@@ -73,6 +73,10 @@ struct localized_stats
   //! Bytes backed by each place, keyed by data_place::to_string()
   ::std::unordered_map<::std::string, size_t> bytes_per_place;
 
+  //! Bytes owned by each grid position, keyed by the position's linear index
+  //! (dim4::get_index of the pos4; friendlier than strings across FFI)
+  ::std::unordered_map<size_t, size_t> bytes_per_grid_index;
+
   //! Fraction of sampled elements whose owner matches the block-majority
   //! owner: an estimate of the fraction of bytes that end up local to their
   //! owner once ownership is quantized to blocks.
@@ -340,6 +344,7 @@ private:
       data_place place  = grid_pos_to_place(p);
       size_t alloc_size = num_blocks * block_size_bytes;
       stats.bytes_per_place[place.to_string()] += alloc_size;
+      stats.bytes_per_grid_index[this->grid.get_dims().get_index(p)] += alloc_size;
       meta.emplace_back(mv(place), alloc_size, first_block * block_size_bytes);
     });
 
@@ -556,6 +561,7 @@ inline localized_stats evaluate_localized_placement(
   for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
     const data_place place = grid.get_place(p).affine_data_place();
     stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
+    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
     stats.nallocs++;
   });
 

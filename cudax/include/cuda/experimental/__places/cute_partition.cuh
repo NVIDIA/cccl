@@ -588,6 +588,7 @@ inline localized_stats evaluate_localized_placement(
   for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
     const data_place place = grid.get_place(p).affine_data_place();
     stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
+    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
     stats.nallocs++;
   });
 
