@@ -102,6 +102,10 @@ public:
     return view_;
   }
 
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
+
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
     void* result = nullptr;
