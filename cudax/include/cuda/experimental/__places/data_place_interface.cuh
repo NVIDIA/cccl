@@ -157,7 +157,7 @@ public:
    * @param stream CUDA stream for stream-ordered allocations
    * @return Pointer to allocated memory
    */
-  virtual void* allocate(dim4 data_dims, size_t elemsize, cudaStream_t stream) const
+  virtual void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream) const
   {
     return allocate(static_cast<::std::ptrdiff_t>(data_dims.size() * elemsize), stream);
   }

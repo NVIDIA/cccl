@@ -21,7 +21,7 @@
  *    (evaluate_localized_placement: bytes per place, placement accuracy);
  * 2. back a logical data with a composite data place, so STF tasks operate
  *    on memory whose pages physically live on the device that owns them;
- * 3. perform a raw geometry-aware allocation (allocate(data_dims, elemsize))
+ * 3. perform a raw geometry-aware allocation (allocate_nd(data_dims, elemsize))
  *    outside of any STF context.
  *
  * Runs on a single GPU (the grid then holds the same device twice); with
@@ -136,7 +136,7 @@ int main()
 
   // 3. Raw geometry-aware allocation, no STF context involved
   auto dp     = ::cuda::experimental::places::make_composite_data_place(all_devs, part);
-  void* raw   = dp.allocate(dim4(N), sizeof(double));
+  void* raw   = dp.allocate_nd(dim4(N), sizeof(double));
   auto* d_buf = static_cast<double*>(raw);
   cuda_safe_call(cudaMemset(d_buf, 0, N * sizeof(double)));
   cuda_safe_call(cudaDeviceSynchronize());
