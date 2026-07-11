@@ -348,6 +348,7 @@ def build_pmf(
 
 def is_ordering_shape(shape: str) -> bool:
     return shape in (
+        "hash_synonym",
         "stale_resident",
         "temporal_phases",
         "strided_sweep",
@@ -428,6 +429,36 @@ def find_hash_synonyms(num_bins: int, slots: int, seed: int) -> list[int]:
             if len(result) == K_HASH_SYNONYM_COUNT:
                 break
     return result
+
+
+def make_hash_synonym_bin_set(
+    num_bins: int, slots: int, seed: int
+) -> tuple[list[int], list[int], bool]:
+    """Return hot synonyms and cache-priming claims, mirroring the C++ helper."""
+    synonyms = find_hash_synonyms(num_bins, slots, seed)
+    if not synonyms:
+        return [], [], False
+
+    primary_slot = cache_slot(synonyms[0], slots, POISON_PRIMARY_MULTIPLIER)
+    claims = [synonyms[0]]
+    blocked_secondary = set()
+    synonym_set = set(synonyms)
+    primary_blocker = [-1] * slots
+    for bin_index in range(num_bins):
+        if bin_index not in synonym_set:
+            slot = cache_slot(bin_index, slots, POISON_PRIMARY_MULTIPLIER)
+            if primary_blocker[slot] < 0:
+                primary_blocker[slot] = bin_index
+    for synonym in synonyms[1:]:
+        secondary_slot = cache_slot(synonym, slots, POISON_SECONDARY_MULTIPLIER)
+        if secondary_slot == primary_slot or secondary_slot in blocked_secondary:
+            continue
+        blocker = primary_blocker[secondary_slot]
+        if blocker < 0 or len(claims) >= K_HASH_SYNONYM_COUNT:
+            return [], [], False
+        claims.append(blocker)
+        blocked_secondary.add(secondary_slot)
+    return synonyms, claims, True
 
 
 def find_poison_bins(num_bins: int, slots: int) -> tuple[int, int, int, bool]:
@@ -516,6 +547,49 @@ def _bins_for_spec(
             )
             bins[indices] = np.searchsorted(cdf, u, side="right").astype(np.int64)
         np.clip(bins, 0, num_bins - 1, out=bins)
+        return bins
+
+    if spec.shape == "hash_synonym":
+        synonyms, claims, enabled = make_hash_synonym_bin_set(
+            num_bins, cache_slots, seed
+        )
+        hot_share = min(1.0, max(0.0, knob_or(spec, DEFAULT_HASH_SYNONYM_HOTSHARE)))
+        bins = np.empty(n, dtype=np.int64)
+        index = np.arange(n, dtype=_U64)
+        for channel in range(sample_stride):
+            indices = channel_indices(channel)
+            samples = np.arange(indices.size, dtype=_U64)
+            stream_seed = channel_seed(channel)
+            select = u01_from_hash(
+                element_key(samples, stream_seed ^ 0x6861736853796E31)
+            )
+            value = u01_from_hash(
+                element_key(samples, stream_seed ^ 0x6861736853796E32)
+            )
+            channel_bins = (value * float(num_bins)).astype(np.int64)
+            np.clip(channel_bins, 0, num_bins - 1, out=channel_bins)
+            if enabled:
+                synonym_array = np.asarray(synonyms, dtype=np.int64)
+                hot = select < hot_share
+                hot_index = (value[hot] * float(len(synonyms))).astype(np.int64)
+                np.clip(hot_index, 0, len(synonyms) - 1, out=hot_index)
+                channel_bins[hot] = synonym_array[hot_index]
+            bins[indices] = channel_bins
+
+        if enabled:
+            multi_layout = sample_stride > 1
+            window = POISON_MULTI_WINDOW if multi_layout else POISON_SINGLE_WINDOW
+            claim_prefix = (
+                POISON_MULTI_CLAIM_PREFIX
+                if multi_layout
+                else POISON_SINGLE_CLAIM_PREFIX
+            )
+            claim = (index & _U64(window - 1)) < _U64(claim_prefix)
+            claim_array = np.asarray(claims, dtype=np.int64)
+            sample = index // _U64(sample_stride)
+            bins[claim] = claim_array[
+                (sample[claim] % _U64(len(claims))).astype(np.int64)
+            ]
         return bins
 
     if spec.shape == "strided_sweep":
@@ -838,12 +912,24 @@ def _assert_contracts():
     if observed_phases != [42, 10, 234, 202, 170, 138, 106, 74]:
         raise AssertionError(f"temporal phase centers changed: {observed_phases}")
 
-    synonyms = find_hash_synonyms(32768, 1024, 42)
-    slots = {
+    synonyms, claims, enabled = make_hash_synonym_bin_set(32768, 1024, 42)
+    primary_slots = {
         cache_slot(bin_index, 1024, POISON_PRIMARY_MULTIPLIER) for bin_index in synonyms
     }
-    if len(synonyms) != K_HASH_SYNONYM_COUNT or len(slots) != 1:
-        raise AssertionError("hash_synonym no longer occupies one real primary slot")
+    claimed_slots = {
+        cache_slot(bin_index, 1024, POISON_PRIMARY_MULTIPLIER) for bin_index in claims
+    }
+    secondary_slots = {
+        cache_slot(bin_index, 1024, POISON_SECONDARY_MULTIPLIER)
+        for bin_index in synonyms[1:]
+    }
+    if (
+        not enabled
+        or len(synonyms) != K_HASH_SYNONYM_COUNT
+        or len(primary_slots) != 1
+        or not secondary_slots.issubset(claimed_slots)
+    ):
+        raise AssertionError("hash_synonym no longer blocks both cache probes")
 
     single_poison = generate_bins(
         "poison", 400000, 32768, cache_slots=1024, sample_stride=1
@@ -903,8 +989,8 @@ def _demo():
     }
     print(f"  argmax bins across seeds 1..5: {sorted(args)} (not pinned to 0)")
 
-    print("== adversarial: hash_synonym collides on one slot ==")
-    b = generate_bins("hash_synonym", N, 262144, seed=42)
+    print("== adversarial: hash_synonym collides on one slot after its claim prefix ==")
+    b = generate_bins("hash_synonym", max(N, 4_000_000), 262144, seed=42)
     hotbins = np.argsort(np.bincount(b, minlength=262144))[::-1][:K_HASH_SYNONYM_COUNT]
     print(
         f"  distinct primary slots among the {K_HASH_SYNONYM_COUNT} hottest bins: "
