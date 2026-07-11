@@ -83,6 +83,9 @@ enum class dim_policy
   block_cyclic //!< round-robin blocks of a given size
 };
 
+/**
+ * @brief One entry of a JAX-like partition specification (see dim_policy)
+ */
 struct dim_spec
 {
   dim_policy policy = dim_policy::whole;
@@ -182,7 +185,8 @@ public:
   }
 
   //! Number of places the partition distributes over (product of place
-  //! extents; grid axes not bound to any dimension replicate and do not count)
+  //! extents; grid axes not bound to any dimension receive coordinate 0 and
+  //! do not count)
   size_t num_places() const
   {
     size_t p = 1;
@@ -238,6 +242,10 @@ public:
    */
   size_t place_offset(size_t place_index) const
   {
+    if (place_index >= num_places())
+    {
+      throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
+    }
     size_t offset = 0;
     for (const auto& l : place_leaves_)
     {
@@ -352,6 +360,10 @@ private:
       {
         throw ::std::invalid_argument("cute_partition: negative strides are not supported");
       }
+      if (l.extent == 0)
+      {
+        throw ::std::invalid_argument("cute_partition: leaf extents must be at least 1");
+      }
       if (l.extent > 1)
       {
         all.push_back(l);
@@ -414,7 +426,8 @@ private:
  * Each entry of `spec` describes how the corresponding tensor dimension maps
  * onto the grid ("blocked over axis 0", ...). Split dimensions are padded up
  * to divisibility, which is what makes the resulting layout exact (see the
- * file-level documentation). Grid axes not referenced by any entry replicate.
+ * file-level documentation). Grid axes not referenced by any entry receive
+ * coordinate 0 (data is not replicated onto them).
  *
  * @param true_dims True tensor extents (dimension 0 fastest)
  * @param spec One entry per tensor dimension (at most 4)
@@ -445,6 +458,10 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
       throw ::std::invalid_argument("make_partition: mesh_axis out of range");
     }
     const size_t nplaces = grid_dims.get(static_cast<size_t>(e.mesh_axis));
+    if (nplaces == 0)
+    {
+      throw ::std::invalid_argument("make_partition: grid axis extents must be at least 1");
+    }
 
     switch (e.policy)
     {
@@ -540,31 +557,23 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
  * See evaluate_localized_placement(); the tensor extents are the partition's
  * true extents.
  */
-inline localized_stats evaluate_localized_placement(
+[[nodiscard]] inline localized_stats evaluate_localized_placement(
   const exec_place& grid,
   const cute_partition& partition,
   size_t elemsize,
   size_t probes     = localized_placement_default_probes,
   size_t block_size = 0)
 {
+  if (!(grid.get_dims() == partition.grid_dims()))
+  {
+    throw ::std::invalid_argument("the partition's grid extents do not match the execution place grid");
+  }
+
   const dim4 data_dims = partition.true_dims();
 
   if (block_size == 0)
   {
-    int ndevs = 0;
-    if (cudaGetDeviceCount(&ndevs) == cudaSuccess && ndevs > 0)
-    {
-      CUmemAllocationProp prop = {};
-      prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-      prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
-      prop.location.id         = 0;
-      block_size               = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
-    }
-    else
-    {
-      cudaGetLastError();
-      block_size = 2 * 1024 * 1024;
-    }
+    block_size = default_placement_block_size();
   }
 
   localized_stats stats;
@@ -580,7 +589,8 @@ inline localized_stats evaluate_localized_placement(
       return partition.owner(data_dims.index_to_pos(index));
     },
     stats.nblocks,
-    block_size / elemsize,
+    block_size,
+    elemsize,
     total_elems,
     probes,
     stats);
@@ -613,7 +623,12 @@ public:
   data_place_cute_composite(exec_place grid, cute_partition partition)
       : grid_(mv(grid))
       , partition_(mv(partition))
-  {}
+  {
+    if (!(grid_.get_dims() == partition_.grid_dims()))
+    {
+      throw ::std::invalid_argument("the partition's grid extents do not match the execution place grid");
+    }
+  }
 
   bool is_resolved() const override
   {
@@ -655,9 +670,11 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
+    // NOTE: routing this place through the logical data path is a recorded
+    // follow-up; do not suggest it in the message meanwhile.
     throw ::std::runtime_error(
-      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
-      "allocate through a logical data");
+      "cute-partition composite data_place serves raw allocation only: use allocate_nd with the partition's true "
+      "extents");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
