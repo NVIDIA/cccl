@@ -239,7 +239,7 @@ def draw_rankfreq(ax, counts):
 # stale_resident scan is a uniform draw over its working set, well represented by a
 # contiguous window too. For i.i.d. shapes a contiguous window is just as
 # representative as a random subsample.
-_FULL_RANGE_SEQ_SHAPES = {"poison", "temporal_phases"}
+_FULL_RANGE_SEQ_SHAPES = {"hash_synonym", "poison", "temporal_phases"}
 
 
 def draw_sequence(ax, bins, num_bins, shape=None):
