@@ -60,8 +60,8 @@ static_assert(!cuda::std::is_default_constructible<cuda::device_memory_pool>::va
 
 #if _CCCL_CTK_AT_LEAST(13, 3)
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::allocation_type_t::type, cudaMemAllocationType>);
-static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::export_handle_types_t::type,
-                                   cudaMemAllocationHandleType>);
+static_assert(
+  cuda::std::is_same_v<cuda::memory_pool_attributes::export_handle_types_t::type, cudaMemAllocationHandleType>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_id_t::type, int>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_type_t::type, cudaMemLocationType>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::max_pool_size_t::type, ::cuuint64_t>);
