@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/machine.cuh>
@@ -40,7 +41,15 @@ namespace cuda::experimental::stf
 {
 using ::cuda::experimental::places::blocked_partition;
 using ::cuda::experimental::places::blocked_partition_custom;
+using ::cuda::experimental::places::cute_partition;
 using ::cuda::experimental::places::cyclic_partition;
+using ::cuda::experimental::places::dim_policy;
+using ::cuda::experimental::places::dim_spec;
+using ::cuda::experimental::places::evaluate_localized_placement;
+using ::cuda::experimental::places::layout_leaf;
+using ::cuda::experimental::places::localized_stats;
+using ::cuda::experimental::places::make_composite_data_place;
+using ::cuda::experimental::places::make_partition;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 using ::cuda::experimental::places::green_context_helper;
 using ::cuda::experimental::places::green_ctx_view;
