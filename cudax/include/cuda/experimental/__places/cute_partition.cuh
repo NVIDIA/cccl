@@ -603,7 +603,7 @@ inline localized_stats evaluate_localized_placement(
  * object is stored on the place. Because a padded partition is intrinsically
  * specific to one tensor, such a place is per-tensor by nature; the reusable
  * shape-free policy object remains the partition_fn_t composite. This place
- * currently serves the raw allocation path only (allocate(data_dims,
+ * currently serves the raw allocation path only (allocate_nd(data_dims,
  * elemsize)); routing it through the STF runtime's logical data path is a
  * recorded follow-up.
  */
@@ -656,11 +656,11 @@ public:
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     throw ::std::runtime_error(
-      "composite data_place cannot allocate from a byte count alone: use allocate(data_dims, elemsize) or allocate "
-      "through a logical data");
+      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+      "allocate through a logical data");
   }
 
-  void* allocate(dim4 data_dims, size_t elemsize, cudaStream_t) const override
+  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
   {
     // A padded partition is specific to one tensor: the requested extents
     // must be the ones the partition was built for.
