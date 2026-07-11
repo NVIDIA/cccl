@@ -235,6 +235,62 @@ __device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int*
   return {lane_run_count, lane_scan - lane_run_count};
 }
 
+template <int kTileSize, int kSlotPad, class KeyT>
+__device__ __forceinline__ void load_tile_keys(
+  KeyT* slot, const KeyT* d_keys, int tile_id, int tile_len, bool first_tile, cuda::std::uint64_t* full_bar, int lane_id)
+{
+  if (lane_id == 0)
+  {
+    const unsigned nbytes = (unsigned) (((size_t) tile_len + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
+    if (tile_len == kTileSize)
+    {
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, nbytes);
+      ptx::cp_async_bulk(
+        ptx::space_shared,
+        ptx::space_global,
+        slot + (first_tile ? kSlotPad : 0),
+        d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
+        nbytes,
+        full_bar);
+    }
+    else
+    {
+      const unsigned span_bytes = (nbytes + 15u) & ~15u;
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
+      ptx::cp_async_bulk_ignore_oob(
+        ptx::space_shared,
+        ptx::space_global,
+        slot + (first_tile ? kSlotPad : 0),
+        d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
+        span_bytes,
+        0u,
+        span_bytes - nbytes,
+        full_bar);
+    }
+  }
+  __syncwarp();
+}
+
+__device__ __forceinline__ int
+clc_next_tile_id(uint4& clc_resp, cuda::std::uint64_t& clc_bar, int pipeline_gen, int num_tiles, int lane_id)
+{
+  int nxt = num_tiles; // if no more work was cancellable
+  if (lane_id == 0)
+  {
+    wait_parity(&clc_bar, (unsigned) (pipeline_gen & 1));
+    // try_cancel wrote clc_resp via the async proxy
+    ptx::fence_proxy_async(ptx::space_shared);
+    const bool canceled = ptx::clusterlaunchcontrol_query_cancel_is_canceled(clc_resp);
+    if (canceled)
+    {
+      nxt = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(clc_resp);
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
+      ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
+    }
+  }
+  return __shfl_sync(kFullMask, nxt, 0);
+}
+
 // start calculating head_flags:
 // each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
 // head = (key != predecessor)
@@ -668,57 +724,11 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       // tile 0 has no predecessor and skips the over-fetch
       const bool first_tile = (tile_id == 0);
       const int tile_len    = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
-      if (lane_id == 0)
-      {
-        const unsigned nbytes = (unsigned) (((size_t) tile_len + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
-        if (tile_len == kTileSize)
-        {
-          ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &full[slot_id], nbytes);
-          ptx::cp_async_bulk(
-            ptx::space_shared,
-            ptx::space_global,
-            tile_buf + (size_t) slot_id * kSlotStride + (first_tile ? kSlotPad : 0),
-            d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
-            nbytes,
-            &full[slot_id]);
-        }
-        else
-        {
-          const unsigned span_bytes = (nbytes + 15u) & ~15u;
-          ptx::mbarrier_arrive_expect_tx(
-            ptx::sem_release, ptx::scope_cta, ptx::space_shared, &full[slot_id], span_bytes);
-          ptx::cp_async_bulk_ignore_oob(
-            ptx::space_shared,
-            ptx::space_global,
-            tile_buf + (size_t) slot_id * kSlotStride + (first_tile ? kSlotPad : 0),
-            d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
-            span_bytes,
-            0u,
-            span_bytes - nbytes,
-            &full[slot_id]);
-        }
-      }
-      __syncwarp();
+      load_tile_keys<kTileSize, kSlotPad>(
+        tile_buf + (size_t) slot_id * kSlotStride, d_keys, tile_id, tile_len, first_tile, &full[slot_id], lane_id);
       // consume the prefetched cancel
       // this is ok since it should be fast to get next cancelled id
-      if (lane_id == 0)
-      {
-        while (!ptx::mbarrier_try_wait_parity(&clc_bar, (unsigned) (pipeline_gen & 1)))
-        {
-        }
-        // try_cancel wrote clc_resp via the async proxy
-        ptx::fence_proxy_async(ptx::space_shared);
-        const bool canceled = ptx::clusterlaunchcontrol_query_cancel_is_canceled(clc_resp);
-        int nxt             = num_tiles; // if no more work was cancellable
-        if (canceled)
-        {
-          nxt = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(clc_resp);
-          ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
-          ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
-        }
-        tile_id = nxt;
-      }
-      tile_id = __shfl_sync(kFullMask, tile_id, 0);
+      tile_id = clc_next_tile_id(clc_resp, clc_bar, pipeline_gen, num_tiles, lane_id);
     }
   }
   // if you are compute
