@@ -18,6 +18,7 @@ adapt to the installed CTK rather than hard-coding architectures.
 
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 from cuda.compute import (
     ProxyArray,
@@ -36,6 +37,7 @@ from cuda.compute._cccl_interop import (
 from cuda.compute._target_cc import target_cc
 from cuda.compute.iterators import CountingIterator, TransformIterator
 from cuda.compute.types import from_numpy_dtype
+from cuda.core import Device
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -394,7 +396,6 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 
 
 def test_compile_only_then_lazy_load_and_execute():
-    cp = pytest.importorskip("cupy")
     cc = current_device_cc_key()
 
     # Single-cc compile-only build (no fused load) for the current device.
@@ -402,18 +403,17 @@ def test_compile_only_then_lazy_load_and_execute():
     assert not reducer.build_results[cc]._loaded
 
     h = np.arange(1024, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
-    reducer(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
-    cp.cuda.runtime.deviceSynchronize()
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
+    reducer(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    Device().sync()
 
     # First call lazily loaded the current-device build result and ran correctly.
     assert reducer.build_results[cc]._loaded
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
 def test_multi_cc_loads_only_the_current_device_build_result():
-    cp = pytest.importorskip("cupy")
     # This test executes kernels, so it legitimately needs a GPU; ensure the
     # current device's cc is one of the built arches.
     cc = current_device_cc_key()
@@ -427,28 +427,27 @@ def test_multi_cc_loads_only_the_current_device_build_result():
     loaded = deserialize(blob)
 
     h = np.arange(256, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
-    loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
-    cp.cuda.runtime.deviceSynchronize()
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
+    loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    Device().sync()
 
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
     # Only the current device's build result is loaded; the other stays lazy.
     assert loaded.build_results[cc]._loaded
     assert not loaded.build_results[other]._loaded
 
 
 def test_fused_fast_path_unchanged_when_no_cc_given():
-    cp = pytest.importorskip("cupy")
     h = np.arange(512, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
 
     # compute_capability omitted -> single, already-loaded build result (fused build).
     builder = make_unary_transform(d_in=d_in, d_out=d_out, op=_add_one)
     (only,) = builder.build_results.values()
     assert only._loaded  # fused build already loaded the kernels
 
-    builder(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
-    cp.cuda.runtime.deviceSynchronize()
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    builder(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)

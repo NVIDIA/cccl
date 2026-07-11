@@ -61,4 +61,12 @@ C2H_TEST("cub::DeviceTransform::Transform accepts a custom policy selector", "[t
   REQUIRE(d_output == expected);
 }
 
+#else // _CCCL_STD_VER >= 2020
+
+// we need a dummy test for C++17, otherwise the return code of the test executable is 2 (not 0)
+C2H_TEST("cub::DeviceTransform::Transform dummy test", "[transform][env]")
+{
+  SUCCEED();
+}
+
 #endif // _CCCL_STD_VER >= 2020
