@@ -1279,24 +1279,19 @@ private:
   static constexpr offset_t flag_candidate = 1; // tie candidate: routed to the back, counted by the boundary scan
   static constexpr offset_t flag_selected  = 2; // strictly selected: routed to the front
 
-  // Shared per-key arrival placement core (called by `place_tile` for both final filters): route one key to its region
-  // by class -- selected to the front (base `sel_prefix`), candidate to the back (base `num_selected + cand_prefix`,
-  // where `num_selected = k - <back region size>`) -- via a block-local SMEM atomic under the uniform `out < k` guard
-  // that drops losing candidates while always accepting selected keys. Pairs builds also copy the key's value from its
-  // segment-local index `seg_idx`. (Index-ordered deterministic tie resolution goes through `emit_indexed` instead.)
+  // Shared per-key arrival placement core (called by `place_tile` for both final filters): route one key by class to
+  // the front (selected) or back (candidate) counter, each primed with its region base by the final-filter drivers so
+  // the SMEM atomic returns the absolute output slot with no per-key offset. The uniform `out < k` guard drops losing
+  // candidates but always accepts selected keys; pairs builds also copy the key's value from `seg_idx`. (Deterministic
+  // index-ordered tie resolution goes through `emit_indexed` instead.)
   template <class KeyOutIt>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void place_one(
-    KeyOutIt block_keys_out,
-    bool is_cand,
-    const key_t& key,
-    offset_t seg_idx,
-    offset_t num_selected,
-    offset_t sel_prefix,
-    offset_t cand_prefix)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  place_one(KeyOutIt block_keys_out, bool is_cand, const key_t& key, offset_t seg_idx)
   {
     offset_t* const counter = is_cand ? &temp_storage.back_local_cnt : &temp_storage.front_local_cnt;
-    const offset_t base     = is_cand ? (num_selected + cand_prefix) : sel_prefix;
-    const out_offset_t out  = static_cast<out_offset_t>(base + atomicAdd(counter, offset_t{1}));
+    const out_offset_t out  = static_cast<out_offset_t>(atomicAdd(counter, offset_t{1}));
+    // The front counter never overruns the selected region, so only losing candidates may exceed `k`.
+    _CCCL_ASSERT(is_cand || out < k, "a strictly-selected key must always land within the top-k output");
     if (out < k)
     {
       block_keys_out[out] = key;
@@ -1311,14 +1306,17 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE bool final_filter_should_stop(const det_filter_state<SelectDirection>& state)
   {
-    // Each region is visited at most once, so neither counter can pass this CTA's exact selected/candidate totals.
-    _CCCL_ASSERT(temp_storage.front_local_cnt <= static_cast<offset_t>(state.my_front)
-                   && temp_storage.back_local_cnt <= state.my_cand_count,
+    // Counters run absolute (primed with the region base), so completion compares against each region's end. Every
+    // region is visited at most once, so neither counter can pass its end.
+    const offset_t num_selected = static_cast<offset_t>(k) - static_cast<offset_t>(state.num_back);
+    const offset_t front_end    = state.sel_prefix + static_cast<offset_t>(state.my_front);
+    const offset_t back_end     = num_selected + state.cand_prefix + state.my_cand_count;
+    _CCCL_ASSERT(temp_storage.front_local_cnt <= front_end && temp_storage.back_local_cnt <= back_end,
                  "final-filter placement counters exceeded this CTA's assigned work");
-    const bool is_front_done = temp_storage.front_local_cnt >= static_cast<offset_t>(state.my_front);
+    const bool is_front_done = temp_storage.front_local_cnt >= front_end;
     // Straddling/above CTAs finish the back when `is_tie_active` clears; an `is_select_all_cand_cta` (which never
     // clears it) finishes once all `my_cand_count` of its candidates are placed.
-    const bool is_back_done = !state.is_tie_active || (temp_storage.back_local_cnt >= state.my_cand_count);
+    const bool is_back_done = !state.is_tie_active || (temp_storage.back_local_cnt >= back_end);
     return is_front_done && is_back_done;
   }
 
@@ -1337,7 +1335,6 @@ private:
     int tile_base,
     bool do_arrival)
   {
-    const offset_t num_selected = static_cast<offset_t>(k) - static_cast<offset_t>(state.num_back); // front region size
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
@@ -1348,7 +1345,7 @@ private:
       }
       const int pos          = tile_base + tid * ItemsPerThread + i;
       const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
-      place_one(state.block_keys_out, is_cand, keys[i], seg_idx, num_selected, state.sel_prefix, state.cand_prefix);
+      place_one(state.block_keys_out, is_cand, keys[i], seg_idx);
     }
   }
 
@@ -1485,19 +1482,24 @@ private:
             // B1: order the arrival global writes (from `place_tile`) ahead of the index-order overwrite (same boundary
             // slots) and make the counter read race-free and block-uniform.
             __syncthreads();
-            const offset_t placed = temp_storage.back_local_cnt;
-            if ((state.cand_prefix + placed) > static_cast<offset_t>(state.num_back))
+            // `back_local_cnt` is primed with the back base (`num_selected + cand_prefix`), so subtracting the front
+            // region size recovers this CTA's candidate-rank reached so far (`cand_prefix` plus the candidates placed).
+            const offset_t num_selected = static_cast<offset_t>(k) - static_cast<offset_t>(state.num_back);
+            _CCCL_ASSERT(temp_storage.back_local_cnt >= num_selected,
+                         "back counter must stay at or above its primed base (no unsigned underflow)");
+            const offset_t reached = temp_storage.back_local_cnt - num_selected;
+            if (reached > static_cast<offset_t>(state.num_back))
             {
               // Crossing tile: overwrite this tile's arrival slots `{num_selected+state.running, ...}` with the
               // index-ordered winners (identical slot set, different candidate->slot mapping).
               emit_indexed<Reversed>(state, keys, flags, seg_base, count, tile_base, state.running);
             }
-            state.running = state.cand_prefix + placed;
+            state.running = reached;
             if (state.running >= static_cast<offset_t>(state.num_back))
             {
               state.is_tie_active = false;
             }
-            // Trailing barrier for the lazy-scan path only: separate this tile's `placed` read (B1 above) from the next
+            // Trailing barrier for the lazy-scan path only: separate this tile's counter read (B1 above) from the next
             // tile's `back_local_cnt` atomic. The other paths write disjoint slots and need no additional explicit
             // barrier.
             __syncthreads();
@@ -1799,6 +1801,15 @@ private:
     nondet_filter_state<IdentifyOp, KeyOutIt> state{
       identify_op, block_keys_out, num_kth, sel_prefix, cand_prefix, resident_keys};
 
+    // Prime the placement counters with this CTA's absolute region bases so `place_one` returns final output slots with
+    // no per-key offset; the barrier publishes both writes before the first placement.
+    if (tid == 0)
+    {
+      temp_storage.front_local_cnt = sel_prefix;
+      temp_storage.back_local_cnt  = static_cast<offset_t>(k - num_kth) + cand_prefix;
+    }
+    __syncthreads();
+
     run_pass(
       // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
       [&](int stage, offset_t overflow_idx) {
@@ -1826,8 +1837,9 @@ private:
   }
 
   // Deterministic final filter: both regions fill forward -- strictly-selected keys into the front `[0, num_selected)`
-  // via a SMEM atomic (offset by `sel_prefix`), candidates into the back `[num_selected, k)`. Candidate placement uses
-  // arrival-order atomics, with an index-ordered BlockScan only on the single boundary-crossing (straddling) CTA. A
+  // via a SMEM atomic (primed with this CTA's `sel_prefix`), candidates into the back `[num_selected, k)`. Candidate
+  // placement uses arrival-order atomics, with an index-ordered BlockScan only on the single boundary-crossing
+  // (straddling) CTA. A
   // combined cross-CTA scan gives this block its disjoint front/back bases and lets it detect whether all/none/some of
   // its candidates win. This member computes the `det_filter_state` inputs and hands them to `run_filter`, which drives
   // the per-region sweeps.
@@ -1880,6 +1892,10 @@ private:
       (cluster_rank == layout.leader_rank)
         ? static_cast<out_offset_t>(num_selected - static_cast<out_offset_t>(sel_prefix))
         : static_cast<out_offset_t>(push_front);
+    // This CTA's front slots `[sel_prefix, sel_prefix + my_front)` (the range its primed `front_local_cnt` walks) must
+    // stay within the selected region `[0, num_selected)`.
+    _CCCL_ASSERT(sel_prefix + static_cast<offset_t>(my_front) <= static_cast<offset_t>(num_selected),
+                 "this CTA's front slots must fit within the selected region");
 
     // Resident-front extent (bulk path): the whole contiguous resident span. The unaligned tail suffix (the
     // globally-last chunk's) is always peeled into `edge_keys` and folded by `process_tail_edge`, so it is never
@@ -1931,6 +1947,15 @@ private:
       is_tail_edge_terminal,
       cand_prefix,
       !is_select_no_cand_cta};
+
+    // Prime the placement counters with this CTA's absolute region bases so `place_one` returns final output slots with
+    // no per-key offset; the barrier publishes both writes before `run_filter`'s first placement.
+    if (tid == 0)
+    {
+      temp_storage.front_local_cnt = sel_prefix;
+      temp_storage.back_local_cnt  = static_cast<offset_t>(num_selected) + cand_prefix;
+    }
+    __syncthreads();
     run_filter(state);
   }
 
@@ -2707,13 +2732,11 @@ private:
       temp_storage.state.len         = static_cast<offset_t>(segment_size);
       temp_storage.state.k           = k;
       temp_storage.state.result_pair = 0;
-      // Front-load every counter the final filter relies on so the initial cluster barrier below (arrive here, wait in
-      // the first pass) publishes the zeros to all ranks (the combined scan's DSMEM pushes then add into an
-      // already-zeroed `prefix_pair`, needing only a post-push barrier). `my_candidates` is zeroed too so idle/leader
-      // ranks (which never write it) read 0.
+      // Front-load the cross-pass accumulators so the initial cluster barrier below (arrive here, wait in the first
+      // pass) publishes the zeros to all ranks: the combined scan's DSMEM pushes add into an already-zeroed
+      // `prefix_pair` (needing only a post-push barrier), and idle/leader ranks that never write `my_candidates` read
+      // 0. (The placement counters are primed with region bases in the final-filter drivers, not here.)
       temp_storage.prefix_pair           = 0;
-      temp_storage.front_local_cnt       = 0;
-      temp_storage.back_local_cnt        = 0;
       temp_storage.num_strictly_selected = 0;
       temp_storage.my_candidates         = 0;
     }
