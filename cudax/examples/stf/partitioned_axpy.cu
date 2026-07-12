@@ -60,17 +60,6 @@ int main()
   int ndevs;
   cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
-  CUdevice dev0;
-  cuda_safe_call(cuInit(0));
-  cuda_safe_call(cuDeviceGet(&dev0, 0));
-  int supports_vmm;
-  cuda_safe_call(cuDeviceGetAttribute(&supports_vmm, CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev0));
-  if (!supports_vmm)
-  {
-    fprintf(stderr, "VMM not supported on this machine, skipping example.\n");
-    return 0;
-  }
-
   // The single task below touches the whole range from each device, which
   // requires peer access between all participating devices; fall back to one
   // device when it is unavailable.
