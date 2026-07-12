@@ -304,7 +304,7 @@ struct agent_batched_topk_cluster
   }
 
   // Two clamp flavors. The `floor` clamp pairs with an unpredicated main loop over full tiles plus a single
-  // non-unrolled remainder loop (the chunk helper `for_each_chunk_key_impl` and the copy fast path); the `ceil` clamp
+  // remainder loop (the chunk helper `for_each_chunk_key_impl` and the copy fast path); the `ceil` clamp
   // keeps the whole resident segment inside one tile for fully-predicated loops (the final filters' `process_tiles`).
   static constexpr int histogram_items_per_thread_clamped =
     clamp_unroll(segment_rounds_floor, histogram_items_per_thread);
@@ -516,7 +516,7 @@ struct agent_batched_topk_cluster
   // by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the histogram passes:
   // `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would interleave each load
   // with its atomic instead of hoisting the whole load wave ahead. `Unroll` is the caller's clamped (floor) items per
-  // thread, so the sub-tile remainder is handled by a single non-unrolled fused block-stride loop bounded by the count.
+  // thread, so the sub-tile remainder is handled by a single fused block-stride loop bounded by the count.
   template <int Unroll, typename Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* keys, int chunk_count, Apply&& apply) const
   {
@@ -540,8 +540,7 @@ struct agent_batched_topk_cluster
       }
     }
 
-    // Sub-tile remainder
-    _CCCL_PRAGMA_NOUNROLL()
+    // Sub-tile remainder. No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
     for (int local = full_tiles + tid; local < chunk_count; local += threads_per_block)
     {
       apply(keys[local], local);
@@ -1017,7 +1016,7 @@ private:
         // Wait for all threads to leave the resident load's final wait before re-arming its shared mbarriers; else
         // the phase advances twice and a lagging thread misses the flip and spins forever.
         __syncthreads();
-        _CCCL_PRAGMA_NOUNROLL()
+        // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
         for (int i = 0; i < stream_stages; ++i)
         {
           const offset_t overflow_idx =
@@ -2226,7 +2225,7 @@ private:
         int next_off_bytes = 0;
 
         // Load every resident chunk's aligned bulk, densely packed in slot order.
-        _CCCL_PRAGMA_NOUNROLL()
+        // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
         for (int stage = 0; stage < prologue; ++stage)
         {
           const auto src = bulk_src(static_cast<offset_t>(stage));
@@ -2482,7 +2481,7 @@ private:
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
 
     int last_pass = num_passes;
-    _CCCL_PRAGMA_NOUNROLL()
+    // No unroll pragma on purpose: the compiler's partial/full auto-unroll beats forced nounroll here.
     for (int pass = 0; pass < num_passes; ++pass)
     {
       const bool is_first_pass = (pass == 0);
@@ -2845,7 +2844,7 @@ private:
     // Sub-tile remainder. Iterate the tail relative to zero and offset by `full_tiles`, so every index stays in
     // `[0, num_items)` without relying on `full_tiles + cluster_tid` staying within `offset_t`.
     const offset_t tail_items = num_items - full_tiles;
-    _CCCL_PRAGMA_NOUNROLL()
+    // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
     for (offset_t local = cluster_tid; local < tail_items; local += cluster_threads)
     {
       const auto seg_idx   = static_cast<segment_size_val_t>(full_tiles + local);
