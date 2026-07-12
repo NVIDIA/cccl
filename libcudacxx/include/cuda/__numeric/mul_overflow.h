@@ -103,6 +103,8 @@ template <class _Result, class _Lhs, class _Rhs>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API overflow_result<_Tp> __mul_overflow_host(_Tp __lhs, _Tp __rhs) noexcept
 {
+  // MSVC x86_64 intrinsic branches intentionally collapse to the same generic implementation elsewhere.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
 #  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
@@ -172,6 +174,7 @@ template <class _Tp>
       return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
     }
   } // ^^^ unsigned types ^^^
+  // NOLINTEND(bugprone-branch-clone)
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 

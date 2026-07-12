@@ -103,7 +103,7 @@ struct MergePolicySelector
 };
 // example-end merge-keys-policy-selector
 
-C2H_TEST("cub::DeviceMerge::MergeKeys env-based API with tuning", "[merge][env]")
+C2H_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge][env]")
 {
   // example-begin merge-keys-tuning
   auto keys1  = thrust::device_vector<int>{0, 2, 5};

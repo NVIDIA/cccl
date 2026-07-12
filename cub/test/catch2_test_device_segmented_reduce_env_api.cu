@@ -632,7 +632,7 @@ struct SegmentedReducePolicySelector
 };
 // example-end segmented-reduce-sum-policy-selector
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum env-based API with tuning", "[segmented_reduce][env]")
+C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts a custom policy selector", "[segmented_reduce][env]")
 {
   // example-begin segmented-reduce-sum-tuning
   int num_segments                     = 3;

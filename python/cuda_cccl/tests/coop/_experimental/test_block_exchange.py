@@ -14,6 +14,7 @@ from operator import mul
 import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import (
     NUMBA_TYPES_TO_NP,
     Complex,
@@ -119,11 +120,10 @@ def test_striped_to_blocked(
     total_items = num_threads * items_per_thread
     h_input = random_int(total_items, T_np)
 
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(total_items, dtype=T_np)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(total_items, dtype=T_np)
 
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
 
@@ -229,11 +229,10 @@ def test_striped_to_blocked_user_defined_type(
     h_input_imag = random_int(total_complex_items, T_complex_np_component)
     h_input_combined = np.concatenate((h_input_real, h_input_imag))
 
-    d_input = cuda.to_device(h_input_combined)
-    d_output = cuda.device_array(2 * total_complex_items, dtype=T_complex_np_component)
+    d_input = DeviceArray.from_numpy(h_input_combined)
+    d_output = DeviceArray.empty(2 * total_complex_items, dtype=T_complex_np_component)
 
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output_combined = d_output.copy_to_host()
     output_real = output_combined[:total_complex_items]

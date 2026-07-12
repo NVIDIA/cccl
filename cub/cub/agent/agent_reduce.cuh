@@ -222,8 +222,12 @@ struct AgentReduceImpl
   static constexpr bool ATTEMPT_VECTORIZATION =
     (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
     && (::cuda::std::is_pointer_v<InputIteratorT>)
-    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-    &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
+         // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+         &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>)
+         // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
+         // TODO(bgruber): this should be decided by tuning
+         &&sizeof(InputT)
+         <= 8;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
@@ -355,14 +359,15 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
+      thread_aggregate =
+        transform_op(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
       thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      InputT item(d_wrapped_in[block_offset + thread_offset]);
+      InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;

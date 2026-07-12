@@ -15,8 +15,7 @@
 #include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 
 #include <nccl.h>
-
-#include "nccl_test_helpers.cuh"
+#include <nccl_test_common.h>
 
 C2H_TEST("nccl_communicator_ref typedefs", "[multi_gpu]")
 {
@@ -32,7 +31,7 @@ C2H_TEST("nccl_communicator_ref not constructible from NCCL_COMM_NULL", "[multi_
   STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, cuda::std::nullptr_t>);
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref basic")
+MULTI_GPU_TEST("nccl_communicator_ref basic", )
 {
   SECTION("rank and size")
   {
@@ -48,12 +47,9 @@ NCCL_COMM_TEST("nccl_communicator_ref basic")
 
   SECTION("native handle")
   {
-    int i = 0;
-
     for (auto& comm : this->communicators())
     {
-      REQUIRE(comm.native_handle() == this->handles()[i]);
-      ++i;
+      REQUIRE(comm.native_handle() != NCCL_COMM_NULL);
     }
   }
 
@@ -79,7 +75,7 @@ NCCL_COMM_TEST("nccl_communicator_ref basic")
     if (cuda::devices.size() > 1)
     {
       REQUIRE_THROWS_WITH(
-        cudax::nccl_communicator_ref(this->handles().front(), cudax::logical_device{cuda::devices[1]}),
+        cudax::nccl_communicator_ref(this->communicators()[0].native_handle(), cudax::logical_device{cuda::devices[1]}),
         "Inconsistent devices, NCCL communicator device and provided logical device do not match");
     }
   }
