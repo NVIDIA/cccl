@@ -24,8 +24,9 @@
  * 3. perform a raw geometry-aware allocation (allocate_nd(data_dims, elemsize))
  *    outside of any STF context.
  *
- * Runs on a single GPU (the grid then holds the same device twice); with
- * several GPUs each place is a distinct device.
+ * Each place computes its own blocked portion (the idiomatic grid-task
+ * pattern), so no cross-device access is required; peer/mempool access setup
+ * is handled by the places machinery itself.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -34,14 +35,14 @@
 
 using namespace cuda::experimental::stf;
 
-__global__ void axpy(double a, slice<const double> x, slice<double> y)
+__global__ void axpy(size_t start, size_t cnt, double a, const double* x, double* y)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
 
-  for (size_t i = tid; i < x.size(); i += nthreads)
+  for (size_t i = tid; i < cnt; i += nthreads)
   {
-    y(i) += a * x(i);
+    y[start + i] += a * x[start + i];
   }
 }
 
@@ -57,39 +58,10 @@ double Y0(size_t i)
 
 int main()
 {
-  int ndevs;
-  cuda_safe_call(cudaGetDeviceCount(&ndevs));
-
-  // The single task below touches the whole range from each device, which
-  // requires peer access between all participating devices; fall back to one
-  // device when it is unavailable.
-  int usable_devs = ::std::min(ndevs, 4);
-  for (int a = 0; a < usable_devs; a++)
-  {
-    for (int b = 0; b < usable_devs; b++)
-    {
-      int can_access = 1;
-      if (a != b)
-      {
-        cuda_safe_call(cudaDeviceCanAccessPeer(&can_access, a, b));
-      }
-      if (!can_access)
-      {
-        fprintf(stderr, "Peer access unavailable between devices %d and %d: using a single device.\n", a, b);
-        usable_devs = 1;
-      }
-    }
-  }
-
-  // A grid of up to 4 places (at least 2 so the partitioning is visible even
-  // on a single-GPU machine, where places then share device 0)
-  const size_t nplaces = ::std::max(2, usable_devs);
-  ::std::vector<exec_place> places;
-  for (size_t i = 0; i < nplaces; i++)
-  {
-    places.push_back(exec_place::device(static_cast<int>(i % usable_devs)));
-  }
-  auto all_devs = make_grid(mv(places));
+  // The places machinery enumerates the devices and sets up peer/mempool
+  // access between them; on a single-GPU machine this is one place.
+  auto all_devs        = exec_place::all_devices();
+  const size_t nplaces = all_devs.get_dims().size();
 
   const size_t N = 4 * 1024 * 1024;
 
@@ -128,8 +100,17 @@ int main()
   // classic blocked partitioner (the callback form of the same policy)
   auto dist = data_place::composite(blocked_partition_custom<0>{}, all_devs);
 
-  ctx.task(all_devs, lX.read(dist), lY.rw(dist))->*[&](cudaStream_t s, auto dX, auto dY) {
-    axpy<<<128, 128, 0, s>>>(alpha, dX, dY);
+  // One task over the grid; each place computes its own blocked chunk
+  auto t = ctx.task(all_devs, lX.read(dist), lY.rw(dist));
+  t->*[&](auto, auto dX, auto dY) {
+    const size_t chunk = (N + nplaces - 1) / nplaces;
+    for (size_t i = 0; i < nplaces; i++)
+    {
+      const size_t start = i * chunk;
+      const size_t cnt   = ::std::min(chunk, N - start);
+      auto active        = t.activate_place(i);
+      axpy<<<128, 128, 0, t.get_stream(i)>>>(start, cnt, alpha, dX.data_handle(), dY.data_handle());
+    }
   };
 
   ctx.finalize();
