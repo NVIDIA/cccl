@@ -63,16 +63,34 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
 
 .. note::
 
-   **Current support.** This initial API surface only implements the fully opted-out configuration.
-   For :cpp:struct:`cub::DeviceBatchedTopK` it must be requested **explicitly** as
-   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-   cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)``
-   (:cpp:struct:`cub::DeviceTopK` has no tie-break dimension yet and omits the ``tie_break`` token).
-   The algorithms ``static_assert`` for any other combination (including an empty, no-requirement
-   environment), so the deterministic default described above cannot yet be exercised in code. The
-   deterministic, tie-broken, and (stable-)sorted modes documented here define the committed long-term
-   contract and will become available (including as the no-requirement default) as those code paths
-   land.
+   **Current support.** Only the unsorted output ordering is implemented so far, so
+   ``cuda::execution::output_ordering::unsorted`` must be requested **explicitly**; ``sorted`` /
+   ``stable_sorted`` (and therefore an empty, no-requirement environment, which resolves to
+   ``stable_sorted``) ``static_assert`` at compile time. The supported *selection* requirements differ
+   by algorithm and, for :cpp:struct:`cub::DeviceBatchedTopK`, by architecture:
+
+   * :cpp:struct:`cub::DeviceBatchedTopK`:
+
+     - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
+       ``(not_guaranteed, unspecified)`` is supported, and every segment must fit a single thread
+       block. Deterministic / tie-break requests and larger segments require the SM 9.0+ cluster
+       backend and are diagnosed at compile time (or at runtime as ``cudaErrorNotSupported`` in
+       relaxed builds).
+     - **Hopper and newer (compute capability >= 9.0):** every acknowledged ``(determinism,
+       tie_break)`` pair is supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run,
+       unspecified)``, and ``(gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index})``
+       -- and segments too large for a single thread block are handled by the cluster backend. Among
+       non-deterministic requests the baseline vs cluster backend is chosen by an architecture /
+       segment-size crossover (the cluster backend is preferred for baseline-coverable segments only on
+       the newer architectures where it wins).
+
+   * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
+     (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break
+     dimension yet, so it omits the ``tie_break`` token.
+
+   The remaining deterministic, tie-broken, and (stable-)sorted modes documented here define the
+   committed long-term contract and will become available (including as the no-requirement default) as
+   those code paths land.
 
 Requirements reference
 ----------------------

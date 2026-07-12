@@ -294,6 +294,18 @@ function(
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 
+  # The unsupported-arch xfail test omits the _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
+  # keeps the strict compile-time diagnostic. Pin it to 89-virtual (the highest arch without cluster support) so the
+  # deterministic request it issues has no viable backend and the static_assert fires regardless of the preset's archs.
+  if (
+    "${test_src}" MATCHES "test_device_batched_topk_unsupported_arch_fail\\.cu"
+  )
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual"
+    )
+  endif()
+
   # Disable clang-cuda >= 22 warnings regarding failed loop unrolling.
   if (
     "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang"

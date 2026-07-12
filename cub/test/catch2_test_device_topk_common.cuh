@@ -6,14 +6,66 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_baseline_policy
+#include <cub/util_device.cuh> // cub::PtxVersion
 
 #include <thrust/remove.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
+
+// Low-level gate: skips the current test case when a request that must use the SM90+ cluster backend has no
+// cluster-capable target in the build. With `_CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test
+// sources do), such a request fails at runtime with cudaErrorNotSupported rather than at compile time. `needs_cluster`
+// must be true when the caller knows the configuration requires the cluster backend; prefer
+// skip_if_batched_topk_backend_unavailable(), which derives it from the request.
+//
+// Uses cub::PtxVersion (the compiled compute capability the dispatch resolves via PtxComputeCap), not cub::SmVersion
+// (the physical device): the two diverge when compiling for a virtual architecture below the device (e.g. `89-virtual`
+// on an SM120 GPU), where the cluster arm is never emitted and the dispatch returns cudaErrorNotSupported -- exactly
+// what this skip must catch.
+inline void skip_if_batched_topk_cluster_unavailable(bool needs_cluster)
+{
+  if (!needs_cluster)
+  {
+    return;
+  }
+  int ptx_version = 0;
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
+  constexpr int cluster_min_ptx_version = 900; // SM 9.0
+  if (ptx_version < cluster_min_ptx_version)
+  {
+    SKIP("This top-k configuration requires the SM90+ cluster backend (a deterministic / tie-break request or a "
+         "segment size beyond the baseline backend's capacity); the current build has no SM90+ target that can serve "
+         "it.");
+  }
+}
+
+// Skips the current test case when the batched top-k configuration cannot run in the current build. The request needs
+// the cluster backend if it is deterministic / has a concrete tie-break, or if `static_max_segment_size` exceeds the
+// baseline backend's coverage; skips if that backend is unavailable. Deriving the size decision here (rather than a
+// precomputed `oversize` bool) keeps the threshold in one place. Pass the same maximum segment size the test hands to
+// the dispatch (its `cuda::args::bounds<...>` upper bound, or the type's maximum when unbounded). Note that `oversize`
+// uses only the tile-size bound `baseline_max_covered_segment_size`; the dispatch's `baseline_can_cover_v` additionally
+// checks the agent's shared-memory fit, so a borderline size the bound deems baseline-coverable could still route to
+// the cluster backend (such a case would fail rather than skip if the cluster backend is unavailable).
+template <cuda::execution::determinism::__determinism_t Determinism =
+            cuda::execution::determinism::__determinism_t::__not_guaranteed,
+          cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified>
+void skip_if_batched_topk_backend_unavailable(cuda::std::int64_t static_max_segment_size)
+{
+  constexpr bool deterministic = Determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed
+                              || TieBreak != cuda::execution::tie_break::__tie_break_t::__unspecified;
+  const bool oversize =
+    static_max_segment_size
+    > cub::detail::batched_topk::baseline_max_covered_segment_size(cub::detail::batched_topk::make_baseline_policy());
+  skip_if_batched_topk_cluster_unavailable(deterministic || oversize);
+}
 
 // Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
@@ -314,9 +366,10 @@ c2h::device_vector<KeyT> compact_to_topk_batched(
     cuda::make_counting_iterator(0),
     get_output_size_op{d_offsets.cbegin(), k_it, static_cast<cuda::std::int64_t>(num_segments)});
 
-  // Calculate destination offsets via prefix sum
-  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(copy_sizes_it, copy_sizes_it + num_segments + 1, d_output_offsets.begin());
+  // Calculate destination offsets via prefix sum. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, which stay in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1);
+  thrust::inclusive_scan(copy_sizes_it, copy_sizes_it + num_segments, d_output_offsets.begin() + 1);
 
   OffsetT total_compacted_size = d_output_offsets.back();
   c2h::device_vector<KeyT> d_keys_out(total_compacted_size, thrust::no_init);
