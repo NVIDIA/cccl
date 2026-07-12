@@ -25,7 +25,7 @@ struct winner_config
   // so it can be SHALLOWER than the keys ring and this buys room for more kStages
   static constexpr int kPosBufStages = 3;
   static_assert(kPosBufStages >= 2 && kPosBufStages <= kStages, "kPosBufStages should be 2 - kStages");
-  static constexpr int kPollMlp = 4; // how many loads each poll lane keeps in flight
+  static constexpr int kPollMlp = 5; // how many loads each poll lane keeps in flight
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 64;
   // when should be pre calculate in registers?
@@ -505,14 +505,9 @@ __device__ __forceinline__ void poll_and_fold(
   {
     const int remain = tile_id - last_seen_tile_id;
     // # of tiles to fold this iteration
-    const int chunk = remain < 32 * kPollMlp ? remain : 32 * kPollMlp;
-    // lane l owns the contiguous tiles
-    // [last_seen_tile_id + l*kPollMlp, last_seen_tile_id + l*kPollMlp + kPollMlp)
-    // clamped to `chunk`
-    const int lane_first_tile_id = last_seen_tile_id + lane_id * kPollMlp;
-    int lane_tile_count          = chunk - lane_id * kPollMlp;
-    lane_tile_count              = lane_tile_count < 0 ? 0 : (lane_tile_count > kPollMlp ? kPollMlp : lane_tile_count);
-    // issue all kPollMlp loads up front, then spin until this lane's owned tiles are all published (MLP)
+    const int chunk                          = remain < 32 * kPollMlp ? remain : 32 * kPollMlp;
+    const int lane_first_tile_id             = last_seen_tile_id + lane_id;
+    const int lane_tile_count                = (chunk - lane_id + 31) >> 5;
     TilePartialStateT packed_words[kPollMlp] = {}; // must zero initialize
     bool ready;
     do
@@ -523,7 +518,7 @@ __device__ __forceinline__ void poll_and_fold(
       {
         if (i < lane_tile_count && packed_words[i].published_tag() != kTilePublished)
         {
-          packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i);
+          packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i * 32);
           if (packed_words[i].published_tag() != kTilePublished)
           {
             ready = false;
@@ -531,24 +526,28 @@ __device__ __forceinline__ void poll_and_fold(
         }
       }
     } while (__ballot_sync(kFullMask, !ready) != 0u);
-    // ordered reduce this lane's own tiles (increasing left -> right)
-    int lane_run_count = 0, lane_open_length = 0;
+    int lane_run_count = 0, lane_last_runs_rel = -1;
 #pragma unroll
     for (int i = 0; i < kPollMlp; ++i)
     {
       if (i < lane_tile_count)
       {
-        const int tile_run_count   = packed_words[i].run_count();
-        const int tile_open_length = packed_words[i].open_len();
-        lane_run_count             = lane_run_count + tile_run_count;
-        lane_open_length           = (tile_run_count > 0) ? tile_open_length : (lane_open_length + tile_open_length);
+        lane_run_count += packed_words[i].run_count();
+        lane_last_runs_rel = (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_runs_rel;
       }
     }
-    // cross lane fold over 32 lane aggregates
-    const int chunk_run_count      = __reduce_add_sync(kFullMask, lane_run_count);
-    const unsigned lanes_with_runs = __ballot_sync(kFullMask, lane_run_count > 0);
-    const int last_run_lane        = lanes_with_runs ? (31 - __clz(lanes_with_runs)) : 0;
-    const int chunk_open_length    = __reduce_add_sync(kFullMask, (lane_id >= last_run_lane) ? lane_open_length : 0);
+    const int t_star_rel = __reduce_max_sync(kFullMask, lane_last_runs_rel);
+    int lane_open_length = 0;
+#pragma unroll
+    for (int i = 0; i < kPollMlp; ++i)
+    {
+      if (i < lane_tile_count && i * 32 + lane_id >= t_star_rel)
+      {
+        lane_open_length += packed_words[i].open_len();
+      }
+    }
+    const int chunk_run_count   = __reduce_add_sync(kFullMask, lane_run_count);
+    const int chunk_open_length = __reduce_add_sync(kFullMask, lane_open_length);
     // combine last_seen_prefix with the chunk aggregate
     const OffT new_run_count = last_seen_prefix_run_count + chunk_run_count;
     const OffT new_open_length =
