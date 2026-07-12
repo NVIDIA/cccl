@@ -86,8 +86,11 @@ CUB_NAMESPACE_BEGIN
  *   CustomLess());
  * @endcode
  *
- * @par Tuning
  * @rst
+ *
+ * Tuning
+ * +++++++++++++++++++++++++++++++++++++++++++++
+ *
  * All algorithms in DeviceMergeSort that accept an environment can be tuned by passing a custom :ref:`policy selector
  * <cub-policy-selectors>` that returns a @ref MergeSortPolicy, as shown in the example below:
  *
@@ -205,9 +208,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -413,9 +414,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -674,9 +673,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -887,9 +884,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1085,9 +1080,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1277,9 +1270,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1465,9 +1456,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation

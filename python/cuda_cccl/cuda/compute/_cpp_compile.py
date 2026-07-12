@@ -14,13 +14,27 @@ from cuda.cccl import get_include_paths
 from cuda.core import Device, Program, ProgramOptions
 
 from ._bindings import TypeEnum
+from ._device_code import DeviceCode
+
+try:
+    from ._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
 
 
 def _get_arch_string() -> str:
-    """Get the compute capability string for the current device."""
+    """Target arch string for iterator LTO-IR compilation.
 
-    device = Device()
-    cc_major, cc_minor = device.compute_capability
+    Honors the build's target compute capability (set for multi-arch / no-GPU
+    builds) so iterator device code is compiled for the lowest target arch and
+    links into every build result; falls back to the current device otherwise.
+    """
+    from ._target_cc import get_target_cc
+
+    cc = get_target_cc()
+    if cc is None:
+        cc = Device().compute_capability
+    cc_major, cc_minor = cc
     return f"sm_{cc_major}{cc_minor}"
 
 
@@ -31,7 +45,6 @@ def _get_include_paths() -> list[str]:
     return [p for p in paths if p is not None]
 
 
-@functools.lru_cache(maxsize=256)
 def compile_cpp_to_ltoir(
     source: str,
     arch: str | None = None,
@@ -54,10 +67,18 @@ def compile_cpp_to_ltoir(
         '''
         ltoir = compile_cpp_to_ltoir(source)
     """
-
+    # Resolve the concrete arch before the cache lookup so the key reflects the
+    # compute capability compiled for. If arch stays None (the usual iterator/op
+    # call, resolved from target_cc), every target collapses to one key and
+    # LTO-IR built for one arch can be reused for another, which nvJitLink
+    # rejects.
     if arch is None:
         arch = _get_arch_string()
+    return _compile_cpp_to_ltoir_cached(source, arch)
 
+
+@functools.lru_cache(maxsize=256)
+def _compile_cpp_to_ltoir_cached(source: str, arch: str) -> bytes:
     # Get include paths
     include_paths = _get_include_paths()
 
@@ -76,6 +97,40 @@ def compile_cpp_to_ltoir(
     result = program.compile("ltoir")
 
     return result.code
+
+
+# Expose the cached-callable surface (cache_info/cache_clear) on the public
+# entry point, backed by the arch-aware inner cache.
+compile_cpp_to_ltoir.cache_clear = _compile_cpp_to_ltoir_cached.cache_clear  # type: ignore[attr-defined]
+compile_cpp_to_ltoir.cache_info = _compile_cpp_to_ltoir_cached.cache_info  # type: ignore[attr-defined]
+
+
+def compile_cpp_op_code(source: str, arch: str | None = None) -> DeviceCode:
+    """Compile C++ wrapper source to whatever form the active backend prefers.
+
+    Returns a :class:`DeviceCode` wrapping the bytes and the matching format tag.
+
+    Cached so identical iterator structures produce identical code bytes —
+    callers can inspect ``cache_info()`` to verify symbol determinism.
+    """
+    # v2 keeps the C++ source verbatim (arch-independent); v1 resolves the
+    # concrete arch before caching (see compile_cpp_to_ltoir).
+    if USING_V2:
+        return _compile_cpp_op_code_cached(source, None)
+    if arch is None:
+        arch = _get_arch_string()
+    return _compile_cpp_op_code_cached(source, arch)
+
+
+@functools.lru_cache(maxsize=256)
+def _compile_cpp_op_code_cached(source: str, arch: str | None) -> DeviceCode:
+    if USING_V2:
+        return DeviceCode(op_bytes=source.encode("utf-8"), kind="cpp_source")
+    return DeviceCode(op_bytes=compile_cpp_to_ltoir(source, arch=arch), kind="ltoir")
+
+
+compile_cpp_op_code.cache_clear = _compile_cpp_op_code_cached.cache_clear  # type: ignore[attr-defined]
+compile_cpp_op_code.cache_info = _compile_cpp_op_code_cached.cache_info  # type: ignore[attr-defined]
 
 
 def cpp_type_from_descriptor(type_desc) -> str | None:

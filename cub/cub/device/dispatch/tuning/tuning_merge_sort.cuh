@@ -25,12 +25,14 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-struct AgentMergeSortPolicy
+struct agent_merge_sort_policy
 {
   static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
@@ -40,6 +42,16 @@ struct AgentMergeSortPolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
+using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMergeSort") =
+  detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 //! The tuning policy for all algorithms in @ref DeviceMergeSort.
 struct MergeSortPolicy
@@ -50,12 +62,20 @@ struct MergeSortPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
+  //! Whether to unroll the loops inside the block merge sort and serial merge implementation
+  // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
+#if defined(CCCL_AVOID_SORT_UNROLL)
+  bool unroll = false;
+#else // CCCL_AVOID_SORT_UNROLL
+  bool unroll = true;
+#endif // CCCL_AVOID_SORT_UNROLL
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm;
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.unroll == rhs.unroll;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -67,9 +87,10 @@ struct MergeSortPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
   {
-    return os << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
+    return os
+        << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .store_algorithm = " << p.store_algorithm << ", .unroll = " << p.unroll << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -82,39 +103,39 @@ struct policy_hub
 {
   using KeyT = it_value_t<KeyIteratorT>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(11),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_LDG,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<256,
+                              Nominal4BItemsToItems<KeyT>(11),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_LDG,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   // NVBug 3384810
 #if defined(_NVHPC_CUDA)
   using Policy520 = Policy500;
 #else
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
+  struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<512,
-                           Nominal4BItemsToItems<KeyT>(15),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_LDG,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<512,
+                              Nominal4BItemsToItems<KeyT>(15),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_LDG,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 #endif
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy520>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy520>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(17),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_DEFAULT,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<256,
+                              Nominal4BItemsToItems<KeyT>(17),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_DEFAULT,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   using MaxPolicy = Policy600;

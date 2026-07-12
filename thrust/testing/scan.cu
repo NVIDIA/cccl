@@ -303,7 +303,7 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     thrust::discard_iterator<> h_result =
       thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
@@ -381,7 +381,7 @@ struct TestScanToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -807,12 +807,12 @@ void TestInclusiveScanForInvalidValues()
   using value_t = unsigned;
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-  // for the CUDA backend, only the warpspeed implementation does not call the scan operator on out-of-bounds data
+  // for the CUDA backend, only the lookahead implementation does not call the scan operator on out-of-bounds data
   cuda::compute_capability cc;
   ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
   using policy_selector_t = cub::detail::scan::
     policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
-  if (policy_selector_t{}(cc).algorithm == cub::detail::scan::scan_algorithm::warpspeed)
+  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::lookahead)
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   {
     for (int n : {1, 100, 10'000})

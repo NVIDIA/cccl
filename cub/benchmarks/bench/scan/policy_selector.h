@@ -3,28 +3,27 @@
 
 #include <cub/device/device_scan.cuh>
 
-#ifndef USES_WARPSPEED
-#  define USES_WARPSPEED() 0
+#ifndef USES_LOOKAHEAD
+#  define USES_LOOKAHEAD() 0
 #endif
 
 #if !TUNE_BASE
-#  if !USES_WARPSPEED()
+#  if !USES_LOOKAHEAD()
 #    include <look_back_helper.cuh>
-#  endif // !USES_WARPSPEED()
+#  endif // !USES_LOOKAHEAD()
 
 template <typename AccumT>
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::scan::scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
   {
-#  if USES_WARPSPEED()
-    return {cub::detail::scan::scan_algorithm::warpspeed,
-            cub::detail::scan::scan_lookback_policy{},
-            cub::detail::scan::scan_warpspeed_policy{
+#  if USES_LOOKAHEAD()
+    return {cub::ScanAlgorithm::lookahead,
+            cub::ScanLookbackPolicy{},
+            cub::ScanLookaheadPolicy{
               TUNE_NUM_REDUCE_SCAN_WARPS,
-              TUNE_NUM_LOOKBACK_ITEMS,
               TUNE_ITEMS_PLUS_ONE - 1,
+              TUNE_NUM_LOOKBACK_ITEMS,
               TUNE_LOOKBACK_STAGES,
               TUNE_BLOCK_IDX_STAGES}};
 #  else
@@ -36,7 +35,7 @@ struct policy_selector
       TUNE_LOAD_MODIFIER,
       TUNE_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
-      delay_constructor_policy);
+      lookback_delay_policy);
 #  endif
   }
 };

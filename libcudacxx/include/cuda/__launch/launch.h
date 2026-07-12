@@ -353,27 +353,9 @@ template <class _Kernel, class _Config, class... _Args>
 
   if constexpr (_BlockExts::rank_dynamic() == 0)
   {
-    if constexpr (_Hierarchy::has_level(cluster))
-    {
-      // todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters
-      // directive is fixed.
-      //
-      // using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-      // using _ClusterExts = typename _ClusterDesc::extents_type;
-      //
-      // if constexpr (_ClusterExts::rank_dynamic() == 0)
-      // {
-      //   return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>);
-      // }
-      // else
-      {
-        return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
-      }
-    }
-    else
-    {
-      return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
-    }
+    // todo(dabayer): Re-enable the cluster-specific block-size launcher once cuda::launch with kernels compiled with
+    // .blocksareclusters directive is fixed.
+    return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
   }
   else
   {
@@ -516,7 +498,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                                                   decltype(__combined),
                                                   ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
   return ::cuda::__launch_impl(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter),
     __combined,
     ::cuda::__get_cufunction_of(__launcher),
     __combined,
@@ -631,7 +613,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<_ExpArgs...>(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
+    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
     ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);

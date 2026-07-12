@@ -11,10 +11,13 @@ coop and compute directories to ensure they execute without errors.
 """
 
 import importlib
+import importlib.util
 import inspect
 import sys
 import traceback
 from pathlib import Path
+
+import pytest
 
 
 def discover_examples():
@@ -70,8 +73,16 @@ def run_example_module(module_name, display_name):
     try:
         print(f"Testing {display_name}...")
 
-        # Import the module
-        module = importlib.import_module(module_name)
+        # Import the module. Examples may sys.exit(0) at module load to skip
+        # when their preconditions aren't met on this build (e.g. v2-only
+        # RawOp examples loaded against a v1 wheel). Treat that as a pass.
+        try:
+            module = importlib.import_module(module_name)
+        except SystemExit as exit_exc:
+            if exit_exc.code in (None, 0):
+                print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
+                return True
+            raise
 
         # Check if module has a main function - if so, run it
         if hasattr(module, "__main__") or hasattr(module, "main"):
@@ -145,6 +156,11 @@ def create_test_functions():
         globals()[test_name] = make_test_func(module_name, display_name)
         globals()[test_name].__name__ = test_name
         globals()[test_name].__doc__ = f"Test {display_name} examples"
+        if module_name.startswith("compute.examples."):
+            globals()[test_name] = pytest.mark.skipif(
+                importlib.util.find_spec("cupy") is None,
+                reason="cuda.compute examples require the optional CuPy dependency",
+            )(globals()[test_name])
 
 
 # Create test functions for pytest

@@ -101,14 +101,14 @@ struct policy_hub
 {
   using ValueT = it_value_t<InputIteratorT>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     using AdjacentDifferencePolicy =
-      AgentAdjacentDifferencePolicy<128,
-                                    Nominal8BItemsToItems<ValueT>(7),
-                                    BLOCK_LOAD_WARP_TRANSPOSE,
-                                    MayAlias ? LOAD_CA : LOAD_LDG,
-                                    BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_adjacent_difference_policy<128,
+                                       Nominal8BItemsToItems<ValueT>(7),
+                                       BLOCK_LOAD_WARP_TRANSPOSE,
+                                       MayAlias ? LOAD_CA : LOAD_LDG,
+                                       BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   using MaxPolicy = Policy500;

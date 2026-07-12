@@ -235,7 +235,7 @@ Requirements:
 
 * Python 3.10+
 * CUDA Toolkit 12.x or 13.x
-* NVIDIA GPU (CC 6.0+)
+* NVIDIA GPU (CC 7.5+)
 * Base dependencies: `numba>=0.60.0`, `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
 * CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
 
@@ -334,7 +334,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
   * Pull request (PR) runs typically spawn ~250 jobs.
   * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
-    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
+    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
     * A smaller subset of jobs is enough to validate the change (e.g. infra changes, targeted fixes).
   * Important rules:
     * PR merges are blocked while an override matrix is active.
@@ -397,6 +397,14 @@ pre-commit install
 pre-commit run --all-files
 pre-commit run --files <file1> <file2>
 ```
+
+### Style Guidance
+
+When editing or reviewing CCCL code for style, read `.agent/skills/cccl-style/SKILL.md`. It routes to the common CCCL style reference and any path-specific style reference that applies to the files being changed.
+
+### Test Guidance
+
+When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills/cccl-test/SKILL.md`. It routes to the common CCCL test reference and any path-specific test reference that applies to the files being changed.
 
 ---
 

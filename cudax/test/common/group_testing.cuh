@@ -63,17 +63,17 @@ struct ThreadsInWarpMappingResult
     return 0;
   }
 
-  __device__ static constexpr ::cuda::std::size_t static_count()
+  __device__ static constexpr ::cuda::std::size_t static_unit_count()
   {
     return 32;
   }
 
-  __device__ unsigned count() const
+  __device__ unsigned unit_count() const
   {
     return 32;
   }
 
-  __device__ unsigned rank() const
+  __device__ unsigned unit_rank() const
   {
     return cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
   }

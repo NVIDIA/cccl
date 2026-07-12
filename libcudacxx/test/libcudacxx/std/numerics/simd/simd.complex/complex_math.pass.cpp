@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/__simd_>
 
 // [simd.complex.math] free functions: real, imag, abs, arg, norm, conj, proj,

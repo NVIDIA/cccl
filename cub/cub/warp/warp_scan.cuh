@@ -175,8 +175,7 @@ private:
 
 public:
   /// @smemstorage{WarpScan}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

@@ -161,7 +161,7 @@ function(cccl_tidy_add_target)
 
     if (TARGET "${tidy_target}")
       # We have seen this file before
-      return()
+      continue()
     endif()
 
     add_custom_target(

@@ -10,9 +10,9 @@ Prerequisites
 
 Before installing cuda-cccl, ensure you have:
 
-* **Python 3.9 or later**
+* **Python 3.10 or later**
 * **CUDA Toolkit 12.x or 13.x**
-* **Compatible NVIDIA GPU** with Compute Capability 6.0 or higher
+* **Compatible NVIDIA GPU** with Compute Capability 7.5 or higher
 * **Operating Systems:** Linux (tested on Ubuntu 20.04+) or Windows 10/11 (with WSL2 support)
 
 Installation
@@ -71,6 +71,10 @@ For development or to access the latest features:
    git clone https://github.com/NVIDIA/cccl.git
    cd cccl/python/cuda_cccl
    pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
+
+The test extras do not install CuPy. To also run the CuPy-based
+``cuda.compute`` examples, install CuPy separately, for example
+``pip install cupy-cuda13x``.
 
 
 Development Setup

@@ -49,7 +49,13 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
 
   // get size of required temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    begin_offsets,
+    end_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
@@ -57,7 +63,13 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    begin_offsets,
+    end_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   thrust::device_vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
@@ -101,7 +113,14 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
 
   // get size of required storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    d_in_beg_offsets,
+    d_in_end_offsets,
+    d_out_beg_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
@@ -109,7 +128,14 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    d_in_beg_offsets,
+    d_in_end_offsets,
+    d_out_beg_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   thrust::device_vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
@@ -138,7 +164,13 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
 
   // get size of requires storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_in, begin_offsets, end_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_in,
+    begin_offsets,
+    end_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
@@ -146,7 +178,13 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
 
   // execute the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_in, begin_offsets, end_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_in,
+    begin_offsets,
+    end_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   thrust::device_vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
@@ -188,7 +226,14 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
 
   // get size of temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    d_in_beg_offsets,
+    d_in_end_offsets,
+    d_out_beg_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
@@ -196,7 +241,14 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
 
   // Compute inclusive sum for each row prepended with 0
   status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
+    temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    d_in_beg_offsets,
+    d_in_end_offsets,
+    d_out_beg_offsets,
+    static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
   std::vector<int> h_expected{};

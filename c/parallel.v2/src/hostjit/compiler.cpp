@@ -24,6 +24,7 @@
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/thread.h>
 #include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
@@ -83,6 +84,26 @@ static void initialize_llvm()
   LLVMInitializeNVPTXAsmPrinter();
 
   llvm_initialized = true;
+}
+
+// Embedding clang as a library bypasses the clang driver's
+// runWithSufficientStackSpace guard, so the frontend runs on the caller's stack.
+// On Windows the default main-thread stack is only 1 MB, which the deep
+// (recursive-descent / template-instantiation) frontend overflows on heavier
+// kernels such as radix_sort / segmented_reduce; Linux's 8 MB default hides it.
+// Run the frontend on a worker thread sized to match clang's own
+// DesiredStackSize (8 MB), which is the proven-sufficient value on Linux.
+inline constexpr unsigned kFrontendStackSize = 8u << 20;
+
+template <class Fn>
+static bool runWithLargeStack(Fn&& fn)
+{
+  bool result = false;
+  llvm::thread worker(std::optional<unsigned>(kFrontendStackSize), [&] {
+    result = fn();
+  });
+  worker.join();
+  return result;
 }
 
 #ifdef _WIN32
@@ -160,8 +181,22 @@ static constexpr const char* pch_preamble_source =
   "#include <cuda/std/iterator>\n"
   "#include <cuda/std/functional>\n"
   "#include <cuda/functional>\n"
+  "#include <cub/device/device_adjacent_difference.cuh>\n"
+  "#include <cub/device/device_copy.cuh>\n"
+  "#include <cub/device/device_find.cuh>\n"
+  "#include <cub/device/device_for.cuh>\n"
+  "#include <cub/device/device_histogram.cuh>\n"
+  "#include <cub/device/device_merge.cuh>\n"
+  "#include <cub/device/device_merge_sort.cuh>\n"
+  "#include <cub/device/device_partition.cuh>\n"
+  "#include <cub/device/device_radix_sort.cuh>\n"
   "#include <cub/device/device_reduce.cuh>\n"
-  "#include <cub/device/device_adjacent_difference.cuh>\n";
+  "#include <cub/device/device_scan.cuh>\n"
+  "#include <cub/device/device_segmented_radix_sort.cuh>\n"
+  "#include <cub/device/device_segmented_scan.cuh>\n"
+  "#include <cub/device/device_segmented_sort.cuh>\n"
+  "#include <cub/device/device_select.cuh>\n"
+  "#include <cub/device/device_transform.cuh>\n";
 
 class CUDACompiler::Impl
 {
@@ -240,7 +275,9 @@ public:
     compiler.getFrontendOpts().OutputFile = pch_output_path;
 
     clang::GeneratePCHAction pch_action;
-    bool success = compiler.ExecuteAction(pch_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(pch_action);
+    });
 
     diag_stream.flush();
     diagnostics += diag_output;
@@ -480,7 +517,9 @@ public:
     llvm::LLVMContext llvm_context;
 
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = compiler.ExecuteAction(emit_llvm_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
@@ -858,7 +897,9 @@ public:
 
     llvm::LLVMContext llvm_context;
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = compiler.ExecuteAction(emit_llvm_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (success)
     {
@@ -914,6 +955,9 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("-fms-compatibility");
     arg_strings.push_back("-fms-compatibility-version=19.40");
+    // We do not have access to the windows CRT, but we are only running single threaded anyway
+    // Otherwise we have undefined symbols like _tls_index and _Init_thread_epoch
+    arg_strings.push_back("-fno-threadsafe-statics");
 #else
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
@@ -1082,7 +1126,9 @@ public:
     }
 
     clang::EmitObjAction emit_action;
-    bool success = compiler.ExecuteAction(emit_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
@@ -1204,9 +1250,11 @@ public:
         return result;
       }
 
-      // Feed any NVRTC LTOIR (Numba-produced user ops) directly to nvJitLink
-      // alongside the device PTX. nvJitLink resolves the extern op symbol(s)
-      // referenced by the PTX from these LTOIR modules.
+      // Feed LTO-IR inputs to nvJitLink alongside the device PTX. This is the
+      // escape-hatch path for callers with pre-built nvcc -dlto artifacts;
+      // Python-emitted user ops travel as LLVM bitcode through the path above
+      // and are already inlined into the PTX by the time we get here.
+      // nvJitLink resolves any remaining extern symbol(s) from these modules.
       for (const auto& ltoir_path : config.device_ltoir_files)
       {
         std::ifstream f(ltoir_path, std::ios::binary);
@@ -1371,6 +1419,7 @@ public:
        "cudaMemset",
        "cudaMemsetAsync",
        "cudaDeviceSynchronize",
+       "cudaFuncSetAttribute",
        "cudaGetDevice",
        "cudaGetDeviceProperties",
        "cudaGetLastError",

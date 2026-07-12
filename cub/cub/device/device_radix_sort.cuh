@@ -145,6 +145,25 @@ inline constexpr bool __can_use_radix_sort =
 //!
 //! @linear_performance{radix sort}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceRadixSort that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref RadixSortPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin radix-sort-keys-policy-selector
+//!      :end-before: example-end radix-sort-keys-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin radix-sort-keys-tuning
+//!      :end-before: example-end radix-sort-keys-tuning
+//!
 //! @endrst
 struct DeviceRadixSort
 {
@@ -172,8 +191,8 @@ private:
     TuningEnvT             = {})
   {
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
-    using policy_selector_t         = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
     return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
@@ -350,9 +369,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -601,9 +618,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -845,9 +860,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1074,8 +1087,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1305,9 +1317,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1505,9 +1515,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1725,9 +1733,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1974,9 +1980,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -2111,9 +2115,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -2253,9 +2255,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -2485,9 +2485,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -2605,9 +2603,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -3002,9 +2998,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -3226,9 +3220,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -3430,9 +3422,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -3619,9 +3609,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -3836,9 +3824,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4002,9 +3988,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4182,9 +4166,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4405,9 +4387,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4527,9 +4507,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4647,9 +4625,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4864,9 +4840,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -4971,9 +4945,7 @@ public:
   //!   The call operator must not modify members of the key.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When ``nullptr``, the
-  //!   required allocation size is written to ``temp_storage_bytes`` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation

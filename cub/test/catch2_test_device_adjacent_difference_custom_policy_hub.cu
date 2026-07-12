@@ -25,7 +25,7 @@ struct my_policy_hub
   using ValueT = cub::detail::it_value_t<InputIteratorT>;
 
   // from Policy500 of the CUB adjacent difference tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using AdjacentDifferencePolicy =
       AgentAdjacentDifferencePolicy<128,

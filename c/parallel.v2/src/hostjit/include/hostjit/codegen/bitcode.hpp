@@ -51,6 +51,6 @@ private:
   uintptr_t unique_id_;
   std::vector<std::string> temp_paths_;
   std::set<std::string> added_symbols_; // dedup by op.name (when present)
-  std::unordered_set<std::uint64_t> added_content_hashes_; // dedup by content hash for unnamed extras
+  std::unordered_set<std::size_t> added_content_hashes_; // dedup by content hash for unnamed extras
 };
 } // namespace hostjit::codegen

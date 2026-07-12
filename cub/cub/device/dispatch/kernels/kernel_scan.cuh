@@ -20,19 +20,28 @@
 #include <cub/util_macro.cuh>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-#  include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
+#  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
+
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+template <typename AccumT>
+struct lookahead_tile_state_arg_t
+{
+  warpspeed::tile_state_t<AccumT>* tile_states;
+  ::cuda::std::uint32_t* atomic_counter;
+};
+
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  warpspeed::tile_state_t<AccumT>* warpspeed;
+  lookahead_tile_state_arg_t<AccumT> lookahead;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
@@ -66,10 +75,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr scan_policy policy = current_policy<PolicySelectorT>();
-  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
+  constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
+  if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
+    device_scan_init_lookahead_body(tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -116,11 +125,11 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr scan_policy policy = current_policy<PolicySelector>();
+  constexpr ScanPolicy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    return num_total_threads(policy.warpspeed);
+    return num_total_threads(policy.lookahead);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.lookback.threads_per_block;
@@ -201,27 +210,28 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int num_stages)
 {
-  static constexpr scan_policy active_policy = current_policy<PolicySelector>();
-  if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
+  if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
-      NV_PROVIDES_SM_100, ({
+      NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-          d_in, d_out, tile_state.warpspeed, num_items, num_stages};
-        device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+          d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+          scan_params, scan_op, init_value);
       }));
 #else
     static_assert(sizeof(d_in) == 0,
-                  "Implementation bug: Tuning policy selected warpspeed, but CUDA compiler does not support it");
+                  "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   }
   else
   {
-    static constexpr scan_lookback_policy policy = active_policy.lookback;
+    static constexpr ScanLookbackPolicy policy = active_policy.lookback;
     static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture accesses");
-    using ScanPolicyT = AgentScanPolicy<
+    using ScanPolicyT = agent_scan_policy<
       0,
       0,
       void,
@@ -230,9 +240,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       policy.store_algorithm,
       policy.scan_algorithm,
       NoScaling<policy.threads_per_block, policy.items_per_thread>,
-      delay_constructor_t<policy.delay_constructor.kind,
-                          policy.delay_constructor.delay,
-                          policy.delay_constructor.l2_write_latency>>;
+      delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<
