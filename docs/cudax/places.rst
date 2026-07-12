@@ -318,6 +318,28 @@ You can query whether a place uses stream-ordered allocation with
 This abstraction is particularly useful when writing generic code that needs to
 work with different types of places, including custom place extensions.
 
+Geometry-aware allocation with allocate_nd
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some places need to know the shape of the tensor being allocated, not just its
+size: a composite data place distributes the allocation according to a
+partitioner that maps *element coordinates* to places. ``allocate_nd()`` takes
+the tensor extents (dimension 0 varying fastest) and the element size:
+
+.. code:: cpp
+
+    // 2-D tensor of nx x ny doubles, distributed by the place's partitioner
+    void* ptr = place.allocate_nd(dim4(nx, ny), sizeof(double));
+    // ...
+    place.deallocate(ptr, nx * ny * sizeof(double));
+
+For most places this is equivalent to ``allocate(prod(dims) * elemsize)``. For
+composite places it is required: the byte-count ``allocate()`` throws there,
+since a byte count alone cannot carry the geometry the partitioner needs. A
+caller that genuinely has untyped bytes states that explicitly with
+``allocate_nd(dim4(nbytes), 1)``, which distributes the buffer with byte
+granularity.
+
 .. _places-vmm:
 
 VMM-based allocation with mem_create
