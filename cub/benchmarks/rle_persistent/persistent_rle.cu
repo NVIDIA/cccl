@@ -27,7 +27,7 @@ struct winner_config
   static_assert(kPosBufStages >= 2 && kPosBufStages <= kStages, "kPosBufStages should be 2 - kStages");
   static constexpr int kPollMlp = 5; // how many loads each poll lane keeps in flight
   // when should compute warps stage?
-  static constexpr int kHeadPosStagingThreshold = 64;
+  static constexpr int kHeadPosStagingThreshold = 32;
   // when should be pre calculate in registers?
   static constexpr int kRegBufMaxRuns = (sizeof(KeyT) <= 4) ? 256 : (sizeof(KeyT) == 8 ? 128 : 64);
 
