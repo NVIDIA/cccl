@@ -107,8 +107,13 @@ int main()
     for (size_t i = 0; i < nplaces; i++)
     {
       const size_t start = i * chunk;
-      const size_t cnt   = ::std::min(chunk, N - start);
-      auto active        = t.activate_place(i);
+      if (start >= N)
+      {
+        // With ceil-division chunks, trailing places may have no work
+        continue;
+      }
+      const size_t cnt = ::std::min(chunk, N - start);
+      auto active      = t.activate_place(i);
       axpy<<<128, 128, 0, t.get_stream(i)>>>(start, cnt, alpha, dX.data_handle(), dY.data_handle());
     }
   };
