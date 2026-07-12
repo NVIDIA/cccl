@@ -253,6 +253,10 @@ public:
    */
   _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 /*data_dims*/, dim4 grid_dims)
   {
+    _CCCL_ASSERT(data_coords.x >= 0 && data_coords.y >= 0 && data_coords.z >= 0 && data_coords.t >= 0,
+                 "get_executor requires zero-based (non-negative) coordinates");
+    _CCCL_ASSERT(grid_dims.x >= 1 && grid_dims.y >= 1 && grid_dims.z >= 1 && grid_dims.t >= 1,
+                 "get_executor requires nonzero grid extents");
     *result = pos4(data_coords.x % static_cast<::std::ptrdiff_t>(grid_dims.x),
                    data_coords.y % static_cast<::std::ptrdiff_t>(grid_dims.y),
                    data_coords.z % static_cast<::std::ptrdiff_t>(grid_dims.z),
