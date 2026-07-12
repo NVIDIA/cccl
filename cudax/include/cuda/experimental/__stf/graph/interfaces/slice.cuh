@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
@@ -109,6 +110,28 @@ public:
         return data_dims.index_to_pos(ind);
       }
     };
+
+    // Composite places backed by a structured partition carry a stateful
+    // owner function; allocate directly (such arrays are parked in the cache
+    // on deallocation and released at finalization - recycling them is a
+    // recorded follow-up).
+    if (auto* cute_place =
+          dynamic_cast<const ::cuda::experimental::places::data_place_cute_composite*>(memory_node.get_impl().get()))
+    {
+      auto part     = cute_place->get_partition(); // trivially copyable
+      auto cute_arr = ::std::make_unique<localized_array>(
+        grid,
+        ::std::function<pos4(size_t)>([part, data_dims](size_t ind) {
+          return part.owner(data_dims.index_to_pos(ind));
+        }),
+        total_size,
+        sizeof(T),
+        data_dims);
+      T* cute_base = static_cast<T*>(cute_arr->get_base_ptr());
+      *extra_args  = cute_arr.release();
+      local_desc   = this->shape.create(cute_base);
+      return;
+    }
 
     auto [array, cached_prereqs] = bctx.get_composite_cache().get(
       memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);

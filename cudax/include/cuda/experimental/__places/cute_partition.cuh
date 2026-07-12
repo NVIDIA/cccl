@@ -100,6 +100,77 @@ struct dim_spec
   size_t block      = 0; //!< block size (block_cyclic only)
 };
 
+//! Maximum number of leaves per layout mode (make_partition emits at most 2
+//! per dimension; fixed capacity keeps partitions and sub-shapes trivially
+//! copyable across the kernel boundary)
+inline constexpr size_t cute_partition_max_leaves = 16;
+
+/**
+ * @brief The set of element coordinates one place owns, as iterated by
+ * parallel_for
+ *
+ * Produced by cute_partition::apply(): enumerates the place's local mode and
+ * converts each local index to global tensor coordinates. Trivially copyable
+ * (fixed-capacity leaf storage) so it crosses the kernel boundary by value,
+ * and satisfies the shape interface the parallel_for kernels consume
+ * (size() + index_to_coords()).
+ */
+template <size_t rank>
+class cute_sub_shape
+{
+public:
+  using coords_t = ::std::array<size_t, rank>;
+
+  _CCCL_HOST_DEVICE cute_sub_shape(::cuda::std::span<const layout_leaf> local_leaves, size_t offset, dim4 padded_dims)
+      : num_leaves_(local_leaves.size())
+      , offset_(offset)
+      , padded_dims_(padded_dims)
+  {
+    for (size_t k = 0; k < num_leaves_; k++)
+    {
+      leaves_[k] = local_leaves[k];
+    }
+  }
+
+  //! Number of elements this place owns
+  _CCCL_HOST_DEVICE size_t size() const
+  {
+    size_t n = 1;
+    for (size_t k = 0; k < num_leaves_; k++)
+    {
+      n *= leaves_[k].extent;
+    }
+    return n;
+  }
+
+  //! Global tensor coordinates of the place's index-th element
+  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  {
+    // Local index -> linear element index (mixed radix over the local leaves)
+    size_t linear = offset_;
+    for (size_t k = 0; k < num_leaves_; k++)
+    {
+      linear += (index % leaves_[k].extent) * static_cast<size_t>(leaves_[k].stride);
+      index /= leaves_[k].extent;
+    }
+
+    // Linear element index -> coordinates (dimension 0 fastest)
+    coords_t coords{};
+    for (size_t d = 0; d < rank; d++)
+    {
+      coords[d] = linear % padded_dims_.get(d);
+      linear /= padded_dims_.get(d);
+    }
+    return coords;
+  }
+
+private:
+  ::cuda::std::array<layout_leaf, cute_partition_max_leaves> leaves_{};
+  size_t num_leaves_ = 0;
+  size_t offset_     = 0;
+  dim4 padded_dims_;
+};
+
 /**
  * @brief A structured description of a tensor partition over a grid of places
  *
@@ -110,11 +181,8 @@ struct dim_spec
 class cute_partition
 {
 public:
-  //! Maximum number of leaves per mode. Leaves live in fixed-capacity
-  //! device-compatible arrays so a partition (or its per-place local mode) is
-  //! trivially copyable across the kernel boundary; make_partition() emits at
-  //! most 2 leaves per dimension.
-  static constexpr size_t max_leaves = 16;
+  //! Maximum number of leaves per mode (see cute_partition_max_leaves)
+  static constexpr size_t max_leaves = cute_partition_max_leaves;
 
   /**
    * @brief Construct a partition from flattened leaves (expert form)
@@ -259,6 +327,58 @@ public:
     }
 
     return pos4(place_coord[0], place_coord[1], place_coord[2], place_coord[3]);
+  }
+
+  /**
+   * @brief Sub-shape owned by one place, for parallel_for over a grid
+   *
+   * Follows the partitioner contract of the classic partitioners: the place
+   * is given as its linear index in the dispatch loop (pos4(i)), and the
+   * returned shape enumerates the coordinates that place owns.
+   *
+   * Restricted to exact covers for now (padded extents == true extents):
+   * parallel_for's shape interface has no notion of skipping the phantom
+   * coordinates padding would introduce. Uneven extents are rejected with an
+   * exception; use the classic clamped partitioners for those until
+   * predicated iteration lands.
+   *
+   * @param s Shape of the task (must match the partition's true extents)
+   * @param place_position Linear place index in .x (dispatch convention)
+   * @param grid_dims Extents of the grid (must match the partition's)
+   */
+  template <typename S>
+  auto apply(const S& s, pos4 place_position, dim4 grid_dims) const
+  {
+    constexpr size_t rank = S::rank();
+
+    if (!(grid_dims == grid_dims_))
+    {
+      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+    }
+    if (!(padded_dims_ == true_dims_))
+    {
+      throw ::std::invalid_argument("cute_partition::apply: parallel_for currently requires an exact cover (padded "
+                                    "extents == true extents)");
+    }
+    for (size_t d = 0; d < rank; d++)
+    {
+      if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
+      {
+        throw ::std::invalid_argument("cute_partition::apply: the task shape does not match the partition's extents");
+      }
+    }
+
+    // The dispatch loop linearizes places into .x
+    const pos4 grid_coords = grid_dims_.index_to_pos(static_cast<size_t>(place_position.x));
+
+    size_t offset = 0;
+    for (size_t k = 0; k < num_place_leaves_; k++)
+    {
+      offset += static_cast<size_t>(grid_coords.get(static_cast<size_t>(place_axes_[k])))
+              * static_cast<size_t>(place_leaves_[k].stride);
+    }
+
+    return cute_sub_shape<rank>(local_leaves(), offset, padded_dims_);
   }
 
   /**
@@ -654,6 +774,11 @@ public:
   }
 
   bool is_resolved() const override
+  {
+    return true;
+  }
+
+  bool is_composite() const override
   {
     return true;
   }

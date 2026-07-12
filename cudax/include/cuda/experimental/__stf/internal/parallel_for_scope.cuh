@@ -435,6 +435,18 @@ private:
  *
  * @tparam deps_t
  */
+//! Detects partitioners exposing the classic stateless interface (a static
+//! get_executor usable as a bare partition function pointer); stateful
+//! partitioners (e.g. cute_partition) provide member functions instead.
+template <typename T, typename = void>
+struct has_static_get_executor : ::std::false_type
+{};
+
+template <typename T>
+struct has_static_get_executor<T, ::std::void_t<decltype(::cuda::experimental::places::partition_fn_t{&T::get_executor})>>
+    : ::std::true_type
+{};
+
 template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
@@ -486,6 +498,17 @@ public:
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
+  {}
+
+  /// @brief Constructor keeping the partitioner instance (required for
+  /// stateful partitioners such as cute_partition; stateless ones cost
+  /// nothing thanks to [[no_unique_address]])
+  parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
+      : deps(mv(deps)...)
+      , ctx(ctx)
+      , e_place(mv(e_place))
+      , shape(mv(shape))
+      , p_(mv(p))
   {}
 
   parallel_for_scope(const parallel_for_scope&)            = delete;
@@ -554,8 +577,16 @@ public:
       // Grids need a composite data place
       if (e_place.size() > 1)
       {
-        // Create a composite data place defined by the grid of places + the partitioning function
-        t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
+        // Create a composite data place defined by the grid of places + the partitioner
+        if constexpr (has_static_get_executor<partitioner_t>::value)
+        {
+          t.set_affine_data_place(data_place::composite(p_, e_place.as_grid()));
+        }
+        else
+        {
+          // Stateful partitioner (found by ADL in the partitioner's namespace)
+          t.set_affine_data_place(make_composite_data_place(e_place.as_grid(), p_));
+        }
       }
     }
 
@@ -686,7 +717,7 @@ public:
           for (size_t i = 0; i < e_place.size(); i++)
           {
             auto active          = t.activate_place(i);
-            const auto sub_shape = partitioner_t::apply(shape, pos4(i), e_place.get_dims());
+            const auto sub_shape = p_.apply(shape, pos4(i), e_place.get_dims());
             do_parallel_for(f, active.place(), sub_shape, t, i);
           }
         }
@@ -1071,6 +1102,14 @@ private:
   exec_place_t e_place;
   ::std::string symbol;
   shape_t shape;
+
+  //! Empty stand-in stored when no partitioner is used (null_partition is
+  //! only forward-declared here, and nothing reads p_ in that case)
+  struct no_partitioner_t
+  {};
+  using stored_partitioner_t =
+    ::std::conditional_t<::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
+  [[no_unique_address]] stored_partitioner_t p_{};
 };
 } // end namespace reserved
 
