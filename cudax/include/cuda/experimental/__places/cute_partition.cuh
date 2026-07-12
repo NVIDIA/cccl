@@ -32,6 +32,11 @@
  * the localized allocation machinery (localized_array,
  * evaluate_localized_placement): it deliberately does not compute placement
  * plans itself - the block-majority engine decides where blocks live.
+ *
+ * Leaves live in fixed-capacity cuda::std::array storage, so the partition is
+ * trivially copyable and its queries (owner(), dims) are host/device callable:
+ * it can cross the kernel boundary by value, which a future parallel_for
+ * integration relies on.
  */
 
 #pragma once
@@ -46,12 +51,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/array>
+#include <cuda/std/span>
+
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 
 #include <algorithm>
-#include <array>
 #include <stdexcept>
 #include <vector>
 
@@ -103,13 +110,20 @@ struct dim_spec
 class cute_partition
 {
 public:
+  //! Maximum number of leaves per mode. Leaves live in fixed-capacity
+  //! device-compatible arrays so a partition (or its per-place local mode) is
+  //! trivially copyable across the kernel boundary; make_partition() emits at
+  //! most 2 leaves per dimension.
+  static constexpr size_t max_leaves = 16;
+
   /**
    * @brief Construct a partition from flattened leaves (expert form)
    *
    * @param place_leaves Leaves of the place mode, leaf 0 fastest; one leaf
-   *        per used grid axis
+   *        per used grid axis (at most max_leaves)
    * @param place_axes Grid axis associated with each place leaf
-   * @param local_leaves Leaves of the local mode, leaf 0 fastest
+   * @param local_leaves Leaves of the local mode, leaf 0 fastest (at most
+   *        max_leaves)
    * @param padded_dims Padded tensor extents the strides refer to
    * @param true_dims True tensor extents (the predicate)
    * @param grid_dims Extents of the grid of places
@@ -117,93 +131,104 @@ public:
    * Throws std::invalid_argument unless the two modes together tile the
    * padded space exactly (bijectivity - validated in O(leaves)).
    */
-  cute_partition(::std::vector<layout_leaf> place_leaves,
-                 ::std::vector<int> place_axes,
-                 ::std::vector<layout_leaf> local_leaves,
+  cute_partition(const ::std::vector<layout_leaf>& place_leaves,
+                 const ::std::vector<int>& place_axes,
+                 const ::std::vector<layout_leaf>& local_leaves,
                  dim4 padded_dims,
                  dim4 true_dims,
                  dim4 grid_dims)
-      : place_leaves_(mv(place_leaves))
-      , place_axes_(mv(place_axes))
-      , local_leaves_(mv(local_leaves))
+      : num_place_leaves_(place_leaves.size())
+      , num_local_leaves_(local_leaves.size())
       , padded_dims_(padded_dims)
       , true_dims_(true_dims)
       , grid_dims_(grid_dims)
   {
+    if (place_leaves.size() > max_leaves || local_leaves.size() > max_leaves)
+    {
+      throw ::std::invalid_argument("cute_partition: at most max_leaves leaves are supported per mode");
+    }
+    if (place_leaves.size() != place_axes.size())
+    {
+      throw ::std::invalid_argument("cute_partition: one grid axis is required per place leaf");
+    }
+    ::std::copy(place_leaves.begin(), place_leaves.end(), place_leaves_.begin());
+    ::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
+    ::std::copy(local_leaves.begin(), local_leaves.end(), local_leaves_.begin());
+
     validate();
 
     // Precompute the decode order: all leaves sorted by decreasing stride.
     // For an exact layout, peeling (linear / stride) % extent in this order
     // recovers every leaf coordinate.
-    for (size_t k = 0; k < place_leaves_.size(); k++)
+    for (size_t k = 0; k < num_place_leaves_; k++)
     {
-      decode_.push_back({place_leaves_[k], /* place leaf index */ static_cast<::std::ptrdiff_t>(k)});
+      decode_[num_decode_++] = {place_leaves_[k], /* place leaf index */ static_cast<::std::ptrdiff_t>(k)};
     }
-    for (const auto& l : local_leaves_)
+    for (size_t k = 0; k < num_local_leaves_; k++)
     {
-      decode_.push_back({l, /* local */ -1});
+      decode_[num_decode_++] = {local_leaves_[k], /* local */ -1};
     }
-    ::std::sort(decode_.begin(), decode_.end(), [](const decode_leaf& a, const decode_leaf& b) {
+    ::std::sort(decode_.begin(), decode_.begin() + num_decode_, [](const decode_leaf& a, const decode_leaf& b) {
       return a.leaf.stride > b.leaf.stride;
     });
   }
 
   //! True tensor extents (the predicate for the padded space)
-  const dim4& true_dims() const
+  _CCCL_HOST_DEVICE const dim4& true_dims() const
   {
     return true_dims_;
   }
 
   //! Padded tensor extents the leaf strides refer to
-  const dim4& padded_dims() const
+  _CCCL_HOST_DEVICE const dim4& padded_dims() const
   {
     return padded_dims_;
   }
 
   //! Extents of the grid of places
-  const dim4& grid_dims() const
+  _CCCL_HOST_DEVICE const dim4& grid_dims() const
   {
     return grid_dims_;
   }
 
   //! Leaves of the place mode (leaf 0 fastest)
-  const ::std::vector<layout_leaf>& place_leaves() const
+  _CCCL_HOST_DEVICE ::cuda::std::span<const layout_leaf> place_leaves() const
   {
-    return place_leaves_;
+    return {place_leaves_.data(), num_place_leaves_};
   }
 
   //! Grid axis associated with each place leaf
-  const ::std::vector<int>& place_axes() const
+  _CCCL_HOST_DEVICE ::cuda::std::span<const int> place_axes() const
   {
-    return place_axes_;
+    return {place_axes_.data(), num_place_leaves_};
   }
 
   //! Leaves of the local mode (leaf 0 fastest)
-  const ::std::vector<layout_leaf>& local_leaves() const
+  _CCCL_HOST_DEVICE ::cuda::std::span<const layout_leaf> local_leaves() const
   {
-    return local_leaves_;
+    return {local_leaves_.data(), num_local_leaves_};
   }
 
   //! Number of places the partition distributes over (product of place
   //! extents; grid axes not bound to any dimension receive coordinate 0 and
   //! do not count)
-  size_t num_places() const
+  _CCCL_HOST_DEVICE size_t num_places() const
   {
     size_t p = 1;
-    for (const auto& l : place_leaves_)
+    for (size_t k = 0; k < num_place_leaves_; k++)
     {
-      p *= l.extent;
+      p *= place_leaves_[k].extent;
     }
     return p;
   }
 
   //! Number of padded elements owned by each place (product of local extents)
-  size_t tiles_per_place() const
+  _CCCL_HOST_DEVICE size_t tiles_per_place() const
   {
     size_t n = 1;
-    for (const auto& l : local_leaves_)
+    for (size_t k = 0; k < num_local_leaves_; k++)
     {
-      n *= l.extent;
+      n *= local_leaves_[k].extent;
     }
     return n;
   }
@@ -214,13 +239,14 @@ public:
    * Total on all true coordinates (true extents never exceed the padded
    * ones); grid axes not bound to any dimension get coordinate 0.
    */
-  pos4 owner(pos4 data_coords) const
+  _CCCL_HOST_DEVICE pos4 owner(pos4 data_coords) const
   {
     const size_t linear = padded_dims_.get_index(data_coords);
 
-    ::std::array<ssize_t, 4> place_coord = {0, 0, 0, 0};
-    for (const auto& d : decode_)
+    ssize_t place_coord[4] = {0, 0, 0, 0};
+    for (size_t k = 0; k < num_decode_; k++)
     {
+      const decode_leaf& d = decode_[k];
       if (d.leaf.extent <= 1)
       {
         continue;
@@ -247,10 +273,10 @@ public:
       throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
     }
     size_t offset = 0;
-    for (const auto& l : place_leaves_)
+    for (size_t k = 0; k < num_place_leaves_; k++)
     {
-      offset += (place_index % l.extent) * static_cast<size_t>(l.stride);
-      place_index /= l.extent;
+      offset += (place_index % place_leaves_[k].extent) * static_cast<size_t>(place_leaves_[k].stride);
+      place_index /= place_leaves_[k].extent;
     }
     return offset;
   }
@@ -269,15 +295,15 @@ public:
     {
       return c;
     }
-    if (int c = cmp_sizes(place_leaves_.size(), o.place_leaves_.size()))
+    if (int c = cmp_sizes(num_place_leaves_, o.num_place_leaves_))
     {
       return c;
     }
-    if (int c = cmp_sizes(local_leaves_.size(), o.local_leaves_.size()))
+    if (int c = cmp_sizes(num_local_leaves_, o.num_local_leaves_))
     {
       return c;
     }
-    for (size_t k = 0; k < place_leaves_.size(); k++)
+    for (size_t k = 0; k < num_place_leaves_; k++)
     {
       if (int c = cmp_sizes(place_leaves_[k].extent, o.place_leaves_[k].extent))
       {
@@ -293,7 +319,7 @@ public:
         return c;
       }
     }
-    for (size_t k = 0; k < local_leaves_.size(); k++)
+    for (size_t k = 0; k < num_local_leaves_; k++)
     {
       if (int c = cmp_sizes(local_leaves_[k].extent, o.local_leaves_[k].extent))
       {
@@ -316,12 +342,7 @@ public:
 private:
   void validate() const
   {
-    if (place_leaves_.size() != place_axes_.size())
-    {
-      throw ::std::invalid_argument("cute_partition: one grid axis is required per place leaf");
-    }
-
-    for (size_t k = 0; k < place_axes_.size(); k++)
+    for (size_t k = 0; k < num_place_leaves_; k++)
     {
       const int a = place_axes_[k];
       if (a < 0 || a > 3)
@@ -352,10 +373,11 @@ private:
     // Exactness/bijectivity over the padded space: sorted by increasing
     // stride, the leaves must form a mixed radix (each stride equal to the
     // product of the preceding extents) whose total size is the padded size.
-    ::std::vector<layout_leaf> all;
-    all.reserve(place_leaves_.size() + local_leaves_.size());
-    for (const auto& l : place_leaves_)
+    ::cuda::std::array<layout_leaf, 2 * max_leaves> all{};
+    size_t num_all = 0;
+    for (size_t k = 0; k < num_place_leaves_ + num_local_leaves_; k++)
     {
+      const layout_leaf& l = (k < num_place_leaves_) ? place_leaves_[k] : local_leaves_[k - num_place_leaves_];
       if (l.stride < 0)
       {
         throw ::std::invalid_argument("cute_partition: negative strides are not supported");
@@ -366,38 +388,23 @@ private:
       }
       if (l.extent > 1)
       {
-        all.push_back(l);
-      }
-    }
-    for (const auto& l : local_leaves_)
-    {
-      if (l.stride < 0)
-      {
-        throw ::std::invalid_argument("cute_partition: negative strides are not supported");
-      }
-      if (l.extent == 0)
-      {
-        throw ::std::invalid_argument("cute_partition: leaf extents must be at least 1");
-      }
-      if (l.extent > 1)
-      {
-        all.push_back(l);
+        all[num_all++] = l;
       }
     }
 
-    ::std::sort(all.begin(), all.end(), [](const layout_leaf& a, const layout_leaf& b) {
+    ::std::sort(all.begin(), all.begin() + num_all, [](const layout_leaf& a, const layout_leaf& b) {
       return a.stride < b.stride;
     });
 
     size_t expected_stride = 1;
-    for (const auto& l : all)
+    for (size_t k = 0; k < num_all; k++)
     {
-      if (static_cast<size_t>(l.stride) != expected_stride)
+      if (static_cast<size_t>(all[k].stride) != expected_stride)
       {
         throw ::std::invalid_argument("cute_partition: leaves do not tile the padded space exactly (layout must be "
                                       "exact and bijective)");
       }
-      expected_stride *= l.extent;
+      expected_stride *= all[k].extent;
     }
     if (expected_stride != padded_dims_.size())
     {
@@ -411,10 +418,13 @@ private:
     ::std::ptrdiff_t place_leaf; // index into place_leaves_, or -1 for local leaves
   };
 
-  ::std::vector<layout_leaf> place_leaves_;
-  ::std::vector<int> place_axes_;
-  ::std::vector<layout_leaf> local_leaves_;
-  ::std::vector<decode_leaf> decode_;
+  ::cuda::std::array<layout_leaf, max_leaves> place_leaves_{};
+  ::cuda::std::array<int, max_leaves> place_axes_{};
+  ::cuda::std::array<layout_leaf, max_leaves> local_leaves_{};
+  ::cuda::std::array<decode_leaf, 2 * max_leaves> decode_{};
+  size_t num_place_leaves_ = 0;
+  size_t num_local_leaves_ = 0;
+  size_t num_decode_       = 0;
   dim4 padded_dims_;
   dim4 true_dims_;
   dim4 grid_dims_;
