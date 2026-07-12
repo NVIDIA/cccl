@@ -325,26 +325,14 @@ static_assert(is_valid_cluster_policy(make_cluster_policy()));
 // Tuned cluster sub-policies for SM 10.x pairs (key + index) requests under a deterministic result-set requirement,
 // measured on B200 (EVO search over `cub.bench.segmented_topk.variable.indexed.cluster` with F32 keys and I32
 // indices, deterministic gpu-to-gpu + prefer-larger-index). Buckets are keyed by the request's statically-known
-// upper bounds on segment size and k; bounds outside the measured grid fall back to the default policy.
+// upper bounds on segment size and k; bounds outside the measured grid fall back to the default policy. Grid
+// diagonal cells (k == max segment size) are intentionally not encoded: the benchmark there only exercises the
+// select-all copy fast path (every segment has exactly k elements), leaving the selection-path knobs unmeasured.
+// Such requests fall through to the nearest larger measured bucket (or the default).
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
   -> cluster_topk_policy
 {
-  if (static_max_segment_size <= 512 && max_k <= 512)
-  {
-    return cluster_topk_policy{
-      /*threads_per_block=*/128,
-      /*min_blocks_per_sm=*/1,
-      /*min_chunks_per_block=*/1,
-      /*chunk_bytes=*/15 * 1024,
-      /*load_align_bytes=*/32,
-      /*pipeline_stages=*/8,
-      /*single_block_max_seg_size=*/8 * 1024,
-      /*bits_per_pass=*/10,
-      /*histogram_items_per_thread=*/4,
-      /*tie_break_items_per_thread=*/21,
-      /*copy_items_per_thread=*/16};
-  }
   if (static_max_segment_size <= 1024 && max_k <= 512)
   {
     return cluster_topk_policy{
@@ -359,21 +347,6 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
       /*histogram_items_per_thread=*/6,
       /*tie_break_items_per_thread=*/8,
       /*copy_items_per_thread=*/9};
-  }
-  if (static_max_segment_size <= 1024 && max_k <= 1024)
-  {
-    return cluster_topk_policy{
-      /*threads_per_block=*/256,
-      /*min_blocks_per_sm=*/1,
-      /*min_chunks_per_block=*/2,
-      /*chunk_bytes=*/14 * 1024,
-      /*load_align_bytes=*/64,
-      /*pipeline_stages=*/15,
-      /*single_block_max_seg_size=*/8 * 1024,
-      /*bits_per_pass=*/8,
-      /*histogram_items_per_thread=*/17,
-      /*tie_break_items_per_thread=*/16,
-      /*copy_items_per_thread=*/19};
   }
   if (static_max_segment_size <= 2048 && max_k <= 512)
   {
@@ -405,30 +378,108 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
       /*tie_break_items_per_thread=*/1,
       /*copy_items_per_thread=*/4};
   }
-  if (static_max_segment_size <= 2048 && max_k <= 2048)
+  if (static_max_segment_size <= 4096 && max_k <= 512)
   {
     return cluster_topk_policy{
-      /*threads_per_block=*/256,
+      /*threads_per_block=*/416,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/2,
+      /*chunk_bytes=*/15 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/9,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/3,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/14};
+  }
+  if (static_max_segment_size <= 4096 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/512,
+      /*min_blocks_per_sm=*/2,
+      /*min_chunks_per_block=*/2,
+      /*chunk_bytes=*/16 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/7,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/2,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/24};
+  }
+  if (static_max_segment_size <= 4096 && max_k <= 2048)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/512,
       /*min_blocks_per_sm=*/1,
       /*min_chunks_per_block=*/1,
-      /*chunk_bytes=*/15 * 1024,
-      /*load_align_bytes=*/32,
-      /*pipeline_stages=*/15,
+      /*chunk_bytes=*/27 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/10,
       /*single_block_max_seg_size=*/8 * 1024,
       /*bits_per_pass=*/9,
-      /*histogram_items_per_thread=*/11,
-      /*tie_break_items_per_thread=*/11,
-      /*copy_items_per_thread=*/14};
+      /*histogram_items_per_thread=*/2,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/12};
+  }
+  if (static_max_segment_size <= 8192 && max_k <= 512)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/512,
+      /*min_blocks_per_sm=*/2,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/23 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/8,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/11,
+      /*histogram_items_per_thread=*/3,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/16};
+  }
+  if (static_max_segment_size <= 8192 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/512,
+      /*min_blocks_per_sm=*/2,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/24 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/11,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/9,
+      /*histogram_items_per_thread=*/2,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/7};
+  }
+  if (static_max_segment_size <= 8192 && max_k <= 2048)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/512,
+      /*min_blocks_per_sm=*/2,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/29 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/7,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/11,
+      /*histogram_items_per_thread=*/2,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/6};
   }
   return make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(512, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1024, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1024, 1024)));
 static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 2048)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 2048)));
 
 // Default selector for cluster-capable architectures (SM 9.0+). The tuning is currently identical across CCs.
 struct cluster_policy_selector
