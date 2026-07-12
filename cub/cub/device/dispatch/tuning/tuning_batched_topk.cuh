@@ -328,11 +328,18 @@ static_assert(is_valid_cluster_policy(make_cluster_policy()));
 // upper bounds on segment size and k; bounds outside the measured grid fall back to the default policy. Grid
 // diagonal cells (k == max segment size) are intentionally not encoded: the benchmark there only exercises the
 // select-all copy fast path (every segment has exactly k elements), leaving the selection-path knobs unmeasured.
-// Such requests fall through to the nearest larger measured bucket (or the default).
+// Such requests keep the default policy -- the selection-tuned buckets below measurably regress the copy fast path
+// (verified on B200), so they must not inherit them.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
   -> cluster_topk_policy
 {
+  // A k bound that reaches the segment-size bound admits copy-fast-path-dominated workloads (k >= segment size
+  // selects the whole segment), for which the selection-tuned buckets below are pessimal.
+  if (max_k >= static_max_segment_size)
+  {
+    return make_cluster_policy();
+  }
   if (static_max_segment_size <= 1024 && max_k <= 512)
   {
     return cluster_topk_policy{
