@@ -29,8 +29,7 @@ struct winner_config
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 64;
   // when should be pre calculate in registers?
-  static constexpr int kRegBufMaxRuns      = (sizeof(KeyT) <= 4) ? 256 : (sizeof(KeyT) == 8 ? 128 : 64);
-  static constexpr int kRegBufMinThreshold = 8;
+  static constexpr int kRegBufMaxRuns = (sizeof(KeyT) <= 4) ? 256 : (sizeof(KeyT) == 8 ? 128 : 64);
 
   static constexpr int kWarpTileSize = 32 * kIPT;
   static constexpr int kTileSize     = kNumCompWarps * kWarpTileSize;
@@ -606,7 +605,6 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   constexpr int kStages                  = Config::kStages;
   constexpr int kPosBufStages            = Config::kPosBufStages;
   constexpr int kHeadPosStagingThreshold = Config::kHeadPosStagingThreshold;
-  constexpr int kRegBufMinThreshold      = Config::kRegBufMinThreshold;
   constexpr int kRegBufMaxRuns           = Config::kRegBufMaxRuns;
   constexpr int kWarpTileSize            = Config::kWarpTileSize;
   constexpr int kTileSize                = Config::kTileSize;
@@ -902,7 +900,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const int runs_before_warp_tile      = __shfl_sync(kFullMask, lane_runs_before_warp_tile, warp_tile_id);
           // if our register budget allows it and it is worth it, we can buffer intermediate results in register
           // and arrive empty early. this buys 2.5% BWUtil at the worst segments
-          if (warp_tile_run_count >= kRegBufMinThreshold && warp_tile_run_count <= kRegBufMaxRuns)
+          if (warp_tile_run_count >= 1 && warp_tile_run_count <= kRegBufMaxRuns)
           {
             const int run_begin = (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile);
             const int run_end   = (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile);
