@@ -457,13 +457,12 @@ struct HeadFlagDecodeT
 // Per run: gather its key from the run's head position -> d_unique,
 // and write its length -> d_counts (= next run's head pos - this run's head pos).
 // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
-template <int kHeadPosStagingThreshold, class KeyT, class LenT, class OffT>
+template <class KeyT, class LenT, class OffT>
 __device__ __forceinline__ void drain_warp_tile_runs(
   KeyT* d_unique,
   LenT* d_counts,
   const KeyT* tile_keys,
   const short* run_positions,
-  const unsigned* slot_head_flags,
   OffT curr_prefix_run_count,
   int warp_tile_id,
   int warp_tile_offset,
@@ -474,30 +473,6 @@ __device__ __forceinline__ void drain_warp_tile_runs(
   int lane_id)
 {
   const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
-  // this is a lot of code, but this buys us 2 - 3.5% BWUtil at MaxSegs 64 - 1M
-  if (warp_tile_run_count < kHeadPosStagingThreshold)
-  {
-    const HeadFlagDecodeT dec(slot_head_flags, warp_tile_id, lane_id);
-    // the warp process 32 runs per round ceil((run_end-run_begin)/32)
-    // now each lane is assigned RUNs
-    const int num_rounds = (run_end - run_begin + 31) >> 5;
-    for (int it = 0; it < num_rounds; ++it)
-    {
-      const int run_idx  = run_begin + it * 32 + lane_id;
-      const RunSpanT run = dec.decode_run(run_idx);
-      if (run_idx < run_end)
-      {
-        const int head_pos        = warp_tile_offset + run.head_pos_in_warp_tile;
-        const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
-        d_unique[global_run_idx]  = tile_keys[head_pos];
-        if (run_idx + 1 < warp_tile_run_count)
-        {
-          d_counts[global_run_idx] = run.next_head_pos - run.head_pos_in_warp_tile;
-        }
-      }
-    }
-    return;
-  } // if not staged
 #pragma unroll 2
   // if staged
   for (int run_idx = run_begin + lane_id; run_idx < run_end; run_idx += 32)
@@ -979,12 +954,11 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const OffT curr_prefix_run_count = wait_prefixed_and_read();
           // wait for staged_warp_tile (3/3)
           wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
-          drain_warp_tile_runs<kHeadPosStagingThreshold>(
+          drain_warp_tile_runs(
             d_unique,
             d_counts,
             tile_keys,
             run_positions,
-            head_flag_buf[slot_id],
             curr_prefix_run_count,
             warp_tile_id,
             warp_tile_id * kWarpTileSize,
