@@ -489,23 +489,22 @@ __device__ __forceinline__ void drain_warp_tile_runs(
   }
 }
 
-template <class Config, class OffT>
-__device__ __forceinline__ void poll_and_fold(
+template <int kChunkCap, class Config, class OffT>
+__device__ __forceinline__ void poll_fold_windows(
   TilePartialStateT* tile_partial_states,
   int tile_id,
   int& last_seen_tile_id,
   OffT& last_seen_prefix_run_count,
   OffT& last_seen_prefix_open_length,
   int lane_id,
-  OffT& curr_prefix_run_count,
-  OffT& curr_prefix_open_length)
+  int& dense_mode)
 {
   constexpr int kPollMlp = Config::kPollMlp;
   while (last_seen_tile_id < tile_id)
   {
     const int remain = tile_id - last_seen_tile_id;
     // # of tiles to fold this iteration
-    const int chunk                          = remain < 32 * kPollMlp ? remain : 32 * kPollMlp;
+    const int chunk                          = remain < kChunkCap ? remain : kChunkCap;
     const int lane_first_tile_id             = last_seen_tile_id + lane_id;
     const int lane_tile_count                = (chunk - lane_id + 31) >> 5;
     TilePartialStateT packed_words[kPollMlp] = {}; // must zero initialize
@@ -548,6 +547,7 @@ __device__ __forceinline__ void poll_and_fold(
     }
     const int chunk_run_count   = __reduce_add_sync(kFullMask, lane_run_count);
     const int chunk_open_length = __reduce_add_sync(kFullMask, lane_open_length);
+    dense_mode                  = chunk_run_count > (chunk << 7);
     // combine last_seen_prefix with the chunk aggregate
     const OffT new_run_count = last_seen_prefix_run_count + chunk_run_count;
     const OffT new_open_length =
@@ -555,6 +555,42 @@ __device__ __forceinline__ void poll_and_fold(
     last_seen_prefix_run_count   = new_run_count;
     last_seen_prefix_open_length = new_open_length;
     last_seen_tile_id += chunk;
+  }
+}
+
+template <class Config, class OffT>
+__device__ __forceinline__ void poll_and_fold(
+  TilePartialStateT* tile_partial_states,
+  int tile_id,
+  int& last_seen_tile_id,
+  OffT& last_seen_prefix_run_count,
+  OffT& last_seen_prefix_open_length,
+  int lane_id,
+  int& dense_mode,
+  OffT& curr_prefix_run_count,
+  OffT& curr_prefix_open_length)
+{
+  if (dense_mode)
+  {
+    poll_fold_windows<96, Config>(
+      tile_partial_states,
+      tile_id,
+      last_seen_tile_id,
+      last_seen_prefix_run_count,
+      last_seen_prefix_open_length,
+      lane_id,
+      dense_mode);
+  }
+  else
+  {
+    poll_fold_windows<32 * Config::kPollMlp, Config>(
+      tile_partial_states,
+      tile_id,
+      last_seen_tile_id,
+      last_seen_prefix_run_count,
+      last_seen_prefix_open_length,
+      lane_id,
+      dense_mode);
   }
   curr_prefix_run_count   = last_seen_prefix_run_count;
   curr_prefix_open_length = last_seen_prefix_open_length;
@@ -798,6 +834,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
         int last_seen_tile_id             = 0;
         OffT last_seen_prefix_run_count   = 0;
         OffT last_seen_prefix_open_length = 0;
+        int poll_dense_mode               = 1;
         for (int pipeline_gen = 0;; ++pipeline_gen)
         {
           const int slot_id  = pipeline_gen % kStages;
@@ -820,6 +857,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             last_seen_prefix_run_count,
             last_seen_prefix_open_length,
             lane_id,
+            poll_dense_mode,
             curr_prefix_run_count,
             curr_prefix_open_length);
           // no wait needed before overwriting the prefix slot since we can prove this is safe with double buffering
