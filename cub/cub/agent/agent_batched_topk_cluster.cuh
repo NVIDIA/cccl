@@ -983,6 +983,39 @@ private:
       static_cast<int>(::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items))));
   }
 
+  // Consume the `i`-th visit on the block-load path (its ping-pong-ordered position is `overflow_idx`): wait for its
+  // slot, fold its keys via `block_apply`, then prefetch the chunk `stream_stages` visits ahead into the just-freed
+  // slot (a barrier orders the block's read ahead of the overwriting copy). Returns false once `should_continue()`
+  // reports the top-k fully placed -- polled before the prefetch so we never launch a copy we would only drain again;
+  // the prefetches already in flight are drained after `run_pass`'s consume loops.
+  template <typename BlockApply, typename Continue>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  consume_overflow_visit(offset_t i, BlockApply&& block_apply, Continue&& should_continue)
+  {
+    const offset_t overflow_idx = stream_is_forward ? i : (layout.overflow_chunks - 1 - i);
+    const int stage             = static_cast<int>(overflow_idx % static_cast<offset_t>(stream_stages));
+    if (stream_inflight_mask & (::cuda::std::uint32_t{1} << stage))
+    {
+      wait_stage(stage);
+      stream_inflight_mask &= ~(::cuda::std::uint32_t{1} << stage);
+    }
+    block_apply(stage, overflow_idx);
+
+    if (!should_continue())
+    {
+      return false;
+    }
+
+    const offset_t next_step = i + static_cast<offset_t>(stream_stages);
+    if (next_step < layout.overflow_chunks)
+    {
+      const offset_t next_overflow_idx = stream_is_forward ? next_step : (layout.overflow_chunks - 1 - next_step);
+      __syncthreads();
+      issue_load(stage, next_overflow_idx);
+    }
+    return true;
+  }
+
   // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
   // in streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
   // gmem (fallback). `mid()` runs at most once per pass, positioned to overlap the caller's resident-chunk work with
@@ -1026,37 +1059,6 @@ private:
         stream_is_primed = true;
       }
 
-      // Consume the `i`-th visit (its ping-pong-ordered position is `overflow_idx`): wait for its slot, fold its keys
-      // via `block_apply`, then prefetch the chunk `stream_stages` visits ahead into the slot just freed (a barrier
-      // guards the slot before the async copy can overwrite the data the block was just reading). Returns false once
-      // `should_continue()` reports the top-k fully placed -- polled before the prefetch so we never launch a copy we
-      // would only drain again; the up-to-`stream_stages - 1` prefetches already in flight (from earlier visits or
-      // priming) are drained after the loop.
-      const auto consume = [&](offset_t i) -> bool {
-        const offset_t overflow_idx = stream_is_forward ? i : (layout.overflow_chunks - 1 - i);
-        const int stage             = static_cast<int>(overflow_idx % static_cast<offset_t>(stream_stages));
-        if (stream_inflight_mask & (::cuda::std::uint32_t{1} << stage))
-        {
-          wait_stage(stage);
-          stream_inflight_mask &= ~(::cuda::std::uint32_t{1} << stage);
-        }
-        block_apply(stage, overflow_idx);
-
-        if (!should_continue())
-        {
-          return false;
-        }
-
-        const offset_t next_step = i + static_cast<offset_t>(stream_stages);
-        if (next_step < layout.overflow_chunks)
-        {
-          const offset_t next_overflow_idx = stream_is_forward ? next_step : (layout.overflow_chunks - 1 - next_step);
-          __syncthreads();
-          issue_load(stage, next_overflow_idx);
-        }
-        return true;
-      };
-
       // Phase 1: consume the first `stream_stages` visits (the chunks reused from the previous pass, already resident
       // in the streaming slots), which issues the prefetch loads for this pass's reload wave into the freed slots.
       bool is_stopped      = false;
@@ -1064,7 +1066,7 @@ private:
       _CCCL_PRAGMA_NOUNROLL()
       for (offset_t i = 0; i < split; ++i)
       {
-        if (!consume(i))
+        if (!consume_overflow_visit(i, block_apply, should_continue))
         {
           is_stopped = true;
           break;
@@ -1082,7 +1084,7 @@ private:
         _CCCL_PRAGMA_NOUNROLL()
         for (offset_t i = split; i < layout.overflow_chunks; ++i)
         {
-          if (!consume(i))
+          if (!consume_overflow_visit(i, block_apply, should_continue))
           {
             break;
           }
@@ -2165,6 +2167,25 @@ private:
     }
   }
 
+  // Aligned bulk of the resident chunk in `slot` (its `count` minus any peeled tail suffix); empty when it has none.
+  // Slot -> rank-local chunk index is `resident_base + slot` (identity unless `is_residency_reversed` shifts the
+  // resident window to the high-index chunks).
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<const key_t> resident_bulk_src(offset_t slot) const
+  {
+    const offset_t chunk_idx = layout.part.global_index(layout.resident_base + slot);
+    const auto chunk         = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
+    const offset_t bulk =
+      ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items));
+    if (bulk == 0)
+    {
+      return {};
+    }
+    // Chunks start after the aligned head on an alignment-multiple stride (mirrors `issue_load`).
+    _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_base + chunk.offset, load_align_bytes),
+                 "resident loader received a chunk with an unaligned start");
+    return {layout.block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
+  }
+
   // Fused first pass: load this rank's resident chunks into the block_tile, stage the persistent boundary edges into
   // `edge_keys`, and fold every key (resident + edges + overflow) into pass 0's histogram in the same sweep (pass 0
   // needs no candidate filtering). Publishes the resident span as `resident_keys` for the later passes and the final
@@ -2198,28 +2219,6 @@ private:
         // the unaligned suffix that is always peeled into `edge_keys`.
         const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(layout.my_resident_chunks));
 
-        // Resident slot -> rank-local chunk index (`resident_base + slot`; identity unless `is_residency_reversed`
-        // shifts the resident window to the high-index chunks).
-        const auto resident_local = [&](offset_t slot) -> offset_t {
-          return layout.resident_base + slot;
-        };
-        // Aligned bulk of the resident chunk in `slot` (its `count` minus any peeled tail suffix); empty when it has
-        // none.
-        const auto bulk_src = [&](offset_t slot) -> ::cuda::std::span<const key_t> {
-          const offset_t chunk_idx = layout.part.global_index(resident_local(slot));
-          const auto chunk         = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
-          const offset_t bulk =
-            ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items));
-          if (bulk == 0)
-          {
-            return {};
-          }
-          // Chunks start after the aligned head on an alignment-multiple stride (mirrors `issue_load`).
-          _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_base + chunk.offset, load_align_bytes),
-                       "resident loader received a chunk with an unaligned start");
-          return {layout.block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
-        };
-
         // Bulks are densely packed from the start of the block_tile. The head prefix is no longer kept here (it lives
         // in `edge_keys`), so there is no reserved front gap: the write cursor starts at offset 0.
         int next_off_bytes = 0;
@@ -2228,21 +2227,21 @@ private:
         // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
         for (int stage = 0; stage < prologue; ++stage)
         {
-          const auto src = bulk_src(static_cast<offset_t>(stage));
+          const auto src = resident_bulk_src(static_cast<offset_t>(stage));
           issue_bulk_copy(stage, key_slots + next_off_bytes, src);
           next_off_bytes += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
         }
 
         // Read cursor trailing the write cursor: chunk `local_chunk`'s bulk was written at `read_off_bytes` (packed
-        // and consumed in the same order), and `bulk_src(local_chunk)` recomputes its length, so the read span needs
-        // no stored per-stage state.
+        // and consumed in the same order), and `resident_bulk_src(local_chunk)` recomputes its length, so the read span
+        // needs no stored per-stage state.
         int read_off_bytes = 0;
         _CCCL_PRAGMA_NOUNROLL()
         for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
         {
           const int stage = static_cast<int>(local_chunk % static_cast<offset_t>(prologue));
           wait_stage(stage);
-          const int read_len_items = static_cast<int>(::cuda::std::size(bulk_src(local_chunk)));
+          const int read_len_items = static_cast<int>(::cuda::std::size(resident_bulk_src(local_chunk)));
           for_each_chunk_key<histogram_items_per_thread_clamped>(
             ::cuda::ptr_rebind<key_t>(key_slots + read_off_bytes), read_len_items, add_first_pass);
           read_off_bytes += read_len_items * int{sizeof(key_t)};
@@ -2250,7 +2249,7 @@ private:
           const offset_t next_local_chunk = local_chunk + static_cast<offset_t>(prologue);
           if (next_local_chunk < layout.my_resident_chunks)
           {
-            const auto src = bulk_src(next_local_chunk);
+            const auto src = resident_bulk_src(next_local_chunk);
             // Phase safety, not data safety (the target offset is fresh): re-arming this stage before all threads
             // leave the wait above would advance the phase twice, stranding a lagging waiter forever.
             __syncthreads();
