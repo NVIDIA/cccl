@@ -158,7 +158,7 @@ public:
 
     _CCCL_HIDE_FROM_ABI __iterator() = default;
 
-    _CCCL_TEMPLATE(bool _OtherConst)
+    _CCCL_TEMPLATE(bool _OtherConst = _Const)
     _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<__ziperator<false>, __ziperator<_OtherConst>>)
     _CCCL_API constexpr __iterator(__iterator<(!_OtherConst)> __i)
         : __parent_{__i.__parent_}
