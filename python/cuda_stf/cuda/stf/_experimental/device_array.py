@@ -57,6 +57,17 @@ class DeviceArray:
         The data place that owns the allocation.
     stream : optional
         CUDA stream for stream-ordered allocation.
+    dims : sequence of int, optional
+        Tensor extents (dimension 0 fastest) describing the geometry of the
+        allocation, when the flat array backs a multi-dimensional tensor.
+        Required for composite places backed by a structured partition,
+        whose extents must match the partition's tensor;
+        ``prod(dims) * elemsize`` must equal ``size * itemsize``. Defaults
+        to the flat byte geometry ``(size * itemsize,)`` with ``elemsize``
+        1, which distributes composite allocations with byte granularity
+        (and is equivalent to a plain byte allocation everywhere else).
+    elemsize : int, optional
+        Element size in bytes paired with ``dims``.
     """
 
     __slots__ = (
@@ -71,7 +82,9 @@ class DeviceArray:
         "__weakref__",
     )
 
-    def __init__(self, size: int, dtype, dplace: "data_place", stream=None):
+    def __init__(
+        self, size: int, dtype, dplace: "data_place", stream=None, *, dims=None, elemsize=None
+    ):
         if size < 0:
             raise ValueError("DeviceArray size must be non-negative")
 
@@ -82,8 +95,24 @@ class DeviceArray:
         self._stream_int = get_stream_pointer(stream)
         self._base = None
 
+        if dims is None:
+            if elemsize is not None:
+                raise ValueError("DeviceArray: elemsize requires dims")
+            dims, elemsize = (self._nbytes,), 1
+        else:
+            dims = tuple(int(d) for d in dims)
+            elemsize = int(elemsize) if elemsize is not None else self._dtype.itemsize
+            geom = elemsize
+            for d in dims:
+                geom *= d
+            if geom != self._nbytes:
+                raise ValueError(
+                    f"DeviceArray: dims {dims} x elemsize {elemsize} = {geom} bytes "
+                    f"!= size {size} x itemsize {self._dtype.itemsize}"
+                )
+
         if self._nbytes > 0:
-            self._ptr = dplace.allocate(self._nbytes, stream)
+            self._ptr = dplace.allocate(dims, stream, elemsize=elemsize)
         else:
             self._ptr = 0
 
