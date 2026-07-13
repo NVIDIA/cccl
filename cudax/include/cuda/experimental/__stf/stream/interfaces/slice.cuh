@@ -128,8 +128,8 @@ public:
       auto part     = cute_place->get_partition(); // trivially copyable
       auto cute_arr = ::std::make_unique<localized_array>(
         grid,
-        ::std::function<pos4(size_t)>([part, data_dims](size_t ind) {
-          return part.owner(data_dims.index_to_pos(ind));
+        ::std::function<pos4(size_t)>([part, delinearize](size_t ind) {
+          return part.owner(delinearize(ind));
         }),
         total_size,
         sizeof(T),
