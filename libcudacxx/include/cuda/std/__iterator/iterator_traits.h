@@ -304,7 +304,7 @@ _CCCL_CONCEPT __cpp17_random_access_iterator = _CCCL_REQUIRES_EXPR((_Iter))(
 } // namespace __iterator_traits_detail
 
 // [iterator.traits]#3.1
-// If the qualified-id I​::​pointer is valid and denotes a type, then ​pointer names that type;
+// If the qualified-id I::pointer is valid and denotes a type, then pointer names that type;
 template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_pointer_or_void(int) -> typename _Iter::pointer;
 // Otherwise, it names void.
@@ -317,12 +317,12 @@ using __iterator_traits_member_pointer_or_void =
 
 // [iterator.traits]#3.2
 // [iterator.traits]#3.2.1
-// If the qualified-id I​::​pointer is valid and denotes a type, then pointer names that type.
+// If the qualified-id I::pointer is valid and denotes a type, then pointer names that type.
 template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_pointer_or_arrow_or_void(int, __priority_tag<1>) ->
   typename _Iter::pointer;
 
-// Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+// Otherwise, if decltype(declval<I&>().operator->()) is well-formed, then pointer names that type.
 template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_pointer_or_arrow_or_void(int, __priority_tag<0>)
   -> decltype(::cuda::std::declval<_Iter&>().operator->());

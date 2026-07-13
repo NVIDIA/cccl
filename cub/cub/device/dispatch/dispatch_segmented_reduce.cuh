@@ -116,6 +116,8 @@ public:
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
@@ -161,7 +163,7 @@ template <
     InitValueT,
     AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedReduce") DispatchSegmentedReduce
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
