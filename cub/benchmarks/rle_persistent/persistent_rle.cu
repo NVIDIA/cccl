@@ -865,6 +865,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             curr_prefix_open_length);
           // no wait needed before overwriting the prefix slot since we can prove this is safe with double buffering
           // (proof see above at barrier initiation)
+          __syncwarp();
           if (lane_id == 0)
           {
             prefix_packed[slot_id][slot_gen & 1] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
