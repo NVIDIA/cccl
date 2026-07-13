@@ -12,6 +12,8 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
@@ -636,54 +638,84 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_re
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SegmentedReduceWarpReducePolicy", "[segmented_reduce][device]")
-{
-  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReduceWarpReducePolicy>);
-  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReduceWarpReducePolicy>);
-
-  // aggregate init
-  constexpr auto p1 = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::CacheLoadModifier::LOAD_LDG};
-
-#  if _CCCL_STD_VER >= 2020
-  // designated init
-  constexpr auto p2 = cub::SegmentedReduceWarpReducePolicy{
-    .threads_per_block = 256,
-    .threads_per_warp  = 32,
-    .items_per_thread  = 16,
-    .vec_size          = 4,
-    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG};
-#  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
-#  endif // _CCCL_STD_VER >= 2020
-
-  // comparison
-  STATIC_REQUIRE(p1 == p2);
-  STATIC_REQUIRE_FALSE(p1 != p2);
-}
-
-C2H_TEST("SegmentedReducePolicy", "[segmented_reduce][device]")
+C2H_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReducePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReducePolicy>);
 
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReduceWarpReducePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReduceWarpReducePolicy>);
+
   // aggregate init
-  constexpr auto p1 = cub::SegmentedReducePolicy{
-    cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG},
-    cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG},
-    cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG}};
+  constexpr auto p1_large  = cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
+  constexpr auto p1_medium = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG};
+  constexpr auto p1_small  = cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG};
+  constexpr auto p1        = cub::SegmentedReducePolicy{p1_large, p1_medium, p1_small};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto p2 = cub::SegmentedReducePolicy{
-    .large_reduce  = cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG},
-    .medium_reduce = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG},
-    .small_reduce  = cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG}};
+  constexpr auto p2_large = cub::ReducePassPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .load_modifier     = cub::LOAD_LDG};
+  constexpr auto p2_medium = cub::SegmentedReduceWarpReducePolicy{
+    .threads_per_block = 256,
+    .threads_per_warp  = 32,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .load_modifier     = cub::LOAD_LDG};
+  constexpr auto p2_small = cub::SegmentedReduceWarpReducePolicy{
+    .threads_per_block = 256,
+    .threads_per_warp  = 1,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .load_modifier     = cub::LOAD_LDG};
+  constexpr auto p2 =
+    cub::SegmentedReducePolicy{.large_reduce = p2_large, .medium_reduce = p2_medium, .small_reduce = p2_small};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto p2_large  = p1_large;
+  constexpr auto p2_medium = p1_medium;
+  constexpr auto p2_small  = p1_small;
+  constexpr auto p2        = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(p1_large == p2_large);
+  STATIC_REQUIRE_FALSE(p1_large != p2_large);
+
+  STATIC_REQUIRE(p1_medium == p2_medium);
+  STATIC_REQUIRE_FALSE(p1_medium != p2_medium);
+
+  STATIC_REQUIRE(p1_small == p2_small);
+  STATIC_REQUIRE_FALSE(p1_small != p2_small);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1_large)
+          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_medium)
+          == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 32"
+             ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_small)
+          == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 1"
+             ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedReducePolicy { .large_reduce = ReducePassPolicy { .threads_per_block = 256"
+       ", .items_per_thread = 16, .vec_size = 4"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
+       ", .medium_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 32, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }"
+       ", .small_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 1, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
