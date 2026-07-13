@@ -77,15 +77,15 @@ _CCCL_CONCEPT __returnable_element = is_reference_v<_Tp> || move_constructible<t
 template <input_range _View, size_t _Np>
   requires view<_View> && __has_tuple_element<range_value_t<_View>, _Np>
         && __has_tuple_element<remove_reference_t<range_reference_t<_View>>, _Np>
-        && __returnable_element<range_reference_t<_View>, _Np>
+        && __returnable_element<remove_reference_t<range_reference_t<_View>>, _Np>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View,
           size_t _Np,
-          enable_if_t<input_range<_View>, int>                                                     = 0,
-          enable_if_t<view<_View>, int>                                                            = 0,
-          enable_if_t<__has_tuple_element<range_value_t<_View>, _Np>, int>                         = 0,
-          enable_if_t<__has_tuple_element<remove_reference_t<range_reference_t<_View>>, _Np>, int> = 0,
-          enable_if_t<__returnable_element<range_reference_t<_View>, _Np>, int>                    = 0>
+          enable_if_t<input_range<_View>, int>                                                      = 0,
+          enable_if_t<view<_View>, int>                                                             = 0,
+          enable_if_t<__has_tuple_element<range_value_t<_View>, _Np>, int>                          = 0,
+          enable_if_t<__has_tuple_element<remove_reference_t<range_reference_t<_View>>, _Np>, int>  = 0,
+          enable_if_t<__returnable_element<remove_reference_t<range_reference_t<_View>>, _Np>, int> = 0>
 #endif // !_CCCL_HAS_CONCEPTS()
 class elements_view : public view_interface<elements_view<_View, _Np>>
 {
