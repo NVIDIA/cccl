@@ -54,12 +54,10 @@ def compute_raw_weight_matrix(rt_axes_values, rt_axes_ids):
 
     first_rt_axis = True
     first_rt_axis_name = None
-    for rt_axis in rt_axes_values:
+    for rt_axis, values in rt_axes_values.items():
         if first_rt_axis:
             first_rt_axis_name = rt_axis
             first_rt_axis = False
-        values = rt_axes_values[rt_axis]
-        rt_axes_values[rt_axis] = values
         if "{io}" in rt_axis:
             rt_axes_weights[rt_axis] = io_weights(values)
         else:

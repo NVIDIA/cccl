@@ -42,7 +42,9 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-// TODO(bgruber): deprecate once we publish the tuning API
+namespace detail
+{
+// TODO(bgruber): drop in CCCL 4.0
 /**
  * Parameterizable tuning policy type for AgentReduce
  * @tparam NominalThreadsPerBlock4B Threads per thread block
@@ -58,8 +60,8 @@ template <int NominalThreadsPerBlock4B,
           int VectorLoadLength,
           BlockReduceAlgorithm BlockAlgorithm,
           CacheLoadModifier LoadModifier,
-          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentReducePolicy : ScalingType
+          typename ScalingType = MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_reduce_policy : ScalingType
 {
   /// Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
@@ -70,23 +72,34 @@ struct AgentReducePolicy : ScalingType
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
 
-/**
- * Parameterizable tuning policy type for AgentWarpReduce
- * @tparam ThreadsPerBlock Threads per thread block
- * @tparam WarpThreads Threads per warp
- * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
- * @tparam ComputeT Dominant compute type
- * @tparam VectorLoadLength Number of items per vectorized load
- * @tparam LoadModifier Cache load modifier for reading input elements
- */
+//! Deprecated [Since 3.5]
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          BlockReduceAlgorithm BlockAlgorithm,
+          CacheLoadModifier LoadModifier,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") = detail::agent_reduce_policy<
+  NominalThreadsPerBlock4B,
+  NominalItemsPerThread4B,
+  ComputeT,
+  VectorLoadLength,
+  BlockAlgorithm,
+  LoadModifier,
+  ScalingType>;
+
+namespace detail
+{
 template <int ThreadsPerBlock,
           int WarpThreads,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           CacheLoadModifier LoadModifier>
-struct AgentWarpReducePolicy
+struct agent_warp_reduce_policy
 {
   /// Number of threads per warp
   static constexpr int WARP_THREADS = WarpThreads;
@@ -101,8 +114,8 @@ struct AgentWarpReducePolicy
   /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
     ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
-                               detail::NoScaling<0, NominalItemsPerThread4B>,
-                               detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
+                               NoScaling<0, NominalItemsPerThread4B>,
+                               MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
@@ -115,6 +128,17 @@ struct AgentWarpReducePolicy
 
   static_assert((BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
+using AgentWarpReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") = detail::
+  agent_warp_reduce_policy<ThreadsPerBlock, WarpThreads, NominalItemsPerThread4B, ComputeT, VectorLoadLength, LoadModifier>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -198,8 +222,12 @@ struct AgentReduceImpl
   static constexpr bool ATTEMPT_VECTORIZATION =
     (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
     && (::cuda::std::is_pointer_v<InputIteratorT>)
-    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-    &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
+         // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+         &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>)
+         // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
+         // TODO(bgruber): this should be decided by tuning
+         &&sizeof(InputT)
+         <= 8;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
@@ -331,14 +359,15 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
+      thread_aggregate =
+        transform_op(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
       thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      InputT item(d_wrapped_in[block_offset + thread_offset]);
+      InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;

@@ -78,7 +78,7 @@ struct offset_to_size_t
 
 struct policy_selector_t
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::BatchedMemcpyPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::BatchedCopyPolicy
   {
     return {
       {

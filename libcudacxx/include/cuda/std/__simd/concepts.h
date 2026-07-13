@@ -25,10 +25,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__floating_point/conversion_rank_order.h>
+#include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -43,6 +46,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
 template <typename _From, typename _To>
 _CCCL_CONCEPT __explicitly_convertible_to = _CCCL_REQUIRES_EXPR((_From, _To))((static_cast<_To>(declval<_From>())));
+
+// [simd.expos], simd-vec-type concept
+
+template <typename _Vp>
+_CCCL_CONCEPT __simd_vec_type = _CCCL_REQUIRES_EXPR(
+  (_Vp))(requires(same_as<_Vp, basic_vec<typename _Vp::value_type, typename _Vp::abi_type>>),
+         requires(is_default_constructible_v<_Vp>));
 
 // [simd.expos], constexpr-wrapper-like concept
 
@@ -118,8 +128,8 @@ inline constexpr bool __is_constexpr_wrapper_value_preserving_v<_From, _ValueTyp
 // [simd.ctor] implicit value constructor
 // - From is not an arithmetic type and does not satisfy constexpr-wrapper-like,
 // - From is an arithmetic type and the conversion from From to value_type is value-preserving
-// - From satisfies constexpr-wrapper-like, remove_cvref_t<decltype(From​::​value)> is an arithmetic type, and
-//   From​::​value is representable by value_type.
+// - From satisfies constexpr-wrapper-like, remove_cvref_t<decltype(From::value)> is an arithmetic type, and
+//   From::value is representable by value_type.
 template <typename _Up, typename _ValueType, typename _From = remove_cvref_t<_Up>>
 _CCCL_CONCEPT __is_value_ctor_implicit =
   convertible_to<_Up, _ValueType>

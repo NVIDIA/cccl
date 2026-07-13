@@ -170,6 +170,7 @@ private:
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to
     // specify stream ordered access
+    ::cuda::__ensure_current_context __guard(__buf_.stream());
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
@@ -804,6 +805,7 @@ using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsL
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
+  ::cuda::__ensure_current_context __guard(__stream);
   __stream.wait(__from.stream());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
@@ -852,38 +854,41 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
     ::cuda::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
   }
+  else if constexpr (::cuda::__driver::__cu_driver_memsetable<_Tp>)
+  {
+    ::cuda::__driver::__memsetAsync(__first, __value, __count, __stream.get());
+  }
   else
   {
-    if constexpr (sizeof(_Tp) <= 4)
-    {
-      ::cuda::__driver::__memsetAsync(__first, __value, __count, __stream.get());
-    }
-    else
-    {
 #  if _CCCL_CUDA_COMPILATION()
-      ::cuda::__ensure_current_context __guard(__stream);
-      CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
+    ::cuda::__ensure_current_context __guard(__stream);
+    CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-      static_assert(sizeof(_Tp) <= 4,
-                    "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
+    static_assert(::cuda::__driver::__cu_driver_memsetable<_Tp>,
+                  "CUDA compiler is required to initialize an async_buffer with elements unable to be initialized "
+                  "with cuMemSet");
 #  endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
-    }
   }
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
+// Require at least one explicit property on the source, so it doesn't look applicable for initializer list inputs
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
                class... _RestProperties,
                class _Resource,
-               class... _SourceProperties,
+               class _FirstSourceProperty,
+               class... _RestSourceProperties,
                class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
 _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
-  stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {})
+  stream_ref __stream,
+  _Resource&& __mr,
+  const buffer<_Tp, _FirstSourceProperty, _RestSourceProperties...>& __source,
+  const _Env& __env = {})
 {
   buffer<_Tp, _FirstProperty, _RestProperties...> __res{
     __stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), no_init, __env};
@@ -899,15 +904,29 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 //! @param __source The source buffer to copy from.
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
-template <class _Tp, class _Resource, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>>
+template <class _Tp,
+          class _Resource,
+          class _FirstSourceProperty,
+          class... _RestSourceProperties,
+          class _Env = ::cuda::std::execution::env<>>
 _CCCL_HOST_API auto make_buffer(
-  stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {});
+  stream_ref __stream,
+  _Resource&& __mr,
+  const buffer<_Tp, _FirstSourceProperty, _RestSourceProperties...>& __source,
+  const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-_CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>)
+_CCCL_TEMPLATE(class _Tp,
+               class _Resource,
+               class _FirstSourceProperty,
+               class... _RestSourceProperties,
+               class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
 _CCCL_HOST_API auto make_buffer(
-  stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {})
+  stream_ref __stream,
+  _Resource&& __mr,
+  const buffer<_Tp, _FirstSourceProperty, _RestSourceProperties...>& __source,
+  const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   auto __res          = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), no_init, __env};

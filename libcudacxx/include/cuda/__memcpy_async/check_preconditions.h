@@ -27,6 +27,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -202,8 +202,14 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    auto augmented_s = dst_memory_node.getDataStream(bctx.async_resources().get_place_resources());
-    auto op          = stream_async_op(bctx, augmented_s, prereqs);
+    // Host places borrow stream pools from the current device. For host-destination copies,
+    // prefer the source place stream so stream/context affinity follows the data origin.
+    const bool dst_is_host_like          = dst_memory_node.is_host() || dst_memory_node.is_managed();
+    const bool src_is_host_like          = src_memory_node.is_host() || src_memory_node.is_managed();
+    const data_place& stream_memory_node = (dst_is_host_like && !src_is_host_like) ? src_memory_node : dst_memory_node;
+    const auto augmented_s = stream_memory_node.getDataStream(bctx.async_resources().get_place_resources());
+    [[maybe_unused]] const auto active_stream_place = stream_memory_node.affine_exec_place().activate();
+    auto op                                         = stream_async_op(bctx, augmented_s, prereqs);
 
     if (bctx.generate_event_symbols())
     {
