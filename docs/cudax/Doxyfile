@@ -45,7 +45,7 @@ EXCLUDE_SYMBOLS        = *detail* *RESERVED* *reserved* *__* _A* _B* _C* _D* _E*
 
 # Path for @snippet references to test/example files
 EXAMPLE_PATH           = ../../cudax/include/cuda/experimental/__stf/utility \
-                         ../../cudax/test/multi_gpu/algorithms/scan
+                         ../../cudax/test/multi_gpu/algorithms
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
 EXTENSION_MAPPING      = cuh=C++ cu=C++
@@ -162,7 +162,7 @@ PREDEFINED = \
 DISTRIBUTE_GROUP_DOC   = YES
 DOXYFILE_ENCODING      = UTF-8
 INPUT_ENCODING         = UTF-8
-EXAMPLE_RECURSIVE      = NO
+EXAMPLE_RECURSIVE      = YES
 EXAMPLE_PATTERNS       = *.cu
 AUTOLINK_SUPPORT       = YES
 

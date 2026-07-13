@@ -226,7 +226,7 @@ _CCCL_HOST_API void __scan(
 //! a thread or process that owns multiple local GPUs. For example, if each process owns two
 //! GPUs, each process can pass both local ranks in one call, as shown in the test below.
 //!
-//! @snippet range_basic.cu exclusive_scan
+//! @snippet exclusive_scan/range_basic.cu exclusive_scan
 //!
 //! All four outer ranges must have the same length. The algorithm caps lockstep iteration at
 //! the shortest range, but this must not be relied upon and may change at any time. Each
@@ -298,7 +298,7 @@ _CCCL_HOST_API void exclusive_scan(
 //! iterator to the range-based overload. It is intended for a thread or process that owns one
 //! local GPU.
 //!
-//! @snippet single_comm_basic.cu exclusive_scan_single_range
+//! @snippet exclusive_scan/single_comm_basic.cu exclusive_scan_single_range
 //!
 //! Every communicator rank must participate in the collective call. `__init`, `__op`, and
 //! `__ident` must describe the same operation on every rank. `__op` must be associative, and
