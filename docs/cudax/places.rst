@@ -706,8 +706,11 @@ Conventions and limits
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - Extents follow the **dimension-0-fastest** linearization of
-  ``dim4::get_index()`` (the convention of STF slices). Row-major front-ends
-  should present reversed extents.
+  ``dim4::get_index()`` (the convention of STF slices). A row-major front-end
+  must present its *whole* description in this order -- the extents, the
+  per-dimension ``dim_spec`` list, and any coordinates passed to ``owner()``
+  reverse together, since reversing only the extents would silently re-target
+  each ``dim_spec`` at the wrong axis.
 - At most 4 tensor dimensions (the ``pos4``/``dim4`` domain), and at most
   ``cute_partition::max_leaves`` layout leaves per mode -- ``make_partition``
   emits at most 2 per dimension, so the bound only concerns the expert
