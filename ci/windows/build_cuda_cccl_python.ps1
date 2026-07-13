@@ -28,8 +28,8 @@
     When set, only that version is built and the *merge* step is skipped.
 
 .PARAMETER Cuda13Image
-    Optional. The Docker image name used for a nested build of the CUDA 13
-    wheel when the outer container defaults to CUDA 12.9.  The default value
+    Optional. The Docker image name used for a nested build of the CUDA 13
+    wheel when the outer container defaults to CUDA 12.9.  The default value
     matches the RAPIDS dev‑container image that contains the required
     toolchain: `rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022`.
 
@@ -39,7 +39,7 @@
     Action.
 
 .EXAMPLE
-    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
+    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
     # 12 and 13 versions), and, if in CI, upload the resulting wheel as an
     # artifact.
     .\build_cuda_cccl_python.ps1 -PyVersion 3.11
@@ -155,7 +155,7 @@ ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu
 function Invoke-Cuda13NestedBuild {
     <#
     .SYNOPSIS
-        Run the nested Docker build for CUDA 13 when we are already inside a
+        Run the nested Docker build for CUDA 13 when we are already inside a
         CUDA 12 builder image.
 
     .DESCRIPTION

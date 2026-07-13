@@ -336,6 +336,7 @@ static constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
 // TODO(bgruber): remove in CCCL 4.0
+//! Deprecated [Since 3.5]
 template <
   SortOrder Order,
   typename KeyT,
@@ -369,7 +370,7 @@ template <
     detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>,
     detail::choose_signed_offset<cub::detail::segmented_sort::global_segment_offset_t>::type>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedSort and pass tunings") DispatchSegmentedSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") DispatchSegmentedSort
 {
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;

@@ -117,7 +117,7 @@ runs:
 
         # Create a swapfile
         DISK_SIZE="$(df --output=size / | tail -n1 | tr -d 'K' | awk '{ print $1 * 1024 }')"
-        MEM_BYTES="$(free -b | head -n 2 | tail -n 1 | tr -s [:blank:] | cut -d' ' -f2)"
+        MEM_BYTES="$(free -b | head -n 2 | tail -n 1 | tr -s '[:blank:]' | cut -d' ' -f2)"
         SWAP_SIZE="$(swapon --show=SIZE --noheadings --bytes | head -n 1 || echo 0)"
         if [[ "${SWAP_SIZE:-0}" -eq 0 ]]; then
           SWAP_SIZE="$(((DISK_SIZE / 4) > MEM_BYTES ? MEM_BYTES : (DISK_SIZE / 4)))"
