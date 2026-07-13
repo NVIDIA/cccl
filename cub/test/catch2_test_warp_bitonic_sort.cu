@@ -37,6 +37,7 @@ template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ActionT>
 __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, ActionT action)
 {
   using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
+  using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and warp index
   const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
@@ -49,11 +50,12 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
     return;
   }
 
-  // Thread-local storage
+  // Thread-local storage & warp-scope temporary storage allocation
   KeyT thread_data[ItemsPerThread];
+  __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
-  warp_bitonic_sort_t warp_sort;
+  warp_bitonic_sort_t warp_sort{storage[warp_id]};
 
   const int warp_offset = valid_items * warp_id;
 
@@ -90,6 +92,7 @@ __global__ void warp_bitonic_sort_kernel(
   KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int valid_items, ActionT action)
 {
   using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+  using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and warp index
   const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
@@ -102,12 +105,13 @@ __global__ void warp_bitonic_sort_kernel(
     return;
   }
 
-  // Thread-local storage
+  // Thread-local storage & warp-scope temporary storage allocation
   KeyT keys[ItemsPerThread];
   ValueT values[ItemsPerThread];
+  __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
-  warp_bitonic_sort_t warp_sort;
+  warp_bitonic_sort_t warp_sort{storage[warp_id]};
 
   const int warp_offset = valid_items * warp_id;
 

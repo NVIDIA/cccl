@@ -17,7 +17,11 @@ struct full_op_t
   template <typename KeyT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(KeyT (&keys)[ItemsPerThread], int) const
   {
-    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>{}.Sort(keys, CustomLess{});
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
+    using TempStorage     = typename WarpBitonicSort::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, CustomLess{});
   }
 };
 
@@ -35,7 +39,11 @@ struct partial_oob_op_t
   template <typename KeyT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(KeyT (&keys)[ItemsPerThread], int len) const
   {
-    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>{}.Sort(keys, CustomLess{}, len, CustomLess::oob_default<KeyT>);
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
+    using TempStorage     = typename WarpBitonicSort::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, CustomLess{}, len, CustomLess::oob_default<KeyT>);
   }
 };
 
@@ -54,7 +62,11 @@ struct partial_op_t
   template <typename KeyT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(KeyT (&keys)[ItemsPerThread], int len) const
   {
-    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>{}.Sort(keys, CustomLess{}, len);
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
+    using TempStorage     = typename WarpBitonicSort::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, CustomLess{}, len);
   }
 };
 

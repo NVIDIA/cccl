@@ -20,7 +20,9 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
@@ -97,8 +99,17 @@ class WarpBitonicSort
 {
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
+  using _TempStorage = cub::NullType;
+
+  // to simplify internal recursive call
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort() = default;
 
 public:
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
+
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
   //!
   //! @par
@@ -446,7 +457,19 @@ private:
 template <typename KeyT, typename ValueT>
 class WarpBitonicSort<1, KeyT, ValueT>
 {
+  static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
+  static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
+  using _TempStorage = cub::NullType;
+
+  // to simplify internal recursive call
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort() = default;
+
 public:
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
+
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
   {

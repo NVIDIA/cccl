@@ -19,7 +19,11 @@ struct full_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int) const
   {
-    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>{}.Sort(keys, values, CustomLess{});
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+    using TempStorage     = typename WarpBitonicSort::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, values, CustomLess{});
   }
 };
 
@@ -39,8 +43,11 @@ struct partial_oob_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int len) const
   {
-    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>{}.Sort(
-      keys, values, CustomLess{}, len, CustomLess::oob_default<KeyT>);
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+    using TempStorage     = typename WarpBitonicSort::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, values, CustomLess{}, len, CustomLess::oob_default<KeyT>);
   }
 };
 
@@ -61,7 +68,11 @@ struct partial_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int len) const
   {
-    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>{}.Sort(keys, values, CustomLess{}, len);
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+    using TempStorage     = typename WarpBitonicSort::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, values, CustomLess{}, len);
   }
 };
 
