@@ -41,7 +41,7 @@ enum class RadixSortAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -49,9 +49,8 @@ namespace detail
       return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
       return "RadixSortAlgorithm::onesweep";
-    default:
-      return "<unknown RadixSortAlgorithm>";
   }
+  return "<unknown RadixSortAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
