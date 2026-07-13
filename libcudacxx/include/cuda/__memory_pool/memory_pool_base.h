@@ -28,6 +28,7 @@
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -236,6 +237,25 @@ static constexpr location_id_t location_id{};
 // The location type of the pool.
 using location_type_t = __pool_attr<::cudaMemPoolAttrLocationType>;
 static constexpr location_type_t location_type{};
+
+// The location of the pool.
+struct location_t
+{
+  using type = ::cuda::memory_location;
+
+  [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
+  {
+    return type{static_cast<::cudaMemLocationType>(::cuda::__driver::__mempoolGetAttribute<::CUmemLocationType>(
+                  __pool, ::CU_MEMPOOL_ATTR_LOCATION_TYPE)),
+                ::cuda::__driver::__mempoolGetAttribute<int>(__pool, ::CU_MEMPOOL_ATTR_LOCATION_ID)};
+  }
+
+  _CCCL_HOST_API static void set(::cudaMemPool_t, type)
+  {
+    _CCCL_THROW(::std::invalid_argument, "This attribute can't be set");
+  }
+};
+static constexpr location_t location{};
 
 // The maximum size of the pool.
 using max_pool_size_t = __pool_attr<::cudaMemPoolAttrMaxPoolSize>;
