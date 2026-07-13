@@ -152,6 +152,43 @@ int main()
     };
   }
 
+  // Boundary-style thin regions: iterate the face with a classic scale-free
+  // partitioner (tight, no discarded lanes) while keeping placement on the
+  // cute composite through explicit deps. This relies on separately
+  // constructed cute composites comparing equal (same instance identity, no
+  // duplication) - guarded here.
+  {
+    const size_t nx = 64, ny = 32;
+    auto lF = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+
+    auto part = make_partition(dim4(nx, ny), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+    auto dist = cuda::experimental::places::make_composite_data_place(grid, part);
+
+    EXPECT(dist == cuda::experimental::places::make_composite_data_place(grid, part),
+           "cute composites from the same partition must compare equal");
+
+    // Volumetric pass placed and decomposed by the partition
+    ctx.parallel_for(part, grid, lF.shape(), lF.write())->*[] _CCCL_DEVICE(size_t x, size_t y, auto f) {
+      f(x, y) = 1;
+    };
+
+    // Face update: classic iteration over the thin box, same placement
+    box face({0ul, nx}, {0ul, 1ul});
+    ctx.parallel_for(blocked_partition(), grid, face, lF.rw(dist))->*[] _CCCL_DEVICE(size_t x, size_t y, auto f) {
+      f(x, y) = 42;
+    };
+
+    ctx.host_launch(lF.read())->*[&](auto f) {
+      for (size_t x = 0; x < nx; x++)
+      {
+        for (size_t y = 0; y < ny; y++)
+        {
+          EXPECT(f(x, y) == (y == 0 ? 42 : 1));
+        }
+      }
+    };
+  }
+
   ctx.finalize();
 
   printf("cute_parallel_for: all checks passed\n");
