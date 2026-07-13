@@ -47,7 +47,7 @@ enum class TransformAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(TransformAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(TransformAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -59,9 +59,8 @@ namespace detail
       return "TransformAlgorithm::ldgsts";
     case TransformAlgorithm::ublkcp:
       return "TransformAlgorithm::ublkcp";
-    default:
-      return "<unknown TransformAlgorithm>";
   }
+  return "<unknown TransformAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

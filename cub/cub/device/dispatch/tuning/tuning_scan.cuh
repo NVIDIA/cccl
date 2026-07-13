@@ -55,7 +55,7 @@ enum class ScanAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(ScanAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(ScanAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -63,9 +63,8 @@ namespace detail
       return "ScanAlgorithm::lookback";
     case ScanAlgorithm::lookahead:
       return "ScanAlgorithm::lookahead";
-    default:
-      return "<unknown ScanAlgorithm>";
   }
+  return "<unknown ScanAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
