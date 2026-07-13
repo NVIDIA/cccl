@@ -9,4 +9,4 @@
 #===----------------------------------------------------------------------===##
 
 add_subdirectory(reduce)
-add_subdirectory(scan)
+add_subdirectory(exclusive_scan)
