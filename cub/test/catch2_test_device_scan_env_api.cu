@@ -284,7 +284,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit with FutureValue accepts environmen
   auto output = thrust::device_vector<int>(4);
 
   auto init_value_vec = thrust::device_vector<int>{10};
-  auto future_init    = cub::FutureValue(init_value_vec.begin());
+  auto future_init    = cuda::args::deferred(init_value_vec.begin());
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 

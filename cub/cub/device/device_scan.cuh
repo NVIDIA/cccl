@@ -26,6 +26,7 @@
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
@@ -2405,8 +2406,8 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
-            typename InitValueT,
             typename InitValueIterT,
+            typename InitValueBounds,
             typename NumItemsT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
@@ -2414,14 +2415,18 @@ struct DeviceScan
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    FutureValue<InitValueT, InitValueIterT> init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBounds>& init_value,
     NumItemsT num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
+    using __init_value_type = ::cuda::std::iter_value_t<InitValueIterT>;
+
+    auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
+
     return scan_impl_env<ForceInclusive::Yes>(
-      d_in, d_out, scan_op, detail::InputValue<InitValueT, InitValueIterT>(init_value), num_items, env);
+      d_in, d_out, scan_op, detail::InputValue<__init_value_type, InitValueIterT>(__fut), num_items, env);
   }
 
   //! @}
