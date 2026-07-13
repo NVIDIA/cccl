@@ -2314,62 +2314,76 @@ private:
         const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(layout.my_resident_chunks));
 
         // Prime the overflow stream while the resident load still runs to hide its latency, over two disjoint stage
-        // sets. The shared stages `[0, prologue)` the resident load cycles through are re-armed as they drain (tail
-        // loop below); the stages `[prologue, stream_stages)` it never touches (non-empty only when the resident region
-        // is smaller than the streaming reservation) are free from the start and primed up front. Together they cover
-        // every stream stage, so only the no-resident-chunks path leaves priming to the post-loop call.
+        // sets: the `prologue` mbarrier stages the resident load cycles through (re-armed for the stream as they drain
+        // in the tail loop below) and the stages it never touches (fresh, primed up front). Together they cover every
+        // stream stage, so only the no-resident-chunks path leaves priming to the post-loop call.
         const bool interleave_overflow_prime = layout.overflow_chunks > offset_t{0};
 
         // Bulks are densely packed from the start of the block_tile. The head prefix is no longer kept here (it lives
         // in `edge_keys`), so there is no reserved front gap: the write cursor starts at offset 0.
         int next_off_bytes = 0;
 
-        // Rotate the resident load's mbarrier-stage assignment so that, when active, the tail (the last `prologue`
-        // chunks, which have no resident successor) drains stages 0,1,...,prologue-1 in order (without the rotation it
-        // would start at `my_resident_chunks % prologue`). The stream's first wave reuses stages `[0, stream_stages)`
-        // as those drain, so this packs every stream prime into the earliest `stream_stages` tail folds -- maximizing
-        // overlap of the in-flight overflow copies with the remaining resident/edge work -- and leaves the slot-less
-        // idle folds (`stage >= stream_stages`) at the end. Only relabels which mbarrier a chunk uses (the packing is
-        // unchanged); `stage_rot` is 0 (identity) except when all of: there is overflow to prime, there are idle folds
-        // (`stream_stages < prologue`), the pipeline fully cycles (`prologue == PipelineStages`), and the tail is
-        // misaligned (`tail_align = my_resident_chunks % prologue != 0`) -- then it is `prologue - tail_align`.
-        // Perf note: `% prologue` is a runtime, non-power-of-two modulo. Critical path (one-time; seeds the resident
-        // stage rotation before the first resident copy) but TMA-dwarfed, with nothing earlier to overlap it;
-        // `prologue` is device-derived, so only removing the divide -- not relocation or a host `fast_mod_div` -- could
-        // help. Low priority. Flagged so a future bottleneck search finds every runtime `/`,`%`.
+        // Place the resident load's `prologue`-wide mbarrier window so the stream's first wave is primed in forward
+        // consume order (stage `s`, holding chunk `s`, first), removing the ordering inversion where the up-front prime
+        // would otherwise issue the last-consumed chunks first. Two complementary knobs, at most one non-zero
+        // (`stream_stages > prologue` vs `<=`); both only relabel which mbarrier a chunk uses (the packing and the
+        // stream ring invariant `stage == chunk % stream_stages` are untouched):
+        //  * `stage_base` shifts the window to `[stage_base, stage_base + prologue)`, leaving the low stream stages
+        //    `[0, stage_base)` free to prime up front. Forward first wave with `stream_stages > prologue` only (which
+        //    forces `prologue == my_resident_chunks`, so there is no reload). Reverse keeps it 0 (its first-consumed
+        //    stage is data-dependent, so no static low-stage reservation helps).
+        //  * `stage_rot` rotates the resident cycle (mod `prologue`) so a misaligned reload tail still drains stages
+        //    0,1,...,prologue-1 in order. Only when the stream stages fit the resident cycle (`stream_stages <=
+        //    prologue`) and the tail is misaligned (`my_resident_chunks % prologue != 0`, implying `prologue ==
+        //    PipelineStages`). Its `% prologue` is a one-time runtime, non-power-of-two modulo, TMA-dwarfed.
+        int stage_base = 0;
+        if constexpr (first_wave_is_forward)
+        {
+          if (interleave_overflow_prime && stream_stages > prologue)
+          {
+            stage_base = stream_stages - prologue;
+          }
+        }
         const offset_t tail_align = layout.my_resident_chunks % static_cast<offset_t>(prologue);
         const offset_t stage_rot =
-          (interleave_overflow_prime && stream_stages < prologue && tail_align != offset_t{0})
+          (interleave_overflow_prime && stream_stages <= prologue && tail_align != offset_t{0})
             ? static_cast<offset_t>(prologue) - tail_align
             : offset_t{0};
 
         // Load every resident chunk's aligned bulk, densely packed in slot order. `stage` is a second, unit-stride
-        // rolling counter: it just increments and wraps to zero (a compare-and-select, no `+ stage_rot` and no runtime
-        // `% prologue`, which would be costly as `prologue` is not a compile-time power of two). The per-iteration
-        // assert pins it to the closed form `(local_chunk + stage_rot) % prologue` so a later edit cannot desync them.
+        // rolling counter over `[stage_base, stage_base + prologue)`: it increments and select-wraps back to
+        // `stage_base` (no `+ stage_rot` and no runtime `% prologue`, costly as `prologue` is not a power of two). The
+        // per-iteration assert pins it to the closed form so a later edit cannot desync them.
         // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
         {
-          int stage = static_cast<int>(stage_rot);
+          int stage = stage_base + static_cast<int>(stage_rot);
           for (offset_t local_chunk = 0; local_chunk < static_cast<offset_t>(prologue); ++local_chunk)
           {
-            _CCCL_ASSERT(static_cast<offset_t>(stage) == (local_chunk + stage_rot) % static_cast<offset_t>(prologue),
-                         "resident issue stage desynced from its rolling counter");
+            _CCCL_ASSERT(
+              stage == stage_base + static_cast<int>((local_chunk + stage_rot) % static_cast<offset_t>(prologue)),
+              "resident issue stage desynced from its rolling counter");
             issue_resident_copy(stage, local_chunk, next_off_bytes);
-            if (++stage == prologue)
+            if (++stage == stage_base + prologue)
             {
-              stage = 0;
+              stage = stage_base;
             }
           }
         }
 
-        // Prime the stream stages the resident load never uses (`[prologue, stream_stages)`; empty unless the resident
-        // region is smaller than the streaming reservation). Their mbarriers are fresh -- no resident drain to wait
-        // for -- so these copies start now, concurrent with the resident bulks. The shared stages `[0, prologue)` are
-        // primed as the resident load frees them in the tail loop below.
+        // Prime the stream stages the resident load never uses -- the complement of `[stage_base, stage_base +
+        // prologue)` within `[0, stream_stages)`. Their mbarriers are fresh (no resident drain to wait for), so these
+        // copies start now, concurrent with the resident bulks; the shared resident stages are primed as the tail frees
+        // them (read loop below). Forward the free set is the low `[0, stage_base)` (first-consumed chunks); reverse it
+        // is the high `[prologue, stream_stages)`; at most one loop is non-empty (both are empty when the whole stream
+        // reservation overlaps the resident window, i.e. `stage_base == 0 && stream_stages <= prologue`).
         // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
         if (interleave_overflow_prime)
         {
-          for (int stage = prologue; stage < stream_stages; ++stage)
+          for (int stage = 0; stage < stage_base; ++stage)
+          {
+            issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
+          }
+          for (int stage = stage_base + prologue; stage < stream_stages; ++stage)
           {
             issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
           }
@@ -2379,14 +2393,16 @@ private:
         // and consumed in the same order), and `chunk_bulk_src` recomputes its length, so the read span needs no
         // stored per-stage state.
         int read_off_bytes = 0;
-        // Same unit-stride rolling counter as the issue loop: increment and select-zero on wrap, no runtime
-        // `% prologue`. Starts at `stage_rot`; the assert pins it to `(local_chunk + stage_rot) % prologue`.
-        int stage = static_cast<int>(stage_rot);
+        // Same unit-stride rolling counter as the issue loop over `[stage_base, stage_base + prologue)`: increment and
+        // select-wrap to `stage_base`, no runtime `% prologue`. Starts at `stage_base + stage_rot`; the assert pins it
+        // to the closed form.
+        int stage = stage_base + static_cast<int>(stage_rot);
         _CCCL_PRAGMA_NOUNROLL()
         for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
         {
-          _CCCL_ASSERT(static_cast<offset_t>(stage) == (local_chunk + stage_rot) % static_cast<offset_t>(prologue),
-                       "resident read stage desynced from its rolling counter");
+          _CCCL_ASSERT(
+            stage == stage_base + static_cast<int>((local_chunk + stage_rot) % static_cast<offset_t>(prologue)),
+            "resident read stage desynced from its rolling counter");
           wait_stage(stage);
           const int read_len_items =
             static_cast<int>(::cuda::std::size(chunk_bulk_src(layout.resident_base, local_chunk)));
@@ -2404,17 +2420,18 @@ private:
           }
           else if (interleave_overflow_prime && stage < stream_stages)
           {
-            // Shared stage `[0, prologue)` with no resident successor: re-arm it with its first-wave chunk
-            // (`first_wave_chunk_for_stage`, direction-aware). Same phase-safety barrier as the resident re-arm; the
-            // copy targets the disjoint stream region (`stream_slot_base` onward), never the densely-packed resident
-            // data the later tail folds still read. Stages `>= stream_stages` are extra resident pipeline depth with no
-            // stream slot, so they idle -- `stage_rot` places them last so all primes issue first.
+            // Shared resident stage (in `[stage_base, stage_base + prologue)`) with no resident successor: re-arm it
+            // with its first-wave chunk (`first_wave_chunk_for_stage`, direction-aware). Same phase-safety barrier as
+            // the resident re-arm; the copy targets the disjoint stream region (`stream_slot_base` onward), never the
+            // densely-packed resident data the later tail folds still read. Stages `>= stream_stages` are extra
+            // resident pipeline depth with no stream slot, so they idle -- `stage_rot` places them last so all primes
+            // issue first.
             __syncthreads();
             issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
           }
-          if (++stage == prologue)
+          if (++stage == stage_base + prologue)
           {
-            stage = 0;
+            stage = stage_base;
           }
         }
 
