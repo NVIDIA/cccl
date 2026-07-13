@@ -1028,14 +1028,12 @@ private:
   }
 
   // Prime the streaming slots: issue this direction's first `stream_stages` overflow copies, arming the reload
-  // pipeline. Idempotent (`stream_is_primed`) and a no-op without overflow -- the first effective call per segment
-  // primes; later passes inherit the previous pass's resident turn-around chunks (exactly this direction's first
-  // `stream_stages` chunks, since the order ping-pongs) with no re-prime. The only path that actually issues here has
-  // no resident chunks (`load_and_histogram_first_pass` interleaves the prime whenever it has some) and already follows
-  // the kernel-init barrier, so the leading `__syncthreads()` is effectively redundant today; it is kept so the prime
-  // stays phase-safe if a future caller ever runs it right after a resident load (every thread must clear that load's
-  // final `wait_stage` before these copies re-arm the shared mbarriers, else the phase advances twice and a lagging
-  // thread spins forever).
+  // pipeline. Idempotent (`stream_is_primed`) and a no-op without overflow. Single caller
+  // `load_and_histogram_first_pass`: its resident path interleaves the prime inline (so this call then no-ops), leaving
+  // only the no-resident-chunks path to actually issue here. That path already follows the kernel-init barrier, so the
+  // leading `__syncthreads()` is redundant today; it is kept so the prime stays phase-safe if a future caller runs it
+  // right after a resident load (every thread must clear that load's final `wait_stage` before these copies re-arm the
+  // shared mbarriers, else the phase advances twice and a lagging thread spins forever).
   _CCCL_DEVICE _CCCL_FORCEINLINE void prime_overflow_stream()
   {
     if (stream_is_primed || layout.overflow_chunks == 0)
@@ -1145,8 +1143,10 @@ private:
 
     if constexpr (use_block_load_to_shared)
     {
-      // Idempotent prime; `load_and_histogram_first_pass` normally primes earlier, so this is usually a no-op.
-      prime_overflow_stream();
+      // The stream is always primed before the first `run_pass`: `load_and_histogram_first_pass` primes every streaming
+      // rank on the block-load path (interleaved with its resident load, or directly when it has no resident chunks),
+      // and `stream_is_primed` then carries across all radix passes and the final filter with no re-prime.
+      _CCCL_ASSERT(stream_is_primed, "run_pass requires the overflow stream primed by load_and_histogram_first_pass");
 
       // Phase 1: consume the first `stream_stages` visits and issue this pass's reload wave into the freed slots. Their
       // slots hold the early-primed wave (still in flight) on the first pass and the previous pass's reused turn-around
