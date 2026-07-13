@@ -47,7 +47,7 @@ enum class TransformAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-_CCCL_API [[nodiscard]] constexpr const char* to_string(TransformAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(TransformAlgorithm algo) noexcept
 {
   switch (algo)
   {
