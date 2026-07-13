@@ -15,6 +15,8 @@ struct stream_registry_factory_t;
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 
+#include <sstream>
+
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_env_launch_helper.h"
 
@@ -388,7 +390,7 @@ C2H_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", bl
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ThreeWayPartitionPolicy", "[partition][device]")
+C2H_TEST("Test ThreeWayPartitionPolicy properties", "[partition][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ThreeWayPartitionPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ThreeWayPartitionPolicy>);
@@ -410,7 +412,8 @@ C2H_TEST("ThreeWayPartitionPolicy", "[partition][device]")
     .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -418,5 +421,62 @@ C2H_TEST("ThreeWayPartitionPolicy", "[partition][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "ThreeWayPartitionPolicy { .threads_per_block = 256, .items_per_thread = 9"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } }");
+}
+
+C2H_TEST("Test PartitionPolicy properties", "[partition][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::PartitionPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::PartitionPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::PartitionPolicy{
+    128,
+    10,
+    cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    cub::CacheLoadModifier::LOAD_DEFAULT,
+    cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+    cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::PartitionPolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 10,
+    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+    .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "PartitionPolicy { .threads_per_block = 128, .items_per_thread = 10"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

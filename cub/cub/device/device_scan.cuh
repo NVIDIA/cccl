@@ -1163,7 +1163,7 @@ struct DeviceScan
       d_in,
       d_out,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      detail::InputValue<InitValueT, InitValueIterT>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -1460,7 +1460,8 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+    return scan_impl_env(
+      d_in, d_out, scan_op, detail::InputValue<InitValueT, InitValueIterT>(init_value), num_items, env);
   }
 
   //! @}
