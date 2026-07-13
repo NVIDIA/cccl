@@ -43,7 +43,7 @@ enum BlockHistogramMemoryPreference
 #if _CCCL_HOSTED()
 namespace detail
 {
-_CCCL_API [[nodiscard]] constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
 {
   switch (mempref)
   {
