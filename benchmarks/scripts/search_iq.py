@@ -7,13 +7,15 @@ from compileiq.types import SearchConfiguration
 
 
 def pool_cull_sizes(num_genes, num_objectives, variant_space_size, cull=0.75):
+    if not (0.05 <= cull <= 0.95):
+        raise ValueError("cull must be between 0.05 and 0.95, got {}".format(cull))
     min_pool_size = 128 if variant_space_size > 10000 else 32
     target = (2 * num_objectives) + 1
     poolsize = int(target / (1 - cull))
     poolsize = max(max(poolsize, min_pool_size), 2 * num_genes)
-    poolsize = poolsize if poolsize % 2 == 0 else poolsize + 1
+    poolsize = poolsize + (poolsize % 2)
     cullsize = int(poolsize * cull)
-    cullsize = cullsize if cullsize % 2 == 0 else cullsize - 1
+    cullsize = cullsize - (cullsize % 2)
     return poolsize, cullsize
 
 
@@ -24,9 +26,9 @@ def get_num_expected_runs(num_genes, num_objectives, variant_space_size):
 
 def build_search_space(parameter_space):
     search_space = {}
-    for rng in parameter_space:
-        search_space[rng.label] = ss.range(
-            start=rng.low, end=rng.high - 1, step=rng.step
+    for search_range in parameter_space:
+        search_space[search_range.label] = ss.range(
+            start=search_range.low, end=search_range.high - 1, step=search_range.step
         )
     return search_space
 
@@ -41,9 +43,11 @@ def make_objective(algname, ct_workload, rt_workload_space, parameter_space):
         print(f"Evaluating variant {config}: ", end="")
 
         range_points = []
-        for rng in parameter_space:
-            value = int(config[rng.label])
-            range_points.append(bench.RangePoint(rng.definition, rng.label, value))
+        for search_range in parameter_space:
+            value = int(config[search_range.label])
+            range_points.append(
+                bench.RangePoint(search_range.definition, search_range.label, value)
+            )
 
         variant = bench.VariantPoint(range_points)
         b = bench.Bench(algname, variant, list(ct_workload))
@@ -57,7 +61,7 @@ def make_objective(algname, ct_workload, rt_workload_space, parameter_space):
         )
 
         if score == float("inf") or score == float("-inf"):
-            print("Infinite store")
+            print("Infinite score")
             return INVALID_SCORE
 
         print(score)
