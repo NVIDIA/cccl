@@ -579,3 +579,100 @@ tiled layout, where the dimension of the tiles is indicated by the
    |     |     |     |     |     |  |
    |     |     |     |     |     |  |
    |_____|_____|_____|_____|_____|__|
+
+.. _places-structured-partitions:
+
+Structured partitions
+---------------------
+
+The classic partitioning policies above are *scale-free*: ``blocked_partition``
+splits whatever shape it is handed, knows nothing about the tensor it will be
+applied to, and always dispatches along the outermost dimension. A
+*structured partition* (``cute_partition``) is the complementary tool: it
+describes, dimension by dimension, how **one specific tensor** maps onto a
+grid of places -- in the spirit of JAX's ``PartitionSpec``.
+
+.. code:: c++
+
+   using namespace cuda::experimental::places;
+
+   // A 3-D tensor: dimension 1 blocked over the places of the grid,
+   // dimensions 0 and 2 not distributed
+   auto part = make_partition(
+       dim4(nx, ny, nz),
+       {dim_spec{}, dim_spec{dim_policy::blocked, /*mesh_axis*/ 0}, dim_spec{}},
+       grid.get_dims());
+
+Each ``dim_spec`` entry selects a policy for the corresponding tensor
+dimension: ``whole`` (not distributed), ``blocked``, ``cyclic``, or
+``block_cyclic`` (with a block size), bound to one axis of the grid. This is
+strictly more expressive than the classic policies -- splitting dimension 1
+of a 3-D tensor, or mixing policies across dimensions, cannot be stated with
+``blocked_partition``.
+
+The reference shape, padding, and predication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The first argument of ``make_partition`` is the tensor's extents: unlike a
+classic policy, a structured partition is **bound to one reference shape**,
+and remains the authority on it. This is a deliberate trade, and the source
+of most of the type's properties:
+
+- Split dimensions are *padded up to divisibility* (a 10-element dimension
+  blocked over 3 places is treated as 12, in chunks of 4). Padding makes the
+  underlying layout exact and bijective, which is what keeps every query
+  closed-form: validation is a linear pass over the layout, and the owner of
+  a coordinate is a chain of divisions and modulos.
+- Coordinates beyond the true extents (the *padding phantoms*) own no bytes
+  and do no work: consumers discard them by comparing coordinates against
+  the true extents. This is the *predication* idiom of CUTLASS/CuTe
+  ("partition the rounded-up shape, predicate the boundary") rather than
+  per-place clamping, which would break the layout's uniformity.
+
+Ownership can be queried directly, and -- more importantly -- a candidate
+mapping can be **scored before any memory is committed**:
+
+.. code:: c++
+
+   pos4 owner = part.owner(pos4(x, y, z));   // grid position owning (x,y,z)
+
+   // Dry run: same block-majority decision procedure as a real allocation
+   localized_stats stats = evaluate_localized_placement(grid, part, sizeof(double));
+   // stats.bytes_per_place, stats.accuracy() (estimated fraction of local bytes),
+   // stats.nallocs, ... -- tune the spec, then allocate
+
+Placement through a structured partition
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A structured partition can back a composite data place. Because the
+partition is bound to one tensor, such a place is *per-tensor* -- allocate
+with the partition's exact extents (compare with the classic composite
+place, which is a reusable shape-free policy):
+
+.. code:: c++
+
+   data_place dp = make_composite_data_place(grid, part);
+   void* ptr     = dp.allocate_nd(dim4(nx, ny, nz), sizeof(double));
+   // physical pages land on the place owning them, per the partition
+   dp.deallocate(ptr, nx * ny * nz * sizeof(double));
+
+Two structured composite places built from equal partitions compare equal,
+so they denote the same data placement wherever data places are compared.
+
+Conventions and limits
+^^^^^^^^^^^^^^^^^^^^^^
+
+- Extents follow the **dimension-0-fastest** linearization of
+  ``dim4::get_index()`` (the convention of STF slices). Row-major front-ends
+  should present reversed extents.
+- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain), and at most
+  ``cute_partition::max_leaves`` layout leaves per mode -- ``make_partition``
+  emits at most 2 per dimension, so the bound only concerns the expert
+  ``cute_partition`` constructor, which accepts raw (extent, stride) leaves
+  for layouts the per-dimension grammar cannot express.
+- The partition object is trivially copyable (fixed-capacity storage) and
+  its queries are host/device callable.
+
+The ``partitioned_axpy`` example shows the intended workflow end to end:
+express the partition once, evaluate it, run tasks over data placed by it,
+and perform a raw geometry-aware allocation.
