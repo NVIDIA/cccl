@@ -967,7 +967,7 @@ private:
   // `count` rounded down to a `load_align` multiple, as a span from `block_keys_base`; empty when it has none. Every
   // chunk starts on a `load_align` boundary (guard-free TMA path); the global-last chunk's unaligned suffix is always
   // peeled into `edge_keys`, so the aligned bulk excludes it (`bulk == count` for every interior chunk). Shared source
-  // computation for both issue paths (`issue_resident_copy`, `issue_stream_copy`).
+  // computation for both the resident and overflow-stream bulk-copy issues.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<const key_t>
   chunk_bulk_src(offset_t window_base, offset_t index) const
   {
@@ -982,29 +982,6 @@ private:
     _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_base + chunk.offset, load_align_bytes),
                  "a chunk source must start on a load-alignment boundary");
     return {layout.block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
-  }
-
-  // Issue resident chunk `chunk_index`'s aligned bulk on stage `stage` into its slot at the fixed stride
-  // `chunk_index * ChunkBytes` (every resident chunk but the segment's last is a full `chunk_items` slot, so the dense
-  // packing needs no running write cursor). Like `issue_stream_copy` but without the stream ring's inflight mask.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void issue_resident_copy(int stage, offset_t chunk_index)
-  {
-    issue_bulk_copy(
-      stage, key_slots + static_cast<int>(chunk_index) * ChunkBytes, chunk_bulk_src(layout.resident_base, chunk_index));
-  }
-
-  // Issue one overflow chunk's aligned bulk on stage `stage` into its streaming slot and mark the stage in flight.
-  // Counterpart of `issue_resident_copy` for the overflow window: a ring slot keyed by `stage` (vs. the resident
-  // window's chunk-indexed slot) whose in-flight stages are tracked in `stream_inflight_mask`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void issue_stream_copy(int stage, offset_t overflow_idx)
-  {
-    _CCCL_ASSERT(overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
-    _CCCL_ASSERT(stage >= 0 && stage < stream_stages, "overflow stage index exceeds the reserved streaming slots");
-    _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
-                 "cannot issue a load into a streaming stage that is still in flight");
-    char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
-    issue_bulk_copy(stage, dst, chunk_bulk_src(layout.overflow_base, overflow_idx));
-    stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
   }
 
   // Shared-memory view of the chunk currently resident in `stage`'s slot: the slot index is a pure function of `stage`
@@ -1066,14 +1043,19 @@ private:
       return;
     }
     // Reaching here is the once-per-segment prime: the guard rules out a re-prime, and the resident load drives the
-    // shared stages via `issue_resident_copy` (never the stream mask), so the stream must be fully drained here.
+    // shared stages via its own bulk copies (never the stream mask), so the stream must be fully drained here.
     _CCCL_ASSERT(stream_inflight_mask == ::cuda::std::uint32_t{0},
                  "overflow stream priming must start from a fully drained stream");
     __syncthreads();
-    // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
+    // Force nounroll: auto-unroll replicates the full TMA issue per iteration and bloats the load path.
+    _CCCL_PRAGMA_NOUNROLL()
     for (int stage = 0; stage < stream_stages; ++stage)
     {
-      issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
+      const offset_t overflow_idx = first_wave_chunk_for_stage(stage);
+      _CCCL_ASSERT(overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
+      char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
+      issue_bulk_copy(stage, dst, chunk_bulk_src(layout.overflow_base, overflow_idx));
+      stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
     }
     stream_is_primed = true;
   }
@@ -1109,8 +1091,13 @@ private:
     if (next_step < layout.overflow_chunks)
     {
       const offset_t next_overflow_idx = stream_is_forward ? next_step : (layout.overflow_chunks - 1 - next_step);
+      _CCCL_ASSERT(next_overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
       __syncthreads();
-      issue_stream_copy(stage, next_overflow_idx);
+      _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
+                   "cannot issue a load into a streaming stage that is still in flight");
+      char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
+      issue_bulk_copy(stage, dst, chunk_bulk_src(layout.overflow_base, next_overflow_idx));
+      stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
     }
     // Step the ring pointer one slot in the consume direction, wrapping with a compare-and-select (no modulo).
     if (stream_is_forward)
@@ -2348,15 +2335,18 @@ private:
         // rolling counter over `[stage_base, stage_base + prologue)`: it increments and select-wraps back to
         // `stage_base` (no `+ stage_rot` and no runtime `% prologue`, costly as `prologue` is not a power of two). The
         // per-iteration assert pins it to the closed form so a later edit cannot desync them.
-        // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
+        // Force nounroll: auto-unroll replicates the full TMA issue per iteration and bloats the load path.
         {
           int stage = stage_base + static_cast<int>(stage_rot);
+          _CCCL_PRAGMA_NOUNROLL()
           for (offset_t local_chunk = 0; local_chunk < static_cast<offset_t>(prologue); ++local_chunk)
           {
             _CCCL_ASSERT(
               stage == stage_base + static_cast<int>((local_chunk + stage_rot) % static_cast<offset_t>(prologue)),
               "resident issue stage desynced from its rolling counter");
-            issue_resident_copy(stage, local_chunk);
+            issue_bulk_copy(stage,
+                            key_slots + static_cast<int>(local_chunk) * ChunkBytes,
+                            chunk_bulk_src(layout.resident_base, local_chunk));
             if (++stage == stage_base + prologue)
             {
               stage = stage_base;
@@ -2364,22 +2354,30 @@ private:
           }
         }
 
-        // Prime the stream stages the resident load never uses -- the complement of `[stage_base, stage_base +
-        // prologue)` within `[0, stream_stages)`. Their mbarriers are fresh (no resident drain to wait for), so these
-        // copies start now, concurrent with the resident bulks; the shared resident stages are primed as the tail frees
-        // them (read loop below). Forward the free set is the low `[0, stage_base)` (first-consumed chunks); reverse it
-        // is the high `[prologue, stream_stages)`; at most one loop is non-empty (both are empty when the whole stream
-        // reservation overlaps the resident window, i.e. `stage_base == 0 && stream_stages <= prologue`).
-        // No unroll pragma on purpose: the compiler's partial auto-unroll beats forced nounroll here.
+        // Prime the stream stages the resident load never uses: the complement of the resident window
+        // `[stage_base, stage_base + prologue)` within `[0, stream_stages)` (`stream_stages - prologue` stages, reached
+        // by mapping `i` around the window). Their mbarriers are fresh (no resident drain to wait for), so these copies
+        // start now, concurrent with the resident bulks; the shared resident stages are primed as the tail frees them
+        // (read loop below). `stage_base` steers this free set to the stages consumed first (low `[0, stage_base)` when
+        // the first wave runs forward, high `[prologue, stream_stages)` when reverse), matching up-front prime order to
+        // consume order. Empty (non-positive trip count) when the reservation fits the resident window
+        // (`stream_stages <= prologue`).
+        // Force nounroll: auto-unroll replicates the full TMA issue per iteration and bloats the load path.
         if (interleave_overflow_prime)
         {
-          for (int stage = 0; stage < stage_base; ++stage)
+          _CCCL_PRAGMA_NOUNROLL()
+          for (int i = 0; i < stream_stages - prologue; ++i)
           {
-            issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
-          }
-          for (int stage = stage_base + prologue; stage < stream_stages; ++stage)
-          {
-            issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
+            const int stage = (i < stage_base) ? i : i + prologue;
+            _CCCL_ASSERT(stage < stage_base || stage >= stage_base + prologue,
+                         "up-front prime stage must lie outside the resident window");
+            const offset_t overflow_idx = first_wave_chunk_for_stage(stage);
+            _CCCL_ASSERT(overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
+            _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
+                         "cannot issue a load into a streaming stage that is still in flight");
+            char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
+            issue_bulk_copy(stage, dst, chunk_bulk_src(layout.overflow_base, overflow_idx));
+            stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
           }
         }
 
