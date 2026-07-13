@@ -43,7 +43,7 @@ struct ScanByKeyPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -52,7 +52,7 @@ struct ScanByKeyPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

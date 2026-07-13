@@ -90,14 +90,14 @@ struct RadixSortHistogramPolicy
   int private_partitions;
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.private_partitions == rhs.private_partitions && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -119,13 +119,13 @@ struct RadixSortExclusiveSumPolicy
   int threads_per_block; //!< Number of threads in a CUDA block
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortExclusiveSumPolicy& lhs, const RadixSortExclusiveSumPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortExclusiveSumPolicy& lhs, const RadixSortExclusiveSumPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -156,7 +156,7 @@ struct RadixSortOnesweepPolicy
 
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -165,7 +165,7 @@ struct RadixSortOnesweepPolicy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -194,7 +194,7 @@ struct RadixSortDownsweepPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortDownsweepPolicy& lhs, const RadixSortDownsweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -203,7 +203,7 @@ struct RadixSortDownsweepPolicy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortDownsweepPolicy& lhs, const RadixSortDownsweepPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -229,14 +229,14 @@ struct RadixSortUpsweepPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortUpsweepPolicy& lhs, const RadixSortUpsweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortUpsweepPolicy& lhs, const RadixSortUpsweepPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -266,7 +266,7 @@ struct RadixSortPolicy
   RadixSortUpsweepPolicy alt_upsweep; //!< Alternate upsweep pass policy with fewer radix bits
   RadixSortDownsweepPolicy single_tile; //!< Single-tile sort policy for small inputs
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortPolicy& lhs, const RadixSortPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.histogram == rhs.histogram && lhs.exclusive_sum == rhs.exclusive_sum
@@ -275,7 +275,7 @@ struct RadixSortPolicy
         && lhs.single_tile == rhs.single_tile;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortPolicy& lhs, const RadixSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
