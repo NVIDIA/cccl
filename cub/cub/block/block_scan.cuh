@@ -105,7 +105,7 @@ enum BlockScanAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-_CCCL_API [[nodiscard]] constexpr const char* to_string(BlockScanAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockScanAlgorithm algo) noexcept
 {
   switch (algo)
   {

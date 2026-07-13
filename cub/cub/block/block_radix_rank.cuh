@@ -76,7 +76,7 @@ enum RadixRankAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-_CCCL_API [[nodiscard]] constexpr const char* to_string(RadixRankAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(RadixRankAlgorithm algo) noexcept
 {
   switch (algo)
   {
