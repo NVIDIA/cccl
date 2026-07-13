@@ -653,7 +653,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
   __shared__ cuda::std::uint64_t full[kStages];
-  __shared__ cuda::std::uint64_t computed[kStages], prefixed[kStages], empty[kStages];
+  __shared__ cuda::std::uint64_t computed[kStages], prefixed[kStages][2], empty[kStages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
   // instead of waiting for all 8 compute warps (warp 0 is always slower!!)
@@ -673,7 +673,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
     {
       ptx::mbarrier_init(&full[slot_id], 1);
       ptx::mbarrier_init(&computed[slot_id], kNumCompWarps); // every compute warp arrives
-      ptx::mbarrier_init(&prefixed[slot_id], 1);
+      ptx::mbarrier_init(&prefixed[slot_id][0], 1);
+      ptx::mbarrier_init(&prefixed[slot_id][1], 1);
       ptx::mbarrier_init(&empty[slot_id], kNumStoreWarps + 1); // store warps + the bookkeeper
       for (int cw = 0; cw < kNumCompWarps; ++cw)
       {
@@ -848,7 +849,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           {
             if (lane_id == 0)
             {
-              ptx::mbarrier_arrive(&prefixed[slot_id]);
+              ptx::mbarrier_arrive(&prefixed[slot_id][slot_gen & 1]);
             }
             break;
           }
@@ -869,7 +870,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           if (lane_id == 0)
           {
             prefix_packed[slot_id][slot_gen & 1] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
-            ptx::mbarrier_arrive(&prefixed[slot_id]); // prefix ready, store may proceed
+            ptx::mbarrier_arrive(&prefixed[slot_id][slot_gen & 1]); // prefix ready, store may proceed
           }
         }
       }
@@ -905,7 +906,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const short* run_positions = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
           // wait for prefixed (2/3)
           auto wait_prefixed_and_read = [&]() {
-            wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
+            wait_parity(&prefixed[slot_id][(pipeline_gen / kStages) & 1],
+                        (unsigned) ((pipeline_gen / kStages / 2) & 1));
             return prefix_packed[slot_id][(pipeline_gen / kStages) & 1].run_count();
           };
           // since we have more store warps, each warptile is split between store warps
@@ -1045,7 +1047,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const int tile_total_runs =
             __shfl_sync(kFullMask, lane_runs_before_warp_tile + lane_warp_tile_run_count, kNumCompWarps - 1);
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(kFullMask, lane_warp_tile_run_count > 0);
-          wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
+          wait_parity(&prefixed[slot_id][(pipeline_gen / kStages) & 1], (unsigned) ((pipeline_gen / kStages / 2) & 1));
           const PrefixT packed_prefix        = prefix_packed[slot_id][(pipeline_gen / kStages) & 1];
           const OffT curr_prefix_run_count   = packed_prefix.run_count();
           const OffT curr_prefix_open_length = packed_prefix.open_len();
