@@ -20,7 +20,7 @@ __device__ __forceinline__ static T generate_random_data()
     data[i] = cuda::ptx::get_sreg_clock();
   }
   T ret;
-  ::cuda::std::memcpy(&ret, data, sizeof(T));
+  cuda::std::memcpy(&ret, data, sizeof(T));
   return ret;
 }
 
