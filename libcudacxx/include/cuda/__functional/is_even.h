@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_FUNCTIONAL_
-#define _CUDA_FUNCTIONAL_
+#ifndef _CUDA___FUNCTIONAL_IS_EVEN_H
+#define _CUDA___FUNCTIONAL_IS_EVEN_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/address_stability.h>
-#include <cuda/__functional/always_true_false.h>
-#include <cuda/__functional/equal_to_value.h>
-#include <cuda/__functional/is_even.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
-#include <cuda/__functional/operator_properties.h>
-#include <cuda/__functional/proclaim_return_type.h>
-#include <cuda/__iterator/zip_function.h>
-#include <cuda/__memory/get_device_address.h>
-#include <cuda/std/functional>
+#include <cuda/std/__type_traits/is_integral.h>
 
-#endif // _CUDA_FUNCTIONAL_
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+//! @brief `is_even` is a function object that checks if a value is even.
+struct __is_even
+{
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API _CCCL_HOST_DEVICE constexpr bool operator()(const _Tp& __value) const noexcept
+  {
+    return (__value & 1) == 0;
+  }
+};
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___FUNCTIONAL_IS_EVEN_H
