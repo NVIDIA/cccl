@@ -2355,8 +2355,8 @@ struct DeviceScan
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin inclusive-scan-init-env
-  //!     :end-before: example-end inclusive-scan-init-env
+  //!     :start-after: example-begin inclusive-scan-future-init-env
+  //!     :end-before: example-end inclusive-scan-future-init-env
   //!
   //! @endrst
   //!

@@ -278,6 +278,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
 
 C2H_TEST("cub::DeviceScan::InclusiveScanInit with FutureValue accepts environment", "[scan][env]")
 {
+  // example-begin inclusive-scan-future-init-env
   auto op     = cuda::std::plus{};
   auto input  = thrust::device_vector<int>{1, 2, 3, 4};
   auto output = thrust::device_vector<int>(4);
@@ -294,6 +295,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit with FutureValue accepts environmen
   }
 
   thrust::device_vector<int> expected{11, 13, 16, 20};
+  // example-end inclusive-scan-future-init-env
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
