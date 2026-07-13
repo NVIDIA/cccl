@@ -822,6 +822,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             }
             stage_head_positions<kIPT>(my_flags, pos_dst, warp_tile_offset, lane_id);
           } // stage flags
+          __syncwarp();
           if (lane_id == 0)
           {
             ptx::mbarrier_arrive(&staged_warp_tile[slot_id][compute_warp_id]); // this warp-tile's positions ready
@@ -958,6 +959,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                     : 0;
               }
             }
+            __syncwarp();
             if (lane_id == 0)
             {
               if constexpr (kPosBufStages < kStages)
@@ -1004,6 +1006,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile),
             (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile),
             lane_id);
+          __syncwarp();
           if (lane_id == 0)
           {
             if constexpr (kPosBufStages < kStages)
@@ -1062,6 +1065,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             }
             // else: this run is open in this tile, now this became a job for the next tile (see below)
           }
+          __syncwarp();
           // now we need to finish last tile's open run
           if (lane_id == 0)
           {
