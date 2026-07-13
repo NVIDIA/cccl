@@ -103,7 +103,8 @@ macro(cccl_get_nvtx)
   CPMAddPackage(
     NAME NVTX
     GITHUB_REPOSITORY NVIDIA/NVTX
-    GIT_TAG release-v3
+    # We should track release-v3, but due to an upstream issue, we pin it now:
+    GIT_TAG 60587e3059c2e6a4d5c83f22c978715c98a5f1f8
     DOWNLOAD_ONLY ON
     SYSTEM ON
   )
