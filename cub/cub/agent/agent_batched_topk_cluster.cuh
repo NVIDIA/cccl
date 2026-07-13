@@ -984,20 +984,18 @@ private:
     return {layout.block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
   }
 
-  // Issue one resident chunk's aligned bulk on stage `stage` into the densely-packed block_tile at `off_bytes`,
-  // advancing `off_bytes` by the bytes written. Counterpart of `issue_stream_copy` for the resident window: the
-  // destination is the running packed cursor (vs a fixed slot) and there is no inflight bookkeeping (resident stages
-  // are driven directly, not through the stream ring).
-  _CCCL_DEVICE _CCCL_FORCEINLINE void issue_resident_copy(int stage, offset_t chunk_index, int& off_bytes)
+  // Issue resident chunk `chunk_index`'s aligned bulk on stage `stage` into its slot at the fixed stride
+  // `chunk_index * ChunkBytes` (every resident chunk but the segment's last is a full `chunk_items` slot, so the dense
+  // packing needs no running write cursor). Like `issue_stream_copy` but without the stream ring's inflight mask.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void issue_resident_copy(int stage, offset_t chunk_index)
   {
-    const auto src = chunk_bulk_src(layout.resident_base, chunk_index);
-    issue_bulk_copy(stage, key_slots + off_bytes, src);
-    off_bytes += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
+    issue_bulk_copy(
+      stage, key_slots + static_cast<int>(chunk_index) * ChunkBytes, chunk_bulk_src(layout.resident_base, chunk_index));
   }
 
-  // Issue one overflow chunk's aligned bulk on stage `stage` into its fixed streaming slot and mark the stage in
-  // flight. Counterpart of `issue_resident_copy` for the overflow window (fixed slot vs packed cursor; the stream ring
-  // records in-flight stages in `stream_inflight_mask`).
+  // Issue one overflow chunk's aligned bulk on stage `stage` into its streaming slot and mark the stage in flight.
+  // Counterpart of `issue_resident_copy` for the overflow window: a ring slot keyed by `stage` (vs. the resident
+  // window's chunk-indexed slot) whose in-flight stages are tracked in `stream_inflight_mask`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void issue_stream_copy(int stage, offset_t overflow_idx)
   {
     _CCCL_ASSERT(overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
@@ -2304,13 +2302,13 @@ private:
       if (layout.my_resident_chunks > 0)
       {
         // Stage mbarriers and the `load_phase` parity are shared with the overflow stream (no per-chunk token array
-        // needed). Chunks are written densely in slot order from offset 0 and read back in the same order, so the read
-        // cursor
-        // (`read_off_bytes`) mirrors the write cursor (`next_off_bytes`) as a running prefix sum, avoiding a
-        // dynamically-indexed `pending_spans` array that would anchor surrounding state to local memory. Every chunk
+        // needed). Chunks are written densely in slot order from offset 0 and read back in the same order; the fixed
+        // slot stride (`chunk_index * ChunkBytes`) positions both the write and the fold with no running cursor or
+        // dynamically-indexed `pending_spans` array (which would anchor surrounding state to local memory). Every chunk
         // begins on a `load_align` boundary (zero prefix), so its aligned bulk is `round_down(count,
-        // load_align_items)`: the whole `count` for interior chunks, and for the global-last chunk its `count` minus
-        // the unaligned suffix that is always peeled into `edge_keys`.
+        // load_align_items)`: the whole `count` for interior chunks (`== chunk_items`, a full slot), and for the
+        // global-last chunk its `count` minus the unaligned suffix that is always peeled into `edge_keys` (the only
+        // chunk that can be short -- and, folded in ascending order, always the last resident chunk).
         const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(layout.my_resident_chunks));
 
         // Prime the overflow stream while the resident load still runs to hide its latency, over two disjoint stage
@@ -2318,10 +2316,6 @@ private:
         // in the tail loop below) and the stages it never touches (fresh, primed up front). Together they cover every
         // stream stage, so only the no-resident-chunks path leaves priming to the post-loop call.
         const bool interleave_overflow_prime = layout.overflow_chunks > offset_t{0};
-
-        // Bulks are densely packed from the start of the block_tile. The head prefix is no longer kept here (it lives
-        // in `edge_keys`), so there is no reserved front gap: the write cursor starts at offset 0.
-        int next_off_bytes = 0;
 
         // Place the resident load's `prologue`-wide mbarrier window so the stream's first wave is primed in forward
         // consume order (stage `s`, holding chunk `s`, first), removing the ordering inversion where the up-front prime
@@ -2362,7 +2356,7 @@ private:
             _CCCL_ASSERT(
               stage == stage_base + static_cast<int>((local_chunk + stage_rot) % static_cast<offset_t>(prologue)),
               "resident issue stage desynced from its rolling counter");
-            issue_resident_copy(stage, local_chunk, next_off_bytes);
+            issue_resident_copy(stage, local_chunk);
             if (++stage == stage_base + prologue)
             {
               stage = stage_base;
@@ -2389,10 +2383,8 @@ private:
           }
         }
 
-        // Read cursor trailing the write cursor: chunk `local_chunk`'s bulk was written at `read_off_bytes` (packed
-        // and consumed in the same order), and `chunk_bulk_src` recomputes its length, so the read span needs no
-        // stored per-stage state.
-        int read_off_bytes = 0;
+        // Chunk `local_chunk` was written at its fixed slot offset `local_chunk * ChunkBytes` (same stride the issue
+        // path uses), and `chunk_bulk_src` recomputes its length, so the fold needs no stored per-chunk state.
         // Same unit-stride rolling counter as the issue loop over `[stage_base, stage_base + prologue)`: increment and
         // select-wrap to `stage_base`, no runtime `% prologue`. Starts at `stage_base + stage_rot`; the assert pins it
         // to the closed form.
@@ -2406,28 +2398,50 @@ private:
           wait_stage(stage);
           const int read_len_items =
             static_cast<int>(::cuda::std::size(chunk_bulk_src(layout.resident_base, local_chunk)));
+          // Fixed-stride packing invariant: only the segment's global-last chunk can be short, and (folded ascending)
+          // it is always the last resident chunk, so every earlier resident chunk fills its slot.
+          _CCCL_ASSERT(local_chunk + offset_t{1} == layout.my_resident_chunks || read_len_items == chunk_items,
+                       "only the last resident chunk may carry a short aligned bulk");
           for_each_chunk_key<histogram_items_per_thread_clamped>(
-            ::cuda::ptr_rebind<key_t>(key_slots + read_off_bytes), read_len_items, add_first_pass);
-          read_off_bytes += read_len_items * int{sizeof(key_t)};
+            ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
+            read_len_items,
+            add_first_pass);
 
           const offset_t next_local_chunk = local_chunk + static_cast<offset_t>(prologue);
+          // Inline both re-arm dispatches (resident successor vs. first-wave stream prime) so each only computes its
+          // `(dst, src)`; the single (force-inlined) bulk copy is then issued once, uniformly, below.
+          char* dst                          = nullptr;
+          ::cuda::std::span<const key_t> src = {};
+          bool rearm                         = false;
           if (next_local_chunk < layout.my_resident_chunks)
           {
-            // Phase safety, not data safety (the target offset is fresh): re-arming this stage before all threads
-            // leave the wait above would advance the phase twice, stranding a lagging waiter forever.
-            __syncthreads();
-            issue_resident_copy(stage, next_local_chunk, next_off_bytes);
+            // Resident successor: densely packed at its fixed slot offset (constant `ChunkBytes` stride).
+            dst   = key_slots + static_cast<int>(next_local_chunk) * ChunkBytes;
+            src   = chunk_bulk_src(layout.resident_base, next_local_chunk);
+            rearm = true;
           }
           else if (interleave_overflow_prime && stage < stream_stages)
           {
             // Shared resident stage (in `[stage_base, stage_base + prologue)`) with no resident successor: re-arm it
-            // with its first-wave chunk (`first_wave_chunk_for_stage`, direction-aware). Same phase-safety barrier as
-            // the resident re-arm; the copy targets the disjoint stream region (`stream_slot_base` onward), never the
-            // densely-packed resident data the later tail folds still read. Stages `>= stream_stages` are extra
-            // resident pipeline depth with no stream slot, so they idle -- `stage_rot` places them last so all primes
-            // issue first.
+            // with its first-wave chunk (`first_wave_chunk_for_stage`, direction-aware) into the disjoint stream region
+            // (`stream_slot_base` onward), never the densely-packed resident data the later tail folds still read.
+            // Stages `>= stream_stages` are extra resident pipeline depth with no stream slot, so they idle
+            // (`stage_rot` places them last so all primes issue first).
+            const offset_t overflow_idx = first_wave_chunk_for_stage(stage);
+            _CCCL_ASSERT(overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
+            _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
+                         "cannot issue a load into a streaming stage that is still in flight");
+            dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
+            src = chunk_bulk_src(layout.overflow_base, overflow_idx);
+            stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
+            rearm = true;
+          }
+          if (rearm)
+          {
+            // Phase safety, not data safety (the target is fresh/disjoint): re-arming this stage before all threads
+            // leave the wait above would advance the phase twice, stranding a lagging waiter forever.
             __syncthreads();
-            issue_stream_copy(stage, first_wave_chunk_for_stage(stage));
+            issue_bulk_copy(stage, dst, src);
           }
           if (++stage == stage_base + prologue)
           {
@@ -2435,12 +2449,17 @@ private:
           }
         }
 
-        // Read and write cursors sum the same aligned bulks in the same order, so they meet on a load-align boundary.
-        _CCCL_ASSERT(read_off_bytes == next_off_bytes && next_off_bytes % load_align_bytes == 0,
-                     "resident bulk read/write cursors must meet on a load-alignment boundary");
-        // The resident region is one contiguous run of aligned bulks for the later passes; both boundary edges are
-        // folded separately from `edge_keys`.
-        resident_keys = smem_keys_t(::cuda::ptr_rebind<key_t>(key_slots), next_off_bytes / int{sizeof(key_t)});
+        // Resident region extent for the later passes (one contiguous run of aligned bulks; both boundary edges live in
+        // `edge_keys`). Inferred once here rather than carried as a loop cursor: the fixed slot stride makes it
+        // `(my_resident_chunks - 1)` full `chunk_items` slots plus the last chunk's (possibly short) aligned bulk. The
+        // sum is a `load_align_items` multiple because each term is.
+        const offset_t last_bulk_items = static_cast<offset_t>(
+          ::cuda::std::size(chunk_bulk_src(layout.resident_base, layout.my_resident_chunks - offset_t{1})));
+        const int resident_items = static_cast<int>(
+          (layout.my_resident_chunks - offset_t{1}) * static_cast<offset_t>(chunk_items) + last_bulk_items);
+        _CCCL_ASSERT(resident_items % load_align_items == 0,
+                     "the resident region must end on a load-alignment boundary");
+        resident_keys = smem_keys_t(::cuda::ptr_rebind<key_t>(key_slots), resident_items);
 
         // The up-front and tail primes together armed every stream stage, so the stream is primed; the post-loop call
         // no-ops.
@@ -2588,10 +2607,10 @@ private:
     // tail of its block_tile and re-streams its overflow chunks from gmem each pass via the overflow stream.
     //
     // Boundary edges (the unaligned head prefix on rank 0 and the unaligned tail suffix on the tail owner) cannot use
-    // the aligned TMA stream, so both are always peeled into the persistent `edge_keys` buffer. The tail chunk's
-    // aligned bulk is then a normal (possibly partial) aligned chunk that can be resident or streamed like any other;
-    // no partial tail chunk is ever kept resident. Peeling both boundaries means streaming needs only `full_slots >=
-    // 1`.
+    // the aligned TMA stream, so both are always peeled into the persistent `edge_keys` buffer. Only that unaligned
+    // suffix is excluded; the tail chunk's aligned bulk is then a normal aligned chunk (possibly shorter than a full
+    // slot) that can be resident or streamed like any other. Peeling both boundaries means streaming needs only
+    // `full_slots >= 1`.
     //
     // `stream_slots` is right-sized: clamped into `[1, full_slots]` when streaming; deep overflows still get the full
     // `PipelineStages` depth. The generic fallback has no async pipeline (it re-reads overflow from gmem each pass and
