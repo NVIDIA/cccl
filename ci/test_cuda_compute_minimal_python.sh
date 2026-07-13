@@ -30,7 +30,7 @@ fi
 # full cu* extras because those pull in numba/numba-cuda.
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
-python -m pip install pytest pytest-xdist "cupy-cuda${cuda_major_version}x"
+python -m pip install pytest pytest-xdist
 
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 -v compute/test_no_numba.py

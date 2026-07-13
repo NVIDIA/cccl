@@ -33,7 +33,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! Backend algorithms for @ref DeviceTransform.
+//! Backend algorithms for @ref cub::DeviceTransform "DeviceTransform".
 enum class TransformAlgorithm
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
@@ -106,7 +106,7 @@ struct TransformPrefetchPolicy
                          //!< retains the compiler's default unrolling by specifying no unroll pragma. 1 prevents
                          //!< unrolling.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block
@@ -115,7 +115,7 @@ struct TransformPrefetchPolicy
         && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -141,14 +141,14 @@ struct TransformVectorizedPolicy
   int items_per_thread; //!< Number of items processed per thread. Must be a multiple of vec_size.
   int vec_size; //!< Number of elements loaded/stored per vectorized access. Must evenly divide items_per_thread.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -172,16 +172,24 @@ struct TransformAsyncCopyPolicy
   int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
   // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
   int unroll_factor = 1; //!< The unroll factor for the transformation loop in the kernel. The value 0 retains the
-                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling.
+                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling. This
+                         //!< parameter has no effect when store vectorization is enabled (see @p store_vec_size) and
+                         //!< eligible at runtime (buffer alignments are sufficient).
+  // Setting store_vec_size smaller narrows the store but also reduces the number of fully-unrolled lambda calls per
+  // store, which bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
+  int store_vec_size = 0; //!< Output elements per vectorized store; only used when algorithm == ublkcp. 0 = auto
+                          //!< (16 / sizeof(output), a 16-byte STG.128); 1 disables vectorization (scalar stores) and
+                          //!< compiles the vectorized branch out of the kernel.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.min_items_per_thread == rhs.min_items_per_thread
-        && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor;
+        && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor
+        && lhs.store_vec_size == rhs.store_vec_size;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -190,14 +198,16 @@ struct TransformAsyncCopyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
   {
-    return os << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
-              << ", .min_items_per_thread = " << policy.min_items_per_thread << ", .max_items_per_thread = "
-              << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor << " }";
+    return os
+        << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
+        << ", .store_vec_size = " << policy.store_vec_size << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
-//! The tuning policy for all algorithms in @ref DeviceTransform.
+//! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
@@ -211,14 +221,14 @@ struct TransformPolicy
   TransformAsyncCopyPolicy async_copy; //!< Sub-policy for the async copy algorithms. Only used when @p algorithm is @p
                                        //!< ldgsts or @p ublkcp.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
   {
     return lhs.min_bytes_in_flight == rhs.min_bytes_in_flight && lhs.algorithm == rhs.algorithm
         && lhs.prefetch == rhs.prefetch && lhs.vectorized == rhs.vectorized && lhs.async_copy == rhs.async_copy;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -350,6 +360,11 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
   return TransformVectorizedPolicy{256, 8, 4};
 }
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int auto_ublkcp_store_vec_size(int out_size)
+{
+  return (out_size > 0 && out_size <= 16 && ::cuda::is_power_of_two(out_size)) ? 16 / out_size : 1;
+}
+
 template <int InputCount>
 struct policy_selector
 {
@@ -387,7 +402,8 @@ struct policy_selector
       const auto prefetch = TransformPrefetchPolicy{256};
       const auto vectorized =
         tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
-      const auto async = TransformAsyncCopyPolicy{async_block_size};
+      auto async           = TransformAsyncCopyPolicy{async_block_size};
+      async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but

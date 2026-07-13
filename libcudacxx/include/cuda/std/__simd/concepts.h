@@ -128,8 +128,8 @@ inline constexpr bool __is_constexpr_wrapper_value_preserving_v<_From, _ValueTyp
 // [simd.ctor] implicit value constructor
 // - From is not an arithmetic type and does not satisfy constexpr-wrapper-like,
 // - From is an arithmetic type and the conversion from From to value_type is value-preserving
-// - From satisfies constexpr-wrapper-like, remove_cvref_t<decltype(From​::​value)> is an arithmetic type, and
-//   From​::​value is representable by value_type.
+// - From satisfies constexpr-wrapper-like, remove_cvref_t<decltype(From::value)> is an arithmetic type, and
+//   From::value is representable by value_type.
 template <typename _Up, typename _ValueType, typename _From = remove_cvref_t<_Up>>
 _CCCL_CONCEPT __is_value_ctor_implicit =
   convertible_to<_Up, _ValueType>

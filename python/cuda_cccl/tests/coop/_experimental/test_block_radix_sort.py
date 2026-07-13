@@ -7,6 +7,7 @@ from operator import mul
 
 import numba
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 
@@ -47,10 +48,9 @@ def test_block_radix_sort_descending(T, threads_per_block, items_per_thread):
     dtype = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads_per_block * items_per_thread
     input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input, reverse=True)
@@ -92,10 +92,9 @@ def test_block_radix_sort(T, threads_per_block, items_per_thread):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input)
@@ -133,10 +132,9 @@ def test_block_radix_sort_overloads_work():
 
     dtype = NUMBA_TYPES_TO_NP[T]
     input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input)
@@ -189,15 +187,14 @@ def test_block_radix_sort_mangling():
             double_output[tid * items_per_thread + i] = double_thread_data[i]
 
     int_input = random_int(items_per_tile, "int32")
-    d_int_input = cuda.to_device(int_input)
-    d_int_output = cuda.device_array(items_per_tile, dtype="int32")
+    d_int_input = DeviceArray.from_numpy(int_input)
+    d_int_output = DeviceArray.empty(items_per_tile, dtype="int32")
     double_input = random_int(items_per_tile, "float64")
-    d_double_input = cuda.to_device(double_input)
-    d_double_output = cuda.device_array(items_per_tile, dtype="float64")
+    d_double_input = DeviceArray.from_numpy(double_input)
+    d_double_output = DeviceArray.empty(items_per_tile, dtype="float64")
     kernel[1, threads_per_block](
         d_int_input, d_int_output, d_double_input, d_double_output
     )
-    cuda.synchronize()
 
     int_output = d_int_output.copy_to_host()
     int_reference = sorted(int_input)

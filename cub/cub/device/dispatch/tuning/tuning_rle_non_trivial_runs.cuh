@@ -44,7 +44,7 @@ struct RleNonTrivialRunsPolicy
   //! The @ref LookbackDelayPolicy controlling the delay between lookback iterations
   LookbackDelayPolicy lookback_delay = {LookbackDelayAlgorithm::fixed_delay, 350, 450};
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -53,7 +53,7 @@ struct RleNonTrivialRunsPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -313,7 +313,7 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -330,7 +330,7 @@ struct policy_hub
   static auto select_agent_policy(long) ->
     typename DefaultPolicy<BLOCK_LOAD_WARP_TRANSPOSE, LengthT, LOAD_DEFAULT>::RleSweepPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
@@ -341,15 +341,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<sm90_tuning<LengthT, KeyT>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
