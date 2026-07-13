@@ -267,7 +267,6 @@ launch_docker() {
         fi
         # shellcheck disable=SC2154
         exec docker run \
-          "${run_args[@]}" \
           "${RUN_ARGS[@]}" \
           "${run_args[@]}" \
           "${ENV_VARS[@]}" \
