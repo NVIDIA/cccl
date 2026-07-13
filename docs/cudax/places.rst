@@ -722,3 +722,56 @@ Conventions and limits
 The ``partitioned_axpy`` example shows the intended workflow end to end:
 express the partition once, evaluate it, run tasks over data placed by it,
 and perform a raw geometry-aware allocation.
+
+Computing over structured partitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same ``parallel_for`` entry point that accepts the classic policies
+accepts a structured partition instance, which then decides **both** the
+per-place kernel decomposition and (through the task's affine data place)
+the placement of the data those kernels touch -- one object, both sides:
+
+.. code:: c++
+
+   // Every place computes exactly the coordinates it owns
+   ctx.parallel_for(part, grid, lX.shape(), lX.write())
+       ->*[] __device__(size_t x, size_t y, size_t z, auto X) { ... };
+
+The shape argument may also be a ``box`` describing a *region within the
+tensor the partition was built for* (validated by containment) -- e.g. the
+interior of a stencil domain. Each place still enumerates its own
+coordinates; those outside the region (like the padding phantoms of uneven
+extents) are skipped by a per-coordinate predicate, so iteration stays
+aligned with data ownership rather than re-splitting the region:
+
+.. code:: c++
+
+   box interior({1ul, nx - 1}, {1ul, ny - 1}, {1ul, nz - 1});
+   ctx.parallel_for(part, grid, interior, lX.rw())->*...;
+
+Predication has a cost proportional to the *rejected* fraction of the
+enumerated coordinates, which makes it the right tool for regions that are
+dense in their bounds (interiors: the rejected boundary shell is a
+surface-to-volume fraction) and the wrong tool for thin regions. For
+boundary-style updates -- a face of the domain, say -- prefer one of:
+
+- **fuse** the boundary handling into the volumetric kernel's body when the
+  condition is cheap (application-dependent);
+- iterate the face with a **classic scale-free policy** (tight, no rejected
+  coordinates) while an explicit dependency keeps placement on the
+  partition's composite place:
+
+  .. code:: c++
+
+     auto dist = make_composite_data_place(grid, part);
+     box face({0ul, nx}, {0ul, ny}, {0ul, 1ul});
+     ctx.parallel_for(blocked_partition(), grid, face, lX.rw(dist))->*...;
+
+  The face's few remote writes (places computing parts of a face another
+  place owns) are typically negligible against the volumetric traffic.
+
+The ``fdtd_mgpu`` example demonstrates the full pattern: a single
+``make_partition`` call decides which dimension splits for every task --
+initialization over the full shape, updates over interior boxes, a point
+source -- and places the fields' data, so changing the distribution of the
+whole simulation is editing one ``dim_spec`` entry.
