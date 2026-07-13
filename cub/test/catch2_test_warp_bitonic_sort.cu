@@ -6,6 +6,7 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -24,7 +25,14 @@ struct CustomLess
   template <typename T>
   static __device__ __host__ T get_oob_default()
   {
-    return cuda::std::numeric_limits<T>::max();
+    if constexpr (cuda::std::is_same_v<T, float>)
+    {
+      return cuda::std::numeric_limits<T>::infinity();
+    }
+    else
+    {
+      return cuda::std::numeric_limits<T>::max();
+    }
   };
 };
 
@@ -323,7 +331,7 @@ void sort_values_for_equal_keys(KeyItT keys, ValueItT values, int valid_items, i
 }
 
 // List of key types to test
-using key_types = c2h::type_list<std::uint8_t, std::int32_t, std::int64_t>;
+using key_types = c2h::type_list<std::uint8_t, std::int32_t, std::int64_t, float>;
 
 // List of value types
 using value_types = c2h::type_list<std::int32_t>;
