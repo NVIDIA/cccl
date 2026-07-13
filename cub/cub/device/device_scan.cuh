@@ -2334,7 +2334,7 @@ struct DeviceScan
   //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
   //! is assigned to ``*d_out``.
   //!
-  //! .. versionadded:: 3.4.0
+  //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - Supports non-commutative scan operators.
