@@ -29,6 +29,7 @@ from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 class _SegmentedReduce(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_cccl",
@@ -70,7 +71,7 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
             d_in,
             d_out,
@@ -106,7 +107,9 @@ class _SegmentedReduce(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(

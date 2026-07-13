@@ -428,19 +428,22 @@ def current_device_id() -> int:
         raise RuntimeError("No CUDA device is available to execute on.") from e
 
 
-def resolve_build_result(build_results: dict):
-    """Load the build result for the current device."""
+def resolve_build_result(build_results: dict, bound_result=None):
+    """Load the build result for the current device.
+
+    ``bound_result`` is a default-build wrapper's construction-time binding
+    (see cache_build_results): already the loaded result for the wrapper's
+    device, returned without any device query. Deserialized wrappers have no
+    binding and resolve per call.
+    """
+    if bound_result is not None:
+        return bound_result
+
     # Wrappers always hold a _PerCCBuildResults (build_for_ccs and
     # deserialization both produce one); the per-device ownership/clone
     # protocol in resolve() relies on it, so fail loudly on anything else
     # rather than fall back to an unprotected load.
     assert isinstance(build_results, _PerCCBuildResults)
-
-    # The default build path already compiled and loaded this singular result
-    # for the wrapper's device. Preserve its existing invocation fast path: it
-    # does not need a CUDA device query or a per-device cache lookup.
-    if build_results._device_bound_result is not None:
-        return build_results._device_bound_result
 
     if len(build_results) == 1:
         # A singular _PerCCBuildResults is used as-is whatever the current device's

@@ -254,10 +254,11 @@ Algorithms in ``cuda.compute`` are compiled to GPU code at runtime. To
 avoid recompiling on every call, build results are cached in memory.
 When you invoke an algorithm with the same configuration—same dtypes,
 iterator kinds, operator, compute capability, and current device—the
-cached build is reused. On systems with multiple GPUs, builds may be
-cached separately for each GPU. When free-threaded Python is enabled,
-compiled build results may be reused by multiple threads in the same
-process.
+cached build is reused. On systems with multiple GPUs, GPUs with the same
+compute capability may share one compiled build, while each GPU keeps its
+own loaded state. Compiled build results may be reused by
+multiple threads in the same process on any interpreter build;
+free-threaded Python additionally runs such threads in parallel.
 
 What determines the cache key
 +++++++++++++++++++++++++++++
@@ -269,12 +270,18 @@ Each algorithm computes a cache key from:
 * **Operator identity** — for user-defined functions, the function's bytecode,
   constants, and closure contents (see below)
 * **Compute capability** — the GPU architecture of the current device
-* **Current device** — the CUDA device active when the algorithm is built
+* **Current device** — determines the algorithm object and its loaded state;
+  the compiled code itself is shared across devices with the same compute
+  capability (see Multi-GPU behavior below). Not used when an explicit
+  ``compute_capability=`` is given, which keys on the requested compute
+  capabilities instead (see :ref:`cuda.compute.ahead_of_time_compilation`)
 * **Algorithm-specific parameters** — such as initial value dtype or determinism mode
 
 Note that array *contents* or *pointers* are not part of the cache key—only
 the array's dtype. This means you can reuse a cached algorithm across different
 arrays of the same type.
+
+.. _cuda.compute.multi_gpu:
 
 Multi-GPU behavior
 ++++++++++++++++++
@@ -460,9 +467,8 @@ running GPU is selected and loaded on the first call. Invoking it on a GPU whose
 architecture was not built raises an error.
 
 The compiled artifact may be reused by multiple devices with the same compute
-capability. Loading remains device-specific: the first device uses the canonical
-build result, and another device loads a deserialized copy of the same compiled
-payload without recompiling it.
+capability. Loading remains device-specific — each device loads its own copy of
+the compiled payload — but no device recompiles.
 
 Building without a GPU
 ++++++++++++++++++++++

@@ -261,13 +261,18 @@ def test_current_device_build_result_preserves_device_query_free_fast_path(
     source = _FakeBuildResult(b"sm80-cubin")
     source._loaded = True
     build_results = _PerCCBuildResults({80: source}, loaded_device_id=0)
+    # Default wrappers resolve their binding once at construction (see
+    # cache_build_results) and pass it to every resolve_build_result call.
+    bound_result = build_results.resolve(80, 0)
+    assert bound_result is source
 
-    def fail_device_query():
+    def fail_device_query(*args, **kwargs):
         raise AssertionError("current-device builds must not query on invocation")
 
     monkeypatch.setattr(cccl_interop, "current_device_info", fail_device_query)
+    monkeypatch.setattr(cccl_interop, "current_device_id", fail_device_query)
 
-    assert cccl_interop.resolve_build_result(build_results) is source
+    assert cccl_interop.resolve_build_result(build_results, bound_result) is source
     assert source.load_count == 0
 
 
@@ -283,13 +288,13 @@ def test_explicit_aot_compilation_cache_normalizes_compute_capability():
         return _PerCCBuildResults({80: _FakeBuildResult(b"sm80-cubin")})
 
     try:
-        first = cache_build_results(
+        first, first_bound = cache_build_results(
             _FakeBuildResult,
             "specialization",
             compute_capability=80,
             builder=build,
         )
-        second = cache_build_results(
+        second, second_bound = cache_build_results(
             _FakeBuildResult,
             "specialization",
             compute_capability=(8, 0),
@@ -299,65 +304,152 @@ def test_explicit_aot_compilation_cache_normalizes_compute_capability():
         clear_all_caches()
 
     assert first is second
+    # Explicit AOT builds have no current device to bind to.
+    assert first_bound is None and second_bound is None
     assert build_count == 1
 
 
-def test_default_build_second_same_cc_device_clones_from_donor(monkeypatch):
-    """A default build on a second same-cc device clones the donor payload.
-
-    Default builds are keyed per device ordinal, but the compiled payload only
-    depends on the compute capability: the first build registers itself as a
-    payload donor, and a later build for another same-cc ordinal reconstructs
-    it via serialize -> deserialize -> load instead of running the builder.
-    """
+def _patch_default_build_env(monkeypatch, device, *, backend_serializes):
     import cuda.compute._caching as _caching_mod
 
-    device = {"id": 0}
     monkeypatch.setattr(
         _caching_mod, "_get_current_device_info", lambda: (device["id"], (8, 0))
     )
     monkeypatch.setattr(_caching_mod, "_process_wide_build_results_cache", {})
-    monkeypatch.setattr(_caching_mod, "_process_wide_default_build_donors", {})
+    # Pin the backend capability so these fake-backed tests exercise a fixed
+    # branch regardless of which backend the suite runs against.
+    monkeypatch.setattr(
+        _caching_mod, "_BACKEND_SERIALIZES_BUILD_RESULTS", backend_serializes
+    )
 
-    built_sources = []
 
+def _make_fake_default_builder(device, built_sources):
     def build():
         source = _FakeBuildResult(b"sm80-cubin")
         source._loaded = True
         built_sources.append(source)
         return _PerCCBuildResults({80: source}, loaded_device_id=device["id"])
 
-    first = cache_build_results(
+    return build
+
+
+def test_default_build_second_same_cc_device_shares_the_entry(monkeypatch):
+    """A default build on a second same-cc device reuses the shared entry.
+
+    Default builds are keyed by compute capability alone, so a second same-cc
+    device hits the same _PerCCBuildResults; its construction-time binding
+    loads a clone of the compiled payload (serialize -> deserialize -> load)
+    instead of running the builder.
+    """
+    device = {"id": 0}
+    _patch_default_build_env(monkeypatch, device, backend_serializes=True)
+    built_sources = []
+    build = _make_fake_default_builder(device, built_sources)
+
+    first, first_bound = cache_build_results(
         _FakeBuildResult, "spec", compute_capability=None, builder=build
     )
     assert len(built_sources) == 1
+    assert first_bound is first[80]
 
-    # Same device: plain cache hit, no builder, no clone.
-    assert (
-        cache_build_results(
-            _FakeBuildResult, "spec", compute_capability=None, builder=build
-        )
-        is first
+    # Same device: plain cache hit, no builder, warm binding.
+    again, again_bound = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
     )
+    assert again is first
+    assert again_bound is first_bound
     assert len(built_sources) == 1
     assert first[80].serialize_count == 0
 
-    # Second same-cc device: cloned from the donor, builder never runs.
+    # Second same-cc device: same shared entry; the binding clones the
+    # compiled payload, and the builder never runs.
     device["id"] = 1
-    second = cache_build_results(
+    second, second_bound = cache_build_results(
         _FakeBuildResult, "spec", compute_capability=None, builder=build
     )
     assert len(built_sources) == 1
-    assert second is not first
+    assert second is first
     assert first[80].serialize_count == 1
-    assert second[80] is not first[80]
-    assert second[80]._loaded
+    assert second_bound is not first_bound
+    assert second_bound._loaded
 
-    # A different specialization has no donor and builds from scratch.
+    # A different specialization has no cached entry and builds from scratch.
     device["id"] = 0
     cache_build_results(
         _FakeBuildResult, "other-spec", compute_capability=None, builder=build
     )
+    assert len(built_sources) == 2
+
+
+def test_default_build_keys_per_device_without_backend_serialization(monkeypatch):
+    """Without build-result serialization, each device builds its own entry.
+
+    A non-owner device loads a shared entry by cloning it through
+    serialization, so a backend that cannot serialize (v2 HostJIT today) keys
+    default builds per device ordinal instead of sharing them.
+    TODO: delete this test once v2 supports build-result serialization and
+    the per-ordinal branch is removed.
+    """
+    device = {"id": 0}
+    _patch_default_build_env(monkeypatch, device, backend_serializes=False)
+    built_sources = []
+    build = _make_fake_default_builder(device, built_sources)
+
+    first, first_bound = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+    assert len(built_sources) == 1
+    assert first_bound is first[80]
+
+    # Second same-cc device: its own key, its own build; nothing serialized.
+    device["id"] = 1
+    second, second_bound = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+    assert len(built_sources) == 2
+    assert second is not first
+    assert second_bound is second[80]
+    assert first[80].serialize_count == 0
+
+
+def test_default_build_binding_falls_back_to_full_build_when_cloning_fails(
+    monkeypatch,
+):
+    """A failed clone degrades to a full build for that device.
+
+    Cloning is only an optimization: if resolving the second device's binding
+    fails (here: the canonical result cannot serialize), _bind_default_build
+    runs the builder for that device and records the result in the shared
+    per-device slot.
+    """
+    device = {"id": 0}
+    _patch_default_build_env(monkeypatch, device, backend_serializes=True)
+    built_sources = []
+    build = _make_fake_default_builder(device, built_sources)
+
+    first, first_bound = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+
+    def broken_serialize():
+        raise RuntimeError("synthetic serialization failure")
+
+    monkeypatch.setattr(first[80], "serialize", broken_serialize)
+
+    device["id"] = 1
+    second, second_bound = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+    assert second is first
+    assert len(built_sources) == 2
+    assert second_bound is built_sources[1]
+    assert second_bound._loaded
+    # The fallback result is recorded so same-device callers share it.
+    third, third_bound = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+    assert third is first
+    assert third_bound is second_bound
     assert len(built_sources) == 2
 
 
@@ -925,9 +1017,12 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
 
 
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
-    """Real-GPU check of the default-path payload donor (see the fake-based
-    test_default_build_second_same_cc_device_clones_from_donor for the
+    """Real-GPU check of the shared default entry (see the fake-based
+    test_default_build_second_same_cc_device_shares_the_entry for the
     protocol): the second same-cc device must never run a native build."""
+    # TODO: drop this skip once v2 supports build-result serialization.
+    if USING_V2:
+        pytest.skip("v2 cannot serialize build results; defaults key per device")
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
@@ -959,9 +1054,11 @@ def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     second_device.sync()
     np.testing.assert_array_equal(d_out_b.copy_to_host(), h + 1)
 
-    # Distinct per-device collections and loaded results; shared payload.
-    assert w_b.build_results is not w_a.build_results
-    (result_a,) = w_a.build_results.values()
-    (result_b,) = w_b.build_results.values()
+    # One shared per-cc entry; distinct per-device loaded results (the
+    # wrappers' construction-time bindings).
+    assert w_b.build_results is w_a.build_results
+    result_a = w_a._bound_build_result
+    result_b = w_b._bound_build_result
+    assert result_a is not None and result_b is not None
     assert result_b is not result_a
     assert result_b._loaded

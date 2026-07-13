@@ -22,6 +22,7 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 class _RadixSort(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_keys_cccl",
         "d_out_keys_cccl",
         "d_in_values_cccl",
@@ -73,7 +74,7 @@ class _RadixSort(Serializable):
             if order is SortOrder.ASCENDING
             else _bindings.SortOrder.DESCENDING
         )
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceRadixSortBuildResult,
             d_in_keys,
             d_out_keys,
@@ -106,7 +107,9 @@ class _RadixSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)

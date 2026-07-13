@@ -19,6 +19,7 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 class _UnaryTransform(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "op_cccl",
@@ -48,7 +49,7 @@ class _UnaryTransform(Serializable):
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in_type,), out_type)
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceUnaryTransform,
             d_in,
             d_out,
@@ -73,7 +74,9 @@ class _UnaryTransform(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         op_adapter = make_op_adapter(op)
 
@@ -94,6 +97,7 @@ class _UnaryTransform(Serializable):
 
 class _BinaryTransform(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in1_cccl",
         "d_in2_cccl",
         "d_out_cccl",
@@ -128,7 +132,7 @@ class _BinaryTransform(Serializable):
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in1_type, in2_type), out_type)
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceBinaryTransform,
             d_in1,
             d_in2,
@@ -156,7 +160,9 @@ class _BinaryTransform(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_in1_cccl, d_in1)
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)

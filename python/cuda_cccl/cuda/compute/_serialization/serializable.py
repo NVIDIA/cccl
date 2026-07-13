@@ -242,6 +242,11 @@ class Serializable:
     # Subclasses declare their serialized members here.
     __serialization_schema__: tuple = ()
 
+    # Construction-time binding of a default-build wrapper's loaded result
+    # (see cache_build_results). Annotation only: storage comes from each
+    # subclass's __slots__; __init__ or deserialize() below assigns it.
+    _bound_build_result: Any
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         Serializable._registry[cls.__qualname__] = cls
@@ -270,6 +275,10 @@ class Serializable:
         """
         r = codec.open(blob, cls.__qualname__)
         obj = cls.__new__(cls)
+        # deserialize() bypasses __init__, which is where default-build
+        # wrappers bind their loaded result (see cache_build_results); an
+        # unbound wrapper resolves per call instead.
+        obj._bound_build_result = None
         for attr, kind in cls.__serialization_schema__:
             setattr(obj, attr, kind.read(r, obj))
         obj._after_deserialize()

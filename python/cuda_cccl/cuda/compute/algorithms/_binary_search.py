@@ -38,6 +38,7 @@ class _BinarySearch:
     _MODE: ClassVar[_bindings.BinarySearchMode]
 
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_data_cccl",
@@ -87,7 +88,7 @@ class _BinarySearch:
 
         self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceBinarySearchBuildResult,
             d_data,
             d_values,
@@ -118,7 +119,9 @@ class _BinarySearch:
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_data_cccl, d_data)
         set_cccl_iterator_state(self.d_values_cccl, d_values)

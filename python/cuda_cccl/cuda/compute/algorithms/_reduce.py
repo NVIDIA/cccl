@@ -34,6 +34,7 @@ from ..typing import (
 
 class _Reduce(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
@@ -71,7 +72,7 @@ class _Reduce(Serializable):
 
         # loaded_build_result / device_reduce_fn are bound lazily on the first
         # __call__ (see _bind_device_reduce_fn).
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
             d_out,
@@ -114,7 +115,9 @@ class _Reduce(Serializable):
     ):
         # Select (and lazily load) the current device's build result, then bind the
         # derived compute fn from it.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
         self._bind_device_reduce_fn()
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)

@@ -22,6 +22,7 @@ from ...typing import DeviceArrayLike, IteratorT, Operator
 
 class _MergeSort(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_keys_cccl",
         "d_in_values_cccl",
         "d_out_keys_cccl",
@@ -64,7 +65,7 @@ class _MergeSort(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.int8)
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceMergeSortBuildResult,
             d_in_keys,
             d_in_values,
@@ -96,7 +97,9 @@ class _MergeSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         present_in_values = d_in_values is not None
         present_out_values = d_out_values is not None

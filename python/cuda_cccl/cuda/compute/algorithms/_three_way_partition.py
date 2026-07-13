@@ -20,6 +20,7 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 class _ThreeWayPartition(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_cccl",
@@ -68,7 +69,7 @@ class _ThreeWayPartition(Serializable):
             (value_type,), types.uint8
         )
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceThreeWayPartitionBuildResult,
             d_in,
             d_first_part_out,
@@ -106,7 +107,9 @@ class _ThreeWayPartition(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_first_part_out_cccl, d_first_part_out)

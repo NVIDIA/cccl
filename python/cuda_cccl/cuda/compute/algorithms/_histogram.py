@@ -22,6 +22,7 @@ from ..typing import DeviceArrayLike, IteratorT
 
 class _Histogram(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "num_rows",
         "d_samples_cccl",
         "d_histogram_cccl",
@@ -65,7 +66,7 @@ class _Histogram(Serializable):
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
 
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceHistogramBuildResult,
             d_samples,
             d_histogram,
@@ -102,7 +103,9 @@ class _Histogram(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_samples_cccl, d_samples)
         set_cccl_iterator_state(self.d_histogram_cccl, d_histogram)

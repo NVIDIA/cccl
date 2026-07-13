@@ -451,6 +451,40 @@ as an example:
    At this point, the kernels stored in the reduction object are
    launched and the reduction is performed.
 
+Build results and device state
+------------------------------
+
+An algorithm is built in one of two ways. A **default build**
+(``compute_capability=None``, the common path) targets the current CUDA
+device — it queries that device's compute capability, then compiles and loads
+for it in one step. An **explicit ahead-of-time (AOT) build** (a
+``compute_capability=`` argument naming one or more compute capabilities) names
+its targets directly, compiles for each without loading, and needs no GPU, so it
+can run on a build machine with no device (see
+:ref:`cuda.compute.ahead_of_time_compilation`).
+
+Either way, building produces a native build result — a Cython build-result
+object wrapping the corresponding C runtime struct — that carries two kinds of
+state with different device affinity:
+
+* The **compiled payload** (the compiled device code and its launch policy)
+  depends only on the target compute capability. It is device-independent: the
+  same payload is valid on any device of that compute capability.
+* **Loaded state** is created when the build result is loaded for execution —
+  the registered ``CUlibrary`` and the kernel handles resolved from it. It
+  belongs to the device (and context) it was loaded on. CUB launch paths
+  resolve a ``CUkernel`` to the current-context ``CUfunction`` and may get or
+  set kernel attributes on it, and CUDA kernel-attribute behavior is
+  device-specific.
+
+Consequently, a *loaded* build result cannot be shared across two devices even
+when they have the same compute capability: its handles are device-specific.
+The compiled payload can be reused, but each device needs its own loaded result
+— built directly, or reconstructed from the shared payload. This is a property
+of CUDA and the build struct itself, independent of caching or free-threaded
+Python. The next section describes how ``cuda.compute`` caches build results to
+reuse the payload while giving each device its own loaded state.
+
 Caching and free-threaded Python
 --------------------------------
 
@@ -469,22 +503,31 @@ Internally, ``cuda.compute`` separates two kinds of cached state:
   ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
   sharing mutable wrapper state across concurrent calls from free-threaded
   Python.
-* **Per-cc build results** (``_PerCCBuildResults``) contain one canonical
-  Cython build result per target compute capability. They are cached by
-  ``cache_build_results`` and may be shared by wrapper objects in different
-  Python threads. For explicit AOT builds, the canonical results contain
-  device-independent compiled payloads; loaded CUDA libraries and kernels are
-  cached separately per device ordinal.
+* **Per-cc build results** (``_PerCCBuildResults``) hold one *canonical* Cython
+  build result per target compute capability — the single authoritative result
+  for that cc, carrying the device-independent compiled payload described in
+  `Build results and device state`_. They are cached by ``cache_build_results``
+  and may be shared by wrapper objects in different Python threads — and, for
+  default builds, across same-cc devices (except on the v2 HostJIT backend
+  today; see `Device keying`_). Each device's loaded result is tracked
+  separately within the entry, so sharing an entry never shares device-specific
+  state.
 
 The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
 thread-local and does not consult the process-wide build-result cache. When a
 wrapper is constructed, a completed build-result hit requires one process-wide
-dictionary lookup and does not take an explicit cache lock. A default
-current-device build stores a direct reference to its already-loaded result, so
-executing that wrapper does not query the current device or consult a shared
-cache. Explicit or deserialized AOT results resolve through a per-device
-dictionary inside their shared per-cc build results; a completed lookup also
-takes no explicit lock.
+dictionary lookup and does not take an explicit cache lock. The two build
+kinds then diverge because they differ in whether the target device is known
+when the wrapper is constructed. A default build already knows its device — the
+wrapper cache queried it to build and keys the wrapper to it — so the wrapper
+resolves that device's loaded result once at construction and stores a direct
+reference; executing it then needs no current-device query and no shared-cache
+lookup. An explicit AOT or deserialized wrapper has no such binding — an AOT
+build targets compute capabilities with no GPU queried, and a deserialized
+wrapper is reconstructed without a device binding — so its device is known only
+at call time. Each call resolves the per-device loaded result from a dictionary
+inside the per-cc build results, where a completed lookup also takes no explicit
+lock.
 
 Design requirements
 +++++++++++++++++++
@@ -546,30 +589,31 @@ criteria for a free-threaded build are:
 Device keying
 +++++++++++++
 
-For the default ``compute_capability=None`` path, both cache layers include the
-current CUDA runtime device ordinal and compute capability in their keys. The
-compute capability identifies the architecture used for code generation and
-policy selection. The device ordinal keeps loaded native state associated with
-the device on which it was built.
+User-facing multi-GPU behavior and requirements are described in
+:ref:`cuda.compute.multi_gpu`; this section covers the keying mechanism.
 
-The compiled payload, however, is shared across same-cc device ordinals: the
-first successful default build for a given specialization and compute
-capability registers itself as a payload donor, and a later default build for
-another device with the same compute capability reconstructs the donor through
-serialization (serialize, deserialize without loading, then load on the new
-device) instead of running a full native compilation. The clone re-validates
-the payload against the current device. When the backend cannot serialize
-build results (the v2 HostJIT backend today), the clone attempt falls back to
-a full per-device build.
+For the default build path, the wrapper cache includes
+the current CUDA runtime device ordinal and compute capability in its key:
+wrapper objects hold device-bound state, so each device (and thread) receives
+its own wrapper. The shared build-result cache is keyed by compute capability
+alone — the compiled payload depends only on the cc — so one shared entry
+serves every same-cc device ordinal.
 
-Explicit AOT builds cannot include a device ordinal in their compilation key:
-they are intentionally supported on machines with no GPU. Their canonical
-compiled results are therefore shared process-wide by specialization and target
-compute capability. On first execution, the canonical result is assigned to the
-current device. Execution on another device with the same compute capability
-clones the canonical result through serialization and loads the clone for that
-device. This reuses the compiled payload without sharing loaded handles or
-recompiling.
+Per-device loaded state lives inside the shared entry. The device that built
+the entry loads the canonical result in place; each additional same-cc device
+loads its own clone of the compiled payload through serialization (serialize,
+deserialize without loading, then load on the new device) instead of running
+a full native compilation, and the clone re-validates the payload against the
+current device. When the backend cannot serialize build results (the v2 HostJIT
+backend today), sharing is not possible, so default builds are keyed per device
+ordinal instead and each device builds its own entry.
+
+Explicit AOT builds cannot include a device ordinal in their compilation key —
+they build with no GPU queried — so their canonical results are shared
+process-wide by specialization and target compute capabilities. Unlike a default
+build, an AOT build compiles without loading, so no device owns the canonical
+result until first execution: the first device to run claims and loads it, and
+other same-cc devices load their own clone, exactly as above.
 
 The first implementation intentionally keys shared build results by CUDA runtime
 device ordinal rather than by CUDA context handle. User-managed CUDA driver
@@ -577,21 +621,14 @@ contexts are not a target use case for ``cuda.compute``. CUDA runtime,
 ``cuda.core``, CuPy, and PyTorch-style applications are expected to use the
 primary-context model, and language frontends generally prefer that model.
 
-Loaded native build results are not shared across devices that happen to have
-the same compute capability. They can contain CUDA-facing load state, and CUB
-launch paths may resolve a ``CUkernel`` to the current-context ``CUfunction``
-before occupancy queries or launch. Some paths also get or set kernel attributes
-on the resolved function, and CUDA kernel-attribute behavior is device-specific.
-Canonical AOT payloads may be shared, but each device receives a distinct loaded
-native result.
-
 Concurrent build coordination
 +++++++++++++++++++++++++++++
 
-``cache_build_results`` coordinates concurrent compilation misses, while the
-per-cc build results use the same single-flight helper for per-device load
-misses. A cache dictionary stores either a completed value or a temporary
-``_InFlightBuild`` entry. On a miss, each caller creates a candidate in-flight
+When several threads miss the same cache key at once, only one should run the
+expensive build and the rest should wait for its result. A shared helper
+provides this coordination, a pattern called *single-flight*. The cache
+dictionary stores either a completed value or a temporary ``_InFlightBuild``
+entry. On a miss, each caller creates a candidate in-flight
 entry, and ``dict.setdefault`` elects one caller to run the builder. Other
 callers receive the winning entry and wait on its ``threading.Event``. If the
 operation succeeds, the in-flight entry is replaced by the completed result and
@@ -600,9 +637,19 @@ propagated to the waiting threads and the failed entry is removed so that a
 later call can retry. Completed-result hits do not allocate an in-flight entry
 or take an explicit cache lock.
 
+The same helper coordinates two kinds of misses: a compilation miss in the
+process-wide build cache, where ``cache_build_results`` runs the native build
+once per specialization, and a per-device load miss inside a per-cc build
+result, where ``resolve`` loads (or clones and loads) the result once per
+device.
+
 When adding a new algorithm, the factory that returns the reusable wrapper object
 should use ``cache_with_registered_key_functions``. The wrapper constructor
-should pass the expensive native build operation to ``cache_build_results``.
+should pass the expensive native build operation to ``cache_build_results``,
+which returns two values: the shared build results, and the loaded result bound
+to the constructing device (``None`` for an explicit AOT build, which has no
+constructing device). Store both; ``__call__`` passes them to
+``resolve_build_result`` (see any algorithm class for the pattern).
 Do not perform an expensive native build before entering
 ``cache_build_results``; otherwise same-key cold factory calls can duplicate the
 build and bypass single-flight coordination.
@@ -615,8 +662,9 @@ or temporary-storage pointers unless those values change the compiled interface.
 User-object and descriptor contracts
 ++++++++++++++++++++++++++++++++++++
 
-Wrapper objects returned by ``make_*`` APIs are not thread-reentrant. If two
-threads need the same algorithm specialization, each thread should call the
+Wrapper objects returned by ``make_*`` APIs are not safe for concurrent calls
+from multiple threads. If two threads need the same algorithm specialization,
+each thread should call the
 factory and receive its own wrapper object, or the caller must externally
 serialize access to a shared wrapper. The wrapper updates its Cython
 ``Iterator``, ``Op``, ``Value``, and algorithm-specific descriptors before each
@@ -664,6 +712,18 @@ exactly once through ``std::call_once``; later calls on any thread only pay the
 GIL builds also execute the native call concurrently once the GIL is released,
 so the cache must be thread-safe unconditionally.
 
+The v2 backend addresses the same transform concern differently, and only on
+Windows. HostJIT compiles generated code with ``-fno-threadsafe-statics``
+because the Windows CRT guard support that thread-safe function-local statics
+require is unavailable. Generated CUB code still initializes function-local
+statics lazily — transform's launch configuration among them — so a
+per-build-result ``first_call_gate``
+(``c/parallel.v2/src/util/first_call_gate.h``) serializes the first successful
+call into each generated function; after it completes, an atomic fast-path check
+lets later concurrent calls proceed without locking. Empty calls bypass the gate
+because they return before CUB initializes the static. This covers transform and
+binary search; other platforms keep thread-safe statics and need no gate.
+
 Clearing caches
 +++++++++++++++
 
@@ -685,6 +745,7 @@ For readers who want to connect this overview back to the source tree:
   constructing and invoking reusable algorithm objects live under
   ``python/cuda_cccl/cuda/compute/``.
 * The lower-level C/C++ runtime compilation and kernel-building
-  machinery lives under ``c/parallel/``.
+  machinery lives under ``c/parallel/`` (and ``c/parallel.v2/`` for the v2
+  HostJIT backend).
 * User-facing examples for ``cuda.compute`` live under
   ``python/cuda_cccl/tests/compute/examples/``.

@@ -51,6 +51,7 @@ def get_init_kind(
 
 class _Scan(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_cccl",
@@ -125,7 +126,7 @@ class _Scan(Serializable):
 
         # loaded_build_result / device_scan_fn are bound lazily on the first
         # __call__ (see _bind_device_scan_fn).
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
             d_in,
             d_out,
@@ -181,7 +182,9 @@ class _Scan(Serializable):
     ):
         # Select (and lazily load) the current device's build result, then bind the
         # derived compute fn from it.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
         self._bind_device_scan_fn()
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)

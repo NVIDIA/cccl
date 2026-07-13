@@ -23,6 +23,7 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 class _SegmentedSort(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "build_results",
         "loaded_build_result",
         "d_in_keys_cccl",
@@ -70,7 +71,7 @@ class _SegmentedSort(Serializable):
             if order is SortOrder.ASCENDING
             else _bindings.SortOrder.DESCENDING
         )
-        self.build_results = cache_build_results(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedSortBuildResult,
             d_in_keys,
             d_out_keys,
@@ -106,7 +107,9 @@ class _SegmentedSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(
