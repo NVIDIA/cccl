@@ -2370,11 +2370,11 @@ struct DeviceScan
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
-  //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value`
-  //!
   //! @tparam InitValueIterT
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
+  //!
+  //! @tparam InitValueBoundsT
+  //!  **[inferred]** Static bounds on `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -2394,7 +2394,7 @@ struct DeviceScan
   //!
   //! @param[in] init_value
   //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
-  //!   is assigned to `*d_out`), provided as future value
+  //!   is assigned to `*d_out`), provided as deferred value
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
@@ -2407,7 +2407,7 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueIterT,
-            typename InitValueBounds,
+            typename InitValueBoundsT,
             typename NumItemsT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
@@ -2415,7 +2415,7 @@ struct DeviceScan
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBounds>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
     NumItemsT num_items,
     EnvT env = {})
   {

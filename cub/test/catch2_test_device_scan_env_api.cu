@@ -276,7 +276,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanInit with FutureValue accepts environment", "[scan][env]")
+C2H_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environment", "[scan][env]")
 {
   // example-begin inclusive-scan-future-init-env
   auto op     = cuda::std::plus{};
