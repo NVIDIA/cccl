@@ -102,28 +102,57 @@ int main()
     };
   }
 
-  ctx.finalize();
-
-  // Uneven extents are rejected by the sub-shape derivation: the exact-cover
-  // restriction of the parallel_for path must fail loudly rather than compute
-  // on phantom coordinates (validated at the apply() contract level - a
-  // partitioner throwing mid-task is not recoverable by design)
+  // Uneven extents: the padding phantoms are excluded by the sub-shape's
+  // predicate (CuTe predication), so odd sizes work end to end
   {
     const size_t n = 1023; // not divisible by 2 places
-    auto part      = make_partition(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+    auto lD        = ctx.logical_data(shape_of<slice<size_t>>(n));
 
-    bool thrown = false;
-    try
-    {
-      auto sub = part.apply(shape_of<slice<size_t>>(n), pos4(0), grid.get_dims());
-      (void) sub;
-    }
-    catch (const ::std::invalid_argument&)
-    {
-      thrown = true;
-    }
-    EXPECT(thrown, "uneven extents must be rejected by the sub-shape derivation");
+    auto part = make_partition(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+
+    ctx.parallel_for(part, grid, lD.shape(), lD.write())->*[] _CCCL_DEVICE(size_t i, auto d) {
+      d(i) = 2 * i + 1;
+    };
+
+    ctx.host_launch(lD.read())->*[&](auto d) {
+      for (size_t i = 0; i < n; i++)
+      {
+        EXPECT(d(i) == 2 * i + 1);
+      }
+    };
   }
+
+  // Interior region: the box is a region within the tensor the partition was
+  // built for; each place computes its owned coordinates restricted to the
+  // box, and the boundary stays untouched
+  {
+    const size_t nx = 64, ny = 32;
+    auto lE = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+
+    auto part = make_partition(dim4(nx, ny), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+
+    ctx.parallel_for(part, grid, lE.shape(), lE.write())->*[] _CCCL_DEVICE(size_t x, size_t y, auto e) {
+      e(x, y) = 7;
+    };
+
+    box interior({1ul, nx - 1}, {1ul, ny - 1});
+    ctx.parallel_for(part, grid, interior, lE.rw())->*[] _CCCL_DEVICE(size_t x, size_t y, auto e) {
+      e(x, y) = 100 + x + y;
+    };
+
+    ctx.host_launch(lE.read())->*[&](auto e) {
+      for (size_t x = 0; x < nx; x++)
+      {
+        for (size_t y = 0; y < ny; y++)
+        {
+          const bool inside = (x >= 1 && x < nx - 1 && y >= 1 && y < ny - 1);
+          EXPECT(e(x, y) == (inside ? 100 + x + y : 7));
+        }
+      }
+    };
+  }
+
+  ctx.finalize();
 
   printf("cute_parallel_for: all checks passed\n");
   return 0;

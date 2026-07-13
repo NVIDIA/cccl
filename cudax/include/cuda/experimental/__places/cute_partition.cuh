@@ -121,15 +121,44 @@ class cute_sub_shape
 public:
   using coords_t = ::std::array<size_t, rank>;
 
-  _CCCL_HOST_DEVICE cute_sub_shape(::cuda::std::span<const layout_leaf> local_leaves, size_t offset, dim4 padded_dims)
+  /**
+   * @param local_leaves Local mode of the place (leaf 0 fastest)
+   * @param offset Linear element offset of the place's first element
+   * @param padded_dims Padded tensor extents the strides refer to
+   * @param lo Inclusive per-dimension lower bounds of the iterated region
+   * @param hi Exclusive per-dimension upper bounds of the iterated region;
+   *        coordinates outside [lo, hi) are skipped by the parallel_for
+   *        loops (predication: interior regions and padding phantoms alike)
+   */
+  _CCCL_HOST_DEVICE cute_sub_shape(
+    ::cuda::std::span<const layout_leaf> local_leaves,
+    size_t offset,
+    dim4 padded_dims,
+    const ::std::array<size_t, rank>& lo,
+    const ::std::array<size_t, rank>& hi)
       : num_leaves_(local_leaves.size())
       , offset_(offset)
       , padded_dims_(padded_dims)
+      , lo_(lo)
+      , hi_(hi)
   {
     for (size_t k = 0; k < num_leaves_; k++)
     {
       leaves_[k] = local_leaves[k];
     }
+  }
+
+  //! Whether the given coordinates are within the iterated region
+  _CCCL_HOST_DEVICE bool contains(const coords_t& coords) const
+  {
+    for (size_t d = 0; d < rank; d++)
+    {
+      if (coords[d] < lo_[d] || coords[d] >= hi_[d])
+      {
+        return false;
+      }
+    }
+    return true;
   }
 
   //! Number of elements this place owns
@@ -169,6 +198,8 @@ private:
   size_t num_leaves_ = 0;
   size_t offset_     = 0;
   dim4 padded_dims_;
+  ::std::array<size_t, rank> lo_{};
+  ::std::array<size_t, rank> hi_{};
 };
 
 /**
@@ -334,13 +365,10 @@ public:
    *
    * Follows the partitioner contract of the classic partitioners: the place
    * is given as its linear index in the dispatch loop (pos4(i)), and the
-   * returned shape enumerates the coordinates that place owns.
-   *
-   * Restricted to exact covers for now (padded extents == true extents):
-   * parallel_for's shape interface has no notion of skipping the phantom
-   * coordinates padding would introduce. Uneven extents are rejected with an
-   * exception; use the classic clamped partitioners for those until
-   * predicated iteration lands.
+   * returned shape enumerates the coordinates that place owns. Coordinates
+   * beyond the true extents (padding phantoms, for uneven covers) are
+   * excluded by the sub-shape's predicate rather than by restructuring the
+   * iteration (the CuTe predication idiom).
    *
    * @param s Shape of the task (must match the partition's true extents)
    * @param place_position Linear place index in .x (dispatch convention)
@@ -351,15 +379,6 @@ public:
   {
     constexpr size_t rank = S::rank();
 
-    if (!(grid_dims == grid_dims_))
-    {
-      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
-    }
-    if (!(padded_dims_ == true_dims_))
-    {
-      throw ::std::invalid_argument("cute_partition::apply: parallel_for currently requires an exact cover (padded "
-                                    "extents == true extents)");
-    }
     for (size_t d = 0; d < rank; d++)
     {
       if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
@@ -368,17 +387,45 @@ public:
       }
     }
 
-    // The dispatch loop linearizes places into .x
-    const pos4 grid_coords = grid_dims_.index_to_pos(static_cast<size_t>(place_position.x));
-
-    size_t offset = 0;
-    for (size_t k = 0; k < num_place_leaves_; k++)
+    ::std::array<size_t, rank> lo{};
+    ::std::array<size_t, rank> hi{};
+    for (size_t d = 0; d < rank; d++)
     {
-      offset += static_cast<size_t>(grid_coords.get(static_cast<size_t>(place_axes_[k])))
-              * static_cast<size_t>(place_leaves_[k].stride);
+      lo[d] = 0;
+      hi[d] = true_dims_.get(d);
     }
+    return apply_region<rank>(lo, hi, place_position, grid_dims);
+  }
 
-    return cute_sub_shape<rank>(local_leaves(), offset, padded_dims_);
+  /**
+   * @brief Sub-shape owned by one place, restricted to a region of the tensor
+   *
+   * The box is not a shape: it is a region within the coordinate space of
+   * the tensor this partition was built for (the partition remains the
+   * authority on the extents). Each place enumerates its own coordinates and
+   * the sub-shape's predicate keeps those inside the box - so the iteration
+   * chunks stay aligned with data ownership, unlike scale-free partitioners
+   * that split the box itself.
+   *
+   * @param b Region to iterate (must be contained in [0, true extents))
+   * @param place_position Linear place index in .x (dispatch convention)
+   * @param grid_dims Extents of the grid (must match the partition's)
+   */
+  template <size_t dims>
+  auto apply(const box<dims>& b, pos4 place_position, dim4 grid_dims) const
+  {
+    ::std::array<size_t, dims> lo{};
+    ::std::array<size_t, dims> hi{};
+    for (size_t d = 0; d < dims; d++)
+    {
+      if (b.get_begin(d) < 0 || static_cast<size_t>(b.get_end(d)) > true_dims_.get(d))
+      {
+        throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
+      }
+      lo[d] = static_cast<size_t>(b.get_begin(d));
+      hi[d] = static_cast<size_t>(b.get_end(d));
+    }
+    return apply_region<dims>(lo, hi, place_position, grid_dims);
   }
 
   /**
@@ -460,6 +507,31 @@ public:
   }
 
 private:
+  template <size_t rank>
+  cute_sub_shape<rank> apply_region(
+    const ::std::array<size_t, rank>& lo,
+    const ::std::array<size_t, rank>& hi,
+    pos4 place_position,
+    dim4 grid_dims) const
+  {
+    if (!(grid_dims == grid_dims_))
+    {
+      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+    }
+
+    // The dispatch loop linearizes places into .x
+    const pos4 grid_coords = grid_dims_.index_to_pos(static_cast<size_t>(place_position.x));
+
+    size_t offset = 0;
+    for (size_t k = 0; k < num_place_leaves_; k++)
+    {
+      offset += static_cast<size_t>(grid_coords.get(static_cast<size_t>(place_axes_[k])))
+              * static_cast<size_t>(place_leaves_[k].stride);
+    }
+
+    return cute_sub_shape<rank>(local_leaves(), offset, padded_dims_, lo, hi);
+  }
+
   void validate() const
   {
     for (size_t k = 0; k < num_place_leaves_; k++)

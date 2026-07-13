@@ -42,6 +42,21 @@ struct owning_container_of;
 
 namespace reserved
 {
+//! Detects shapes carrying a coordinate predicate (e.g. cute_sub_shape):
+//! enumerated coordinates outside the predicate are skipped, which is how
+//! interior regions and padding phantoms are handled (predication rather than
+//! restructured iteration).
+template <typename T, typename = void>
+struct shape_has_contains : ::std::false_type
+{};
+
+template <typename T>
+struct shape_has_contains<
+  T,
+  ::std::void_t<decltype(::std::declval<const T&>().contains(::std::declval<const T&>().index_to_coords(size_t{})))>>
+    : ::std::true_type
+{};
+
 /*
  * @brief A CUDA kernel for executing a function `f` in parallel over `n` threads.
  *
@@ -73,7 +88,15 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      auto coords = shape.index_to_coords(i);
+      if constexpr (shape_has_contains<shape_t>::value)
+      {
+        if (!shape.contains(coords))
+        {
+          continue;
+        }
+      }
+      ::std::apply(explode_coords, mv(coords));
     }
   };
   // Moving from `targs` here is not useful because `explode_args` uses it multiple times.
@@ -315,7 +338,15 @@ __global__ void loop_redux(
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      auto coords = shape.index_to_coords(i);
+      if constexpr (shape_has_contains<shape_t>::value)
+      {
+        if (!shape.contains(coords))
+        {
+          continue;
+        }
+      }
+      ::std::apply(explode_coords, mv(coords));
     }
   };
 
@@ -1052,7 +1083,15 @@ public:
         auto h = [&](auto&&... coords) {
           f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
         };
-        ::std::apply(h, shape.index_to_coords(i));
+        auto coords = shape.index_to_coords(i);
+        if constexpr (shape_has_contains<sub_shape_t>::value)
+        {
+          if (!shape.contains(coords))
+          {
+            return;
+          }
+        }
+        ::std::apply(h, mv(coords));
       };
 
       // Finally we get to do the workload on every 1D item of the shape
