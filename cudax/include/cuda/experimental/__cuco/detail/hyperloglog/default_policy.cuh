@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_DEFAULT_POLICY_CUH
 #define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_DEFAULT_POLICY_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -74,7 +74,7 @@ struct default_hll_policy
   //! @return The hash value of `__k`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hash_result_type hash(const _Key& __k) const noexcept
   {
-    return this->hasher_(__k);
+    return hasher_(__k);
   }
 
   //! @brief Extracts the register index from the hash.

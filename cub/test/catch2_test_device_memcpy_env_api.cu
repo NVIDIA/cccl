@@ -80,7 +80,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
 // example-begin memcpy-batched-policy-selector
 struct BatchedMemcpyPolicySelector
 {
-  __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedMemcpyPolicy
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
     return {.small_buffer = {.threads_per_block     = 128,
                              .buffers_per_thread    = 4,
@@ -98,7 +98,7 @@ struct BatchedMemcpyPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceMemcpy::Batched env-based API with tuning", "[memcpy][env]")
+C2H_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]")
 {
   // example-begin memcpy-batched-tuning
   // Source data: 3 buffers laid out contiguously

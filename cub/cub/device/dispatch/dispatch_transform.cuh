@@ -17,6 +17,7 @@
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
@@ -45,6 +46,12 @@
 #include <cuda/std/expected>
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
+
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
+#  include <cub/device/dispatch/dispatch_transform_tile.cuh>
+
+#  include <cuda/__functional/always_true_false.h>
+#endif
 
 // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
 _CCCL_DIAG_PUSH
@@ -575,6 +582,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   {
     return cudaSuccess;
   }
+
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
+  // Opt-in tile path. When the (Op, T, NumInputs) combo is trait-eligible and the device is sm_80+, we check the
+  // alignment/divisibility preconditions at runtime and route to the tile kernel; we fall through to the standard
+  // CUB dispatch below if they do not hold (CUB's kernels handle the unaligned/tail case, so this is a graceful
+  // fallback, not an error). device_supports_tile() enforces the sm_80+ hardware floor at runtime; below it (or if
+  // the capability query fails) we fall through to the standard CUB dispatch.
+  if constexpr (StableAddress == requires_stable_address::no && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+                && tile::tile_dispatch_eligible_v<TransformOp, RandomAccessIteratorOut, RandomAccessIteratorsIn...>)
+  {
+    if (tile::device_supports_tile() && tile::runtime_preconditions_valid(in, out, num_items))
+    {
+      return tile::dispatch<TransformOp>(in, out, num_items, stream);
+    }
+  }
+#endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
