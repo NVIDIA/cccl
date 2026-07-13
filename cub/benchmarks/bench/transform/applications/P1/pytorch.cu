@@ -612,7 +612,7 @@ try
       d_b,
       n,
       [=] __device__(T self_val, T end_val) {
-        return lerp(self_val, end_val, weight_val);
+        return ::lerp(self_val, end_val, weight_val);
       },
       s);
 
@@ -622,7 +622,7 @@ try
       d_a,
       n,
       [] __device__(T self_val, T end_val, T weight_val) -> T {
-        return lerp(self_val, end_val, weight_val);
+        return ::lerp(self_val, end_val, weight_val);
       },
       s);
 
