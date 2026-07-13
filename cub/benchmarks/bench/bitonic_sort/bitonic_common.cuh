@@ -78,6 +78,11 @@ void run_bench(nvbench::state& state)
   const int num_SMs = state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
   constexpr int block_dim = calc_block_dim<mode>();
   const int grid_dim      = calc_grid_dim<mode>(num_SMs, block_dim, kernel);
+  if (grid_dim == 0)
+  {
+    state.skip("No feasible occupancy for this launch configuration");
+    return;
+  }
   state.add_element_count(grid_dim * (block_dim / warp_threads) * Len * num_iterations);
 
   state.exec([grid_dim, block_dim, kernel](nvbench::launch& launch) {
