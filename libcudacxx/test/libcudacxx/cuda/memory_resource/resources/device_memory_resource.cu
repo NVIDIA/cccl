@@ -93,6 +93,12 @@ static inline void check_default_device_pool_attributes(const cuda::device_memor
           == get_raw_attribute<cudaMemLocationType>(pool.get(), ::cudaMemPoolAttrLocationType));
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == ::cudaMemLocationTypeDevice);
 
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == get_raw_attribute<int>(pool.get(), ::cudaMemPoolAttrLocationId));
+  REQUIRE(location.id == device);
+  REQUIRE(location.type == get_raw_attribute<cudaMemLocationType>(pool.get(), ::cudaMemPoolAttrLocationType));
+  REQUIRE(location.type == ::cudaMemLocationTypeDevice);
+
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size)
           == get_raw_attribute<::cuuint64_t>(pool.get(), ::cudaMemPoolAttrMaxPoolSize));
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled)

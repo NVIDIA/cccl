@@ -76,6 +76,9 @@ void check_shared_pool_creation_attributes(const PoolType& pool, const cuda::mem
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == expected_location_id);
+  REQUIRE(location.type == expected_location_type);
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
   REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
 }

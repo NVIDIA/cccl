@@ -64,6 +64,7 @@ static_assert(
   cuda::std::is_same_v<cuda::memory_pool_attributes::export_handle_types_t::type, cudaMemAllocationHandleType>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_id_t::type, int>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_type_t::type, cudaMemLocationType>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_t::type, cuda::memory_location>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::max_pool_size_t::type, ::cuuint64_t>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::hw_decompress_enabled_t::type, bool>);
 #endif // _CCCL_CTK_AT_LEAST(13, 3)
@@ -153,6 +154,9 @@ check_creation_attributes(const PoolType& pool, const cuda::memory_pool_properti
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == expected_location_id);
+  REQUIRE(location.type == expected_location_type);
   REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
   REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
 }
@@ -184,6 +188,7 @@ static void check_creation_attributes_are_read_only(PoolType& pool)
   check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::export_handle_types);
   check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location_id);
   check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location_type);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location);
   check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::max_pool_size);
   check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::hw_decompress_enabled);
 }
