@@ -137,7 +137,9 @@ struct topk_backend_selector
       /*bits_per_pass=*/TUNE_CLUSTER_BITS_PER_PASS,
       /*histogram_items_per_thread=*/TUNE_CLUSTER_HIST_IPT,
       /*tie_break_items_per_thread=*/TUNE_CLUSTER_TIEBREAK_IPT,
-      /*copy_items_per_thread=*/TUNE_CLUSTER_COPY_IPT};
+      /*copy_items_per_thread=*/TUNE_CLUSTER_COPY_IPT,
+      /*max_blocks_per_cluster=*/0,
+      /*max_chunk_slots_per_block=*/0};
 #else
     const auto cluster = cub::detail::batched_topk::cluster_policy_selector{}(cc);
 #endif

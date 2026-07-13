@@ -9,6 +9,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk.cuh> // topk_policy / make_{baseline,cluster}_policy (cluster-cap tuning test)
 #include <cub/util_type.cuh>
 
 #include <thrust/copy.h>
@@ -24,6 +25,7 @@
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/signbit.h>
@@ -525,6 +527,343 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a deferred (device-resident
 #endif // TEST_TYPES == 2
 
 #if TEST_TYPES == 1
+template <typename KeyT>
+struct cast_to_key_op
+{
+  template <typename T>
+  __host__ __device__ KeyT operator()(T x) const
+  {
+    return static_cast<KeyT>(x);
+  }
+};
+
+// Yields, for each segment, a *non-contiguous* iterator over that segment's keys (an integral counting iterator cast to
+// the key type). Feeding the cluster top-k a non-contiguous key iterator makes `use_block_load_to_shared` false, so the
+// agent takes its generic (non-BlockLoadToShared) overflow-streaming path. Segment `seg` produces keys
+// [seg * segment_size, (seg + 1) * segment_size), so the flattened input equals the identity sequence.
+template <typename KeyT, typename SegmentSizeT>
+struct counting_segment_keys_op
+{
+  SegmentSizeT segment_size;
+
+  template <typename IndexT>
+  __host__ __device__ auto operator()(IndexT seg) const
+  {
+    return cuda::make_transform_iterator(
+      cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), cast_to_key_op<KeyT>{});
+  }
+};
+#endif // TEST_TYPES == 1
+
+// The cluster-path coverage below pins the launch geometry through `cluster_tuning_selector` (a whole-`topk_policy`
+// tune override), which is a direct-API construct -- so this whole block is `TEST_LAUNCH == 0` (built once) rather than
+// going through the launch-wrapper macro. These tests exercise agent-internal cluster paths (multi-CTA scan / cluster
+// barriers / gmem streaming / stage schedule / idle ranks) that are identical across launch modes, so host launch is
+// sufficient; they run at a racecheck-tiny footprint instead of the ~1 Mi segments these paths used to require (small
+// segments otherwise collapse to the single-CTA fast path). The chunk stride is shrunk to 512 B (128 floats), so every
+// segment still spans several chunks per block rather than degenerating to one. On a device with a very small
+// shared-memory budget the real resident capacity could dip below the pinned slot cap, but that only forces *more*
+// streaming, so the paths under test stay covered.
+#if TEST_TYPES == 1 && TEST_LAUNCH == 0
+// Runs the direct-API cluster top-k twice (temp-size query, then the real call) and syncs, requiring success at each
+// step. `Direction` selects Min/Max at compile time. Factored out because the tune-override tests here cannot use the
+// launch-wrapper macro (it owns the env) and would otherwise repeat this boilerplate.
+template <cub::detail::topk::select Direction,
+          typename KeyInItT,
+          typename KeyOutItT,
+          typename SegSizesT,
+          typename KParamT,
+          typename NumSegT,
+          typename EnvT>
+void run_cluster_topk_keys(
+  KeyInItT d_keys_in, KeyOutItT d_keys_out, SegSizesT seg_sizes, KParamT k_param, NumSegT num_seg, EnvT env)
+{
+  std::size_t temp_bytes = 0;
+  auto run               = [&](void* d_temp) {
+    if constexpr (Direction == cub::detail::topk::select::max)
+    {
+      return cub::DeviceBatchedTopK::MaxKeys(
+        d_temp, temp_bytes, d_keys_in, d_keys_out, seg_sizes, k_param, num_seg, env);
+    }
+    else
+    {
+      return cub::DeviceBatchedTopK::MinKeys(
+        d_temp, temp_bytes, d_keys_in, d_keys_out, seg_sizes, k_param, num_seg, env);
+    }
+  };
+  REQUIRE(cudaSuccess == run(nullptr));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == run(thrust::raw_pointer_cast(temp_storage.data())));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+// Builds the require/tune env pinning `Selector` as the whole-policy tune override.
+template <cuda::execution::determinism::__determinism_t Determinism,
+          cuda::execution::tie_break::__tie_break_t TieBreak,
+          typename Selector>
+auto make_cluster_tune_env(Selector selector)
+{
+  return cuda::std::execution::env{
+    cuda::stream_ref{cudaStream_t{0}},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
+                             cuda::execution::output_ordering::unsorted),
+    cuda::execution::tune(selector)};
+}
+
+// A small multi-CTA segment that stays *fully resident* across a forced 2-CTA cluster: `single_block_max_seg_size = 0`
+// disables the single-CTA fast path so even this tiny segment fans out, and cap 2 pins the width. This exercises the
+// real cross-CTA prefix scan (`prime_placement_counters` / remote `red.add`), the cluster barriers, and the DSMEM
+// histogram fold -- machinery that previously only ran on 64 Ki+ segments too large for `compute-sanitizer racecheck`.
+// Non-deterministic here (striped load + early-stop driver, the path unique to keys); the deterministic driver's use of
+// the same scan is verified against an index reference by the pairs "deterministic cross-CTA scan" test. No overflow
+// (verifies the scan in isolation).
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through the cross-CTA scan",
+         "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction   = cub::detail::topk::select::max;
+  skip_if_batched_topk_cluster_unavailable(true); // the tune override forces the SM90+ cluster backend
+
+  // 2048 floats = 16 chunks; a 2-CTA cluster holds 8 chunks each -> fully resident, no streaming.
+  constexpr segment_size_t static_max_segment_size = 2048;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+  constexpr segment_size_t segment_size            = static_max_segment_size;
+  const segment_size_t k                           = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
+
+  CAPTURE(segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // Force a 2-CTA cluster with the single-CTA fast path disabled; slots stay unrestricted (the segment is resident).
+  auto env =
+    make_cluster_tune_env<determinism, tie_break>(cluster_tuning_selector<2, 0, 0, cluster_test_chunk_bytes>{});
+  run_cluster_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    env);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Cluster-width cap (`cluster_cap_list`) plus a resident-slot cap force a tiny segment to overflow and stream: cap 1
+// streams inside one CTA (barrier-free), cap 2 across a fixed 2-CTA cluster (cross-CTA scan while streaming). The
+// resident capacity is `slots * chunk_items` (host-known), so 4 slots x 128 floats = 512 resident floats and the ~1.5 K
+// segment spills several overflow chunks. Both `stream_stages` and `prologue` are `min(PipelineStages, .)` (of the
+// per-CTA overflow count and the 4 resident chunks respectively), so sweeping `PipelineStages` {2,4,8} across the two
+// caps (cap 1 -> ~8 overflow chunks/CTA, cap 2 -> ~2) spans the `stream_stages` <, ==, > `prologue` trichotomy and
+// reaches the `stage_base` up-front prime (the `>` case). The 4-slot cap leaves an aligned resident tail here; the
+// complementary misaligned-tail `stage_rot` reorder is covered by the dedicated test below (reached through the slot
+// cap, not a distinct `PipelineStages`). An unaligned size (`- 31`) + `pad` also covers the peeled overflow tail edge.
+// Non-deterministic (forward first wave only); the pairs schedule test streams the deterministic combos, which
+// additionally reach the reverse first wave. Verified against a sorted reference.
+using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
+using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
+
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across the pipeline-stage schedule",
+         "[keys][segmented][topk][device][cluster]",
+         cluster_cap_list,
+         stage_list)
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr int cluster_cap  = c2h::get<0, TestType>::value;
+  constexpr int stages       = c2h::get<1, TestType>::value;
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction   = cub::detail::topk::select::max;
+  skip_if_batched_topk_cluster_unavailable(true);
+
+  constexpr segment_size_t static_max_segment_size = 1536;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+
+  const int pad = GENERATE(0, 7);
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31})); // unaligned -> peeled overflow tail
+                                                                                    // edge
+  const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k     = GENERATE_COPY(values({segment_size_t{1}, max_k}));
+
+  CAPTURE(cluster_cap, stages, pad, segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(pad + num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data()) + pad;
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(num_segments * segment_size, thrust::no_init);
+  thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
+
+  // cap + 4 resident slots -> a tiny segment overflows and streams; `stages` varies the pipeline depth.
+  auto env = make_cluster_tune_env<determinism, tie_break>(
+    cluster_tuning_selector<cluster_cap, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, stages>{});
+  run_cluster_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    env);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Misaligned-tail stage rotation (`stage_rot`): the interleaved overflow prime rotates the resident mbarrier-stage
+// assignment when the resident chunk count is not a multiple of the pipeline depth. Reuses the schedule sweep's exact
+// cap-1 / stages-2 kernel (same `cluster_tuning_selector<1, 4, 0, .., 2>` type and same size/k bounds -> no new
+// instantiation); only the *runtime* segment size differs -- 5 chunks here vs 12 there. With 4 slots and one chunk of
+// excess over them, 1 stream slot is reserved, leaving 3 resident chunks, and `3 % prologue(2) == 1` misaligns the tail
+// (whereas the sweep's 12-chunk segment leaves an aligned 2-chunk tail). Single-CTA (cap 1) streaming,
+// non-deterministic (forward first wave); the pairs stage-rotation test streams the deterministic combos, which
+// additionally rotate the reverse first wave. Verified against a sorted reference.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment with a misaligned resident tail",
+         "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction   = cub::detail::topk::select::max;
+  skip_if_batched_topk_cluster_unavailable(true);
+
+  // Bounds match the schedule sweep (same kernel); the runtime segment is sized to 5 chunks (640 floats) so, at 4 slots
+  // minus 1 reserved stream slot, only 3 resident chunks remain -> a misaligned reload tail (`3 % prologue(2) == 1`).
+  constexpr segment_size_t static_max_segment_size = 1536;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+  constexpr segment_size_t segment_size            = 640;
+  const segment_size_t k                           = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
+
+  CAPTURE(segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // Same selector as the schedule sweep's cap-1 / stages-2 case; the 5-chunk runtime segment overflows 4 slots and
+  // leaves 3 resident chunks -> a misaligned reload tail that triggers `stage_rot`.
+  auto env = make_cluster_tune_env<determinism, tie_break>(
+    cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/2>{});
+  run_cluster_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    env);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Generic (non-BlockLoadToShared) overflow streaming at a tiny footprint: the non-contiguous counting-iterator key
+// source makes `use_block_load_to_shared` false, and the slot cap forces a ~1.5 K segment to overflow, so the agent
+// takes its generic gmem-streaming path. Non-deterministic (the load path is determinism-independent; the deterministic
+// generic streamer is covered by the pairs generic index-order test). Verified against the identity sequence.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment through a non-contiguous key iterator",
+         "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction   = cub::detail::topk::select::max;
+  skip_if_batched_topk_cluster_unavailable(true);
+
+  constexpr segment_size_t static_max_segment_size = 1536;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+  constexpr segment_size_t segment_size            = static_max_segment_size;
+  const segment_size_t k                           = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
+  const segment_size_t num_items                   = num_segments * segment_size;
+
+  CAPTURE(segment_size, k, num_segments);
+
+  // Non-contiguous input: segment `seg` is the counting iterator [seg * segment_size, (seg + 1) * segment_size).
+  auto d_keys_in = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), counting_segment_keys_op<key_t, segment_size_t>{segment_size});
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  auto env = make_cluster_tune_env<determinism, tie_break>(
+    cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes>{});
+  run_cluster_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    env);
+
+  // The flattened input is the identity sequence, so build the expected keys directly and reuse the standard
+  // sort + compact verification.
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+#endif // TEST_TYPES == 1 && TEST_LAUNCH == 0
+
+// Big-segment general coverage (launch wrapper -> all launch modes, no tune override). The tiny tune-override tests
+// above pin geometry to reach the multi-CTA / streaming / schedule / idle paths at a racecheck-tiny footprint; these
+// keep real 1 Mi-scale coverage so the index/offset arithmetic (and the streaming path under device/graph launch) is
+// exercised at scale. Their sweeps are trimmed (fewer sizes/k/pads) since the fine-grained path coverage now lives in
+// the tiny tests.
+#if TEST_TYPES == 1
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
          "[keys][segmented][topk][device][cluster][determinism]",
          det_tie_combos)
@@ -533,35 +872,23 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  // Requirement under test. Random keys rarely tie at the boundary, so this mainly exercises the blocked-partition +
-  // streaming/edge interaction; the key result is invariant to the requirement, so all combinations match the
-  // reference.
   using combo                = c2h::get<0, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-  // `static_max_segment_size` is chosen to exceed the largest all-resident cluster coverage (~16 blocks worth of
-  // resident SMEM), so the 1 Mi-element segments force the agent's gmem-streaming overflow path (including an
-  // unaligned overflow tail via `- 31`), while the 128 Ki-element segment still runs fully resident under the same
-  // streaming-capable launch configuration. The `+ 1` / `- 4095` sizes make the global-last chunk a single item, i.e.
-  // a pure-suffix tail with an empty aligned bulk (`bulk == 0`) once `pad == 0` aligns the base, exercising the
-  // always-peeled tail edge on top of a zero-length resident/streamed tail chunk (resident `128 Ki + 1`, streamed
-  // `1 Mi - 4095`).
+  // 1 Mi segments overflow the resident cluster and stream (one unaligned `- 31` tail; `- 4095` makes the global-last
+  // chunk a single item -> pure-suffix tail with empty aligned bulk once `pad == 0`). The requirement is swept because
+  // the deterministic (blocked-load) path has distinct large-offset arithmetic.
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
-  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
   skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
-  constexpr auto direction          = cub::detail::topk::select::max;
-  const int pad                     = GENERATE(0, 1, 3, 7);
-  const segment_size_t segment_size = GENERATE_COPY(values(
-    {static_max_segment_size,
-     static_max_segment_size - 31,
-     static_max_segment_size - 4095,
-     segment_size_t{128 * 1024},
-     segment_size_t{128 * 1024 + 1}}));
-  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
-  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  constexpr auto direction = cub::detail::topk::select::max;
+  const int pad            = GENERATE(0, 7);
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, static_max_segment_size - 4095}));
+  const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k     = GENERATE_COPY(values({segment_size_t{1}, max_k}));
 
   CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
 
@@ -586,21 +913,19 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
-
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-// Streaming counterpart of the narrow-segment-size regression. Streaming needs segments larger than the resident
-// cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use signed 32-bit -- the same signed
-// `int32_t` as the internal `offset_t` -- to exercise the streaming path's index arithmetic across det/non-det.
+// Big streaming with a signed 32-bit segment-size type (same width as the internal `offset_t`, but signed): the point
+// is that the large-offset arithmetic stays correct on a signed type at real 1 Mi scale.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 32-bit segment-size type",
          "[keys][segmented][topk][device][cluster][determinism]",
          det_tie_combos)
 {
   using key_t           = float;
-  using seg_size_t      = int; // signed 32-bit: same width as offset_t, but signed
+  using seg_size_t      = int; // signed 32-bit
   using segment_index_t = cuda::std::int64_t;
 
   using combo                = c2h::get<0, TestType>;
@@ -611,7 +936,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
   constexpr seg_size_t static_max_segment_size = 1024 * 1024;
   constexpr seg_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments       = 2;
-  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
   skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   const int pad                 = GENERATE(0, 7);
@@ -647,34 +971,90 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-template <typename KeyT>
-struct cast_to_key_op
+// Big variable-size batch: a loose 1.1 Mi bound sizes a wide cluster while the actual segments mix a streaming 1 Mi
+// segment, a fully-resident multi-CTA segment, and small segments that leave surplus CTAs idle -- large-offset
+// coverage of every effective-width regime in one launch (the tiny idle-rank test above covers the idle path
+// racecheck-clean; this covers it at scale).
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         det_tie_combos)
 {
-  template <typename T>
-  __host__ __device__ KeyT operator()(T x) const
-  {
-    return static_cast<KeyT>(x);
-  }
-};
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
 
-// Yields, for each segment, a *non-contiguous* iterator over that segment's keys (an integral counting iterator
-// cast to the key type). Feeding the cluster top-k a non-contiguous key iterator makes `use_block_load_to_shared`
-// false, so the agent takes its generic (non-BlockLoadToShared) overflow-streaming path. Segment `seg` produces
-// keys [seg * segment_size, (seg + 1) * segment_size), so the flattened input equals the identity sequence and the
-// expected top-k is exact.
-template <typename KeyT, typename SegmentSizeT>
-struct counting_segment_keys_op
-{
-  SegmentSizeT segment_size;
+  using combo                                      = c2h::get<0, TestType>;
+  constexpr auto determinism                       = combo::determinism;
+  constexpr auto tie_break                         = combo::tie_break;
+  constexpr segment_size_t static_max_segment_size = 1100 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
-  template <typename IndexT>
-  __host__ __device__ auto operator()(IndexT seg) const
-  {
-    return cuda::make_transform_iterator(
-      cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), cast_to_key_op<KeyT>{});
-  }
-};
+  constexpr auto direction = cub::detail::topk::select::max;
+  const int pad            = GENERATE(1, 7);
+  const segment_size_t k   = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
 
+  constexpr segment_size_t big_segment_size = 1024 * 1024;
+  c2h::host_vector<segment_size_t> h_segment_offsets{
+    0,
+    big_segment_size,
+    big_segment_size + (big_segment_size - 31),
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17),
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257,
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257 + (12 * 1024 + 1)};
+  c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
+  const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
+  const segment_size_t num_items                     = h_segment_offsets.back();
+
+  auto segment_offsets_it = thrust::raw_pointer_cast(segment_offsets.data());
+  auto segment_size_it    = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
+
+  CAPTURE(pad, static_max_segment_size, static_max_k, k, num_segments, num_items, direction);
+
+  auto compacted_output_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}),
+    get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k), num_segments});
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
+  thrust::exclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  segment_size_t total_output_size = compacted_offsets.back();
+
+  c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data()) + pad;
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_offsets.cbegin());
+  auto d_keys_out =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_out_ptr), compacted_offsets.cbegin());
+
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
+
+  batched_topk_keys<direction, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments});
+
+  segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
+  expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, k);
+
+  segmented_sort_keys(
+    keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Big generic (non-BlockLoadToShared) streaming under default tuning: the non-contiguous counting-iterator key source
+// makes `use_block_load_to_shared` false, so the dispatch routes these 1 Mi segments to the cluster backend's generic
+// overflow-streaming path (vs. the tiny forced-cluster generic test above, this exercises the real default routing at
+// large-offset scale). The 1 Mi - 31 segment streams with an unaligned tail edge; the 128 Ki segment validates the
+// generic resident path (no streaming) through the same code. Keeping totals below 2^24 makes every key an exact float.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-contiguous key iterator",
          "[keys][segmented][topk][device][cluster][determinism]",
          det_tie_combos)
@@ -683,35 +1063,26 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  // Requirement under test (the key result is invariant to it; exercises the generic streaming path).
   using combo                = c2h::get<0, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-  // The counting-iterator key source is non-contiguous, so the agent uses its generic overflow-streaming path rather
-  // than BlockLoadToShared. `static_max_segment_size` exceeds the largest all-resident cluster coverage, so the 1 Mi
-  // -element segments stream (incl. an unaligned `- 31` tail), while the 128 Ki-element segment validates the generic
-  // resident path (no streaming) through the same code. Keeping the largest total below 2^24 makes every key an exact
-  // float.
+  constexpr auto direction   = cub::detail::topk::select::max;
+
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
-  constexpr segment_index_t num_segments           = 3;
-  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  constexpr segment_index_t num_segments           = 2;
   skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
-  constexpr auto direction = cub::detail::topk::select::max;
-  const segment_size_t segment_size =
-    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
-  const segment_size_t max_k     = (cuda::std::min) (static_max_k, segment_size);
-  const segment_size_t k         = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
-  const segment_size_t num_items = num_segments * segment_size;
+  const segment_size_t segment_size = GENERATE_COPY(values({static_max_segment_size - 31, segment_size_t{128 * 1024}}));
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k}));
+  const segment_size_t num_items    = num_segments * segment_size;
 
   CAPTURE(static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
 
-  // Non-contiguous input: segment `seg` is the counting iterator [seg * segment_size, (seg + 1) * segment_size).
   auto d_keys_in = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}), counting_segment_keys_op<key_t, segment_size_t>{segment_size});
 
-  // Output is a real buffer (the output iterator stays contiguous; only the input drives the streaming path).
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
   auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
@@ -723,8 +1094,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
     cuda::args::immediate{num_segments});
 
-  // The flattened input is the identity sequence, so build the expected keys directly and reuse the standard
-  // sort + compact verification.
   c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
   thrust::sequence(expected_keys.begin(), expected_keys.end());
 
@@ -835,44 +1204,38 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-#if TEST_TYPES == 1
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
-         "[keys][segmented][topk][device][cluster][determinism]",
-         det_tie_combos)
+#if TEST_TYPES == 1 && TEST_LAUNCH == 0
+// Small variable-size batch under a forced wide (4-CTA) cluster with the single-CTA fast path disabled. One per-batch
+// launch sizes the cluster from the loose bound (4096 -> 4 CTAs), but each segment derives its own effective width from
+// its actual chunk count, so the smaller segments leave surplus CTAs idle -- exercising the effective-cluster-width
+// arithmetic and the `rank >= eff_cluster_blocks` idle early-out at a racecheck-tiny footprint (previously only
+// reachable on a 64 Ki+ mixed batch). Non-deterministic (the effective-width arithmetic is determinism-independent; the
+// deterministic idle path is covered by the pairs mixed-effective-width test). Verified against a sorted reference.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys leave surplus cluster CTAs idle on small variable-size segments",
+         "[keys][segmented][topk][device][cluster]")
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  // Requirement under test (the key result is invariant to it; exercises mixed resident/streaming segments).
-  using combo                = c2h::get<0, TestType>;
-  constexpr auto determinism = combo::determinism;
-  constexpr auto tie_break   = combo::tie_break;
-  // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so a single per-segment launch sizes a
-  // wide (16-CTA) cluster and mixes every effective-width regime: streaming segments (the 1 Mi-element ones, one with
-  // an unaligned `- 31` overflow tail), a fully-resident multi-CTA segment (96 Ki + 17), two *medium* segments that
-  // exceed the single-CTA threshold but need only a few chunks (so surplus cluster CTAs go idle -- the runtime
-  // effective-cluster-width path), and a tiny segment that collapses onto a single CTA (257 elements).
-  constexpr segment_size_t static_max_segment_size = 1100 * 1024;
-  constexpr segment_size_t static_max_k            = 4 * 1024;
-  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
-  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction   = cub::detail::topk::select::max;
+  skip_if_batched_topk_cluster_unavailable(true);
 
-  constexpr auto direction = cub::detail::topk::select::max;
-  const int pad            = GENERATE(1, 3, 7);
-  const segment_size_t k   = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
+  constexpr segment_size_t static_max_segment_size = 4096; // loose bound -> 4-CTA physical cluster (128 floats/chunk)
+  constexpr segment_size_t static_max_k            = 512;
+  const int pad                                    = GENERATE(0, 7);
+  const segment_size_t k                           = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
 
-  constexpr segment_size_t big_segment_size = 1024 * 1024;
-  constexpr segment_size_t med_segment_a    = 12 * 1024 + 1; // a few chunks, unaligned tail -> most cluster CTAs idle
-  constexpr segment_size_t med_segment_b    = 40 * 1024; // more chunks, still well below the 16-CTA launch width
-  c2h::host_vector<segment_size_t> h_segment_offsets{
-    0,
-    big_segment_size,
-    big_segment_size + (big_segment_size - 31),
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17),
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257,
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257 + med_segment_a,
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257 + med_segment_a + med_segment_b};
+  // Mixed effective widths under the fixed 4-CTA launch: 4096 -> full 4, 1024/512 -> 4, 256 -> 2 (2 idle), 128 -> 1
+  // (3 idle).
+  c2h::host_vector<segment_size_t> h_segment_offsets{0};
+  for (const segment_size_t s :
+       {segment_size_t{4096}, segment_size_t{128}, segment_size_t{512}, segment_size_t{256}, segment_size_t{1024}})
+  {
+    h_segment_offsets.push_back(h_segment_offsets.back() + s);
+  }
   c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
   const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
   const segment_size_t num_items                     = h_segment_offsets.back();
@@ -881,7 +1244,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   auto segment_size_it    = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
 
-  CAPTURE(pad, static_max_segment_size, static_max_k, k, num_segments, num_items, direction);
+  CAPTURE(pad, static_max_segment_size, static_max_k, k, num_segments, num_items);
 
   // Each output segment holds exactly min(k, segment_size[i]) items, tightly packed.
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
@@ -906,12 +1269,15 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
   thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
 
-  batched_topk_keys<direction, determinism, tie_break>(
+  auto env = make_cluster_tune_env<determinism, tie_break>(
+    cluster_tuning_selector<4, /*slots=*/0, /*single_block=*/0, cluster_test_chunk_bytes>{});
+  run_cluster_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments});
+    cuda::args::immediate{num_segments},
+    env);
 
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
   expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, k);
@@ -922,7 +1288,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-#endif // TEST_TYPES == 1
+#endif // TEST_TYPES == 1 && TEST_LAUNCH == 0
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
          "[keys][segmented][topk][device]",

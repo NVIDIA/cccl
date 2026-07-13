@@ -68,6 +68,66 @@ void skip_if_batched_topk_backend_unavailable(cuda::std::int64_t static_max_segm
   skip_if_batched_topk_cluster_unavailable(deterministic || oversize);
 }
 
+// Whole-`topk_policy` tuning override that forces the cluster backend and pins otherwise heuristic / hardware-derived
+// launch geometry, so a *small* segment can deterministically reach paths that normally only large segments hit. Shared
+// by the segmented keys and pairs cluster tests (identical there, so it lives here). The levers (a `0`/`-1` sentinel
+// keeps the production default):
+//   * `MaxBlocksPerCluster`   -- cap on the launched cluster width. A cap narrower than a segment needs forces the
+//                                oversize/streaming fallback (cap 1 -> single-CTA streaming; cap 2 -> a fixed 2-CTA
+//                                cluster with a real cross-CTA scan / barriers) instead of the hardware-derived width.
+//   * `MaxChunkSlotsPerBlock` -- cap on resident chunk slots per block. Resident capacity is then `slots * chunk_items`
+//                                (host-known), so a tiny segment above it overflows into streaming -- how a test
+//                                reaches the streaming / stage-schedule paths at a racecheck-tiny footprint. Combined
+//                                with a segment size that overflows to a non-divisor resident-chunk count, it also
+//                                reaches the misaligned-tail (`stage_rot`) prime rotation.
+//   * `SingleBlockMaxSegSize` -- pin the single-CTA-fastpath threshold; `0` disables it so even a small resident
+//                                segment fans out across the cluster (multi-CTA scan / idle-rank paths).
+//   * `ChunkBytes`            -- shrink the chunk (== slot) stride so a small segment still spans several chunks.
+//   * `PipelineStages`        -- vary the streaming pipeline depth relative to the resident chunk count, sweeping the
+//                                `stream_stages` <, ==, > `prologue` stage-schedule trichotomy.
+//   * `MinChunksPerBlock`     -- raise the chunks-per-block divisor to collapse the effective cluster below the
+//                                physical width (idle-rank early-out).
+template <int MaxBlocksPerCluster,
+          int MaxChunkSlotsPerBlock = 0,
+          int SingleBlockMaxSegSize = -1,
+          int ChunkBytes            = 0,
+          int PipelineStages        = 0,
+          int MinChunksPerBlock     = 0>
+struct cluster_tuning_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::batched_topk::topk_policy
+  {
+    auto cluster                   = cub::detail::batched_topk::make_cluster_policy();
+    cluster.max_blocks_per_cluster = MaxBlocksPerCluster;
+    if constexpr (MaxChunkSlotsPerBlock != 0)
+    {
+      cluster.max_chunk_slots_per_block = MaxChunkSlotsPerBlock;
+    }
+    if constexpr (SingleBlockMaxSegSize >= 0)
+    {
+      cluster.single_block_max_seg_size = SingleBlockMaxSegSize;
+    }
+    if constexpr (ChunkBytes != 0)
+    {
+      cluster.chunk_bytes = ChunkBytes;
+    }
+    if constexpr (PipelineStages != 0)
+    {
+      cluster.pipeline_stages = PipelineStages;
+    }
+    if constexpr (MinChunksPerBlock != 0)
+    {
+      cluster.min_chunks_per_block = MinChunksPerBlock;
+    }
+    return cub::detail::batched_topk::topk_policy{
+      cub::detail::batched_topk::topk_backend::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
+  }
+};
+
+// 512 B chunk stride -> 128 floats per chunk (== per slot); small enough that a tiny segment spans several chunks.
+inline constexpr int cluster_test_chunk_bytes = 512;
+
 // Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
 struct inc_t

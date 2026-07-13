@@ -20,7 +20,7 @@
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh> // max_portable_cluster_blocks (CDP static-cluster kernel)
+#include <cub/util_device.cuh>
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
@@ -447,6 +447,9 @@ __launch_bounds__(
 // `cudaFuncSetAttribute` (device-side launches cannot opt into dynamic cluster dimensions the way the host
 // `device_batched_topk_kernel` does). It mirrors that kernel's cluster arm with a fixed cluster dim, and is consumed by
 // the CDP arm of `launch_cluster_arm` (see `CUB_TOPK_CLUSTER_DEVICE_LAUNCH` in dispatch_batched_topk.cuh).
+// `ClusterBlocks` is the compile-time cluster width the CDP arm picks: `<= max_portable_cluster_blocks` (device
+// launches can't opt into non-portable cluster sizes), and further narrowed when the policy's `max_blocks_per_cluster`
+// cap is tighter.
 template <int ThreadsPerBlock,
           int HistogramItemsPerThread,
           int PipelineStages,
@@ -457,6 +460,7 @@ template <int ThreadsPerBlock,
           int SingleBlockMaxSegSize,
           int MinChunksPerBlock,
           int CopyItemsPerThread,
+          int ClusterBlocks,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -467,7 +471,7 @@ template <int ThreadsPerBlock,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks, 1, 1)
+__launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterBlocks, 1, 1)
   _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_cluster_kernel_static(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,

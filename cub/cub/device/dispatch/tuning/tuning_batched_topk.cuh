@@ -224,9 +224,10 @@ struct baseline_policy_selector_from_types
 static_assert(baseline_topk_policy_selector<baseline_policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-//! Per-block execution shape for the thread-block-cluster backend of @ref DeviceBatchedTopK. The dispatch picks the
-//! number of cluster blocks and the dynamic shared-memory block_tile capacity at runtime (occupancy / wave-aware), so
-//! this policy carries only the per-block tuning knobs.
+//! Execution shape for the thread-block-cluster backend of @ref DeviceBatchedTopK. The dispatch picks the number of
+//! cluster blocks and the dynamic shared-memory block_tile capacity at runtime (occupancy / wave-aware), so this policy
+//! mostly carries per-block tuning knobs; the two trailing `max_*` fields are optional launch-geometry caps that bound
+//! that runtime choice.
 struct cluster_topk_policy
 {
   // Fields grouped by kind and, across and within groups, ordered by kernel use: launch config, then load, then
@@ -253,6 +254,23 @@ struct cluster_topk_policy
   int tie_break_items_per_thread; //!< Keys each thread processes per tile during the final tie-break / filter phase.
   int copy_items_per_thread; //!< Keys each thread copies per tile on the select-all (k >= segment size) fast path.
 
+  // Launch-geometry caps that bound the otherwise heuristic / hardware-derived cluster width and resident shared-memory
+  // footprint. Both default to 0 (= unrestricted) and are deliberately not auto-tuned. Beyond deterministically
+  // steering tests onto the streaming / cluster paths at a small footprint, they let a caller trade top-k throughput
+  // for resources it wants to leave free -- e.g. capping resident slots to fit a shared-memory carveout reserved for a
+  // concurrently running kernel, or narrowing the cluster width to co-schedule other work. The algorithm stays correct
+  // at any cap: a segment that no longer fits resident simply streams the remainder from global memory.
+  int max_blocks_per_cluster; //!< Upper bound on the launched cluster width (CTAs per segment); 0 = unrestricted (the
+                              //!< hardware cluster-width ceiling, queried from the runtime for a host launch and the
+                              //!< portable ceiling for a device (CDP) launch). Non-zero is additionally clamped to that
+                              //!< same ceiling. A cap narrower than a segment needs pushes it into the streaming
+                              //!< fallback (cap 1 -> single-CTA streaming).
+  int max_chunk_slots_per_block; //!< Upper bound on resident chunk slots per block; 0 = unrestricted (the full
+                                 //!< shared-memory budget: the hardware opt-in budget for a host launch, the portable
+                                 //!< 48 KiB budget for a device (CDP) launch). A smaller cap shrinks each CTA's
+                                 //!< resident capacity (and thus its dynamic shared-memory request), so a smaller
+                                 //!< segment overflows into the streaming path.
+
   // Equality/streaming make this a regular type (required by the `policy_selector` concept / `dispatch_compute_cap`).
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
   {
@@ -262,7 +280,9 @@ struct cluster_topk_policy
         && lhs.single_block_max_seg_size == rhs.single_block_max_seg_size && lhs.bits_per_pass == rhs.bits_per_pass
         && lhs.histogram_items_per_thread == rhs.histogram_items_per_thread
         && lhs.tie_break_items_per_thread == rhs.tie_break_items_per_thread
-        && lhs.copy_items_per_thread == rhs.copy_items_per_thread;
+        && lhs.copy_items_per_thread == rhs.copy_items_per_thread
+        && lhs.max_blocks_per_cluster == rhs.max_blocks_per_cluster
+        && lhs.max_chunk_slots_per_block == rhs.max_chunk_slots_per_block;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
@@ -280,7 +300,9 @@ struct cluster_topk_policy
         << ", .pipeline_stages = " << p.pipeline_stages
         << ", .single_block_max_seg_size = " << p.single_block_max_seg_size << ", .bits_per_pass = " << p.bits_per_pass
         << ", .histogram_items_per_thread = " << p.histogram_items_per_thread << ", .tie_break_items_per_thread = "
-        << p.tie_break_items_per_thread << ", .copy_items_per_thread = " << p.copy_items_per_thread << " }";
+        << p.tie_break_items_per_thread << ", .copy_items_per_thread = " << p.copy_items_per_thread
+        << ", .max_blocks_per_cluster = " << p.max_blocks_per_cluster
+        << ", .max_chunk_slots_per_block = " << p.max_chunk_slots_per_block << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -305,7 +327,9 @@ concept cluster_topk_policy_selector = policy_selector<T, cluster_topk_policy>;
     /*bits_per_pass=*/11,
     /*histogram_items_per_thread=*/8,
     /*tie_break_items_per_thread=*/8,
-    /*copy_items_per_thread=*/8};
+    /*copy_items_per_thread=*/8,
+    /*max_blocks_per_cluster=*/0,
+    /*max_chunk_slots_per_block=*/0};
 }
 
 // Hard constraints on the block_tile byte geometry. The aligned bulk-copy (TMA) load path addresses gmem/smem in

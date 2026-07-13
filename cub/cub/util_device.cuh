@@ -603,9 +603,6 @@ inline constexpr int bulk_copy_min_align = 16;
 // Largest thread-block cluster width guaranteed on every SM 9.0+ device.
 inline constexpr int max_portable_cluster_blocks = 8;
 
-// CUDA's hardware ceiling on thread-block cluster width (Hopper supports up to 16).
-inline constexpr int max_supported_cluster_blocks = 16;
-
 //! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
 //! @tparam T
 //!   Value type to be loaded.
