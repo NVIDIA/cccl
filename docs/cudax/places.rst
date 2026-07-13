@@ -338,7 +338,11 @@ composite places it is required: the byte-count ``allocate()`` throws there,
 since a byte count alone cannot carry the geometry the partitioner needs. A
 caller that genuinely has untyped bytes states that explicitly with
 ``allocate_nd(dim4(nbytes), 1)``, which distributes the buffer with byte
-granularity.
+granularity. This raw-byte form applies to composite places built from
+scale-free partitioners only; a composite place backed by a structured
+partition (see :ref:`places-structured-partitions`) accepts exactly the
+extents of the tensor the partition was built for and rejects anything else,
+including a flat byte count.
 
 .. _places-vmm:
 
