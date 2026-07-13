@@ -279,10 +279,12 @@ clc_next_tile_id(uint4& clc_resp, cuda::std::uint64_t& clc_bar, int pipeline_gen
     wait_parity(&clc_bar, (unsigned) (pipeline_gen & 1));
     // try_cancel wrote clc_resp via the async proxy
     ptx::fence_proxy_async(ptx::space_shared);
-    const bool canceled = ptx::clusterlaunchcontrol_query_cancel_is_canceled(clc_resp);
+    const uint4 resp_snapshot = clc_resp;
+    ptx::fence_proxy_async(ptx::space_shared);
+    const bool canceled = ptx::clusterlaunchcontrol_query_cancel_is_canceled(resp_snapshot);
     if (canceled)
     {
-      nxt = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(clc_resp);
+      nxt = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(resp_snapshot);
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
       ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
     }
