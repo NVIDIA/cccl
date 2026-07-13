@@ -44,8 +44,8 @@ Defined in ``<cuda/numeric>`` header.
 
    abs(lhs - rhs) <= max(absolute_tol, relative_tol * max(abs(lhs), abs(rhs)))
 
+- The overloads without ``relative_tol`` use a default relative tolerance based on half of available digits of accuracy. The defaultrelative tolerance for integer types is 0.
 - The overloads without ``absolute_tol`` use ``absolute_tol == 0``.
-- The overloads without ``relative_tol`` use a default relative tolerance based on half of available digits of accuracy.
 
 **Parameters**
 
@@ -54,14 +54,14 @@ Defined in ``<cuda/numeric>`` header.
 - ``relative_tol``: The relative tolerance. Passing ``0`` performs a purely absolute tolerance check when ``absolute_tol`` is non-zero.
 - ``absolute_tol``: The absolute tolerance. This is useful for comparisons near zero.
 
-**Precision**
-
-- ``relative_tol``: Must be in the range ``[0.0, 1.0]``.
-- ``absolute_tol``: Must be finite and non-negative.
-
 **Return value**
 
 - Returns ``true`` if ``lhs`` and ``rhs`` are close to each other, otherwise returns ``false``.
+
+**Preconditions**
+
+- ``relative_tol``: Must be in the range ``[0.0, 1.0]``.
+- ``absolute_tol``: Must be finite and non-negative.
 
 **Constraints**
 
@@ -85,10 +85,9 @@ Example
 
     __global__ void kernel()
     {
-        assert(cuda::isclose( 1.0f, 1.0f + 5e-10f));
-        assert(!cuda::isclose(1.0f, 1.0f + 5e-8f));
+        assert(cuda::isclose( 1.0f, 1.0f + 5e-6f));
+        assert(!cuda::isclose(1.0f, 1.0f + 2e-5f));
 
-        assert(!cuda::isclose(0.0f, 1e-12f));
         assert(cuda::isclose( 0.0f, 1e-12f, 0.0f, 1e-12f));
 
         cuda::std::complex<float> z1{1.0f, 1.0f};

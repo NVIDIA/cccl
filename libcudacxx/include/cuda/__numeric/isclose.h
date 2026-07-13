@@ -94,6 +94,7 @@ template <typename _ComplexType, typename _AbsTol>
   using __scalar_t _CCCL_NODEBUG_ALIAS  = typename _ComplexType::value_type;
   using __compare_t _CCCL_NODEBUG_ALIAS = __isclose_compare_t<__scalar_t>;
 #if _CCCL_HAS_FLOAT128()
+  // __float128 is not supported because cuda::std::hypot is not implemented for this type
   static_assert(!::cuda::std::is_same_v<__scalar_t, __float128>, "cuda::isclose: __float128 is not supported");
 #endif // _CCCL_HAS_FLOAT128()
   _CCCL_ASSERT(::cuda::in_range(__rel_tol, 0.0f, 1.0f),
