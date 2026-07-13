@@ -31,6 +31,7 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cmath>
 #include <cstdio>
 
 using namespace cuda::experimental::stf;
