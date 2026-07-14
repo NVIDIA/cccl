@@ -379,12 +379,12 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   int{current_policy<PolicySelector>().single_tile.threads_per_block},
-  1) void DeviceReduceDeferredSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                               _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                               _CCCL_GRID_CONSTANT const KernelNumItemsT kernel_num_items,
-                                               _CCCL_GRID_CONSTANT const int first_pass_grid_size,
+  1) void DeviceReduceDeferredSingleTileKernel(const InputIteratorT d_in,
+                                               const OutputIteratorT d_out,
+                                               const KernelNumItemsT kernel_num_items,
+                                               const int first_pass_grid_size,
                                                ReductionOpT reduction_op,
-                                               _CCCL_GRID_CONSTANT const InitValueT init,
+                                               const InitValueT init,
                                                TransformOpT transform_op)
 {
   const OffsetT actual_num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
