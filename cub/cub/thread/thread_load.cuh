@@ -51,7 +51,7 @@ enum CacheLoadModifier
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(CacheLoadModifier modifier) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(CacheLoadModifier modifier) noexcept
 {
   switch (modifier)
   {
@@ -69,9 +69,8 @@ namespace detail
       return "LOAD_LDG";
     case LOAD_VOLATILE:
       return "LOAD_VOLATILE";
-    default:
-      return "<unknown CacheLoadModifier>";
   }
+  return "<unknown CacheLoadModifier>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

@@ -704,7 +704,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
  */
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("MergeSort build result has AoT metadata populated", "[merge_sort][aot]")
+C2H_TEST("MergeSort build result has serialization metadata populated", "[merge_sort][serialization]")
 {
   using T = int32_t;
 
@@ -749,7 +749,7 @@ C2H_TEST("MergeSort build result has AoT metadata populated", "[merge_sort][aot]
   REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
 }
 
-C2H_TEST("MergeSort compile/load round-trip", "[merge_sort][aot]")
+C2H_TEST("MergeSort compile/load round-trip", "[merge_sort][serialization]")
 {
   using T = int32_t;
 
