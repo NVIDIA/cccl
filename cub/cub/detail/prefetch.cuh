@@ -22,7 +22,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
-#include <cuda/__ptx/ptx_helper_functions.h>
+#include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -96,8 +96,8 @@ struct BlockPrefetch
   {
     if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<It>)
     {
-      const int total_bytes     = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
-      const auto* const src_ptr = reinterpret_cast<const char*>(::cuda::std::to_address(tile_base));
+      const int total_bytes = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
+      const auto src_ptr    = ::cuda::ptr_rebind<char>(::cuda::std::to_address(tile_base));
       if (total_bytes <= 0)
       {
         return;
@@ -114,13 +114,12 @@ struct BlockPrefetch
             if (::cuda::device::__block_elect_one())
             {
               // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
-              const auto* const aligned_base = ::cuda::align_down(src_ptr, 16);
-              const unsigned int prefix      = static_cast<unsigned int>(src_ptr - aligned_base);
-              const unsigned int aligned_size =
-                ::cuda::round_up(static_cast<unsigned int>(total_bytes) + prefix, 16u);
+              const auto* aligned_base = ::cuda::align_down(src_ptr, 16);
+              const auto prefix        = static_cast<unsigned>(src_ptr - aligned_base);
+              const auto aligned_size  = ::cuda::round_up(static_cast<unsigned>(total_bytes) + prefix, 16u);
               asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
                            :
-                           : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
+                           : "l"(::__cvta_generic_to_global(aligned_base)), "r"(aligned_size)
                            : "memory");
             }
           }),
@@ -146,11 +145,11 @@ private:
       // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
       if constexpr (Level == LoadPrefetch::l1)
       {
-        asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
+        asm volatile("prefetch.global.L1 [%0];" : : "l"(::__cvta_generic_to_global(src_ptr + offset)) : "memory");
       }
       else
       {
-        asm volatile("prefetch.global.L2 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
+        asm volatile("prefetch.global.L2 [%0];" : : "l"(::__cvta_generic_to_global(src_ptr + offset)) : "memory");
       }
     }
   }
