@@ -276,6 +276,31 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   REQUIRE(output == expected);
 }
 
+C2H_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environment", "[scan][env]")
+{
+  // example-begin inclusive-scan-future-init-env
+  auto op     = cuda::std::plus{};
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(4);
+
+  auto init_value_vec = thrust::device_vector<int>{10};
+  auto future_init    = cuda::args::deferred(init_value_vec.begin());
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, future_init, input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveScanInit (FutureValue) failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{11, 13, 16, 20};
+  // example-end inclusive-scan-future-init-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan][env]")
 {
   // example-begin inclusive-scan-init-env-stream
