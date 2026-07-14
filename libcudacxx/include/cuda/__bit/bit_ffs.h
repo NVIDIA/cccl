@@ -31,67 +31,70 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CHECK_BUILTIN(builtin_ffs) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_FFS(...)   __builtin_ffs(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FFSLL(...) __builtin_ffsll(__VA_ARGS__)
+#if _CCCL_CHECK_BUILTIN(builtin_ffs) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_FFS(...) __builtin_ffs(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ffs)
 
-// nvcc does not support __builtin_ffs in device code
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#if _CCCL_CHECK_BUILTIN(builtin_ffsll) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_FFSLL(...) __builtin_ffsll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ffsll)
+
+// nvcc does not support __builtin_ffs in device code and nvrtc does not support it at all
+#if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_COMPILER(NVRTC)
 #  undef _CCCL_BUILTIN_FFS
 #  undef _CCCL_BUILTIN_FFSLL
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_COMPILER(NVRTC)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr int __bit_ffs_impl_constexpr(_Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr int __bit_ffs_impl_generic(const _Tp __value) noexcept
 {
   return (__value == _Tp{0}) ? 0 : ::cuda::std::countr_zero(__value) + 1;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HOST_API int __bit_ffs_impl_host(_Tp __value) noexcept
+[[nodiscard]] _CCCL_HOST_API int __bit_ffs_impl_host(const _Tp __value) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FFS)
-  if constexpr (sizeof(_Tp) <= sizeof(int))
+#  if defined(_CCCL_BUILTIN_FFS) && defined(_CCCL_BUILTIN_FFSLL)
+  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
   {
-    return _CCCL_BUILTIN_FFS(static_cast<int>(static_cast<unsigned>(__value)));
+    return _CCCL_BUILTIN_FFS(static_cast<int>(__value));
   }
   else
   {
-    return _CCCL_BUILTIN_FFSLL(static_cast<long long>(static_cast<unsigned long long>(__value)));
+    return _CCCL_BUILTIN_FFSLL(static_cast<long long>(__value));
   }
 #  elif _CCCL_COMPILER(MSVC)
   unsigned long __where{};
   unsigned char __found{};
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
   {
-    __found = ::_BitScanForward(&__where, static_cast<uint32_t>(__value));
+    __found = ::_BitScanForward(&__where, static_cast<::cuda::std::uint32_t>(__value));
   }
   else
   {
-    __found = ::_BitScanForward64(&__where, static_cast<uint64_t>(__value));
+    __found = ::_BitScanForward64(&__where, static_cast<::cuda::std::uint64_t>(__value));
   }
   return __found ? static_cast<int>(__where) + 1 : 0;
 #  else
-  return ::cuda::__bit_ffs_impl_constexpr(__value);
-#  endif // _CCCL_BUILTIN_FFS
+  return ::cuda::__bit_ffs_impl_generic(__value);
+#  endif // _CCCL_BUILTIN_FFS && _CCCL_BUILTIN_FFSLL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API int __bit_ffs_impl_device(_Tp __value) noexcept
+[[nodiscard]] _CCCL_DEVICE_API int __bit_ffs_impl_device(const _Tp __value) noexcept
 {
-  if constexpr (sizeof(_Tp) <= sizeof(int))
+  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
   {
-    return ::__ffs(static_cast<int>(static_cast<unsigned>(__value)));
+    return ::__ffs(static_cast<int>(__value));
   }
   else
   {
-    return ::__ffsll(static_cast<long long>(static_cast<unsigned long long>(__value)));
+    return ::__ffsll(static_cast<long long>(__value));
   }
 }
 #endif // _CCCL_CUDA_COMPILATION()
@@ -101,9 +104,9 @@ template <class _Tp>
 // result is 1-based and the zero input is well defined (it returns 0).
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr int bit_ffs(_Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr int bit_ffs(const _Tp __value) noexcept
 {
-  if constexpr (sizeof(_Tp) <= sizeof(unsigned long long))
+  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint64_t))
   {
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -112,11 +115,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
         NV_IS_HOST, (return ::cuda::__bit_ffs_impl_host(__value);), (return ::cuda::__bit_ffs_impl_device(__value);))
     }
 #endif // !_CCCL_TILE_COMPILATION()
-    return ::cuda::__bit_ffs_impl_constexpr(__value);
+    return ::cuda::__bit_ffs_impl_generic(__value);
   }
   else
   {
-    return ::cuda::__bit_ffs_impl_constexpr(__value);
+    return ::cuda::__bit_ffs_impl_generic(__value);
   }
 }
 

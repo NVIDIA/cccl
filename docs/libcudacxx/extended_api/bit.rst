@@ -30,7 +30,7 @@ Bit
    * - :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>`
      - Find the first (least significant) set bit
      - CCCL 3.5.0
-     - CUDA 13.x
+     - CUDA 13.5
 
    * - :ref:`bit_reverse <libcudacxx-extended-api-bit-bit_reverse>`
      - Reverse the order of bits
