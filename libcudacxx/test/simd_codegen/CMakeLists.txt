@@ -144,6 +144,26 @@ function(simd_codegen_get_sass_check_prefixes out_var test_contents arch)
   set(${out_var} "${check_prefixes}" PARENT_SCOPE)
 endfunction()
 
+function(simd_codegen_has_sass_arch_specific_checks out_var test_contents)
+  string(
+    REGEX MATCH
+    "; SM([0-9]+[a-f]?|1XX)(:|-LABEL:|-NOT:|-NEXT:|-SAME:|-DAG:|-COUNT:|-EMPTY:)"
+    has_arch_specific_checks
+    "${test_contents}"
+  )
+  string(
+    REGEX MATCH
+    "; SM[0-9]+-PLUS(:|-[A-Z]+:)"
+    has_plus_checks
+    "${test_contents}"
+  )
+  if (has_arch_specific_checks OR has_plus_checks)
+    set(${out_var} TRUE PARENT_SCOPE)
+  else()
+    set(${out_var} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
 # configure the library target for the test
 function(simd_codegen_add_library_target out_var kind arch test_path)
   cmake_path(GET test_path FILENAME test_file)
@@ -224,7 +244,16 @@ function(simd_codegen_add_sass_test test_path)
     endif()
   endforeach()
   if (NOT test_archs)
-    set(test_archs ${simd_codegen_sass_cuda_archs})
+    simd_codegen_has_sass_arch_specific_checks(has_arch_specific_checks "${test_contents}")
+    if (has_arch_specific_checks)
+      message(
+        STATUS
+        "-- Skipping ${test_path}: requires an unsupported CUDA architecture"
+      )
+      return()
+    else()
+      set(test_archs ${simd_codegen_sass_cuda_archs})
+    endif()
   endif()
 
   foreach (arch IN LISTS test_archs)

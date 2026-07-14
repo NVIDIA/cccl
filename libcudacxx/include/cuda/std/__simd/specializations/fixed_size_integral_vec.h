@@ -49,7 +49,7 @@ inline constexpr __simd_operations_kind __simd_operations_kind_v<_Tp, __fixed_si
   __is_fixed_size_small_integral_v<_Tp, _Np> ? __simd_operations_small_integral : __simd_operations_kind::__default;
 
 #define _CCCL_SIMD_FIXED_SIZE_INTEGRAL_BINARY_BITWISE(_NAME, _OP)                           \
-  [[nodiscard]] _CCCL_API static constexpr __simd_storage_t _NAME(                          \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t _NAME(              \
     const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept                  \
   {                                                                                         \
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT                                                          \
@@ -81,7 +81,8 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
   static constexpr __simd_size_type __usize = ::cuda::ceil_div(_Np, __ratio);
   using __unsigned_storage_t                = array<uint32_t, __usize>;
 
-  [[nodiscard]] _CCCL_API static constexpr __simd_storage_t __bitwise_not(const __simd_storage_t& __s) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
+  __bitwise_not(const __simd_storage_t& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -104,7 +105,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
   // Unary arithmetic operations
 
   // x++ = x + 1
-  _CCCL_API static constexpr void __increment(__simd_storage_t& __s) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr void __increment(__simd_storage_t& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -124,7 +125,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
   }
 
   // x-- = x - 1
-  _CCCL_API static constexpr void __decrement(__simd_storage_t& __s) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr void __decrement(__simd_storage_t& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -145,7 +146,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
 
   // -x = ~x + 1
   [[nodiscard]]
-  _CCCL_API static constexpr __simd_storage_t __unary_minus(const __simd_storage_t& __s) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t __unary_minus(const __simd_storage_t& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -167,7 +168,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
   // Binary arithmetic operations
 
   [[nodiscard]]
-  _CCCL_API static constexpr __simd_storage_t
+  _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
   __plus(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -178,14 +179,14 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
       {
         NV_IF_TARGET(NV_PROVIDES_SM_90,
                      (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
-                               ::cuda::std::simd::__vadd_16bit_x2<_Tp>(__lhs_u, __rhs_u));))
+                               ::cuda::std::simd::__vadd_16bit_x2(__lhs_u, __rhs_u));))
       }
 #  if _CCCL_HAS_SIMD_8BIT()
       else if constexpr (sizeof(_Tp) == 1)
       {
         NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
                      (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
-                               ::cuda::std::simd::__vadd_8bit_x4<_Tp>(__lhs_u, __rhs_u));))
+                               ::cuda::std::simd::__vadd_8bit_x4(__lhs_u, __rhs_u));))
       }
 #  endif // _CCCL_HAS_SIMD_8BIT()
     }
@@ -193,7 +194,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
   }
 
   [[nodiscard]]
-  _CCCL_API static constexpr __simd_storage_t
+  _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
   __minus(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT

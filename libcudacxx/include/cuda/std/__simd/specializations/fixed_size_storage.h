@@ -41,12 +41,12 @@ struct __fixed_size
 // However, SIMD storage could spill from register to cache/memory. This could break the alignment of the data for
 // vectorized instructions. For this reason, we align the SIMD storage to at least 8 bytes (max SIMD instruction size).
 // 8 bytes is a negligible constraint in case of spilling.
-template <typename _Tp, __simd_size_type _Np, size_t _TotalAlignment = alignof(_Tp) * _Np>
+template <typename _Tp>
 inline constexpr size_t __simd_storage_alignment_v = ::cuda::std::max(alignof(_Tp), size_t{8});
 
 // Element-per-slot simd storage for fixed_size ABI
 template <typename _Tp, __simd_size_type _Np>
-struct alignas(__simd_storage_alignment_v<_Tp, _Np>) __simd_storage<_Tp, __fixed_size<_Np>>
+struct alignas(__simd_storage_alignment_v<_Tp>) __simd_storage<_Tp, __fixed_size<_Np>>
 {
   using value_type = _Tp;
 
