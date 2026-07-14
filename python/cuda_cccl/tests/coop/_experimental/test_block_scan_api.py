@@ -4,6 +4,7 @@
 
 import numba
 import numpy as np
+from _utils.device_array import DeviceArray
 from numba import cuda
 
 import cuda.coop._experimental as coop
@@ -43,7 +44,7 @@ def test_block_exclusive_sum():
     tile_size = threads_per_block * items_per_thread
 
     h_keys = np.ones(tile_size, dtype=np.int32)
-    d_keys = cuda.to_device(h_keys)
+    d_keys = DeviceArray.from_numpy(h_keys)
     kernel[1, threads_per_block](d_keys)
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
@@ -77,7 +78,7 @@ def test_block_exclusive_sum_single_input_per_thread():
     tile_size = threads_per_block
 
     h_keys = np.ones(tile_size, dtype=np.int32)
-    d_keys = cuda.to_device(h_keys)
+    d_keys = DeviceArray.from_numpy(h_keys)
     kernel[1, threads_per_block](d_keys)
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):

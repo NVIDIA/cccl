@@ -17,9 +17,9 @@ architecture).
 
 import struct
 
-import cupy as cp
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray, get_compute_capability
 
 from cuda.compute import OpKind, deserialize, make_reduce_into
 
@@ -39,8 +39,8 @@ _OFF_CC = 4 + 4
 
 
 def _reduce_blob():
-    d = cp.arange(1024, dtype=cp.int32)
-    o = cp.zeros(1, dtype=cp.int32)
+    d = DeviceArray.from_numpy(np.arange(1024, dtype=np.int32))
+    o = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
     r = make_reduce_into(d_in=d, d_out=o, op=OpKind.PLUS, h_init=np.zeros(1, np.int32))
     return r.serialize()
 
@@ -53,7 +53,7 @@ def _patch_u32(blob, field_off, value):
 
 
 def test_wrong_cc_major_reports_clear_message():
-    maj = int(cp.cuda.Device().compute_capability[0])
+    maj = int(get_compute_capability()[0])
     other_major = 7 if maj != 7 else 8
     bad = _patch_u32(_reduce_blob(), _OFF_CC, other_major * 10 + 5)
     with pytest.raises(RuntimeError, match="compute-capability major"):
@@ -64,8 +64,7 @@ def test_wrong_cc_minor_reports_clear_message():
     # A CUBIN built for a higher minor than the device is not backward-compatible
     # (SASS is only forward-compatible across minors within a major), so a blob
     # targeting the same major but a higher minor must be rejected.
-    cc = cp.cuda.Device().compute_capability  # e.g. "75"
-    maj, minr = int(cc[0]), int(cc[1])
+    maj, minr = (int(part) for part in get_compute_capability())
     if minr >= 9:
         pytest.skip("device minor is already the maximum within its major")
     bad = _patch_u32(_reduce_blob(), _OFF_CC, maj * 10 + (minr + 1))
@@ -85,11 +84,11 @@ def test_valid_blob_still_roundtrips():
     from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
     reducer = deserialize(_reduce_blob())
-    d = cp.arange(1024, dtype=cp.int32)
-    o = cp.zeros(1, dtype=cp.int32)
+    d = DeviceArray.from_numpy(np.arange(1024, dtype=np.int32))
+    o = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
     kw = dict(
         d_in=d, d_out=o, num_items=1024, op=OpKind.PLUS, h_init=np.zeros(1, np.int32)
     )
     nbytes = reducer(temp_storage=None, **kw)
     reducer(temp_storage=TempStorageBuffer(nbytes, None), **kw)
-    assert int(o.get()[0]) == 1024 * 1023 // 2
+    assert int(o.copy_to_host()[0]) == 1024 * 1023 // 2

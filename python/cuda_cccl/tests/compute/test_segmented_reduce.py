@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import cupy as cp
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -19,6 +19,19 @@ from cuda.compute import (
     serialize,
 )
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
+
+
+def is_out_of_memory_error(error):
+    # cuda-core exception types vary by memory resource, so classify by message.
+    message = str(error).lower()
+    return any(
+        marker in message
+        for marker in (
+            "out of memory",
+            "out_of_memory",
+            "failed to allocate memory from pool",
+        )
+    )
 
 
 @pytest.fixture(params=["i4", "u4", "i8", "u8"])
@@ -40,22 +53,24 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
 
     assert input_array.ndim == 1
     sz = input_array.size
-    rng = cp.random
+    rng = np.random.default_rng()
     n_segments = 16
-    h_offsets = cp.zeros(n_segments + 1, dtype="int64")
+    h_offsets = np.zeros(n_segments + 1, dtype="int64")
     h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
 
-    offsets = cp.cumsum(cp.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
+    offsets = np.cumsum(np.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
 
-    start_offsets = offsets[:-1]
-    end_offsets = offsets[1:]
+    h_start_offsets = offsets[:-1]
+    h_end_offsets = offsets[1:]
 
     assert offsets.dtype == np.dtype(offset_dtype)
-    assert cp.all(start_offsets <= end_offsets)
-    assert end_offsets[-1] == sz
+    assert np.all(h_start_offsets <= h_end_offsets)
+    assert h_end_offsets[-1] == sz
 
-    d_in = cp.asarray(input_array)
-    d_out = cp.empty(n_segments, dtype=d_in.dtype)
+    d_in = DeviceArray.from_numpy(input_array)
+    d_out = DeviceArray.empty(n_segments, input_array.dtype)
+    start_offsets = DeviceArray.from_numpy(h_start_offsets)
+    end_offsets = DeviceArray.from_numpy(h_end_offsets)
 
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
@@ -75,11 +90,16 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
         h_init=h_init,
     )
 
-    d_expected = cp.empty_like(d_out)
+    expected = np.empty(n_segments, dtype=input_array.dtype)
     for i in range(n_segments):
-        d_expected[i] = cp.sum(d_in[start_offsets[i] : end_offsets[i]])
+        expected[i] = np.sum(input_array[h_start_offsets[i] : h_end_offsets[i]])
 
-    assert cp.all(d_out == d_expected)
+    result = d_out.copy_to_host()
+    if np.issubdtype(input_array.dtype, np.inexact):
+        tolerance = 4 * np.finfo(input_array.dtype).eps
+        np.testing.assert_allclose(result, expected, rtol=tolerance, atol=tolerance)
+    else:
+        np.testing.assert_array_equal(result, expected)
 
 
 def test_segmented_reduce_struct_type(monkeypatch):
@@ -89,8 +109,6 @@ def test_segmented_reduce_struct_type(monkeypatch):
         "_check_sass",
         False,
     )
-    import cupy as cp
-    import numpy as np
 
     @gpu_struct
     class Pixel:
@@ -106,13 +124,18 @@ def test_segmented_reduce_struct_type(monkeypatch):
 
     segment_size = 64
     n_pixels = align_up(4000, 64)
-    offsets = cp.arange(n_pixels + segment_size - 1, step=segment_size, dtype=np.int64)
-    start_offsets = offsets[:-1]
-    end_offsets = offsets[1:]
-    n_segments = start_offsets.size
+    offsets = np.arange(n_pixels + segment_size - 1, step=segment_size, dtype=np.int64)
+    h_start_offsets = offsets[:-1]
+    h_end_offsets = offsets[1:]
+    n_segments = h_start_offsets.size
 
-    d_rgb = cp.random.randint(0, 256, (n_pixels, 3), dtype=np.int32).view(Pixel.dtype)
-    d_out = cp.empty(n_segments, Pixel.dtype)
+    rng = np.random.default_rng()
+    h_rgb = rng.integers(0, 256, (n_pixels, 3), dtype=np.int32)
+    h_rgb = h_rgb.view(Pixel.dtype).reshape(n_pixels)
+    d_rgb = DeviceArray.from_numpy(h_rgb)
+    d_out = DeviceArray.empty(n_segments, Pixel.dtype)
+    start_offsets = DeviceArray.from_numpy(h_start_offsets)
+    end_offsets = DeviceArray.from_numpy(h_end_offsets)
 
     h_init = Pixel(0, 0, 0)
 
@@ -127,10 +150,10 @@ def test_segmented_reduce_struct_type(monkeypatch):
         h_init=h_init,
     )
 
-    h_rgb = np.reshape(d_rgb.get(), (n_segments, -1))
+    h_rgb = np.reshape(h_rgb, (n_segments, -1))
     expected = h_rgb[np.arange(h_rgb.shape[0]), h_rgb["g"].argmax(axis=-1)]
 
-    np.testing.assert_equal(expected["g"], d_out.get()["g"])
+    np.testing.assert_equal(expected["g"], d_out.copy_to_host()["g"])
 
 
 @pytest.mark.large
@@ -177,10 +200,12 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
 
     num_segments = (2**15 + 2**3) * 2**16
     try:
-        res = cp.full(num_segments, fill_value=127, dtype=cp.uint8)
-    except cp.cuda.memory.OutOfMemoryError:
+        res = DeviceArray.empty(num_segments, np.uint8)
+    except Exception as error:
+        if not is_out_of_memory_error(error):
+            raise
         pytest.skip("Insufficient memory to run the large number of segments test")
-    assert res.size == num_segments
+    assert res.nbytes == num_segments * np.dtype(np.uint8).itemsize
 
     def my_add(a: np.uint8, b: np.uint8) -> np.uint8:
         return (a + b) % np.uint8(7)
@@ -250,10 +275,12 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
 
     num_segments = (2**15 + 2**3) * 2**16
     try:
-        res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
-    except cp.cuda.memory.OutOfMemoryError:
+        res = DeviceArray.empty(num_segments, np.int16)
+    except Exception as error:
+        if not is_out_of_memory_error(error):
+            raise
         pytest.skip("Insufficient memory to run the large number of segments test")
-    assert res.size == num_segments
+    assert res.nbytes == num_segments * np.dtype(np.int16).itemsize
 
     h_init = np.zeros(tuple(), dtype=np.int16)
 
@@ -284,10 +311,13 @@ def test_segmented_reduce_well_known_plus(monkeypatch):
     h_init = np.array([0], dtype=dtype)
 
     # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
-    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
-    d_starts = cp.array([0, 3, 5], dtype=np.int32)
-    d_ends = cp.array([3, 5, 9], dtype=np.int32)
-    d_output = cp.empty(3, dtype=dtype)
+    h_input = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    h_starts = np.array([0, 3, 5], dtype=np.int32)
+    h_ends = np.array([3, 5, 9], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_starts = DeviceArray.from_numpy(h_starts)
+    d_ends = DeviceArray.from_numpy(h_ends)
+    d_output = DeviceArray.empty(3, dtype)
 
     cuda.compute.segmented_reduce(
         d_in=d_input,
@@ -300,7 +330,7 @@ def test_segmented_reduce_well_known_plus(monkeypatch):
     )
 
     expected = np.array([6, 9, 30])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_segmented_reduce_well_known_maximum(monkeypatch):
@@ -314,10 +344,13 @@ def test_segmented_reduce_well_known_maximum(monkeypatch):
     h_init = np.array([-100], dtype=dtype)
 
     # Create segmented data: [1, 9, 3] | [4, 2] | [6, 7, 1, 8]
-    d_input = cp.array([1, 9, 3, 4, 2, 6, 7, 1, 8], dtype=dtype)
-    d_starts = cp.array([0, 3, 5], dtype=np.int32)
-    d_ends = cp.array([3, 5, 9], dtype=np.int32)
-    d_output = cp.empty(3, dtype=dtype)
+    h_input = np.array([1, 9, 3, 4, 2, 6, 7, 1, 8], dtype=dtype)
+    h_starts = np.array([0, 3, 5], dtype=np.int32)
+    h_ends = np.array([3, 5, 9], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_starts = DeviceArray.from_numpy(h_starts)
+    d_ends = DeviceArray.from_numpy(h_ends)
+    d_output = DeviceArray.empty(3, dtype)
 
     cuda.compute.segmented_reduce(
         d_in=d_input,
@@ -330,7 +363,7 @@ def test_segmented_reduce_well_known_maximum(monkeypatch):
     )
 
     expected = np.array([9, 4, 8])  # max of each segment
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_segmented_reduce_bool_maximum(monkeypatch):
@@ -343,10 +376,13 @@ def test_segmented_reduce_bool_maximum(monkeypatch):
     h_init = np.array([False], dtype=np.bool_)
 
     # Create segmented data: [False, True] | [False, False] | [True]
-    d_input = cp.array([False, True, False, False, True], dtype=np.bool_)
-    d_starts = cp.array([0, 2, 4], dtype=np.int32)
-    d_ends = cp.array([2, 4, 5], dtype=np.int32)
-    d_output = cp.empty(3, dtype=np.bool_)
+    h_input = np.array([False, True, False, False, True], dtype=np.bool_)
+    h_starts = np.array([0, 2, 4], dtype=np.int32)
+    h_ends = np.array([2, 4, 5], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_starts = DeviceArray.from_numpy(h_starts)
+    d_ends = DeviceArray.from_numpy(h_ends)
+    d_output = DeviceArray.empty(3, np.bool_)
 
     cuda.compute.segmented_reduce(
         d_in=d_input,
@@ -359,7 +395,7 @@ def test_segmented_reduce_bool_maximum(monkeypatch):
     )
 
     expected = np.array([True, False, True], dtype=np.bool_)
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch):
@@ -374,13 +410,15 @@ def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch)
     h_init = np.array([0], dtype=dtype)
 
     # Use the floating_array fixture which provides random floating-point data of size 1000
-    d_input = floating_array
+    d_input = DeviceArray.from_numpy(floating_array)
 
     # Create 2 segments of roughly equal size
-    segment_size = d_input.size // 2
-    d_output = cp.empty(2, dtype=dtype)
-    start_offsets = cp.array([0, segment_size], dtype=np.int32)
-    end_offsets = cp.array([segment_size, d_input.size], dtype=np.int32)
+    segment_size = floating_array.size // 2
+    d_output = DeviceArray.empty(2, dtype)
+    start_offsets = DeviceArray.from_numpy(np.array([0, segment_size], dtype=np.int32))
+    end_offsets = DeviceArray.from_numpy(
+        np.array([segment_size, floating_array.size], dtype=np.int32)
+    )
 
     def sqrt(x: dtype) -> dtype:
         return x**0.5
@@ -397,15 +435,15 @@ def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch)
         h_init=h_init,
     )
 
-    expected = cp.sqrt(
-        cp.array(
+    expected = np.sqrt(
+        np.array(
             [
-                cp.sum(d_input[0:segment_size]),
-                cp.sum(d_input[segment_size : d_input.size]),
+                np.sum(floating_array[:segment_size]),
+                np.sum(floating_array[segment_size:]),
             ]
         )
     )
-    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+    np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-6)
 
 
 def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
@@ -420,7 +458,7 @@ def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
         return a + b
 
     n_rows, n_cols = 67, 12345
-    rng = cp.random.default_rng()
+    rng = np.random.default_rng()
     mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
 
     def make_scaler(step):
@@ -435,9 +473,9 @@ def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
 
     end_offsets = start_offsets + 1
 
-    d_input = mat
+    d_input = DeviceArray.from_numpy(mat)
     h_init = np.zeros(tuple(), dtype=np.int32)
-    d_output = cp.empty(n_rows, dtype=d_input.dtype)
+    d_output = DeviceArray.empty(n_rows, mat.dtype)
 
     cuda.compute.segmented_reduce(
         d_in=d_input,
@@ -449,8 +487,8 @@ def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
         h_init=h_init,
     )
 
-    expected = cp.sum(mat, axis=-1)
-    assert cp.all(d_output == expected)
+    expected = np.sum(mat, axis=-1)
+    np.testing.assert_array_equal(d_output.copy_to_host(), expected)
 
 
 def test_segmented_reduce_with_lambda(monkeypatch):
@@ -465,10 +503,13 @@ def test_segmented_reduce_with_lambda(monkeypatch):
     h_init = np.array([0], dtype=dtype)
 
     # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
-    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
-    d_starts = cp.array([0, 3, 5], dtype=np.int32)
-    d_ends = cp.array([3, 5, 9], dtype=np.int32)
-    d_output = cp.empty(3, dtype=dtype)
+    h_input = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    h_starts = np.array([0, 3, 5], dtype=np.int32)
+    h_ends = np.array([3, 5, 9], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_starts = DeviceArray.from_numpy(h_starts)
+    d_ends = DeviceArray.from_numpy(h_ends)
+    d_output = DeviceArray.empty(3, dtype)
 
     # Use a lambda function directly as the reducer
     cuda.compute.segmented_reduce(
@@ -482,7 +523,7 @@ def test_segmented_reduce_with_lambda(monkeypatch):
     )
 
     expected = np.array([6, 9, 30])  # sum of each segment
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 @pytest.mark.parametrize(
@@ -505,21 +546,24 @@ def test_segmented_reduce_max_segment_size(max_seg_size, monkeypatch):
         False,
     )
     dtype = np.int32
-    rng = cp.random
+    rng = np.random.default_rng()
     num_segments = 1024
     h_init = np.zeros(1, dtype=dtype)
 
     # Non-uniform segment sizes in [1, max_seg_size]
-    sizes = rng.randint(1, max_seg_size + 1, size=num_segments, dtype=np.int64)
-    offsets = cp.zeros(num_segments + 1, dtype=np.int64)
-    offsets[1:] = cp.cumsum(sizes)
+    sizes = rng.integers(1, max_seg_size + 1, size=num_segments, dtype=np.int64)
+    offsets = np.zeros(num_segments + 1, dtype=np.int64)
+    offsets[1:] = np.cumsum(sizes)
 
-    total = int(offsets[-1].item())
-    d_input = rng.randint(0, 100, size=total, dtype=dtype)
-    d_output = cp.empty(num_segments, dtype=dtype)
+    total = int(offsets[-1])
+    h_input = rng.integers(0, 100, size=total, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(num_segments, dtype)
 
-    d_starts = offsets[:-1]
-    d_ends = offsets[1:]
+    h_starts = offsets[:-1]
+    h_ends = offsets[1:]
+    d_starts = DeviceArray.from_numpy(h_starts)
+    d_ends = DeviceArray.from_numpy(h_ends)
 
     cuda.compute.segmented_reduce(
         d_in=d_input,
@@ -532,11 +576,11 @@ def test_segmented_reduce_max_segment_size(max_seg_size, monkeypatch):
         max_segment_size=max_seg_size,
     )
 
-    expected = cp.empty(num_segments, dtype=dtype)
+    expected = np.empty(num_segments, dtype=dtype)
     for i in range(num_segments):
-        expected[i] = cp.sum(d_input[int(d_starts[i].item()) : int(d_ends[i].item())])
+        expected[i] = np.sum(h_input[h_starts[i] : h_ends[i]])
 
-    np.testing.assert_array_equal(d_output.get(), expected.get())
+    np.testing.assert_array_equal(d_output.copy_to_host(), expected)
 
 
 def _run(reducer, *, d_in, d_out, num_segments, start, end, op, h_init):
@@ -567,11 +611,11 @@ def _run(reducer, *, d_in, d_out, num_segments, start, end, op, h_init):
 def test_serialize_deserialize_segmented_reduce_round_trip():
     h_in = np.array([8, 6, 7, 5, 3, 0, 9, -4, 3, 0, 1, 3, 1, 11, 25, 8], dtype=np.int32)
     offsets = np.array([0, 7, 11, 16], dtype=np.int64)
-    d_in = cp.asarray(h_in)
-    start = cp.asarray(offsets[:-1])
-    end = cp.asarray(offsets[1:])
-    n_segments = start.size
-    d_out = cp.empty(n_segments, dtype=cp.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    start = DeviceArray.from_numpy(offsets[:-1])
+    end = DeviceArray.from_numpy(offsets[1:])
+    n_segments = offsets.size - 1
+    d_out = DeviceArray.empty(n_segments, np.int32)
     h_init = np.array([0], dtype=np.int32)
 
     builder = make_segmented_reduce(
@@ -600,4 +644,4 @@ def test_serialize_deserialize_segmented_reduce_round_trip():
     expected = np.array(
         [h_in[s:e].sum() for s, e in zip(offsets[:-1], offsets[1:])], dtype=np.int32
     )
-    np.testing.assert_array_equal(d_out.get(), expected)
+    np.testing.assert_array_equal(d_out.copy_to_host(), expected)

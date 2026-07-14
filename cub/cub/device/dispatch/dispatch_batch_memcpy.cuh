@@ -226,7 +226,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
   static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
-  using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
+  using agent_policy_t = agent_batch_memcpy_policy<
     policy.threads_per_block,
     policy.buffers_per_thread,
     policy.bytes_per_thread,
@@ -243,7 +243,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
 
   // Block-level specialization
   using AgentBatchMemcpyT = AgentBatchMemcpy<
-    AgentBatchMemcpyPolicyT,
+    agent_policy_t,
     InputBufferIt,
     OutputBufferIt,
     BufferSizeIteratorT,

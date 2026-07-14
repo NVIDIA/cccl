@@ -1278,7 +1278,7 @@ def write_outputs(final_workflow):
         )
     }
 
-    runner_heading = f"🏃‍ Runner counts (total jobs: {total_jobs})"
+    runner_heading = f"🏃 Runner counts (total jobs: {total_jobs})"
 
     runner_counts_table = f"| {'#':^4} | Runner\n"
     runner_counts_table += "|------|------\n"

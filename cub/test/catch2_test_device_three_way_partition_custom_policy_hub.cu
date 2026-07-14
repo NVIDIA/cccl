@@ -22,7 +22,7 @@ template <class InputT, class OffsetT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB three-way partition tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ThreeWayPartitionPolicy =
       AgentThreeWayPartitionPolicy<256,
