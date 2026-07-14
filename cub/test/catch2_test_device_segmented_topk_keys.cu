@@ -29,6 +29,7 @@
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/signbit.h>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
@@ -73,7 +74,7 @@ template <cub::detail::topk::select SelectDirection,
           typename NumSegmentsParameterT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   void* d_temp_storage,
-  size_t& temp_storage_bytes,
+  cuda::std::size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParamT segment_sizes,
@@ -578,8 +579,8 @@ template <cub::detail::topk::select Direction,
 void run_cluster_topk_keys(
   KeyInItT d_keys_in, KeyOutItT d_keys_out, SegSizesT seg_sizes, KParamT k_param, NumSegT num_seg, EnvT env)
 {
-  std::size_t temp_bytes = 0;
-  auto run               = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  auto run                     = [&](void* d_temp) {
     if constexpr (Direction == cub::detail::topk::select::max)
     {
       return cub::DeviceBatchedTopK::MaxKeys(
@@ -592,7 +593,7 @@ void run_cluster_topk_keys(
     }
   };
   REQUIRE(cudaSuccess == run(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == run(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
@@ -1662,8 +1663,8 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage poin
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
 
-  size_t temp_storage_bytes = 0;
-  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
   REQUIRE(error == cudaSuccess);
 
@@ -1718,8 +1719,8 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned seg
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
 
-  size_t temp_storage_bytes = 0;
-  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
   REQUIRE(error == cudaSuccess);
 
@@ -1773,8 +1774,8 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
 
-  size_t temp_storage_bytes = 0;
-  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
   REQUIRE(error == cudaSuccess);
 
@@ -1870,5 +1871,81 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as n
 
   // No segment had any items, so the whole output is left untouched.
   REQUIRE(keys_out == thrust::device_vector<int>(num_segments * k, sentinel));
+}
+
+// Zero segments is a no-op, but with a positive segment-size bound the `max_seg_size <= 0` guard does not fire, so the
+// dispatch must elide the launch from `num_segments == 0` alone -- otherwise the grid would use `grid_dim == 0`, an
+// invalid launch configuration. Small size + no determinism keeps this on the baseline arm; the cluster arm is below.
+C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (baseline backend)",
+         "[keys][segmented][topk][device]")
+{
+  constexpr int k        = 3;
+  constexpr int stride   = 8;
+  constexpr int sentinel = -12345;
+  auto keys_in           = thrust::device_vector<int>{};
+  // Canary output slots that must stay untouched: with zero segments nothing may be written.
+  auto keys_out = thrust::device_vector<int>(k, sentinel);
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  auto segment_sizes   = cuda::args::immediate{cuda::std::int16_t{stride}, cuda::args::bounds<0, 100>()};
+  constexpr auto k_arg = cuda::args::constant<k>{};
+  auto num_segs        = cuda::args::immediate{cuda::std::int64_t{0}};
+  auto env             = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == thrust::device_vector<int>(k, sentinel));
+}
+
+// Cluster-backend counterpart: a deterministic requirement forces the SM90+ cluster arm, whose own `num_seg_val == 0`
+// guard must likewise elide the launch (positive size bound -> the `max_seg_size <= 0` guard does not apply).
+C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (cluster backend)",
+         "[keys][segmented][topk][device][cluster][determinism]")
+{
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int k            = 3;
+  constexpr int stride       = 8;
+  constexpr int sentinel     = -12345;
+  constexpr cuda::std::int64_t static_max_segment_size = 100;
+
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
+
+  auto keys_in = thrust::device_vector<int>{};
+  // Canary output slots that must stay untouched: with zero segments nothing may be written.
+  auto keys_out = thrust::device_vector<int>(k, sentinel);
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  batched_topk_keys<cub::detail::topk::select::max, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{cuda::std::int16_t{stride}, cuda::args::bounds<0, 100>()},
+    cuda::args::constant<k>{},
+    cuda::args::immediate{cuda::std::int64_t{0}});
+
+  REQUIRE(keys_out == thrust::device_vector<int>(k, sentinel));
 }
 #endif // TEST_TYPES == 0 && TEST_LAUNCH == 0

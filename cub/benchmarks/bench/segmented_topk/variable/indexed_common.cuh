@@ -43,6 +43,12 @@
 #  error \
     "indexed_common.cuh requires the includer to define TUNE_REQUIREMENT (0 non-det / 1 det+smaller / 2 det+larger)"
 #endif
+#if TUNE_BACKEND < 0 || TUNE_BACKEND > 2
+#  error "indexed_common.cuh: TUNE_BACKEND must be 0 (baseline), 1 (cluster), or 2 (automatic)"
+#endif
+#if TUNE_REQUIREMENT < 0 || TUNE_REQUIREMENT > 2
+#  error "indexed_common.cuh: TUNE_REQUIREMENT must be 0 (non-det), 1 (det+smaller), or 2 (det+larger)"
+#endif
 
 enum class topk_backend
 {
@@ -174,7 +180,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_indexed(
   NumSegmentsParameterT num_segments,
   EnvT env)
 {
-  auto req_env = cuda::std::execution::env{
+  const auto req_env = cuda::std::execution::env{
     env,
     cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<selected_determinism>{},
                              cuda::execution::tie_break::__tie_break_holder_t<selected_tie_break>{},
@@ -190,7 +196,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_indexed(
     using key_t          = cub::detail::it_value_t<cub::detail::it_value_t<KeyInputItItT>>;
     using value_t        = cub::detail::it_value_t<cub::detail::it_value_t<ValueInputItItT>>;
     constexpr auto max_k = ::cuda::args::__traits<KParamT>::highest;
-    auto full_env        = cuda::std::execution::env{
+    const auto full_env  = cuda::std::execution::env{
       req_env, cuda::execution::tune(topk_backend_selector<key_t, value_t, cuda::std::int64_t, max_k>{})};
     return cub::DeviceBatchedTopK::MaxPairs(
       d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, full_env);
@@ -224,21 +230,21 @@ void decode_style_variable_topk_indexed(
   auto out_keys_buffer    = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
   auto out_indices_buffer = thrust::device_vector<IndexT>(output_elements, thrust::no_init);
 
-  auto segment_sizes_param = cuda::args::deferred_sequence{
+  const auto segment_sizes_param = cuda::args::deferred_sequence{
     thrust::raw_pointer_cast(d_segment_sizes.data()), cuda::args::bounds<1, MaxSegmentSize>()};
-  auto k_param            = cuda::args::constant<K>{};
-  auto num_segments_param = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
+  const auto k_param            = cuda::args::constant<K>{};
+  const auto num_segments_param = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
-  auto d_keys_in = cuda::make_strided_iterator(
+  const auto d_keys_in = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),
     static_cast<cuda::std::ptrdiff_t>(MaxSegmentSize));
-  auto d_keys_out = cuda::make_strided_iterator(
+  const auto d_keys_out = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(out_keys_buffer.data())),
     static_cast<cuda::std::ptrdiff_t>(K));
 
   // Input values: every segment maps to the same counting iterator starting at 0, so values are segment-local indices.
-  auto d_indices_in  = cuda::make_constant_iterator(cuda::make_counting_iterator(IndexT{0}));
-  auto d_indices_out = cuda::make_strided_iterator(
+  const auto d_indices_in  = cuda::make_constant_iterator(cuda::make_counting_iterator(IndexT{0}));
+  const auto d_indices_out = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(out_indices_buffer.data())),
     static_cast<cuda::std::ptrdiff_t>(K));
 
@@ -250,7 +256,7 @@ void decode_style_variable_topk_indexed(
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(alloc, launch);
+    const auto env = cub_bench_env(alloc, launch);
     _CCCL_TRY_CUDA_API(
       batched_topk_indexed,
       "batched topk failed",

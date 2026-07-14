@@ -143,7 +143,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
 
     // The per-segment device backend uses the unsorted / not-guaranteed-determinism fast path. Layer the requirement
     // on top of the benchmark environment (which carries the stream and the caching memory resource).
-    auto seg_env = cuda::std::execution::env{
+    const auto seg_env = cuda::std::execution::env{
       env,
       cuda::execution::require(cuda::execution::determinism::not_guaranteed,
                                cuda::execution::output_ordering::unsorted)};
@@ -169,7 +169,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   {
     // The determinism / tie-break / ordering requirement this benchmark issues; the library honors it whether or not we
     // additionally force a backend.
-    auto req_env = cuda::std::execution::env{
+    const auto req_env = cuda::std::execution::env{
       env,
       cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<selected_determinism>{},
                                cuda::execution::tie_break::__tie_break_holder_t<selected_tie_break>{},
@@ -183,7 +183,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
     {
       using key_t          = cub::detail::it_value_t<cub::detail::it_value_t<KeyInputItItT>>;
       constexpr auto max_k = ::cuda::args::__traits<KParamT>::highest;
-      auto full_env        = cuda::std::execution::env{
+      const auto full_env  = cuda::std::execution::env{
         req_env, cuda::execution::tune(topk_backend_selector<key_t, cub::NullType, cuda::std::int64_t, max_k>{})};
       return cub::DeviceBatchedTopK::MaxKeys(d_keys_in, d_keys_out, segment_sizes, k, num_segments, full_env);
     }
@@ -212,13 +212,13 @@ void fixed_seg_size_topk_keys(
 
   thrust::device_vector<KeyT> in_keys_buffer = generate(elements, entropy);
   thrust::device_vector<KeyT> out_keys_buffer(selected_elements * num_segments, thrust::no_init);
-  auto d_keys_in_ptr  = thrust::raw_pointer_cast(in_keys_buffer.data());
-  auto d_keys_out_ptr = thrust::raw_pointer_cast(out_keys_buffer.data());
-  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
-  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
+  const auto d_keys_in_ptr  = thrust::raw_pointer_cast(in_keys_buffer.data());
+  const auto d_keys_out_ptr = thrust::raw_pointer_cast(out_keys_buffer.data());
+  const auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  const auto d_keys_out = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
 
-  auto segment_sizes = ::cuda::args::constant<MaxSegmentSize>{};
-  auto k             = ::cuda::args::constant<MaxNumSelected>{};
+  const auto segment_sizes = ::cuda::args::constant<MaxSegmentSize>{};
+  const auto k             = ::cuda::args::constant<MaxNumSelected>{};
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(segment_size, "SegmentSize");
@@ -228,11 +228,11 @@ void fixed_seg_size_topk_keys(
 
   // Host copy of segment sizes — all entries equal MaxSegmentSize for fixed-size segments. Consumed only by the
   // per-segment device backend. Segment sizes fit in a signed 32-bit integer (the library caps them at 2^21).
-  std::vector<cuda::std::int32_t> h_segment_sizes(num_segments, static_cast<cuda::std::int32_t>(MaxSegmentSize));
+  const std::vector<cuda::std::int32_t> h_segment_sizes(num_segments, static_cast<cuda::std::int32_t>(MaxSegmentSize));
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(alloc, launch);
+    const auto env = cub_bench_env(alloc, launch);
     _CCCL_TRY_CUDA_API(
       batched_topk_keys,
       "batched topk failed",

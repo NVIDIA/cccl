@@ -8,6 +8,7 @@
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/argument>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
 
@@ -37,9 +38,9 @@ int main()
     ex::require(ex::determinism::gpu_to_gpu, ex::tie_break::prefer_smaller_index, ex::output_ordering::unsorted);
   // expected-error {{"is not supported on at least one architecture"}}
 
-  auto env                  = cuda::std::execution::env{requirements};
-  size_t temp_storage_bytes = 0;
-  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+  auto env                             = cuda::std::execution::env{requirements};
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segments, env);
   if (error != cudaSuccess)
   {

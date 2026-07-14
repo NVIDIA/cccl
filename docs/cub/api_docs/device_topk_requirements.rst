@@ -174,7 +174,7 @@ execution environment alongside other properties such as a stream:
      cuda::execution::require(
        cuda::execution::determinism::gpu_to_gpu,
        cuda::execution::tie_break::prefer_smaller_index,
-       cuda::execution::output_ordering::sorted),
+       cuda::execution::output_ordering::unsorted),
      stream_ref};
 
 .. _cub-topk-set-membership:

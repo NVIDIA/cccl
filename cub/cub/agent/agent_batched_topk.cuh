@@ -220,112 +220,113 @@ struct agent_batched_topk_worker_per_segment
       // Process small segment
       const auto k = (::cuda::std::min) (params::get_param(k_param, segment_id),
                                          static_cast<decltype(params::get_param(k_param, segment_id))>(segment_size));
-      // Nothing to select for an empty segment (including a negative size clamped to 0) or a zero k: skip it, leaving
-      // its output untouched. Also keeps the block primitive's `valid_items in [1, tile_items]` precondition.
-      if (k == 0)
+      // Nothing to select for an empty segment (including a negative size clamped to 0) or a zero k: skip the block
+      // work, leaving its output untouched (also keeps the block primitive's `valid_items in [1, tile_items]`
+      // precondition). We must not `return` here -- the large-segment epilogue below is unconditional participation, so
+      // bailing out would drop this block from the retirement count and stall the epilogue scan.
+      if (k != 0)
       {
-        return;
-      }
-      const auto direction = select_directions.get_param(segment_id);
+        const auto direction = select_directions.get_param(segment_id);
 
-      // Determine padding key based on direction
-      const key_t padding_key =
-        (direction == detail::topk::select::max)
-          ? ::cuda::std::numeric_limits<key_t>::lowest()
-          : (::cuda::std::numeric_limits<key_t>::max)();
+        // Determine padding key based on direction
+        const key_t padding_key =
+          (direction == detail::topk::select::max)
+            ? ::cuda::std::numeric_limits<key_t>::lowest()
+            : (::cuda::std::numeric_limits<key_t>::max)();
 
-      // Dereference iterator-of-iterators to get the segment specific iterator
-      auto block_keys_in = d_key_segments_it[segment_id];
+        // Dereference iterator-of-iterators to get the segment specific iterator
+        auto block_keys_in = d_key_segments_it[segment_id];
 
-      // Load Keys
-      key_t thread_keys[items_per_thread];
-      if constexpr (is_full_tile)
-      {
-        // No padding needed
-        block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys);
-      }
-      else
-      {
-        // Potentially partial final load with padding
-        // TODO (elstehle): explore whether a runtime check for segment_size == tile_size improves performance
-        block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size);
-      }
-
-      // Load Values (if applicable)
-      [[maybe_unused]] value_t thread_values[items_per_thread];
-
-      if constexpr (!is_keys_only)
-      {
-        __syncthreads();
-        auto block_vals_in = d_value_segments_it[segment_id];
-
+        // Load Keys
+        key_t thread_keys[items_per_thread];
         if constexpr (is_full_tile)
         {
           // No padding needed
-          block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values);
+          block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys);
         }
         else
         {
           // Potentially partial final load with padding
           // TODO (elstehle): explore whether a runtime check for segment_size == tile_size improves performance
-          block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
+          block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size);
         }
-      }
 
-      __syncthreads();
+        // Load Values (if applicable)
+        [[maybe_unused]] value_t thread_values[items_per_thread];
 
-      // Perform Block Top-K
-      if constexpr (is_keys_only)
-      {
-        const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
-          select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
-            if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
-            {
-              block_topk_t(temp_storage.topk).template max_keys<is_full_tile>(thread_keys, k, segment_size);
-            }
-            else
-            {
-              block_topk_t(temp_storage.topk).template min_keys<is_full_tile>(thread_keys, k, segment_size);
-            }
-          });
-        _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
-      }
-      else
-      {
-        // Pass both keys and values
-        const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
-          select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
-            if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
-            {
-              block_topk_t(temp_storage.topk)
-                .template max_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
-            }
-            else
-            {
-              block_topk_t(temp_storage.topk)
-                .template min_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
-            }
-          });
-        _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
-      }
+        if constexpr (!is_keys_only)
+        {
+          __syncthreads();
+          auto block_vals_in = d_value_segments_it[segment_id];
 
-      __syncthreads();
+          if constexpr (is_full_tile)
+          {
+            // No padding needed
+            block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values);
+          }
+          else
+          {
+            // Potentially partial final load with padding
+            // TODO (elstehle): explore whether a runtime check for segment_size == tile_size improves performance
+            block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
+          }
+        }
 
-      auto block_keys_out = d_key_segments_out_it[segment_id];
-
-      block_store_keys_t(temp_storage.store_keys)
-        .Store(block_keys_out,
-               thread_keys,
-               k // Only store K items
-        );
-
-      if constexpr (!is_keys_only)
-      {
         __syncthreads();
-        auto block_vals_out = d_value_segments_out_it[segment_id];
 
-        block_store_vals_t(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
-      }
+        // Perform Block Top-K
+        if constexpr (is_keys_only)
+        {
+          const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
+            select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
+              if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
+              {
+                block_topk_t(temp_storage.topk).template max_keys<is_full_tile>(thread_keys, k, segment_size);
+              }
+              else
+              {
+                block_topk_t(temp_storage.topk).template min_keys<is_full_tile>(thread_keys, k, segment_size);
+              }
+            });
+          _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
+        }
+        else
+        {
+          // Pass both keys and values
+          const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
+            select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
+              if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
+              {
+                block_topk_t(temp_storage.topk)
+                  .template max_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
+              }
+              else
+              {
+                block_topk_t(temp_storage.topk)
+                  .template min_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
+              }
+            });
+          _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
+        }
+
+        __syncthreads();
+
+        auto block_keys_out = d_key_segments_out_it[segment_id];
+
+        block_store_keys_t(temp_storage.store_keys)
+          .Store(block_keys_out,
+                 thread_keys,
+                 k // Only store K items
+          );
+
+        if constexpr (!is_keys_only)
+        {
+          __syncthreads();
+          auto block_vals_out = d_value_segments_out_it[segment_id];
+
+          block_store_vals_t(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
+        }
+      } // if (k != 0)
     }
 
     // Epilogue: Scan queued large segment sizes (in tiles not elements) for load balancing search in the large segment

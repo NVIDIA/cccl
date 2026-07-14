@@ -47,6 +47,12 @@
 #ifndef TUNE_REQUIREMENT
 #  error "keys_common.cuh requires the includer to define TUNE_REQUIREMENT (0 non-det / 1 det+smaller / 2 det+larger)"
 #endif
+#if TUNE_BACKEND < 0 || TUNE_BACKEND > 3
+#  error "keys_common.cuh: TUNE_BACKEND must be 0 (baseline), 1 (cluster), 2 (device), or 3 (automatic)"
+#endif
+#if TUNE_REQUIREMENT < 0 || TUNE_REQUIREMENT > 2
+#  error "keys_common.cuh: TUNE_REQUIREMENT must be 0 (non-det), 1 (det+smaller), or 2 (det+larger)"
+#endif
 
 enum class topk_backend
 {
@@ -186,7 +192,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
 
     // The per-segment device backend uses the unsorted / not-guaranteed-determinism fast path. Layer the requirement
     // on top of the benchmark environment (which carries the stream and the caching memory resource).
-    auto seg_env = cuda::std::execution::env{
+    const auto seg_env = cuda::std::execution::env{
       env,
       cuda::execution::require(cuda::execution::determinism::not_guaranteed,
                                cuda::execution::output_ordering::unsorted)};
@@ -212,7 +218,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   {
     // The determinism / tie-break / ordering requirement this benchmark issues; the library honors it whether or not we
     // additionally force a backend.
-    auto req_env = cuda::std::execution::env{
+    const auto req_env = cuda::std::execution::env{
       env,
       cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<selected_determinism>{},
                                cuda::execution::tie_break::__tie_break_holder_t<selected_tie_break>{},
@@ -226,7 +232,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
     {
       using key_t          = cub::detail::it_value_t<cub::detail::it_value_t<KeyInputItItT>>;
       constexpr auto max_k = ::cuda::args::__traits<KParamT>::highest;
-      auto full_env        = cuda::std::execution::env{
+      const auto full_env  = cuda::std::execution::env{
         req_env, cuda::execution::tune(topk_backend_selector<key_t, cub::NullType, cuda::std::int64_t, max_k>{})};
       return cub::DeviceBatchedTopK::MaxKeys(d_keys_in, d_keys_out, segment_sizes, k, num_segments, full_env);
     }
@@ -256,15 +262,15 @@ void decode_style_variable_topk_keys(
     num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
   auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
 
-  auto segment_sizes_param = cuda::args::deferred_sequence{
+  const auto segment_sizes_param = cuda::args::deferred_sequence{
     thrust::raw_pointer_cast(d_segment_sizes.data()), cuda::args::bounds<1, MaxSegmentSize>()};
-  auto k_param            = cuda::args::constant<K>{};
-  auto num_segments_param = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
+  const auto k_param            = cuda::args::constant<K>{};
+  const auto num_segments_param = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
-  auto d_keys_in = cuda::make_strided_iterator(
+  const auto d_keys_in = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),
     static_cast<cuda::std::ptrdiff_t>(MaxSegmentSize));
-  auto d_keys_out = cuda::make_strided_iterator(
+  const auto d_keys_out = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(out_keys_buffer.data())),
     static_cast<cuda::std::ptrdiff_t>(K));
 
@@ -279,7 +285,7 @@ void decode_style_variable_topk_keys(
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(alloc, launch);
+    const auto env = cub_bench_env(alloc, launch);
     _CCCL_TRY_CUDA_API(
       batched_topk_keys,
       "batched topk failed",

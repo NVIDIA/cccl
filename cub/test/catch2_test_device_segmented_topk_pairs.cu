@@ -23,6 +23,8 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 #include <algorithm>
 #include <functional>
@@ -81,7 +83,7 @@ template <cub::detail::topk::select SelectDirection,
           typename NumSegmentsParameterT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   void* d_temp_storage,
-  size_t& temp_storage_bytes,
+  cuda::std::size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
   ValueInputItItT d_value_segments_it,
@@ -252,8 +254,8 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
 
   flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()};
 
-  auto num_duplicates =
-    thrust::count_if(cuda::make_counting_iterator(size_t{0}), cuda::make_counting_iterator(num_items - 1), flag_op);
+  auto num_duplicates = thrust::count_if(
+    cuda::make_counting_iterator(cuda::std::size_t{0}), cuda::make_counting_iterator(num_items - 1), flag_op);
 
   return num_duplicates == 0;
 }
@@ -533,7 +535,7 @@ template <typename Selector,
           typename NumSegmentsParameterT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_cluster_topk_pairs(
   void* d_temp_storage,
-  size_t& temp_storage_bytes,
+  cuda::std::size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
   ValueInputItItT d_value_segments_it,
@@ -874,15 +876,15 @@ c2h::host_vector<IndexT> reference_deterministic_topk_indices(
     return reverse_index ? static_cast<IndexT>(last_index - idx) : idx;
   };
 
-  c2h::host_vector<IndexT> selected(static_cast<std::size_t>(num_segments * k));
-  std::vector<std::pair<KeyT, IndexT>> pairs(static_cast<std::size_t>(segment_size));
+  c2h::host_vector<IndexT> selected(static_cast<cuda::std::size_t>(num_segments * k));
+  std::vector<std::pair<KeyT, IndexT>> pairs(static_cast<cuda::std::size_t>(segment_size));
   for (SegSizeT seg = 0; seg < num_segments; ++seg)
   {
     const SegSizeT base = seg * segment_size;
     for (SegSizeT i = 0; i < segment_size; ++i)
     {
-      const IndexT idx                   = static_cast<IndexT>(base + i);
-      pairs[static_cast<std::size_t>(i)] = {h_keys[static_cast<std::size_t>(base + i)], encode(idx)};
+      const IndexT idx                         = static_cast<IndexT>(base + i);
+      pairs[static_cast<cuda::std::size_t>(i)] = {h_keys[static_cast<cuda::std::size_t>(base + i)], encode(idx)};
     }
     if (want_max)
     {
@@ -892,10 +894,10 @@ c2h::host_vector<IndexT> reference_deterministic_topk_indices(
     {
       std::partial_sort(pairs.begin(), pairs.begin() + k, pairs.end());
     }
-    const auto seg_begin = selected.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    const auto seg_begin = selected.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
     for (SegSizeT i = 0; i < k; ++i)
     {
-      seg_begin[i] = encode(pairs[static_cast<std::size_t>(i)].second);
+      seg_begin[i] = encode(pairs[static_cast<cuda::std::size_t>(i)].second);
     }
     std::sort(seg_begin, seg_begin + k);
   }
@@ -974,7 +976,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
   c2h::host_vector<val_t> h_values_out = values_out_buffer;
   for (segment_index_t seg = 0; seg < num_segments; ++seg)
   {
-    const auto seg_begin = h_values_out.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    const auto seg_begin = h_values_out.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
     std::sort(seg_begin, seg_begin + k);
   }
 
@@ -1043,8 +1045,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
 
-  size_t temp_bytes = 0;
-  const auto invoke = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  const auto invoke            = [&](void* d_temp) {
     if constexpr (direction == cub::detail::topk::select::max)
     {
       return cub::DeviceBatchedTopK::MaxPairs(
@@ -1075,7 +1077,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
     }
   };
   REQUIRE(cudaSuccess == invoke(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
@@ -1092,7 +1094,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
   c2h::host_vector<val_t> h_values_out = values_out_buffer;
   for (segment_index_t seg = 0; seg < num_segments; ++seg)
   {
-    const auto seg_begin = h_values_out.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    const auto seg_begin = h_values_out.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
     std::sort(seg_begin, seg_begin + k);
   }
 
@@ -1186,7 +1188,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
   c2h::host_vector<val_t> h_values_out = values_out_buffer;
   for (segment_index_t seg = 0; seg < num_segments; ++seg)
   {
-    const auto seg_begin = h_values_out.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    const auto seg_begin = h_values_out.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
     std::sort(seg_begin, seg_begin + k);
   }
 
@@ -1279,11 +1281,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
     cuda::args::immediate{num_segments});
 
   // Materialize the (non-contiguous) key input for verification: same heavy-tie function of the global index.
-  c2h::host_vector<key_t> h_keys(static_cast<std::size_t>(num_items));
+  c2h::host_vector<key_t> h_keys(static_cast<cuda::std::size_t>(num_items));
   heavy_tie_key_op<key_t> key_op{};
   for (segment_size_t idx = 0; idx < num_items; ++idx)
   {
-    h_keys[static_cast<std::size_t>(idx)] = key_op(idx);
+    h_keys[static_cast<cuda::std::size_t>(idx)] = key_op(idx);
   }
   const c2h::device_vector<key_t> keys_materialized = h_keys;
 
@@ -1298,7 +1300,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
   c2h::host_vector<val_t> h_values_out = values_out_buffer;
   for (segment_index_t seg = 0; seg < num_segments; ++seg)
   {
-    const auto seg_begin = h_values_out.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    const auto seg_begin = h_values_out.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
     std::sort(seg_begin, seg_begin + k);
   }
 
@@ -1407,14 +1409,18 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_a, values_out_a) == true);
   REQUIRE(verify_unique_indices(values_out_a, num_segments, k) == true);
+  // The second run uses config B (the streaming path under gpu_to_gpu); validate its pairing/uniqueness too so a
+  // B-only key/value mismatch cannot hide behind the index-set comparison below.
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_b, values_out_b) == true);
+  REQUIRE(verify_unique_indices(values_out_b, num_segments, k) == true);
 
   // Determinism: both runs must select the same per-segment index set. Sort each segment (within-top-k order is free).
   c2h::host_vector<val_t> h_values_a = values_out_a;
   c2h::host_vector<val_t> h_values_b = values_out_b;
   for (segment_index_t seg = 0; seg < num_segments; ++seg)
   {
-    const auto a_begin = h_values_a.begin() + static_cast<std::ptrdiff_t>(seg * k);
-    const auto b_begin = h_values_b.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    const auto a_begin = h_values_a.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
+    const auto b_begin = h_values_b.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
     std::sort(a_begin, a_begin + k);
     std::sort(b_begin, b_begin + k);
   }
@@ -1497,8 +1503,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment acros
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
 
-  size_t temp_bytes = 0;
-  const auto invoke = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  const auto invoke            = [&](void* d_temp) {
     return cub::DeviceBatchedTopK::MaxPairs(
       d_temp,
       temp_bytes,
@@ -1512,7 +1518,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment acros
       env);
   };
   REQUIRE(cudaSuccess == invoke(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
@@ -1588,8 +1594,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
 
-  size_t temp_bytes = 0;
-  const auto invoke = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  const auto invoke            = [&](void* d_temp) {
     return cub::DeviceBatchedTopK::MaxPairs(
       d_temp,
       temp_bytes,
@@ -1603,7 +1609,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
       env);
   };
   REQUIRE(cudaSuccess == invoke(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
@@ -1680,8 +1686,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
 
-  size_t temp_bytes = 0;
-  const auto invoke = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  const auto invoke            = [&](void* d_temp) {
     return cub::DeviceBatchedTopK::MaxPairs(
       d_temp,
       temp_bytes,
@@ -1695,7 +1701,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
       env);
   };
   REQUIRE(cudaSuccess == invoke(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
@@ -1772,8 +1778,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
 
-  size_t temp_bytes = 0;
-  const auto invoke = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  const auto invoke            = [&](void* d_temp) {
     return cub::DeviceBatchedTopK::MaxPairs(
       d_temp,
       temp_bytes,
@@ -1787,7 +1793,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
       env);
   };
   REQUIRE(cudaSuccess == invoke(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
@@ -1861,8 +1867,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
 
-  size_t temp_bytes = 0;
-  const auto invoke = [&](void* d_temp) {
+  cuda::std::size_t temp_bytes = 0;
+  const auto invoke            = [&](void* d_temp) {
     return cub::DeviceBatchedTopK::MaxPairs(
       d_temp,
       temp_bytes,
@@ -1876,7 +1882,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
       env);
   };
   REQUIRE(cudaSuccess == invoke(nullptr));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 

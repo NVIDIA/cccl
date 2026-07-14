@@ -172,7 +172,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t baseline_dispatch(
   using large_segment_tile_offset_t = typename ::cuda::args::__traits<TotalNumItemsGuaranteeT>::element_type;
 
   // Wrap the raw enum into the internal discrete param type
-  auto select_directions          = wrap_select_direction(select_direction);
+  const auto select_directions    = wrap_select_direction(select_direction);
   using SelectDirectionParameterT = decltype(select_directions);
 
   // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
@@ -263,8 +263,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t baseline_dispatch(
 
   // TODO (elstehle): support number of segments provided by device-accessible iterator
   // Only uniform number of segments are supported (i.e., we need to resolve the number of segments on the host)
-  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
-                "Only a uniform number of segments is currently supported.");
+  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value
+                  && !::cuda::args::__traits<NumSegmentsParameterT>::is_deferred,
+                "Only a host-known uniform number of segments is currently supported; a deferred (device-resident) "
+                "count is not yet supported (see the TODO above).");
+
+  // No work to launch when there are no segments; otherwise the grid launches below would use `grid_dim = 0`, an
+  // invalid launch configuration.
+  if (params::get_param(num_segments, 0) == 0)
+  {
+    return cudaSuccess;
+  }
 
   if constexpr (any_small_segments)
   {
@@ -407,44 +416,44 @@ template <typename SegmentSizeParameterT>
 // Without CDP/RDC a device-side launch is impossible; surface that instead of silently returning success (no-op).
 #  define CUB_TOPK_CLUSTER_DEVICE_LAUNCH return cudaErrorNotSupported;
 #else // CUB_RDC_ENABLED
-#  define CUB_TOPK_CLUSTER_DEVICE_LAUNCH                                                    \
-    auto static_kernel = detail::batched_topk::device_segmented_topk_cluster_kernel_static< \
-      ThreadsPerBlock,                                                                      \
-      HistogramItemsPerThread,                                                              \
-      PipelineStages,                                                                       \
-      ChunkBytes,                                                                           \
-      LoadAlignBytes,                                                                       \
-      BitsPerPass,                                                                          \
-      TieBreakItemsPerThread,                                                               \
-      SingleBlockMaxSegSize,                                                                \
-      MinChunksPerBlock,                                                                    \
-      CopyItemsPerThread,                                                                   \
-      cdp_cluster_blocks,                                                                   \
-      Determinism,                                                                          \
-      TieBreak,                                                                             \
-      KeyInputItItT,                                                                        \
-      KeyOutputItItT,                                                                       \
-      ValueInputItItT,                                                                      \
-      ValueOutputItItT,                                                                     \
-      SegmentSizeParameterT,                                                                \
-      KParameterT,                                                                          \
-      SelectDirectionParameterT,                                                            \
-      NumSegmentsParameterT>;                                                               \
-    if (const auto error = CubDebug(                                                        \
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(                            \
-            static_cast<int>(grid_blocks), ThreadsPerBlock, dynamic_smem_bytes, stream)     \
-            .doit(static_kernel,                                                            \
-                  d_key_segments_it,                                                        \
-                  d_key_segments_out_it,                                                    \
-                  d_value_segments_it,                                                      \
-                  d_value_segments_out_it,                                                  \
-                  segment_sizes,                                                            \
-                  k_param,                                                                  \
-                  select_directions,                                                        \
-                  num_segments,                                                             \
-                  block_tile_capacity)))                                                    \
-    {                                                                                       \
-      return error;                                                                         \
+#  define CUB_TOPK_CLUSTER_DEVICE_LAUNCH                                                          \
+    const auto static_kernel = detail::batched_topk::device_segmented_topk_cluster_kernel_static< \
+      ThreadsPerBlock,                                                                            \
+      HistogramItemsPerThread,                                                                    \
+      PipelineStages,                                                                             \
+      ChunkBytes,                                                                                 \
+      LoadAlignBytes,                                                                             \
+      BitsPerPass,                                                                                \
+      TieBreakItemsPerThread,                                                                     \
+      SingleBlockMaxSegSize,                                                                      \
+      MinChunksPerBlock,                                                                          \
+      CopyItemsPerThread,                                                                         \
+      cdp_cluster_blocks,                                                                         \
+      Determinism,                                                                                \
+      TieBreak,                                                                                   \
+      KeyInputItItT,                                                                              \
+      KeyOutputItItT,                                                                             \
+      ValueInputItItT,                                                                            \
+      ValueOutputItItT,                                                                           \
+      SegmentSizeParameterT,                                                                      \
+      KParameterT,                                                                                \
+      SelectDirectionParameterT,                                                                  \
+      NumSegmentsParameterT>;                                                                     \
+    if (const auto error = CubDebug(                                                              \
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(                                  \
+            static_cast<int>(grid_blocks), ThreadsPerBlock, dynamic_smem_bytes, stream)           \
+            .doit(static_kernel,                                                                  \
+                  d_key_segments_it,                                                              \
+                  d_key_segments_out_it,                                                          \
+                  d_value_segments_it,                                                            \
+                  d_value_segments_out_it,                                                        \
+                  segment_sizes,                                                                  \
+                  k_param,                                                                        \
+                  select_directions,                                                              \
+                  num_segments,                                                                   \
+                  block_tile_capacity)))                                                          \
+    {                                                                                             \
+      return error;                                                                               \
     }
 #endif // CUB_RDC_ENABLED
 
@@ -560,23 +569,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
     return cudaSuccess;
   }
 
-  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
-                "Number of segments must be resolved on the host.");
-
   using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
-  const auto num_seg_val   = detail::params::get_param(num_segments, num_segments_val_t{0});
-  if (num_seg_val == 0)
-  {
-    return cudaSuccess;
-  }
-
-  // No work to launch when the tightest known upper bound on any segment size (static or runtime) is non-positive:
-  // every segment is empty (e.g. a uniform negative size, which the kernel would clamp to 0). Also avoids
-  // `clusterDim.x = 0` and a negative maximum feeding the unsigned sizing math below.
-  if (max_seg_size <= 0)
-  {
-    return cudaSuccess;
-  }
+  // `num_segments > 0` and `max_seg_size > 0` here: the generic `dispatch` returns for the empty-batch cases (no
+  // segments, or a non-positive max segment size) before selecting an arm.
+  const auto num_seg_val = detail::params::get_param(num_segments, num_segments_val_t{0});
 
   // Cluster launches require compute capability 9.0+.
   int sm_version = 0;
@@ -1090,15 +1086,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_baseline_arm(
       return cudaSuccess;
     }
 
-    // No work to launch when the tightest known upper bound on any segment size is non-positive (mirrors the cluster
-    // arm): every segment is empty (e.g. a uniform host-known negative size, which the agent clamps to 0 device-side).
-    if (runtime_max_segment_size(segment_sizes) <= 0)
-    {
-      return cudaSuccess;
-    }
-
-    static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
-                  "Only a uniform number of segments is currently supported.");
+    // `num_segments > 0` and the max segment size > 0 here: the generic `dispatch` returns for the empty-batch cases
+    // (no segments, or a non-positive max segment size) before selecting an arm.
 
     if constexpr (any_small_segments)
     {
@@ -1178,7 +1167,7 @@ template <class PolicySelector>
   }
   return any;
 }
-#endif // _CCCL_CUDA_COMPILATION() && !CUB_DEFINE_RUNTIME_POLICIES && !NVRTC
+#endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 
 // Internal entry point: the single dispatch that replaces the standalone baseline / cluster dispatches. It resolves the
 // runtime compute capability, then uses `dispatch_compute_cap` to pick, per architecture, the backend chosen by
@@ -1217,9 +1206,27 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream)
 {
+  // Both arms resolve `num_segments` on the host via detail::params::get_param (allocation sizing, grid extent,
+  // empty-batch guard), so it must be a host-known single value; device-side counts are future work (see TODOs below).
+  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value
+                  && !::cuda::args::__traits<NumSegmentsParameterT>::is_deferred,
+                "cub::DeviceBatchedTopK requires a host-known uniform number of segments (constant, immediate, or a "
+                "plain integral): a per-segment sequence is not a meaningful segment count, and a single deferred "
+                "(device-resident) value is meaningful but not yet supported (resolve the count on the host).");
+
+  // No work to launch when the batch is empty: no segments, or the tightest known max segment size is non-positive
+  // (every segment empty; e.g. a uniform negative size the kernel clamps to 0). A negative `num_segments` is out of
+  // contract (non-negative is a documented precondition), hence `== 0` not `<= 0`. Guard only the actual launch: the
+  // query pass (`d_temp_storage == nullptr`) must fall through so the chosen arm still reports `temp_storage_bytes`.
+  if (d_temp_storage != nullptr
+      && (detail::params::get_param(num_segments, 0) == 0 || runtime_max_segment_size(segment_sizes) <= 0))
+  {
+    return cudaSuccess;
+  }
+
   // The selection direction is a compile-time constant carried as `::cuda::args::constant<Dir>`. Wrap it into the
   // internal discrete param the kernel/agent expect (both host arms take the wrapped form).
-  auto select_directions          = wrap_select_direction(select_direction);
+  const auto select_directions    = wrap_select_direction(select_direction);
   using SelectDirectionParameterT = decltype(select_directions);
 
   using key_t                   = it_value_t<it_value_t<KeyInputItItT>>;
@@ -1281,11 +1288,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     "CMAKE_CUDA_ARCHITECTURES (the deterministic / large-segment cluster backend requires SM90+). Remove the "
     "unsupported architecture(s), relax the request, or define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the "
     "diagnosis to runtime (cudaErrorNotSupported).");
-#endif // strict unsupported-arch check
+#endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+       // && !defined(_CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
 
   // The supported maximum segment size (2^21) is enforced at compile time at the public entry; a statically negative
   // lower bound is allowed and negative runtime sizes are clamped to 0 (see detail::params::get_segment_size). A
-  // per-segment value outside its declared bound is a caller error (asserted for host-known values, otherwise UB).
+  // per-segment value outside its declared bound is a caller error (UB): the statically declared bounds are validated
+  // at compile time, while the argument values are bounds-checked only by assertions active in assertion-enabled (e.g.
+  // debug) builds -- host-side for a host-known immediate value and device-side for values read from a deferred /
+  // deferred_sequence handle.
 
   detail::TripleChevronFactory launcher_factory{};
   ::cuda::compute_capability cc{};

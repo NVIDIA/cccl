@@ -159,10 +159,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   // ---------------------------------------------------------------------------
   // Argument-annotation constraints surfaced at the call site.
   // ---------------------------------------------------------------------------
-  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
-                "cub::DeviceBatchedTopK currently requires a single (uniform) number of segments resolved on the "
-                "host; pass num_segments as a single-value annotation (e.g. cuda::args::constant or "
-                "cuda::args::immediate), not a per-segment sequence.");
+  static_assert(
+    ::cuda::args::__traits<NumSegmentsParameterT>::is_single_value
+      && !::cuda::args::__traits<NumSegmentsParameterT>::is_deferred,
+    "cub::DeviceBatchedTopK requires a single (uniform) number of segments resolved on the host: pass "
+    "num_segments as a host-known single value (e.g. cuda::args::constant or cuda::args::immediate). A "
+    "per-segment sequence is not a meaningful segment count; a single deferred (device-resident) value is "
+    "meaningful but not yet supported.");
   // The segment_sizes checks below are layered so that a single misuse reports a single, targeted diagnostic: each
   // check is guarded by the validity of the ones before it (a later check "passes" once an earlier one has failed),
   // so e.g. a raw pointer trips only the form check, not also the range check, and a scalar handed to `deferred`
@@ -328,13 +331,16 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   as narrow, lying within the compile-time range and only tightening it further.
 //!
 //! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. ``num_segments`` must be
-//! a single value (``constant``, ``immediate``, or a plain integral), never a per-segment sequence. ``segment_sizes``
+//! a single, non-negative value known on the host (``constant``, ``immediate``, or a plain integral).
+//! ``segment_sizes``
 //! must have a statically-known *maximum* not exceeding the supported ``2^21`` (about 2 million; see *Current
 //! constraints* below): a type whose maximum already fits (a narrow type such as ``uint8_t``, ``int16_t``, or
 //! ``uint16_t``) is accepted without an explicit bound, while a type whose maximum exceeds ``2^21`` (e.g. ``int32_t``,
 //! ``uint32_t``, or ``int64_t``) must carry a compile-time upper bound (a ``constant<N>`` or
-//! ``cuda::args::bounds<lo, hi>()``). A negative lower bound is allowed -- negative runtime sizes are clamped to an
-//! empty segment (see *Current constraints*). Tight bounds on every parameter are encouraged.
+//! ``cuda::args::bounds<lo, hi>()``). A negative statically-known lower bound is allowed: negative runtime sizes are
+//! clamped to an empty segment (size 0). A non-negative lower bound is trusted -- passing an actual value outside its
+//! declared bound (for instance a negative value under a non-negative bound) is a caller precondition violation
+//! (undefined behavior). Tight bounds on every parameter are encouraged.
 //!
 //! .. code-block:: c++
 //!
@@ -374,11 +380,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   size. Larger segments are future work. A type whose maximum already lies within it (a narrow type such as
 //!   ``uint8_t``, ``int16_t``, or ``uint16_t``) is accepted un-annotated; a type whose maximum exceeds ``2^21`` (e.g.
 //!   ``int32_t``, ``uint32_t``, or ``int64_t``) must carry a compile-time ``cuda::args::bounds`` whose upper end does
-//!   not exceed ``2^21``. A negative statically-known lower bound is accepted: a negative runtime size is treated as an
-//!   empty segment (clamped to 0). A non-negative lower bound is trusted -- an actual negative value there, like any
-//!   per-segment value outside its declared bound, is a caller precondition violation (undefined behavior; only
-//!   host-known values are checked, by assertions in debug builds).
-//! - **Uniform number of segments.** ``num_segments`` must be a single value, never a per-segment sequence.
+//!   not exceed ``2^21`` (see *Which form each parameter accepts* above for how the lower bound and out-of-bound values
+//!   are handled).
+//! - **Uniform number of segments.** ``num_segments`` must be a single value (``constant``, ``immediate``, or a plain
+//!   integral) resolved on the host. A ``deferred`` (device-resident) count is not supported at this time.
 //! - **Unsorted output required.** Only ``cuda::execution::output_ordering::unsorted`` is implemented; the sorted
 //!   orderings of the default contract described in *Determinism, tie-breaking, and output ordering* below (and hence
 //!   an empty, no-requirement environment, which defaults to ``stable_sorted``) are rejected at compile time. The
@@ -501,7 +506,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -600,7 +606,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -705,7 +712,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -802,7 +810,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -924,7 +933,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -1033,7 +1043,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -1147,7 +1158,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
@@ -1256,7 +1268,8 @@ struct DeviceBatchedTopK
   //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
