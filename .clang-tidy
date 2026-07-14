@@ -193,6 +193,7 @@ Checks:
   - '-bugprone-unsafe-to-allow-exceptions'
   - '-bugprone-sizeof-expression'
   - '-modernize-use-nullptr'
+  - '-bugprone-std-exception-baseclass'
 
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
