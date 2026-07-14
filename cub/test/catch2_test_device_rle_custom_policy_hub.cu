@@ -21,7 +21,7 @@ using namespace cub;
 template <typename LengthT, typename KeyT>
 struct my_policy_hub
 {
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using RleSweepPolicyT =
       AgentRlePolicy<96,

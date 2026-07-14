@@ -497,6 +497,11 @@ public:
     return this->__has_val_;
   }
 
+  _CCCL_API constexpr bool has_error() const noexcept
+  {
+    return !this->__has_val_;
+  }
+
   _CCCL_API constexpr const _Tp& value() const&
   {
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
@@ -1393,6 +1398,11 @@ public:
   _CCCL_API constexpr bool has_value() const noexcept
   {
     return this->__has_val_;
+  }
+
+  _CCCL_API constexpr bool has_error() const noexcept
+  {
+    return !this->__has_val_;
   }
 
   _CCCL_API constexpr void operator*() const noexcept
