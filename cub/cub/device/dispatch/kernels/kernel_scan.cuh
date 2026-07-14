@@ -108,8 +108,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
-  ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
+_CCCL_KERNEL_ATTRIBUTES void
+DeviceCompactInitKernel(ScanTileStateT tile_state, const int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
