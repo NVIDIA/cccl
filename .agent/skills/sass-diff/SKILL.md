@@ -46,7 +46,9 @@ Ignore as trivial:
 
 * If any non-trivial change was detected, report the top 5 regions where a non-trivial change was detected,
   including the name of the kernel they appeared in.
-* Provide short summary of the diff type (opcode change, memory access size change, size delta, control-flow, etc.).
+* Provide a short summary of the diff type,
+  including opcode changes, memory access size/cache policy changes, control-flow changes, register-count changes,
+  spills/local memory, shared memory, and occupancy-relevant resource deltas.
 * Explicitly state if only noise was detected after normalization.
 * If you are not sure if the differences are impactful, show it and ask the user for guidance.
 * Keep the original and normalized disassembly dumps available and tell the user where they can find them.
