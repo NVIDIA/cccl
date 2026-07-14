@@ -121,7 +121,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     _CCCL_GRID_CONSTANT const InitValueT init,
     _CCCL_GRID_CONSTANT const size_t max_segment_size)
 {
-  static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
@@ -138,26 +138,26 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
-  static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
+  static constexpr SegmentedReduceWarpReducePolicy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
-    AgentWarpReducePolicy<med_pol.threads_per_block,
-                          med_pol.threads_per_warp,
-                          med_pol.items_per_thread,
-                          void,
-                          med_pol.vec_size,
-                          med_pol.load_modifier>;
+    agent_warp_reduce_policy<med_pol.threads_per_block,
+                             med_pol.threads_per_warp,
+                             med_pol.items_per_thread,
+                             void,
+                             med_pol.vec_size,
+                             med_pol.load_modifier>;
   using AgentMediumReduceT =
     reduce::AgentWarpReduce<medium_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Small segment agent (one thread per segment)
-  static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
+  static constexpr SegmentedReduceWarpReducePolicy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
-    AgentWarpReducePolicy<small_pol.threads_per_block,
-                          small_pol.threads_per_warp,
-                          small_pol.items_per_thread,
-                          void,
-                          small_pol.vec_size,
-                          small_pol.load_modifier>;
+    agent_warp_reduce_policy<small_pol.threads_per_block,
+                             small_pol.threads_per_warp,
+                             small_pol.items_per_thread,
+                             void,
+                             small_pol.vec_size,
+                             small_pol.load_modifier>;
   using AgentSmallReduceT =
     reduce::AgentWarpReduce<small_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
@@ -327,7 +327,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   _CCCL_GRID_CONSTANT const int full_chunk_size,
   _CCCL_GRID_CONSTANT const int blocks_per_segment)
 {
-  static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
@@ -344,25 +344,25 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
-  static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
+  static constexpr SegmentedReduceWarpReducePolicy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
-    AgentWarpReducePolicy<med_pol.threads_per_block,
-                          med_pol.threads_per_warp,
-                          med_pol.items_per_thread,
-                          void,
-                          med_pol.vec_size,
-                          med_pol.load_modifier>;
+    agent_warp_reduce_policy<med_pol.threads_per_block,
+                             med_pol.threads_per_warp,
+                             med_pol.items_per_thread,
+                             void,
+                             med_pol.vec_size,
+                             med_pol.load_modifier>;
   using AgentMediumReduceT = reduce::AgentWarpReduce<medium_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 
   // Small segment agent (one thread per segment)
-  static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
+  static constexpr SegmentedReduceWarpReducePolicy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
-    AgentWarpReducePolicy<small_pol.threads_per_block,
-                          small_pol.threads_per_warp,
-                          small_pol.items_per_thread,
-                          void,
-                          small_pol.vec_size,
-                          small_pol.load_modifier>;
+    agent_warp_reduce_policy<small_pol.threads_per_block,
+                             small_pol.threads_per_warp,
+                             small_pol.items_per_thread,
+                             void,
+                             small_pol.vec_size,
+                             small_pol.load_modifier>;
   using AgentSmallReduceT = reduce::AgentWarpReduce<small_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 
   constexpr int small_items_per_tile  = small_pol.items_per_tile();

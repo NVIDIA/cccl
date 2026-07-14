@@ -98,22 +98,22 @@ OutputIterator scan_impl(
 
   _CCCL_ASSERT(num_threads > 1, "Parallel scan requires multiple threads");
 
-  temporary_array<accum_t, DerivedPolicy> block_sums(exec, num_threads);
+  // The chosen block size may leave some threads without work
+  const Size block_size    = ::cuda::ceil_div(n, static_cast<Size>(num_threads));
+  const int active_threads = static_cast<int>(::cuda::ceil_div(n, block_size));
+
+  temporary_array<accum_t, DerivedPolicy> block_sums(exec, active_threads);
 
   // Step 1: Reduce each block (N reads)
-  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
+  THRUST_PRAGMA_OMP(parallel num_threads(active_threads))
   {
-    const int tid         = omp_get_thread_num();
-    const Size block_size = ::cuda::ceil_div(n, num_threads);
-    const Size start      = tid * block_size;
-    const Size end        = (::cuda::std::min) (start + block_size, n);
+    const int tid    = omp_get_thread_num();
+    const Size start = tid * block_size;
+    const Size end   = (::cuda::std::min) (start + block_size, n);
 
-    if (start < n)
-    {
-      // For both has_init and no-init cases: reduce each block using first element as init
-      accum_t first_elem = *(first + start);
-      block_sums[tid]    = ::cuda::std::reduce(first + start + 1, first + end, first_elem, wrapped_binary_op);
-    }
+    // For both has_init and no-init cases: reduce each block using first element as init
+    const accum_t first_elem = *(first + start);
+    block_sums[tid]          = ::cuda::std::reduce(first + start + 1, first + end, first_elem, wrapped_binary_op);
   }
 
   // Step 2: Scan block sums
@@ -130,41 +130,37 @@ OutputIterator scan_impl(
   }
 
   // Step 3: Scan each block with offset (N reads/writes)
-  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
+  THRUST_PRAGMA_OMP(parallel num_threads(active_threads))
   {
-    const int tid         = omp_get_thread_num();
-    const Size block_size = ::cuda::ceil_div(n, num_threads);
-    const Size start      = tid * block_size;
-    const Size end        = (::cuda::std::min) (start + block_size, n);
+    const int tid    = omp_get_thread_num();
+    const Size start = tid * block_size;
+    const Size end   = (::cuda::std::min) (start + block_size, n);
 
-    if (start < n)
+    if constexpr (IsInclusive)
     {
-      if constexpr (IsInclusive)
+      if constexpr (has_init)
       {
-        if constexpr (has_init)
+        const accum_t prefix = block_sums[tid];
+        ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+      }
+      else
+      {
+        // For no init: thread 0 has no prefix, others use block_sums
+        if (tid == 0)
+        {
+          ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op);
+        }
+        else
         {
           const accum_t prefix = block_sums[tid];
           ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
         }
-        else
-        {
-          // For no init: thread 0 has no prefix, others use block_sums
-          if (tid == 0)
-          {
-            ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op);
-          }
-          else
-          {
-            const accum_t prefix = block_sums[tid];
-            ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
-          }
-        }
       }
-      else
-      {
-        const accum_t prefix = block_sums[tid];
-        ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, wrapped_binary_op);
-      }
+    }
+    else
+    {
+      const accum_t prefix = block_sums[tid];
+      ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, wrapped_binary_op);
     }
   }
 

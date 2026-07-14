@@ -143,12 +143,13 @@ struct ScanByKeyPolicySelector
             .load_modifier     = cub::LOAD_DEFAULT,
             .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+            .lookback_delay    = cub::LookbackDelayPolicy{
+                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
   }
 };
 // example-end exclusive-sum-by-key-policy-selector
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey env-based API with tuning", "[scan][by_key][env]")
+C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts a custom policy selector", "[scan][by_key][env]")
 {
   // example-begin exclusive-sum-by-key-tuning
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};

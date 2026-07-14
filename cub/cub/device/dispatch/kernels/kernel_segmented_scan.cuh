@@ -237,11 +237,14 @@ public:
         block_store_t storer(temp_storage.reused.store);
         if (chunk_size == tile_items)
         {
-          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, thread_values);
+          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, // NOLINT(bugprone-misplaced-widening-cast)
+                       thread_values);
         }
         else
         {
-          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, thread_values, chunk_size);
+          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, // NOLINT(bugprone-misplaced-widening-cast)
+                       thread_values,
+                       chunk_size);
         }
       }
       if (++chunk_id < n_chunks)

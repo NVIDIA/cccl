@@ -271,11 +271,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
-    AgentTopKPolicy<policy.threads_per_block,
-                    policy.items_per_thread,
-                    policy.bits_per_pass,
-                    policy.load_algorithm,
-                    policy.scan_algorithm>;
+    agent_topk_policy<policy.threads_per_block,
+                      policy.items_per_thread,
+                      policy.bits_per_pass,
+                      policy.load_algorithm,
+                      policy.scan_algorithm>;
   using agent_topk_t =
     AgentTopK<agent_topk_policy_t,
               KeyInputIteratorT,
@@ -331,11 +331,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
-    AgentTopKPolicy<policy.threads_per_block,
-                    policy.items_per_thread,
-                    policy.bits_per_pass,
-                    policy.load_algorithm,
-                    policy.scan_algorithm>;
+    agent_topk_policy<policy.threads_per_block,
+                      policy.items_per_thread,
+                      policy.bits_per_pass,
+                      policy.load_algorithm,
+                      policy.scan_algorithm>;
   using identify_candidates_op_t = NullType;
   using agent_topk_t =
     AgentTopK<agent_topk_policy_t,
@@ -392,11 +392,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
-    AgentTopKPolicy<policy.threads_per_block,
-                    policy.items_per_thread,
-                    policy.bits_per_pass,
-                    policy.load_algorithm,
-                    policy.scan_algorithm>;
+    agent_topk_policy<policy.threads_per_block,
+                      policy.items_per_thread,
+                      policy.bits_per_pass,
+                      policy.load_algorithm,
+                      policy.scan_algorithm>;
   using extract_bin_op_t = NullType;
   using agent_topk_t =
     AgentTopK<agent_topk_policy_t,

@@ -4,6 +4,7 @@
 
 import numba
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
 
@@ -35,10 +36,9 @@ def test_warp_merge_sort(T, items_per_thread):
     dtype = NUMBA_TYPES_TO_NP[T]
     items_per_tile = 32 * items_per_thread
     input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, 32](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input)
@@ -79,10 +79,9 @@ def test_warp_merge_sort_multiple_warps():
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     for wid in range(threads_per_block // warp_threads):

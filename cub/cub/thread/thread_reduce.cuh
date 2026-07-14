@@ -294,7 +294,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 2)
     {
-      array[j] = reduction_op(array[j], array[j + i]);
+      array[j] = reduction_op(array[j], array[j + i]); // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
   return array[0];

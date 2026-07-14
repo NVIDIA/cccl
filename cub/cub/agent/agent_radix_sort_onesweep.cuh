@@ -56,7 +56,7 @@ enum RadixSortStoreAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(RadixSortStoreAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(RadixSortStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -64,9 +64,8 @@ namespace detail
       return "RADIX_SORT_STORE_DIRECT";
     case RADIX_SORT_STORE_ALIGNED:
       return "RADIX_SORT_STORE_ALIGNED";
-    default:
-      return "<unknown RadixSortStoreAlgorithm>";
   }
+  return "<unknown RadixSortStoreAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
@@ -119,6 +118,7 @@ struct agent_radix_sort_onesweep_policy : ScalingType
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -450,7 +450,7 @@ struct AgentRadixSortOnesweep
     {
       // gather and scatter the values
       ValueT values[ITEMS_PER_THREAD];
-      LoadValues(block_idx * TILE_ITEMS, values);
+      LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
       if (full_block)
       {
         StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
@@ -650,7 +650,7 @@ struct AgentRadixSortOnesweep
 
     // load values
     ValueT values[ITEMS_PER_THREAD];
-    LoadValues(block_idx * TILE_ITEMS, values);
+    LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
 
     // scatter values
     __syncthreads();
@@ -670,7 +670,7 @@ struct AgentRadixSortOnesweep
     // if warp1 < warp2, all elements of warp1 occur before those of warp2
     // in the source array
     bit_ordered_type keys[ITEMS_PER_THREAD];
-    LoadKeys(block_idx * TILE_ITEMS, keys);
+    LoadKeys(block_idx * TILE_ITEMS, keys); // NOLINT(bugprone-misplaced-widening-cast)
 
     // rank keys
     int ranks[ITEMS_PER_THREAD];
