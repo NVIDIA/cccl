@@ -1622,8 +1622,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 // min(stages, excess=3)) and 1 resident chunk remains: `stream_stages(3) > prologue(1)` yet `my_resident > 0`, so a
 // forward wave sets `stage_base = 2` and the merged loop's stream re-arm must seed its ring counter at
 // `fw(stage_base)`, not `fw(0)`. The schedule sweep never reaches this (its `>` configs all collapse to `my_resident ==
-// 0` pure streaming, which guards `stage_base` back to 0). Non-deterministic combos drive the forward wave (the new
-// coverage); the deterministic combos exercise the already-working reverse counterpart (`stage_base == 0`).
+// 0` pure streaming, which guards `stage_base` back to 0). The combos that select a forward first wave drive the new
+// coverage; the reverse ones here land on `stage_base == 0` (`overflow_chunks(6) % stream_stages(3) == 0`), the
+// simplest reverse case (the wrapping non-zero reverse `stage_base` is pinned by the C = 5 test below).
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a resident chunk below a wider stream",
          "[pairs][segmented][topk][device][cluster][determinism]",
          det_tie_pair_combos)
@@ -1673,6 +1674,187 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
                              cuda::execution::output_ordering::unsorted),
     cuda::execution::tune(
       cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/4>{})};
+
+  auto seg_sizes =
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
+  auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
+
+  size_t temp_bytes = 0;
+  const auto invoke = [&](void* d_temp) {
+    return cub::DeviceBatchedTopK::MaxPairs(
+      d_temp,
+      temp_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      seg_sizes,
+      k_param,
+      cuda::args::immediate{num_segments},
+      env);
+  };
+  REQUIRE(cudaSuccess == invoke(nullptr));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Reverse first-wave with a non-zero cyclic `stage_base` and a wrapping resident window. Reuses the schedule sweep's
+// cap-1 / slots-4 / stages-4 kernel (no new instantiation); only the runtime segment size differs. Sized to 5 chunks so
+// the single CTA reserves 1 stream slot (`excess = 1`), leaving 3 resident chunks: sub-case B (`stream_stages(1) <=
+// prologue(3)`) with `overflow_chunks = 2`, so a reverse first wave (`first_wave_is_forward == false`) sets
+// `stage_base = (s0+1) % stage_cycle = 1` over `stage_cycle = 3`, giving the cyclic window `[1,4) mod 3`. Resident
+// chunks 0,1,2 then map to stages 0,2,1 (descending cycle position from `reverse_cycle_seed`), and the `-1` re-arm must
+// free stream stage 0 in consume order. The `stage_base == 0` reverse case is covered by the wider-stream test above (C
+// = 7); this pins the wrapping, non-zero-`stage_base` reverse path. Only the deterministic combos whose (tie-break,
+// pass-parity) select a reverse first wave exercise it; the rest re-drive forward paths.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a wrapping reverse resident window",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         det_tie_pair_combos)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction   = cub::detail::topk::select::max;
+
+  constexpr segment_size_t static_max_segment_size = 1536;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+  skip_if_batched_topk_cluster_unavailable(true);
+
+  const segment_size_t segment_size = 640 - 31; // 5 chunks (128 items each), unaligned -> peeled overflow tail edge
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k}));
+
+  CAPTURE(static_max_segment_size, static_max_k, segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{cudaStream_t{0}},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<tie_break>{},
+                             cuda::execution::output_ordering::unsorted),
+    cuda::execution::tune(
+      cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/4>{})};
+
+  auto seg_sizes =
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
+  auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
+
+  size_t temp_bytes = 0;
+  const auto invoke = [&](void* d_temp) {
+    return cub::DeviceBatchedTopK::MaxPairs(
+      d_temp,
+      temp_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      seg_sizes,
+      k_param,
+      cuda::args::immediate{num_segments},
+      env);
+  };
+  REQUIRE(cudaSuccess == invoke(nullptr));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Partial final wave: `overflow_chunks % stream_stages != 0`, so the streaming reload branch wraps its ring on an
+// uneven tail. Reuses the misaligned-tail test's cap-1 / slots-4 / stages-2 kernel (no new instantiation). Sized to 7
+// chunks so, at 4 slots / 2 stages, streaming reserves 2 (`excess = 3`, `min(stages,excess) = 2`) and 2 resident chunks
+// remain: sub-case B with `overflow_chunks = 5`, `stream_stages = 2` -> `5 % 2 == 1`. The other tune tests all keep
+// `overflow_chunks` a multiple of `stream_stages`, so this is the only tiny check of the uneven-tail reload for both
+// directions (deterministic combos drive reverse, non-deterministic forward).
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a partial final overflow wave",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         det_tie_pair_combos)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction   = cub::detail::topk::select::max;
+
+  constexpr segment_size_t static_max_segment_size = 1536;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+  skip_if_batched_topk_cluster_unavailable(true);
+
+  const segment_size_t segment_size = 896 - 63; // 7 chunks (128 items each), unaligned -> peeled overflow tail edge
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k}));
+
+  CAPTURE(static_max_segment_size, static_max_k, segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{cudaStream_t{0}},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<tie_break>{},
+                             cuda::execution::output_ordering::unsorted),
+    cuda::execution::tune(
+      cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/2>{})};
 
   auto seg_sizes =
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};

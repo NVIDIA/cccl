@@ -2219,74 +2219,100 @@ private:
     {
       // Resident load geometry (meaningful only when this rank owns resident chunks). Chunks are written densely in
       // slot order from offset 0 at the fixed stride `chunk_index * ChunkBytes` and read back in the same order, so the
-      // fold needs no stored per-chunk state. `prologue_stages` shared mbarrier stages carry the resident pipeline;
-      // `stage_base`/`stage_rot` only relabel which stage each resident chunk uses (the packing and the ring invariant
-      // `stage == chunk % stream_stages` are untouched) so the interleaved first-wave stream prime lands in forward
-      // consume order and a misaligned reload tail still drains stages 0..prologue_stages-1 in order:
-      //  * `stage_base` shifts the window to `[stage_base, stage_base + prologue_stages)`, freeing the low stream
-      //  stages for
-      //    the up-front prime. Forward first wave with `stream_stages > prologue_stages` only (which forces
-      //    `prologue_stages == my_resident_chunks`, so there is no reload). Reverse keeps it 0 (its first-consumed
-      //    stage is data-dependent).
-      //  * `stage_rot` rotates the resident cycle (mod `prologue_stages`), only when the stream fits the resident cycle
-      //    (`stream_stages <= prologue_stages`) and the tail is misaligned. Its one-time `% prologue_stages` is
-      //    TMA-dwarfed.
+      // fold needs no stored per-chunk state. `prologue_stages` shared mbarrier stages carry the resident pipeline. The
+      // stream ring (`stream_stages` stages) and the resident window share the same mbarrier array; the first wave is
+      // primed in consume order so the earliest-consumed copies issue first (see the direction-aware layout below).
       const bool interleave_overflow_prime = layout.overflow_chunks > offset_t{0};
       const int prologue_stages =
         layout.my_resident_chunks > 0
           ? (::cuda::std::min) (PipelineStages, static_cast<int>(layout.my_resident_chunks))
           : 0;
+
+      // First wave = the `stream_stages` overflow chunks resident when the overflow phase begins (forward chunks
+      // `[0, stream_stages)`, reverse chunks `[fw_base, overflow_chunks)`); a chunk's stage is always `chunk %
+      // stream_stages`.
+      const offset_t fw_stages = static_cast<offset_t>(stream_stages);
+      const offset_t fw_base   = layout.overflow_chunks - fw_stages;
+
+      // Distinct mbarrier stages in flight: the stream ring and the resident window share mbarriers, so the cycle spans
+      // whichever is wider -- sub-case A (`stream_stages > prologue_stages`) nests the resident window in the stream
+      // ring; sub-case B nests the stream ring in the resident window.
+      const int stage_cycle = (::cuda::std::max) (stream_stages, prologue_stages);
+
+      // Reverse consumes the first wave as stages descending from `reverse_first_stage`; forward ascending from 0. We
+      // prime in that same order. The `stream_stages - prologue_stages` early-consumed stages are the "complement",
+      // primed up-front onto fresh mbarriers for maximal overlap; the `prologue_stages` late-consumed stages are the
+      // "resident window", primed as the resident fold frees their shared mbarriers.
+      const int reverse_first_stage =
+        interleave_overflow_prime ? static_cast<int>((layout.overflow_chunks - offset_t{1}) % fw_stages) : 0;
+
+      // `stage_base` places the resident window on the late-consumed stages. Forward: shift up by the early-consumed
+      // count `stream_stages - prologue_stages` (nonzero only when `stream_stages > prologue_stages`, which forces
+      // `prologue_stages == my_resident_chunks`, so no reload). Reverse: the late-consumed stages form the cyclic
+      // window starting at `(reverse_first_stage + 1) % stage_cycle` (== `overflow_chunks % stream_stages` for sub-case
+      // A).
       int stage_base = 0;
       if constexpr (first_wave_is_forward)
       {
-        if (interleave_overflow_prime && layout.my_resident_chunks > 0 && stream_stages > prologue_stages)
+        if (interleave_overflow_prime && prologue_stages > 0 && stream_stages > prologue_stages)
         {
           stage_base = stream_stages - prologue_stages;
         }
       }
+      else
+      {
+        if (prologue_stages > 0)
+        {
+          stage_base = static_cast<int>(
+            (static_cast<offset_t>(reverse_first_stage) + offset_t{1}) % static_cast<offset_t>(stage_cycle));
+        }
+      }
+
+      // Resident chunk -> mbarrier-stage rotation, chosen so the last `prologue_stages` resident chunks free the
+      // resident window in consume order as they fold. Forward walks the window `+1` (ascending); `stage_rot` corrects
+      // a misaligned reload tail so the last chunks still land `[stage_base, stage_base + prologue_stages)` in order.
+      // Reverse walks the window `-1` (descending) from its top; `reverse_cycle_seed` seeds the cycle position so chunk
+      // `my_resident-1` frees `stage_base`.
       const offset_t tail_align =
         prologue_stages > 0 ? layout.my_resident_chunks % static_cast<offset_t>(prologue_stages) : offset_t{0};
       const offset_t stage_rot =
-        (interleave_overflow_prime && prologue_stages > 0 && stream_stages <= prologue_stages
+        (first_wave_is_forward && interleave_overflow_prime && prologue_stages > 0 && stream_stages <= prologue_stages
          && tail_align != offset_t{0})
           ? static_cast<offset_t>(prologue_stages) - tail_align
           : offset_t{0};
+      const int reverse_cycle_seed =
+        prologue_stages > 0
+          ? static_cast<int>((layout.my_resident_chunks - offset_t{1}) % static_cast<offset_t>(prologue_stages))
+          : 0;
 
-      // First-wave stage -> chunk mapping, shared by the up-front prime and the merged loop's resident re-arms below.
-      // The wave occupies the last `stream_stages` overflow chunks, each landing in stage `chunk % stream_stages`.
-      // Forward keeps stage `s` -> chunk `s`. Reverse walks the window `[overflow_chunks - stream_stages,
-      // overflow_chunks)`; since +1 in stage is +1 in chunk there (with wrap), each prime site seeds a ring counter
-      // once (one modulo) at its first stage and steps it unit-stride, replacing the per-copy modulo.
-      const offset_t fw_stages = static_cast<offset_t>(stream_stages);
-      const offset_t fw_base   = layout.overflow_chunks - fw_stages;
-
-      // The up-front prime and the merged loop's resident re-arms below share one first-wave ring counter, seeded once
-      // here in prime order and stepped unit-stride (`fw_base`/`fw_stages`: +1 with wrap). `prime_complement` is the
-      // sub-case A predicate -- the wave is wider than the resident window, so the up-front loop primes the complement
-      // stages the resident load never touches, walking the counter to `fw(stage_base)` for the merged loop to continue
-      // from. Forward primes upward from stage 0; reverse's complement starts at stage `prologue_stages`. Without a
-      // complement (forward, or reverse sub-case B) the merged loop consumes the counter first, so it must already sit
-      // at `fw(stage_base)`: 0 for forward, `fw(0)` for reverse.
+      // Shared first-wave ring counter, seeded once in prime (== consume) order and stepped unit-stride across both the
+      // up-front prime and the merged fold loop's resident re-arms: forward `+1` from chunk 0, reverse `-1` from
+      // `overflow_chunks - 1` (== `fw(reverse_first_stage)`). `prime_complement` marks sub-case A, where the up-front
+      // loop primes the early-consumed complement stages first and then hands the counter to the re-arms.
       const bool prime_complement = interleave_overflow_prime && stream_stages > prologue_stages;
-      offset_t first_wave_chunk =
-        first_wave_is_forward
-          ? offset_t{0}
-          : fw_base
-              + ((prime_complement ? static_cast<offset_t>(prologue_stages) : offset_t{0}) + fw_stages
-                 - fw_base % fw_stages)
-                  % fw_stages;
+      // Sub-case A implies `prologue_stages < PipelineStages`, which forces `prologue_stages == my_resident_chunks`:
+      // the resident fold then never reloads a resident successor (`chunk + prologue_stages >= my_resident_chunks`
+      // always), so every last-`prologue_stages` fold re-arms a shared stream stage.
+      _CCCL_ASSERT(!prime_complement || layout.my_resident_chunks == static_cast<offset_t>(prologue_stages),
+                   "sub-case A (stream wider than the resident window) admits no resident reload");
+      offset_t first_wave_chunk = first_wave_is_forward ? offset_t{0} : (layout.overflow_chunks - offset_t{1});
+
+      // Reverse resident chunk -> mbarrier stage (assertion + cursor cross-check): descending cycle position
+      // `reverse_cycle_seed - chunk` (Euclidean) mapped into the cyclic window. Only valid when `prologue_stages > 0`.
+      [[maybe_unused]] const auto reverse_resident_stage = [&](offset_t chunk_index) -> int {
+        const offset_t cycle_len = static_cast<offset_t>(prologue_stages);
+        const offset_t cycle_pos =
+          (static_cast<offset_t>(reverse_cycle_seed) + cycle_len - chunk_index % cycle_len) % cycle_len;
+        const int stage_index = stage_base + static_cast<int>(cycle_pos);
+        return stage_index >= stage_cycle ? stage_index - stage_cycle : stage_index;
+      };
 
       {
-        // Issue every up-front bulk copy from one TMA site, over two disjoint stage sets. The first `prologue_stages`
-        // iterations load the resident chunks over the mbarrier window `[stage_base, stage_base + prologue_stages)`
-        // (`resident_stage`: unit-stride, select-wrap to `stage_base`, avoiding a `% prologue_stages`, a real division
-        // since `prologue_stages` is a runtime value). The remaining `stream_stages - prologue_stages` iterations (only
-        // when interleaving) prime the complement stages the resident load never touches with their first-wave chunk
-        // into the disjoint stream region; those mbarriers are fresh, so the copies run concurrently with the resident
-        // bulks (the shared resident stages are primed as the merged fold loop below frees them). `stage_base` steers
-        // the free set to the first-consumed stages (low for a forward first wave, high for reverse), matching prime
-        // order to consume order. With no resident chunks `prologue_stages == 0`, so every iteration takes the
-        // complement path and this loop alone arms the whole first wave (stages `0..stream_stages-1`).
+        // Issue every up-front bulk copy from one TMA site, in first-wave consume order. The first `prologue_stages`
+        // iterations load resident chunks into their dense slots over the resident-window mbarriers; the rest (sub-case
+        // A) prime the early-consumed complement onto fresh stream mbarriers that overlap the resident bulks (the
+        // resident-window stages are re-armed later, by the fold loop). No resident chunks -> this loop arms the whole
+        // wave.
         //
         // Force nounroll: auto-unroll replicates the full TMA issue per iteration and bloats the load path.
         _CCCL_ASSERT(!interleave_overflow_prime || stream_is_forward == first_wave_is_forward,
@@ -2294,7 +2320,10 @@ private:
         _CCCL_ASSERT(!interleave_overflow_prime || static_cast<offset_t>(stream_stages) <= layout.overflow_chunks,
                      "first wave assumes at least `stream_stages` overflow chunks");
         const int upfront_copies = prime_complement ? stream_stages : prologue_stages;
-        int resident_stage       = stage_base + static_cast<int>(stage_rot);
+        // Resident-load mbarrier cursor (see the rotation note above): forward walks `+1` from `stage_base`, reverse
+        // walks the cycle position `-1` from `reverse_cycle_seed`; both select-wrap, no runtime modulo.
+        [[maybe_unused]] int resident_stage     = first_wave_is_forward ? stage_base + static_cast<int>(stage_rot) : 0;
+        [[maybe_unused]] int resident_cycle_pos = reverse_cycle_seed;
         _CCCL_PRAGMA_NOUNROLL()
         for (int idx = 0; idx < upfront_copies; ++idx)
         {
@@ -2307,25 +2336,49 @@ private:
           if (idx < prologue_stages)
           {
             const offset_t local_chunk = static_cast<offset_t>(idx);
-            _CCCL_ASSERT(
-              resident_stage
-                == stage_base + static_cast<int>((local_chunk + stage_rot) % static_cast<offset_t>(prologue_stages)),
-              "resident issue stage desynced from its rolling counter");
-            stage     = resident_stage;
+            if constexpr (first_wave_is_forward)
+            {
+              _CCCL_ASSERT(
+                resident_stage
+                  == stage_base + static_cast<int>((local_chunk + stage_rot) % static_cast<offset_t>(prologue_stages)),
+                "resident issue stage desynced from its rolling counter");
+              stage = resident_stage;
+              if (++resident_stage == stage_base + prologue_stages)
+              {
+                resident_stage = stage_base;
+              }
+            }
+            else
+            {
+              stage = stage_base + resident_cycle_pos;
+              if (stage >= stage_cycle)
+              {
+                stage -= stage_cycle;
+              }
+              _CCCL_ASSERT(stage == reverse_resident_stage(local_chunk),
+                           "resident issue stage desynced from its rolling counter");
+              resident_cycle_pos = (resident_cycle_pos == 0) ? prologue_stages - 1 : resident_cycle_pos - 1;
+            }
             dst_slot  = idx;
             src_base  = layout.resident_base;
             src_index = local_chunk;
-            if (++resident_stage == stage_base + prologue_stages)
-            {
-              resident_stage = stage_base;
-            }
           }
           else
           {
-            // Map the complement index `idx - prologue_stages` around the resident window: low stages `[0, stage_base)`
-            // map to themselves, the rest skip the window (`+ prologue_stages`, i.e. back to `idx`).
-            stage = (idx - prologue_stages < stage_base) ? idx - prologue_stages : idx;
-            _CCCL_ASSERT(stage < stage_base || stage >= stage_base + prologue_stages,
+            if constexpr (first_wave_is_forward)
+            {
+              // Map the complement index `idx - prologue_stages` around the resident window: low stages `[0,
+              // stage_base)` map to themselves, the rest skip the window (`+ prologue_stages`, i.e. back to `idx`).
+              stage = (idx - prologue_stages < stage_base) ? idx - prologue_stages : idx;
+            }
+            else
+            {
+              // Reverse complement stages descend from `reverse_first_stage`; the ring counter already walks them, so
+              // the stage is just its chunk's stage.
+              stage = static_cast<int>(first_wave_chunk % fw_stages);
+            }
+            _CCCL_ASSERT(prologue_stages == 0
+                           || static_cast<int>((stage - stage_base + stage_cycle) % stage_cycle) >= prologue_stages,
                          "up-front prime stage must lie outside the resident window");
             _CCCL_ASSERT(
               first_wave_chunk < layout.overflow_chunks && first_wave_chunk % fw_stages == static_cast<offset_t>(stage),
@@ -2333,8 +2386,16 @@ private:
             dst_slot  = stream_slot_base + stage;
             src_base  = layout.overflow_base;
             src_index = first_wave_chunk;
-            first_wave_chunk =
-              (first_wave_chunk + offset_t{1} == fw_base + fw_stages) ? fw_base : first_wave_chunk + offset_t{1};
+            if constexpr (first_wave_is_forward)
+            {
+              first_wave_chunk =
+                (first_wave_chunk + offset_t{1} == fw_base + fw_stages) ? fw_base : first_wave_chunk + offset_t{1};
+            }
+            else
+            {
+              first_wave_chunk =
+                (first_wave_chunk == fw_base) ? fw_base + fw_stages - offset_t{1} : first_wave_chunk - offset_t{1};
+            }
           }
           issue_bulk_copy(stage, key_slots + dst_slot * ChunkBytes, chunk_bulk_src(src_base, src_index));
         }
@@ -2345,25 +2406,24 @@ private:
       // and optionally refills one stage's pipeline; the `fold_is_resident` x `refill_kind` classification below names
       // the five states it can be in. The stream is fully primed before the overflow phase (the up-front loop above,
       // plus this loop's resident re-arms) and the histogram never early-stops, so overflow visits only wait/fold/
-      // prefetch and the pass ends drained. Edges are folded after. `resident_stage` cycles the resident window
-      // `[stage_base, stage_base + prologue_stages)`, `streaming_stage` the stream ring `[0, stream_stages)`; both step
-      // unit-stride with a select-wrap (no runtime modulo).
+      // prefetch and the pass ends drained. Edges are folded after. The resident cursor cycles the resident window and
+      // `streaming_stage` the stream ring `[0, stream_stages)`, both stepping unit-stride with a select-wrap (no
+      // runtime modulo); forward ascends, reverse descends.
       enum class refill_kind
       {
         none,
         resident,
         stream
       };
-      const offset_t total_chunks = layout.my_resident_chunks + layout.overflow_chunks;
-      int resident_stage          = stage_base + static_cast<int>(stage_rot);
-      int streaming_stage =
-        (interleave_overflow_prime && !first_wave_is_forward)
-          ? static_cast<int>((layout.overflow_chunks - offset_t{1}) % static_cast<offset_t>(stream_stages))
-          : 0;
-      // `first_wave_chunk` carries over from the up-front prime, which left it at `fw(stage_base)` (sub-case A walked
-      // it there through the complement; otherwise it was seeded there directly). The resident re-arms below fire on
-      // consecutive iterations starting at `stage_base` -- the last `prologue_stages` resident chunks occupy the window
-      // `[stage_base, stage_base + prologue_stages)` in +1 order -- so they consume the counter unit-stride from here.
+      const offset_t total_chunks             = layout.my_resident_chunks + layout.overflow_chunks;
+      [[maybe_unused]] int resident_stage     = first_wave_is_forward ? stage_base + static_cast<int>(stage_rot) : 0;
+      [[maybe_unused]] int resident_cycle_pos = reverse_cycle_seed;
+      int streaming_stage = first_wave_is_forward ? 0 : static_cast<int>(reverse_first_stage); // reverse 1st-consumed
+                                                                                               // stage
+      // `first_wave_chunk` carries over from the up-front prime in consume order: sub-case A walked it through the
+      // early-consumed complement, leaving it at the first late-consumed chunk; otherwise it still sits at its seed.
+      // The last `prologue_stages` resident chunks free the resident window in consume order as they fold, so their
+      // re-arms consume the counter unit-stride from here (forward `+1`, reverse `-1`).
       _CCCL_PRAGMA_NOUNROLL()
       for (offset_t chunk = offset_t{0}; chunk < total_chunks; ++chunk)
       {
@@ -2374,13 +2434,26 @@ private:
         offset_t overflow_visit = 0; // stream only: 0-based position in the overflow sequence
         if (chunk < layout.my_resident_chunks)
         {
-          fold_is_resident = true;
-          stage            = resident_stage;
-          fold_chunk       = chunk;
-          _CCCL_ASSERT(
-            stage == stage_base + static_cast<int>((chunk + stage_rot) % static_cast<offset_t>(prologue_stages)),
-            "resident read stage desynced from its rolling counter");
-          resident_stage = (resident_stage + 1 == stage_base + prologue_stages) ? stage_base : resident_stage + 1;
+          fold_chunk = chunk;
+          if constexpr (first_wave_is_forward)
+          {
+            stage = resident_stage;
+            _CCCL_ASSERT(
+              stage == stage_base + static_cast<int>((chunk + stage_rot) % static_cast<offset_t>(prologue_stages)),
+              "resident read stage desynced from its rolling counter");
+            resident_stage = (resident_stage + 1 == stage_base + prologue_stages) ? stage_base : resident_stage + 1;
+          }
+          else
+          {
+            stage = stage_base + resident_cycle_pos;
+            if (stage >= stage_cycle)
+            {
+              stage -= stage_cycle;
+            }
+            _CCCL_ASSERT(stage == reverse_resident_stage(chunk),
+                         "resident read stage desynced from its rolling counter");
+            resident_cycle_pos = (resident_cycle_pos == 0) ? prologue_stages - 1 : resident_cycle_pos - 1;
+          }
         }
         else
         {
@@ -2418,8 +2491,16 @@ private:
                        "first-wave chunk must map back to its stage");
           refill       = refill_kind::stream;
           refill_chunk = first_wave_chunk;
-          first_wave_chunk =
-            (first_wave_chunk + offset_t{1} == fw_base + fw_stages) ? fw_base : first_wave_chunk + offset_t{1};
+          if constexpr (first_wave_is_forward)
+          {
+            first_wave_chunk =
+              (first_wave_chunk + offset_t{1} == fw_base + fw_stages) ? fw_base : first_wave_chunk + offset_t{1};
+          }
+          else
+          {
+            first_wave_chunk =
+              (first_wave_chunk == fw_base) ? fw_base + fw_stages - offset_t{1} : first_wave_chunk - offset_t{1};
+          }
         }
         else if (!fold_is_resident && overflow_visit + static_cast<offset_t>(stream_stages) < layout.overflow_chunks)
         {
