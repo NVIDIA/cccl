@@ -43,8 +43,9 @@ enum class LoadPrefetch : int
   //! Emit an L1 prefetch hint (``prefetch.global.L1``) to all affected cache lines. Falls back to L2 on
   //! architectures that do not support real L1 prefetch.
   l1,
-  //! Emit a TMA bulk prefetch into L2 (``cp.async.bulk.prefetch``) for the whole tile.
-  //! Requires SM_90 or later (Hopper/Blackwell). Falls back to a no-op on older architectures.
+  //! Emit a TMA bulk prefetch into L2 (``cp.async.bulk.prefetch``) for the whole tile on SM_90 or later
+  //! (Hopper/Blackwell). On older architectures falls back to the same strided per-cache-line L2 prefetch
+  //! as ``l2``, so the tile still reaches L2 — via a different mechanism with different (unmeasured) cost.
   bulk_l2,
 };
 
@@ -95,50 +96,61 @@ struct BlockPrefetch
   {
     if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<It>)
     {
-      const int linear_tid      = static_cast<int>(threadIdx.x);
       const int total_bytes     = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
       const auto* const src_ptr = reinterpret_cast<const char*>(::cuda::std::to_address(tile_base));
-
-      // Suppress "variable declared but not referenced" MSVC error
-      (void) linear_tid;
-      (void) total_bytes;
-      (void) src_ptr;
+      if (total_bytes <= 0)
+      {
+        return;
+      }
 
       if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {
         // One elected thread issues a single TMA bulk prefetch for the whole tile.
         // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
-        // Requires SM_90+; a no-op on older architectures.
-        NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                       if (total_bytes > 0 && ::cuda::device::__block_elect_one())
-                       {
-                         // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
-                         const auto* const aligned_base = ::cuda::align_down(src_ptr, 16);
-                         const unsigned int prefix      = static_cast<unsigned int>(src_ptr - aligned_base);
-                         const unsigned int aligned_size =
-                           ::cuda::round_up(static_cast<unsigned int>(total_bytes) + prefix, 16u);
-                         asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
-                                      :
-                                      : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
-                                      : "memory");
-                       }
-                     }))
+        // Requires SM_90+; on older architectures fall back to the strided L2 prefetch.
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_90,
+          ({
+            if (::cuda::device::__block_elect_one())
+            {
+              // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
+              const auto* const aligned_base = ::cuda::align_down(src_ptr, 16);
+              const unsigned int prefix      = static_cast<unsigned int>(src_ptr - aligned_base);
+              const unsigned int aligned_size =
+                ::cuda::round_up(static_cast<unsigned int>(total_bytes) + prefix, 16u);
+              asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
+                           :
+                           : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
+                           : "memory");
+            }
+          }),
+          ({ __strided_prefetch<LoadPrefetch::l2>(src_ptr, total_bytes); }))
       }
       else
       {
-        _CCCL_PRAGMA_NOUNROLL()
-        for (int offset = linear_tid * PrefetchStride; offset < total_bytes; offset += ThreadsPerBlock * PrefetchStride)
-        {
-          // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
-          if constexpr (PrefetchLevel == LoadPrefetch::l1)
-          {
-            asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
-          }
-          else
-          {
-            asm volatile("prefetch.global.L2 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
-          }
-        }
+        __strided_prefetch<PrefetchLevel>(src_ptr, total_bytes);
+      }
+    }
+  }
+
+private:
+  //! The block's threads cooperatively walk ``[src_ptr, src_ptr + total_bytes)`` in ``PrefetchStride``-byte
+  //! steps, each issuing one prefetch hint per cache line targeting ``Level`` (``l1`` or ``l2``).
+  template <LoadPrefetch Level>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void __strided_prefetch(const char* src_ptr, int total_bytes)
+  {
+    _CCCL_PRAGMA_NOUNROLL()
+    for (int offset = static_cast<int>(threadIdx.x) * PrefetchStride; offset < total_bytes;
+         offset += ThreadsPerBlock * PrefetchStride)
+    {
+      // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
+      if constexpr (Level == LoadPrefetch::l1)
+      {
+        asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
+      }
+      else
+      {
+        asm volatile("prefetch.global.L2 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
       }
     }
   }
