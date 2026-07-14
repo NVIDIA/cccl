@@ -47,7 +47,7 @@ try
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1, thrust::no_init);
-  thrust::device_vector<OffsetT> device_num_items(1, elements);
+  thrust::device_vector<OffsetT> device_num_items{elements};
 
   auto d_in        = thrust::raw_pointer_cast(in.data());
   auto d_out       = thrust::raw_pointer_cast(out.data());
@@ -89,5 +89,5 @@ using types = nvbench::type_list<float, double>;
 NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  // 2^31 and 2^32 straddle INT32_MAX to cover the code paths for problem sizes that exceed a single 32-bit chunk
-  .add_int64_power_of_two_axis("Elements{io}", {16, 20, 24, 28, 31, 32});
+  // 2^32 exceeds INT32_MAX to cover the code paths for problem sizes that exceed a single 32-bit chunk
+  .add_int64_power_of_two_axis("Elements{io}", {16, 20, 24, 28, 32});
