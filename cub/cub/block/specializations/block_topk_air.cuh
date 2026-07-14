@@ -115,13 +115,23 @@ struct compare_key_prefix_op
 //!   4B keys + 4B values), where the measured win is largest; for 16-byte pairs (e.g. 8B keys or
 //!   8B values) the win shrinks to ~-30 cycles while the exchange doubles again — enable it
 //!   there only if the shared-memory budget allows.
+//! @tparam ScanAlgorithm
+//!   <b>[optional]</b> BlockScan algorithm used for the per-pass histogram prefix sum (default:
+//!   BLOCK_SCAN_WARP_REDUCE_THEN_SCAN). The histogram counters are 32-bit unsigned sums — the
+//!   ideal case for the redux-based reduce-then-scan variant, which minimizes the latency of the
+//!   scan phase (the largest remaining per-pass cost of this primitive): measured -60 (float
+//!   pairs) to -76 (u32 pairs) cycles per call at identical registers/occupancy and neutral
+//!   throughput on B200. On architectures or configurations where redux.sync does not apply it
+//!   falls back to the classic BLOCK_SCAN_WARP_SCANS code paths automatically, so overriding
+//!   this is only useful for tuning experiments.
 template <typename KeyT,
           int ThreadsPerBlock,
           int ItemsPerThread,
-          typename ValueT           = NullType,
-          int RadixBits             = 8,
-          bool UnrollBitPasses      = true,
-          bool FuseKeyValueExchange = (sizeof(KeyT) + sizeof(ValueT) <= 8)>
+          typename ValueT               = NullType,
+          int RadixBits                 = 8,
+          bool UnrollBitPasses          = true,
+          bool FuseKeyValueExchange     = (sizeof(KeyT) + sizeof(ValueT) <= 8),
+          BlockScanAlgorithm ScanAlgorithm = BLOCK_SCAN_WARP_REDUCE_THEN_SCAN>
 class block_topk_air
 {
 private:
@@ -140,7 +150,7 @@ private:
   static constexpr bool fuse_exchange     = FuseKeyValueExchange && !keys_only;
 
   using histo_counter_t = ::cuda::std::uint32_t;
-  using block_scan_t    = BlockScan<histo_counter_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
+  using block_scan_t    = BlockScan<histo_counter_t, threads_per_block, ScanAlgorithm>;
 
   using traits                 = detail::radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
