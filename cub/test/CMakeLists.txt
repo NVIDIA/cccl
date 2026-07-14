@@ -172,6 +172,20 @@ function(
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
     endif()
 
+    if (
+      CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+      AND "${test_src}" MATCHES "test_device_transform_tile\\.cu$"
+    )
+      target_compile_options(
+        ${test_target}
+        PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>
+      )
+      target_compile_definitions(
+        ${test_target}
+        PRIVATE _CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+      )
+    endif()
+
     # enable lambdas for all API examples
     if ("${test_src}" MATCHES "test.+_api\\.cu$")
       target_compile_options(

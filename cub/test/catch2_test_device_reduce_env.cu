@@ -31,6 +31,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 
+#include <sstream>
+
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
@@ -39,10 +41,10 @@ using cuda::execution::determinism::__determinism_t;
 template <int ThreadsPerBlock>
 struct reduce_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto policy = cub::detail::reduce::agent_reduce_policy{
-      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    const auto policy =
+      cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy};
   }
 };
@@ -376,6 +378,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             decltype(d_in),
             accumulator_t*,
             offset_t,
+            offset_t,
             op_t,
             accumulator_t,
             init_value_t,
@@ -415,6 +418,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
           /* StableReductionOrder */ false,
           decltype(d_in),
           decltype(raw_ptr),
+          offset_t,
           offset_t,
           op_t,
           accumulator_t,
@@ -514,6 +518,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             decltype(d_in),
             accumulator_t*,
             offset_t,
+            offset_t,
             op_t,
             accumulator_t,
             init_value_t,
@@ -553,6 +558,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
           /* StableReductionOrder */ false,
           decltype(d_in),
           decltype(raw_ptr),
+          offset_t,
           offset_t,
           op_t,
           accumulator_t,
@@ -650,6 +656,7 @@ C2H_TEST("Device reduce not_guaranteed falls back when output type differs from 
           decltype(d_in.begin()),
           accumulator_t*,
           offset_t,
+          offset_t,
           op_t,
           accumulator_t,
           init_value_t,
@@ -710,6 +717,7 @@ C2H_TEST("Device sum not_guaranteed falls back when output type differs from acc
           /* StableReductionOrder */ true,
           decltype(d_in.begin()),
           accumulator_t*,
+          offset_t,
           offset_t,
           op_t,
           accumulator_t,
@@ -1061,8 +1069,97 @@ C2H_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]")
   REQUIRE(index_output[0] == 2);
 }
 
+C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][env]")
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1, thrust::no_init);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::Reduce(
+      nullptr,
+      expected_bytes_allocated,
+      input.begin(),
+      output.begin(),
+      input.size(),
+      cuda::std::plus<>{},
+      cub::detail::reduce::no_init));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, cub::detail::reduce::no_init, env);
+  REQUIRE(output[0] == 15);
+}
+
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ReduceByKeyPolicy", "[reduce][device]")
+C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePassPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePassPolicy>);
+
+  // aggregate init
+  constexpr auto p1_multi = cub::ReducePassPolicy{
+    256, 16, 4, cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS, cub::CacheLoadModifier::LOAD_LDG};
+  constexpr auto p1_single = cub::ReducePassPolicy{
+    128, 8, 2, cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, cub::CacheLoadModifier::LOAD_DEFAULT};
+  constexpr auto p1 = cub::ReducePolicy{p1_multi, p1_single};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2_multi = cub::ReducePassPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG};
+  constexpr auto p2_single = cub::ReducePassPolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 8,
+    .vec_size          = 2,
+    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT};
+  constexpr auto p2 = cub::ReducePolicy{.multi_tile = p2_multi, .single_tile = p2_single};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2_multi  = p1_multi;
+  constexpr auto p2_single = p1_single;
+  constexpr auto p2        = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1_multi == p2_multi);
+  STATIC_REQUIRE_FALSE(p1_multi != p2_multi);
+
+  STATIC_REQUIRE(p1_single == p2_single);
+  STATIC_REQUIRE_FALSE(p1_single != p2_single);
+
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1_multi)
+          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_single)
+          == "ReducePassPolicy { .threads_per_block = 128, .items_per_thread = 8, .vec_size = 2"
+             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT }");
+  REQUIRE(to_string(p1)
+          == "ReducePolicy { .multi_tile = ReducePassPolicy { .threads_per_block = 256"
+             ", .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
+             ", .single_tile = ReducePassPolicy { .threads_per_block = 128"
+             ", .items_per_thread = 8, .vec_size = 2"
+             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT } }");
+}
+
+C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReduceByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReduceByKeyPolicy>);
@@ -1093,5 +1190,17 @@ C2H_TEST("ReduceByKeyPolicy", "[reduce][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "ReduceByKeyPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 832, .l2_write_latency = 1165 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

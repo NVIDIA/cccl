@@ -134,9 +134,6 @@ and the returned value is included in the environment passed to the CUB API.
 The following code is included in the benchmark for the policy selector to be enabled
 and the parameters to have effect in execution:
 
-..
-    TODO(bgruber): we have to update this example again after the reduce tuning API has been actually released
-
 .. code:: c++
 
   #if !TUNE_BASE
@@ -145,14 +142,14 @@ and the parameters to have effect in execution:
     _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::ReducePolicy {
       const auto [items, threads] = cub::detail::scale_mem_bound(
                                      TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(T));
-      const auto policy = cub::detail::agent_reduce_policy{
+      const auto pass = cub::ReducePassPolicy{
         .threads_per_block = threads,
         .items_per_thread = items,
-        .vector_load_length = 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
-        .block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+        .vec_size = 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
+        .reduce_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
         .load_modifier = cub::LOAD_DEFAULT
       };
-      return {policy, policy, policy, policy};
+      return { .multi_tile = pass, .single_tile = pass};
     }
   };
   #endif
@@ -539,7 +536,7 @@ since the names of the reported parameters in the variant are derived from these
 The variant ``ipt_19.tpb_512``, which stands for 19 items per thread (``ipt``) and 512 threads per block (``tpb``),
 was thus compiled with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512``.
 The meaning of these values is specific to the benchmark definition,
-and we have to check the benchmark’s source code for how they are applied.
+and we have to check the benchmark's source code for how they are applied.
 Equally named tuning parameters may not translate to different benchmarks (please double check).
 
 As a user of CUB, such a new set of tuning parameters (i.e. a variant) can then be used to define a policy selector,
@@ -558,7 +555,7 @@ as :ref:`sketched above <cub-tuning-infra-authoring-benchmarks>`:
     }
   };
 
-The default tunings defined inside CUB’s source use the same infrastructure
+The default tunings defined inside CUB's source use the same infrastructure
 but should only be changed and extended by the CCCL maintainers.
 All default tunings are found in the :code:`cub/device/dispatch/tuning/tuning_*.cuh` headers, organized by algorithm.
 CUB's policy selectors are highly parameterized on type information and traits of the input arguments to CUB algorithms

@@ -38,13 +38,13 @@ struct epilogue_policy
   BlockStoreAlgorithm store_algorithm; //!< Block store algorithm used to write the selected keys.
   BlockScanAlgorithm scan_algorithm; //!< Block scan algorithm used for the histogram prefix sum.
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
   {
     return lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -70,14 +70,14 @@ struct worker_policy
 
   epilogue_policy epilogue; //!< Sub-policy for the compaction epilogue.
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
         && lhs.epilogue == rhs.epilogue;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -99,12 +99,12 @@ struct multi_worker_policy
   int threads_per_block; //!< Number of threads in a CUDA block.
   int items_per_thread; //!< Keys each thread loads/processes per tile.
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -126,14 +126,14 @@ struct baseline_topk_policy
   ::cuda::std::array<worker_policy, 6> worker_per_segment_policies;
   multi_worker_policy multi_worker_per_segment_policy; //!< Worker policy for segments too large for a single block.
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const baseline_topk_policy& lhs, const baseline_topk_policy& rhs)
   {
     return lhs.worker_per_segment_policies == rhs.worker_per_segment_policies
         && lhs.multi_worker_per_segment_policy == rhs.multi_worker_per_segment_policy;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const baseline_topk_policy& lhs, const baseline_topk_policy& rhs)
   {
     return !(lhs == rhs);
@@ -272,7 +272,7 @@ struct cluster_topk_policy
                                  //!< segment overflows into the streaming path.
 
   // Equality/streaming make this a regular type (required by the `policy_selector` concept / `dispatch_compute_cap`).
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm
         && lhs.min_chunks_per_block == rhs.min_chunks_per_block && lhs.chunk_bytes == rhs.chunk_bytes
@@ -285,7 +285,7 @@ struct cluster_topk_policy
         && lhs.max_chunk_slots_per_block == rhs.max_chunk_slots_per_block;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -396,12 +396,12 @@ struct topk_policy
   baseline_topk_policy baseline; //!< Sub-policy used when @p backend is @p topk_backend::baseline.
   cluster_topk_policy cluster; //!< Sub-policy used when @p backend is @p topk_backend::cluster.
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const topk_policy& lhs, const topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
     return lhs.backend == rhs.backend && lhs.baseline == rhs.baseline && lhs.cluster == rhs.cluster;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
   {
     return !(lhs == rhs);
   }

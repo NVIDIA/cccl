@@ -91,7 +91,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
     _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
 {
   static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
-  using StatusWord                                     = typename TileT::StatusWord;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
@@ -103,7 +102,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
 
   constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.threads_per_block);
   constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
-  constexpr BufferSizeT TILE_SIZE     = static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD);
+  constexpr BufferSizeT TILE_SIZE     = BufferSizeT{BLOCK_THREADS} * ITEMS_PER_THREAD;
 
   BufferOffsetT num_blev_buffers = buffer_offset_tile.LoadValid(last_tile_offset);
 
@@ -225,11 +224,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
     _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
 {
   static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
-  // Internal type used for storing a buffer's size
-  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
-  using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
+  using agent_policy_t = agent_batch_memcpy_policy<
     policy.threads_per_block,
     policy.buffers_per_thread,
     policy.bytes_per_thread,
@@ -246,7 +243,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
 
   // Block-level specialization
   using AgentBatchMemcpyT = AgentBatchMemcpy<
-    AgentBatchMemcpyPolicyT,
+    agent_policy_t,
     InputBufferIt,
     OutputBufferIt,
     BufferSizeIteratorT,

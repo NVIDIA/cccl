@@ -8,12 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
-#include <cuda/functional>
+#include <cuda/buffer>
+#include <cuda/iterator>
+#include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/hyperloglog.cuh>
@@ -56,6 +59,17 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
 
 using test_types = c2h::type_list<int32_t, int64_t>;
 
+// Maps index i to i / repeats, yielding `repeats` duplicates of each value
+struct scaled_index
+{
+  std::size_t repeats;
+
+  __device__ int operator()(std::size_t i) const noexcept
+  {
+    return static_cast<int>(i / repeats);
+  }
+};
+
 C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 {
   using T              = c2h::get<0, TestType>;
@@ -69,26 +83,31 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
-  thrust::device_vector<T> items(num_items);
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   // Generate `num_items` distinct items
-  thrust::sequence(items.begin(), items.end(), T{0});
+  auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
 
   // Initialize the estimator
-  estimator_type estimator{sketch_size_kb};
+  estimator_type estimator{stream, mr, sketch_size_kb};
 
   // Add all items to the estimator
-  estimator.add(items.begin(), items.end());
+  estimator.add(stream, items.begin(), items.end());
 
-  const auto host_estimate = estimator.estimate();
+  const auto host_estimate = estimator.estimate(stream);
 
-  thrust::device_vector<std::size_t> device_estimate(1);
+  auto device_estimate = ::cuda::make_buffer<std::size_t>(stream, mr, 1, ::cuda::no_init);
   estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
-    <<<1, 512, estimator.sketch_bytes()>>>(sketch_size_kb, items.begin(), num_items, device_estimate.begin());
+    <<<1, 512, estimator.sketch_bytes(), stream.get()>>>(
+      sketch_size_kb, items.begin(), num_items, device_estimate.begin());
+  REQUIRE(cudaGetLastError() == cudaSuccess);
 
-  REQUIRE_CUDART(cudaDeviceSynchronize());
-
-  std::size_t device_estimate_value = device_estimate[0];
+  std::size_t device_estimate_value{};
+  REQUIRE_CUDART(cudaMemcpyAsync(
+    &device_estimate_value, device_estimate.data(), sizeof(std::size_t), cudaMemcpyDeviceToHost, stream.get()));
+  stream.sync();
   REQUIRE(device_estimate_value == host_estimate);
 }
 
@@ -109,33 +128,35 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   // RSD for a given precision is given by the following formula
   const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
-  thrust::device_vector<T> items(num_items);
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   // Generate `num_items` distinct items
-  thrust::sequence(items.begin(), items.end(), T{0});
+  auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
 
   // Initialize the estimator
-  estimator_type estimator{sketch_size_kb};
+  estimator_type estimator{stream, mr, sketch_size_kb};
 
-  REQUIRE(estimator.estimate() == 0);
+  REQUIRE(estimator.estimate(stream) == 0);
 
   // Add all items to the estimator
-  estimator.add(items.begin(), items.end());
+  estimator.add(stream, items.begin(), items.end());
 
-  const auto estimate = estimator.estimate();
+  const auto estimate = estimator.estimate(stream);
 
   // Adding the same items again should not affect the result
-  estimator.add(items.begin(), items.begin() + num_items / 2);
-  REQUIRE(estimator.estimate() == estimate);
+  estimator.add(stream, items.begin(), items.begin() + num_items / 2);
+  REQUIRE(estimator.estimate(stream) == estimate);
 
   // Adding the same items again (might use shared memory code path) should not affect the result
-  auto* ptr = thrust::raw_pointer_cast(items.data());
-  estimator.add(ptr, ptr + num_items / 2);
-  REQUIRE(estimator.estimate() == estimate);
+  auto* ptr = items.data();
+  estimator.add(stream, ptr, ptr + num_items / 2);
+  REQUIRE(estimator.estimate(stream) == estimate);
 
   // Clearing the estimator should reset the estimate
-  estimator.clear();
-  REQUIRE(estimator.estimate() == 0);
+  estimator.clear(stream);
+  REQUIRE(estimator.estimate(stream) == 0);
 
   const double relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
 
@@ -173,19 +194,19 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
   REQUIRE(estimator_type::sketch_bytes(sd) == expected_sketch_bytes);
   REQUIRE(estimator_type::sketch_bytes(sd) == estimator_type::sketch_bytes(sb));
 
-  auto items_begin = thrust::make_transform_iterator(
-    thrust::make_counting_iterator<std::size_t>(0), cuda::proclaim_return_type<T>([repeats] __device__(auto i) {
-      return static_cast<T>(i / repeats);
-    }));
+  auto items_begin = cuda::transform_iterator(cuda::counting_iterator<std::size_t>{0}, scaled_index{repeats});
 
-  estimator_type estimator{sd};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  REQUIRE(estimator.estimate() == 0);
+  estimator_type estimator{stream, mr, sd};
+
+  REQUIRE(estimator.estimate(stream) == 0);
 
   // Add all items to the estimator
-  estimator.add(items_begin, items_begin + num_items);
+  estimator.add(stream, items_begin, items_begin + num_items);
 
-  const auto estimate = estimator.estimate();
+  const auto estimate = estimator.estimate(stream);
 
   const double expected_count = static_cast<double>(num_items) / static_cast<double>(repeats);
   const double relative_error = std::abs((static_cast<double>(estimate) / expected_count) - 1.0);
@@ -210,10 +231,13 @@ C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
 
   REQUIRE(estimator_type::sketch_bytes(precision) == expected_sketch_bytes);
 
-  estimator_type estimator{precision};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  estimator_type estimator{stream, mr, precision};
 
   REQUIRE(estimator.sketch_bytes() == expected_sketch_bytes);
-  REQUIRE(estimator.estimate() == 0);
+  REQUIRE(estimator.estimate(stream) == 0);
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 9) // Pinned memory resource is only supported with CTK 12.9 and later
@@ -231,14 +255,17 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
   constexpr double tolerance_factor        = 2.5;
   const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
-  thrust::device_vector<T> items(num_items);
-  thrust::sequence(items.begin(), items.end(), T{0});
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  estimator_type estimator{sketch_size_kb};
-  estimator.add(items.begin(), items.end());
+  auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
+
+  estimator_type estimator{stream, mr, sketch_size_kb};
+  estimator.add(stream, items.begin(), items.end());
 
   auto host_mr        = ::cuda::pinned_default_memory_pool();
-  const auto estimate = estimator.estimate(host_mr);
+  const auto estimate = estimator.estimate(stream, host_mr);
 
   const double relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
 

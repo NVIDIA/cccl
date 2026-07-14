@@ -27,7 +27,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-//! @brief Parameterizable tuning policy type for AgentTopK
+//! @brief Parameterizable tuning policy type for agent_topk
 //!
 //! @tparam ThreadsPerBlock
 //!   Threads per thread block
@@ -49,7 +49,7 @@ template <int ThreadsPerBlock,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
           BlockScanAlgorithm ScanAlgorithm>
-struct AgentTopKPolicy
+struct agent_topk_policy
 {
   static constexpr int threads_per_block             = ThreadsPerBlock;
   static constexpr int items_per_thread              = ItemsPerThread;
@@ -200,7 +200,7 @@ enum class candidate_class
 //! device-wide topK
 //!
 //! @tparam AgentTopKPolicyT
-//!   Parameterized AgentTopKPolicy tuning policy type
+//!   Parameterized agent_topk_policy tuning policy type
 //!
 //! @tparam KeyInputIteratorT
 //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
@@ -360,13 +360,14 @@ struct AgentTopK
   {
     key_in_t thread_data[items_per_thread];
 
-    const OffsetT items_per_pass   = tile_items * gridDim.x;
+    const OffsetT items_per_pass =
+      static_cast<OffsetT>(tile_items * gridDim.x); // NOLINT(bugprone-misplaced-widening-cast)
     const OffsetT total_num_blocks = ::cuda::ceil_div(num_items, tile_items);
 
     const OffsetT num_remaining_elements = num_items % tile_items;
     const OffsetT last_block_id          = (total_num_blocks - 1) % gridDim.x;
 
-    OffsetT tile_base = blockIdx.x * tile_items;
+    OffsetT tile_base = static_cast<OffsetT>(blockIdx.x * tile_items); // NOLINT(bugprone-misplaced-widening-cast)
     OffsetT offset    = threadIdx.x * items_per_thread + tile_base;
 
     for (int i_block = static_cast<int>(blockIdx.x); i_block < total_num_blocks - 1;
