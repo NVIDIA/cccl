@@ -549,16 +549,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-<<<<<<< HEAD
   if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(cc);
-=======
   const SegmentedReducePolicy active_policy = policy_selector(cc);
->>>>>>> upstream/main
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;

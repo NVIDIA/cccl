@@ -366,21 +366,25 @@ struct dispatch_three_way_partition_if
       return error;
     }
 
-<<<<<<< HEAD
     if (const auto error = CubDebug(detail::validate_stream_device(stream)))
     {
       return error;
     }
 
-    DispatchThreeWayPartitionIf dispatch
-    {
-=======
     dispatch_three_way_partition_if dispatch{
->>>>>>> upstream/main
-      d_temp_storage, temp_storage_bytes, d_in, d_first_part_out, d_second_part_out, d_unselected_out,
-        d_num_selected_out, select_first_part_op, select_second_part_op, num_items, stream, kernel_source,
-        launcher_factory
-    };
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_first_part_out,
+      d_second_part_out,
+      d_unselected_out,
+      d_num_selected_out,
+      select_first_part_op,
+      select_second_part_op,
+      num_items,
+      stream,
+      kernel_source,
+      launcher_factory};
 
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
