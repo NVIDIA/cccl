@@ -475,6 +475,8 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
 {
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
+  static_assert(LogicalWarpThreads == detail::warp_threads,
+                  "Logical warp smaller than architectural warp size are not yet supported");
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
