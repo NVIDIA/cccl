@@ -111,15 +111,15 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
-    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
-    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
-    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
-    _CCCL_GRID_CONSTANT const int current_bit,
-    _CCCL_GRID_CONSTANT const int pass_bits,
-    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+    const KeyT* const d_keys_in,
+    KeyT* const d_keys_out,
+    const ValueT* const d_values_in,
+    ValueT* const d_values_out,
+    const BeginOffsetIteratorT d_begin_offsets,
+    const EndOffsetIteratorT d_end_offsets,
+    const int current_bit,
+    const int pass_bits,
+    const DecomposerT decomposer = {})
 {
   //
   // Constants
