@@ -109,7 +109,7 @@ class WarpBitonicSort
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort() = default;
+  _CCCL_FORCEINLINE WarpBitonicSort() = default;
 
 public:
   struct TempStorage : Uninitialized<_TempStorage>
@@ -469,7 +469,7 @@ class WarpBitonicSort<1, KeyT, ValueT>
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort() = default;
+  _CCCL_FORCEINLINE WarpBitonicSort() = default;
 
 public:
   struct TempStorage : Uninitialized<_TempStorage>
