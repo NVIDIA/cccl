@@ -505,6 +505,102 @@ public:
   }
 
   //!
+  //! @brief Finds the slot holding the probe key `__key`.
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //!
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if `__key` is not present
+  template <class _ProbeKey>
+  [[nodiscard]] _CCCL_DEVICE_API __iterator find(_ProbeKey __key) const noexcept
+  {
+    static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
+    const auto __init_idx = *__probing_iter;
+
+    while (true)
+    {
+      const auto __bucket_slots = __storage_ref[*__probing_iter];
+
+      for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
+      {
+        switch (__predicate.template operator()<detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[__i])))
+        {
+          case detail::__equal_result::__empty:
+            return end();
+          case detail::__equal_result::__equal:
+            return __iterator{__get_slot_ptr(*__probing_iter, __i)};
+          default:
+            continue;
+        }
+      }
+      ++__probing_iter;
+      if (*__probing_iter == __init_idx)
+      {
+        return end();
+      }
+    }
+  }
+
+  //!
+  //! @brief Cooperative-group variant of `find`.
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _ParentCG Type of parent Cooperative Group
+  //!
+  //! @param __group The Cooperative Group used to perform the group find
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if `__key` is not present
+  template <class _ProbeKey, class _ParentCG>
+  [[nodiscard]] _CCCL_DEVICE_API __iterator
+  find(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
+    const auto __init_idx = *__probing_iter;
+
+    while (true)
+    {
+      const auto __bucket_slots = __storage_ref[*__probing_iter];
+
+      auto __state              = detail::__equal_result::__unequal;
+      auto __intra_bucket_index = ::cuda::std::int32_t{-1};
+      for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
+      {
+        const auto __res =
+          __predicate.template operator()<detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[__i]));
+        if (__res != detail::__equal_result::__unequal)
+        {
+          __state              = __res;
+          __intra_bucket_index = __i;
+          break;
+        }
+      }
+
+      const auto __group_finds_match = __group.ballot(__state == detail::__equal_result::__equal);
+      if (__group_finds_match != 0)
+      {
+        const auto __src_lane = __ffs(__group_finds_match) - 1;
+        const auto __slot     = __group.shfl(
+          reinterpret_cast<::cuda::std::intptr_t>(__get_slot_ptr(*__probing_iter, __intra_bucket_index)), __src_lane);
+        return __iterator{reinterpret_cast<__value_type*>(__slot)};
+      }
+      if (__group.any(__state == detail::__equal_result::__empty))
+      {
+        return end();
+      }
+      ++__probing_iter;
+      if (*__probing_iter == __init_idx)
+      {
+        return end();
+      }
+    }
+  }
+
+  //!
   //! @brief Scans a bucket for the first slot available for inserting @p __key.
   //!
   //! Returns the intra-bucket index of the first empty slot, or of a slot already holding an equal

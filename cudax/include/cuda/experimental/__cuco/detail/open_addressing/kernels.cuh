@@ -81,6 +81,35 @@ template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, c
 __contains_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
   -> __contains_if_fn<_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
 
+//! @brief Scalar (cooperative-group size 1) functor writing the payload of `first[i]` (or the empty
+//! value sentinel on miss) when `pred(stencil[i])` holds, and the empty value sentinel otherwise.
+template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+struct __find_if_fn
+{
+  _InputIt __first;
+  _StencilIt __stencil;
+  _Predicate __pred;
+  _OutputIt __output_begin;
+  _Ref __ref;
+
+  _CCCL_DEVICE_API void operator()(detail::__index_type __idx) const
+  {
+    if (__pred(*(__stencil + __idx)))
+    {
+      const auto __found        = __ref.find(*(__first + __idx));
+      *(__output_begin + __idx) = (__found == __ref.end()) ? __ref.empty_value_sentinel() : __found->second;
+    }
+    else
+    {
+      *(__output_begin + __idx) = __ref.empty_value_sentinel();
+    }
+  }
+};
+
+template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+__find_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
+  -> __find_if_fn<_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
+
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of
 //! successful insertions if `pred` of the corresponding stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
@@ -179,6 +208,34 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __contains_if_n(
     if (__tile.thread_rank() == 0)
     {
       *(__output_begin + __idx) = __found;
+    }
+    __idx += __loop_stride;
+  }
+}
+
+//! @brief Find with predicate.
+template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
+  _InputIt __first,
+  detail::__index_type __n,
+  _StencilIt __stencil,
+  _Predicate __pred,
+  _OutputIt __output_begin,
+  _Ref __ref)
+{
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
+
+  while (__idx < __n)
+  {
+    const auto __tile     = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+    using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+    const __value_t __key = *(__first + __idx);
+    const auto __found    = __pred(*(__stencil + __idx)) ? __ref.find(__tile, __key) : __ref.end();
+    if (__tile.thread_rank() == 0)
+    {
+      *(__output_begin + __idx) = (__found == __ref.end()) ? __ref.empty_value_sentinel() : __found->second;
     }
     __idx += __loop_stride;
   }
