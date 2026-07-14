@@ -195,6 +195,9 @@ Checks:
   - '-modernize-use-nullptr'
   - '-bugprone-std-exception-baseclass'
   - '-modernize-avoid-variadic-functions'
+  - '-modernize-type-traits'
+  - '-bugprone-random-generator-seed'
+  - '-bugprone-command-processor'
 
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
