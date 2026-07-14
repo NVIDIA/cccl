@@ -59,10 +59,15 @@ endif()
 
 function(cudax_add_multi_gpu_test sub_prefix target_name_var source)
   cmake_path(GET source STEM filename)
-  cudax_add_catch2_test("${target_name_var}" "multi_gpu.${sub_prefix}.${filename}" ${source} ${ARGN})
-  set(${target_name_var} ${test_target} PARENT_SCOPE)
+  cudax_add_catch2_test("${target_name_var}" "multi_gpu.${sub_prefix}.${filename}" "${source}" ${ARGN})
+  target_include_directories(
+    "${${target_name_var}}"
+    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/include"
+  )
+  set("${target_name_var}" "${${target_name_var}}" PARENT_SCOPE)
 endfunction()
 
+add_subdirectory(algorithms)
 add_subdirectory(communicators)
 add_subdirectory(concepts)
 add_subdirectory(nccl)

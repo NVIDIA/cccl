@@ -30,7 +30,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__cuco/detail/prime.hpp>
+#include <cuda/experimental/__cuco/detail/prime.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

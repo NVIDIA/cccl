@@ -50,21 +50,21 @@ struct policy_selector
       },
       cub::SegmentedSortSubWarpMergeSortPolicy{
         TUNE_THREADS,
-        tune_sw_threads,
-        TUNE_S_ITEMS,
-        (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
-        (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
-        : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
-                             : cub::LOAD_CA,
-        cub::WARP_STORE_DIRECT,
-      },
-      cub::SegmentedSortSubWarpMergeSortPolicy{
-        TUNE_THREADS,
         tune_mw_threads,
         TUNE_M_ITEMS,
         (TUNE_M_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
         (TUNE_M_LOAD == 0)   ? cub::LOAD_DEFAULT
         : (TUNE_M_LOAD == 1) ? cub::LOAD_LDG
+                             : cub::LOAD_CA,
+        cub::WARP_STORE_DIRECT,
+      },
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        TUNE_THREADS,
+        tune_sw_threads,
+        TUNE_S_ITEMS,
+        (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
+        (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
                              : cub::LOAD_CA,
         cub::WARP_STORE_DIRECT,
       },

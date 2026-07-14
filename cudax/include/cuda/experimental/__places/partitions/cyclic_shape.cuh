@@ -246,9 +246,21 @@ public:
     return cyclic_shape<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static void get_executor(pos4* /*unused*/, pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
+  /**
+   * @brief Inverse of `apply` for zero-based data coordinates: in a round-robin
+   * distribution the owner of an element is its coordinate modulo the grid
+   * extent, independently in each dimension.
+   */
+  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 /*data_dims*/, dim4 grid_dims)
   {
-    abort();
+    _CCCL_ASSERT(data_coords.x >= 0 && data_coords.y >= 0 && data_coords.z >= 0 && data_coords.t >= 0,
+                 "get_executor requires zero-based (non-negative) coordinates");
+    _CCCL_ASSERT(grid_dims.x >= 1 && grid_dims.y >= 1 && grid_dims.z >= 1 && grid_dims.t >= 1,
+                 "get_executor requires nonzero grid extents");
+    *result = pos4(data_coords.x % static_cast<::std::ptrdiff_t>(grid_dims.x),
+                   data_coords.y % static_cast<::std::ptrdiff_t>(grid_dims.y),
+                   data_coords.z % static_cast<::std::ptrdiff_t>(grid_dims.z),
+                   data_coords.t % static_cast<::std::ptrdiff_t>(grid_dims.t));
   }
 };
 
@@ -343,6 +355,37 @@ UNITTEST("apply cyclic ")
 
   // We must have gone over all elements exactly once
   EXPECT(cnt == expected_cnt);
+};
+
+UNITTEST("cyclic get_executor is the inverse of apply")
+{
+  // Zero-based box so that apply and get_executor use the same coordinate
+  // origin: apply assigns coordinate c to place (c % grid extent) per dimension.
+  box<3> e({{0, 7}, {0, 5}, {0, 20}});
+
+  const size_t dim0 = 2;
+  const size_t dim1 = 3;
+  const dim4 grid_dims(dim0, dim1);
+  const dim4 data_dims(7, 5, 20);
+
+  size_t cnt = 0;
+  for (size_t i0 = 0; i0 < dim0; i0++)
+  {
+    for (size_t i1 = 0; i1 < dim1; i1++)
+    {
+      auto c = cyclic_partition::apply(e, pos4(i0, i1), grid_dims);
+      for (const auto& pos : c)
+      {
+        pos4 owner;
+        cyclic_partition::get_executor(&owner, pos4(pos[0], pos[1], pos[2]), data_dims, grid_dims);
+        EXPECT(owner == pos4(i0, i1));
+        cnt++;
+      }
+    }
+  }
+
+  // Every element must be visited exactly once and map back to its place
+  EXPECT(cnt == 7 * 5 * 20);
 };
 #endif // UNITTESTED_FILE
 } // namespace cuda::experimental::places

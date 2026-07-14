@@ -417,8 +417,8 @@ template <
     detail::three_way_partition::streaming_context_t<OffsetT>,
     OffsetT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchThreeWayPartitionIf
-  CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") = detail::three_way_partition::dispatch_three_way_partition_if<
+using DispatchThreeWayPartitionIf CCCL_DEPRECATED_BECAUSE("Use the tuning API for DevicePartition") =
+  detail::three_way_partition::dispatch_three_way_partition_if<
     InputIteratorT,
     FirstOutputIteratorT,
     SecondOutputIteratorT,
