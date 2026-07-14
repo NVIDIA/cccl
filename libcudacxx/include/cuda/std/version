@@ -75,7 +75,7 @@
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #define __cccl_lib_concepts          202002L
 #define __cccl_lib_exchange_function 201304L
-#define __cccl_lib_expected          202211L
+#define __cccl_lib_expected          202606L
 // # define __cccl_lib_generic_associative_lookup           201304L
 #define __cccl_lib_invoke                201411L
 #define __cccl_lib_invoke_r              202106L

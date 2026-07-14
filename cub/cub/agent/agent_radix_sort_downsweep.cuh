@@ -95,6 +95,7 @@ struct agent_radix_sort_downsweep_policy : ScalingType
  * Tuning policy types
  ******************************************************************************/
 
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,

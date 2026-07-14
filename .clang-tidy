@@ -32,7 +32,6 @@ Checks:
   - 'bugprone-*'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
-  - '-bugprone-branch-clone'
   - '-bugprone-argument-comment'
   # This is just noise
   - '-bugprone-signed-char-misuse'
@@ -181,6 +180,25 @@ Checks:
   #
   # So better left disabled.
   - '-bugprone-macro-parentheses'
+
+  # TODO: Enable for clang-tidy-22
+  - '-modernize-avoid-c-style-cast'
+  - '-bugprone-signed-bitwise'
+  - '-bugprone-std-namespace-modification'
+  - '-clang-diagnostic-deprecated-attributes'
+  - '-bugprone-throwing-static-initialization'
+  - '-bugprone-unchecked-string-to-number-conversion'
+  - '-bugprone-invalid-enum-default-initialization'
+  - '-bugprone-derived-method-shadowing-base-method'
+  - '-bugprone-unsafe-to-allow-exceptions'
+  - '-bugprone-sizeof-expression'
+  - '-modernize-use-nullptr'
+  - '-bugprone-std-exception-baseclass'
+  - '-modernize-avoid-variadic-functions'
+  - '-modernize-type-traits'
+  - '-bugprone-random-generator-seed'
+  - '-bugprone-command-processor'
+
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
   # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on

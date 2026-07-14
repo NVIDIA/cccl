@@ -1,8 +1,8 @@
 # Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-import cupy as cp
 import numpy as np
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import ZipIterator, gpu_struct
@@ -25,13 +25,8 @@ def test_reduce_nested_struct_direct():
         h_data[i]["inner"]["a"] = i * 2
         h_data[i]["inner"]["b"] = float(i * 3)
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Outer.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Outer.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Outer.dtype)
 
     h_init = Outer(0, Inner(0, 0.0))
 
@@ -39,7 +34,7 @@ def test_reduce_nested_struct_direct():
         d_in=d_input, d_out=d_output, num_items=num_items, op=sum_nested, h_init=h_init
     )
 
-    result = d_output.view(np.uint8).get().view(Outer.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(range(num_items))
     expected_a = sum(i * 2 for i in range(num_items))
@@ -71,13 +66,8 @@ def test_nested_struct_inline():
         h_data[i]["inner"]["a"] = i * 2
         h_data[i]["inner"]["b"] = float(i * 3)
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Outer.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Outer.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Outer.dtype)
 
     h_init = Outer(0, Inner(0, 0.0))
 
@@ -85,7 +75,7 @@ def test_nested_struct_inline():
         d_in=d_input, d_out=d_output, num_items=num_items, op=sum_nested, h_init=h_init
     )
 
-    result = d_output.view(np.uint8).get().view(Outer.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(range(num_items))
     expected_a = sum(i * 2 for i in range(num_items))
@@ -113,28 +103,25 @@ def test_nested_struct_in_zip_iterator():
 
     num_items = 100
 
-    d_points = cp.empty(num_items, dtype=Point.dtype)
-    d_colors = cp.empty(num_items, dtype=Color.dtype)
-
     h_points = np.array([(i, i * 2) for i in range(num_items)], dtype=Point.dtype)
     h_colors = np.array(
         [(i % 256, (i * 2) % 256, (i * 3) % 256) for i in range(num_items)],
         dtype=Color.dtype,
     )
 
-    d_points.set(h_points)
-    d_colors.set(h_colors)
+    d_points = DeviceArray.from_numpy(h_points)
+    d_colors = DeviceArray.from_numpy(h_colors)
 
     zip_it = ZipIterator(d_points, d_colors)
 
-    d_output = cp.empty(1, dtype=Pixel.dtype)
+    d_output = DeviceArray.empty(1, Pixel.dtype)
     h_init = Pixel(Point(0, 0), Color(0, 0, 0))
 
     cuda.compute.reduce_into(
         d_in=zip_it, d_out=d_output, num_items=num_items, op=sum_pixels, h_init=h_init
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(i for i in range(num_items))
     expected_y = sum(i * 2 for i in range(num_items))
@@ -224,13 +211,8 @@ def test_dict_init_with_reduction():
         h_data[i]["inner"]["a"] = i * 2
         h_data[i]["inner"]["b"] = float(i * 3)
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Outer.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Outer.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Outer.dtype)
 
     # Use dictionary initialization for the init value
     h_init = Outer({"x": 0, "inner": {"a": 0, "b": 0.0}})
@@ -239,7 +221,7 @@ def test_dict_init_with_reduction():
         d_in=d_input, d_out=d_output, num_items=num_items, op=sum_nested, h_init=h_init
     )
 
-    result = d_output.view(np.uint8).get().view(Outer.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(range(num_items))
     expected_a = sum(i * 2 for i in range(num_items))
@@ -267,13 +249,8 @@ def test_nested_struct_tuple_construction():
         h_data[i]["inner"]["a"] = i * 2
         h_data[i]["inner"]["b"] = float(i * 3)
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Outer.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Outer.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Outer.dtype)
 
     h_init = Outer(0, Inner(0, 0.0))
 
@@ -285,7 +262,7 @@ def test_nested_struct_tuple_construction():
         h_init=h_init,
     )
 
-    result = d_output.view(np.uint8).get().view(Outer.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(range(num_items))
     expected_a = sum(i * 2 for i in range(num_items))
@@ -320,13 +297,8 @@ def test_deeply_nested_tuple_construction():
         h_data[i]["middle"]["data"] = float(i * 2.5)
         h_data[i]["middle"]["nested"]["value"] = i * 3
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Level3.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Level3.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Level3.dtype)
 
     h_init = Level3(0, Level2(0.0, Level1(0)))
 
@@ -338,7 +310,7 @@ def test_deeply_nested_tuple_construction():
         h_init=h_init,
     )
 
-    result = d_output.view(np.uint8).get().view(Level3.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_id = sum(i * 10 for i in range(num_items))
     expected_data = sum(float(i * 2.5) for i in range(num_items))
@@ -373,13 +345,8 @@ def test_mixed_tuple_and_direct_construction():
         h_data[i]["inner2"]["c"] = float(i * 4)
         h_data[i]["inner2"]["d"] = float(i * 5)
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Outer.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Outer.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Outer.dtype)
 
     h_init = Outer(0, Inner1(0, 0), Inner2(0.0, 0.0))
 
@@ -387,7 +354,7 @@ def test_mixed_tuple_and_direct_construction():
         d_in=d_input, d_out=d_output, num_items=num_items, op=sum_mixed, h_init=h_init
     )
 
-    result = d_output.view(np.uint8).get().view(Outer.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(range(num_items))
     expected_a = sum(i * 2 for i in range(num_items))
@@ -421,21 +388,18 @@ def test_tuple_construction_in_zip_iterator():
 
     num_items = 100
 
-    d_points = cp.empty(num_items, dtype=Point.dtype)
-    d_colors = cp.empty(num_items, dtype=Color.dtype)
-
     h_points = np.array([(i, i * 2) for i in range(num_items)], dtype=Point.dtype)
     h_colors = np.array(
         [(i % 256, (i * 2) % 256, (i * 3) % 256) for i in range(num_items)],
         dtype=Color.dtype,
     )
 
-    d_points.set(h_points)
-    d_colors.set(h_colors)
+    d_points = DeviceArray.from_numpy(h_points)
+    d_colors = DeviceArray.from_numpy(h_colors)
 
     zip_it = ZipIterator(d_points, d_colors)
 
-    d_output = cp.empty(1, dtype=Pixel.dtype)
+    d_output = DeviceArray.empty(1, Pixel.dtype)
     h_init = Pixel(Point(0, 0), Color(0, 0, 0))
 
     cuda.compute.reduce_into(
@@ -446,7 +410,7 @@ def test_tuple_construction_in_zip_iterator():
         h_init=h_init,
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
     expected_x = sum(i for i in range(num_items))
     expected_y = sum(i * 2 for i in range(num_items))
@@ -478,13 +442,8 @@ def test_all_tuple_construction():
         h_data[i]["field1"]["a"] = i
         h_data[i]["field2"]["b"] = float(i * 2)
 
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Outer.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Outer.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Outer.dtype)
 
     h_init = Outer(Inner1(0), Inner2(0.0))
 
@@ -496,7 +455,7 @@ def test_all_tuple_construction():
         h_init=h_init,
     )
 
-    result = d_output.view(np.uint8).get().view(Outer.dtype)[0]
+    result = d_output.copy_to_host()[0]
 
     expected_a = sum(range(num_items))
     expected_b = sum(float(i * 2) for i in range(num_items))

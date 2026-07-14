@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDAX_TEST_MULTI_GPU_COMMUNICATORS_NCCL_TEST_HELPERS_CUH
-#define CUDAX_TEST_MULTI_GPU_COMMUNICATORS_NCCL_TEST_HELPERS_CUH
+#ifndef CUDAX_TEST_MULTI_NCCL_TEST_COMMON_H
+#define CUDAX_TEST_MULTI_NCCL_TEST_COMMON_H
 
 #include <cuda/devices>
 #include <cuda/std/cstddef>
@@ -34,15 +34,28 @@ namespace nccl_test_util
   return {cuda::devices.begin(), cuda::devices.end()};
 }
 
-// Caches a single-process, multi-GPU NCCL communicator world for the life of one test
-// case. Setup runs in the constructor and teardown in the destructor. The template parameter
-// is required because the C2H fixture macros expand to a templated TEST_CASE_METHOD.
-template <class Dummy = void>
-class nccl_comm_fixture
+class nccl_communicator : public cudax::nccl_communicator_ref
 {
 public:
-  nccl_comm_fixture()
+  using nccl_communicator_ref::nccl_communicator_ref;
+
+  // These are never allowed
+  nccl_communicator(const nccl_communicator&)            = delete;
+  nccl_communicator& operator=(const nccl_communicator&) = delete;
+  // These should be allowed once we make this a proper class, but need to be able to reach
+  // into nccl_communicator_ref to work properly
+  nccl_communicator(nccl_communicator&&)            = delete;
+  nccl_communicator& operator=(nccl_communicator&&) = delete;
+
+  ~nccl_communicator()
   {
+    static_cast<void>(ncclCommDestroy(native_handle()));
+  }
+};
+
+[[nodiscard]] inline const std::vector<nccl_communicator>& nccl_comms()
+{
+  static const auto comms = []() -> std::vector<nccl_communicator> {
     if (cuda::devices.size() == 0)
     {
       SKIP("No CUDA devices visible");
@@ -56,51 +69,36 @@ public:
       devs.emplace_back(d.get());
     }
 
-    comms_.resize(devs.size());
+    std::vector<ncclComm_t> raw_comms(devs.size());
 
-    const ncclResult_t result = ncclCommInitAll(comms_.data(), static_cast<int>(devs.size()), devs.data());
+    const ncclResult_t result = ncclCommInitAll(raw_comms.data(), static_cast<int>(devs.size()), devs.data());
 
     INFO("NCCL: " << ncclGetErrorString(result));
     REQUIRE(result == ncclSuccess);
 
-    wrappers_.reserve(comms_.size());
-    for (cuda::std::size_t i = 0; i < comms_.size(); ++i)
-    {
-      wrappers_.emplace_back(comms_[i], cudax::logical_device{devs[i]});
-    }
-  }
+    return {raw_comms.begin(), raw_comms.end()};
+  }();
 
-  ~nccl_comm_fixture()
-  {
-    wrappers_.clear();
-    // Wrappers are non-owning; they are declared after comms_ so they destruct first, before we
-    // destroy the handles they refer to.
-    for (auto comm : comms_)
-    {
-      if (comm != nullptr)
-      {
-        static_cast<void>(ncclCommDestroy(comm));
-      }
-    }
-  }
+  return comms;
+}
 
+// Caches a single-process, multi-GPU NCCL communicator world for the life of the entire test
+// suite.
+template <class = void>
+class nccl_comm_fixture
+{
+public:
   [[nodiscard]] cuda::std::span<cudax::nccl_communicator_ref> communicators()
   {
     return wrappers_;
   }
 
-  [[nodiscard]] cuda::std::span<const ncclComm_t> handles() const
-  {
-    return comms_;
-  }
-
 private:
-  std::vector<ncclComm_t> comms_{};
-  std::vector<cudax::nccl_communicator_ref> wrappers_{};
+  std::vector<cudax::nccl_communicator_ref> wrappers_{nccl_comms().begin(), nccl_comms().end()};
 };
 
-#define NCCL_COMM_TEST(NAME, ...) \
+#define MULTI_GPU_TEST(NAME, ...) \
   C2H_TEST_WITH_FIXTURE(::nccl_test_util::nccl_comm_fixture, NAME, "[multi_gpu][nccl]", __VA_ARGS__)
 } // namespace nccl_test_util
 
-#endif // CUDAX_TEST_MULTI_GPU_COMMUNICATORS_NCCL_TEST_HELPERS_CUH
+#endif // CUDAX_TEST_MULTI_GPU_NCCL_TEST_COMMON_H

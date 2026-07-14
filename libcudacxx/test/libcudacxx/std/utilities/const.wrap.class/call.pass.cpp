@@ -124,7 +124,7 @@ static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cu
 #endif // !_CCCL_COMPILER(MSVC)
 
 // gcc < 13 fails this test with error:
-//   ‘nothrow_call’/'throwing_call' is not a valid template argument of type ‘int (*)(int) noexcept’ because it is not
+//   'nothrow_call'/'throwing_call' is not a valid template argument of type 'int (*)(int) noexcept' because it is not
 //   a variable
 #if !_CCCL_COMPILER(GCC, <, 13)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<nothrow_call>, int>);
@@ -228,7 +228,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // gcc < 13 fails this test with error:
-    //   ‘fun_ptr’ is not a valid template argument of type ‘bool (*)(int)’ because ‘fun_ptr’ is not a variable
+    //   'fun_ptr' is not a valid template argument of type 'bool (*)(int)' because 'fun_ptr' is not a variable
 #if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer
     using T                                        = cuda::std::__constant_wrapper<fun_ptr>;
@@ -239,7 +239,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // gcc < 13 fails this test with error:
-    //   ‘fun_ptr’ is not a valid template argument of type ‘bool (*)(int)’ because ‘fun_ptr’ is not a variable
+    //   'fun_ptr' is not a valid template argument of type 'bool (*)(int)' because 'fun_ptr' is not a variable
 #if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer with constexpr param
     using T = cuda::std::__constant_wrapper<fun_ptr>;

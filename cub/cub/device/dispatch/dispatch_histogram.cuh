@@ -1169,9 +1169,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
  * Dispatch
  ******************************************************************************/
 
-// TODO(bgruber): deprecate once we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceHistogram
+ *
+ * Deprecated [Since 3.5]
  *
  * @tparam NUM_CHANNELS
  *   Number of channels interleaved in the input data (may be greater than the number of channels
@@ -1208,7 +1210,7 @@ template <
   typename KernelSource = detail::histogram::
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceHistogram") DispatchHistogram
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
   static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,

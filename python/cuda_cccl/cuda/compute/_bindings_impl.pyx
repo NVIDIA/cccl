@@ -25,7 +25,24 @@ from cpython.pycapsule cimport (
 )
 
 import ctypes
+import threading
 from enum import IntEnum
+
+# Serializes the one-time transition of a build result to "loaded". The backend
+# loader runs under `with nogil` (releasing the GIL), so without this lock two
+# concurrent first-time __call__s on the same build result could both pass the
+# `_loaded` guard and load the same handle twice.
+_LOAD_LOCK = threading.Lock()
+
+
+def _load_once(build_result, loader):
+    with _LOAD_LOCK:
+        if build_result._loaded:
+            return
+        loader(build_result)
+        build_result._loaded = True
+
+
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
     cdef struct OpaqueCUkernel_st
@@ -1011,12 +1028,16 @@ cdef extern from "cccl/c/reduce.h":
 
 cdef class DeviceReduceBuildResult:
     cdef cccl_device_reduce_build_result_t build_data
+    # Whether cuLibraryLoadData + cuLibraryGetKernel have populated the
+    # library/kernel handles.
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         # Always zero the C struct so that __dealloc__ + cccl_device_reduce_cleanup
         # is safe regardless of which initialization path is taken (regular build,
         # alternate factory like deserialize, or a build that raises mid-way).
         memset(&self.build_data, 0, sizeof(cccl_device_reduce_build_result_t))
+        self._loaded = False
 
     def __init__(
         DeviceReduceBuildResult self,
@@ -1141,11 +1162,24 @@ cdef class DeviceReduceBuildResult:
         return <int>self.build_data.determinism
 
     def serialize(DeviceReduceBuildResult self):
-        return _serialization_reduce_serialize(self)
+        return _reduce_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_reduce_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _reduce_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _reduce_compile(*args)
+
+    def load(DeviceReduceBuildResult self):
+        # Idempotent: the fused build and a prior load() both set _loaded, so
+        # this is a cheap no-op after the first successful load. The guard also
+        # keeps the (unsupported) v2 backend's load stub from firing on an
+        # already-loaded result.
+        if self._loaded:
+            return
+        _load_once(self, _reduce_load)
 
 # ------------
 #   DeviceScan
@@ -1236,9 +1270,11 @@ cdef extern from "cccl/c/scan.h":
 
 cdef class DeviceScanBuildResult:
     cdef cccl_device_scan_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_scan_build_result_t))
+        self._loaded = False
 
     def __init__(
         DeviceScanBuildResult self,
@@ -1460,11 +1496,20 @@ cdef class DeviceScanBuildResult:
         )
 
     def serialize(DeviceScanBuildResult self):
-        return _serialization_scan_serialize(self)
+        return _scan_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_scan_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _scan_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _scan_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _scan_load)
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1506,9 +1551,11 @@ include "_bindings_segmented_reduce_backend.pxi"
 
 cdef class DeviceSegmentedReduceBuildResult:
     cdef cccl_device_segmented_reduce_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_segmented_reduce_build_result_t))
+        self._loaded = False
 
     def __init__(
         DeviceSegmentedReduceBuildResult self,
@@ -1603,11 +1650,20 @@ cdef class DeviceSegmentedReduceBuildResult:
         )
 
     def serialize(DeviceSegmentedReduceBuildResult self):
-        return _serialization_segmented_reduce_serialize(self)
+        return _segmented_reduce_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_segmented_reduce_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _segmented_reduce_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _segmented_reduce_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _segmented_reduce_load)
 
 # -----------------
 #   DeviceMergeSort
@@ -1649,9 +1705,11 @@ cdef extern from "cccl/c/merge_sort.h":
 
 cdef class DeviceMergeSortBuildResult:
     cdef cccl_device_merge_sort_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_merge_sort_build_result_t))
+        self._loaded = False
 
     def __init__(
         DeviceMergeSortBuildResult self,
@@ -1740,11 +1798,20 @@ cdef class DeviceMergeSortBuildResult:
         )
 
     def serialize(DeviceMergeSortBuildResult self):
-        return _serialization_merge_sort_serialize(self)
+        return _merge_sort_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_merge_sort_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _merge_sort_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _merge_sort_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _merge_sort_load)
 
 
 # -------------------
@@ -1789,9 +1856,11 @@ cdef extern from "cccl/c/unique_by_key.h":
 
 cdef class DeviceUniqueByKeyBuildResult:
     cdef cccl_device_unique_by_key_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_unique_by_key_build_result_t))
+        self._loaded = False
 
     def __init__(
         DeviceUniqueByKeyBuildResult self,
@@ -1885,11 +1954,20 @@ cdef class DeviceUniqueByKeyBuildResult:
         )
 
     def serialize(DeviceUniqueByKeyBuildResult self):
-        return _serialization_unique_by_key_serialize(self)
+        return _unique_by_key_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_unique_by_key_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _unique_by_key_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _unique_by_key_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _unique_by_key_load)
 
 # -----------------
 # DeviceRadixSort
@@ -1934,9 +2012,11 @@ cdef extern from "cccl/c/radix_sort.h":
 
 cdef class DeviceRadixSortBuildResult:
     cdef cccl_device_radix_sort_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_radix_sort_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceRadixSortBuildResult self):
         cdef CUresult status = -1
@@ -2036,11 +2116,20 @@ cdef class DeviceRadixSortBuildResult:
         )
 
     def serialize(DeviceRadixSortBuildResult self):
-        return _serialization_radix_sort_serialize(self)
+        return _radix_sort_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_radix_sort_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _radix_sort_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _radix_sort_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _radix_sort_load)
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
@@ -2091,9 +2180,11 @@ cdef extern from "cccl/c/transform.h":
 
 cdef class DeviceUnaryTransform:
     cdef cccl_device_transform_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+        self._loaded = False
 
     def __init__(
         self,
@@ -2163,18 +2254,29 @@ cdef class DeviceUnaryTransform:
         )
 
     def serialize(DeviceUnaryTransform self):
-        return _serialization_unary_transform_serialize(self)
+        return _unary_transform_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_unary_transform_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _unary_transform_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _unary_transform_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _unary_transform_load)
 
 
 cdef class DeviceBinaryTransform:
     cdef cccl_device_transform_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+        self._loaded = False
 
     def __init__(
         self,
@@ -2247,11 +2349,20 @@ cdef class DeviceBinaryTransform:
         )
 
     def serialize(DeviceBinaryTransform self):
-        return _serialization_binary_transform_serialize(self)
+        return _binary_transform_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_binary_transform_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _binary_transform_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _binary_transform_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _binary_transform_load)
 
 
 # -----------------
@@ -2298,9 +2409,11 @@ cdef extern from "cccl/c/histogram.h":
 
 cdef class DeviceHistogramBuildResult:
     cdef cccl_device_histogram_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceHistogramBuildResult self):
         cdef CUresult status = -1
@@ -2403,11 +2516,20 @@ cdef class DeviceHistogramBuildResult:
         )
 
     def serialize(DeviceHistogramBuildResult self):
-        return _serialization_histogram_serialize(self)
+        return _histogram_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_histogram_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _histogram_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _histogram_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _histogram_load)
 
 
 # -------------------
@@ -2446,9 +2568,11 @@ cdef extern from "cccl/c/binary_search.h":
 
 cdef class DeviceBinarySearchBuildResult:
     cdef cccl_device_binary_search_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_binary_search_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceBinarySearchBuildResult self):
         cdef CUresult status = -1
@@ -2527,11 +2651,20 @@ cdef class DeviceBinarySearchBuildResult:
         return _binary_search_cubin_bytes(&self.build_data)
 
     def serialize(DeviceBinarySearchBuildResult self):
-        return _serialization_binary_search_serialize(self)
+        return _binary_search_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_binary_search_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _binary_search_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _binary_search_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _binary_search_load)
 
 
 # ----------------------------------
@@ -2576,9 +2709,11 @@ cdef extern from "cccl/c/three_way_partition.h":
 
 cdef class DeviceThreeWayPartitionBuildResult:
     cdef cccl_device_three_way_partition_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_three_way_partition_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceThreeWayPartitionBuildResult self):
         cdef CUresult status = -1
@@ -2676,11 +2811,20 @@ cdef class DeviceThreeWayPartitionBuildResult:
         )
 
     def serialize(DeviceThreeWayPartitionBuildResult self):
-        return _serialization_three_way_partition_serialize(self)
+        return _three_way_partition_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_three_way_partition_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _three_way_partition_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _three_way_partition_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _three_way_partition_load)
 
 
 # -------------------
@@ -2725,9 +2869,11 @@ cdef extern from "cccl/c/segmented_sort.h":
 
 cdef class DeviceSegmentedSortBuildResult:
     cdef cccl_device_segmented_sort_build_result_t build_data
+    cdef public bint _loaded
 
     def __cinit__(self, *args, **kwargs):
         memset(&self.build_data, 0, sizeof(cccl_device_segmented_sort_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceSegmentedSortBuildResult self):
         cdef CUresult status = -1
@@ -2827,10 +2973,19 @@ cdef class DeviceSegmentedSortBuildResult:
         )
 
     def serialize(DeviceSegmentedSortBuildResult self):
-        return _serialization_segmented_sort_serialize(self)
+        return _segmented_sort_serialize(self)
 
     @staticmethod
-    def deserialize(blob):
-        return _serialization_segmented_sort_deserialize(blob)
+    def deserialize(blob, load=True, check_cc=True):
+        return _segmented_sort_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _segmented_sort_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _segmented_sort_load)
 
 include "_bindings_serialization.pxi"
