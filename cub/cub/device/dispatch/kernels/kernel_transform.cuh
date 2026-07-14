@@ -798,7 +798,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // turning this lambda into a function does not change SASS
       auto bulk_copy_tile = [&](auto aligned_ptr) {
         using T         = typename decltype(aligned_ptr)::value_type;
-        const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+        const char* src = aligned_ptr.ptr + offset * sizeof(T);
         char* dst       = smem;
         _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
         _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
@@ -939,7 +939,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
         const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
-        char* dst = smem + head_padding;
+        char* dst       = smem + head_padding;
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
