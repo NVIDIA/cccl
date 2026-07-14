@@ -47,19 +47,19 @@ struct half_t
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit half_t(int a)
   {
-    *this = half_t(float(a));
+    *this = half_t(static_cast<float>(a));
   }
 
   /// Constructor from std::size_t
   __host__ __device__ __forceinline__ explicit half_t(std::size_t a)
   {
-    *this = half_t(float(a));
+    *this = half_t(static_cast<float>(a));
   }
 
   /// Constructor from double
   __host__ __device__ __forceinline__ explicit half_t(double a)
   {
-    *this = half_t(float(a));
+    *this = half_t(static_cast<float>(a));
   }
 
   /// Constructor from unsigned long long int
@@ -69,7 +69,7 @@ struct half_t
               && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
   __host__ __device__ __forceinline__ explicit half_t(T a)
   {
-    *this = half_t(float(a));
+    *this = half_t(static_cast<float>(a));
   }
 
   /// Default constructor
@@ -97,7 +97,7 @@ struct half_t
     }
     else if ((ia & 0x7f800000) >= 0x33000000)
     {
-      int32_t shift = (int32_t) ((ia >> 23) & 0xff) - 127;
+      int32_t shift = static_cast<int32_t>((ia >> 23) & 0xff) - 127;
       if (shift > 15)
       {
         ir |= 0x7c00; /* infinity */
@@ -211,20 +211,20 @@ struct half_t
   /// Assignment by sum
   __host__ __device__ __forceinline__ half_t& operator+=(const half_t& rhs)
   {
-    *this = half_t(float(*this) + float(rhs));
+    *this = half_t(static_cast<float>(*this) + static_cast<float>(rhs));
     return *this;
   }
 
   /// Multiply
   __host__ __device__ __forceinline__ half_t operator*(const half_t& other) const
   {
-    return half_t(float(*this) * float(other));
+    return half_t(static_cast<float>(*this) * static_cast<float>(other));
   }
 
   /// Divide
   __host__ __device__ __forceinline__ half_t& operator/=(const half_t& other)
   {
-    return *this = half_t(float(*this) / float(other));
+    return *this = half_t(static_cast<float>(*this) / static_cast<float>(other));
   }
 
   friend __host__ __device__ __forceinline__ half_t operator/(half_t self, const half_t& other)
@@ -235,37 +235,37 @@ struct half_t
   /// Add
   __host__ __device__ __forceinline__ half_t operator+(const half_t& other) const
   {
-    return half_t(float(*this) + float(other));
+    return half_t(static_cast<float>(*this) + static_cast<float>(other));
   }
 
   /// Sub
   __host__ __device__ __forceinline__ half_t operator-(const half_t& other) const
   {
-    return half_t(float(*this) - float(other));
+    return half_t(static_cast<float>(*this) - static_cast<float>(other));
   }
 
   /// Less-than
   __host__ __device__ __forceinline__ bool operator<(const half_t& other) const
   {
-    return float(*this) < float(other);
+    return static_cast<float>(*this) < static_cast<float>(other);
   }
 
   /// Less-than-equal
   __host__ __device__ __forceinline__ bool operator<=(const half_t& other) const
   {
-    return float(*this) <= float(other);
+    return static_cast<float>(*this) <= static_cast<float>(other);
   }
 
   /// Greater-than
   __host__ __device__ __forceinline__ bool operator>(const half_t& other) const
   {
-    return float(*this) > float(other);
+    return static_cast<float>(*this) > static_cast<float>(other);
   }
 
   /// Greater-than-equal
   __host__ __device__ __forceinline__ bool operator>=(const half_t& other) const
   {
-    return float(*this) >= float(other);
+    return static_cast<float>(*this) >= static_cast<float>(other);
   }
 
   /// numeric_traits<half_t>::max
@@ -290,7 +290,7 @@ struct half_t
 /// Insert formatted \p half_t into the output stream
 inline std::ostream& operator<<(std::ostream& out, const half_t& x)
 {
-  out << (float) x;
+  out << static_cast<float>(x);
   return out;
 }
 
