@@ -29,10 +29,6 @@ Any non-trivial change must be detected.
   Make sure the CUDA SM architectures (`CMAKE_CUDA_ARCHITECTURES`) are set to the user-provided or approved list.
 * Dump the disassembly from the binaries produced in the previous set using `cuobjdump -sass` or `cuobjdump -ptx`.
 
-## Normalization rules (strip known noise)
-
-Use the `normalize_codegen.py` script to produce normalized disassembly listings for both the baseline and comparison.
-
 ## Comparison rules (what matters)
 
 Ignore as trivial:
@@ -49,6 +45,6 @@ Ignore as trivial:
 * Provide a short summary of the diff type,
   including opcode changes, memory access size/cache policy changes, control-flow changes, register-count changes,
   spills/local memory, shared memory, and occupancy-relevant resource deltas.
-* Explicitly state if only noise was detected after normalization.
+* Explicitly state if only noise was detected.
 * If you are not sure if the differences are impactful, show it and ask the user for guidance.
-* Keep the original and normalized disassembly dumps available and tell the user where they can find them.
+* Keep the disassembly dumps available and tell the user where they can find them.
