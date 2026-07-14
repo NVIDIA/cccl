@@ -602,28 +602,29 @@ def generate_dispatch_job_origin(matrix_job, job_type, job_info):
 
 def generate_dispatch_job_json(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
-    project = get_project(matrix_job["project"])["id"]
+    project = get_project(matrix_job["project"])
     command = generate_dispatch_job_command(matrix_job, job_type, job_info)
+    job_prefix = job_info["invoke"]["prefix"]
 
     if (
         # Only use the build cluster for build jobs
-        job_type == "build"
+        job_prefix == "build"
         # Only use the build cluster for CPU jobs
         and not job_info["gpu"]
         # Only use the build cluster for Linux jobs
         and not is_windows(matrix_job)
         and (
             # Use the build cluster for 1 of 2 cudax jobs
-            (project == "cudax" and random.randint(0, 1) == 0)
+            (project["id"] == "cudax" and random.randint(0, 1) == 0)
             or
             # Use the build cluster for 1 of 10 CUB jobs
-            (project == "cub" and random.randint(0, 9) == 0)
+            (project["id"] == "cub" and random.randint(0, 9) == 0)
             or
             # Use the build cluster for 1 of 10 Thrust jobs
-            (project == "thrust" and random.randint(0, 9) == 0)
+            (project["id"] == "thrust" and random.randint(0, 9) == 0)
             or
             # Use the build cluster for 1 of 10 libcu++ jobs
-            (project == "libcudacxx" and random.randint(0, 9) == 0)
+            (project["id"] == "libcudacxx" and random.randint(0, 9) == 0)
             or
             # Don't use the build cluster for other project's jobs
             False
@@ -631,12 +632,15 @@ def generate_dispatch_job_json(matrix_job, job_type):
     ):
         matrix_job["use_sccache_dist"] = True
         matrix_job["environment"] = matrix_job.get("environment") or []
-        matrix_job["environment"].append("USE_SCCACHE_DIST=1")
+        if "USE_SCCACHE_DIST=1" not in matrix_job["environment"]:
+            matrix_job["environment"].append("USE_SCCACHE_DIST=1")
         # Over-subscribe -j to keep the build cluster busy if *not* ClangCUDA
         # or Python. ClangCUDA can use the build cluster for C++ files, but not
         # CUDA, and we'll OOM if we try to compile too many at once.
-        if ("clang" not in matrix_job["cudacxx"]) and not command.endswith(
-            "_python.sh"
+        if (
+            ("clang" not in matrix_job["cudacxx"])
+            and not command.endswith("_python.sh")
+            and ("PARALLEL_LEVEL=0" not in matrix_job["environment"])
         ):
             matrix_job["environment"].append("PARALLEL_LEVEL=0")
 
