@@ -81,8 +81,7 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // todo: Fails to compile with nvcc.
-#if !_CCCL_CUDA_COMPILER(NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
     // the constructor is implicit
     constexpr int arr[]                       = {1, 2, 3, 4, 5};
     constexpr cw_fixed_value<const int[5]> ci = arr;
@@ -92,7 +91,7 @@ TEST_FUNC constexpr bool test()
     assert(cw.value[2] == 3);
     assert(cw.value[3] == 4);
     assert(cw.value[4] == 5);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
   }
 
   return true;

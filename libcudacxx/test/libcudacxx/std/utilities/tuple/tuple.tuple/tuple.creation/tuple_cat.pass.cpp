@@ -12,8 +12,6 @@
 
 // template <class... Tuples> tuple<CTypes...> tuple_cat(Tuples&&... tpls);
 
-// UNSUPPORTED: nvhpc-23.1
-
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 // cuda::std::string not supported

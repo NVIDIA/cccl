@@ -52,6 +52,8 @@
 #include "helpers.h"
 #include "test_macros.h"
 
+TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
+
 struct WithOps
 {
   int value;
@@ -281,23 +283,53 @@ TEST_FUNC constexpr bool test()
     cuda::std::__constant_wrapper<6> cw6;
     cuda::std::__constant_wrapper<3> cw3;
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) equal = cw6 == cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) equal = cw6 == cw3;
+// nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    static_assert(!decltype(equal)::value);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(!static_cast<bool>(equal));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) not_equal = cw6 != cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) not_equal = cw6 != cw3;
+// nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    static_assert(decltype(not_equal)::value);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(static_cast<bool>(not_equal));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less = cw6 < cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less = cw6 < cw3;
+// nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    static_assert(!decltype(less)::value);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(!static_cast<bool>(less));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less_equal = cw6 <= cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less_equal = cw6 <= cw3;
+// nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    static_assert(!decltype(less_equal)::value);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(!static_cast<bool>(less_equal));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater = cw6 > cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater = cw6 > cw3;
+// nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    static_assert(decltype(greater)::value);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(static_cast<bool>(greater));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cw6 >= cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cw6 >= cw3;
+// nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    static_assert(decltype(greater_equal)::value);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
     static_assert(static_cast<bool>(greater_equal));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     // strong_ordering is not a structural type

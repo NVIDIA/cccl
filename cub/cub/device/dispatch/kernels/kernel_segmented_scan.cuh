@@ -44,7 +44,7 @@ namespace detail::segmented_scan
 //!        of a device-wide segmented prefix scan.
 //!
 //! @tparam SegmentedScanPolicyGetterT
-//!   Nullary callable type for getting segmented_scan_policy
+//!   Nullary callable type for getting SegmentedScanPolicy
 //!
 //! @tparam InputIteratorT
 //!   Random-access input iterator type
@@ -237,11 +237,14 @@ public:
         block_store_t storer(temp_storage.reused.store);
         if (chunk_size == tile_items)
         {
-          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, thread_values);
+          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, // NOLINT(bugprone-misplaced-widening-cast)
+                       thread_values);
         }
         else
         {
-          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, thread_values, chunk_size);
+          storer.Store(d_out + output_begin_idx + chunk_id * tile_items, // NOLINT(bugprone-misplaced-widening-cast)
+                       thread_values,
+                       chunk_size);
         }
       }
       if (++chunk_id < n_chunks)

@@ -120,6 +120,20 @@ public:
  *   CUDA events are used as synchronization primitives.
  *
  * This class is copyable, movable, and can be passed by value
+ *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `stream_ctx` instances synchronize the submission
+ * stream from `finalize()` and only return once all queued work has
+ * completed. Instances constructed with `stream_ctx(user_stream, handle)`
+ * instead bind the context to the caller-provided CUDA stream, set
+ * `blocking_finalize = false`, and make `finalize()` non-blocking: the
+ * remaining work and the context's resource-release callback are enqueued on
+ * `user_stream` and `finalize()` returns without synchronizing it. The
+ * caller must therefore drive `user_stream` to completion (e.g. via
+ * `cudaStreamSynchronize(user_stream)`) before observing results on the
+ * host or destroying any shared `async_resources_handle` that was passed
+ * to the context.
  */
 class stream_ctx : public backend_ctx<stream_ctx>
 {
@@ -584,24 +598,37 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+      };
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      out = owning_container_of<T>::get_value(data);
-    };
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      return out;
+    }
   }
 
 private:
+  using base_impl = typename base::impl;
+
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
-  class impl : public base::impl
+  class impl : public base_impl
   {
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr), bool initialize_cuda_runtime = true)
-        : base::impl(mv(_async_resources), initialize_cuda_runtime)
+        : base_impl(mv(_async_resources), initialize_cuda_runtime)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
@@ -612,7 +639,7 @@ private:
       deferred_tasks.clear();
       task_map.clear();
       submitted_stream = nullptr;
-      base::impl::cleanup();
+      base_impl::cleanup();
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped

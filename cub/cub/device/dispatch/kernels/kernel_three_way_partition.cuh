@@ -87,8 +87,10 @@ public:
   {
     if (last_partition)
     {
-      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
-      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+      user_num_selected_out_it[0] =
+        num_previously_selected_first() + num_selected_first; // NOLINT(bugprone-misplaced-widening-cast)
+      user_num_selected_out_it[1] =
+        num_previously_selected_second() + num_selected_second; // NOLINT(bugprone-misplaced-widening-cast)
     }
     else
     {
@@ -132,15 +134,15 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   static constexpr auto active_policy = current_policy<PolicySelector>();
-  using AgentThreeWayPartitionPolicyT = AgentThreeWayPartitionPolicy<
+  using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
     active_policy.threads_per_block,
     active_policy.items_per_thread,
     active_policy.load_algorithm,
     active_policy.load_modifier,
-    active_policy.block_scan_algorithm,
-    delay_constructor_t<active_policy.delay_constructor.kind,
-                        active_policy.delay_constructor.delay,
-                        active_policy.delay_constructor.l2_write_latency>>;
+    active_policy.scan_algorithm,
+    delay_constructor_t<active_policy.lookback_delay.kind,
+                        active_policy.lookback_delay.delay,
+                        active_policy.lookback_delay.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<

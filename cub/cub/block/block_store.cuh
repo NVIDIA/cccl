@@ -21,7 +21,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -59,7 +62,7 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -104,7 +107,7 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -169,7 +172,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
 
   // Add the alignment check to ensure the vectorized storing can proceed.
-  if (reinterpret_cast<uintptr_t>(block_ptr) % (alignof(Vector)) == 0)
+  if (::cuda::std::is_sufficiently_aligned<alignof(Vector)>(block_ptr))
   {
     // Alias global pointer
     Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
@@ -346,7 +349,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -402,7 +405,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   {
     if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
     {
-      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM]; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 }
@@ -543,27 +546,50 @@ enum BlockStoreAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case BLOCK_STORE_DIRECT:
-      return os << "BLOCK_STORE_DIRECT";
+      return "BLOCK_STORE_DIRECT";
     case BLOCK_STORE_STRIPED:
-      return os << "BLOCK_STORE_STRIPED";
+      return "BLOCK_STORE_STRIPED";
     case BLOCK_STORE_VECTORIZE:
-      return os << "BLOCK_STORE_VECTORIZE";
+      return "BLOCK_STORE_VECTORIZE";
     case BLOCK_STORE_TRANSPOSE:
-      return os << "BLOCK_STORE_TRANSPOSE";
+      return "BLOCK_STORE_TRANSPOSE";
     case BLOCK_STORE_WARP_TRANSPOSE:
-      return os << "BLOCK_STORE_WARP_TRANSPOSE";
+      return "BLOCK_STORE_WARP_TRANSPOSE";
     case BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED:
-      return os << "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
-    default:
-      return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
+      return "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
   }
+  return "<unknown BlockStoreAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockStoreAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement
@@ -826,12 +852,7 @@ public:
       block_exchange(temp_storage).BlockedToStriped(items);
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE)
-    {
-      block_exchange(temp_storage).BlockedToWarpStriped(items);
-      StoreDirectWarpStriped(linear_tid, block_itr, items);
-    }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
       StoreDirectWarpStriped(linear_tid, block_itr, items);
@@ -893,17 +914,13 @@ public:
   template <typename OutputIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
   {
-    if constexpr (Algorithm == BLOCK_STORE_DIRECT)
+    if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_VECTORIZE)
     {
       StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
-    }
-    else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
-    {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
@@ -916,18 +933,7 @@ public:
       __syncthreads();
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE)
-    {
-      block_exchange(temp_storage).BlockedToWarpStriped(items);
-      if (linear_tid == 0)
-      {
-        // Move through volatile smem as a workaround to prevent RF spilling on subsequent loads
-        temp_storage.valid_items = valid_items;
-      }
-      __syncthreads();
-      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
-    }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
       if (linear_tid == 0)

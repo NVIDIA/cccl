@@ -1148,11 +1148,11 @@ TEST_FUNC constexpr void test_to_chars(const TestItem& item)
   const char* ref_str = (cuda::std::is_signed_v<T>) ? item.str_signed : item.str_unsigned;
   const auto ref_len  = cuda::std::strlen(ref_str);
 
-  // ptxas below 13.4 + SM120 + int16_t gives invalid result for -32768. See nvbug 5537408.
+  // ptxas below 13.4 + int16_t gives invalid result for -32768. See nvbug 5537408.
 #if _CCCL_CUDACC_BELOW(13, 4)
   if (!cuda::std::is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_EXACTLY_SM_120, ({
+    NV_IF_TARGET(NV_IS_DEVICE, ({
                    if constexpr (cuda::std::is_signed_v<T>)
                    {
                      if (value == -32768)

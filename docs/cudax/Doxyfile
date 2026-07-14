@@ -11,6 +11,7 @@ XML_PROGRAMLISTING     = YES
 
 # Input directory - specific paths for cudax
 INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
+                         ../../cudax/include/cuda/experimental/__fill_bytes \
                          ../../cudax/include/cuda/experimental/__container \
                          ../../cudax/include/cuda/experimental/__device \
                          ../../cudax/include/cuda/experimental/graph.cuh \
@@ -139,6 +140,7 @@ PREDEFINED = \
     "_CCCL_TYPE_VISIBILITY_HIDDEN=" \
     "_CCCL_VISIBILITY_DEFAULT=" \
     "_CCCL_VISIBILITY_HIDDEN=" \
+    "_CCCL_LIFETIMEBOUND=" \
     "_CUDAX_CONSTEXPR_FRIEND=friend" \
     "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1" \
     "CCCL_DEPRECATED=" \
@@ -152,7 +154,8 @@ PREDEFINED = \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
     "THRUST_NAMESPACE_END=}" \
-    "THRUST_PREVENT_MACRO_SUBSTITUTION"
+    "THRUST_PREVENT_MACRO_SUBSTITUTION" \
+    "_CCCL_HOSTED()=1"
 
 # Additional settings from repo.toml
 DISTRIBUTE_GROUP_DOC   = YES

@@ -91,7 +91,15 @@ class data_place
   static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<data_place_interface>(&instance, [](data_place_interface*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies. Besides
+    // avoiding a redundant control block per call, this keeps the factory
+    // thread-safe if T ever derives from enable_shared_from_this: constructing
+    // a shared_ptr from a raw pointer writes the object's weak-this member, so
+    // doing it on every call would race across host threads. The guarded
+    // function-local static performs that write once; later calls only copy
+    // the handle (atomic refcount bump).
+    static ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
+    return handle;
   }
 
 public:
@@ -542,7 +550,15 @@ public:
   static ::std::shared_ptr<impl> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<impl>(&instance, [](impl*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies.
+    // exec_place::impl derives from enable_shared_from_this, so constructing a
+    // shared_ptr from the raw &instance writes the object's weak-this member.
+    // Doing that on every call races when multiple host threads request the
+    // same singleton (e.g. concurrent parallel_for -> exec_place::current_device()).
+    // The guarded function-local static performs that write once; later calls
+    // only copy the handle (atomic refcount bump).
+    static ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
+    return handle;
   }
 
   exec_place() = default;
@@ -1064,8 +1080,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   // Activation - no-op for host
@@ -1136,8 +1156,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   ::std::string to_string() const override
@@ -1228,19 +1252,30 @@ public:
 
 inline exec_place exec_place::device(int devid)
 {
-  static int ndevices;
-  static exec_place_device::impl* impls = [] {
-    ndevices    = cuda_try<cudaGetDeviceCount>();
-    auto result = static_cast<exec_place_device::impl*>(::operator new[](ndevices * sizeof(exec_place_device::impl)));
+  static const int ndevices = cuda_try<cudaGetDeviceCount>();
+  // One process-global ``shared_ptr`` per device, created exactly once in this
+  // function-local static initializer (guaranteed thread-safe init by the
+  // compiler). We hand out *copies* below.
+  //
+  // We must NOT re-create a ``shared_ptr`` from the raw object pointer on every
+  // call: ``exec_place::impl`` derives from ``enable_shared_from_this``, so each
+  // such construction writes the object's internal weak-this member. Because
+  // this path runs on every task submission and from every user thread,
+  // concurrent calls would race on that member (and on the freshly created
+  // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
+  // reference count, which is thread-safe.
+  static ::std::shared_ptr<exec_place::impl>* impls = [] {
+    auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
     for (int i : each(ndevices))
     {
-      new (result + i) exec_place_device::impl(i);
+      // no-op deleter: these device places are process-global singletons
+      result[i] = ::std::shared_ptr<exec_place::impl>(new exec_place_device::impl(i), [](exec_place::impl*) {});
     }
     return result;
   }();
   _CCCL_ASSERT(devid >= 0, "invalid device id");
   _CCCL_ASSERT(devid < ndevices, "invalid device id");
-  return ::std::shared_ptr<exec_place::impl>(&impls[devid], [](exec_place::impl*) {}); // no-op deleter
+  return impls[devid];
 }
 
 #ifdef UNITTESTED_FILE
@@ -1488,8 +1523,12 @@ inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t id
 inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
-  // Static instance - use no-op deleter instead of shared_from_this()
-  return ::std::shared_ptr<impl>(this, [](impl*) {});
+  // These device impls are always owned by the per-device ``shared_ptr``
+  // created in ``exec_place::device()``, so ``shared_from_this()`` is valid and
+  // (unlike re-wrapping ``this`` in a fresh ``shared_ptr``) does not mutate the
+  // enable_shared_from_this weak-this member -- it only bumps the atomic
+  // reference count, which is safe to call concurrently.
+  return shared_from_this();
 }
 
 //! Creates a grid by replicating an execution place multiple times

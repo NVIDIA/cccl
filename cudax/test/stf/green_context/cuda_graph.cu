@@ -11,6 +11,8 @@
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <vector>
+
 using namespace cuda::experimental::stf;
 
 // Green contexts are only supported since CUDA 12.4
@@ -56,15 +58,23 @@ int main()
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
   // The green_context_helper class automates the creation of green context views
-  green_context_helper gc(num_sms);
+  std::vector<green_context_helper> gc(ndevs);
+  for (int devid = 0; devid < ndevs; devid++)
+  {
+    gc[devid] = green_context_helper(num_sms, devid);
+  }
 
   for (int iter = 0; iter < NITER; iter++)
   {
-    auto cnt = gc.get_count();
-    ctx.task(exec_place::green_ctx(gc.get_view(iter % cnt)), handle_X.read(), handle_Y.rw())
-        ->*[&](cudaStream_t stream, auto dX, auto dY) {
-              axpy<<<16, 16, 0, stream>>>(alpha, dX, dY);
-            };
+    for (int devid = 0; devid < ndevs; devid++)
+    {
+      auto& g_ctx = gc[devid];
+      auto cnt    = g_ctx.get_count();
+      ctx.task(exec_place::green_ctx(g_ctx.get_view(iter % cnt)), handle_X.read(), handle_Y.rw())
+          ->*[&](cudaStream_t stream, auto dX, auto dY) {
+                axpy<<<16, 16, 0, stream>>>(alpha, dX, dY);
+              };
+    }
   }
 
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[&](auto hX, auto hY) {

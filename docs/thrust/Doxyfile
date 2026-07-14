@@ -124,6 +124,7 @@ PREDEFINED             = __device__= \
                         _CCCL_PUBLIC_HOST_API=inline \
                         _CCCL_VISIBILITY_DEFAULT= \
                         _CCCL_VISIBILITY_HIDDEN= \
+                        _CCCL_LIFETIMEBOUND= \
                         _CCCL_TRY=try \
                         _CCCL_CATCH=catch \
                         "_CCCL_CATCH_ALL=catch (...)" \
@@ -148,7 +149,8 @@ PREDEFINED             = __device__= \
                         "CUB_RDC_ENABLED" \
                         "CUB_NAMESPACE_BEGIN=namespace cub {" \
                         "CUB_NAMESPACE_END=}" \
-                        "CUB_RUNTIME_FUNCTION="
+                        "CUB_RUNTIME_FUNCTION=" \
+                        "_CCCL_HOSTED()=1"
 
 # Images and examples
 IMAGE_PATH             = ../img

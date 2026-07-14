@@ -13,7 +13,9 @@
 
 #include <cuda/std/__simd_>
 #include <cuda/std/array>
+#include <cuda/std/cmath>
 #include <cuda/std/complex>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
@@ -151,13 +153,13 @@ TEST_FUNC constexpr void is_fp_close(const T& a, const T& b)
 //----------------------------------------------------------------------------------------------------------------------
 // vec utilities
 
-template <typename T, int _Offset = 1>
+template <typename T, int Offset = 1>
 struct iota_generator
 {
   template <typename I>
   TEST_FUNC constexpr T operator()(I i) const noexcept
   {
-    return static_cast<T>(i + _Offset);
+    return static_cast<T>(i + Offset);
   }
 };
 
@@ -202,22 +204,45 @@ struct complex_diverse_generator
   }
 };
 
-template <typename T, int N>
-TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int __offset = 1)
+template <typename T, int N, int Offset = 1>
+TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array()
 {
   cuda::std::array<T, N> arr{};
   for (int i = 0; i < N; ++i)
   {
-    arr[i] = static_cast<T>(i + __offset);
+    arr[i] = static_cast<T>(i + Offset);
   }
   return arr;
 }
 
+template <typename T, int N>
+TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int offset)
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(i + offset);
+  }
+  return arr;
+}
+
+template <typename T, int N, int Offset = 0>
+TEST_FUNC constexpr cuda::std::array<T, N> make_reverse_iota_array()
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(N - 1 - i + Offset);
+  }
+  return arr;
+}
+
+// Elementwise comparison of a basic_vec against a cuda::std::array
 template <typename T, typename Abi, typename U, size_t N>
 TEST_FUNC constexpr bool operator==(const simd::basic_vec<T, Abi>& vec, const cuda::std::array<U, N>& arr)
 {
   static_assert(simd::basic_vec<T, Abi>::size() == static_cast<int>(N));
-  for (int i = 0; i < static_cast<int>(N); ++i)
+  for (size_t i = 0; i < N; ++i)
   {
     if (vec[i] != arr[i])
     {
@@ -238,6 +263,96 @@ TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_vec()
   return simd::basic_vec<T, simd::fixed_size<N>>(arr);
 }
 
+template <typename T, int N>
+TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_reverse_vec()
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(N - 1 - i);
+  }
+  return simd::basic_vec<T, simd::fixed_size<N>>(arr);
+}
+//----------------------------------------------------------------------------------------------------------------------
+// math utilities
+
+template <typename T>
+struct math_values
+{
+  template <typename I>
+  TEST_FUNC constexpr T operator()(I i) const noexcept
+  {
+    return static_cast<T>(static_cast<int>(i) - 1) / T{4};
+  }
+};
+
+template <typename T>
+struct positive_math_values
+{
+  template <typename I>
+  TEST_FUNC constexpr T operator()(I i) const noexcept
+  {
+    return static_cast<T>(i + 1) / T{4};
+  }
+};
+
+template <typename T>
+TEST_FUNC bool almost_equal(T lhs, T rhs, T tolerance) noexcept
+{
+  return cuda::std::fabs(lhs - rhs) <= tolerance;
+}
+// bit utilities
+
+template <typename T>
+struct bit_values
+{
+  template <typename I>
+  TEST_FUNC constexpr T operator()(I) const noexcept
+  {
+    return static_cast<T>((I::value + 1) * 3);
+  }
+};
+
+// Each simd.bit test file must define test_constraints() and a test functor template
+// clang-format off
+#define _SIMD_BIT_TEST_SIGNED_TYPES(_Test)                         \
+  _Test<int8_t, 1>{}();                                            \
+  _Test<int8_t, 4>{}();                                            \
+  _Test<int16_t, 1>{}();                                           \
+  _Test<int16_t, 4>{}();                                           \
+  _Test<int32_t, 1>{}();                                           \
+  _Test<int32_t, 4>{}();                                           \
+  _Test<int64_t, 1>{}();                                           \
+  _Test<int64_t, 4>{}();
+
+#define _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                       \
+  _Test<uint8_t, 1>{}();                                           \
+  _Test<uint8_t, 4>{}();                                           \
+  _Test<uint16_t, 1>{}();                                          \
+  _Test<uint16_t, 4>{}();                                          \
+  _Test<uint32_t, 1>{}();                                          \
+  _Test<uint32_t, 4>{}();                                          \
+  _Test<uint64_t, 1>{}();                                          \
+  _Test<uint64_t, 4>{}();
+
+#define DEFINE_SIMD_BIT_INTEGRAL_TEST(_Test)                      \
+  TEST_FUNC constexpr bool test()                                 \
+  {                                                               \
+    _SIMD_BIT_TEST_SIGNED_TYPES(_Test)                            \
+    _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                          \
+    test_constraints();                                           \
+    return true;                                                  \
+  }
+
+#define DEFINE_SIMD_BIT_UNSIGNED_TEST(_Test)                      \
+  TEST_FUNC constexpr bool test()                                 \
+  {                                                               \
+    _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                          \
+    test_constraints();                                           \
+    return true;                                                  \
+  }
+// clang-format on
+
 // Each vec test file must define test_type<T, N>() and then define test() using this macro.
 // clang-format off
 #if defined(__cccl_lib_char8_t)
@@ -257,28 +372,52 @@ TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_vec()
 #endif
 
 #if _LIBCUDACXX_HAS_NVFP16()
-#  define _SIMD_TEST_FP16()                                       \
-    test_type<__half, 1>();                                       \
-    test_type<__half, 4>();
+#  define _SIMD_TEST_FP16(_N)                                     \
+    test_type<__half, _N>();
 #else
-#  define _SIMD_TEST_FP16()
+#  define _SIMD_TEST_FP16(_N)
 #endif
 
 #if _LIBCUDACXX_HAS_NVBF16()
-#  define _SIMD_TEST_BF16()                                       \
-    test_type<__nv_bfloat16, 1>();                                \
-    test_type<__nv_bfloat16, 4>();
+#  define _SIMD_TEST_BF16(_N)                                     \
+    test_type<__nv_bfloat16, _N>();
 #else
-#  define _SIMD_TEST_BF16()
+#  define _SIMD_TEST_BF16(_N)
 #endif
 
-// __half and __nv_bfloat16 constructors are not constexpr (CUDA toolkit limitation),
-// so they are tested only at runtime via test_runtime().
+// Each simd.math test file must define test_type<T, N>() and then define test() using one of these macros.
+#define DEFINE_SIMD_MATH_FLOATING_TEST()                           \
+  TEST_FUNC bool test()                                            \
+  {                                                                \
+    test_type<float, 4>();                                         \
+    test_type<double, 4>();                                        \
+    return true;                                                   \
+  }
+
+#define DEFINE_SIMD_MATH_FLOATING_CONSTEXPR_TEST()                 \
+  TEST_FUNC constexpr bool test()                                  \
+  {                                                                \
+    test_type<float, 4>();                                         \
+    test_type<double, 4>();                                        \
+    return true;                                                   \
+  }
+
+// __half and __nv_bfloat16 constructors are not constexpr, they are tested only at runtime via test_runtime().
+#define DEFINE_SIMD_MATH_FLOATING_TEST_RUNTIME()                  \
+  TEST_FUNC bool test_runtime()                                   \
+  {                                                               \
+    _SIMD_TEST_FP16(4)                                            \
+    _SIMD_TEST_BF16(4)                                            \
+    return true;                                                  \
+  }
+
 #define DEFINE_BASIC_VEC_TEST_RUNTIME()                           \
   TEST_FUNC bool test_runtime()                                   \
   {                                                               \
-    _SIMD_TEST_FP16()                                             \
-    _SIMD_TEST_BF16()                                             \
+    _SIMD_TEST_FP16(1)                                            \
+    _SIMD_TEST_FP16(4)                                            \
+    _SIMD_TEST_BF16(1)                                            \
+    _SIMD_TEST_BF16(4)                                            \
     return true;                                                  \
   }
 
