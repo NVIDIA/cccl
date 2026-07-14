@@ -133,9 +133,9 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void DeviceReduceKernel(
-  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  _CCCL_GRID_CONSTANT AccumT* const d_out,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  const InputIteratorT d_in,
+  AccumT* const d_out,
+  const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
   TransformOpT transform_op)
@@ -226,11 +226,11 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(current_policy<PolicySelector>().single_tile.threads_per_block),
-  1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  1) void DeviceReduceSingleTileKernel(const InputIteratorT d_in,
                                        OutputIteratorT d_out,
-                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
+                                       const OffsetT num_items,
                                        ReductionOpT reduction_op,
-                                       _CCCL_GRID_CONSTANT const InitT init,
+                                       const InitT init,
                                        TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
@@ -289,14 +289,13 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   current_policy<PolicySelector>()
-    .reduce
-    .threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
-                                                                       GridEvenShare<OffsetT> even_share,
-                                                                       ReductionOpT reduction_op,
-                                                                       _CCCL_GRID_CONSTANT const InitT init,
-                                                                       TransformOpT transform_op)
+    .reduce.threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(const InputIteratorT d_in,
+                                                                              const OutputIteratorT d_out,
+                                                                              const OffsetT num_items,
+                                                                              GridEvenShare<OffsetT> even_share,
+                                                                              ReductionOpT reduction_op,
+                                                                              const InitT init,
+                                                                              TransformOpT transform_op)
 {
   // todo: This static_assert fails with nvc++ CUDA compilation.
   NV_IF_ELSE_TARGET(
