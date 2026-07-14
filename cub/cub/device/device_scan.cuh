@@ -2336,7 +2336,7 @@ struct DeviceScan
   //! is assigned to ``*d_out``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
