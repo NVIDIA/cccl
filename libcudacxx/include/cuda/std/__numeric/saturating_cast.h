@@ -31,6 +31,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// clang-tidy thinks that branches in __saturating_cast_impl_device are all the same.
+// NOLINTBEGIN(bugprone-branch-clone)
+
 #if _CCCL_CUDA_COMPILATION()
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int8_t)))
@@ -372,6 +375,8 @@ template <class _To, class _From>
   return ::cuda::saturating_overflow_cast<_To>(__x).value;
 }
 #endif // _CCCL_CUDA_COMPILATION()
+
+// NOLINTEND(bugprone-branch-clone)
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(__cccl_is_integer_v<_To> _CCCL_AND __cccl_is_integer_v<_From>)
