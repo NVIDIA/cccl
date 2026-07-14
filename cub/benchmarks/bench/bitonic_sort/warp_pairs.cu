@@ -19,7 +19,7 @@ struct full_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int) const
   {
-    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<KeyT, ItemsPerThread, warp_threads, ValueT>;
     using TempStorage     = typename WarpBitonicSort::TempStorage;
     __shared__ TempStorage temp_storage[32];
     const auto warp_id = threadIdx.x / 32;
@@ -43,7 +43,7 @@ struct partial_oob_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int len) const
   {
-    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<KeyT, ItemsPerThread, warp_threads, ValueT>;
     using TempStorage     = typename WarpBitonicSort::TempStorage;
     __shared__ TempStorage temp_storage[32];
     const auto warp_id = threadIdx.x / 32;
@@ -68,7 +68,7 @@ struct partial_op_t
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int len) const
   {
-    using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+    using WarpBitonicSort = cub::detail::WarpBitonicSort<KeyT, ItemsPerThread, warp_threads, ValueT>;
     using TempStorage     = typename WarpBitonicSort::TempStorage;
     __shared__ TempStorage temp_storage[32];
     const auto warp_id = threadIdx.x / 32;

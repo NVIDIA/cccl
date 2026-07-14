@@ -44,7 +44,7 @@ inline constexpr int warp_threads = cub::detail::warp_threads;
 template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ActionT>
 __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, ActionT action)
 {
-  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
+  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<KeyT, ItemsPerThread>;
   using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and warp index
@@ -99,7 +99,7 @@ template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ValueT, ty
 __global__ void warp_bitonic_sort_kernel(
   KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int valid_items, ActionT action)
 {
-  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
+  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<KeyT, ItemsPerThread, warp_threads, ValueT>;
   using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and warp index
@@ -562,4 +562,3 @@ C2H_TEST("Warp sort on custom key-value pairs works",
   sort_values_for_equal_keys(h_keys_out.begin(), h_values_out.begin(), valid_items, total_warps);
   REQUIRE(h_values_in_out == h_values_out);
 }
-

@@ -71,7 +71,7 @@ inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_s
 //!        constexpr int warps_per_block = threads_per_block / warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
-//!        using WarpBitonicSortT = cub::detail::WarpBitonicSort<items_per_thread, int>;
+//!        using WarpBitonicSortT = cub::detail::WarpBitonicSort<int, items_per_thread>;
 //!
 //!        // Allocate shared memory
 //!        __shared__ typename WarpBitonicSortT::TempStorage temp_storage[warps_per_block];
@@ -91,21 +91,26 @@ inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_s
 //!
 //! @endrst
 //!
+//! @tparam KeyT
+//!   Key type. Should be default constructible and trivially copyable.
+//!
 //! @tparam ItemsPerThread
 //!   The number of items per thread.
 //!
-//! @tparam KeyT
-//!   Key type. Should be default constructible and trivially copyable.
+//! @tparam LogicalWarpThreads
+//!   <b>[optional]</b> The number of threads per "logical" warp. Only architectural warp size is supported.
 //!
 //! @tparam ValueT
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a keys-only sort).
 //!   Should be default constructible and trivially copyable.
 //!
-template <int ItemsPerThread, typename KeyT, typename ValueT = NullType>
+template <typename KeyT, int ItemsPerThread, int LogicalWarpThreads = detail::warp_threads, typename ValueT = NullType>
 class WarpBitonicSort
 {
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
+  static_assert(LogicalWarpThreads == detail::warp_threads,
+                "Logical warp smaller than architectural warp size are not yet supported");
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
@@ -292,7 +297,7 @@ public:
   }
 
 private:
-  template <int, typename, typename>
+  template <typename, int, int, typename>
   friend class WarpBitonicSort;
 
   static constexpr int warp_threads = detail::warp_threads;
@@ -306,8 +311,9 @@ private:
     constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
     constexpr int second_half_len = ItemsPerThread - first_half_len;
 
-    WarpBitonicSort<first_half_len, KeyT, ValueT>{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
-    WarpBitonicSort<second_half_len, KeyT, ValueT>{}.template sort<CompareOp, Reverse>(
+    WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, !Reverse>(
+      keys, values, compare_op);
+    WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, Reverse>(
       keys + first_half_len, (keys_only ? nullptr : values + first_half_len), compare_op);
     merge<CompareOp, Reverse>(keys, values, compare_op);
   }
@@ -364,8 +370,9 @@ private:
       }
     }
 
-    WarpBitonicSort<first_half_len, KeyT, ValueT>{}.template merge<CompareOp, Reverse>(keys, values, compare_op);
-    WarpBitonicSort<second_half_len, KeyT, ValueT>{}.template merge<CompareOp, Reverse>(
+    WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
+      keys, values, compare_op);
+    WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
       keys + first_half_len, (keys_only ? nullptr : values + first_half_len), compare_op);
   }
 
@@ -377,8 +384,9 @@ private:
 
     if (valid_items > first_half_len * warp_threads)
     {
-      WarpBitonicSort<first_half_len, KeyT, ValueT>{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
-      WarpBitonicSort<second_half_len, KeyT, ValueT>{}.template sort<CompareOp, Reverse>(
+      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, !Reverse>(
+        keys, values, compare_op);
+      WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, Reverse>(
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
@@ -387,7 +395,7 @@ private:
     }
     else
     {
-      WarpBitonicSort<first_half_len, KeyT, ValueT>{}.template sort<CompareOp, Reverse>(
+      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, Reverse>(
         keys, values, compare_op, valid_items);
     }
   }
@@ -444,8 +452,9 @@ private:
 
     if (valid_items > first_half_len * warp_threads)
     {
-      WarpBitonicSort<first_half_len, KeyT, ValueT>{}.template merge<CompareOp, Reverse>(keys, values, compare_op);
-      WarpBitonicSort<second_half_len, KeyT, ValueT>{}.template merge<CompareOp, Reverse>(
+      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
+        keys, values, compare_op);
+      WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
@@ -453,7 +462,7 @@ private:
     }
     else
     {
-      WarpBitonicSort<first_half_len, KeyT, ValueT>{}.template merge<CompareOp, Reverse>(
+      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
         keys, values, compare_op, valid_items);
     }
   }
@@ -461,8 +470,8 @@ private:
 
 // When each thread holds a single item, the bitonic sort operates entirely across warp lanes
 // using shuffle instructions.
-template <typename KeyT, typename ValueT>
-class WarpBitonicSort<1, KeyT, ValueT>
+template <typename KeyT, int LogicalWarpThreads, typename ValueT>
+class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
 {
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
@@ -535,7 +544,7 @@ public:
   }
 
 private:
-  template <int, typename, typename>
+  template <typename, int, int, typename>
   friend class WarpBitonicSort;
 
   static constexpr int warp_threads            = detail::warp_threads;
