@@ -194,6 +194,7 @@ Checks:
   - '-bugprone-sizeof-expression'
   - '-modernize-use-nullptr'
   - '-bugprone-std-exception-baseclass'
+  - '-modernize-avoid-variadic-functions'
 
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
