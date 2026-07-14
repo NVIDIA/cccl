@@ -19,9 +19,9 @@
 
 #include <cub/util_type.cuh>
 
-#include <cuda/__cmath/round_up.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
+#include <cuda/__memory/align_up.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/concepts.h>
@@ -117,10 +117,10 @@ struct BlockPrefetch
           ({
             if (::cuda::device::__block_elect_one())
             {
-              // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
+              // srcMem must be 16-byte aligned per PTX ISA; align the range outward on both ends to compensate
               const auto* aligned_base = ::cuda::align_down(src_ptr, 16);
-              const auto prefix        = static_cast<unsigned>(src_ptr - aligned_base);
-              const auto aligned_size  = ::cuda::round_up(static_cast<unsigned>(total_bytes) + prefix, 16u);
+              const auto* aligned_end  = ::cuda::align_up(src_ptr + total_bytes, 16);
+              const auto aligned_size  = static_cast<unsigned>(aligned_end - aligned_base);
               asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
                            :
                            : "l"(::__cvta_generic_to_global(aligned_base)), "r"(aligned_size)
