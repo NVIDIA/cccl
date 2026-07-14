@@ -50,9 +50,9 @@ struct deterministic_num_items<KernelNumItemsT, false>
 {
   using element_t = it_value_t<KernelNumItemsT>;
   using type      = ::cuda::std::conditional_t<
-         ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
-         int,
-         ::cuda::std::conditional_t<::cuda::std::is_signed_v<element_t>, ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
+    ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
+    int,
+    ::cuda::std::conditional_t<::cuda::std::is_signed_v<element_t>, ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
 };
 
 template <typename KernelNumItemsT>

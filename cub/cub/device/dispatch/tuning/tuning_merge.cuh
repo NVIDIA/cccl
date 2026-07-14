@@ -90,10 +90,10 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergePolicy
   {
-    const int tune_type_size = key_size + value_size;
-    const int ipt_800_plus   = nominal_4B_items_to_items(15, tune_type_size);
-    const bool can_bulk_keys = (key_size == key_align) && key_is_trivially_relocatable && key_iterators_are_contiguous
-                            && key_iterator_value_types_are_the_same;
+    const int tune_type_size   = key_size + value_size;
+    const int ipt_800_plus     = nominal_4B_items_to_items(15, tune_type_size);
+    const bool can_bulk_keys   = (key_size == key_align) && key_is_trivially_relocatable && key_iterators_are_contiguous
+                              && key_iterator_value_types_are_the_same;
     const bool can_bulk_values = (value_size == value_align) && value_is_trivially_relocatable
                               && value_iterators_are_contiguous && value_iterator_value_types_are_the_same;
 

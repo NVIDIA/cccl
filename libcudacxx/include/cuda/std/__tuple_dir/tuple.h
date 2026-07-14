@@ -451,7 +451,7 @@ public:
 
   // [tuple.assign]-15
   template <class... _UTypes,
-            __select_assignment _Trait             = __tuple_select_converting_assignable_v</*__is_const=*/false,
+            __select_assignment _Trait = __tuple_select_converting_assignable_v</*__is_const=*/false,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __tuple_types<const _UTypes&...>>,
             enable_if_t<__can_assign<_Trait>, int> = 0>
@@ -463,7 +463,7 @@ public:
 
   // [tuple.assign]-18
   template <class... _UTypes,
-            __select_assignment _Trait             = __tuple_select_converting_assignable_v</*__is_const=*/true,
+            __select_assignment _Trait = __tuple_select_converting_assignable_v</*__is_const=*/true,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __tuple_types<const _UTypes&...>>,
             enable_if_t<__can_assign<_Trait>, int> = 0>
@@ -502,7 +502,7 @@ public:
   // [tuple.assign]-39
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
-            __select_assignment _Trait             = __tuple_select_tuple_like_assignable_v</*__is_const=*/false,
+            __select_assignment _Trait = __tuple_select_tuple_like_assignable_v</*__is_const=*/false,
                                                                                 _UTuple,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __make_tuple_indices_t<sizeof...(_Tp)>>,
@@ -517,7 +517,7 @@ public:
   // [tuple.assign]-42
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
-            __select_assignment _Trait             = __tuple_select_tuple_like_assignable_v</*__is_const=*/true,
+            __select_assignment _Trait = __tuple_select_tuple_like_assignable_v</*__is_const=*/true,
                                                                                 _UTuple,
                                                                                 __tuple_types<_Tp...>,
                                                                                 __make_tuple_indices_t<sizeof...(_Tp)>>,

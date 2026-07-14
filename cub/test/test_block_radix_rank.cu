@@ -287,7 +287,7 @@ void Test()
   Test<cub::RadixRankAlgorithm::RADIX_RANK_BASIC, ThreadsPerBlock>();
   Test<cub::RadixRankAlgorithm::RADIX_RANK_MEMOIZE, ThreadsPerBlock>();
 
-  Test<ThreadsPerBlock>(cuda::std::bool_constant < (ThreadsPerBlock % 32) == 0 > {});
+  Test<ThreadsPerBlock>(cuda::std::bool_constant<(ThreadsPerBlock % 32) == 0>{});
 }
 
 int main(int argc, char** argv)

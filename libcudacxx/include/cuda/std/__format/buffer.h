@@ -458,10 +458,8 @@ class __fmt_direct_iterator_buffer : public __fmt_output_buffer<_CharT>
 public:
   _CCCL_API constexpr explicit __fmt_direct_iterator_buffer(
     _OutIt __out_it, __fmt_max_output_size* __max_output_size = nullptr) noexcept
-      : __fmt_output_buffer<_CharT>{::cuda::std::__unwrap_iter(__out_it),
-                                    __buffer_size,
-                                    __prepare_write,
-                                    __max_output_size}
+      : __fmt_output_buffer<_CharT>{
+          ::cuda::std::__unwrap_iter(__out_it), __buffer_size, __prepare_write, __max_output_size}
       , __out_it_{__out_it}
   {}
 

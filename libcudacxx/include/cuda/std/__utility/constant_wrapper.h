@@ -135,16 +135,16 @@ struct __cw_operators
   // binary operators
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value + _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value + _Rp::value)>{})
   operator+(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value - _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value - _Rp::value)>{})
   operator-(_Lp, _Rp) noexcept
   {
     return {};
@@ -159,16 +159,16 @@ struct __cw_operators
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value / _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value / _Rp::value)>{})
   operator/(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value % _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value % _Rp::value)>{})
   operator%(_Lp, _Rp) noexcept
   {
     return {};
@@ -176,16 +176,16 @@ struct __cw_operators
 
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value << _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value
+                                                                                                    << _Rp::value)>{})
   operator<<(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value >> _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value >> _Rp::value)>{})
   operator>>(_Lp, _Rp) noexcept
   {
     return {};
@@ -200,16 +200,16 @@ struct __cw_operators
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value | _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value
+                                                                                                    | _Rp::value)>{})
   operator|(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value ^ _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value
+                                                                                                    ^ _Rp::value)>{})
   operator^(_Lp, _Rp) noexcept
   {
     return {};
@@ -227,8 +227,8 @@ struct __cw_operators
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp> _CCCL_AND(
     !is_constructible_v<bool, decltype(_Lp::value)> || !is_constructible_v<bool, decltype(_Rp::value)>))
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value || _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value
+                                                                                                    || _Rp::value)>{})
   operator||(_Lp, _Rp) noexcept
   {
     return {};
@@ -247,48 +247,48 @@ struct __cw_operators
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value < _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value < _Rp::value)>{})
   operator<(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value <= _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value <= _Rp::value)>{})
   operator<=(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value == _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value == _Rp::value)>{})
   operator==(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value != _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value != _Rp::value)>{})
   operator!=(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value > _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value > _Rp::value)>{})
   operator>(_Lp, _Rp) noexcept
   {
     return {};
   }
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value >= _Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value >= _Rp::value)>{})
   operator>=(_Lp, _Rp) noexcept
   {
     return {};
@@ -300,8 +300,8 @@ struct __cw_operators
 
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<__cw_fixed_value(_Lp::value->*_Rp::value)>{})
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend consteval decltype(__constant_wrapper<
+                                                                __cw_fixed_value(_Lp::value->*_Rp::value)>{})
   operator->*(_Lp, _Rp) noexcept
   {
     return {};
@@ -398,8 +398,7 @@ struct __constant_wrapper : __cw_operators
   operator[](_Args&&...) noexcept
 #    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API consteval __constant_wrapper<
-    __cw_fixed_value(value[remove_cvref_t<_Args>::value...])>
-  operator[](_Args&&...) const noexcept
+    __cw_fixed_value(value[remove_cvref_t<_Args>::value...])> operator[](_Args&&...) const noexcept
 #    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
   {
     return {};

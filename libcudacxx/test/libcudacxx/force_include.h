@@ -48,8 +48,7 @@ void list_devices()
 #ifdef __CUDACC_TILE__
 __tile__
 #endif // __CUDACC_TILE__
-  __host__ __device__ int
-  fake_main(int, char**);
+  __host__ __device__ int fake_main(int, char**);
 
 int cuda_thread_count = 1;
 int cuda_cluster_size = 1;
@@ -59,8 +58,7 @@ __tile_global__
 #else // ^^^ __CUDACC_TILE__ ^^^ / vvv !__CUDACC_TILE__ vvv
 __global__
 #endif // !__CUDACC_TILE__
-  void
-  fake_main_kernel(int* ret)
+  void fake_main_kernel(int* ret)
 {
   *ret = fake_main(0, nullptr);
 }

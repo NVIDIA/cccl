@@ -246,14 +246,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
       error                      = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < KernelPolicySelector,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                OffsetT,
-                InputT,
-                AliasOpt == MayAlias::Yes,
-                ReadOpt == ReadOption::Left >,
+          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
+                  KernelPolicySelector,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  DifferenceOpT,
+                  OffsetT,
+                  InputT,
+                  AliasOpt == MayAlias::Yes,
+                  ReadOpt == ReadOption::Left>,
                 d_input,
                 first_tile_previous,
                 d_output,
@@ -438,14 +439,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.threads_per_block, 0, stream)
-          .doit(DeviceAdjacentDifferenceDifferenceKernel < policy_selector_t,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                offset_t,
-                input_t,
-                AliasOpt == MayAlias::Yes,
-                ReadOpt == ReadOption::Left >,
+          .doit(DeviceAdjacentDifferenceDifferenceKernel<
+                  policy_selector_t,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  DifferenceOpT,
+                  offset_t,
+                  input_t,
+                  AliasOpt == MayAlias::Yes,
+                  ReadOpt == ReadOption::Left>,
                 d_input,
                 first_tile_previous,
                 d_output,

@@ -37,7 +37,7 @@ C2H_TEST("task_scheduler starts work on the correct execution context", "[schedu
   ex::task_scheduler sched{ctx.get_scheduler()};
   auto sndr  = ex::starts_on(sched, ex::just() | ex::then([] {
                                      return ::std::this_thread::get_id();
-                                   }));
+                                    }));
   auto [tid] = ex::sync_wait(cuda::std::move(sndr)).value();
   CHECK(tid == ctx.get_id());
 }

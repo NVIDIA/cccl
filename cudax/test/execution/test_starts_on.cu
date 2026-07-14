@@ -45,7 +45,7 @@ C2H_TEST("starts_on can be piped", "[adaptors][starts_on]")
            | ex::then([](int val) {
                return val * 2;
              });
-  auto op = ex::connect(std::move(snd), checked_value_receiver{84});
+  auto op  = ex::connect(std::move(snd), checked_value_receiver{84});
   ex::start(op);
   // The receiver checks if we receive the transformed value
 }

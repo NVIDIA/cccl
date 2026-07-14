@@ -493,7 +493,7 @@ struct UniqueByKeyPolicySelector
             .load_modifier     = cub::LOAD_DEFAULT,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
             .lookback_delay    = cub::LookbackDelayPolicy{
-                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+              .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   }
 };
 // example-end unique-by-key-policy-selector

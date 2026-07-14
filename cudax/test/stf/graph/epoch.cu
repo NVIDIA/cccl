@@ -36,7 +36,9 @@ int main()
   for (size_t k = 0; k < NITER; k++)
   {
     ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
-        ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = cos(A(i)); };
+        ->*[] __host__ __device__(size_t i, slice<double> A) {
+              A(i) = cos(A(i));
+            };
 
     ctx.change_stage();
   }

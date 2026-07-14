@@ -144,7 +144,7 @@ struct ScanByKeyPolicySelector
             .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
             .lookback_delay    = cub::LookbackDelayPolicy{
-                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+              .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
   }
 };
 // example-end exclusive-sum-by-key-policy-selector

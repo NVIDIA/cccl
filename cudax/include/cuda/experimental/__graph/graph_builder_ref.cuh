@@ -267,8 +267,9 @@ private:
   //! \throws cuda::std::cuda_error if `cudaGraphAddChildGraphNode` fails.
 #if _CCCL_CTK_AT_LEAST(12, 2)
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_API auto
-  __add_to_graph(cudaGraph_t __parent, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
+  [[nodiscard]]
+  _CCCL_HOST_API auto __add_to_graph(cudaGraph_t __parent, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps)
+    -> graph_node_ref
   {
     ::CUgraphNodeParams __params{};
     __params.type        = ::CU_GRAPH_NODE_TYPE_GRAPH;

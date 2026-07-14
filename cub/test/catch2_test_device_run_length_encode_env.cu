@@ -327,7 +327,7 @@ C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
     .load_modifier     = cub::LOAD_DEFAULT,
     .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
     .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -376,7 +376,7 @@ C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]
     .store_with_time_slicing = false,
     .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
     .lookback_delay          = cub::LookbackDelayPolicy{
-               .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

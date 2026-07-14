@@ -1143,8 +1143,8 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   size_t bytes_allocated   = 0;
   size_t bytes_deallocated = 0;
   auto env                 = stdexec::env{device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated},
-                          stream,
-                          cuda::execution::tune(policy_selector)};
+                                          stream,
+                                          cuda::execution::tune(policy_selector)};
   REQUIRE(cudaSuccess == run(env));
   stream.sync();
   CHECK(bytes_allocated > 0);
@@ -1603,13 +1603,13 @@ C2H_TEST("Test RadixSortPolicy properties", "[radix_sort][device]")
     .threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8};
   constexpr auto p2_exclusive_sum = cub::RadixSortExclusiveSumPolicy{.threads_per_block = 256, .radix_bits = 8};
   constexpr auto p2_onesweep      = cub::RadixSortOnesweepPolicy{
-         .threads_per_block       = 256,
-         .items_per_thread        = 21,
-         .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
-         .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-         .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-         .rank_private_partitions = 1,
-         .radix_bits              = 8};
+    .threads_per_block       = 256,
+    .items_per_thread        = 21,
+    .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+    .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+    .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+    .rank_private_partitions = 1,
+    .radix_bits              = 8};
   constexpr auto p2_scan = cub::ScanPolicy{
     .algorithm = cub::ScanAlgorithm::lookback,
     .lookback =

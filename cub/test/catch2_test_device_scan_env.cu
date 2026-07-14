@@ -629,7 +629,7 @@ C2H_TEST("Test ScanPolicy properties", "[scan][device]")
     .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
     .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
   constexpr auto p2_la = cub::ScanLookaheadPolicy{
     .reduce_and_scan_warps      = 3,
     .items_per_thread           = 8,

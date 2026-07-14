@@ -3,7 +3,6 @@ from collections.abc import Generator
 
 import numpy as np
 import pytest
-
 from cuda.core import Device, Stream
 
 try:

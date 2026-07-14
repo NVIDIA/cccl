@@ -927,9 +927,9 @@ _CCCL_API void __introsort(
       continue;
     }
     // Use bitset partition only if asked for.
-    auto __ret                = _UseBitSetPartition
-                                ? ::cuda::std::__bitset_partition<_AlgPolicy, _RandomAccessIterator, _Compare>(__first, __last, __comp)
-                                : ::cuda::std::__partition_with_equals_on_right<_AlgPolicy, _RandomAccessIterator, _Compare>(
+    auto __ret = _UseBitSetPartition
+                 ? ::cuda::std::__bitset_partition<_AlgPolicy, _RandomAccessIterator, _Compare>(__first, __last, __comp)
+                 : ::cuda::std::__partition_with_equals_on_right<_AlgPolicy, _RandomAccessIterator, _Compare>(
                      __first, __last, __comp);
     _RandomAccessIterator __i = __ret.first;
     // [__first, __i) < *__i and *__i <= [__i+1, __last)

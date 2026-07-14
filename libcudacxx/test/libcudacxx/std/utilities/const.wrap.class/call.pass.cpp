@@ -191,7 +191,7 @@ TEST_FUNC constexpr bool test()
     // nullary
     using T                                                                     = cuda::std::__constant_wrapper<[] {
       return 42;
-                                                                        }>;
+    }>;
     cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, );
     static_assert(result == 42);
 #endif // !_CCCL_COMPILER(MSVC)

@@ -1299,7 +1299,7 @@ C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
     .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #    else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #    endif // _CCCL_STD_VER >= 2020
@@ -1348,7 +1348,7 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
     .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

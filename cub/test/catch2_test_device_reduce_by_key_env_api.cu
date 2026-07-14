@@ -26,7 +26,7 @@ struct ReduceByKeyPolicySelector
             .load_modifier     = cub::LOAD_DEFAULT,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
             .lookback_delay    = cub::LookbackDelayPolicy{
-                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+              .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
   }
 };
 // example-end reduce-by-key-policy-selector

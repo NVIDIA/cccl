@@ -187,13 +187,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 {
   static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
   using AgentRlePolicyT                           = agent_rle_policy<
-                              policy.threads_per_block,
-                              policy.items_per_thread,
-                              policy.load_algorithm,
-                              policy.load_modifier,
-                              policy.store_with_time_slicing,
-                              policy.scan_algorithm,
-                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+    policy.threads_per_block,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_with_time_slicing,
+    policy.scan_algorithm,
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   using AgentRleT =
     AgentRle<AgentRlePolicyT,

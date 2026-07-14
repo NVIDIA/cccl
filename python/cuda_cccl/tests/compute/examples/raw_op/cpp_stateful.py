@@ -15,10 +15,10 @@ import struct
 
 import cupy as cp
 import numpy as np
+from cuda.core import Device, Program, ProgramOptions
 
 import cuda.compute
 from cuda.compute.op import RawOp
-from cuda.core import Device, Program, ProgramOptions
 
 
 def get_arch():
