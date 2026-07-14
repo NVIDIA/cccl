@@ -34,6 +34,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -2394,7 +2395,8 @@ struct DeviceScan
   //!
   //! @param[in] init_value
   //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
-  //!   is assigned to `*d_out`), provided as deferred value
+  //!   is assigned to `*d_out`), provided as deferred value. The deferred value must model an
+  //!   iterator (i.e. the contained value should be dereferenceable to a value).
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
@@ -2421,7 +2423,8 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
-    using __init_value_type = ::cuda::std::iter_value_t<InitValueIterT>;
+    static_assert(::cuda::std::indirectly_readable<InitValueIterT>, "The deferred value must model an iterator");
+    using __init_value_type = typename ::cuda::std::remove_cvref_t<decltype(init_value)>::__element_type;
 
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
