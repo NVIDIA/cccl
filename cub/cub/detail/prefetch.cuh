@@ -40,8 +40,9 @@ enum class LoadPrefetch : int
   none,
   //! Emit an L2 prefetch hint (``prefetch.global.L2``) to all affected cache lines.
   l2,
-  //! Emit an L1 prefetch hint (``prefetch.global.L1``) to all affected cache lines. Falls back to L2 on
-  //! architectures that do not support real L1 prefetch.
+  //! Emit an L1 prefetch hint (``prefetch.global.L1``) to all affected cache lines. The emitted instruction is
+  //! always ``prefetch.global.L1``; on architectures without real L1 prefetch the hardware itself services the
+  //! hint as an L2 prefetch (e.g. on Blackwell).
   l1,
   //! Emit a TMA bulk prefetch into L2 (``cp.async.bulk.prefetch``) for the whole tile on SM_90 or later
   //! (Hopper/Blackwell). On older architectures falls back to the same strided per-cache-line L2 prefetch
@@ -89,7 +90,7 @@ struct BlockPrefetch
   //!
   //! @param tile_base Iterator to the first item of the calling block's tile.
   //! @param items_to_prefetch Total number of items in the tile, across all threads of the block — NOT a
-  //!   per-thread count. Same semantics as ``BlockLoad::Load``'s ``valid_items``: pass e.g.
+  //!   per-thread count. Same semantics as ``BlockLoad::Load``'s ``block_items_end``: pass e.g.
   //!   ``min(num_remaining, TILE_ITEMS)`` for a partial tile.
   template <typename It>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Prefetch(It tile_base, int items_to_prefetch)
