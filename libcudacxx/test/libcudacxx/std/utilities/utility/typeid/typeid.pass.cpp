@@ -64,8 +64,8 @@ int main(int, char**)
   static_assert(!_CCCL_TYPEID_CONSTEXPR(int).before(_CCCL_TYPEID_CONSTEXPR(int)));
   static_assert(!_CCCL_TYPEID_CONSTEXPR(int).before(_CCCL_TYPEID_CONSTEXPR(float)));
 
-  static_assert(_CCCL_TYPEID_CONSTEXPR(int).__name_view() == ::cuda::std::__string_view("int"));
-  static_assert(_CCCL_TYPEID_CONSTEXPR(float).__name_view() == ::cuda::std::__string_view("float"));
+  static_assert(_CCCL_TYPEID_CONSTEXPR(int).__name_view() == "int");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(float).__name_view() == "float");
   static_assert(_CCCL_TYPEID_CONSTEXPR(a_dummy_class_type).__name_view().find("a_dummy_class_type") != -1);
 #endif
 
