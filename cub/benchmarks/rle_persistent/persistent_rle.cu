@@ -28,7 +28,7 @@ struct winner_config
   static constexpr int kPollMlp = 5; // how many loads each poll lane keeps in flight
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 32;
-  // when should be pre calculate in registers?
+  // when should we pre calculate in registers?
   static constexpr int kRegBufMaxRuns = (sizeof(KeyT) <= 4) ? 256 : (sizeof(KeyT) == 8 ? 128 : 64);
 
   static constexpr int kWarpTileSize = 32 * kIPT;
@@ -52,11 +52,6 @@ __device__ __forceinline__ int swizzle_xor_stride32(int x)
   return x ^ (x >> 5);
 }
 
-// CLC = 1 => use shiny new blackwell feature (UGETNEXTWORKID)
-// CLC = 0 => use atomics for work stealing. no perf difference observed on blackwell
-// The CLC knob removed since I want to focus on blackwell perf first
-// i.e. we fry one fish at a time :)
-
 constexpr unsigned kFullMask = 0xffffffffu;
 
 __device__ __forceinline__ void wait_parity(cuda::std::uint64_t* bar, unsigned parity)
@@ -66,29 +61,31 @@ __device__ __forceinline__ void wait_parity(cuda::std::uint64_t* bar, unsigned p
   }
 }
 
-// tile_partial_states: one word per tile
-// Layout: u64 [published_tag:32][open_len:16][run_count:16]
-// states are cleared by rle_init_states every launch (CUB temp storage has no cross-call ownership)
+// tile_partial_states: one dword per tile, layout: u64 [published_tag:32][open_len:16][run_count:16]
+// states are cleared by rle_init_states every launch, since we do not own temp storage!
 // an aligned 64-bit access is already non-tearing, but atomic_ref doesn't hurt and has clear semantics
+// Nan: we could use u32 layouts [ready_bit:1][open_len:15][run_count:16], but we choose to use u64 to
+// 1. w << 32 is free (u64 is already split into 2 registers), so we save a bit of time (theoretically)
+// 2. to use the same layout as warpspeed scan
 constexpr unsigned kTilePublished = 1u;
 
 struct TilePartialStateT
 {
-  cuda::std::uint64_t word;
+  cuda::std::uint64_t dword;
 
   __device__ __forceinline__ unsigned published_tag() const
   {
-    return (unsigned) (word >> 32);
+    return (unsigned) (dword >> 32);
   }
 
   __device__ __forceinline__ int run_count() const
   {
-    return (int) (word & 0xffffu);
+    return (int) (dword & 0xffffu);
   }
 
   __device__ __forceinline__ int open_len() const
   {
-    return (int) ((word >> 16) & 0xffffu);
+    return (int) ((dword >> 16) & 0xffffu);
   }
 
   static __device__ __forceinline__ TilePartialStateT pack(int run_count, int open_len)
@@ -101,27 +98,28 @@ struct TilePartialStateT
 __device__ __forceinline__ void
 publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
-  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
-  a.store(TilePartialStateT::pack(run_count, open_len).word, cuda::memory_order_relaxed);
+  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
+  a.store(TilePartialStateT::pack(run_count, open_len).dword, cuda::memory_order_relaxed);
 }
 
 // return the state (even if not yet publish for this launch, caller checks it)
 // we do not want to spin here
 __device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
-  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
+  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
   return {a.load(cuda::memory_order_relaxed)};
 }
 
-// what is going to be the type of the prefix (run_count, open_len)?
-// how do we pack them? if P is 32 bit, we compact them into 1 word. Otherwise, 2 words!
+// CRITICAL: from choose_signed_offset, it is guranteed that OffT covers the whole index space.
+// Therefore, in the kernel, the type of the prefix (run_count, open_len) should always be OffT.
+// How do we pack them? if P is 32 bit, we compact them into 1 dword. Otherwise, 2 dwords!
 template <class OffT, bool = (sizeof(OffT) > 4)>
 struct PrefixT;
 
 template <class OffT>
 struct PrefixT<OffT, false>
 {
-  cuda::std::uint64_t word;
+  cuda::std::uint64_t dword;
 
   static __device__ __forceinline__ PrefixT pack(OffT run_count, OffT open_len)
   {
@@ -130,12 +128,12 @@ struct PrefixT<OffT, false>
 
   __device__ __forceinline__ OffT run_count() const
   {
-    return (OffT) (unsigned) (word & 0xffffffffull);
+    return (OffT) (unsigned) (dword & 0xffffffffull);
   }
 
   __device__ __forceinline__ OffT open_len() const
   {
-    return (OffT) (unsigned) (word >> 32);
+    return (OffT) (unsigned) (dword >> 32);
   }
 };
 
@@ -161,13 +159,11 @@ struct alignas(16) PrefixT<OffT, true>
   }
 };
 
-// position of the n-th set bit of flag_mask
-// requires popc(flag_mask) > rank.
+// position of the n-th set bit of flag_mask, requires popc(flag_mask) > rank. Implementation is binary search.
 // __fns(flag_mask, 0, rank+1) computes the same thing but has NO hardware op on sm_100a and is slower
 __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
 {
   // each step: if the wanted bit is not among the low half's set bits, skip that half entirely
-  // this is manually unrolled to reduce the count of generated SASS instructions
   int bit_position         = 0;
   int set_bits_in_low_half = __popc(flag_mask & 0xffffu);
   if (rank >= set_bits_in_low_half)
@@ -204,10 +200,13 @@ __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
   return bit_position;
 }
 
-// kWidth = how many low lanes participate
+// kWidth = how many low lanes participate, i.e. lanes [0, kWidth): lane i returns
+// lane_value(0) + ... + lane_value(i). lanes in [kWidth, 32) must still call this
+// (the shuffles are warp-collective), but their return values are unspecified.
 template <int kWidth>
 __device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
 {
+  static_assert(1 <= kWidth && kWidth <= 32, "the scan operates within a single warp");
 #pragma unroll
   for (int offset = 1; offset < kWidth; offset <<= 1)
   {
@@ -226,6 +225,7 @@ struct WarpTileRunScanT
   int lane_runs_before;
 };
 
+// we need this because STORE and BOOKKEEPER both recalculate from slot_warp_run_counts
 template <int kNumCompWarps>
 __device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
 {
