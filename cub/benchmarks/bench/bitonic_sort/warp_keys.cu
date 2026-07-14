@@ -20,7 +20,7 @@ struct full_op_t
     using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
     using TempStorage     = typename WarpBitonicSort::TempStorage;
     __shared__ TempStorage temp_storage[32];
-    auto warp_id = threadIdx.x / 32;
+    const auto warp_id = threadIdx.x / 32;
     WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, CustomLess{});
   }
 };
@@ -42,7 +42,7 @@ struct partial_oob_op_t
     using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
     using TempStorage     = typename WarpBitonicSort::TempStorage;
     __shared__ TempStorage temp_storage[32];
-    auto warp_id = threadIdx.x / 32;
+    const auto warp_id = threadIdx.x / 32;
     WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, CustomLess{}, len, CustomLess::oob_default<KeyT>);
   }
 };
@@ -65,7 +65,7 @@ struct partial_op_t
     using WarpBitonicSort = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
     using TempStorage     = typename WarpBitonicSort::TempStorage;
     __shared__ TempStorage temp_storage[32];
-    auto warp_id = threadIdx.x / 32;
+    const auto warp_id = threadIdx.x / 32;
     WarpBitonicSort{temp_storage[warp_id]}.Sort(keys, CustomLess{}, len);
   }
 };

@@ -67,13 +67,20 @@ inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_s
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        constexpr int items_per_thread = 2;
+//!        constexpr int threads_per_block = 256;
+//!        constexpr int warps_per_block = threads_per_block / warp_threads;
+//!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
 //!        using WarpBitonicSortT = cub::detail::WarpBitonicSort<items_per_thread, int>;
 //!
+//!        // Allocate shared memory
+//!        __shared__ typename WarpBitonicSortT::TempStorage temp_storage[warps_per_block];
+//!
+//!        // Obtain items and put them in thread_keys
 //!        int thread_keys[items_per_thread];
 //!        // ...
 //!
-//!        WarpBitonicSortT{}.Sort(thread_keys, CustomLess());
+//!        WarpBitonicSortT{temp_storage[warp_id]}.Sort(thread_keys, CustomLess());
 //!    }
 //!
 //! Suppose the set of input ``thread_keys`` across a warp of threads is
