@@ -15,7 +15,7 @@ Defined in the ``<cuda/bit>`` header.
 
    } // namespace cuda
 
-The function returns the zero-based index of the most significant set bit of ``value`` (that is, ``floor(log2(value))``), or ``-1`` if ``value`` is zero. It is the most-significant counterpart to :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>` (find first set).
+The function returns the zero-based index of the most significant set bit of ``value`` (that is, :math:`\lfloor \log_2 value \rfloor`), or ``-1`` if ``value`` is zero. It is the most-significant counterpart to :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>` (find first set).
 
 **Parameters**
 
@@ -31,7 +31,7 @@ The function returns the zero-based index of the most significant set bit of ``v
 
 .. note::
 
-    For a non-zero ``value``, ``bit_msb(value)`` equals ``cuda::std::bit_width(value) - 1``. It is provided as a safe, type-generic way to get the most significant bit index on all supported integer types.
+    For a non-zero ``value``, ``bit_msb(value)`` equals ``cuda::std::bit_width(value) - 1``. It is provided as a safe, type-generic way to get the most significant bit index on all supported unsigned integer types.
 
 Example
 -------

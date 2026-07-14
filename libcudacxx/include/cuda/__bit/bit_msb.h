@@ -28,13 +28,16 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// Returns the zero-based index of the most significant set bit of __value, or -1 if __value is zero,
-// i.e. floor(log2(__value)). This is the most-significant counterpart to bit_ffs (find first set).
-// It forwards to cuda::std::__bit_log2, which already lowers to the optimal find-leading-bit code
-// (ptx::bfind on device, a countl_zero based path on host), and exposes it type safely.
+//! @brief Finds the position of the most significant set bit of \p __value
+//! @param __value The unsigned integer value to scan
+//! @return The zero-based index of the most significant set bit of \p __value, i.e. floor(log2(value)),
+//!         or -1 if \p __value is zero
+//! @note bit_msb is the most-significant counterpart to bit_ffs (find first set). It forwards to
+//!       cuda::std::__bit_log2, which lowers to the optimal find-leading-bit code (ptx::bfind on device,
+//!       a countl_zero based path on host)
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr int bit_msb(_Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr int bit_msb(const _Tp __value) noexcept
 {
   return static_cast<int>(::cuda::std::__bit_log2(__value));
 }

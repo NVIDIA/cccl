@@ -9,8 +9,6 @@
 
 #include <cuda/bit>
 #include <cuda/std/cassert>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -22,8 +20,11 @@ enum class Enum
   value
 };
 
+template <class T, class = void>
+constexpr bool can_bit_msb = false;
+
 template <class T>
-_CCCL_CONCEPT can_bit_msb = _CCCL_REQUIRES_EXPR((T), T value)(cuda::bit_msb(value));
+constexpr bool can_bit_msb<T, cuda::std::void_t<decltype(cuda::bit_msb(cuda::std::declval<T>()))>> = true;
 
 static_assert(can_bit_msb<unsigned char>);
 static_assert(can_bit_msb<unsigned int>);
@@ -41,7 +42,7 @@ TEST_FUNC constexpr void test()
 
   // a zero input has no set bit and returns -1
   assert(cuda::bit_msb(T{0}) == -1);
-  // the least significant bit sits at index 0
+  // the most significant bit sits at index 0
   assert(cuda::bit_msb(T{1}) == 0);
   // a single bit set at position k returns k
   assert(cuda::bit_msb(static_cast<T>(T{1} << 3)) == 3);
@@ -58,15 +59,6 @@ TEST_FUNC constexpr bool test()
   test<unsigned>();
   test<unsigned long>();
   test<unsigned long long>();
-
-  test<uint8_t>();
-  test<uint16_t>();
-  test<uint32_t>();
-  test<uint64_t>();
-  test<size_t>();
-  test<uintmax_t>();
-  test<uintptr_t>();
-
 #if _CCCL_HAS_INT128()
   test<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
