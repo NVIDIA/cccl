@@ -633,7 +633,7 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate res
          gpu_to_gpu_count_types)
 {
   using value_t = float;
-  using count_t = typename c2h::get<0, TestType>;
+  using count_t = c2h::get<0, TestType>;
 
   constexpr count_t capacity = 100'000;
   const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, capacity);
@@ -664,7 +664,7 @@ C2H_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immed
          gpu_to_gpu_large_count_types)
 {
   using value_t = float;
-  using count_t = typename c2h::get<0, TestType>;
+  using count_t = c2h::get<0, TestType>;
 
   // Exceeds INT32_MAX, so the immediate reference reduces two host-side chunks while the deferred reduction consumes
   // the whole problem in a single launch with 64-bit indexing; RFA results are partition independent, so the results

@@ -259,7 +259,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
     // An immediate problem size is passed as the current chunk size; a deferred problem size is read on device and
     // `num_current_items` holds the worst-case chunk size, which must not be passed to the kernel.
-    const auto kernel_num_items = [&] {
+    const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
         return detail::reduce::make_num_items_kernel_arg(num_items);
