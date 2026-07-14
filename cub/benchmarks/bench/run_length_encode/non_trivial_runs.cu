@@ -4,7 +4,6 @@
 #include <cub/device/device_run_length_encode.cuh>
 
 #include <cuda/buffer>
-#include <cuda/memory_resource>
 #include <cuda/std/execution>
 #include <cuda/stream>
 
@@ -48,9 +47,9 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  const auto stream     = get_stream_ref(state);
-  const auto device     = stream.device();
-  auto& memory_resource = cuda::device_default_memory_pool(device);
+  const auto stream = get_stream_ref(state);
+  const auto device = stream.device();
+  caching_allocator_t alloc;
 
   auto num_runs_out = cuda::make_buffer<offset_t>(stream, pinned_memory_resource(), 1, cuda::no_init);
   auto out_offsets  = cuda::make_device_buffer<offset_t>(stream, device, elements, cuda::no_init);
@@ -73,7 +72,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       d_out_lengths,
       d_num_runs_out,
       static_cast<OffsetT>(elements),
-      cub_bench_env(memory_resource,
+      cub_bench_env(alloc,
                     stream
 #if !TUNE_BASE
                     ,
@@ -92,7 +91,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
-      memory_resource,
+      alloc,
       get_stream_ref(launch)
 #if !TUNE_BASE
         ,

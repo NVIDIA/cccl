@@ -4,7 +4,6 @@
 #include <cub/device/device_select.cuh>
 
 #include <cuda/buffer>
-#include <cuda/memory_resource>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/stream>
@@ -47,9 +46,9 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
   const auto elements         = state.get_int64("Elements{io}");
   const auto max_segment_size = state.get_int64("MaxSegSize");
 
-  const auto stream     = get_stream_ref(state);
-  const auto device     = stream.device();
-  auto& memory_resource = cuda::device_default_memory_pool(device);
+  const auto stream = get_stream_ref(state);
+  const auto device = stream.device();
+  caching_allocator_t alloc;
 
   auto in = generate.uniform.key_segments(elements, /* min_segmented_size */ 1, max_segment_size)
               .device_buffer<T>(stream, device);
@@ -69,7 +68,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     d_num_unique,
     static_cast<offset_t>(elements),
     ::cuda::std::equal_to<>{},
-    cub_bench_env(memory_resource, stream));
+    cub_bench_env(alloc, stream));
   stream.sync();
   const offset_t num_unique = num_unique_out[0];
 
@@ -80,7 +79,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
-      memory_resource,
+      alloc,
       get_stream_ref(launch)
 #if !TUNE_BASE
         ,

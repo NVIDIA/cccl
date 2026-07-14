@@ -850,6 +850,14 @@ auto cub_bench_env(MemoryResource& memory_resource, ::cuda::stream_ref stream, M
   return cuda::std::execution::env{stream, memory_resource, envs...};
 }
 
+// Returns an environment for benchmarking using alloc as MR, stream, and any additional envs passed in.
+template <typename... MoreEnvs>
+auto cub_bench_env(caching_allocator_t& alloc, ::cuda::stream_ref stream, MoreEnvs... envs)
+{
+  return cuda::std::execution::env{
+    stream, ::cuda::std::execution::prop{cuda::mr::get_memory_resource, ::cuda::mr::resource_ref<>{alloc}}, envs...};
+}
+
 // Returns an environment for benchmarking using alloc as MR, launch's stream, and any additional envs passed in.
 template <typename... MoreEnvs>
 auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs... envs)

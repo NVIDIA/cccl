@@ -4,7 +4,6 @@
 #include <cub/device/device_select.cuh>
 
 #include <cuda/buffer>
-#include <cuda/memory_resource>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/stream>
@@ -56,9 +55,9 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  const auto stream     = get_stream_ref(state);
-  const auto device     = stream.device();
-  auto& memory_resource = cuda::device_default_memory_pool(device);
+  const auto stream = get_stream_ref(state);
+  const auto device = stream.device();
+  caching_allocator_t alloc;
 
   auto num_runs_out = cuda::make_buffer<OffsetT>(stream, pinned_memory_resource(), 1, cuda::no_init);
   auto in_vals      = cuda::make_device_buffer<ValueT>(stream, device, elements, ValueT{});
@@ -86,7 +85,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_num_runs_out,
     num_items,
     equality_op_t{},
-    cub_bench_env(memory_resource, stream));
+    cub_bench_env(alloc, stream));
   stream.sync();
   const OffsetT num_runs = num_runs_out[0];
 
@@ -99,7 +98,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
-      memory_resource,
+      alloc,
       get_stream_ref(launch)
 #if !TUNE_BASE
         ,
