@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/__cmath/uabs.h>
 #include <cuda/__complex/get_real_imag.h>
 #include <cuda/__complex/traits.h>
@@ -42,6 +43,7 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -143,44 +145,56 @@ __safe_abs_diff(const _Tp __lhs, const _Tp __rhs) noexcept
          : static_cast<__unsigned_t>(__lhs_abs - __rhs_abs);
 }
 
-_CCCL_TEMPLATE(typename _Unsigned, typename _Float)
-_CCCL_REQUIRES(::cuda::std::is_unsigned_v<_Unsigned>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API bool __is_floating_point_convertible_to_unsigned(const _Float __x) noexcept
+// Represents a non-negative float exactly as __mantissa_ / 2^__shift_.
+struct __float_ratio
 {
-  constexpr int __unsigned_bits = ::cuda::std::numeric_limits<_Unsigned>::digits;
-  if constexpr (__unsigned_bits >= ::cuda::std::numeric_limits<_Float>::max_exponent)
-  {
-    return true;
-  }
-  else
-  {
-    return __x < ::cuda::std::ldexp(_Float{1}, __unsigned_bits);
-  }
-}
+  ::cuda::std::uint32_t __mantissa_{};
+  int __shift_{};
 
-// Edge cases for 128-bit integers can be not representable as 32-bit float. In addition, large 128-bit values
-// rounding to floatint-point values can cause precision loss.
-template <typename _Tp>
-using __isclose_integer_rel_t _CCCL_NODEBUG_ALIAS = ::cuda::std::conditional_t<
-#if _CCCL_HAS_INT128()
-  sizeof(_Tp) == sizeof(__int128_t),
-#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-  false,
-#endif // !_CCCL_HAS_INT128()
-  double,
-  float>;
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API int __extract_power_of_two_shift(const float __rel_tol) noexcept
-{
-  int __exponent                 = 0;
-  const auto __normalized_mant   = ::cuda::std::frexp(__rel_tol, &__exponent);
-  constexpr auto __pow2_mantissa = 0.5f;
-  if (__normalized_mant != __pow2_mantissa) // not a power of two
+  _CCCL_HOST_DEVICE_API explicit __float_ratio(const float __value) noexcept
   {
-    return -1;
+    _CCCL_ASSERT(__value >= 0.0f, "cuda::__float_ratio: value must be non-negative");
+    constexpr int __digits = ::cuda::std::numeric_limits<float>::digits;
+    int __exponent         = 0;
+    const auto __fraction  = ::cuda::std::frexp(__value, &__exponent);
+    __mantissa_            = static_cast<::cuda::std::uint32_t>(::cuda::std::ldexp(__fraction, __digits));
+    __shift_               = __digits - __exponent;
   }
-  return 1 - __exponent;
-}
+
+  template <typename _Unsigned>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Unsigned operator*(const _Unsigned __value) const noexcept
+  {
+    static_assert(::cuda::std::is_unsigned_v<_Unsigned>, "cuda::__float_ratio::operator* requires an unsigned type");
+    // The result is floor(__value * __mantissa_ / 2^__shift_).
+    constexpr int __digits             = ::cuda::std::numeric_limits<_Unsigned>::digits;
+    constexpr int __float_digits       = ::cuda::std::numeric_limits<float>::digits;
+    constexpr auto __power_of_two_mant = ::cuda::std::uint32_t{1} << (__float_digits - 1);
+    static_assert(__digits >= __float_digits, "__float_ratio requires an unsigned integer at least as wide as float");
+
+    // A zero mantissa represents zero. If the shift is at least the width of the double-width product, all bits are
+    // shifted out and the result rounds down to zero.
+    if (__mantissa_ == 0 || __shift_ >= 2 * __digits)
+    {
+      return _Unsigned{0};
+    }
+    // if the floating-point value is a power-of-two frexp normalizes an exact power of two, we can simplify the code
+    if (__mantissa_ == __power_of_two_mant)
+    {
+      const auto __pow2_shift = __shift_ - (__float_digits - 1);
+      return (__pow2_shift >= __digits) ? _Unsigned{0} : __value >> __pow2_shift;
+    }
+    const auto __mantissa = static_cast<_Unsigned>(__mantissa_);
+    const auto __low      = static_cast<_Unsigned>(__value * __mantissa);
+    const auto __high     = ::cuda::mul_hi(__value, __mantissa);
+    // product = (__high << __digits) | __low
+    // then product >> shift
+    if (__shift_ < __digits)
+    {
+      return (__high << (__digits - __shift_)) | (__low >> __shift_);
+    }
+    return __high >> (__shift_ - __digits);
+  }
+};
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool
@@ -196,24 +210,8 @@ __isclose_integer_impl(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, 
   const auto __diff                      = ::cuda::__safe_abs_diff(__lhs, __rhs);
   const auto __abs                       = static_cast<__unsigned_t>(__abs_tol);
   const auto __max_abs                   = ::cuda::std::max(__lhs_abs, __rhs_abs);
-  // if the relative tolerance is exactly a power of two, we can use bit shifts to compute the relative value without
-  // potentially losing precision
-  const auto __pow2_rel_tol_shift = ::cuda::__extract_power_of_two_shift(__rel_tol);
-  if (__pow2_rel_tol_shift >= 0)
-  {
-    constexpr int __digits = ::cuda::std::numeric_limits<__unsigned_t>::digits;
-    const auto __rel_value = (__pow2_rel_tol_shift >= __digits) ? __unsigned_t{0} : (__max_abs >> __pow2_rel_tol_shift);
-    return __diff <= ::cuda::std::max(__abs, __rel_value);
-  }
-  using __rel_value_t _CCCL_NODEBUG_ALIAS = ::cuda::__isclose_integer_rel_t<_Tp>;
-  const auto __rel_value = static_cast<__rel_value_t>(__rel_tol) * static_cast<__rel_value_t>(__max_abs);
-  // if the floating-point value is too large to be convertible to an unsigned type,
-  // then __diff is always less than __rel_value
-  if (!::cuda::__is_floating_point_convertible_to_unsigned<__unsigned_t>(__rel_value))
-  {
-    return true;
-  }
-  return __diff <= ::cuda::std::max(__abs, static_cast<__unsigned_t>(__rel_value));
+  const auto __rel_value                 = ::cuda::__float_ratio{__rel_tol} * __max_abs;
+  return __diff <= ::cuda::std::max(__abs, __rel_value);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

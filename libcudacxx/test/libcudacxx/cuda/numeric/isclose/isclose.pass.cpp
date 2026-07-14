@@ -12,6 +12,7 @@
 #include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -104,6 +105,37 @@ TEST_FUNC bool test_integral()
   return true;
 }
 
+TEST_FUNC bool test_integral_boundaries()
+{
+  constexpr uint64_t rhs       = 18446744073586094827ull;
+  constexpr uint64_t threshold = 1844674434846400176ull;
+  constexpr uint64_t lhs       = rhs - threshold;
+
+  assert(cuda::__float_ratio{0.1f} * rhs == threshold);
+  assert(cuda::isclose(lhs + 1, rhs, 0.1f));
+  assert(cuda::isclose(lhs, rhs, 0.1f));
+  assert(!cuda::isclose(lhs - 1, rhs, 0.1f));
+
+  constexpr auto max = cuda::std::numeric_limits<uint64_t>::max();
+  assert(cuda::__float_ratio{0.0f} * max == uint64_t{0});
+  assert(cuda::__float_ratio{0.5f} * max == (max >> 1));
+  assert(cuda::__float_ratio{cuda::std::numeric_limits<float>::denorm_min()} * max == 0);
+
+#if _CCCL_HAS_INT128()
+  constexpr auto max128       = cuda::std::numeric_limits<__uint128_t>::max();
+  constexpr auto threshold128 = (__uint128_t{13421773} << 101) - 1;
+  constexpr auto lhs128       = max128 - threshold128;
+
+  assert(cuda::__float_ratio{0.1f} * max128 == threshold128);
+  assert(cuda::isclose(lhs128 + 1, max128, 0.1f));
+  assert(cuda::isclose(lhs128, max128, 0.1f));
+  assert(!cuda::isclose(lhs128 - 1, max128, 0.1f));
+  assert(cuda::__float_ratio{0.5f} * max128 == (max128 >> 1));
+  assert(cuda::__float_ratio{cuda::std::numeric_limits<float>::denorm_min()} * max128 == 0);
+#endif // _CCCL_HAS_INT128()
+  return true;
+}
+
 template <class Complex>
 TEST_FUNC void test_complex()
 {
@@ -151,7 +183,7 @@ TEST_FUNC constexpr void test_invalid_complex_cases()
 #endif // _CCCL_HAS_HOST_STD_LIB()
 }
 
-TEST_FUNC bool test()
+TEST_FUNC bool test_standard_types()
 {
   test_floating_point<float>();
   test_floating_point<double>();
@@ -175,13 +207,14 @@ TEST_FUNC bool test()
   test_integral<__int128_t>();
   test_integral<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
+  test_integral_boundaries();
 
   test_invalid_complex_cases();
   return true;
 }
 
 template <template <typename> class Complex>
-TEST_FUNC void test_complex_types_runtime()
+TEST_FUNC void test_complex_types()
 {
   test_complex<Complex<float>>();
   test_complex<Complex<double>>();
@@ -191,7 +224,7 @@ TEST_FUNC void test_complex_types_runtime()
   // complex__float128 support requires std::hypot overload
 }
 
-TEST_FUNC bool test_runtime()
+TEST_FUNC bool test_extended_fp()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_floating_point<__half>();
@@ -200,23 +233,23 @@ TEST_FUNC bool test_runtime()
   test_floating_point<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-  test_complex_types_runtime<cuda::std::complex>();
+  test_complex_types<cuda::std::complex>();
 #if _LIBCUDACXX_HAS_NVFP16()
   test_complex<cuda::std::complex<__half>>();
 #endif // _LIBCUDACXX_HAS_NVFP16()
 #if _LIBCUDACXX_HAS_NVBF16()
   test_complex<cuda::std::complex<__nv_bfloat16>>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
-  test_complex_types_runtime<cuda::complex>();
+  test_complex_types<cuda::complex>();
 #if _CCCL_HAS_HOST_STD_LIB()
-  NV_IF_TARGET(NV_IS_HOST, (test_complex_types_runtime<std::complex>();))
+  NV_IF_TARGET(NV_IS_HOST, (test_complex_types<std::complex>();))
 #endif // _CCCL_HAS_HOST_STD_LIB()
   return true;
 }
 
 int main(int, char**)
 {
-  assert(test());
-  assert(test_runtime());
+  assert(test_standard_types());
+  assert(test_extended_fp());
   return 0;
 }

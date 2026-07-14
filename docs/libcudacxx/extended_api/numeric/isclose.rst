@@ -44,7 +44,8 @@ Defined in ``<cuda/numeric>`` header.
 
    abs(lhs - rhs) <= max(absolute_tol, relative_tol * max(abs(lhs), abs(rhs)))
 
-- The overloads without ``relative_tol`` use a default relative tolerance based on half of available digits of accuracy. The defaultrelative tolerance for integer types is 0.
+- For integral operands, ``relative_tol`` is interpreted as its exact binary floating-point value. Comparing it to the integral difference is equivalent to rounding the relative threshold down to the nearest integer.
+- The overloads without ``relative_tol`` use a default relative tolerance based on half of available digits of accuracy. The default relative tolerance for integer types is 0.
 - The overloads without ``absolute_tol`` use ``absolute_tol == 0``.
 
 **Parameters**
