@@ -118,7 +118,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     const EndOffsetIteratorT d_end_offsets,
     const int num_segments,
     ReductionOpT reduction_op,
-    _CCCL_GRID_CONSTANT const InitValueT init,
+    const InitValueT init,
     const size_t max_segment_size)
 {
   static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
@@ -322,7 +322,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   const OffsetT segment_size,
   const int num_segments,
   ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const InitValueT init,
+  const InitValueT init,
   AccumT* const d_partial_out,
   const int full_chunk_size,
   const int blocks_per_segment)

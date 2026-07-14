@@ -140,8 +140,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     const ValueT* d_values_in_orig,
     ValueT* d_values_out_orig,
     device_double_buffer<ValueT> d_values_double_buffer,
-    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
-    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets)
+    const BeginOffsetIteratorT d_begin_offsets,
+    const EndOffsetIteratorT d_end_offsets)
 {
   static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
   static constexpr auto large_policy                 = active_policy.large_segment;

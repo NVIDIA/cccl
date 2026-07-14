@@ -183,7 +183,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     EqualityOpT equality_op,
     const OffsetT num_items,
     const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const StreamingContextT streaming_context)
 {
   static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
   using AgentRlePolicyT                           = agent_rle_policy<

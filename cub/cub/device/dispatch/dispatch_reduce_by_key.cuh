@@ -200,7 +200,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
     const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
+    const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   static constexpr ReduceByKeyPolicy policy = current_policy<PolicySelector>();

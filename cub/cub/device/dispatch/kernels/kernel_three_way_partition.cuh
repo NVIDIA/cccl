@@ -131,7 +131,7 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
     SelectSecondPartOp select_second_part_op,
     const OffsetT num_items,
     const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const StreamingContextT streaming_context)
 {
   static constexpr auto active_policy = current_policy<PolicySelector>();
   using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<

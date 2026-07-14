@@ -144,7 +144,7 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsw
  */
 template <typename PolicySelector, typename OffsetT>
 __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_block, 1)
-  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
+  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* const d_spine, const int num_counts)
 {
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>().scan;
   static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
@@ -451,7 +451,7 @@ template <typename PolicySelector,
           typename DecomposerT = identity_decomposer_t>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) void DeviceRadixSortHistogramKernel(
-  _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
+  OffsetT* const d_bins_out,
   const KeyT* const d_keys_in,
   const OffsetT num_items,
   const int start_bit,
@@ -474,10 +474,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
 
 template <typename PolicySelector, typename InitT0, typename InitT1>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
-  _CCCL_GRID_CONSTANT InitT0* const d_items0,
-  _CCCL_GRID_CONSTANT const size_t num_items0,
-  _CCCL_GRID_CONSTANT InitT1* const d_items1,
-  _CCCL_GRID_CONSTANT const size_t num_items1)
+  InitT0* const d_items0, const size_t num_items0, InitT1* const d_items1, const size_t num_items1)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -564,7 +561,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
  * Exclusive sum kernel
  */
 template <typename PolicySelector, typename OffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_bins)
 {
   static constexpr RadixSortExclusiveSumPolicy policy = current_policy<PolicySelector>().exclusive_sum;
   constexpr int RADIX_BITS                            = policy.radix_bits;

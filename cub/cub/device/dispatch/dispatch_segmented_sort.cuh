@@ -195,8 +195,8 @@ __launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuatio
   local_segment_index_t* const large_and_medium_segments_indices,
   local_segment_index_t* const small_segments_indices,
   const KernelLauncherFactory launcher_factory,
-  _CCCL_GRID_CONSTANT const int large_threads_per_block,
-  _CCCL_GRID_CONSTANT const int small_threads_per_block,
+  const int large_threads_per_block,
+  const int small_threads_per_block,
   const int medium_segments_per_block,
   const int small_segments_per_block)
 {

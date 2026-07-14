@@ -594,8 +594,8 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     const BeginOffsetIteratorOutputT begin_offset_d_out,
     const OffsetT n_segments,
     const ScanOpT scan_op,
-    _CCCL_GRID_CONSTANT const InitValueT init_value,
-    _CCCL_GRID_CONSTANT const int num_segments_per_worker)
+    const InitValueT init_value,
+    const int num_segments_per_worker)
 {
   static constexpr auto policy = current_policy<PolicySelector>();
   static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
