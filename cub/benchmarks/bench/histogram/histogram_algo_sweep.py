@@ -99,12 +99,14 @@ def git_commit_for_path(path) -> str:
 # Forced high-bin algorithms (env values for CUB_HISTO_FORCE_ALGO). "" == the
 # selector's own pick, recorded under the "default" key. `main` is handled
 # separately (a different binary, no force hook).
-# `hybrid` and `gmem_privatized_nocache` both live under the GmemPrivatized<NoCache>
-# kernel (hybrid = smem_split>0 member, gmem_privatized_nocache = pure-gather member);
-# forcing pins one member. hybrid is single-channel only and needs a non-empty GMEM
-# secondary tail (bins > HYBRID_MIN_BINS); cells outside that domain are SKIPPED up
-# front via _forced_algo_applicable (running them would abort, not fall back). The
-# post-run DROP check on the [launch] tag remains as a safety net if the floor drifts.
+# `hybrid` is the smem_split>0 member of the older GmemPrivatized gather kernel.
+# The GPN result key (`gmem_privatized_nocache`) deliberately forces the newer
+# cooperative CacheSpillKernel<no_cache_probe, private_block_spill>; the explicit
+# force-name mapping below prevents it from silently measuring the older pure-gather
+# member again. hybrid is single-channel only and needs a non-empty GMEM secondary
+# tail (bins > HYBRID_MIN_BINS); cells outside that domain are SKIPPED up front via
+# _forced_algo_applicable (running them would abort, not fall back). The post-run
+# DROP check on the [launch] tag remains as a safety net if the floor drifts.
 # Forced algorithms come in two regimes:
 #   HIGH-BIN (bins >= HIGH_BIN_THRESHOLD): the off-chip candidates that compete in the
 #     high-bin region (hybrid / gmem-priv / direct-atomic). Forced via CUB_HISTO_FORCE_ALGO.
@@ -147,6 +149,14 @@ def _base_algo(akey: str) -> str:
     return akey[: -len("__nocoal")] if akey.endswith("__nocoal") else akey
 
 
+def _force_algo(akey: str) -> str:
+    """Map the published series name to the unambiguous dispatch force name."""
+    base = _base_algo(akey)
+    if base == "gmem_privatized_nocache":
+        return "gmem_privatized_nocache_cooperative"
+    return base
+
+
 # The exact `[launch] ... ran=X` tag each forced request must produce to count as
 # "actually ran the requested algorithm". Both GmemPrivatized<NoCache> members report
 # ran=gmem_privatized_nocache, distinguished only by the `:hybrid` suffix; the two
@@ -154,7 +164,7 @@ def _base_algo(akey: str) -> str:
 # Everything else maps to itself.
 EXPECTED_RAN = {
     "hybrid": "gmem_privatized_nocache:hybrid",
-    "gmem_privatized_nocache": "gmem_privatized_nocache",
+    "gmem_privatized_nocache": "gmem_privatized_nocache_cooperative",
     "smem_static": "smem_privatized:static",
     "smem_dynamic": "smem_privatized:dynamic",
 }
@@ -353,9 +363,9 @@ def query_cache_slots_for_cell(
     return value
 
 
-# Maps the `[launch] ... ran=X` tag the dispatch emits to the canonical algorithm
-# name the sweep forces. The hybrid member reports `gmem_privatized_nocache:hybrid`;
-# it serves the `gmem_privatized_nocache` enum, so it validates that request.
+# Parses the exact `[launch] ... ran=X` tag emitted by dispatch. In particular,
+# hybrid reports the older gather member while GPN must report the distinct new
+# cooperative no-cache/private-spill specialization.
 _LAUNCH_RE = re.compile(r"\[launch\] bins=(\d+) ch=(\d+) ran=([a-z_:]+)")
 
 
@@ -601,7 +611,7 @@ def main():
                         # only the warp-coalesce policy flag differs) but run against the
                         # .nocoal binary (built -DCUB_HISTO_FORCE_WARP_COALESCE=0). All other
                         # keys run against this binary with their own name as the force value.
-                        force_env = _base_algo(akey) if akey else ""
+                        force_env = _force_algo(akey) if akey else ""
                         # The .nocoal variant must carry the SAME binary-suffix as the
                         # stock binary (e.g. ".u64"), so the 64-bit leg finds
                         # `<bin>.base.nocoal.u64`, not the 32-bit `<bin>.base.nocoal`.
