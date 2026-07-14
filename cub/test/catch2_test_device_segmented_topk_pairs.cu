@@ -1615,6 +1615,97 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+
+// Forward first-wave `stage_base` prime (`stream_stages > prologue` *with* a resident chunk present). Reuses the
+// schedule sweep's cap-1 / stages-4 kernel (same `cluster_tuning_selector<1, 4, 0, .., 4>` type and static bounds -> no
+// new instantiation); only the runtime segment size differs. Sized to 7 chunks so, at 4 slots, streaming reserves 3 (=
+// min(stages, excess=3)) and 1 resident chunk remains: `stream_stages(3) > prologue(1)` yet `my_resident > 0`, so a
+// forward wave sets `stage_base = 2` and the merged loop's stream re-arm must seed its ring counter at
+// `fw(stage_base)`, not `fw(0)`. The schedule sweep never reaches this (its `>` configs all collapse to `my_resident ==
+// 0` pure streaming, which guards `stage_base` back to 0). Non-deterministic combos drive the forward wave (the new
+// coverage); the deterministic combos exercise the already-working reverse counterpart (`stage_base == 0`).
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a resident chunk below a wider stream",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         det_tie_pair_combos)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction   = cub::detail::topk::select::max;
+
+  constexpr segment_size_t static_max_segment_size = 1536;
+  constexpr segment_size_t static_max_k            = 512;
+  constexpr segment_index_t num_segments           = 2;
+  skip_if_batched_topk_cluster_unavailable(true);
+
+  const segment_size_t segment_size = 896 - 31; // 7 chunks (128 items each), unaligned -> peeled overflow tail edge
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k}));
+
+  CAPTURE(static_max_segment_size, static_max_k, segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{cudaStream_t{0}},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<tie_break>{},
+                             cuda::execution::output_ordering::unsorted),
+    cuda::execution::tune(
+      cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/4>{})};
+
+  auto seg_sizes =
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
+  auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
+
+  size_t temp_bytes = 0;
+  const auto invoke = [&](void* d_temp) {
+    return cub::DeviceBatchedTopK::MaxPairs(
+      d_temp,
+      temp_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      seg_sizes,
+      k_param,
+      cuda::args::immediate{num_segments},
+      env);
+  };
+  REQUIRE(cudaSuccess == invoke(nullptr));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == invoke(thrust::raw_pointer_cast(temp_storage.data())));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
 #  endif // TEST_LAUNCH == 0
 
 // Effective-cluster-width coverage for pairs: the large `deferred_sequence` bound sizes a wide (16-CTA) launch, but the
