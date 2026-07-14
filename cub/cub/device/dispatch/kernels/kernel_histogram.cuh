@@ -2294,8 +2294,8 @@ struct single_probe_cache
 //! ignored, so a `NoCache` kernel that passes a zero-sized cache allocates no
 //! SMEM cache. This is the third member of `Combiner ∈ {NoCache, Cuckoo,
 //! SingleProbe}` from the design doc: it isolates the combiner's contribution
-//! (no on-chip combining) and is the building block of `direct_nocache` and of
-//! the `GmemPrivatized<NoCache>` family (= `gmem_priv_gather` / `hybrid`).
+//! (no on-chip combining) and is the building block of `direct_nocache` and the
+//! cooperative no-cache / private-spill GMEM-privatized specialization.
 struct no_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
@@ -2394,8 +2394,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // gather then sums the per-block slabs into the output. Boundedness note: a
   // cache miss can hit ANY bin, so each block's slab must be full-size
   // (num_bins), giving a num_blocks * num_bins footprint (see design doc).
-  constexpr bool kPrivateSpill = ::cuda::std::is_same_v<SpillOp, private_block_spill>;
-  using SpillCounterT          = typename SpillOp::template target_type<CounterT, OutputCounterT>;
+  constexpr bool kPrivateSpill   = ::cuda::std::is_same_v<SpillOp, private_block_spill>;
+  constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
+  using SpillCounterT            = typename SpillOp::template target_type<CounterT, OutputCounterT>;
 
   // ---------------------------------------------------------------------
   // Phase 1: zero the spill destination via a grid-wide stride loop. For the
@@ -2562,14 +2563,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // the explicit pre-merge that the u32 instruction supplies in hardware. Compile-time
   // (zero runtime branch), still AND-ed with the policy flag so
   // CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
-  constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
   constexpr bool kWarpCoalesce =
     (kProbeIsNoCache || sizeof(CounterT) > sizeof(unsigned int)) && current_policy<PolicySelector>().warp_coalesce;
-  const int cache_mask = cache_slots_per_channel - 1;
+  const int cache_mask = kProbeIsNoCache ? 0 : cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
-  const int cache_slot_log2 = 32 - __clz(cache_mask);
-  const size_t slots_sz     = static_cast<size_t>(cache_slots_per_channel);
+  const int cache_slot_log2 = kProbeIsNoCache ? 0 : 32 - __clz(cache_mask);
+  const size_t slots_sz     = kProbeIsNoCache ? 0 : static_cast<size_t>(cache_slots_per_channel);
   const int replica         = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
   extern __shared__ unsigned char s_bin_cache_raw[];
   int* const s_cache_keys_base = reinterpret_cast<int*>(s_bin_cache_raw);
@@ -2586,22 +2586,27 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   }
 
   // Initialize cache: keys = -1 (empty sentinel), all replica counts = 0.
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  // The no-cache specialization receives zero dynamic SMEM and compiles this
+  // entire phase out; its probe ignores the cache pointers and hash arguments.
+  if constexpr (!kProbeIsNoCache)
   {
-    for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      s_cache_keys[ch][slot] = -1;
+      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      {
+        s_cache_keys[ch][slot] = -1;
+      }
     }
-  }
-  {
-    const size_t total_count_words = static_cast<size_t>(NumActiveChannels) * kCountReplicas * slots_sz;
-    for (size_t i = threadIdx.x; i < total_count_words; i += blockDim.x)
     {
-      s_cache_counts_base[i] = CounterT{0};
+      const size_t total_count_words = static_cast<size_t>(NumActiveChannels) * kCountReplicas * slots_sz;
+      for (size_t i = threadIdx.x; i < total_count_words; i += blockDim.x)
+      {
+        s_cache_counts_base[i] = CounterT{0};
+      }
     }
+    __syncthreads();
   }
-  __syncthreads();
 
   // Host-init path: hoist the RANGE SearchTransform's loop-invariant
   // interpolation state out of the per-sample classify. No-op for EVEN /
@@ -2895,25 +2900,28 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // replicas. For the private-spill variant the flush is block-scope and
     // uncontended (each block owns its slab slice), so the SpillOp scope applies
     // here too.
-    __syncthreads();
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    if constexpr (!kProbeIsNoCache)
     {
-      CounterT* const ch_counts_base = s_cache_counts_base + static_cast<size_t>(ch) * kCountReplicas * slots_sz;
-      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      __syncthreads();
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
-        const int key = s_cache_keys[ch][slot];
-        if (key >= 0)
+        CounterT* const ch_counts_base = s_cache_counts_base + static_cast<size_t>(ch) * kCountReplicas * slots_sz;
+        for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
         {
-          CounterT cnt = CounterT{0};
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int r = 0; r < kCountReplicas; ++r)
+          const int key = s_cache_keys[ch][slot];
+          if (key >= 0)
           {
-            cnt += ch_counts_base[static_cast<size_t>(r) * slots_sz + slot];
-          }
-          if (cnt > CounterT{0})
-          {
-            SpillOp::spill(spill_target[ch], key, cnt);
+            CounterT cnt = CounterT{0};
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int r = 0; r < kCountReplicas; ++r)
+            {
+              cnt += ch_counts_base[static_cast<size_t>(r) * slots_sz + slot];
+            }
+            if (cnt > CounterT{0})
+            {
+              SpillOp::spill(spill_target[ch], key, cnt);
+            }
           }
         }
       }

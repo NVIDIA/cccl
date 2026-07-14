@@ -84,7 +84,7 @@ ALGO_STYLE = {
     "gmem_privatized_nocache": (
         "#9467bd",
         "^",
-        "gmem-priv + no cache (gather)",
+        "cooperative GMEM-privatized + no cache",
         "-",
         1.1,
     ),

@@ -191,6 +191,12 @@ enum class algorithm : unsigned char
   // auto-selected (the high-bin region routes to direct_single_probe).
   gmem_privatized_nocache,
 
+  // No-cache front-end on the cooperative CacheSpillKernel, with block-private
+  // GMEM spill and an atomic-free gather. This is deliberately distinct from
+  // gmem_privatized_nocache above, which names the older unified hybrid / pure
+  // gather kernel. Forced-only for benchmark characterization.
+  gmem_privatized_nocache_cooperative,
+
   // Single-probe SMEM cache with block-private GMEM spill and an atomic-free
   // gather. Forced-only for benchmark characterization; the selector never
   // returns it.
@@ -1279,6 +1285,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         output_decode_op_t,
         single_probe_cache,
         private_block_spill>();
+      auto direct_atomic_priv_no_cache_kernel_ptr = kernel_source.template HistogramCacheSpillKernel<
+        PolicySelector,
+        PRIVATIZED_SMEM_BINS,
+        privatized_decode_op_t,
+        output_decode_op_t,
+        no_cache_probe,
+        private_block_spill>();
       // No-cache combiner, output spill (algorithm::direct_nocache, cache_mode 2):
       // warp-coalesce then device-scope atomicAdd straight to the output, no SMEM
       // cache. Isolates the combiner's contribution.
@@ -1295,6 +1308,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         reinterpret_cast<const void*>(direct_atomic_priv_cuckoo_kernel_ptr);
       const void* direct_atomic_priv_single_probe_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_priv_single_probe_kernel_ptr);
+      const void* direct_atomic_priv_no_cache_kernel_ptr_void =
+        reinterpret_cast<const void*>(direct_atomic_priv_no_cache_kernel_ptr);
 
       // `direct_atomic_cache_mode` (set by dispatch_by_algorithm from the algorithm
       // enum) encodes BOTH the combiner and the spill policy:
@@ -1303,9 +1318,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       //   2 -> no-cache,     output spill   (direct_nocache)
       //   3 -> cuckoo,       private spill  (gmem_privatized_cuckoo)
       //   4 -> single-probe, private spill  (gmem_privatized_single_probe)
+      //   5 -> no-cache,     private spill  (gmem_privatized_nocache_cooperative)
       const bool use_private_spill      = (direct_atomic_cache_mode >= 3);
       const bool use_single_probe_cache = (direct_atomic_cache_mode == 1 || direct_atomic_cache_mode == 4);
-      const bool use_no_cache           = (direct_atomic_cache_mode == 2);
+      const bool use_no_cache           = (direct_atomic_cache_mode == 2 || direct_atomic_cache_mode == 5);
       // When the CUCKOO kernel is selected with OUTPUT spill, drop its second probe
       // on the high-bin tier (bins >> any achievable cache slot count, where the
       // secondary slot can't raise the hit rate -- it just doubles the SMEM key
@@ -1318,7 +1334,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const bool use_gated_cuckoo =
         (direct_atomic_cache_mode == 0) && (max_num_output_bins >= kSecondProbeBinThreshold);
       const void* active_direct_atomic_kernel_ptr_void =
-        (direct_atomic_cache_mode == 4)   ? direct_atomic_priv_single_probe_kernel_ptr_void
+        (direct_atomic_cache_mode == 5)   ? direct_atomic_priv_no_cache_kernel_ptr_void
+        : (direct_atomic_cache_mode == 4) ? direct_atomic_priv_single_probe_kernel_ptr_void
         : (direct_atomic_cache_mode == 3) ? direct_atomic_priv_cuckoo_kernel_ptr_void
         : use_no_cache                    ? direct_atomic_no_cache_kernel_ptr_void
         : use_single_probe_cache          ? direct_atomic_single_probe_kernel_ptr_void
@@ -1399,9 +1416,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       };
 
       int cache_slots_per_channel =
-        (direct_atomic_cache_mode == 4)   ? size_cache_for(direct_atomic_priv_single_probe_kernel_ptr)
+        use_no_cache                      ? 0
+        : (direct_atomic_cache_mode == 4) ? size_cache_for(direct_atomic_priv_single_probe_kernel_ptr)
         : (direct_atomic_cache_mode == 3) ? size_cache_for(direct_atomic_priv_cuckoo_kernel_ptr)
-        : use_no_cache                    ? size_cache_for(direct_atomic_no_cache_kernel_ptr)
         : use_single_probe_cache          ? size_cache_for(direct_atomic_single_probe_kernel_ptr)
         : use_gated_cuckoo
           ? size_cache_for(direct_atomic_noprobe2_kernel_ptr)
@@ -1415,28 +1432,31 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // slot count and the sizing inputs to stderr. These let the cache slot
       // count be swept against a single build without recompiling.
       NV_IF_TARGET(NV_IS_HOST, ({
-                     if (const char* env = ::std::getenv("CUB_HISTO_FORCE_SLOTS"))
+                     if (!use_no_cache)
                      {
-                       const int forced = ::std::atoi(env);
-                       // power-of-two check + clamp into the legal window.
-                       if (forced > 0 && (forced & (forced - 1)) == 0)
+                       if (const char* env = ::std::getenv("CUB_HISTO_FORCE_SLOTS"))
                        {
-                         int clamped = forced;
-                         if (clamped < cache_slots_floor)
+                         const int forced = ::std::atoi(env);
+                         // power-of-two check + clamp into the legal window.
+                         if (forced > 0 && (forced & (forced - 1)) == 0)
                          {
-                           clamped = cache_slots_floor;
-                         }
-                         if (clamped > max_slots_by_smem)
-                         {
-                           // round down to the largest power-of-two <= max_slots_by_smem
-                           int hi = cache_slots_floor;
-                           while ((hi << 1) <= max_slots_by_smem)
+                           int clamped = forced;
+                           if (clamped < cache_slots_floor)
                            {
-                             hi <<= 1;
+                             clamped = cache_slots_floor;
                            }
-                           clamped = hi;
+                           if (clamped > max_slots_by_smem)
+                           {
+                             // round down to the largest power-of-two <= max_slots_by_smem
+                             int hi = cache_slots_floor;
+                             while ((hi << 1) <= max_slots_by_smem)
+                             {
+                               hi <<= 1;
+                             }
+                             clamped = hi;
+                           }
+                           cache_slots_per_channel = clamped;
                          }
-                         cache_slots_per_channel = clamped;
                        }
                      }
                      if (::std::getenv("CUB_HISTO_DEBUG_SLOTS"))
@@ -1455,11 +1475,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                      }
                    }));
 #  endif // _CCCL_HOSTED()
-      const int cuckoo_cache_smem_bytes = NUM_ACTIVE_CHANNELS * cache_slots_per_channel * cache_bytes_per_slot;
+      const int cuckoo_cache_smem_bytes =
+        use_no_cache ? 0 : NUM_ACTIVE_CHANNELS * cache_slots_per_channel * cache_bytes_per_slot;
       // Make sure the ACTIVE kernel's dynamic-SMEM attribute matches the final
       // chosen size (the sizing loop above may have left a larger size set on a
       // rejected candidate). Set it on whichever kernel `direct_atomic_cache_mode`
-      // selected (0-4). Use the typed kernel pointer (the launcher's
+      // selected (0-5). Use the typed kernel pointer (the launcher's
       // set_max_dynamic_smem_size_for takes the kernel handle type, which differs
       // between the CUDA-runtime and CUDA-driver launchers).
       auto set_active_smem = [&](auto kernel_ptr) {
@@ -1470,6 +1491,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       };
       switch (direct_atomic_cache_mode)
       {
+        case 5:
+          set_active_smem(direct_atomic_priv_no_cache_kernel_ptr);
+          break;
         case 4:
           set_active_smem(direct_atomic_priv_single_probe_kernel_ptr);
           break;
@@ -1594,10 +1618,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         (void) cudaGetLastError();
         persistent_sm_occupancy = 0;
       }
-      // Query occupancy of the ACTUAL kernel that will run (mode 0-4), so the
+      // Query occupancy of the ACTUAL kernel that will run (mode 0-5), so the
       // free-SMEM grid sizing is measured against it.
       const auto direct_occ_err =
-        (direct_atomic_cache_mode == 4)
+        (direct_atomic_cache_mode == 5)
+          ? launcher_factory.MaxSmOccupancy(
+              direct_atomic_sm_occupancy,
+              direct_atomic_priv_no_cache_kernel_ptr,
+              direct_atomic_threads_per_block,
+              cuckoo_cache_smem_bytes)
+        : (direct_atomic_cache_mode == 4)
           ? launcher_factory.MaxSmOccupancy(
               direct_atomic_sm_occupancy,
               direct_atomic_priv_single_probe_kernel_ptr,
@@ -1830,8 +1860,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                              ran = (direct_atomic_cache_mode == 1) ? "direct_single_probe"
                                  : (direct_atomic_cache_mode == 2) ? "direct_nocache"
                                  : (direct_atomic_cache_mode == 3) ? "gmem_privatized_cuckoo"
-                                 : (direct_atomic_cache_mode == 4)
-                                   ? "gmem_privatized_single_probe"
+                                 : (direct_atomic_cache_mode == 4) ? "gmem_privatized_single_probe"
+                                 : (direct_atomic_cache_mode == 5)
+                                   ? "gmem_privatized_nocache_cooperative"
                                    : "direct_cuckoo"; // mode 0
                            }
                            ::std::fprintf(
@@ -2534,6 +2565,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   //   gmem_priv_gather  -> per-block GMEM-privatized + gather (no cache)
   //   gmem_privatized_single_probe (or legacy priv_single_probe)
   //                      -> single-probe cache + private_block_spill
+  //   gmem_privatized_nocache_cooperative
+  //                      -> no cache + private_block_spill + cooperative gather
   // The priv_* and direct_* values route to the PRIVATIZED_SMEM_BINS==0 case; the
   // deeper `dispatch<>` hook reads the same env var to pick the exact kernel
   // (cache variant + spill policy). Off by default -> normal dispatch unchanged.
@@ -2588,6 +2621,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
                             || ::std::strcmp(env, "priv_single_probe") == 0)
                    {
                      algo = algorithm::gmem_privatized_single_probe;
+                   }
+                   else if (::std::strcmp(env, "gmem_privatized_nocache_cooperative") == 0)
+                   {
+                     algo = algorithm::gmem_privatized_nocache_cooperative;
                    }
                  }
                }));
@@ -2765,6 +2802,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
     case algorithm::direct_nocache:
     case algorithm::direct_cuckoo:
     case algorithm::direct_single_probe:
+    case algorithm::gmem_privatized_nocache_cooperative:
     case algorithm::gmem_privatized_single_probe: {
       // CacheSpillKernel<Combiner> family, PRIVATIZED_SMEM_BINS=0. The deeper dispatch<>
       // picks the kernel from `direct_atomic_cache_mode`, which encodes the combiner
@@ -2774,13 +2812,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       //   1 -> single-probe, output spill   (direct_single_probe)
       //   2 -> no-cache,     output spill   (direct_nocache)
       //   4 -> single-probe, private spill  (gmem_privatized_single_probe)
+      //   5 -> no-cache,     private spill  (gmem_privatized_nocache_cooperative)
       // kForceDirect: these are explicit direct-atomic choices, so dispatch<> runs
       // the direct-atomic kernel UNCONDITIONALLY (no bin-count veto) -- a forced or
       // selected direct_cuckoo therefore actually runs cuckoo at any high-bin count.
       constexpr int PRIVATIZED_SMEM_BINS = 0;
       const int direct_atomic_cache_mode =
-        (algo == algorithm::gmem_privatized_single_probe) ? 4
-        : (algo == algorithm::direct_cuckoo)              ? 0
+        (algo == algorithm::gmem_privatized_nocache_cooperative) ? 5
+        : (algo == algorithm::gmem_privatized_single_probe)      ? 4
+        : (algo == algorithm::direct_cuckoo)                     ? 0
         : (algo == algorithm::direct_single_probe)
           ? 1
           : /* algorithm::direct_nocache */ 2;
