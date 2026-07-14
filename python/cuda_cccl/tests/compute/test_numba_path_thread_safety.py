@@ -2,17 +2,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Concurrency tests for numba-dependent paths on regular (GIL) builds.
+"""Thread-safety of the shared build/cache machinery for the numba-dependent
+op paths, on regular (GIL) interpreters.
 
-The free-threading stress suite (test_free_threading_stress.py) runs on the
-minimal extra, so it cannot exercise Python-callable ops, stateful closure ops,
-gpu_struct types, or return-type inference. This file exercises those paths
-from multiple threads on regular GIL interpreters instead: the Cython bindings
-release the GIL around native builds and launches, and native LLVM/NVRTC work
-runs outside the GIL, so those phases genuinely overlap (numba's own
-compilation serializes on its compiler lock). The goal is not to prove numba
-internally parallel but that cuda.compute's caching, key hashing, and
-descriptor machinery stay correct under concurrent entry.
+cuda.compute releases the GIL around native builds and
+launches, so concurrent calls overlap in the C layer even under the GIL.
+So the shared caching/native machinery must be thread-safe on every interpreter
+build, and these tests validate that for the numba op paths.
+
+They cover the paths the free-threading stress suite
+(test_free_threading_stress.py) cannot: that suite runs on the minimal extra,
+which omits numba, so Python-callable ops, stateful closure ops, gpu_struct
+types, and return-type inference are untested there. This file exercises them
+from multiple threads on a regular GIL interpreter. The C-layer build/launch
+machinery itself is op-source-agnostic and already covered by the stress suite;
+the unique surface here is the numba frontend (CachableFunction hashing,
+inference, closure/struct handling).
+
+Only the native build/launch phase genuinely overlaps (the GIL is released
+around it); numba's own compilation serializes on its compiler lock and the
+Python-side key hashing serializes under the GIL. So the goal is not to prove
+numba runs in parallel, but that cuda.compute's caching, key hashing, and
+descriptor machinery stay correct when these paths are entered concurrently.
 """
 
 import concurrent.futures
@@ -86,12 +97,14 @@ def _make_clamped_max_op(k):
 
 
 def test_concurrent_distinct_python_ops_build_storm():
-    """Distinct Python callables force one concurrent numba+native build per worker.
+    """Distinct Python callables force a separate numba+native build per worker.
 
     Distinct closure constants give each worker its own cache key, so
-    _cache_single_flight elects a separate builder per thread and the
-    CachableFunction hashing, return-type handling, and numba compilation
-    paths all run genuinely concurrently. The op computes max(a, b, k) with a
+    _cache_single_flight elects a separate builder per thread. The native
+    builds overlap (the GIL is released around them) while the CachableFunction
+    hashing and numba compilation serialize (under the GIL and numba's own
+    compiler lock); the target is that this concurrent entry keeps each
+    worker's op and build uncontaminated. The op computes max(a, b, k) with a
     per-worker k that dominates every input, so the expected result is exactly
     k however CUB shapes the reduction tree — and a wrong k directly exposes
     any cross-thread op/build contamination.

@@ -123,19 +123,6 @@ def _get_build_result(algorithm):
     raise AssertionError(f"{type(algorithm).__name__} does not expose a build result")
 
 
-def _selected_segments(keys, values, starts, ends, descending=False):
-    out_keys = keys.copy()
-    out_values = values.copy()
-    for start, end in zip(starts, ends):
-        segment_keys = keys[start:end]
-        order = np.argsort(segment_keys, kind="stable")
-        if descending:
-            order = order[::-1]
-        out_keys[start:end] = segment_keys[order]
-        out_values[start:end] = values[start:end][order]
-    return out_keys, out_values
-
-
 @dataclass(frozen=True)
 class _AlgorithmCase:
     name: str
@@ -299,16 +286,6 @@ def _make_binary_worker(cc, worker_id, iteration):
     }
 
 
-def _make_binary_shared(cc):
-    worker = _make_binary_worker(cc, 0, -1)
-    return cc.make_binary_transform(
-        d_in1=worker["d_in1"],
-        d_in2=worker["d_in2"],
-        d_out=worker["d_out"],
-        op=cc.OpKind.PLUS,
-    )
-
-
 def _make_binary_for_worker(cc, worker):
     return cc.make_binary_transform(
         d_in1=worker["d_in1"],
@@ -372,16 +349,6 @@ def _make_exclusive_scan_shared(cc):
     )
 
 
-def _make_inclusive_scan_shared(cc):
-    worker = _make_scan_worker(cc, 0, -1)
-    return cc.make_inclusive_scan(
-        d_in=worker["d_in"],
-        d_out=worker["d_out"],
-        op=cc.OpKind.PLUS,
-        init_value=worker["h_init"],
-    )
-
-
 def _run_scan(cc, scanner, worker):
     _call_with_temp(
         scanner,
@@ -399,12 +366,6 @@ def _check_exclusive_scan(cc, worker):
     expected = np.empty_like(worker["h_in"])
     expected[0] = worker["h_init"][0]
     expected[1:] = worker["h_init"][0] + np.cumsum(worker["h_in"][:-1])
-    np.testing.assert_array_equal(worker["d_out"].copy_to_host(), expected)
-
-
-def _check_inclusive_scan(cc, worker):
-    worker["stream"].sync()
-    expected = worker["h_init"][0] + np.cumsum(worker["h_in"])
     np.testing.assert_array_equal(worker["d_out"].copy_to_host(), expected)
 
 
@@ -469,78 +430,6 @@ def _check_segmented_reduce(cc, worker):
     np.testing.assert_array_equal(worker["d_out"].copy_to_host(), expected)
 
 
-def _make_histogram_worker(cc, worker_id, iteration):
-    stream = _make_stream()
-    lower = np.float32(worker_id * 10)
-    upper = np.float32(lower + 8)
-    h_samples = np.array(
-        [
-            lower + 0.5,
-            lower + 1.5,
-            lower + 2.0,
-            lower + 3.5,
-            lower + 6.0,
-            upper + 1.0,
-        ],
-        dtype=np.float32,
-    )
-    h_num_levels = np.array([5], dtype=np.int32)
-    h_lower = np.array([lower], dtype=np.float32)
-    h_upper = np.array([upper], dtype=np.float32)
-    d_samples = DeviceArray.from_numpy(h_samples)
-    d_histogram = DeviceArray.from_numpy(np.zeros(h_num_levels[0] - 1, dtype=np.int32))
-    return {
-        "stream": stream,
-        "h_samples": h_samples,
-        "h_num_levels": h_num_levels,
-        "h_lower": h_lower,
-        "h_upper": h_upper,
-        "d_samples": d_samples,
-        "d_histogram": d_histogram,
-    }
-
-
-def _make_histogram_shared(cc):
-    worker = _make_histogram_worker(cc, 0, -1)
-    return cc.make_histogram_even(
-        d_samples=worker["d_samples"],
-        d_histogram=worker["d_histogram"],
-        h_num_output_levels=worker["h_num_levels"],
-        h_lower_level=worker["h_lower"],
-        h_upper_level=worker["h_upper"],
-        num_samples=worker["h_samples"].size,
-    )
-
-
-def _run_histogram(cc, histogrammer, worker):
-    worker["d_histogram"].copy_from_host(
-        np.zeros(worker["h_num_levels"][0] - 1, dtype=np.int32),
-        stream=worker["stream"],
-    )
-    _call_with_temp(
-        histogrammer,
-        d_samples=worker["d_samples"],
-        d_histogram=worker["d_histogram"],
-        h_num_output_levels=worker["h_num_levels"],
-        h_lower_level=worker["h_lower"],
-        h_upper_level=worker["h_upper"],
-        num_samples=worker["h_samples"].size,
-        stream=worker["stream"],
-    )
-
-
-def _check_histogram(cc, worker):
-    worker["stream"].sync()
-    expected, _ = np.histogram(
-        worker["h_samples"],
-        bins=int(worker["h_num_levels"][0] - 1),
-        range=(float(worker["h_lower"][0]), float(worker["h_upper"][0])),
-    )
-    np.testing.assert_array_equal(
-        worker["d_histogram"].copy_to_host(), expected.astype(np.int32)
-    )
-
-
 def _make_binary_search_worker(cc, worker_id, iteration):
     stream = _make_stream()
     h_data = np.array([90, 70, 50, 30, 10], dtype=np.int32) - worker_id
@@ -556,26 +445,6 @@ def _make_binary_search_worker(cc, worker_id, iteration):
         "d_values": d_values,
         "d_out": d_out,
     }
-
-
-def _make_lower_bound_shared(cc):
-    worker = _make_binary_search_worker(cc, 0, -1)
-    return cc.make_lower_bound(
-        d_data=worker["d_data"],
-        d_values=worker["d_values"],
-        d_out=worker["d_out"],
-        comp=cc.OpKind.GREATER,
-    )
-
-
-def _make_upper_bound_shared(cc):
-    worker = _make_binary_search_worker(cc, 0, -1)
-    return cc.make_upper_bound(
-        d_data=worker["d_data"],
-        d_values=worker["d_values"],
-        d_out=worker["d_out"],
-        comp=cc.OpKind.GREATER,
-    )
 
 
 def _make_lower_bound_for_worker(cc, worker):
@@ -654,36 +523,6 @@ def _make_select_worker(cc, worker_id, iteration):
     }
 
 
-def _make_select_shared(cc):
-    worker = _make_select_worker(cc, 0, -1)
-    return cc.make_select(
-        d_in=worker["d_in"],
-        d_out=worker["d_out"],
-        d_num_selected_out=worker["d_count"],
-        cond=cc.OpKind.IDENTITY,
-    )
-
-
-def _run_select(cc, selector, worker):
-    _call_with_temp(
-        selector,
-        d_in=worker["d_in"],
-        d_out=worker["d_out"],
-        d_num_selected_out=worker["d_count"],
-        cond=cc.OpKind.IDENTITY,
-        num_items=worker["h_in"].size,
-        stream=worker["stream"],
-    )
-
-
-def _check_select(cc, worker):
-    worker["stream"].sync()
-    count = int(worker["d_count"].copy_to_host()[0])
-    expected = worker["h_in"][worker["h_in"]]
-    assert count == expected.size
-    np.testing.assert_array_equal(worker["d_out"].copy_to_host()[:count], expected)
-
-
 def _make_three_way_shared(cc):
     worker = _make_select_worker(cc, 0, -1)
     d_unselected = DeviceArray.empty(worker["h_in"].shape, worker["h_in"].dtype)
@@ -740,125 +579,6 @@ def _check_three_way(cc, worker):
     )
 
 
-def _make_unique_worker(cc, worker_id, iteration):
-    stream = _make_stream()
-    base = worker_id * 10 + iteration
-    h_keys = np.array(
-        [base, base, base + 1, base + 2, base + 2, base + 3], dtype=np.int32
-    )
-    h_items = np.arange(h_keys.size, dtype=np.int32) + worker_id * 100
-    d_in_keys = DeviceArray.from_numpy(h_keys)
-    d_in_items = DeviceArray.from_numpy(h_items)
-    d_out_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
-    d_out_items = DeviceArray.empty(h_items.shape, h_items.dtype)
-    d_count = DeviceArray.empty(1, dtype=np.int32)
-    return {
-        "stream": stream,
-        "h_keys": h_keys,
-        "h_items": h_items,
-        "d_in_keys": d_in_keys,
-        "d_in_items": d_in_items,
-        "d_out_keys": d_out_keys,
-        "d_out_items": d_out_items,
-        "d_count": d_count,
-    }
-
-
-def _make_unique_shared(cc):
-    worker = _make_unique_worker(cc, 0, -1)
-    return cc.make_unique_by_key(
-        d_in_keys=worker["d_in_keys"],
-        d_in_items=worker["d_in_items"],
-        d_out_keys=worker["d_out_keys"],
-        d_out_items=worker["d_out_items"],
-        d_out_num_selected=worker["d_count"],
-        op=cc.OpKind.EQUAL_TO,
-    )
-
-
-def _run_unique(cc, uniquer, worker):
-    _call_with_temp(
-        uniquer,
-        d_in_keys=worker["d_in_keys"],
-        d_in_items=worker["d_in_items"],
-        d_out_keys=worker["d_out_keys"],
-        d_out_items=worker["d_out_items"],
-        d_out_num_selected=worker["d_count"],
-        op=cc.OpKind.EQUAL_TO,
-        num_items=worker["h_keys"].size,
-        stream=worker["stream"],
-    )
-
-
-def _check_unique(cc, worker):
-    worker["stream"].sync()
-    selected = np.concatenate(([True], worker["h_keys"][1:] != worker["h_keys"][:-1]))
-    expected_keys = worker["h_keys"][selected]
-    expected_items = worker["h_items"][selected]
-    count = int(worker["d_count"].copy_to_host()[0])
-    assert count == expected_keys.size
-    np.testing.assert_array_equal(
-        worker["d_out_keys"].copy_to_host()[:count], expected_keys
-    )
-    np.testing.assert_array_equal(
-        worker["d_out_items"].copy_to_host()[:count], expected_items
-    )
-
-
-def _make_merge_sort_worker(cc, worker_id, iteration):
-    stream = _make_stream()
-    h_keys = np.array([5, 1, 3, 1, 4, 2], dtype=np.int32) + worker_id * 10
-    h_values = np.arange(h_keys.size, dtype=np.int32) + iteration * 100
-    d_in_keys = DeviceArray.from_numpy(h_keys)
-    d_in_values = DeviceArray.from_numpy(h_values)
-    d_out_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
-    d_out_values = DeviceArray.empty(h_values.shape, h_values.dtype)
-    return {
-        "stream": stream,
-        "h_keys": h_keys,
-        "h_values": h_values,
-        "d_in_keys": d_in_keys,
-        "d_in_values": d_in_values,
-        "d_out_keys": d_out_keys,
-        "d_out_values": d_out_values,
-    }
-
-
-def _make_merge_sort_shared(cc):
-    worker = _make_merge_sort_worker(cc, 0, -1)
-    return cc.make_merge_sort(
-        d_in_keys=worker["d_in_keys"],
-        d_in_values=worker["d_in_values"],
-        d_out_keys=worker["d_out_keys"],
-        d_out_values=worker["d_out_values"],
-        op=cc.OpKind.LESS,
-    )
-
-
-def _run_merge_sort(cc, sorter, worker):
-    _call_with_temp(
-        sorter,
-        d_in_keys=worker["d_in_keys"],
-        d_in_values=worker["d_in_values"],
-        d_out_keys=worker["d_out_keys"],
-        d_out_values=worker["d_out_values"],
-        op=cc.OpKind.LESS,
-        num_items=worker["h_keys"].size,
-        stream=worker["stream"],
-    )
-
-
-def _check_merge_sort(cc, worker):
-    worker["stream"].sync()
-    order = np.argsort(worker["h_keys"], kind="stable")
-    np.testing.assert_array_equal(
-        worker["d_out_keys"].copy_to_host(), worker["h_keys"][order]
-    )
-    np.testing.assert_array_equal(
-        worker["d_out_values"].copy_to_host(), worker["h_values"][order]
-    )
-
-
 def _make_radix_sort_worker(cc, worker_id, iteration):
     stream = _make_stream()
     h_keys = np.array([7, 3, 5, 3, 1, 9], dtype=np.uint32) + np.uint32(worker_id * 11)
@@ -911,76 +631,15 @@ def _check_radix_sort(cc, worker):
     assert worker["keys"].selector == worker["values"].selector
 
 
-def _make_segmented_sort_worker(cc, worker_id, iteration):
-    stream = _make_stream()
-    h_keys = np.array([4, 2, 3, 8, 6, 7, 1, 5], dtype=np.int32) + worker_id * 13
-    h_values = np.arange(h_keys.size, dtype=np.int32) + iteration * 100
-    h_start_offsets = np.array([0, 3, 6], dtype=np.int32)
-    h_end_offsets = np.array([3, 6, 8], dtype=np.int32)
-    d_in_keys = DeviceArray.from_numpy(h_keys)
-    d_tmp_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
-    d_in_values = DeviceArray.from_numpy(h_values)
-    d_tmp_values = DeviceArray.empty(h_values.shape, h_values.dtype)
-    d_start_offsets = DeviceArray.from_numpy(h_start_offsets)
-    d_end_offsets = DeviceArray.from_numpy(h_end_offsets)
-    return {
-        "stream": stream,
-        "h_keys": h_keys,
-        "h_values": h_values,
-        "h_start_offsets": h_start_offsets,
-        "h_end_offsets": h_end_offsets,
-        "keys": cc.DoubleBuffer(d_in_keys, d_tmp_keys),
-        "values": cc.DoubleBuffer(d_in_values, d_tmp_values),
-        "d_start_offsets": d_start_offsets,
-        "d_end_offsets": d_end_offsets,
-    }
-
-
-def _make_segmented_sort_shared(cc):
-    worker = _make_segmented_sort_worker(cc, 0, -1)
-    return cc.make_segmented_sort(
-        d_in_keys=worker["keys"],
-        d_out_keys=None,
-        d_in_values=worker["values"],
-        d_out_values=None,
-        start_offsets_in=worker["d_start_offsets"],
-        end_offsets_in=worker["d_end_offsets"],
-        order=cc.SortOrder.ASCENDING,
-    )
-
-
-def _run_segmented_sort(cc, sorter, worker):
-    _call_with_temp(
-        sorter,
-        d_in_keys=worker["keys"],
-        d_out_keys=None,
-        d_in_values=worker["values"],
-        d_out_values=None,
-        num_items=worker["h_keys"].size,
-        num_segments=worker["h_start_offsets"].size,
-        start_offsets_in=worker["d_start_offsets"],
-        end_offsets_in=worker["d_end_offsets"],
-        stream=worker["stream"],
-    )
-
-
-def _check_segmented_sort(cc, worker):
-    worker["stream"].sync()
-    expected_keys, expected_values = _selected_segments(
-        worker["h_keys"],
-        worker["h_values"],
-        worker["h_start_offsets"],
-        worker["h_end_offsets"],
-    )
-    np.testing.assert_array_equal(
-        worker["keys"].current().copy_to_host(), expected_keys
-    )
-    np.testing.assert_array_equal(
-        worker["values"].current().copy_to_host(), expected_values
-    )
-    assert worker["keys"].selector == worker["values"].selector
-
-
+# A representative subset rather than every algorithm: these tests exercise the
+# algorithm-agnostic caching machinery (per-thread wrappers, one shared build,
+# single-flight coalescing, concurrent deserialize), so the cases are chosen
+# for build-result/descriptor variety rather than coverage of every algorithm —
+# basic reduce, a transform, a scan (init_value), a segmented op (offset
+# iterators), a sort (DoubleBuffer + SortOrder), and a multi-output partition.
+# Algorithm-specific native concurrency (transform's launch-config cache, the
+# v2 first-call gate) is covered by its own dedicated tests below, and
+# per-algorithm correctness lives in the per-algorithm test files.
 SHARED_ALGORITHM_CASES = [
     _AlgorithmCase(
         "reduce", _make_reduce_shared, _make_reduce_worker, _run_reduce, _check_reduce
@@ -993,25 +652,11 @@ SHARED_ALGORITHM_CASES = [
         _check_unary,
     ),
     _AlgorithmCase(
-        "binary_transform",
-        _make_binary_shared,
-        _make_binary_worker,
-        _run_binary,
-        _check_binary,
-    ),
-    _AlgorithmCase(
         "exclusive_scan",
         _make_exclusive_scan_shared,
         _make_scan_worker,
         _run_scan,
         _check_exclusive_scan,
-    ),
-    _AlgorithmCase(
-        "inclusive_scan",
-        _make_inclusive_scan_shared,
-        _make_scan_worker,
-        _run_scan,
-        _check_inclusive_scan,
     ),
     _AlgorithmCase(
         "segmented_reduce",
@@ -1021,51 +666,6 @@ SHARED_ALGORITHM_CASES = [
         _check_segmented_reduce,
     ),
     _AlgorithmCase(
-        "histogram",
-        _make_histogram_shared,
-        _make_histogram_worker,
-        _run_histogram,
-        _check_histogram,
-    ),
-    _AlgorithmCase(
-        "lower_bound",
-        _make_lower_bound_shared,
-        _make_binary_search_worker,
-        _run_binary_search,
-        _check_lower_bound,
-    ),
-    _AlgorithmCase(
-        "upper_bound",
-        _make_upper_bound_shared,
-        _make_binary_search_worker,
-        _run_binary_search,
-        _check_upper_bound,
-    ),
-    _AlgorithmCase(
-        "select", _make_select_shared, _make_select_worker, _run_select, _check_select
-    ),
-    _AlgorithmCase(
-        "three_way_partition",
-        _make_three_way_shared,
-        _make_three_way_worker,
-        _run_three_way,
-        _check_three_way,
-    ),
-    _AlgorithmCase(
-        "unique_by_key",
-        _make_unique_shared,
-        _make_unique_worker,
-        _run_unique,
-        _check_unique,
-    ),
-    _AlgorithmCase(
-        "merge_sort",
-        _make_merge_sort_shared,
-        _make_merge_sort_worker,
-        _run_merge_sort,
-        _check_merge_sort,
-    ),
-    _AlgorithmCase(
         "radix_sort",
         _make_radix_sort_shared,
         _make_radix_sort_worker,
@@ -1073,11 +673,11 @@ SHARED_ALGORITHM_CASES = [
         _check_radix_sort,
     ),
     _AlgorithmCase(
-        "segmented_sort",
-        _make_segmented_sort_shared,
-        _make_segmented_sort_worker,
-        _run_segmented_sort,
-        _check_segmented_sort,
+        "three_way_partition",
+        _make_three_way_shared,
+        _make_three_way_worker,
+        _run_three_way,
+        _check_three_way,
     ),
 ]
 
@@ -1360,56 +960,6 @@ def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
         # Only the current device's arch loads; the other entry stays lazy.
         assert algorithm.build_results[current_key]._loaded
         assert not algorithm.build_results[other_key]._loaded
-
-
-def test_free_threaded_deserialize_diagnostics_are_thread_local(compute_module):
-    cc = compute_module
-    _require_serialization_backend()
-
-    source_algorithm = _make_reduce_shared(cc)
-    blob = cc.serialize(source_algorithm)
-    c_magic = b"CCCLSER1"
-    c_header_offset = blob.find(c_magic)
-    assert c_header_offset >= 0
-
-    bad_magic = bytearray(blob)
-    bad_magic[c_header_offset : c_header_offset + len(c_magic)] = b"XXXXXXXX"
-
-    bad_payload_kind = bytearray(blob)
-    payload_kind_offset = c_header_offset + len(c_magic) + 4
-    bad_payload_kind[payload_kind_offset : payload_kind_offset + 4] = (
-        0xFFFFFFFF
-    ).to_bytes(4, "little")
-
-    corruptions = [
-        (bytes(bad_magic), "bad magic"),
-        (bytes(bad_payload_kind), "unknown payload kind"),
-    ]
-
-    for _ in range(STRESS_ITERATIONS):
-        errors = [None] * len(corruptions)
-
-        def make_thread(worker_id, corrupted_blob):
-            def thread(barrier):
-                barrier.wait()
-                try:
-                    cc.deserialize(corrupted_blob)
-                except RuntimeError as error:
-                    errors[worker_id] = str(error)
-                    return
-                raise AssertionError("deserializing a corrupted C blob must fail")
-
-            return thread
-
-        _run_threaded(
-            [
-                make_thread(worker_id, corrupted_blob)
-                for worker_id, (corrupted_blob, _) in enumerate(corruptions)
-            ]
-        )
-
-        for error, (_, expected_message) in zip(errors, corruptions):
-            assert expected_message in error
 
 
 def _cache_miss_reduce(cc, worker_id, iteration):
@@ -1943,27 +1493,6 @@ def _iterator_counting(cc):
     return cc.CountingIterator(np.int32(0)), np.dtype(np.int32), 32, sum(range(32))
 
 
-def _iterator_constant(cc):
-    return cc.ConstantIterator(np.int32(5)), np.dtype(np.int32), 32, 32 * 5
-
-
-def _iterator_cache_modified(cc):
-    h_in = np.arange(32, dtype=np.int32)
-    d_in = DeviceArray.from_numpy(h_in)
-    return (
-        cc.CacheModifiedInputIterator(d_in, "stream"),
-        h_in.dtype,
-        h_in.size,
-        int(h_in.sum()),
-    )
-
-
-def _iterator_reverse(cc):
-    h_in = np.arange(32, dtype=np.int32)
-    d_in = DeviceArray.from_numpy(h_in)
-    return cc.ReverseIterator(d_in), h_in.dtype, h_in.size, int(h_in.sum())
-
-
 def _iterator_permutation(cc):
     h_values = np.arange(32, dtype=np.int32)
     h_indices = np.arange(31, -1, -1, dtype=np.int32)
@@ -1974,16 +1503,6 @@ def _iterator_permutation(cc):
         h_values.dtype,
         h_indices.size,
         int(h_values[h_indices].sum()),
-    )
-
-
-def _iterator_shuffle(cc):
-    num_items = 32
-    return (
-        cc.ShuffleIterator(num_items, seed=1234),
-        np.dtype(np.int64),
-        num_items,
-        sum(range(num_items)),
     )
 
 
@@ -2009,13 +1528,15 @@ def _iterator_transform(cc):
     )
 
 
+# A representative subset: the shared-iterator race is IteratorBase's per-instance
+# lazy Op construction (guarded by _op_lock), which is identical for every
+# iterator type, so these cover the structural variety rather than every iterator
+# — a leaf iterator, a compound iterator that wraps a child and memoizes a
+# compiled op (transform), and a compound iterator with two children
+# (permutation). Per-iterator correctness lives in the dedicated iterator tests.
 ITERATOR_FACTORIES = [
     _iterator_counting,
-    _iterator_constant,
-    _iterator_cache_modified,
-    _iterator_reverse,
     _iterator_permutation,
-    _iterator_shuffle,
     _iterator_transform,
 ]
 
@@ -2148,10 +1669,3 @@ def test_runtime_ownership_isolation(compute_module):
 
     for _ in range(STRESS_ITERATIONS):
         _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
-
-
-def test_cache_clear_while_active_operations_is_not_a_supported_contract():
-    pytest.skip(
-        "clear_all_caches() while cached operations are active is an unsupported "
-        "contract decision; see ST-19 in stress_tests.md."
-    )

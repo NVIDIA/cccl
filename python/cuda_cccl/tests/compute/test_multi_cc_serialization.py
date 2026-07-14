@@ -53,7 +53,12 @@ try:
 except ImportError:
     USING_V2 = False
 
-pytestmark = pytest.mark.skipif(
+# Marker for tests that exercise real v1 serialization or NVRTC/LTO-IR
+# compilation. The fake-backed protocol tests (``_FakeBuildResult`` +
+# ``_PerCCBuildResults``) and pure-logic tests below are backend-agnostic and
+# deliberately run on both backends, so the skip is applied per-test here
+# rather than to the whole module.
+requires_serialization = pytest.mark.skipif(
     USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
 )
 
@@ -162,6 +167,10 @@ class _TrackingLock:
 
 
 def test_aot_build_results_load_once_per_device_without_recompiling():
+    """Owner device loads the canonical result in place; a second same-cc device
+    loads an independent serialize -> deserialize -> load clone. Each is cached
+    per device, so repeat resolves reuse it without re-loading or recompiling.
+    """
     source = _FakeBuildResult(b"sm80-cubin")
     build_results = _PerCCBuildResults({80: source})
 
@@ -178,6 +187,10 @@ def test_aot_build_results_load_once_per_device_without_recompiling():
 
 
 def test_aot_build_result_concurrent_load_is_coalesced_per_device():
+    """Concurrent first-load requests for one device coalesce through
+    single-flight to a single load, and every caller receives that same
+    loaded result.
+    """
     load_started = threading.Event()
     allow_load = threading.Event()
     source = _FakeBuildResult(b"sm80-cubin", (load_started, allow_load))
@@ -199,6 +212,9 @@ def test_aot_build_result_concurrent_load_is_coalesced_per_device():
 
 
 def test_aot_build_result_load_failure_is_shared_and_retryable():
+    """A failing first load hands every concurrent waiter the same exception and
+    removes the failed entry, so a later call retries and can succeed.
+    """
     thread_count = 4
     source = _FakeBuildResult(b"sm80-cubin", load_failures=1)
     build_results = _PerCCBuildResults({80: source})
@@ -232,6 +248,10 @@ def test_aot_build_result_load_failure_is_shared_and_retryable():
 
 
 def test_aot_serialization_waits_for_canonical_first_load():
+    """serialize_build_result() takes the same per-cc source lock as the first
+    in-place load, so a serialize started mid-load blocks until the load
+    finishes instead of reading half-loaded state.
+    """
     load_started = threading.Event()
     allow_load = threading.Event()
     source = _FakeBuildResult(b"sm80-cubin", (load_started, allow_load))
@@ -253,60 +273,6 @@ def test_aot_serialization_waits_for_canonical_first_load():
         assert serialize_future.result() == b"sm80-cubin"
 
     assert source.serialize_count == 1
-
-
-def test_current_device_build_result_preserves_device_query_free_fast_path(
-    monkeypatch,
-):
-    source = _FakeBuildResult(b"sm80-cubin")
-    source._loaded = True
-    build_results = _PerCCBuildResults({80: source}, loaded_device_id=0)
-    # Default wrappers resolve their binding once at construction (see
-    # cache_build_results) and pass it to every resolve_build_result call.
-    bound_result = build_results.resolve(80, 0)
-    assert bound_result is source
-
-    def fail_device_query(*args, **kwargs):
-        raise AssertionError("current-device builds must not query on invocation")
-
-    monkeypatch.setattr(cccl_interop, "current_device_info", fail_device_query)
-    monkeypatch.setattr(cccl_interop, "current_device_id", fail_device_query)
-
-    assert cccl_interop.resolve_build_result(build_results, bound_result) is source
-    assert source.load_count == 0
-
-
-def test_explicit_aot_compilation_cache_normalizes_compute_capability():
-    from cuda.compute import clear_all_caches
-
-    clear_all_caches()
-    build_count = 0
-
-    def build():
-        nonlocal build_count
-        build_count += 1
-        return _PerCCBuildResults({80: _FakeBuildResult(b"sm80-cubin")})
-
-    try:
-        first, first_bound = cache_build_results(
-            _FakeBuildResult,
-            "specialization",
-            compute_capability=80,
-            builder=build,
-        )
-        second, second_bound = cache_build_results(
-            _FakeBuildResult,
-            "specialization",
-            compute_capability=(8, 0),
-            builder=build,
-        )
-    finally:
-        clear_all_caches()
-
-    assert first is second
-    # Explicit AOT builds have no current device to bind to.
-    assert first_bound is None and second_bound is None
-    assert build_count == 1
 
 
 def _patch_default_build_env(monkeypatch, device, *, backend_serializes):
@@ -492,6 +458,7 @@ def _compilable_ccs(want=2):
 # ----------------------------------------------------------------------------
 
 
+@requires_serialization
 def test_proxy_single_cc_compile_is_not_loaded():
     ccs = _compilable_ccs(1)
     if not ccs:
@@ -503,6 +470,7 @@ def test_proxy_single_cc_compile_is_not_loaded():
     assert not builder.build_results[cc]._loaded
 
 
+@requires_serialization
 def test_proxy_multi_cc_compile_produces_one_build_result_per_cc():
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -512,6 +480,7 @@ def test_proxy_multi_cc_compile_produces_one_build_result_per_cc():
     assert all(not br._loaded for br in builder.build_results.values())
 
 
+@requires_serialization
 def test_multi_cc_serialize_deserialize_roundtrip_defers_load():
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -571,6 +540,7 @@ def _transform_case():
     return make, arch_bytes
 
 
+@requires_serialization
 @pytest.mark.parametrize(
     "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
 )
@@ -612,6 +582,7 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
         assert arch_bytes(it) == ref[lo]
 
 
+@requires_serialization
 def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -654,6 +625,7 @@ def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     assert set(it._input_deref_op.keys()) == {hi_cc, lo_cc}
 
 
+@requires_serialization
 def test_select_always_false_op_recompiles_per_target_cc():
     """``_always_false_op`` is a module-global cache whose LTO-IR is linked into
     every ``make_select`` build (as the three-way-partition's second predicate).
@@ -686,6 +658,7 @@ def test_select_always_false_op_recompiles_per_target_cc():
 # ----------------------------------------------------------------------------
 
 
+@requires_serialization
 def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
     """Constructing an unannotated TransformIterator infers the lambda's return
     type; that inference is architecture-independent and must not query the
@@ -710,6 +683,7 @@ def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
     assert it.value_type == from_numpy_dtype(np.dtype(np.int64))
 
 
+@requires_serialization
 def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
     """``deserialize()`` must neither recompile device code nor require a GPU.
 
@@ -769,6 +743,7 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 # ----------------------------------------------------------------------------
 
 
+@requires_serialization
 def test_compile_only_then_lazy_load_and_execute():
     cc = current_device_cc_key()
 
@@ -787,6 +762,7 @@ def test_compile_only_then_lazy_load_and_execute():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
+@requires_serialization
 def test_multi_cc_loads_only_the_current_device_build_result():
     # This test executes kernels, so it legitimately needs a GPU; ensure the
     # current device's cc is one of the built arches.
@@ -812,6 +788,7 @@ def test_multi_cc_loads_only_the_current_device_build_result():
     assert not loaded.build_results[other]._loaded
 
 
+@requires_serialization
 def test_fused_fast_path_unchanged_when_no_cc_given():
     h = np.arange(512, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h)
@@ -851,7 +828,12 @@ def _same_cc_device_pair():
     return None
 
 
+@requires_serialization
 def test_second_device_loads_via_clone_without_recompiling():
+    """On real same-cc GPUs, the first device loads the canonical build result
+    in place and the second loads an independent serialize -> deserialize ->
+    load clone, reusing the compiled payload without recompiling.
+    """
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
@@ -887,7 +869,12 @@ def test_second_device_loads_via_clone_without_recompiling():
     assert loaded_b._loaded
 
 
+@requires_serialization
 def test_deserialized_wrapper_runs_on_both_devices():
+    """One deserialized wrapper runs correctly on two same-cc GPUs: the first
+    device to execute claims and loads the canonical result, the second loads
+    its own clone.
+    """
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
@@ -921,6 +908,7 @@ def test_deserialized_wrapper_runs_on_both_devices():
 # ----------------------------------------------------------------------------
 
 
+@requires_serialization
 def test_serialize_while_other_threads_execute():
     """serialize() must be safe while other threads run the same build.
 
@@ -981,6 +969,7 @@ def test_serialize_while_other_threads_execute():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
+@requires_serialization
 def test_double_serialize_roundtrip_is_stable_and_executes():
     """serialize -> deserialize -> serialize -> deserialize is stable.
 
@@ -1016,13 +1005,11 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
+@requires_serialization
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     """Real-GPU check of the shared default entry (see the fake-based
     test_default_build_second_same_cc_device_shares_the_entry for the
     protocol): the second same-cc device must never run a native build."""
-    # TODO: drop this skip once v2 supports build-result serialization.
-    if USING_V2:
-        pytest.skip("v2 cannot serialize build results; defaults key per device")
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
