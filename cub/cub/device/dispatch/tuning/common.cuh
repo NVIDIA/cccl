@@ -228,9 +228,8 @@ namespace detail
       return "LookbackDelayAlgorithm::exponential_backon";
     case LookbackDelayAlgorithm::__reduce_by_key:
       return "LookbackDelayAlgorithm::__reduce_by_key";
-    default:
-      return "<unknown LookbackDelayAlgorithm>";
   }
+  return "<unknown LookbackDelayAlgorithm>";
 }
 } // namespace detail
 

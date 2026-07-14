@@ -135,7 +135,7 @@ struct agent_t
     // number of keys per tile
     const int keys1_count_tile = static_cast<int>(keys1_end - keys1_beg);
     const int keys2_count_tile = static_cast<int>(keys2_end - keys2_beg);
-    if constexpr (IsFullTile)
+    if constexpr (IsFullTile) // NOLINT(bugprone-branch-clone)
     {
       _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == items_per_tile, "");
     }
