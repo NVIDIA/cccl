@@ -467,6 +467,9 @@ def generate_dispatch_job_name(matrix_job, job_type, job_info):
         else ""
     )
 
+    if matrix_job.get("use_sccache_dist", False):
+        extra_info += " (dist)"
+
     return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
