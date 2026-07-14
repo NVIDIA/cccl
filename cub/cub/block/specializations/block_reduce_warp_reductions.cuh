@@ -177,10 +177,11 @@ struct BlockReduceWarpReductions
     // single-thread sequential loop over the warp aggregates.
     // When __reduce_<op>_sync is available (redux), the parallel path is a single HW instruction,
     // so we use a lower threshold.
+    // Without HW redux the shuffle-based path is not faster than the sequential unrolled loop
+    // over at most 31 warp aggregates, so we disable it.
     // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
-    constexpr int small_block_warp_threshold = is_warp_redux_op_supported<ReductionOp, T> ? 2 : 4;
     constexpr bool use_parallel_reduction =
-      (warps >= small_block_warp_threshold) && (threads_per_block >= warp_threads)
+      is_warp_redux_op_supported<ReductionOp, T> && (warps >= 2) && (threads_per_block >= warp_threads)
       && ::cuda::has_identity_element_v<ReductionOp, T>;
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
