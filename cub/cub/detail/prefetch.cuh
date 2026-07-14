@@ -97,6 +97,9 @@ struct BlockPrefetch
   {
     if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<It>)
     {
+      // The tile is strided by the linear thread id, which this implementation derives from threadIdx.x alone
+      _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "BlockPrefetch requires a one-dimensional thread block");
+
       const int total_bytes = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
       const auto src_ptr    = ::cuda::ptr_rebind<char>(::cuda::std::to_address(tile_base));
       if (total_bytes <= 0)
