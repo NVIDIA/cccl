@@ -89,7 +89,10 @@ function(simd_codegen_set_cuda_arch target_name arch)
       PRIVATE "--generate-code=arch=compute_${arch},code=sm_${arch}"
     )
   else()
-    set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES "${arch}")
+    set_target_properties(
+      ${target_name}
+      PROPERTIES CUDA_ARCHITECTURES "${arch}"
+    )
   endif()
 endfunction()
 
