@@ -158,7 +158,7 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeviceReduceKernel(
-  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const KernelNumItemsT kernel_num_items,
   GridEvenShare<OffsetT> even_share,
@@ -310,7 +310,7 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(current_policy<PolicySelector>().single_tile.threads_per_block),
-  1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  1) void DeviceReduceSingleTileKernel(const InputIteratorT d_in,
                                        OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,
