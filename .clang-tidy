@@ -191,6 +191,8 @@ Checks:
   - '-bugprone-invalid-enum-default-initialization'
   - '-bugprone-derived-method-shadowing-base-method'
   - '-bugprone-unsafe-to-allow-exceptions'
+  - '-bugprone-sizeof-expression'
+  - '-modernize-use-nullptr'
 
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
