@@ -30,7 +30,9 @@
 #endif // ^^^ no cooperative groups ^^^
 
 #include <cuda/__fwd/hierarchy.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/extents.h>
+#include <cuda/std/__fwd/span.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -79,6 +81,9 @@ template <class _Data, bool _IsExahustive>
 class group_as;
 
 class identity_mapping;
+
+template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent>
+class take;
 
 // synchronizers
 
