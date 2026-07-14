@@ -29,6 +29,20 @@ __global__ void rle_init_states(StateT* states, long long n_states)
   }
 }
 
+enum class RleRoute : int
+{
+  none       = -1,
+  stock      = 0,
+  persistent = 1,
+};
+
+inline bool persistent_rle_gate(
+  long long tiles, const void* d_keys, const void* d_temp_storage, int cc_major, long long smem_optin, size_t dyn_smem)
+{
+  return tiles >= kStockDispatchTiles && tiles <= 0x7fffffff && ((size_t) d_keys & 15u) == 0
+      && ((size_t) d_temp_storage & 7u) == 0 && cc_major >= 10 && (size_t) smem_optin >= dyn_smem;
+}
+
 template <class Config, class KeyT, class LenT, class NumRunsT, class OffT>
 inline cudaError_t persistent_rle_encode(
   void* d_temp_storage,
@@ -38,8 +52,13 @@ inline cudaError_t persistent_rle_encode(
   LenT* d_counts,
   NumRunsT* d_num_runs,
   OffT num_items,
-  cudaStream_t stream = 0)
+  cudaStream_t stream   = 0,
+  RleRoute* route_taken = nullptr)
 {
+  if (route_taken)
+  {
+    *route_taken = RleRoute::none;
+  }
   // size query must cover BOTH paths (the same allocation may serve either across calls)
   size_t cub_bytes = 0;
   cub::DeviceRunLengthEncode::Encode(nullptr, cub_bytes, d_keys, d_unique, d_counts, d_num_runs, num_items, stream);
@@ -69,11 +88,18 @@ inline cudaError_t persistent_rle_encode(
   {
     return error;
   }
-  if (tiles < kStockDispatchTiles || tiles > 0x7fffffff || ((size_t) d_keys & 15u) != 0
-      || ((size_t) d_temp_storage & 7u) != 0 || cc_major < 10 || (size_t) smem_optin < Config::kDynSmem)
+  if (!persistent_rle_gate(tiles, d_keys, d_temp_storage, cc_major, smem_optin, Config::kDynSmem))
   {
+    if (route_taken)
+    {
+      *route_taken = RleRoute::stock;
+    }
     return cub::DeviceRunLengthEncode::Encode(
       d_temp_storage, temp_storage_bytes, d_keys, d_unique, d_counts, d_num_runs, num_items, stream);
+  }
+  if (route_taken)
+  {
+    *route_taken = RleRoute::persistent;
   }
   auto* states          = (TilePartialStateT*) d_temp_storage;
   const int init_blocks = (int) ((tiles + 255) / 256);
