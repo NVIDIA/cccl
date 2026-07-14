@@ -2450,6 +2450,18 @@ struct DeviceScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive max-scan of an ``int`` device vector
+  //! with the initial value provided as a deferred device value.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin device-inclusive-scan-init-deferred
+  //!     :end-before: example-end device-inclusive-scan-init-deferred
+  //!
   //! @endrst
   //!
   //! @tparam InputIteratorT

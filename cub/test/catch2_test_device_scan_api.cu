@@ -140,6 +140,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload is 
 
 C2H_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload works", "[scan][device]")
 {
+  // example-begin device-inclusive-scan-init-deferred
   thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
   thrust::device_vector<int> out(input.size());
   thrust::device_vector<int> init_storage{1};
@@ -167,6 +168,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload wor
     static_cast<int>(input.size()));
 
   thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
+  // example-end device-inclusive-scan-init-deferred
 
   REQUIRE(expected == out);
 }
