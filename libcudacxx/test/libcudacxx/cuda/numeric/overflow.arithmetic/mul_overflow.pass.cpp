@@ -117,10 +117,11 @@ TEST_FUNC constexpr void test_corner_cases()
     using U             = cuda::std::uint32_t;
     using U2x           = cuda::std::uint64_t;
     constexpr auto min  = cuda::std::numeric_limits<T>::min();
+    constexpr auto max  = cuda::std::numeric_limits<T>::max();
     constexpr auto umax = cuda::std::numeric_limits<U>::max();
     test_mul_overflow<T2x, T, T>(min, -1, T2x{min} * (-1ll), false);
     test_mul_overflow<T2x, T, T>(min, min, T2x{min} * T2x{min}, false);
-    test_mul_overflow<T2x, T, T>(T{umax}, T{umax}, T2x{umax * umax}, false);
+    test_mul_overflow<T2x, T, T>(max, max, T2x{max} * T2x{max}, false);
     test_mul_overflow<U2x, U, U>(umax, umax, U2x{umax} * U2x{umax}, false);
     test_mul_overflow<T2x, U, U>(umax, umax, -8589934591, true);
   }
