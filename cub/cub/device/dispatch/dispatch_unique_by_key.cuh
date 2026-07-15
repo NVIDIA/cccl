@@ -34,6 +34,8 @@
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_empty.h>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key

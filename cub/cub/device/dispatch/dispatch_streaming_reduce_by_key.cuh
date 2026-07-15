@@ -29,6 +29,8 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce_by_key

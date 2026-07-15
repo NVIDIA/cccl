@@ -304,9 +304,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
 
         // Log device_reduce_sweep_kernel configuration
         detail::log(
-          "Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
+          "Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
           "%d items per thread, %d SM occupancy\n",
-          num_current_segments,
+          (long long) num_current_segments,
           policy.SegmentedReduce().ThreadsPerBlock(),
           (long long) stream,
           policy.SegmentedReduce().ItemsPerThread(),
@@ -598,9 +598,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     const auto num_current_segments = ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
     // Log device_reduce_sweep_kernel configuration
-    log("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
+    log("Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
         "%d items per thread, %d SM occupancy\n",
-        num_current_segments,
+        (long long) num_current_segments,
         active_policy.large_reduce.threads_per_block,
         (long long) stream,
         active_policy.large_reduce.items_per_thread,
