@@ -268,7 +268,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy accepts cuda::device_buffer
   cuda::stream stream{cuda::devices[0]};
   auto input = cuda::make_device_buffer<type>(stream, cuda::devices[0], {2, 5, 9, 14, 20});
   c2h::device_vector<type> output(input.size(), thrust::no_init);
-  auto output_it = thrust::raw_pointer_cast(output.data());
+  const auto output_it = thrust::raw_pointer_cast(output.data());
 
   void* temporary_storage     = nullptr;
   std::size_t temporary_bytes = 0;
