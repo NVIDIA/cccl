@@ -539,7 +539,8 @@ CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStr
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     ({
-      detail::log("Synchronizing...\n");
+      // we log unconditionally when CUB_DEBUG_SYNC is enabled
+      detail::log_always("Synchronizing...\n");
       return SyncStream(stream);
     }),
     ({
