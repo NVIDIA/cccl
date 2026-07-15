@@ -226,10 +226,8 @@ struct DevicePartition
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
-    using choose_offset_t         = detail::choose_signed_offset<NumItemsT>;
-    using offset_t                = typename choose_offset_t::type;
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
     if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
@@ -237,8 +235,16 @@ struct DevicePartition
       return error;
     }
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
+    return detail::dispatch_with_env(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        using default_policy_selector = detail::select::
+          policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
+        using policy_selector_t =
+          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -250,7 +256,7 @@ struct DevicePartition
           NullType{},
           static_cast<offset_t>(num_items),
           stream,
-          policy_selector);
+          __policy_selector_adapter<policy_selector_t>{});
       });
   }
 
