@@ -34,7 +34,10 @@ namespace detail
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST,
                ({
-                 static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
+                 static const bool enabled = [] {
+                   const char* const env = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING");
+                   return env != nullptr && ::std::atoi(env) != 0;
+                 }();
                  return enabled;
                }),
                ({ return false; }));
