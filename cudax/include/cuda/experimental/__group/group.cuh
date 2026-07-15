@@ -176,7 +176,6 @@ public:
     return __mapping_result_;
   }
 
-  // todo(dabayer): Do we want to expose synchronizer getter?
   [[nodiscard]] _CCCL_DEVICE_API const synchronizer_type& synchronizer() const noexcept
   {
     return __synchronizer_;
@@ -194,7 +193,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_);
+    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
@@ -207,7 +206,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_);
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_, __hier_);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)

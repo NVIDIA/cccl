@@ -184,11 +184,14 @@ cudax_add_catch2_test(test_target group.mapping.identity_mapping
 cudax_add_catch2_test(test_target group.mapping.take
     group/mapping/take.cu
 )
+cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
+    group/synchronizer/barrier_synchronizer.cu
+)
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )
-cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
-    group/synchronizer/barrier_synchronizer.cu
+cudax_add_catch2_test(test_target group.synchronizer.level_synchronizer
+    group/synchronizer/level_synchronizer.cu
 )
 cudax_add_catch2_test(test_target group.cooperative_algorithm
     group/cooperative_algorithm.cu

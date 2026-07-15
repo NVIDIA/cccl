@@ -87,10 +87,12 @@ class take;
 
 // synchronizers
 
-class lane_synchronizer;
-
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
+
+class lane_synchronizer;
+
+class level_synchronizer;
 
 // traits
 

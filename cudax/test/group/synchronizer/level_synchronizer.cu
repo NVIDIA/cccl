@@ -8,10 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/barrier>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/bit>
+#include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -22,27 +23,27 @@
 namespace
 {
 template <class Level, class Config>
-__device__ void test_lane_synchronizer(const Level& level, Config config)
+__device__ void test_level_synchronizer(const Level& level, Config config)
 {
   const auto& hierarchy = config.hierarchy();
 
-  using Synchronizer = cudax::lane_synchronizer;
+  using Synchronizer = cudax::level_synchronizer;
   static_assert(cuda::std::is_empty_v<Synchronizer>);
 
   // Test default constructor.
   static_assert(cuda::std::is_trivially_default_constructible_v<Synchronizer>);
 
-  // Test make_instance(...).
+  // Test __synchronizer_instance<Level>
   {
-    const auto parent_group = cudax::make_this_group(level, config);
-    const ThreadsInWarpMappingResult prev_mapping_result;
+    using MappingResult        = cudax::__this_mapping_result<Level>;
+    using SynchronizerInstance = typename Synchronizer::template __synchronizer_instance<Level>;
 
-    const cudax::group_by mapping{2};
-    const Synchronizer synchronizer{};
+    MappingResult mapping_result{};
+    Synchronizer synchronizer{};
 
-    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
-    const auto synchronizer_instance =
-      synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
+    // Test default constructor.
+    static_assert(cuda::std::is_nothrow_default_constructible_v<SynchronizerInstance>);
+    SynchronizerInstance synchronizer_instance{};
 
     // Test do_sync(...).
     static_assert(
@@ -64,26 +65,36 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    test_lane_synchronizer(cuda::warp, config);
-    test_lane_synchronizer(cuda::block, config);
-    test_lane_synchronizer(cuda::cluster, config);
-    test_lane_synchronizer(cuda::grid, config);
+    test_level_synchronizer(cuda::gpu_thread, config);
+    test_level_synchronizer(cuda::warp, config);
+    test_level_synchronizer(cuda::block, config);
+    test_level_synchronizer(cuda::cluster, config);
+    test_level_synchronizer(cuda::grid, config);
   }
 };
 } // namespace
 
-C2H_TEST("Lane synchronizer", "[group]")
+C2H_TEST("Level synchronizer", "[group]")
 {
   const auto device = cuda::devices[0];
 
   const cuda::stream stream{device};
 
   {
-    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<8, 4>());
+    const auto config = cuda::make_config(cuda::grid_dims<8>(), cuda::block_dims<8, 16>(), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
+
   {
-    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims(dim3{8, 4}));
+    const auto config =
+      cuda::make_config(cuda::grid_dims<8>(), cuda::block_dims(dim3{8, 16}), cuda::cooperative_launch{});
+    cuda::launch(stream, config, TestKernel{});
+  }
+
+  if (cuda::device_attributes::compute_capability_major(device) >= 9)
+  {
+    const auto config = cuda::make_config(
+      cuda::grid_dims<8>(), cuda::cluster_dims<4>(), cuda::block_dims(dim3{8, 16}), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
 
