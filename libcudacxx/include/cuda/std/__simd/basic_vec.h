@@ -134,6 +134,7 @@ private:
     __s_.__set(__i, __v);
   }
 
+public:
   using abi_type = _Abi;
 
   using iterator       = __simd_iterator<basic_vec>;
