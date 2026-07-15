@@ -954,25 +954,20 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                         (unsigned) ((pipeline_gen / kStages / 2) & 1));
             return prefix_packed[slot_id][(pipeline_gen / kStages) & 1].run_count();
           };
-          // since we have more store warps, each warptile is split between store warps
-          constexpr int kStoreWarpsPerWarpTile = kNumStoreWarps / kNumCompWarps;
-          const int warp_tile_id               = store_warp_idx / kStoreWarpsPerWarpTile;
-          const int sub                        = store_warp_idx % kStoreWarpsPerWarpTile;
-          const int warp_tile_run_count        = __shfl_sync(kFullMask, lane_warp_tile_run_count, warp_tile_id);
-          const int runs_before_warp_tile      = __shfl_sync(kFullMask, lane_runs_before_warp_tile, warp_tile_id);
+          const int warp_tile_id          = store_warp_idx;
+          const int warp_tile_run_count   = __shfl_sync(kFullMask, lane_warp_tile_run_count, warp_tile_id);
+          const int runs_before_warp_tile = __shfl_sync(kFullMask, lane_runs_before_warp_tile, warp_tile_id);
           // if our register budget allows it and it is worth it, we can buffer intermediate results in register
           // and arrive empty early. this buys 2.5% BWUtil at the worst segments
           if (warp_tile_run_count >= 1 && warp_tile_run_count <= kRegBufMaxRuns)
           {
-            const int run_begin = (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile);
-            const int run_end   = (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile);
             // wait for staged_warp_tile (3/3)
             wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
             constexpr int kBufPerLane = ((kRegBufMaxRuns + 31) / 32 > 0) ? (kRegBufMaxRuns + 31) / 32 : 1;
             KeyT buf_key[kBufPerLane];
             int buf_run_length[kBufPerLane];
             const int warp_tile_offset = warp_tile_id * kWarpTileSize;
-            const int num_rounds       = (run_end - run_begin + 31) >> 5;
+            const int num_rounds       = (warp_tile_run_count + 31) >> 5;
             if (warp_tile_run_count < kHeadPosStagingThreshold)
             {
               const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
@@ -983,10 +978,11 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                 {
                   break;
                 }
-                const int run_idx  = run_begin + it * 32 + lane_id;
+                const int run_idx  = it * 32 + lane_id;
                 const RunSpanT run = dec.decode_run(run_idx);
-                buf_key[it] =
-                  (run_idx < run_end) ? tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems] : KeyT{};
+                buf_key[it]        = (run_idx < warp_tile_run_count)
+                                     ? tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems]
+                                     : KeyT{};
                 buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
               }
             } // if not staged
@@ -999,8 +995,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                 {
                   break;
                 }
-                const int run_idx  = run_begin + it * 32 + lane_id;
-                const bool act     = run_idx < run_end;
+                const int run_idx  = it * 32 + lane_id;
+                const bool act     = run_idx < warp_tile_run_count;
                 const int head_pos = act ? (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)] : 0;
                 buf_key[it]        = tile_keys[head_pos + skip_elems];
                 buf_run_length[it] =
@@ -1026,8 +1022,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
               {
                 break;
               }
-              const int run_idx = run_begin + it * 32 + lane_id;
-              if (run_idx < run_end)
+              const int run_idx = it * 32 + lane_id;
+              if (run_idx < warp_tile_run_count)
               {
                 const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
                 d_unique[global_run_idx]  = buf_key[it];
@@ -1054,8 +1050,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             warp_tile_id * kWarpTileSize,
             runs_before_warp_tile,
             warp_tile_run_count,
-            (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile),
-            (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile),
+            0,
+            warp_tile_run_count,
             lane_id);
           __syncwarp();
           if (lane_id == 0)
