@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -169,10 +170,8 @@ protected:
     }
 
     // Derive the device ordinal from the context
-    cuda_try<cuCtxPushCurrent>(ctx);
-    CUdevice dev                            = cuda_try<cuCtxGetDevice>();
-    [[maybe_unused]] const CUcontext popped = cuda_try<cuCtxPopCurrent>();
-    return static_cast<int>(dev);
+    ::cuda::__ensure_current_context guard{ctx};
+    return static_cast<int>(cuda_try<cuCtxGetDevice>());
   }
 
   int devid_                = -1;
