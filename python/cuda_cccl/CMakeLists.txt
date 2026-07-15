@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-cmake_minimum_required(VERSION 3.30...3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30)
 
 # Must be set before project() initializes the CUDA language; otherwise CMake
 # < 3.23 defaults to sm_52, which is below CCCL's minimum supported arch.
@@ -16,7 +16,7 @@ set(
 
 project(cuda_cccl DESCRIPTION "Python package cuda_cccl" LANGUAGES CUDA CXX C)
 
-find_package(CUDAToolkit)
+find_package(CUDAToolkit REQUIRED)
 
 set(CUDA_VERSION_MAJOR ${CUDAToolkit_VERSION_MAJOR})
 set(CUDA_VERSION_DIR "cu${CUDA_VERSION_MAJOR}")
@@ -71,9 +71,6 @@ add_subdirectory(${_cccl_root} _parent_cccl)
 set(CMAKE_INSTALL_LIBDIR "${old_libdir}") # pop
 set(CMAKE_INSTALL_INCLUDEDIR "${old_includedir}") # pop
 
-# ensure the destination directory exists
-file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
-
 # Install version-specific binaries
 install(
   TARGETS ${_cccl_c_parallel_target}
@@ -83,38 +80,34 @@ install(
 # Build and install Cython extension
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
-get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
-
 set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)
 execute_process(
   COMMAND ${CYTHON_version_command}
   OUTPUT_VARIABLE CYTHON_version_output
   ERROR_VARIABLE CYTHON_version_error
-  RESULT_VARIABLE CYTHON_version_result
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_STRIP_TRAILING_WHITESPACE
+  COMMAND_ERROR_IS_FATAL ANY
 )
 
-if (NOT ${CYTHON_version_result} EQUAL 0)
-  set(_error_msg "Command \"${CYTHON_version_command}\" failed with")
-  set(_error_msg "${_error_msg} output:\n${CYTHON_version_error}")
-  message(FATAL_ERROR "${_error_msg}")
-else()
-  if ("${CYTHON_version_output}" MATCHES "^[Cc]ython version ([^,]+)")
-    set(CYTHON_VERSION "${CMAKE_MATCH_1}")
-  else()
-    if ("${CYTHON_version_error}" MATCHES "^[Cc]ython version ([^,]+)")
-      set(CYTHON_VERSION "${CMAKE_MATCH_1}")
-    endif()
-  endif()
+if ("${CYTHON_version_output}" MATCHES "^[Cc]ython version ([^,]+)")
+  set(CYTHON_VERSION "${CMAKE_MATCH_1}")
+elseif ("${CYTHON_version_error}" MATCHES "^[Cc]ython version ([^,]+)")
+  set(CYTHON_VERSION "${CMAKE_MATCH_1}")
 endif()
 
 # -3 generates source for Python 3
 # -M generates depfile
 # -t cythonizes if PYX is newer than preexisting output
 # -w sets working directory
-set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_cccl_SOURCE_DIR}\"")
-string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
+set(
+  CYTHON_FLAGS
+  -3
+  -M
+  -t
+  -w
+  "${cuda_cccl_SOURCE_DIR}"
+)
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
@@ -150,10 +143,10 @@ endforeach()
 # above.
 add_custom_command(
   OUTPUT "${_generated_extension_src}"
-  COMMAND "${Python3_EXECUTABLE}" -m cython
-  # gersemi: off
-  ARGS
-    ${CYTHON_FLAGS_LIST}
+  COMMAND
+    "${Python3_EXECUTABLE}" -m cython
+    # gersemi: off
+    ${CYTHON_FLAGS}
     -I "${CMAKE_CURRENT_BINARY_DIR}"
     "${pyx_source_file}"
     --output-file "${_generated_extension_src}"
@@ -163,10 +156,6 @@ add_custom_command(
   COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
 )
 
-set_source_files_properties(
-  "${_generated_extension_src}"
-  PROPERTIES GENERATED TRUE
-)
 add_custom_target(
   cythonize_bindings_impl
   ALL
