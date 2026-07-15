@@ -34,12 +34,18 @@ The following factory methods create the most common execution places:
 - ``exec_place::device(id)`` -- a specific CUDA device
 - ``exec_place::host()`` -- the host CPU
 - ``exec_place::current_device()`` -- the CUDA device that is currently active
+- ``exec_place::cuda_context(ctx, devid)`` -- an externally-owned CUDA driver
+  context; the device ordinal is derived from the context when ``devid`` is
+  omitted
 
 When an execution place is activated, it sets the appropriate CUDA context
 (e.g. calls ``cudaSetDevice``). Each execution place also has an *affine*
 data place: the memory location naturally associated with it. For a device
 execution place the affine data place is the device's global memory; for
 the host it is pinned host memory (RAM).
+
+A CUDA-context execution place is non-owning. The caller must keep the
+``CUcontext`` alive while the place and any streams obtained from it are in use.
 
 .. _places-data-places:
 
