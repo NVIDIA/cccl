@@ -58,7 +58,7 @@ template <typename BufferOffsetScanTileStateT, typename BlockOffsetScanTileState
 _CCCL_KERNEL_ATTRIBUTES void InitTileStateKernel(
   BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
   BlockOffsetScanTileStateT block_offset_scan_tile_state,
-  _CCCL_GRID_CONSTANT const TileOffsetT num_tiles)
+  const TileOffsetT num_tiles)
 {
   // Initialize tile status
   buffer_offset_scan_tile_state.InitializeStatus(num_tiles);
@@ -83,12 +83,12 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
-    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
-    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
-    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
-    _CCCL_GRID_CONSTANT const BufferTileOffsetItT buffer_tile_offsets,
+    const InputBufferIt input_buffer_it,
+    const OutputBufferIt output_buffer_it,
+    const BufferSizeIteratorT buffer_sizes,
+    const BufferTileOffsetItT buffer_tile_offsets,
     TileT buffer_offset_tile,
-    _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
+    const TileOffsetT last_tile_offset)
 {
   static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
@@ -212,16 +212,16 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
-    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
-    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
-    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
-    _CCCL_GRID_CONSTANT const BufferOffsetT num_buffers,
-    _CCCL_GRID_CONSTANT const BlevBufferSrcsOutItT blev_buffer_srcs,
-    _CCCL_GRID_CONSTANT const BlevBufferDstsOutItT blev_buffer_dsts,
-    _CCCL_GRID_CONSTANT const BlevBufferSizesOutItT blev_buffer_sizes,
-    _CCCL_GRID_CONSTANT const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
-    _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
-    _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
+    const InputBufferIt input_buffer_it,
+    const OutputBufferIt output_buffer_it,
+    const BufferSizeIteratorT buffer_sizes,
+    const BufferOffsetT num_buffers,
+    const BlevBufferSrcsOutItT blev_buffer_srcs,
+    const BlevBufferDstsOutItT blev_buffer_dsts,
+    const BlevBufferSizesOutItT blev_buffer_sizes,
+    const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
+    const BLevBufferOffsetTileState blev_buffer_scan_state,
+    const BLevBlockOffsetTileState blev_block_scan_state)
 {
   static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
 

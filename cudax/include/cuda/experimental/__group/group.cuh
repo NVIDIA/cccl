@@ -252,7 +252,7 @@ public:
 
 _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup>)
-_CCCL_DEVICE group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
   -> group<_Unit, _ParentGroup, _Mapping, _Synchronizer>;
 } // namespace cuda::experimental
 

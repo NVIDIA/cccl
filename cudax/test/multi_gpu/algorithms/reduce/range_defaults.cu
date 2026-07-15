@@ -19,10 +19,9 @@
 #include <numeric>
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
-
-#include "common.h"
 
 MULTI_GPU_TEST("reduce, range overloads default values", )
 {

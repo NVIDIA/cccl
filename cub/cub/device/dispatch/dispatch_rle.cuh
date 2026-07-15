@@ -175,15 +175,15 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const OffsetsOutputIteratorT d_offsets_out,
-    _CCCL_GRID_CONSTANT const LengthsOutputIteratorT d_lengths_out,
-    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
+    const InputIteratorT d_in,
+    const OffsetsOutputIteratorT d_offsets_out,
+    const LengthsOutputIteratorT d_lengths_out,
+    const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_status,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
   static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
   using AgentRlePolicyT                           = agent_rle_policy<
