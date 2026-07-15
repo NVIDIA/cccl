@@ -451,6 +451,293 @@ as an example:
    At this point, the kernels stored in the reduction object are
    launched and the reduction is performed.
 
+Build results and device state
+------------------------------
+
+An algorithm is built in one of two ways. A **default build**
+(``compute_capability=None``, the common path) targets the current CUDA
+device — it queries that device's compute capability, then compiles and loads
+for it in one step. An **explicit ahead-of-time (AOT) build** (a
+``compute_capability=`` argument naming one or more compute capabilities) names
+its targets directly, compiles for each without loading, and needs no GPU, so it
+can run on a build machine with no device (see
+:ref:`cuda.compute.ahead_of_time_compilation`).
+
+Either way, building produces a native build result — a Cython build-result
+object wrapping the corresponding C runtime struct — that carries two kinds of
+state with different device affinity:
+
+* The **compiled payload** (the compiled device code and its launch policy)
+  depends only on the target compute capability. It is device-independent: the
+  same payload is valid on any device of that compute capability.
+* **Loaded state** is created when the build result is loaded for execution —
+  the registered ``CUlibrary`` and the kernel handles resolved from it. It
+  belongs to the device (and context) it was loaded on. CUB launch paths
+  resolve a ``CUkernel`` to the current-context ``CUfunction`` and may get or
+  set kernel attributes on it, and CUDA kernel-attribute behavior is
+  device-specific.
+
+Consequently, a *loaded* build result cannot be shared across two devices even
+when they have the same compute capability: its handles are device-specific.
+The compiled payload can be reused, but each device needs its own loaded result
+— built directly, or reconstructed from the shared payload. This is a property
+of CUDA and the build struct itself, independent of caching or free-threaded
+Python. The next section describes how ``cuda.compute`` caches build results to
+reuse the payload while giving each device its own loaded state.
+
+Caching and free-threaded Python
+--------------------------------
+
+The user-facing cache behavior is described in :ref:`cuda.compute.caching`. This
+section describes the implementation contracts that keep that behavior correct
+for free-threaded Python and multi-GPU use.
+
+Two cache layers
+++++++++++++++++
+
+Internally, ``cuda.compute`` separates two kinds of cached state:
+
+* **Wrapper objects** are the Python objects returned by ``make_*`` APIs, such as
+  ``make_reduce_into``. They own per-call descriptor state and are cached per
+  Python thread by ``cache_with_registered_key_functions`` in
+  ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
+  sharing mutable wrapper state across concurrent calls from free-threaded
+  Python.
+* **Per-cc build results** (``_PerCCBuildResults``) hold one *canonical* Cython
+  build result per target compute capability — the single authoritative result
+  for that cc, carrying the device-independent compiled payload described in
+  `Build results and device state`_. They are cached by ``cache_build_results``
+  and may be shared by wrapper objects in different Python threads — and, for
+  default builds, across same-cc devices (except on the v2 HostJIT backend
+  today; see `Device keying`_). Each device's loaded result is tracked
+  separately within the entry, so sharing an entry never shares device-specific
+  state.
+
+The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
+thread-local and does not consult the process-wide build-result cache. When a
+wrapper is constructed, a completed build-result hit requires one process-wide
+dictionary lookup and does not take an explicit cache lock. The two build
+kinds then diverge because they differ in whether the target device is known
+when the wrapper is constructed. A default build already knows its device — the
+wrapper cache queried it to build and keys the wrapper to it — so the wrapper
+resolves that device's loaded result once at construction and stores a direct
+reference; executing it then needs no current-device query and no shared-cache
+lookup. An explicit AOT or deserialized wrapper has no such binding — an AOT
+build targets compute capabilities with no GPU queried, and a deserialized
+wrapper is reconstructed without a device binding — so its device is known only
+at call time. Each call resolves the per-device loaded result from a dictionary
+inside the per-cc build results, where a completed lookup also takes no explicit
+lock.
+
+Design requirements
++++++++++++++++++++
+
+The free-threading design is constrained by the following requirements:
+
+* Importing ``cuda.compute`` in a free-threaded CPython interpreter must not
+  re-enable the GIL.
+* Free-threading support should not add global locking or shared-state
+  contention to the normal single-threaded execution path. Wrapper cache hits
+  should be thread-local, and normal algorithm execution should not take a
+  global cache lock.
+* Mutable wrapper state must not be shared across threads.
+* Expensive native build results should still be shared across threads when they
+  are safe to share.
+* Same-key concurrent cold builds should build once; waiters should receive the
+  same result or observe the same exception.
+
+The current free-threading support boundary is Linux with the
+``minimal-cu12`` and ``minimal-cu13`` extras. These extras omit Numba and Numba
+CUDA. Consequently, free-threaded support currently covers built-in ``OpKind``
+operations and externally compiled ``RawOp`` operations, but not Python-callable
+operators or ``cuda.coop._experimental``. The full ``cu12`` and ``cu13`` extras
+remain outside the support claim until the Numba CUDA dependency is replaced by
+a free-threading-compatible implementation.
+
+CI runs ``test_free_threading_stress.py`` directly from the minimal test job.
+The v1 backend is covered across the supported CUDA 12 and 13 lanes, and a
+separate CTK 13.X minimal job runs the same suite against the v2 HostJIT
+backend. Pytest runs each suite in one process while the stress tests create
+and synchronize their own worker threads.
+
+Build and validation requirements
++++++++++++++++++++++++++++++++++
+
+The Cython extension that backs ``cuda.compute`` must opt in to free-threaded
+execution:
+
+.. code-block:: cython
+
+   # cython: freethreading_compatible=True
+
+Without this marker, importing the extension in a free-threaded CPython process
+can cause CPython to re-enable the GIL. The generated extension should advertise
+``Py_MOD_GIL_NOT_USED`` and importing ``cuda.compute`` should leave
+``sys._is_gil_enabled()`` false.
+
+The free-threaded wheel must also keep its free-threaded ABI tag after repair and
+merge steps. For CPython 3.14, the expected wheel tag contains
+``cp314-cp314t`` rather than the regular ``cp314-cp314`` tag. The acceptance
+criteria for a free-threaded build are:
+
+* the wheel has the expected ``cp314-cp314t`` ABI tag;
+* importing ``cuda.compute`` does not re-enable the GIL;
+* the free-threading stress suite passes without forcing ``PYTHON_GIL=0`` or
+  ``-X gil=0``.
+
+
+Device keying
++++++++++++++
+
+User-facing multi-GPU behavior and requirements are described in
+:ref:`cuda.compute.multi_gpu`; this section covers the keying mechanism.
+
+For the default build path, the wrapper cache includes
+the current CUDA runtime device ordinal and compute capability in its key:
+wrapper objects hold device-bound state, so each device (and thread) receives
+its own wrapper. The shared build-result cache is keyed by compute capability
+alone — the compiled payload depends only on the cc — so one shared entry
+serves every same-cc device ordinal.
+
+Per-device loaded state lives inside the shared entry. The device that built
+the entry loads the canonical result in place; each additional same-cc device
+loads its own clone of the compiled payload through serialization (serialize,
+deserialize without loading, then load on the new device) instead of running
+a full native compilation, and the clone re-validates the payload against the
+current device. When the backend cannot serialize build results (the v2 HostJIT
+backend today), sharing is not possible, so default builds are keyed per device
+ordinal instead and each device builds its own entry.
+
+Explicit AOT builds cannot include a device ordinal in their compilation key —
+they build with no GPU queried — so their canonical results are shared
+process-wide by specialization and target compute capabilities. Unlike a default
+build, an AOT build compiles without loading, so no device owns the canonical
+result until first execution: the first device to run claims and loads it, and
+other same-cc devices load their own clone, exactly as above.
+
+The first implementation intentionally keys shared build results by CUDA runtime
+device ordinal rather than by CUDA context handle. User-managed CUDA driver
+contexts are not a target use case for ``cuda.compute``. CUDA runtime,
+``cuda.core``, CuPy, and PyTorch-style applications are expected to use the
+primary-context model, and language frontends generally prefer that model.
+
+Concurrent build coordination
++++++++++++++++++++++++++++++
+
+When several threads miss the same cache key at once, only one should run the
+expensive build and the rest should wait for its result. A shared helper
+provides this coordination, a pattern called *single-flight*. The cache
+dictionary stores either a completed value or a temporary ``_InFlightBuild``
+entry. On a miss, each caller creates a candidate in-flight
+entry, and ``dict.setdefault`` elects one caller to run the builder. Other
+callers receive the winning entry and wait on its ``threading.Event``. If the
+operation succeeds, the in-flight entry is replaced by the completed result and
+all waiting threads receive that same object. If it fails, the exception is
+propagated to the waiting threads and the failed entry is removed so that a
+later call can retry. Completed-result hits do not allocate an in-flight entry
+or take an explicit cache lock.
+
+The same helper coordinates two kinds of misses: a compilation miss in the
+process-wide build cache, where ``cache_build_results`` runs the native build
+once per specialization, and a per-device load miss inside a per-cc build
+result, where ``resolve`` loads (or clones and loads) the result once per
+device.
+
+When adding a new algorithm, the factory that returns the reusable wrapper object
+should use ``cache_with_registered_key_functions``. The wrapper constructor
+should pass the expensive native build operation to ``cache_build_results``,
+which returns two values: the shared build results, and the loaded result bound
+to the constructing device (``None`` for an explicit AOT build, which has no
+constructing device). Store both; ``__call__`` passes them to
+``resolve_build_result`` (see any algorithm class for the pattern).
+Do not perform an expensive native build before entering
+``cache_build_results``; otherwise same-key cold factory calls can duplicate the
+build and bypass single-flight coordination.
+
+The specialization key must include every argument that can affect generated
+code, type layout, policy selection, or native build state. It should not include
+runtime-only values such as array pointers, array contents, item counts, streams,
+or temporary-storage pointers unless those values change the compiled interface.
+
+User-object and descriptor contracts
+++++++++++++++++++++++++++++++++++++
+
+Wrapper objects returned by ``make_*`` APIs are not safe for concurrent calls
+from multiple threads. If two threads need the same algorithm specialization,
+each thread should call the
+factory and receive its own wrapper object, or the caller must externally
+serialize access to a shared wrapper. The wrapper updates its Cython
+``Iterator``, ``Op``, ``Value``, and algorithm-specific descriptors before each
+native call, so concurrent calls through the same wrapper could overwrite the
+descriptor state another thread is about to use.
+
+The same contract applies to wrappers reconstructed by ``deserialize()`` —
+they are the same classes with the same mutable descriptors. Unlike the
+factories, ``deserialize()`` does not hand each calling thread its own object
+through the per-thread wrapper cache: every call constructs a fresh, uncached
+wrapper. The natural deserialize-once-and-share pattern therefore reintroduces
+exactly the descriptor races the per-thread factory cache prevents. Threads
+that need a deserialized algorithm concurrently should each deserialize the
+blob themselves; that performs no recompilation, at the cost of an independent
+native load per object.
+
+Read-only iterator and operator objects may be shared across threads. The
+iterator base class uses a per-iterator lock for first-time lazy construction of
+advance, input-dereference, and output-dereference ``Op`` objects; cached access
+after that remains lock-free. This lock does not make arbitrary mutation safe:
+concurrent mutation of iterator state, operator state, captured state, or child
+iterators remains unsupported unless the caller synchronizes externally.
+
+Mutable execution state belongs to one thread at a time unless the caller
+provides synchronization. This includes output arrays, temporary-storage buffers,
+streams, ``DoubleBuffer`` instances, and other objects whose state changes as
+part of a launch.
+
+Backend-specific notes
+++++++++++++++++++++++
+
+The v1 NVRTC/nvJitLink backend and the v2 HostJIT backend have different
+free-threading risk surfaces and must be audited independently. v1 stresses
+NVRTC, nvJitLink, CUDA library loading, and CUB host dispatch. v2 adds HostJIT
+compiler state, LLVM/Clang initialization, persistent PCH paths, generated
+source/cubin artifacts, and dynamic loader lifetime.
+
+Transform has one additional v1 native-cache rule. Each transform build result
+owns a native cache of launch configurations (``async_config`` /
+``prefetch_config``) in ``c/parallel/src/transform.cu``. Because one build
+result is shared by every thread using the same specialization, and the Cython
+bindings release the GIL around the native call, each configuration is filled
+exactly once through ``std::call_once``; later calls on any thread only pay the
+``once_flag`` fast-path check. This holds on every interpreter build — regular
+GIL builds also execute the native call concurrently once the GIL is released,
+so the cache must be thread-safe unconditionally.
+
+The v2 backend addresses the same transform concern differently, and only on
+Windows. HostJIT compiles generated code with ``-fno-threadsafe-statics``
+because the Windows CRT guard support that thread-safe function-local statics
+require is unavailable. Generated CUB code still initializes function-local
+statics lazily — transform's launch configuration among them — so a
+per-build-result ``first_call_gate``
+(``c/parallel.v2/src/util/first_call_gate.h``) serializes the first successful
+call into each generated function; after it completes, an atomic fast-path check
+lets later concurrent calls proceed without locking. Empty calls bypass the gate
+because they return before CUB initializes the static. This covers transform and
+binary search; other platforms keep thread-safe statics and need no gate.
+
+Clearing caches
++++++++++++++++
+
+``clear_all_caches()`` is process-local. It clears all known per-thread wrapper
+caches through a weak registry of live thread cache containers, and it clears the
+shared build-result cache. Separate Python processes build and cache
+independently.
+
+Calling ``clear_all_caches()`` concurrently with active factory calls or
+algorithm execution is not supported unless the caller synchronizes externally.
+
+
+Source map
+----------
 
 For readers who want to connect this overview back to the source tree:
 
@@ -458,6 +745,7 @@ For readers who want to connect this overview back to the source tree:
   constructing and invoking reusable algorithm objects live under
   ``python/cuda_cccl/cuda/compute/``.
 * The lower-level C/C++ runtime compilation and kernel-building
-  machinery lives under ``c/parallel/``.
+  machinery lives under ``c/parallel/`` (and ``c/parallel.v2/`` for the v2
+  HostJIT backend).
 * User-facing examples for ``cuda.compute`` live under
   ``python/cuda_cccl/tests/compute/examples/``.
