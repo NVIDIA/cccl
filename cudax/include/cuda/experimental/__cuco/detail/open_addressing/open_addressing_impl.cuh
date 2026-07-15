@@ -342,19 +342,11 @@ public:
       return;
     }
 
-    if constexpr (__cg_size == 1)
-    {
-      __open_addressing::__find_if_fn __op{__first, __stencil, __pred, __output_begin, __container_ref};
-      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to find keys", __num_keys, __op, __stream);
-    }
-    else
-    {
-      const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
 
-      __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-    }
+    __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
+      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
+        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
   }
 
   //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
