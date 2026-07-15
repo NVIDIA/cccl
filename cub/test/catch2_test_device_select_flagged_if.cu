@@ -10,6 +10,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
@@ -54,21 +55,18 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, select_flagged_if);
 
 using custom_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 
-template <typename T>
 struct is_even_t
 {
+  template <typename T>
   __host__ __device__ bool operator()(T const& elem) const
   {
-    return !(elem % 2);
+    return cuda::__is_even<T>{}(elem);
   }
-};
 
-template <>
-struct is_even_t<custom_t>
-{
-  __host__ __device__ bool operator()(custom_t elem) const
+  template <template <typename> class... Policies>
+  __host__ __device__ bool operator()(c2h::custom_type_t<Policies> elem) const
   {
-    return !(elem.key % 2);
+   return cuda::__is_even<int>{}(elem.key);
   }
 };
 

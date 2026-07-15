@@ -11,6 +11,7 @@
 #ifndef SIMD_TEST_UTILS_H
 #define SIMD_TEST_UTILS_H
 
+#include <cuda/functional>
 #include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/cmath>
@@ -53,7 +54,7 @@ struct is_even
   template <typename I>
   TEST_FUNC constexpr bool operator()(I i) const noexcept
   {
-    return i % 2 == 0;
+    return cuda::__is_even<T>(i);
   }
 };
 

@@ -2,16 +2,9 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
-#include <unittest/unittest.h>
+#include <cuda/functional>
 
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
+#include <unittest/unittest.h>
 
 template <typename Vector>
 void TestIsPartitionedSimple()
@@ -52,11 +45,11 @@ void TestIsPartitioned()
   v[0] = 1;
   v[1] = 0;
 
-  ASSERT_EQUAL(false, thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  ASSERT_EQUAL(false, thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even<T>{}));
 
-  thrust::partition(v.begin(), v.end(), is_even<T>());
+  thrust::partition(v.begin(), v.end(), cuda::__is_even<T>{});
 
-  ASSERT_EQUAL(true, thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  ASSERT_EQUAL(true, thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even<T>{}));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsPartitioned);
 

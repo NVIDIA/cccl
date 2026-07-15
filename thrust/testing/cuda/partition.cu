@@ -3,17 +3,10 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/partition.h>
 
+#include <cuda/functional>
+
 #include "thrust/detail/raw_pointer_cast.h"
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
 
 template <typename T>
 struct mod_n
@@ -58,7 +51,7 @@ void TestPartitionDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_even<T>(), result.begin());
+  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), cuda::__is_even<T>{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -120,7 +113,7 @@ void TestPartitionStencilDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), is_even<T>(), result.begin());
+  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), cuda::__is_even<T>{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -191,7 +184,7 @@ void TestPartitionCopyDevice(ExecutionPolicy exec)
   thrust::device_vector<pair_type> iterators(1);
 
   partition_copy_kernel<<<1, 1>>>(
-    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>(), iterators.begin());
+    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), cuda::__is_even<T>{}, iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -283,7 +276,7 @@ void TestPartitionCopyStencilDevice(ExecutionPolicy exec)
     stencil.begin(),
     true_results.begin(),
     false_results.begin(),
-    is_even<T>(),
+    cuda::__is_even<T>{},
     iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
@@ -345,7 +338,7 @@ void TestStablePartitionDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_even<T>(), result.begin());
+  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), cuda::__is_even<T>{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -407,7 +400,7 @@ void TestStablePartitionStencilDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), is_even<T>(), result.begin());
+  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), cuda::__is_even<T>{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -478,7 +471,7 @@ void TestStablePartitionCopyDevice(ExecutionPolicy exec)
   thrust::device_vector<pair_type> iterators(1);
 
   stable_partition_copy_kernel<<<1, 1>>>(
-    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>(), iterators.begin());
+    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), cuda::__is_even<T>{}, iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -570,7 +563,7 @@ void TestStablePartitionCopyStencilDevice(ExecutionPolicy exec)
     stencil.begin(),
     true_results.begin(),
     false_results.begin(),
-    is_even<T>(),
+    cuda::__is_even<T>{},
     iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
@@ -706,7 +699,7 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
+  Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), cuda::__is_even<T>{});
 
   Vector ref(5);
   ref[0] = 2;

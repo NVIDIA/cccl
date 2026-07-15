@@ -10,6 +10,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/execution>
 #include <cuda/stream>
@@ -40,7 +41,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::remove_if(cuda_policy(alloc, launch), in.begin(), in.end(), is_even{});
+               cuda::std::remove_if(cuda_policy(alloc, launch), in.begin(), in.end(), cuda::__is_even<T>{});
              });
 }
 
