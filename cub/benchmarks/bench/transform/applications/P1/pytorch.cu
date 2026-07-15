@@ -109,7 +109,7 @@ __device__ __forceinline__ bool is_lerp_weight_small(scalar_t weight)
 }
 
 template <typename scalar_t, typename weight_t>
-__device__ __forceinline__ scalar_t lerp(scalar_t self_, scalar_t end_, weight_t weight_)
+__device__ __forceinline__ scalar_t aten_lerp(scalar_t self_, scalar_t end_, weight_t weight_)
 {
   using opmath_t        = opmath_type<scalar_t>;
   using opmath_weight_t = opmath_type<weight_t>;
@@ -612,7 +612,7 @@ try
       d_b,
       n,
       [=] __device__(T self_val, T end_val) {
-        return ::lerp(self_val, end_val, weight_val);
+        return aten_lerp(self_val, end_val, weight_val);
       },
       s);
 
@@ -622,7 +622,7 @@ try
       d_a,
       n,
       [] __device__(T self_val, T end_val, T weight_val) -> T {
-        return ::lerp(self_val, end_val, weight_val);
+        return aten_lerp(self_val, end_val, weight_val);
       },
       s);
 
