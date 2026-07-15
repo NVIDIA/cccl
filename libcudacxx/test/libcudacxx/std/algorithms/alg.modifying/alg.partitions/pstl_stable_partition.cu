@@ -19,6 +19,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/execution>
@@ -31,28 +32,19 @@
 
 inline constexpr int size = 1000;
 
-template <class T>
-struct is_even
-{
-  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T value) const noexcept
-  {
-    return value % 2 == 0;
-  }
-};
-
 template <class Policy>
 void test_partition(const Policy& policy, thrust::device_vector<int>& input)
 {
   { // Empty does not access anything
     auto res =
-      cuda::std::stable_partition(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), is_even<int>{});
+      cuda::std::stable_partition(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), cuda::__is_even<int>{});
     CHECK(res == nullptr);
   }
 
   const auto mid = size / 2;
   thrust::sequence(input.begin(), input.end(), 0);
   { // With matching predicate
-    auto res = cuda::std::stable_partition(policy, input.begin(), input.end(), is_even<int>{});
+    auto res = cuda::std::stable_partition(policy, input.begin(), input.end(), cuda::__is_even<int>{});
     CHECK(res == cuda::std::next(input.begin(), mid));
     CHECK(cuda::std::equal(policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
     CHECK(cuda::std::equal(policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
@@ -60,7 +52,7 @@ void test_partition(const Policy& policy, thrust::device_vector<int>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // With converting predicate
-    auto res = cuda::std::stable_partition(policy, input.begin(), input.end(), is_even<long>{});
+    auto res = cuda::std::stable_partition(policy, input.begin(), input.end(), cuda::__is_even<long>{});
     CHECK(res == cuda::std::next(input.begin(), mid));
     CHECK(cuda::std::equal(policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
     CHECK(cuda::std::equal(policy, res, input.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));

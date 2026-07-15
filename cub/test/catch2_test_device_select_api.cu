@@ -9,6 +9,8 @@
 #include <thrust/equal.h>
 #include <thrust/memory.h>
 
+#include <cuda/functional>
+
 #include <cstddef>
 
 #include "cub_test_macros.h"
@@ -31,7 +33,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_out(num_items);
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  cuda::__is_even is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -74,7 +76,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   c2h::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  cuda::__is_even is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
