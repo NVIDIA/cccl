@@ -391,13 +391,21 @@ HITRATE_ALGO_ORDER = [
 ]
 
 
-def hitrate_cache_title(algo, sample):
-    """Cache-type title with every algorithm tag that uses that cache."""
+def hitrate_cache_title(algo, sample, available_algos=None):
+    """Cache-type title with algorithm tags that use that cache.
+
+    By default this preserves the catalog-style label listing every known user of
+    the cache family. A focused run can pass its measured hit-rate algorithms so
+    the title does not imply that unmeasured algorithms contributed data.
+    """
     family = HITRATE_CACHE_FAMILY[algo]
+    visible_algos = (
+        set(HITRATE_ALGO_ORDER) if available_algos is None else set(available_algos)
+    )
     tags = [
         ALGO_TAG[other]
         for other in HITRATE_ALGO_ORDER
-        if HITRATE_CACHE_FAMILY[other] == family
+        if HITRATE_CACHE_FAMILY[other] == family and other in visible_algos
     ]
     return (
         f"{family} ({', '.join(tags)})\n{ALGO_TAG[algo]} · {sample} hit rate vs #bins"
@@ -921,8 +929,17 @@ def render_geomean(
     needs_legend_row = layout == "wide" or free_slots == 0
     nrows = perf_rows + (1 if needs_legend_row else 0)
 
+    # In the wide layout, match the overall width used by the per-shape figures.
+    # Geomean omits their characterization sidebar, but collapsing that space made
+    # all_geomean.png roughly 40% narrower than every neighboring image and caused
+    # an unpleasant display-size jump when browsing the run. Give that space to the
+    # performance panels instead.
+    figure_width = 5.0 * ncols + 11.5 if layout == "wide" else 5.4 * ncols
     fig = plt.figure(
-        figsize=(5.4 * ncols, 4.1 * perf_rows + (0.9 if needs_legend_row else 0))
+        figsize=(
+            figure_width,
+            4.1 * perf_rows + (0.9 if needs_legend_row else 0),
+        )
     )
     height_ratios = [4.1] * perf_rows + ([0.9] if needs_legend_row else [])
     gs = fig.add_gridspec(nrows, ncols, height_ratios=height_ratios)
@@ -1013,6 +1030,7 @@ def render_one(
     outpath,
     hr_for_binary=None,
     layout="wide",
+    hitrate_label_scope="family",
 ):
     """Render one per-shape PNG in the selectable wide or legacy tall layout."""
     bins, counts, char_bins = C.char_input(shape)
@@ -1187,7 +1205,11 @@ def render_one(
                 sample,
                 shape,
                 elements_list,
-                hitrate_cache_title(algo, sample),
+                hitrate_cache_title(
+                    algo,
+                    sample,
+                    hitrate_algos if hitrate_label_scope == "measured" else None,
+                ),
             )
         # ONE shared #elements legend below the context graphs, beside the
         # algorithm-series legend. It is never overlaid on a data panel.
@@ -1240,6 +1262,13 @@ def main():
         choices=("wide", "tall"),
         default="wide",
         help="figure arrangement: laptop-friendly wide sidebar (default) or legacy tall stack",
+    )
+    ap.add_argument(
+        "--hitrate-label-scope",
+        choices=("family", "measured"),
+        default="family",
+        help="label hit-rate panels with every cache-family user (default) or only "
+        "algorithms measured in the supplied hit-rate JSON",
     )
     args = ap.parse_args()
 
@@ -1314,6 +1343,7 @@ def main():
                     outpath,
                     hr_for_binary,
                     args.layout,
+                    args.hitrate_label_scope,
                 )
                 written.append(outpath)
             # One geomean-over-shapes figure per (binary, sample): the shape-agnostic
