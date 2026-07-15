@@ -23,6 +23,8 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -112,23 +114,46 @@ enum WarpStoreAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] _CCCL_API constexpr const char* to_string(WarpStoreAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case WARP_STORE_DIRECT:
-      return os << "WARP_STORE_DIRECT";
+      return "WARP_STORE_DIRECT";
     case WARP_STORE_STRIPED:
-      return os << "WARP_STORE_STRIPED";
+      return "WARP_STORE_STRIPED";
     case WARP_STORE_VECTORIZE:
-      return os << "WARP_STORE_VECTORIZE";
+      return "WARP_STORE_VECTORIZE";
     case WARP_STORE_TRANSPOSE:
-      return os << "WARP_STORE_TRANSPOSE";
-    default:
-      return os << "<unknown WarpStoreAlgorithm: " << static_cast<int>(algorithm) << ">";
+      return "WARP_STORE_TRANSPOSE";
   }
+  return "<unknown WarpStoreAlgorithm>";
 }
-#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::WarpStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::WarpStoreAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The WarpStore class provides :ref:`collective <collective-primitives>`

@@ -23,6 +23,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -39,21 +41,44 @@ enum BlockHistogramMemoryPreference
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
 {
   switch (mempref)
   {
     case GMEM:
-      return os << "GMEM";
+      return "GMEM";
     case SMEM:
-      return os << "SMEM";
+      return "SMEM";
     case BLEND:
-      return os << "BLEND";
-    default:
-      return os << "<unknown BlockHistogramMemoryPreference: " << static_cast<int>(mempref) << ">";
+      return "BLEND";
   }
+  return "<unknown BlockHistogramMemoryPreference>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(mempref);
 }
 #endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(mempref), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 namespace detail
 {

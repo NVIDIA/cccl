@@ -24,10 +24,10 @@ using float_type_list = c2h::type_list<float, double>;
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::rfa::rfa_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::ReducePolicy
   {
-    return {{BlockSize, ItemsPerThread, cub::BLOCK_REDUCE_RAKING},
-            {BlockSize, ItemsPerThread, cub::BLOCK_REDUCE_RAKING}};
+    const auto p = cub::ReducePassPolicy{BlockSize, ItemsPerThread, 1, cub::BLOCK_REDUCE_RAKING, cub::LOAD_DEFAULT};
+    return {p, p};
   }
 };
 

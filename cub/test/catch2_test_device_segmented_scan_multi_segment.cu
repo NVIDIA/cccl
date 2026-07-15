@@ -272,7 +272,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -378,7 +378,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   {
     compute_exclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       h_init,
       op);
@@ -454,7 +454,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -541,7 +541,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -908,12 +908,14 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
 
-    for (offset_t offset = h_offsets[segment_id]; offset < h_offsets[segment_id + 1]; ++offset)
+    for (offset_t offset = h_offsets[segment_id];
+         offset < h_offsets[segment_id + 1]; // NOLINT(bugprone-misplaced-widening-cast)
+         ++offset)
     {
       h_expected[offset] = init_op<value_t>{}(h_expected[offset]);
     }

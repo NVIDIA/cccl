@@ -16,6 +16,8 @@ struct stream_registry_factory_t;
 #include <cuda/__execution/tune.h>
 #include <cuda/__iterator/constant_iterator.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key);
@@ -349,7 +351,7 @@ C2H_TEST("Device scan inclusive-scan-by-key uses environment", "[scan][by_key][d
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ScanByKeyPolicy", "[scan][by_key][device]")
+C2H_TEST("Test ScanByKeyPolicy properties", "[scan][by_key][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanByKeyPolicy>);
@@ -373,7 +375,8 @@ C2H_TEST("ScanByKeyPolicy", "[scan][by_key][device]")
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -381,5 +384,17 @@ C2H_TEST("ScanByKeyPolicy", "[scan][by_key][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "ScanByKeyPolicy { .threads_per_block = 256, .items_per_thread = 11"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = BLOCK_STORE_DIRECT, .scan_algorithm = BLOCK_SCAN_RAKING"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 832, .l2_write_latency = 1165 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -12,6 +12,8 @@
 #include <cuda/devices>
 #include <cuda/stream>
 
+#include <sstream>
+
 #include <c2h/catch2_test_helper.h>
 
 struct square_ref_op
@@ -232,7 +234,7 @@ C2H_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", block_sizes)
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ForPolicy", "[for][device]")
+C2H_TEST("Test ForPolicy properties", "[for][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ForPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ForPolicy>);
@@ -250,5 +252,12 @@ C2H_TEST("ForPolicy", "[for][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1) == "ForPolicy { .threads_per_block = 128, .items_per_thread = 4 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
