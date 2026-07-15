@@ -11,7 +11,6 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/complex>
 #include <cuda/std/execution>
 #include <cuda/stream>
 

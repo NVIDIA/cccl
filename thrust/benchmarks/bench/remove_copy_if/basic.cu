@@ -5,7 +5,6 @@
 #include <thrust/remove.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/complex>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
