@@ -141,8 +141,7 @@ inline constexpr bool is_non_deterministic_v =
 //! updating or recapturing the graph. Compile-time and runtime bounds are accepted as caller preconditions, but do not
 //! currently change temporary storage, grid dimensions, or pass selection. Since the problem size is not available to
 //! the host, the first reduction pass launches CUB's maximum grid and may launch more blocks than the actual problem
-//! size needs. Extra blocks return without reducing input. Deferred problem sizes are not currently supported with
-//! ``gpu_to_gpu`` determinism.
+//! size needs. Extra blocks return without reducing input.
 //!
 //! Determinism
 //! ====================================
@@ -205,32 +204,28 @@ private:
 
     if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
     {
-      if constexpr (args_traits_t::is_deferred)
-      {
-        static_assert(!args_traits_t::is_deferred, "cuda::args::deferred is not supported with gpu_to_gpu determinism");
-        // NVHPC requires a return statement even though the static assertion makes this branch ill-formed.
-        return cudaErrorNotSupported;
-      }
-      else
-      {
-        // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
-        (void) reduction_op;
-        using default_policy_selector = detail::reduce::
-          policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
-        return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-          env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-            return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-              storage,
-              bytes,
-              d_in,
-              d_out,
-              detail::make_num_items_dispatch_arg(num_items),
-              init,
-              stream,
-              transform_op,
-              policy_selector);
-          });
-      }
+      // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
+      (void) reduction_op;
+      using default_policy_selector = detail::reduce::
+        policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
+      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+          return detail::rfa::dispatch<InputIteratorT,
+                                       OutputIteratorT,
+                                       decltype(detail::make_num_items_dispatch_arg(num_items)),
+                                       T,
+                                       TransformOpT,
+                                       accum_t>(
+            storage,
+            bytes,
+            d_in,
+            d_out,
+            detail::make_num_items_dispatch_arg(num_items),
+            init,
+            stream,
+            transform_op,
+            policy_selector);
+        });
     }
     else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
     {

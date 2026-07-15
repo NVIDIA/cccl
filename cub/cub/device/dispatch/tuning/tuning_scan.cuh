@@ -55,7 +55,7 @@ enum class ScanAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(ScanAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(ScanAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -63,9 +63,8 @@ namespace detail
       return "ScanAlgorithm::lookback";
     case ScanAlgorithm::lookahead:
       return "ScanAlgorithm::lookahead";
-    default:
-      return "<unknown ScanAlgorithm>";
   }
+  return "<unknown ScanAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
@@ -962,7 +961,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       // tunings from cub/benchmarks/bench/scan/exclusive/sum.lookahead.cu
-      if (operation_t == op_kind_t::plus && accum_is_primitive_or_trivially_copy_constructible)
+      if (accum_is_primitive_or_trivially_copy_constructible)
       {
         switch (input_value_size)
         {
