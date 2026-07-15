@@ -8,9 +8,6 @@
 
 namespace rle_impl
 {
-// tile count below which stock CUB runs
-constexpr int kStockDispatchTiles = 1024;
-
 template <class Config>
 inline long long rle_state_tiles(long long n)
 {
@@ -39,7 +36,7 @@ enum class RleRoute : int
 inline bool persistent_rle_gate(
   long long tiles, const void* d_keys, const void* d_temp_storage, int cc_major, long long smem_optin, size_t dyn_smem)
 {
-  return tiles >= kStockDispatchTiles && tiles <= 0x7fffffff && ((size_t) d_temp_storage & 7u) == 0 && cc_major >= 10
+  return tiles >= 1 && tiles <= 0x7fffffff && ((size_t) d_temp_storage & 7u) == 0 && cc_major >= 10
       && (size_t) smem_optin >= dyn_smem;
 }
 
@@ -72,6 +69,10 @@ inline cudaError_t persistent_rle_encode(
   if (temp_storage_bytes < required)
   {
     return cudaErrorInvalidValue;
+  }
+  if (num_items <= 0)
+  {
+    return cudaMemsetAsync(d_num_runs, 0, sizeof(NumRunsT), stream);
   }
   const long long tiles = rle_state_tiles<Config>((long long) num_items);
   int device = 0, cc_major = 0, smem_optin = 0;
