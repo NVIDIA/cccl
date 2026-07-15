@@ -76,6 +76,7 @@ struct Bufs
   using NumRunsT = cub::detail::choose_signed_offset_t<OffsetT>;
 
   T* dk          = nullptr;
+  T* dk_alloc    = nullptr;
   T* du          = nullptr;
   RunLengthT* dc = nullptr;
   NumRunsT* dn   = nullptr;
@@ -86,7 +87,7 @@ struct Bufs
 };
 
 template <class T, class OffsetT, class RunLengthT>
-Bufs<T, OffsetT, RunLengthT> setup(long long n, int max_seg)
+Bufs<T, OffsetT, RunLengthT> setup(long long n, int max_seg, int elem_offset)
 {
   using config_t = rle_impl::winner_config<T>;
   Bufs<T, OffsetT, RunLengthT> b;
@@ -95,8 +96,9 @@ Bufs<T, OffsetT, RunLengthT> setup(long long n, int max_seg)
   auto h               = gen_keys<T>(n, max_seg, 1u);
   const long long cpuR = cpu_run_count(h);
 
-  cudaMalloc(&b.dk, sizeof(T) * pad);
-  cudaMemset(b.dk, 0, sizeof(T) * pad);
+  cudaMalloc(&b.dk_alloc, sizeof(T) * (pad + 16));
+  cudaMemset(b.dk_alloc, 0, sizeof(T) * (pad + 16));
+  b.dk = b.dk_alloc + elem_offset;
   cudaMalloc(&b.du, sizeof(T) * (size_t) n);
   cudaMalloc(&b.dc, sizeof(RunLengthT) * (size_t) n);
   cudaMalloc(&b.dn, sizeof(typename Bufs<T, OffsetT, RunLengthT>::NumRunsT));
@@ -127,7 +129,7 @@ Bufs<T, OffsetT, RunLengthT> setup(long long n, int max_seg)
 template <class T, class OffsetT, class RunLengthT>
 void teardown(Bufs<T, OffsetT, RunLengthT>& b)
 {
-  cudaFree(b.dk);
+  cudaFree(b.dk_alloc);
   cudaFree(b.du);
   cudaFree(b.dc);
   cudaFree(b.dn);
@@ -150,7 +152,7 @@ static void persistent_rle_bench(nvbench::state& state, nvbench::type_list<T, Of
   using config_t    = rle_impl::winner_config<T>;
   const long long n = state.get_int64("Elements{io}");
   const int max_seg = (int) state.get_int64("MaxSegSize");
-  auto b            = setup<T, OffsetT, RunLengthT>(n, max_seg);
+  auto b            = setup<T, OffsetT, RunLengthT>(n, max_seg, (int) state.get_int64("Misalign"));
   add_counters(state, b);
   state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     rle_impl::persistent_rle_encode<config_t>(
@@ -164,7 +166,7 @@ static void cub_rle_bench(nvbench::state& state, nvbench::type_list<T, OffsetT, 
 {
   const long long n = state.get_int64("Elements{io}");
   const int max_seg = (int) state.get_int64("MaxSegSize");
-  auto b            = setup<T, OffsetT, RunLengthT>(n, max_seg);
+  auto b            = setup<T, OffsetT, RunLengthT>(n, max_seg, (int) state.get_int64("Misalign"));
   add_counters(state, b);
   void* tmp   = nullptr;
   size_t tbsz = 0;
@@ -181,10 +183,12 @@ NVBENCH_BENCH_TYPES(persistent_rle_bench, NVBENCH_TYPE_AXES(key_types, offset_ty
   .set_name("persistent_rle")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}", "RunLengthT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {28})
-  .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
+  .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8})
+  .add_int64_axis("Misalign", {0});
 NVBENCH_BENCH_TYPES(cub_rle_bench, NVBENCH_TYPE_AXES(key_types, offset_types, run_length_types))
   .set_name("cub_DeviceRunLengthEncode")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}", "RunLengthT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {28})
-  .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
+  .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8})
+  .add_int64_axis("Misalign", {0});
 NVBENCH_MAIN;
