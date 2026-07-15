@@ -132,8 +132,16 @@ _COALESCE_AFFECTED = [
     "direct_cuckoo",
     "direct_single_probe",
 ]
+_SPILL_POLICY_ALGOS = [
+    "gmem_privatized_agent",
+    "gmem_privatized_nocache_direct_spill",
+    "gmem_privatized_single_probe_coalesced_spill",
+    "gmem_privatized_single_probe_rle_spill",
+    "gmem_privatized_nocache_rle_spill",
+]
 FORCED_HIGH_BIN_ALGOS = (
     ["hybrid", "gmem_privatized_single_probe"]
+    + _SPILL_POLICY_ALGOS
     + _COALESCE_AFFECTED
     + [a + "__nocoal" for a in _COALESCE_AFFECTED]
 )
@@ -154,6 +162,8 @@ def _force_algo(akey: str) -> str:
     base = _base_algo(akey)
     if base == "gmem_privatized_nocache":
         return "gmem_privatized_nocache_cooperative"
+    if base == "gmem_privatized_agent":
+        return "gmem_privatized_nocache"
     return base
 
 
@@ -165,6 +175,7 @@ def _force_algo(akey: str) -> str:
 EXPECTED_RAN = {
     "hybrid": "gmem_privatized_nocache:hybrid",
     "gmem_privatized_nocache": "gmem_privatized_nocache_cooperative",
+    "gmem_privatized_agent": "gmem_privatized_nocache",
     "smem_static": "smem_privatized:static",
     "smem_dynamic": "smem_privatized:dynamic",
 }
@@ -227,17 +238,19 @@ def _forced_algo_applicable(akey: str, bins: int, multichannel: bool) -> bool:
 # (historical behaviour). An empty set => `default`-only (selected-vs-baseline). Set from
 # --forced-algos in main().
 FORCED_ALGO_FILTER = None
+INCLUDE_DEFAULT = True
 
 
 def algos_for_bin(bins: int) -> list:
-    """The forced-algo env values to measure at this bin count (besides `default`, which
-    is always measured). Two regimes, possibly overlapping at neither end of the grid:
+    """The forced-algo env values to measure at this bin count, optionally including
+    `default`. Two regimes, possibly overlapping at neither end of the grid:
       - LOW-BIN  (bins <= MAX_STATIC_BINS): the smem static-vs-dynamic comparison.
       - HIGH-BIN (bins >= HIGH_BIN_THRESHOLD): the off-chip candidates. Between the two
         (e.g. 2048..16384) only `default` is recorded -- smem_privatized is the lone
         competitive algorithm there and the forced columns would be no-ops or losers.
-    FORCED_ALGO_FILTER (from --forced-algos) further restricts; `default` ("") always kept."""
-    algos = [""]
+    FORCED_ALGO_FILTER (from --forced-algos) further restricts the forced entries;
+    --omit-default independently removes `default` ("")."""
+    algos = [""] if INCLUDE_DEFAULT else []
     if bins <= MAX_STATIC_BINS:
         algos += FORCED_LOW_BIN_ALGOS
     # An explicit forced-algorithm request is authoritative even below the
@@ -526,13 +539,19 @@ def main():
         nargs="+",
         default=None,
         metavar="ALGO",
-        help="forced-algo columns besides `default` (selector) and `main` baseline "
-        "(both always recorded). 'all' (default) = every regime-appropriate forced "
+        help="forced-algo columns besides `default` (selector) and the optional `main` baseline. "
+        "'all' (default) = every regime-appropriate forced "
         "algo; 'none' = selected-vs-baseline only; or an explicit list.",
+    )
+    ap.add_argument(
+        "--omit-default",
+        action="store_true",
+        help="do not benchmark the shipping selector; useful for forced-candidate-only studies",
     )
     args = ap.parse_args()
 
-    global FORCED_ALGO_FILTER
+    global FORCED_ALGO_FILTER, INCLUDE_DEFAULT
+    INCLUDE_DEFAULT = not args.omit_default
     if args.forced_algos is None or args.forced_algos == ["all"]:
         FORCED_ALGO_FILTER = None
     elif args.forced_algos == ["none"]:
@@ -596,7 +615,8 @@ def main():
                     # high-bin off-chip candidates), each further restricted to cells
                     # where it can structurally run -- skipping a cell where dispatch
                     # would return cudaErrorNotSupported (which the bench escalates to a
-                    # FATAL abort, not a fallback). `default` ("") is always kept.
+                    # FATAL abort, not a fallback). `default` ("") is kept unless
+                    # this forced-candidate study requested --omit-default.
                     algos = [
                         a
                         for a in algos_for_bin(bins)
