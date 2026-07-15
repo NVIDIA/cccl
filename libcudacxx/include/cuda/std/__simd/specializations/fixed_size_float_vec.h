@@ -111,6 +111,16 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     }
     return __base::__multiplies(__lhs, __rhs);
   }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _SimdStorage
+  __fma(const _SimdStorage& __lhs, const _SimdStorage& __rhs, const _SimdStorage& __add) noexcept
+  {
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::cuda::std::simd::__fma_f32x2(__lhs, __rhs, __add);))
+    }
+    return __base::__fma(__lhs, __rhs, __add);
+  }
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD

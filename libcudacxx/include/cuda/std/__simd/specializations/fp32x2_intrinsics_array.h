@@ -26,6 +26,7 @@
 // TODO(fbusato): check 5361571, remove this path once the feature is supported
 #if _CCCL_HAS_SIMD_F32X2()
 
+#  include <cuda/std/__cmath/fma.h>
 #  include <cuda/std/__fwd/simd.h>
 #  include <cuda/std/__simd/abi.h>
 #  include <cuda/std/__simd/specializations/fixed_size_storage.h>
@@ -120,7 +121,7 @@ __fma_f32x2(const __simd_storage_f32<_Np>& __lhs,
   }
   if constexpr (_Np % 2 != 0)
   {
-    __result.__data[_Np - 1] = __lhs.__data[_Np - 1] * __rhs.__data[_Np - 1] + __add.__data[_Np - 1];
+    __result.__data[_Np - 1] = ::cuda::std::fma(__lhs.__data[_Np - 1], __rhs.__data[_Np - 1], __add.__data[_Np - 1]);
   }
   return __result;
 }
