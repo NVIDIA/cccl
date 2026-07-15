@@ -84,7 +84,7 @@ set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)
 execute_process(
   COMMAND ${CYTHON_version_command}
   OUTPUT_VARIABLE CYTHON_version_output
-  ERROR_VARIABLE CYTHON_version_error
+  ERROR_VARIABLE CYTHON_version_output
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_STRIP_TRAILING_WHITESPACE
   COMMAND_ERROR_IS_FATAL ANY
@@ -92,8 +92,11 @@ execute_process(
 
 if ("${CYTHON_version_output}" MATCHES "^[Cc]ython version ([^,]+)")
   set(CYTHON_VERSION "${CMAKE_MATCH_1}")
-elseif ("${CYTHON_version_error}" MATCHES "^[Cc]ython version ([^,]+)")
-  set(CYTHON_VERSION "${CMAKE_MATCH_1}")
+else()
+  message(
+    FATAL_ERROR
+    "Failed to parse Cython version from:\n${CYTHON_version_output}"
+  )
 endif()
 
 # -3 generates source for Python 3
