@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/logging.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
