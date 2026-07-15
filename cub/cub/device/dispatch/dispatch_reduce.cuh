@@ -803,12 +803,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   if constexpr (StableReductionOrder)
-  {// Log single_reduce_sweep_kernel configuration
-  log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-      "%d items per thread\n",
-      active_policy.single_tile.threads_per_block,
-      (long long) stream,
-      active_policy.single_tile.items_per_thread);
+  { // Log single_reduce_sweep_kernel configuration
+    log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+        "%d items per thread\n",
+        active_policy.single_tile.threads_per_block,
+        (long long) stream,
+        active_policy.single_tile.items_per_thread);
 
     // Invoke DeviceReduceSingleTileKernel/DeviceReduceDeferredSingleTileKernel
     if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
@@ -961,15 +961,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #if _CCCL_HOSTED() // guard needed for stringstream used to format reduce_policy
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (logging_enabled())
-                 {
-                   std::stringstream ss;
-                   ss << active_policy;
-                   log_always("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
+                   {
+                     std::stringstream ss;
+                     ss << active_policy;
+                     log_always("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
+                                cc.major_cap(),
+                                cc.minor_cap(),
+                                ss.str().c_str());
+                   }
+                 }))
 #endif // _CCCL_HOSTED()
 
     if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
@@ -988,12 +988,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           return cudaSuccess;
         }
 
-    // Log single_reduce_sweep_kernel configuration
-    log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-        "%d items per thread\n",
-        active_policy.single_tile.threads_per_block,
-        (long long) stream,
-        active_policy.single_tile.items_per_thread);
+        // Log single_reduce_sweep_kernel configuration
+        log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+            "%d items per thread\n",
+            active_policy.single_tile.threads_per_block,
+            (long long) stream,
+            active_policy.single_tile.items_per_thread);
 
         // Invoke single_reduce_sweep_kernel
         if (const auto error = CubDebug(
