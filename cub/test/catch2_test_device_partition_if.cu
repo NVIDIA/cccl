@@ -9,6 +9,7 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/cmath>
 #include <cuda/devices>
 #include <cuda/functional>
