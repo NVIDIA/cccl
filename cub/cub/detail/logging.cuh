@@ -28,7 +28,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-//! Returns if logging is enabled CCCL_EXPERIMENTAL_LOGGING. (always false in device code)
+//! Returns if logging is enabled via the CCCL_EXPERIMENTAL_LOGGING env variable (always false in device code)
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool logging_enabled() noexcept
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
