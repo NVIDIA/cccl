@@ -23,6 +23,7 @@
 
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include <cstdio>
 #include <cstring>
@@ -38,6 +39,15 @@
 #include "fp_test_targets.h"
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+
+#if _CCCL_HAS_FLOAT128()
+// __float128 -> double is a lossy narrowing (and otherwise makes construction
+// ambiguous with the float/double ctors), so quad construction is deliberately
+// deleted for the single-double emulated types, mirroring the deleted 128-bit
+// integer ctors. (fp64mp2's double-double CAN hold a quad and keeps its ctor.)
+static_assert(!::cuda::std::is_constructible_v<fpemu<double>, __float128>, "");
+static_assert(!::cuda::std::is_constructible_v<fpemu_unpacked<double>, __float128>, "");
+#endif // _CCCL_HAS_FLOAT128()
 
 // ---------------------------------------------------------------------------
 // Bit-reinterpret helpers (host + device via cuda::std::bit_cast).

@@ -21,21 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-/**
- * @file fpemu_dmul_impl.hpp
- * @brief Implementation of double-precision multiplication operations for FPEMU floating point emulation library
- *
- * This header provides the implementation of double-precision multiplication operations for the FPEMU library.
- * It includes:
- *
- * - Multiplication functions for fpemu
- * - Multiplication operators for fpemu
- * - Multiplication functions to other types
- *
- * The multiplication functions are designed to work across both host and device code
- * through appropriate decorators and provide bit-exact results matching hardware
- * floating point units.
- */
+//! @file fpemu_dmul_impl.hpp
+//! @brief Implementation of double-precision multiplication operations for FPEMU floating point emulation library
+//!
+//! This header provides the implementation of double-precision multiplication operations for the FPEMU library.
+//! It includes:
+//!
+//! - Multiplication functions for fpemu
+//! - Multiplication operators for fpemu
+//! - Multiplication functions to other types
+//!
+//! The multiplication functions are designed to work across both host and device code
+//! through appropriate decorators and provide bit-exact results matching hardware
+//! floating point units.
 #define _CCCL_FP64EMU_USE_MUL_UNPACKED      0
 #define _CCCL_FP64EMU_DMUL_FP32_FAST_ENABLE 1
 
@@ -46,32 +44,30 @@
 
 namespace cuda::experimental
 {
-/**
- * @brief v1.0 Emulation of double-precision multiplication for FPEMU
- *
- * This function implements the reference (v1.0) emulation of double-precision
- * floating-point multiplication for the FPEMU format. It operates on the
- * internal bitwise representation (__fpbits64) of the operands and produces
- * a bit-exact result matching the IEEE-754 standard for double-precision
- * multiplication.
- *
- * The algorithm performs the following steps:
- *   - Extracts the sign, exponent, and mantissa from both operands.
- *   - Handles special cases such as zero, denormalized numbers, infinities, and NaNs.
- *   - Multiplies the mantissas with full precision, including the implicit leading bit.
- *   - Computes the resulting exponent, taking into account normalization and bias.
- *   - Normalizes the result and applies rounding according to the specified mode.
- *   - Packs the sign, exponent, and mantissa back into the __fpbits64 result.
- *
- * This implementation is designed for correctness and bitwise reproducibility,
- * serving as a reference for optimized or hardware-accelerated versions.
- *
- * @tparam rm   Rounding mode (default: nearest-even)
- * @tparam _Acc Accuracy level (fpemu_accuracy; default: high)
- * @param x     First operand (__fpbits64)
- * @param y     Second operand (__fpbits64)
- * @return      Product as __fpbits64
- */
+//! @brief v1.0 Emulation of double-precision multiplication for FPEMU
+//!
+//! This function implements the reference (v1.0) emulation of double-precision
+//! floating-point multiplication for the FPEMU format. It operates on the
+//! internal bitwise representation (__fpbits64) of the operands and produces
+//! a bit-exact result matching the IEEE-754 standard for double-precision
+//! multiplication.
+//!
+//! The algorithm performs the following steps:
+//!   - Extracts the sign, exponent, and mantissa from both operands.
+//!   - Handles special cases such as zero, denormalized numbers, infinities, and NaNs.
+//!   - Multiplies the mantissas with full precision, including the implicit leading bit.
+//!   - Computes the resulting exponent, taking into account normalization and bias.
+//!   - Normalizes the result and applies rounding according to the specified mode.
+//!   - Packs the sign, exponent, and mantissa back into the __fpbits64 result.
+//!
+//! This implementation is designed for correctness and bitwise reproducibility,
+//! serving as a reference for optimized or hardware-accelerated versions.
+//!
+//! @tparam rm   Rounding mode (default: nearest-even)
+//! @tparam _Acc Accuracy level (fpemu_accuracy; default: high)
+//! @param x     First operand (__fpbits64)
+//! @param y     Second operand (__fpbits64)
+//! @return      Product as __fpbits64
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_accurate(__fpbits64 __x, __fpbits64 __y) noexcept
 {
@@ -196,24 +192,22 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_accurate(__fpbits64 __x, __
   return __result;
 } // __internal_fp64emu_dmul_accurate
 
-/**
- * @brief Version 2.0 emulation of the double-precision multiplication function.
- *
- * This implementation provides an emulation of IEEE-754 double-precision (fp64) multiplication,
- * supporting configurable rounding modes, accuracy, and range options.
- *
- * The function operates by:
- *   - Extracting the exponent and mantissa fields from the input operands.
- *   - Computing the result sign as the XOR of the input signs.
- *   - Adding the exponents and subtracting the fp64 bias to obtain the result exponent.
- *   - Multiplying the mantissas by a dedicated helper (__mul_mant), which handles
- *     normalization, carry, and accuracy-specific bit manipulations.
- *   - Adjusting the result for exponent overflow and underflow, and setting the sign and exponent bits.
- *   - Returning the correctly packed fp64 result.
- *
- * This version is designed for improved accuracy and performance, and is suitable for both
- * host and device execution.
- */
+//! @brief Version 2.0 emulation of the double-precision multiplication function.
+//!
+//! This implementation provides an emulation of IEEE-754 double-precision (fp64) multiplication,
+//! supporting configurable rounding modes, accuracy, and range options.
+//!
+//! The function operates by:
+//!   - Extracting the exponent and mantissa fields from the input operands.
+//!   - Computing the result sign as the XOR of the input signs.
+//!   - Adding the exponents and subtracting the fp64 bias to obtain the result exponent.
+//!   - Multiplying the mantissas by a dedicated helper (__mul_mant), which handles
+//!     normalization, carry, and accuracy-specific bit manipulations.
+//!   - Adjusting the result for exponent overflow and underflow, and setting the sign and exponent bits.
+//!   - Returning the correctly packed fp64 result.
+//!
+//! This version is designed for improved accuracy and performance, and is suitable for both
+//! host and device execution.
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_def(__fpbits64 __x, __fpbits64 __y) noexcept
 {
@@ -328,15 +322,13 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_def(__fpbits64 __x, __fpbit
   return __result;
 } // __internal_fp64emu_dmul_def
 
-/**
- * @brief Fast double-precision multiplication for FPEMU
- *
- * This function performs double-precision multiplication on two FPEMU floating-point numbers,
- * by single precision multiplication for the mantissa (fast mode).
- * It takes two __fpbits64 structures as input, representing the packed sign, exponent,
- * and mantissa fields of the operands. The multiplication is performed according to the specified rounding mode,
- * accuracy, range, and engine template parameters.
- */
+//! @brief Fast double-precision multiplication for FPEMU
+//!
+//! This function performs double-precision multiplication on two FPEMU floating-point numbers,
+//! by single precision multiplication for the mantissa (fast mode).
+//! It takes two __fpbits64 structures as input, representing the packed sign, exponent,
+//! and mantissa fields of the operands. The multiplication is performed according to the specified rounding mode,
+//! accuracy, range, and engine template parameters.
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_fast(__fpbits64 __x, __fpbits64 __y) noexcept
 {
@@ -424,26 +416,24 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_fast(__fpbits64 __x, __fpbi
   return __result;
 } // __internal_fp64emu_dmul_fast
 
-/**
- * @brief Pure MUL core on the unpacked representation (unified path).
- *
- * Consumes/produces __fpbits64_unpacked exactly as the universal
- * __internal_fp64emu_unpack / __internal_fp64emu_pack. This
- * is the multiply section of the unified FMA core, made standalone: the
- * significand product normalized so the high 64 bits carry the universal
- * mantissa (implicit bit at position 61) with a sticky LSB, and the product
- * exponent in the pack's "+1" convention.
- *
- *   - accurate (cr/full): returns the pre-rounding intermediate; the universal
- *     full pack does the single correct rounding plus inf/denormal/overflow.
- *     inf*0 -> NaN is folded into the exponent band; inf*finite -> inf rides
- *     the huge unpack exponent that pack classifies as inf.
- *   - def (ha/normal): same 128-bit product, but the lean pack does no special
- *     handling, so the core flushes denormal-inputs / underflow to signed zero
- *     and saturates overflow, exactly as the legacy fused def kernel did.
- *   - fast (la/normal): fp32 product of the top significand bits (the legacy
- *     fast kernel), re-expressed on the universal scale, same flush/saturate.
- */
+//! @brief Pure MUL core on the unpacked representation (unified path).
+//!
+//! Consumes/produces __fpbits64_unpacked exactly as the universal
+//! __internal_fp64emu_unpack / __internal_fp64emu_pack. This
+//! is the multiply section of the unified FMA core, made standalone: the
+//! significand product normalized so the high 64 bits carry the universal
+//! mantissa (implicit bit at position 61) with a sticky LSB, and the product
+//! exponent in the pack's "+1" convention.
+//!
+//!   - accurate (cr/full): returns the pre-rounding intermediate; the universal
+//!     full pack does the single correct rounding plus inf/denormal/overflow.
+//!     inf*0 -> NaN is folded into the exponent band; inf*finite -> inf rides
+//!     the huge unpack exponent that pack classifies as inf.
+//!   - def (ha/normal): same 128-bit product, but the lean pack does no special
+//!     handling, so the core flushes denormal-inputs / underflow to signed zero
+//!     and saturates overflow, exactly as the legacy fused def kernel did.
+//!   - fast (la/normal): fp32 product of the top significand bits (the legacy
+//!     fast kernel), re-expressed on the universal scale, same flush/saturate.
 template <fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64_unpacked
 __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b) noexcept
@@ -586,34 +576,32 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
     return __r;
   }
 } // __internal_fp64emu_dmul_unpacked
-/**
- * @brief Emulation of double-precision floating-point multiplication.
- *
- * This function provides an emulated implementation of the IEEE-754
- * double-precision (fp64) multiplication operation. It operates on the
- * internal bitwise representation of fp64 numbers (__fpbits64) and
- * supports configurable rounding modes, accuracy, and range
- * selection via template parameters.
- *
- * The emulation performs the following steps:
- *   - Extracts the exponent and mantissa fields from the input operands.
- *   - Computes the result sign as the XOR of the input signs.
- *   - Adds the exponents and subtracts the fp64 bias to obtain the result exponent.
- *   - Multiplies the mantissas by a dedicated helper function, handling
- *     normalization and carry propagation.
- *   - Checks for exponent overflow and underflow, saturating or zeroing the
- *     result as appropriate.
- *   - Assembles the final result by setting the sign, exponent, and mantissa
- *     fields in the output bit pattern.
- *
- * This emulation is designed to be bit-accurate and to match the behavior
- * of hardware or reference software implementations, including correct
- * handling of special cases such as zero, infinity, and NaN.
- *
- * The function is intended for use in both host and device code, and is
- * selected as the optimized multiplication path when the appropriate
- * macros are enabled.
- */
+//! @brief Emulation of double-precision floating-point multiplication.
+//!
+//! This function provides an emulated implementation of the IEEE-754
+//! double-precision (fp64) multiplication operation. It operates on the
+//! internal bitwise representation of fp64 numbers (__fpbits64) and
+//! supports configurable rounding modes, accuracy, and range
+//! selection via template parameters.
+//!
+//! The emulation performs the following steps:
+//!   - Extracts the exponent and mantissa fields from the input operands.
+//!   - Computes the result sign as the XOR of the input signs.
+//!   - Adds the exponents and subtracts the fp64 bias to obtain the result exponent.
+//!   - Multiplies the mantissas by a dedicated helper function, handling
+//!     normalization and carry propagation.
+//!   - Checks for exponent overflow and underflow, saturating or zeroing the
+//!     result as appropriate.
+//!   - Assembles the final result by setting the sign, exponent, and mantissa
+//!     fields in the output bit pattern.
+//!
+//! This emulation is designed to be bit-accurate and to match the behavior
+//! of hardware or reference software implementations, including correct
+//! handling of special cases such as zero, infinity, and NaN.
+//!
+//! The function is intended for use in both host and device code, and is
+//! selected as the optimized multiplication path when the appropriate
+//! macros are enabled.
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul(__fpbits64 __x, __fpbits64 __y) noexcept
 {
@@ -778,19 +766,19 @@ _CCCL_DEVICE_API fpemu<double, _Acc> operator*(const fpemu<double, _Acc>& __x, c
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_high_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dmul_rn(__x.bits, __y.bits));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dmul_rn(__x.bits, __y.bits));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dmul_rn(__x.bits, __y.bits));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_dmul_rn(__x.bits, __y.bits));
   }
 } // operator*
 
@@ -799,15 +787,18 @@ _CCCL_API fpemu<double, _Acc> __dmul_rn(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_high_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_high_dmul_rn(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_rn(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dmul_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_rn(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -815,19 +806,23 @@ _CCCL_API fpemu<double, _Acc> __dmul_rz(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_rz(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dmul_rz(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dmul_rz(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_rz(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -835,19 +830,23 @@ _CCCL_API fpemu<double, _Acc> __dmul_ru(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_ru(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dmul_ru(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dmul_ru(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_ru(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -855,19 +854,23 @@ _CCCL_API fpemu<double, _Acc> __dmul_rd(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_rd(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dmul_rd(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dmul_rd(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dmul_rd(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
   }
 }
 
@@ -878,19 +881,19 @@ operator*(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_high_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_dmul(__x.bits, __y.bits));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_mid_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_dmul(__x.bits, __y.bits));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_low_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_dmul(__x.bits, __y.bits));
   }
   else
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_dmul(__x.bits, __y.bits));
   }
 } // operator*
 
@@ -900,16 +903,57 @@ __dmul_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_high_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_dmul(
+      __fpemu_bit_cast<__fpbits64_unpacked>(__x), __fpemu_bit_cast<__fpbits64_unpacked>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_low_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_dmul(
+      __fpemu_bit_cast<__fpbits64_unpacked>(__x), __fpemu_bit_cast<__fpbits64_unpacked>(__y)));
   }
   else
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_mid_dmul(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_dmul(
+      __fpemu_bit_cast<__fpbits64_unpacked>(__x), __fpemu_bit_cast<__fpbits64_unpacked>(__y)));
   }
+}
+
+// Mixed-operand promoters (relocated from the class body; formerly hidden
+// friends). Enabled only when at least one operand is an fpemu and at least
+// one is a built-in arithmetic type: both operands are promoted to the fpemu
+// type and the exact-match core above is called. Pure fpemu/fpemu calls bind
+// to the cores directly; pure arithmetic calls are left to the language.
+
+_CCCL_TEMPLATE(class _T1, class _T2)
+_CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
+_CCCL_API __fpemu_pick_t<_T1, _T2> __dmul_rn(const _T1& __x, const _T2& __y) noexcept
+{
+  using _Fp = __fpemu_pick_t<_T1, _T2>;
+  return __dmul_rn(_Fp(__x), _Fp(__y));
+}
+
+_CCCL_TEMPLATE(class _T1, class _T2)
+_CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
+_CCCL_API __fpemu_pick_t<_T1, _T2> __dmul_rz(const _T1& __x, const _T2& __y) noexcept
+{
+  using _Fp = __fpemu_pick_t<_T1, _T2>;
+  return __dmul_rz(_Fp(__x), _Fp(__y));
+}
+
+_CCCL_TEMPLATE(class _T1, class _T2)
+_CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
+_CCCL_API __fpemu_pick_t<_T1, _T2> __dmul_ru(const _T1& __x, const _T2& __y) noexcept
+{
+  using _Fp = __fpemu_pick_t<_T1, _T2>;
+  return __dmul_ru(_Fp(__x), _Fp(__y));
+}
+
+_CCCL_TEMPLATE(class _T1, class _T2)
+_CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
+_CCCL_API __fpemu_pick_t<_T1, _T2> __dmul_rd(const _T1& __x, const _T2& __y) noexcept
+{
+  using _Fp = __fpemu_pick_t<_T1, _T2>;
+  return __dmul_rd(_Fp(__x), _Fp(__y));
 }
 } // namespace cuda::experimental
 

@@ -20,22 +20,20 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-/**
- * @file fpemu_common.h
- * @brief Public API surface shared by the FPEMU headers
- *
- * This header carries only the user-facing pieces that both the fpemu class
- * (<cuda/__fp/fpemu.h>) and the emulation cores (<cuda/__fp/fpemu_impl.h> and the
- * per-operation fpemu_impl_<op>.h headers) need to agree on:
- *
- * - The public accuracy selector fpemu_accuracy
- * - The public compile-mode knobs CCCL_FPEMU_LIB / CCCL_FPEMU_INLINE
- *
- * All library-internal machinery (decorator/ABI/declaration macros, the raw-bits
- * vocabulary types __fpbits64/__fpbits64_unpacked, the internal __fpemu_rounding
- * enum, and the helper functions) lives in <cuda/__fp/fpemu_impl.h>. Keeping the
- * public and internal pieces apart lets every FP header compile standalone.
- */
+//! @file fpemu_common.h
+//! @brief Public API surface shared by the FPEMU headers
+//!
+//! This header carries only the user-facing pieces that both the fpemu class
+//! (<cuda/__fp/fpemu.h>) and the emulation cores (<cuda/__fp/fpemu_impl.h> and the
+//! per-operation fpemu_impl_<op>.h headers) need to agree on:
+//!
+//! - The public accuracy selector fpemu_accuracy
+//! - The public compile-mode knobs CCCL_FPEMU_LIB / CCCL_FPEMU_INLINE
+//!
+//! All library-internal machinery (decorator/ABI/declaration macros, the raw-bits
+//! vocabulary types __fpbits64/__fpbits64_unpacked, the internal __fpemu_rounding
+//! enum, and the helper functions) lives in <cuda/__fp/fpemu_impl.h>. Keeping the
+//! public and internal pieces apart lets every FP header compile standalone.
 
 // ---------------------------------------------------------------------------
 // User-facing configuration (public compile-mode knobs)
@@ -79,15 +77,13 @@
 
 namespace cuda::experimental
 {
-/**
- * @brief Accuracy level for floating-point emulation (public).
- *
- * Named fpemu_accuracy, so callers write e.g. fpemu<double, fpemu_accuracy::high>.
- * - high: Correctly rounded with full IEEE-754 range (infinities, NaNs, subnormals)
- * - mid:  High accuracy (1-2 ULP) with normal range
- * - low:  Low accuracy (up to half mantissa) with normal range
- * - def:  Default selector; equals high so the default is IEEE-correct.
- */
+//! @brief Accuracy level for floating-point emulation (public).
+//!
+//! Named fpemu_accuracy, so callers write e.g. fpemu<double, fpemu_accuracy::high>.
+//! - high: Correctly rounded with full IEEE-754 range (infinities, NaNs, subnormals)
+//! - mid:  High accuracy (1-2 ULP) with normal range
+//! - low:  Low accuracy (up to half mantissa) with normal range
+//! - def:  Default selector; equals high so the default is IEEE-correct.
 enum struct fpemu_accuracy
 {
   unset = -1,

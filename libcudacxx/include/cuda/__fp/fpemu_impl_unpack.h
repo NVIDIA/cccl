@@ -21,34 +21,32 @@
 #  pragma system_header
 #endif // no system header
 
-/**
- * @file fpemu_impl_unpack.h
- * @brief Common pack/unpack routines for the FPEMU library
- *
- * This header holds the two routines that convert between the packed IEEE-754
- * binary64 representation (__fpbits64) and the public unpacked ABI
- * (__fpbits64_unpacked) used by the arithmetic cores:
- *
- *   - __internal_fp64emu_unpack  (packed   -> unpacked)
- *   - __internal_fp64emu_pack    (unpacked -> packed)
- *
- * They are the single, shared prologue/epilogue for every unpacked operation
- * (add / sub / mul / mad / dot / cmul / div / sqrt / cvt / cmp / fma) and every
- * accuracy level (high / mid / low). Because the unpacked approach only crosses the
- * packed<->unpacked boundary outside hot loops, both routines are always the
- * richest, fully-accurate full-range form and are accuracy-INDEPENDENT: denormals
- * are normalized (clz) and inf/nan are encoded in the exponent band on unpack,
- * and the matching full-range epilogue (correctly-rounded by rm, subnormal
- * emission, inf saturation, nan) finalizes every accuracy level on pack. A mid/low core
- * (lower mantissa precision) simply rides on the richer form (subsumption); the
- * accuracy level only affects the precision the core produced, not the range handling
- * here. The packed (legacy non-unified) add/mul/fma kernels do their own inlined
- * lean unpack/pack and do not use these routines.
- *
- * They depend only on the primitives/constants in fpemu_impl.h
- * (bit_cast, __round, __fp64_ovfl_sat, __internal_clzll, the FP64_* masks,
- * EXTRA_BITS, BIAS, ...).
- */
+//! @file fpemu_impl_unpack.h
+//! @brief Common pack/unpack routines for the FPEMU library
+//!
+//! This header holds the two routines that convert between the packed IEEE-754
+//! binary64 representation (__fpbits64) and the public unpacked ABI
+//! (__fpbits64_unpacked) used by the arithmetic cores:
+//!
+//!   - __internal_fp64emu_unpack  (packed   -> unpacked)
+//!   - __internal_fp64emu_pack    (unpacked -> packed)
+//!
+//! They are the single, shared prologue/epilogue for every unpacked operation
+//! (add / sub / mul / mad / dot / cmul / div / sqrt / cvt / cmp / fma) and every
+//! accuracy level (high / mid / low). Because the unpacked approach only crosses the
+//! packed<->unpacked boundary outside hot loops, both routines are always the
+//! richest, fully-accurate full-range form and are accuracy-INDEPENDENT: denormals
+//! are normalized (clz) and inf/nan are encoded in the exponent band on unpack,
+//! and the matching full-range epilogue (correctly-rounded by rm, subnormal
+//! emission, inf saturation, nan) finalizes every accuracy level on pack. A mid/low core
+//! (lower mantissa precision) simply rides on the richer form (subsumption); the
+//! accuracy level only affects the precision the core produced, not the range handling
+//! here. The packed (legacy non-unified) add/mul/fma kernels do their own inlined
+//! lean unpack/pack and do not use these routines.
+//!
+//! They depend only on the primitives/constants in fpemu_impl.h
+//! (bit_cast, __round, __fp64_ovfl_sat, __internal_clzll, the FP64_* masks,
+//! EXTRA_BITS, BIAS, ...).
 
 #include <cuda/__fp/fpemu_impl.h>
 
@@ -56,18 +54,16 @@
 
 namespace cuda::experimental
 {
-/**
- * @brief Unpack a packed binary64 value into the public unpacked ABI.
- *
- * Fully-accurate, method-independent, full-range prologue: the sign/exponent/
- * mantissa are extracted, denormals are normalized via clz, and inf/nan are
- * encoded in the exponent band so the matching pack can recover them. The
- * exponent is stored as (biased exponent + 1) with the implicit bit kept in the
- * mantissa (bit 61); pack consumes exactly this convention.
- *
- * @param  x The packed 64-bit value to unpack
- * @return The unpacked representation
- */
+//! @brief Unpack a packed binary64 value into the public unpacked ABI.
+//!
+//! Fully-accurate, method-independent, full-range prologue: the sign/exponent/
+//! mantissa are extracted, denormals are normalized via clz, and inf/nan are
+//! encoded in the exponent band so the matching pack can recover them. The
+//! exponent is stored as (biased exponent + 1) with the implicit bit kept in the
+//! mantissa (bit 61); pack consumes exactly this convention.
+//!
+//! @param  x The packed 64-bit value to unpack
+//! @return The unpacked representation
 _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
 {
   __fpbits64_unpacked __a_unpacked;
@@ -112,25 +108,23 @@ _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) 
   return __a_unpacked;
 }
 
-/**
- * @brief Pack a public unpacked value back into packed binary64.
- *
- * Fully-accurate, full-range epilogue: subnormal emission, inf/nan
- * classification and correctly-rounded overflow saturation (per rm).
- *
- * It is the exact inverse of unpack (pack(unpack(x)) == x), which the converters
- * (cvt/div/sqrt/cmp) and the unpacked class rely on. unpack stores the *biased*
- * exponent + 1 with the implicit bit kept in the mantissa (bit 61); the proven
- * epilogue expects an exponent one smaller, so we round/place with (exp - 1).
- * The cores emit a matching (exp + 1) so the +1/-1 cancel and op results stay
- * bit-exact while the round-trip identity holds. inf is recovered from the
- * exponent band unpack/cores encode (finite results never reach it); nan is
- * detected from the exponent and wins the overflow branch.
- *
- * @tparam rm Rounding mode
- * @param  x  The unpacked value to pack
- * @return The packed 64-bit value
- */
+//! @brief Pack a public unpacked value back into packed binary64.
+//!
+//! Fully-accurate, full-range epilogue: subnormal emission, inf/nan
+//! classification and correctly-rounded overflow saturation (per rm).
+//!
+//! It is the exact inverse of unpack (pack(unpack(x)) == x), which the converters
+//! (cvt/div/sqrt/cmp) and the unpacked class rely on. unpack stores the *biased*
+//! exponent + 1 with the implicit bit kept in the mantissa (bit 61); the proven
+//! epilogue expects an exponent one smaller, so we round/place with (exp - 1).
+//! The cores emit a matching (exp + 1) so the +1/-1 cancel and op results stay
+//! bit-exact while the round-trip identity holds. inf is recovered from the
+//! exponent band unpack/cores encode (finite results never reach it); nan is
+//! detected from the exponent and wins the overflow branch.
+//!
+//! @tparam rm Rounding mode
+//! @param  x  The unpacked value to pack
+//! @return The packed 64-bit value
 template <__fpemu_rounding _Rm = __fpemu_rounding::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
 {

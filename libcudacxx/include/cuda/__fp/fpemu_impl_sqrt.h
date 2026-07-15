@@ -21,21 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-/**
- * @file fpemu_dsqrt_impl.hpp
- * @brief Implementation of double-precision square root operations for FPEMU floating point emulation library
- *
- * This header provides the implementation of double-precision square root operations for the FPEMU library.
- * It includes:
- *
- * - Square root functions for fpemu
- * - Square root operators for fpemu
- * - Square root functions to other types
- *
- * The square root functions are designed to work across both host and device code
- * through appropriate decorators and provide bit-exact results matching hardware
- * floating point units.
- */
+//! @file fpemu_dsqrt_impl.hpp
+//! @brief Implementation of double-precision square root operations for FPEMU floating point emulation library
+//!
+//! This header provides the implementation of double-precision square root operations for the FPEMU library.
+//! It includes:
+//!
+//! - Square root functions for fpemu
+//! - Square root operators for fpemu
+//! - Square root functions to other types
+//!
+//! The square root functions are designed to work across both host and device code
+//! through appropriate decorators and provide bit-exact results matching hardware
+//! floating point units.
 
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
@@ -65,10 +63,10 @@ extern "C" float sqrtf(float __x) noexcept; // host seed for the reciprocal-sqrt
 // results.
 // ========================================================================
 
-/// @brief Approximation of 2^47 / sqrt(a / 2^odd_exp), a in [2^31, 2^32),
-///        in [2^31, 2^32). Seeded by the fp32 rsqrt builtin, refined by one
-///        Newton step, then trimmed to a strict underestimate so that the
-///        derived root stays a lower bound (keeps the remainder unsigned).
+//! @brief Approximation of 2^47 / sqrt(a / 2^odd_exp), a in [2^31, 2^32),
+//!        in [2^31, 2^32). Seeded by the fp32 rsqrt builtin, refined by one
+//!        Newton step, then trimmed to a strict underestimate so that the
+//!        derived root stays a lower bound (keeps the remainder unsigned).
 _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint32_t __odd_exp, uint32_t __a) noexcept
 {
   // Seed: r ~ 2^47 * rsqrt(a / 2^odd_exp). Halving the radicand for the
@@ -138,16 +136,14 @@ _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint32_t __odd_e
 template <fpemu_accuracy _Acc>
 _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept;
 
-/**
- * @brief Square root of a double-precision floating point number
- *
- * This function computes the square root of a double-precision floating point number.
- * It works by splitting the number into sign, exponent, and mantissa, normalizing the mantissa,
- * and then computing the square root of the mantissa.
- *
- * @param __x The double-precision floating point number to compute the square root of
- * @return The square root of the double-precision floating point number
- */
+//! @brief Square root of a double-precision floating point number
+//!
+//! This function computes the square root of a double-precision floating point number.
+//! It works by splitting the number into sign, exponent, and mantissa, normalizing the mantissa,
+//! and then computing the square root of the mantissa.
+//!
+//! @param __x The double-precision floating point number to compute the square root of
+//! @return The square root of the double-precision floating point number
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x) noexcept
 {
@@ -251,16 +247,14 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x) noexcept
 #endif // _CCCL_FPEMU_PACKED_VIA_UNPACKED
 } // __internal_fp64emu_dsqrt
 
-/**
- * @brief Square root of a double-precision floating point number
- *
- * This function computes the square root of a double-precision floating point number.
- * It works by splitting the number into sign, exponent, and mantissa, normalizing the mantissa,
- * and then computing the square root of the mantissa.
- *
- * @param __x The double-precision floating point number to compute the square root of
- * @return The square root of the double-precision floating point number
- */
+//! @brief Square root of a double-precision floating point number
+//!
+//! This function computes the square root of a double-precision floating point number.
+//! It works by splitting the number into sign, exponent, and mantissa, normalizing the mantissa,
+//! and then computing the square root of the mantissa.
+//!
+//! @param __x The double-precision floating point number to compute the square root of
+//! @return The square root of the double-precision floating point number
 template <fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept
 {
@@ -429,15 +423,15 @@ _CCCL_API fpemu<double, _Acc> sqrt(const fpemu<double, _Acc>& __x) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_high_dsqrt_rn(__x.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dsqrt_rn(__fpemu_bit_cast<__fpbits64>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dsqrt_rn(__x.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dsqrt_rn(__fpemu_bit_cast<__fpbits64>(__x)));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dsqrt_rn(__x.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dsqrt_rn(__fpemu_bit_cast<__fpbits64>(__x)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -445,31 +439,31 @@ _CCCL_API fpemu<double, _Acc> __dsqrt_rn(const fpemu<double, _Acc>& __x) noexcep
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_high_dsqrt_rn(__x.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dsqrt_rn(__fpemu_bit_cast<__fpbits64>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_low_dsqrt_rn(__x.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dsqrt_rn(__fpemu_bit_cast<__fpbits64>(__x)));
   }
   else
   {
-    return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dsqrt_rn(__x.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dsqrt_rn(__fpemu_bit_cast<__fpbits64>(__x)));
   }
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API fpemu<double, _Acc> __dsqrt_rz(const fpemu<double, _Acc>& __x) noexcept
 {
-  return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dsqrt_rz(__x.bits));
+  return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_rz(__fpemu_bit_cast<__fpbits64>(__x)));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API fpemu<double, _Acc> __dsqrt_ru(const fpemu<double, _Acc>& __x) noexcept
 {
-  return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dsqrt_ru(__x.bits));
+  return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_ru(__fpemu_bit_cast<__fpbits64>(__x)));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API fpemu<double, _Acc> __dsqrt_rd(const fpemu<double, _Acc>& __x) noexcept
 {
-  return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_dsqrt_rd(__x.bits));
+  return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_rd(__fpemu_bit_cast<__fpbits64>(__x)));
 }
 
 template <fpemu_accuracy _Acc>
@@ -477,15 +471,18 @@ _CCCL_API fpemu_unpacked<double, _Acc> sqrt(const fpemu_unpacked<double, _Acc>& 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_high_dsqrt(__x.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(
+      __fp64emu_unpacked_high_dsqrt(__fpemu_bit_cast<__fpbits64_unpacked>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_low_dsqrt(__x.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(
+      __fp64emu_unpacked_low_dsqrt(__fpemu_bit_cast<__fpbits64_unpacked>(__x)));
   }
   else
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_mid_dsqrt(__x.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(
+      __fp64emu_unpacked_mid_dsqrt(__fpemu_bit_cast<__fpbits64_unpacked>(__x)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -493,18 +490,42 @@ _CCCL_API fpemu_unpacked<double, _Acc> __dsqrt_rn(const fpemu_unpacked<double, _
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_high_dsqrt(__x.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(
+      __fp64emu_unpacked_high_dsqrt(__fpemu_bit_cast<__fpbits64_unpacked>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_low_dsqrt(__x.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(
+      __fp64emu_unpacked_low_dsqrt(__fpemu_bit_cast<__fpbits64_unpacked>(__x)));
   }
   else
   {
-    return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_mid_dsqrt(__x.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(
+      __fp64emu_unpacked_mid_dsqrt(__fpemu_bit_cast<__fpbits64_unpacked>(__x)));
   }
 }
 } // namespace cuda::experimental
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// Overloads of sqrt for the emulated double types so the standard spelling
+// cuda::std::sqrt selects the emulated implementation instead of silently
+// narrowing fpemu -> double (a qualified call suppresses ADL). These forward to
+// cuda::experimental::sqrt, which unqualified/ADL calls already resolve to.
+template <::cuda::experimental::fpemu_accuracy _Acc>
+[[nodiscard]] _CCCL_API ::cuda::experimental::fpemu<double, _Acc>
+sqrt(const ::cuda::experimental::fpemu<double, _Acc>& __x) noexcept
+{
+  return ::cuda::experimental::sqrt(__x);
+}
+template <::cuda::experimental::fpemu_accuracy _Acc>
+[[nodiscard]] _CCCL_API ::cuda::experimental::fpemu_unpacked<double, _Acc>
+sqrt(const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __x) noexcept
+{
+  return ::cuda::experimental::sqrt(__x);
+}
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 #endif // _CUDA___FP_FPEMU_IMPL_SQRT_H

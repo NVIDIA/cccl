@@ -20,28 +20,26 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-/**
- * @file fpemu_impl.h
- * @brief Internal implementation vocabulary and utilities for the FPEMU library
- *
- * This is the internal base header for the FPEMU emulation cores. It gathers all
- * library-internal (non-public) machinery in one place so that <cuda/__fp/fpemu.h>
- * and the per-operation cores (fpemu_impl_<op>.h) depend on a single impl header,
- * while <cuda/__fp/fpemu_common.h> is reserved for the public API surface
- * (the fpemu_accuracy selector and the CCCL_FPEMU_LIB / CCCL_FPEMU_INLINE knobs).
- *
- * It defines:
- * - Internal compilation-mode / decorator macros (inline vs library, host/device,
- *   the extern-"C" ABI decorator, and the builtin declaration macro)
- * - Internal vocabulary types (__fpbits64, __fpbits64_unpacked) and the internal
- *   __fpemu_rounding enum
- * - Compile-time assertion macros, bit-casting utilities, and platform-independent
- *   helper functions used by the emulation cores
- *
- * The utilities are designed to work across both host and device code through
- * appropriate decorators and provide consistent behavior across different
- * platforms and compilers.
- */
+//! @file fpemu_impl.h
+//! @brief Internal implementation vocabulary and utilities for the FPEMU library
+//!
+//! This is the internal base header for the FPEMU emulation cores. It gathers all
+//! library-internal (non-public) machinery in one place so that <cuda/__fp/fpemu.h>
+//! and the per-operation cores (fpemu_impl_<op>.h) depend on a single impl header,
+//! while <cuda/__fp/fpemu_common.h> is reserved for the public API surface
+//! (the fpemu_accuracy selector and the CCCL_FPEMU_LIB / CCCL_FPEMU_INLINE knobs).
+//!
+//! It defines:
+//! - Internal compilation-mode / decorator macros (inline vs library, host/device,
+//!   the extern-"C" ABI decorator, and the builtin declaration macro)
+//! - Internal vocabulary types (__fpbits64, __fpbits64_unpacked) and the internal
+//!   __fpemu_rounding enum
+//! - Compile-time assertion macros, bit-casting utilities, and platform-independent
+//!   helper functions used by the emulation cores
+//!
+//! The utilities are designed to work across both host and device code through
+//! appropriate decorators and provide consistent behavior across different
+//! platforms and compilers.
 #if !defined(__CUDA_LIBDEVICE__)
 #  include <cuda/std/cstdint>
 #  include <cuda/std/cstdlib>
@@ -150,25 +148,21 @@ namespace cuda::experimental
  * Internal vocabulary types and enums
  *********************************************************************/
 
-/**
- * @brief Bit representation of a double-precision floating point number
- *
- * @internal Library-internal type. It is the raw-bits vocabulary of the emulation
- * builtins (and the extern-"C" library ABI); it is NOT part of the public C++ API.
- * C++ users operate on the fpemu class (double in, overloaded ops, double out) and
- * never handle __fpbits64 directly. If the builtins are ever exposed to compilers,
- * a public alias can be introduced then.
- *
- * Holds the IEEE-754 binary encoding of a double (sign, exponent and mantissa bits).
- */
+//! @brief Bit representation of a double-precision floating point number
+//!
+//! @internal Library-internal type. It is the raw-bits vocabulary of the emulation
+//! builtins (and the extern-"C" library ABI); it is NOT part of the public C++ API.
+//! C++ users operate on the fpemu class (double in, overloaded ops, double out) and
+//! never handle __fpbits64 directly. If the builtins are ever exposed to compilers,
+//! a public alias can be introduced then.
+//!
+//! Holds the IEEE-754 binary encoding of a double (sign, exponent and mantissa bits).
 typedef uint64_t __fpbits64;
 
-/**
- * @brief Unpacked representation of a double-precision floating point number
- *
- * @internal Library-internal type (see __fpbits64). Represents a double in unpacked
- * form (separate sign, exponent, mantissa) for the *_unpacked builtins; not public.
- */
+//! @brief Unpacked representation of a double-precision floating point number
+//!
+//! @internal Library-internal type (see __fpbits64). Represents a double in unpacked
+//! form (separate sign, exponent, mantissa) for the *_unpacked builtins; not public.
 typedef struct
 {
   uint32_t sign;
@@ -176,15 +170,13 @@ typedef struct
   uint64_t mantissa;
 } __fpbits64_unpacked;
 
-/**
- * @brief Rounding modes for floating point operations (internal)
- *
- * Enumeration of supported rounding modes:
- * - rn: Round to nearest (ties to even) - default IEEE-754 rounding
- * - rz: Round toward zero (truncation)
- * - ru: Round toward positive infinity
- * - rd: Round toward negative infinity
- */
+//! @brief Rounding modes for floating point operations (internal)
+//!
+//! Enumeration of supported rounding modes:
+//! - rn: Round to nearest (ties to even) - default IEEE-754 rounding
+//! - rz: Round toward zero (truncation)
+//! - ru: Round toward positive infinity
+//! - rd: Round toward negative infinity
 enum struct __fpemu_rounding
 {
   unset = -1,
@@ -372,18 +364,16 @@ _CCCL_API _Tp __fpemu_bit_cast(const _Rp __value) noexcept
   return _CCCL_FPEMU_BIT_CAST(_Tp, __value);
 }
 
-/**
- * @brief Enumeration for classifying floating point numbers
- *
- * This enum class defines the different categories that a floating point number
- * can belong to according to IEEE-754:
- *
- * - normal: A normalized floating point number with an implicit leading 1
- * - zero: Positive or negative zero (+0.0 or -0.0)
- * - inf: Positive or negative infinity
- * - nan: Not a Number (quiet or signaling)
- * - denormal: Denormalized number with leading zeros
- */
+//! @brief Enumeration for classifying floating point numbers
+//!
+//! This enum class defines the different categories that a floating point number
+//! can belong to according to IEEE-754:
+//!
+//! - normal: A normalized floating point number with an implicit leading 1
+//! - zero: Positive or negative zero (+0.0 or -0.0)
+//! - inf: Positive or negative infinity
+//! - nan: Not a Number (quiet or signaling)
+//! - denormal: Denormalized number with leading zeros
 enum struct __fpclass
 {
   normal   = 0,
@@ -393,29 +383,27 @@ enum struct __fpclass
   denormal = 4
 };
 
-/**
- * @brief Structure representing an unpacked double precision floating point number
- *
- * This structure stores the components of a double precision floating point number
- * in an unpacked format for easier manipulation:
- *
- * @var mantissa The significand/mantissa bits including the implicit leading 1 for normalized numbers
- * @var exponent The unbiased exponent value
- * @var sign The sign bit (0 for positive, 1<<31 for negative)
- * @var fpclass The floating point class (normal, zero, inf, nan, denormal)
- *
- * @note `fpclass` carries a default member initializer (`__fpclass::normal`)
- *       so that any code path producing an `__fp64emu_unpacked` that does not
- *       explicitly classify the value (e.g. intermediate result structs
- *       in fma/add/mul) leaves the field with
- *       a defined value. Reading an indeterminate `fpclass` is undefined
- *       behavior; UB-aware optimizers (NVVM 22.0.0 on sm_120/121) will
- *       happily DCE entire downstream computations on the assumption it
- *       cannot happen — observed previously as `fma_device_impl` emitting
- *       just `ret;` and callers reading zeros. The other fields stay
- *       uninitialized by design (they are written unconditionally by every
- *       producer and we don't want to pessimize the optimizer's SROA).
- */
+//! @brief Structure representing an unpacked double precision floating point number
+//!
+//! This structure stores the components of a double precision floating point number
+//! in an unpacked format for easier manipulation:
+//!
+//! @var mantissa The significand/mantissa bits including the implicit leading 1 for normalized numbers
+//! @var exponent The unbiased exponent value
+//! @var sign The sign bit (0 for positive, 1<<31 for negative)
+//! @var fpclass The floating point class (normal, zero, inf, nan, denormal)
+//!
+//! @note `fpclass` carries a default member initializer (`__fpclass::normal`)
+//!       so that any code path producing an `__fp64emu_unpacked` that does not
+//!       explicitly classify the value (e.g. intermediate result structs
+//!       in fma/add/mul) leaves the field with
+//!       a defined value. Reading an indeterminate `fpclass` is undefined
+//!       behavior; UB-aware optimizers (NVVM 22.0.0 on sm_120/121) will
+//!       happily DCE entire downstream computations on the assumption it
+//!       cannot happen — observed previously as `fma_device_impl` emitting
+//!       just `ret;` and callers reading zeros. The other fields stay
+//!       uninitialized by design (they are written unconditionally by every
+//!       producer and we don't want to pessimize the optimizer's SROA).
 struct __fp64emu_unpacked
 {
   uint64_t mantissa;
@@ -424,37 +412,31 @@ struct __fp64emu_unpacked
   __fpclass fpclass = __fpclass::normal;
 };
 
-/**
- * @brief Structure representing a 64-bit integer split into two 32-bit parts
- *
- * This structure is used to store a 64-bit integer as two 32-bit parts,
- * which is useful for certain operations that require 64-bit arithmetic
- * but can be performed by 32-bit operations.
- */
+//! @brief Structure representing a 64-bit integer split into two 32-bit parts
+//!
+//! This structure is used to store a 64-bit integer as two 32-bit parts,
+//! which is useful for certain operations that require 64-bit arithmetic
+//! but can be performed by 32-bit operations.
 struct __uint32x2
 {
   uint32_t x[2];
 };
 
-/**
- * @brief Structure representing a 64-bit integer split into two 32-bit parts
- *
- * This structure is used to store a 64-bit integer as two 32-bit parts,
- * which is useful for certain operations that require 64-bit arithmetic
- * but can be performed by 32-bit operations.
- */
+//! @brief Structure representing a 64-bit integer split into two 32-bit parts
+//!
+//! This structure is used to store a 64-bit integer as two 32-bit parts,
+//! which is useful for certain operations that require 64-bit arithmetic
+//! but can be performed by 32-bit operations.
 struct __uint64x2
 {
   uint64_t x[2];
 };
 
-/**
- * @brief Structure representing a 128-bit integer split into two 64-bit parts
- *
- * This structure is used to store a 128-bit integer as two 64-bit parts,
- * which is useful for certain operations that require 128-bit arithmetic
- * but can be performed by 64-bit operations.
- */
+//! @brief Structure representing a 128-bit integer split into two 64-bit parts
+//!
+//! This structure is used to store a 128-bit integer as two 64-bit parts,
+//! which is useful for certain operations that require 128-bit arithmetic
+//! but can be performed by 64-bit operations.
 struct __uint32x4
 {
   __uint32x2 lo;
@@ -462,15 +444,13 @@ struct __uint32x4
 };
 
 #ifndef __CUDA_ARCH__
-/**
- * @brief Count leading zeros in a 32-bit integer
- *
- * This function counts the number of leading zeros in a 32-bit integer.
- * It works by shifting the integer right until the most significant bit is found.
- *
- * @param x The 32-bit integer to count leading zeros in
- * @return The number of leading zeros in the integer
- */
+//! @brief Count leading zeros in a 32-bit integer
+//!
+//! This function counts the number of leading zeros in a 32-bit integer.
+//! It works by shifting the integer right until the most significant bit is found.
+//!
+//! @param x The 32-bit integer to count leading zeros in
+//! @return The number of leading zeros in the integer
 _CCCL_TRIVIAL_API int __internal_clz(int __x) noexcept
 {
   if (__x == 0)
@@ -509,15 +489,13 @@ _CCCL_TRIVIAL_API int __internal_clz(int __x) noexcept
   return __n;
 }
 
-/**
- * @brief Count leading zeros in a 64-bit integer
- *
- * This function counts the number of leading zeros in a 64-bit integer.
- * It works by shifting the integer right until the most significant bit is found.
- *
- * @param x The 64-bit integer to count leading zeros in
- * @return The number of leading zeros in the integer
- */
+//! @brief Count leading zeros in a 64-bit integer
+//!
+//! This function counts the number of leading zeros in a 64-bit integer.
+//! It works by shifting the integer right until the most significant bit is found.
+//!
+//! @param x The 64-bit integer to count leading zeros in
+//! @return The number of leading zeros in the integer
 _CCCL_TRIVIAL_API int __internal_clzll(int64_t __x) noexcept
 {
   uint64_t __ux = (uint64_t) __x;
@@ -561,15 +539,13 @@ _CCCL_TRIVIAL_API int __internal_clzll(int64_t __x) noexcept
 #ifndef _CCCL_FP64EMU_PTX_XOR
 #  define _CCCL_FP64EMU_PTX_XOR 0
 #endif
-/**
- * @brief Invert the most significant bit of a 32-bit integer
- *
- * This function inverts the MSB (most significant bit) of a 32-bit integer.
- * Uses PTX inline assembly for CUDA to avoid unwanted compiler optimizations.
- *
- * @param sign The 32-bit integer to invert the sign of
- * @return The inverted sign
- */
+//! @brief Invert the most significant bit of a 32-bit integer
+//!
+//! This function inverts the MSB (most significant bit) of a 32-bit integer.
+//! Uses PTX inline assembly for CUDA to avoid unwanted compiler optimizations.
+//!
+//! @param sign The 32-bit integer to invert the sign of
+//! @return The inverted sign
 _CCCL_TRIVIAL_API uint32_t __invert_msb(uint32_t __sign) noexcept
 {
 #if _CCCL_FP64EMU_PTX_XOR == 1
@@ -587,27 +563,25 @@ _CCCL_TRIVIAL_API uint32_t __invert_msb(uint32_t __sign) noexcept
 #endif
 }
 
-/**
- * @brief Multiply two 64-bit integers and return the high 32 bits of the result
- *
- * This function performs multiplication of two 64-bit integers represented as pairs
- * of 32-bit integers (__uint32x2). It returns only the high 32 bits of the 128-bit
- * multiplication result.
- *
- * The implementation is optimized differently for CUDA and CPU:
- * - On CUDA: Uses PTX assembly instructions (mad.hi.u32) for efficient high-bit multiplication
- * - On CPU: Uses standard C++ arithmetic with careful handling of carries and partial products
- *
- * The CPU implementation:
- * 1. Computes all partial products (lo*lo, lo*hi, hi*lo, hi*hi)
- * 2. Handles carries between the partial products
- * 3. Extracts and combines the high bits to form the final 32-bit result
- *
- * @tparam _Acc The accuracy level (fpemu_accuracy)
- * @param a_ First 64-bit multiplicand as two 32-bit integers
- * @param b_ Second 64-bit multiplicand as two 32-bit integers
- * @return The high 32 bits of the multiplication result
- */
+//! @brief Multiply two 64-bit integers and return the high 32 bits of the result
+//!
+//! This function performs multiplication of two 64-bit integers represented as pairs
+//! of 32-bit integers (__uint32x2). It returns only the high 32 bits of the 128-bit
+//! multiplication result.
+//!
+//! The implementation is optimized differently for CUDA and CPU:
+//! - On CUDA: Uses PTX assembly instructions (mad.hi.u32) for efficient high-bit multiplication
+//! - On CPU: Uses standard C++ arithmetic with careful handling of carries and partial products
+//!
+//! The CPU implementation:
+//! 1. Computes all partial products (lo*lo, lo*hi, hi*lo, hi*hi)
+//! 2. Handles carries between the partial products
+//! 3. Extracts and combines the high bits to form the final 32-bit result
+//!
+//! @tparam _Acc The accuracy level (fpemu_accuracy)
+//! @param a_ First 64-bit multiplicand as two 32-bit integers
+//! @param b_ Second 64-bit multiplicand as two 32-bit integers
+//! @return The high 32 bits of the multiplication result
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
 _CCCL_TRIVIAL_API uint32_t __mul_32(__uint32x2 __a, __uint32x2 __b) noexcept
 {
@@ -638,21 +612,19 @@ _CCCL_TRIVIAL_API uint32_t __mul_32(__uint32x2 __a, __uint32x2 __b) noexcept
   return __res;
 } //__mul_32
 
-/**
- * @brief Multiply two 64-bit integers and return the high 64 bits of the result
- *
- * This function performs multiplication of two 64-bit integers represented as pairs
- * of 32-bit integers (__uint32x2). It returns the high 64 bits of the 128-bit result.
- *
- * The implementation is optimized differently for CUDA and CPU:
- * - On CUDA: Uses PTX assembly instructions for efficient 64-bit multiplication
- * - On CPU: Uses standard C++ arithmetic with careful handling of carries
- *
- * @tparam _Acc The accuracy level (fpemu_accuracy)
- * @param a_ First 64-bit multiplicand as two 32-bit integers
- * @param b_ Second 64-bit multiplicand as two 32-bit integers
- * @return The high 64 bits of the multiplication result as two 32-bit integers
- */
+//! @brief Multiply two 64-bit integers and return the high 64 bits of the result
+//!
+//! This function performs multiplication of two 64-bit integers represented as pairs
+//! of 32-bit integers (__uint32x2). It returns the high 64 bits of the 128-bit result.
+//!
+//! The implementation is optimized differently for CUDA and CPU:
+//! - On CUDA: Uses PTX assembly instructions for efficient 64-bit multiplication
+//! - On CPU: Uses standard C++ arithmetic with careful handling of carries
+//!
+//! @tparam _Acc The accuracy level (fpemu_accuracy)
+//! @param a_ First 64-bit multiplicand as two 32-bit integers
+//! @param b_ Second 64-bit multiplicand as two 32-bit integers
+//! @return The high 64 bits of the multiplication result as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
 _CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
@@ -703,27 +675,25 @@ _CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
   return __res;
 } //__mul_64
 
-/**
- * @brief Multiply two 64-bit integers and return the full 128-bit result
- *
- * This function performs multiplication of two 64-bit integers represented as pairs
- * of 32-bit integers (__uint32x2). It returns the full 128-bit result stored in
- * a __uint32x4 structure containing both high and low 64 bits.
- *
- * The implementation handles the multiplication by:
- * 1. Computing partial products (lo*lo, lo*hi, hi*lo, hi*hi)
- * 2. Properly handling carries between the partial products
- * 3. Combining the results into the final 128-bit value
- *
- * The implementation is optimized differently for CUDA and CPU:
- * - On CUDA: Uses built-in __umul64hi for high bits
- * - On CPU: Uses standard C++ arithmetic with careful handling of carries
- *
- * @tparam _Acc The accuracy level (fpemu_accuracy)
- * @param a_ First 64-bit multiplicand as two 32-bit integers
- * @param b_ Second 64-bit multiplicand as two 32-bit integers
- * @return The full 128-bit multiplication result as four 32-bit integers
- */
+//! @brief Multiply two 64-bit integers and return the full 128-bit result
+//!
+//! This function performs multiplication of two 64-bit integers represented as pairs
+//! of 32-bit integers (__uint32x2). It returns the full 128-bit result stored in
+//! a __uint32x4 structure containing both high and low 64 bits.
+//!
+//! The implementation handles the multiplication by:
+//! 1. Computing partial products (lo*lo, lo*hi, hi*lo, hi*hi)
+//! 2. Properly handling carries between the partial products
+//! 3. Combining the results into the final 128-bit value
+//!
+//! The implementation is optimized differently for CUDA and CPU:
+//! - On CUDA: Uses built-in __umul64hi for high bits
+//! - On CPU: Uses standard C++ arithmetic with careful handling of carries
+//!
+//! @tparam _Acc The accuracy level (fpemu_accuracy)
+//! @param a_ First 64-bit multiplicand as two 32-bit integers
+//! @param b_ Second 64-bit multiplicand as two 32-bit integers
+//! @return The full 128-bit multiplication result as four 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
 _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
 {
@@ -773,16 +743,14 @@ _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
   return __res;
 } //__mul_128
 
-/**
- * @brief Shift a 64-bit value left by a specified amount
- *
- * This function performs a logical left shift on a 64-bit value represented
- * as two 32-bit integers. The shift amount can be positive or negative.
- *
- * @param man The 64-bit value to shift as two 32-bit integers
- * @param shift The number of bits to shift (positive for left shift)
- * @return The shifted value as two 32-bit integers
- */
+//! @brief Shift a 64-bit value left by a specified amount
+//!
+//! This function performs a logical left shift on a 64-bit value represented
+//! as two 32-bit integers. The shift amount can be positive or negative.
+//!
+//! @param man The 64-bit value to shift as two 32-bit integers
+//! @param shift The number of bits to shift (positive for left shift)
+//! @return The shifted value as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
 {
   uint64_t __man64 = __fpemu_bit_cast<uint64_t>(__man);
@@ -790,16 +758,14 @@ _CCCL_TRIVIAL_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
   return __fpemu_bit_cast<__uint32x2>(__man64);
 } //__shl_64
 
-/**
- * @brief Shift a 64-bit value right by a specified amount
- *
- * This function performs a logical right shift on a 64-bit value represented
- * as two 32-bit integers. The shift amount can be positive or negative.
- *
- * @param man The 64-bit value to shift as two 32-bit integers
- * @param shift The number of bits to shift (positive for right shift)
- * @return The shifted value as two 32-bit integers
- */
+//! @brief Shift a 64-bit value right by a specified amount
+//!
+//! This function performs a logical right shift on a 64-bit value represented
+//! as two 32-bit integers. The shift amount can be positive or negative.
+//!
+//! @param man The 64-bit value to shift as two 32-bit integers
+//! @param shift The number of bits to shift (positive for right shift)
+//! @return The shifted value as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __shr_64(__uint32x2 __man, int __shift) noexcept
 {
   uint64_t __man64 = __fpemu_bit_cast<uint64_t>(__man);
@@ -810,23 +776,19 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64(__uint32x2 __man, int __shift) noexcept
   return __fpemu_bit_cast<__uint32x2>(__man64);
 } //__shr_64
 
-/**
- * @brief Logical right shift with directed rounding (HA/def paths)
- *
- * Truncates toward zero for rz and rn. For ru/rd, increments the result
- * when any discarded bit is set.
- *
- * @tparam rm  Rounding mode (default: nearest-even, treated as truncation)
- * @param man  The 64-bit value to shift as two 32-bit integers
- * @param shift The number of bits to shift (positive for right shift)
- * @param sign Result sign (used for directed rounding modes ru/rd)
- * @return The shifted value as two 32-bit integers
- */
-/**
- * @brief Single-precision multiply with directed rounding (fast mul paths)
- *
- * Uses CUDA intrinsics on device; host falls back to native multiply (RN).
- */
+//! @brief Logical right shift with directed rounding (HA/def paths)
+//!
+//! Truncates toward zero for rz and rn. For ru/rd, increments the result
+//! when any discarded bit is set.
+//!
+//! @tparam rm  Rounding mode (default: nearest-even, treated as truncation)
+//! @param man  The 64-bit value to shift as two 32-bit integers
+//! @param shift The number of bits to shift (positive for right shift)
+//! @param sign Result sign (used for directed rounding modes ru/rd)
+//! @return The shifted value as two 32-bit integers
+//! @brief Single-precision multiply with directed rounding (fast mul paths)
+//!
+//! Uses CUDA intrinsics on device; host falls back to native multiply (RN).
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API float __fmul_dir(float __x, float __y) noexcept
 {
@@ -853,11 +815,9 @@ _CCCL_TRIVIAL_API float __fmul_dir(float __x, float __y) noexcept
 #endif
 } //__fmul_dir
 
-/**
- * @brief Single-precision add with directed rounding (fast add paths)
- *
- * Uses CUDA intrinsics on device; host falls back to native add (RN).
- */
+//! @brief Single-precision add with directed rounding (fast add paths)
+//!
+//! Uses CUDA intrinsics on device; host falls back to native add (RN).
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API float __fadd_dir(float __x, float __y) noexcept
 {
@@ -917,9 +877,7 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __
   return __fpemu_bit_cast<__uint32x2>(__man64);
 } //__shr_64_rnd
 
-/**
- * @brief Logical right shift of 128-bit mantissa with directed rounding
- */
+//! @brief Logical right shift of 128-bit mantissa with directed rounding
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API __uint128_t __shr_128_rnd(__uint128_t __man, int __shift, bool __sign = false) noexcept
 {
@@ -959,26 +917,22 @@ _CCCL_TRIVIAL_API __uint128_t __shr_128_rnd(__uint128_t __man, int __shift, bool
   return __man;
 } //__shr_128_rnd
 
-/**
- * @brief Logical right shift of 128-bit mantissa with jam (sticky) only.
- * Used during FMA alignment; directed rounding is deferred to the pack epilogue.
- */
+//! @brief Logical right shift of 128-bit mantissa with jam (sticky) only.
+//! Used during FMA alignment; directed rounding is deferred to the pack epilogue.
 _CCCL_TRIVIAL_API __uint128_t __shr_128_jam(__uint128_t __man, int __shift) noexcept
 {
   return __shr_128_rnd<__fpemu_rounding::rn>(__man, __shift);
 } //__shr_128_jam
 
-/**
- * @brief Arithmetic Shift a 64-bit value right with rounding
- *
- * This function performs a arithmetic right shift on a 64-bit value represented
- * as two 32-bit integers, with rounding to the nearest value. The shift amount
- * can be positive or negative.
- *
- * @param man The 64-bit value to shift as two 32-bit integers
- * @param shift The number of bits to shift (positive for right shift)
- * @return The shifted and rounded value as two 32-bit integers
- */
+//! @brief Arithmetic Shift a 64-bit value right with rounding
+//!
+//! This function performs a arithmetic right shift on a 64-bit value represented
+//! as two 32-bit integers, with rounding to the nearest value. The shift amount
+//! can be positive or negative.
+//!
+//! @param man The 64-bit value to shift as two 32-bit integers
+//! @param shift The number of bits to shift (positive for right shift)
+//! @return The shifted and rounded value as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
 _CCCL_TRIVIAL_API __uint32x2 __sar_64(__uint32x2 __man, int __shift) noexcept
 {
@@ -991,20 +945,18 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64(__uint32x2 __man, int __shift) noexcept
   return __res;
 } //__sar_64_rnd
 
-/**
- * @brief Arithmetic Shift a 64-bit value right with rounding
- *
- * This function performs a arithmetic right shift on a 64-bit value represented
- * as two 32-bit integers, with rounding according to the specified mode.
- * The shift amount can be positive or negative.
- *
- * @tparam _Acc Accuracy level (sticky-bit preservation applies only for high)
- * @tparam rm  Rounding mode (default: nearest-even)
- * @param man  The 64-bit value to shift as two 32-bit integers
- * @param shift The number of bits to shift (positive for right shift)
- * @param sign Result sign (used for directed rounding modes ru/rd)
- * @return The shifted and rounded value as two 32-bit integers
- */
+//! @brief Arithmetic Shift a 64-bit value right with rounding
+//!
+//! This function performs a arithmetic right shift on a 64-bit value represented
+//! as two 32-bit integers, with rounding according to the specified mode.
+//! The shift amount can be positive or negative.
+//!
+//! @tparam _Acc Accuracy level (sticky-bit preservation applies only for high)
+//! @tparam rm  Rounding mode (default: nearest-even)
+//! @param man  The 64-bit value to shift as two 32-bit integers
+//! @param shift The number of bits to shift (positive for right shift)
+//! @param sign Result sign (used for directed rounding modes ru/rd)
+//! @return The shifted and rounded value as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high, __fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __sign = false) noexcept
 {
@@ -1044,17 +996,15 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __
   return __res;
 } //__sar_64_rnd
 
-/**
- * @brief Unpack the exponent from a 64-bit floating point number
- *
- * This function extracts the exponent from a 64-bit floating point number
- * represented as two 32-bit integers. It handles the exponent extraction
- * according to IEEE-754 double precision format.
- *
- * @tparam _Acc Accuracy level (full-range special handling only for high)
- * @param input The input number as two 32-bit integers
- * @return The extracted exponent value
- */
+//! @brief Unpack the exponent from a 64-bit floating point number
+//!
+//! This function extracts the exponent from a 64-bit floating point number
+//! represented as two 32-bit integers. It handles the exponent extraction
+//! according to IEEE-754 double precision format.
+//!
+//! @tparam _Acc Accuracy level (full-range special handling only for high)
+//! @param input The input number as two 32-bit integers
+//! @return The extracted exponent value
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
 _CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __input) noexcept
 {
@@ -1088,20 +1038,18 @@ _CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __input) noexcept
   return __exp;
 } //__unpack_exp
 
-/**
- * @brief Unpack the mantissa from a 64-bit floating point number
- *
- * This function extracts the mantissa from a 64-bit floating point number
- * represented as two 32-bit integers. It handles both normal and denormal
- * numbers according to IEEE-754 double precision format.
- *
- * @tparam twos_comp_flag Whether to use two's complement representation
- * @tparam _Acc Accuracy level (full-range special handling only for high)
- * @param sign Pointer to store the sign bit
- * @param input The input number as two 32-bit integers
- * @param is_zero_exp Whether the exponent is zero (denormal case)
- * @return The extracted mantissa as two 32-bit integers
- */
+//! @brief Unpack the mantissa from a 64-bit floating point number
+//!
+//! This function extracts the mantissa from a 64-bit floating point number
+//! represented as two 32-bit integers. It handles both normal and denormal
+//! numbers according to IEEE-754 double precision format.
+//!
+//! @tparam twos_comp_flag Whether to use two's complement representation
+//! @tparam _Acc Accuracy level (full-range special handling only for high)
+//! @param sign Pointer to store the sign bit
+//! @param input The input number as two 32-bit integers
+//! @param is_zero_exp Whether the exponent is zero (denormal case)
+//! @return The extracted mantissa as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
 _CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __input, bool __is_zero_exp) noexcept
 {
@@ -1124,18 +1072,16 @@ _CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __input, boo
   return __man32x2;
 } //__unpack_mant
 
-/**
- * @brief Saturate unbiased exponent and mantissa on fp64 overflow
- *
- * Sets exp (unbiased exponent field, 0..2047) and man (without exponent
- * in man.x[1]) according to rounding mode. Caller folds exp into man via
- * man.x[1] |= (uint32_t)exp << _CCCL_FP64_HI_MANT_SHIFT when needed.
- *
- * @tparam rm   Rounding mode
- * @param sign  Result sign (true for negative)
- * @param exp   Output unbiased exponent field
- * @param man   Output mantissa as two 32-bit integers
- */
+//! @brief Saturate unbiased exponent and mantissa on fp64 overflow
+//!
+//! Sets exp (unbiased exponent field, 0..2047) and man (without exponent
+//! in man.x[1]) according to rounding mode. Caller folds exp into man via
+//! man.x[1] |= (uint32_t)exp << _CCCL_FP64_HI_MANT_SHIFT when needed.
+//!
+//! @tparam rm   Rounding mode
+//! @param sign  Result sign (true for negative)
+//! @param exp   Output unbiased exponent field
+//! @param man   Output mantissa as two 32-bit integers
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API void __fp64_ovfl_sat(bool __sign, int32_t& __exp, __uint32x2& __man) noexcept
 {
@@ -1177,20 +1123,18 @@ _CCCL_TRIVIAL_API void __fp64_ovfl_sat(bool __sign, int32_t& __exp, __uint32x2& 
   }
 } //__fp64_ovfl_sat
 
-/**
- * @brief Pack floating point components into a 64-bit double
- *
- * This function combines the sign, exponent, and mantissa components
- * into a 64-bit double precision floating point number according to
- * IEEE-754 format.
- *
- * @tparam _Acc Accuracy level (full-range special handling only for high)
- * @tparam rm  Rounding mode for overflow/underflow saturation (default: nearest-even)
- * @param sign The sign bit (true for negative)
- * @param exp The exponent value
- * @param man The mantissa as two 32-bit integers
- * @return The packed 64-bit double precision number
- */
+//! @brief Pack floating point components into a 64-bit double
+//!
+//! This function combines the sign, exponent, and mantissa components
+//! into a 64-bit double precision floating point number according to
+//! IEEE-754 format.
+//!
+//! @tparam _Acc Accuracy level (full-range special handling only for high)
+//! @tparam rm  Rounding mode for overflow/underflow saturation (default: nearest-even)
+//! @param sign The sign bit (true for negative)
+//! @param exp The exponent value
+//! @param man The mantissa as two 32-bit integers
+//! @return The packed 64-bit double precision number
 template <fpemu_accuracy _Acc = fpemu_accuracy::high, __fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man) noexcept
 {
@@ -1268,16 +1212,14 @@ _CCCL_TRIVIAL_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man)
   return __fpemu_bit_cast<uint64_t>(__res);
 } //__pack
 
-/**
- * @brief Convert a 64-bit value to its two's complement
- *
- * This function computes the two's complement of a 64-bit value represented
- * as two 32-bit integers. The operation is performed by inverting all bits
- * and adding 1.
- *
- * @param c The 64-bit value to convert as two 32-bit integers
- * @return The two's complement of the input value
- */
+//! @brief Convert a 64-bit value to its two's complement
+//!
+//! This function computes the two's complement of a 64-bit value represented
+//! as two 32-bit integers. The operation is performed by inverting all bits
+//! and adding 1.
+//!
+//! @param c The 64-bit value to convert as two 32-bit integers
+//! @return The two's complement of the input value
 _CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
 {
   uint64_t __c64   = __fpemu_bit_cast<uint64_t>(__c);
@@ -1285,30 +1227,26 @@ _CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
   return __fpemu_bit_cast<__uint32x2>(__res64);
 } //__imad_wide_sub
 
-/**
- * @brief Find the position of the most significant set bit in a signed 64-bit value
- *
- * This function determines the position of the most significant set bit
- * in a 64-bit signed integer represented as two 32-bit integers.
- *
- * @param x The 64-bit value to analyze as two 32-bit integers
- * @return The position of the most significant set bit (0-based)
- */
+//! @brief Find the position of the most significant set bit in a signed 64-bit value
+//!
+//! This function determines the position of the most significant set bit
+//! in a 64-bit signed integer represented as two 32-bit integers.
+//!
+//! @param x The 64-bit value to analyze as two 32-bit integers
+//! @return The position of the most significant set bit (0-based)
 _CCCL_TRIVIAL_API int32_t __flo_s64(__uint32x2 __x) noexcept
 {
   int64_t __x64 = __fpemu_bit_cast<int64_t>(__x);
   return __internal_clzll(__x64 << 1);
 } //__flo_s64
 
-/**
- * @brief Find the position of the most significant set bit in an unsigned 64-bit value
- *
- * This function determines the position of the most significant set bit
- * in a 64-bit unsigned integer represented as two 32-bit integers.
- *
- * @param x The 64-bit value to analyze as two 32-bit integers
- * @return The position of the most significant set bit (0-based)
- */
+//! @brief Find the position of the most significant set bit in an unsigned 64-bit value
+//!
+//! This function determines the position of the most significant set bit
+//! in a 64-bit unsigned integer represented as two 32-bit integers.
+//!
+//! @param x The 64-bit value to analyze as two 32-bit integers
+//! @return The position of the most significant set bit (0-based)
 _CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
 {
   uint64_t __x64 = __fpemu_bit_cast<uint64_t>(__x);
@@ -1316,16 +1254,14 @@ _CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
   return __internal_clzll(__x64 & _CCCL_FPEMU_ABS_64);
 } //__flo_u64
 
-/**
- * @brief Add two 64-bit unsigned integers
- *
- * This function adds two 64-bit unsigned integers represented as pairs
- * of 32-bit integers, handling carry propagation between the halves.
- *
- * @param a First operand as two 32-bit integers
- * @param b Second operand as two 32-bit integers
- * @return The sum as two 32-bit integers
- */
+//! @brief Add two 64-bit unsigned integers
+//!
+//! This function adds two 64-bit unsigned integers represented as pairs
+//! of 32-bit integers, handling carry propagation between the halves.
+//!
+//! @param a First operand as two 32-bit integers
+//! @param b Second operand as two 32-bit integers
+//! @return The sum as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   uint64_t __a64   = __fpemu_bit_cast<uint64_t>(__a);
@@ -1334,16 +1270,14 @@ _CCCL_TRIVIAL_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
   return __fpemu_bit_cast<__uint32x2>(__res64);
 } //__iadd_u64
 
-/**
- * @brief Subtract two 64-bit unsigned integers
- *
- * This function subtracts two 64-bit unsigned integers represented as pairs
- * of 32-bit integers, handling carry propagation between the halves.
- *
- * @param a First operand as two 32-bit integers
- * @param b Second operand as two 32-bit integers
- * @return The difference as two 32-bit integers
- */
+//! @brief Subtract two 64-bit unsigned integers
+//!
+//! This function subtracts two 64-bit unsigned integers represented as pairs
+//! of 32-bit integers, handling carry propagation between the halves.
+//!
+//! @param a First operand as two 32-bit integers
+//! @param b Second operand as two 32-bit integers
+//! @return The difference as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   uint64_t __a64   = __fpemu_bit_cast<uint64_t>(__a);
@@ -1352,18 +1286,16 @@ _CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
   return __fpemu_bit_cast<__uint32x2>(__res64);
 } //__isub_u64
 
-/**
- * @brief Round a 64-bit value to a specified number of bits
- *
- * This function rounds a 64-bit value represented as two 32-bit integers
- * to a specified number of bits according to the specified rounding mode.
- *
- * @tparam rm Rounding mode (default: nearest-even)
- * @param man The 64-bit value to round as two 32-bit integers
- * @param shift The number of bits to round to
- * @param sign Result sign (used for directed rounding modes ru/rd)
- * @return The rounded value as two 32-bit integers
- */
+//! @brief Round a 64-bit value to a specified number of bits
+//!
+//! This function rounds a 64-bit value represented as two 32-bit integers
+//! to a specified number of bits according to the specified rounding mode.
+//!
+//! @tparam rm Rounding mode (default: nearest-even)
+//! @param man The 64-bit value to round as two 32-bit integers
+//! @param shift The number of bits to round to
+//! @param sign Result sign (used for directed rounding modes ru/rd)
+//! @return The rounded value as two 32-bit integers
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool __sign = false) noexcept
 {
@@ -1426,7 +1358,7 @@ _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool _
 // implementations (fpemu_impl_div.h / fpemu_impl_sqrt.h).
 // ============================================================================
 
-/// @brief High 64 bits of a 64x64 -> 128 unsigned multiply (host/device).
+//! @brief High 64 bits of a 64x64 -> 128 unsigned multiply (host/device).
 _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_mulhi64(uint64_t __a, uint64_t __b) noexcept
 {
 #if defined(__CUDA_ARCH__)
@@ -1442,15 +1374,15 @@ _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_mulhi64(uint64_t __a, uint64_t __b
 #endif
 } // __internal_fp64emu_mulhi64
 
-/// @brief Right shift keeping a sticky bit.
+//! @brief Right shift keeping a sticky bit.
 _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_shr_jam64(uint64_t __a, uint32_t __dist) noexcept
 {
   return (__dist < 63) ? (__a >> __dist) | ((uint64_t) ((__a << (-__dist & 63)) != 0)) : (uint64_t) (__a != 0);
 } // __internal_fp64emu_shr_jam64
 
-/// @brief Round and pack a result whose 'sig' carries its leading significand
-///        bit at bit 62 and whose 'exp' is the biased exponent minus one.
-///        Shared by divide and square root (square root passes sign = false).
+//! @brief Round and pack a result whose 'sig' carries its leading significand
+//!        bit at bit 62 and whose 'exp' is the biased exponent minus one.
+//!        Shared by divide and square root (square root passes sign = false).
 template <__fpemu_rounding _Rm>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_round_pack(bool __sign, int32_t __exp, uint64_t __sig) noexcept
 {

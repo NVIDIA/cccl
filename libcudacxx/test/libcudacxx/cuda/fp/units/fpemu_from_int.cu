@@ -17,6 +17,7 @@
 
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include <cstdint>
 #include <cstdio>
@@ -31,6 +32,18 @@
 #include "fp_test_targets.h"
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+
+#if _CCCL_HAS_INT128()
+// 128-bit integer construction is deliberately deleted: it would silently truncate
+// to 64 bits. Verify no emulated type is constructible from __int128 while the
+// standard integer widths remain constructible.
+static_assert(!::cuda::std::is_constructible_v<fpemu<double>, __int128_t>, "");
+static_assert(!::cuda::std::is_constructible_v<fpemu<double>, __uint128_t>, "");
+static_assert(!::cuda::std::is_constructible_v<fpemu_unpacked<double>, __int128_t>, "");
+static_assert(!::cuda::std::is_constructible_v<fpemu_unpacked<double>, __uint128_t>, "");
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, int64_t>, "");
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, uint64_t>, "");
+#endif // _CCCL_HAS_INT128()
 
 // Convert one integer through fp64emu and compare bit-for-bit against the native
 // cast to double.

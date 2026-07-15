@@ -21,6 +21,7 @@
 
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include <cmath>
 #include <cstdint>
@@ -38,6 +39,18 @@
 #include "fp_test_targets.h"
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+
+#if _CCCL_HAS_INT128()
+// 128-bit integer conversion is deliberately deleted: it would silently truncate
+// to 64 bits. Verify no emulated type converts to __int128 while the standard
+// integer widths remain (explicitly) convertible.
+static_assert(!::cuda::std::is_constructible_v<__int128_t, fpemu<double>>, "");
+static_assert(!::cuda::std::is_constructible_v<__uint128_t, fpemu<double>>, "");
+static_assert(!::cuda::std::is_constructible_v<__int128_t, fpemu_unpacked<double>>, "");
+static_assert(!::cuda::std::is_constructible_v<__uint128_t, fpemu_unpacked<double>>, "");
+static_assert(::cuda::std::is_constructible_v<int64_t, fpemu<double>>, "");
+static_assert(::cuda::std::is_constructible_v<uint64_t, fpemu<double>>, "");
+#endif // _CCCL_HAS_INT128()
 
 // Target type / rounding-mode indices. conv index = type*4 + mode.
 enum
