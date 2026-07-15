@@ -160,20 +160,18 @@ public:
       : Parent(n, value, alloc)
   {}
 
-  /*! This constructor creates a \p host_vector with the given size, performing only default-initialization instead of
-   *  value-initialization.
-   *  \param n The number of elements to initially create.
-   *  \param alloc The allocator to use by this host_vector.
-   */
+  //! This constructor creates a \p host_vector with the given size, performing only default-initialization instead of
+  //! value-initialization.
+  //! \param n The number of elements to initially create.
+  //! \param alloc The allocator to use by this host_vector.
   _CCCL_HOST host_vector(size_type n, default_init_t, const Alloc& alloc)
       : Parent(n, default_init_t{}, alloc)
   {}
 
-  /*! This constructor creates a \p host_vector with the given size, without initializing elements. It mandates that
-   *  the element type is trivially default-constructible.
-   *  \param n The number of elements to initially create.
-   *  \param alloc The allocator to use by this host_vector.
-   */
+  //! This constructor creates a \p host_vector with the given size, without initializing elements. It mandates that
+  //! the element type is trivially default-constructible.
+  //! \param n The number of elements to initially create.
+  //! \param alloc The allocator to use by this host_vector.
   _CCCL_HOST host_vector(size_type n, no_init_t, const Alloc& alloc)
       : Parent(n, no_init_t{}, alloc)
   {}
