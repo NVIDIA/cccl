@@ -37,12 +37,12 @@ __add_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
 {
   ::float2 __result{};
 #  if _CCCL_HAS_SIMD_F32X2_INTRINSICS()
-  NV_IF_ELSE_TARGET(NV_IS_EXACTLY_SM_100,
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
                     (__result = ::__fadd2_rn(__lhs, __rhs);),
                     (_CCCL_VERIFY(false, "cuda::std::simd::__add_f32x2: Unsupported architecture");))
 #  elif _CCCL_HAS_SIMD_F32X2_PTX() // PTX ISA 8.6
   NV_IF_ELSE_TARGET(
-    NV_IS_EXACTLY_SM_100,
+    NV_PROVIDES_SM_100,
     (asm("{"
          ".reg .b64 __lhs, __rhs, __result;"
          "mov.b64 __lhs, {%2, %3};"
@@ -66,12 +66,12 @@ __mul_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
 {
   ::float2 __result{};
 #  if _CCCL_HAS_SIMD_F32X2_INTRINSICS()
-  NV_IF_ELSE_TARGET(NV_IS_EXACTLY_SM_100,
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
                     (__result = ::__fmul2_rn(__lhs, __rhs);),
                     (_CCCL_VERIFY(false, "cuda::std::simd::__mul_f32x2: Unsupported architecture");))
 #  elif _CCCL_HAS_SIMD_F32X2_PTX() // PTX ISA 8.6
   NV_IF_ELSE_TARGET(
-    NV_IS_EXACTLY_SM_100,
+    NV_PROVIDES_SM_100,
     (asm("{"
          ".reg .b64 __lhs, __rhs, __result;"
          "mov.b64 __lhs, {%2, %3};"
@@ -95,12 +95,12 @@ __sub_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
 {
   ::float2 __result{};
 #  if _CCCL_HAS_SIMD_F32X2_INTRINSICS()
-  NV_IF_ELSE_TARGET(NV_IS_EXACTLY_SM_100,
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
                     (__result = ::__fadd2_rn(__lhs, ::float2{-__rhs.x, -__rhs.y});),
                     (_CCCL_VERIFY(false, "cuda::std::simd::__sub_f32x2: Unsupported architecture");))
 #  elif _CCCL_HAS_SIMD_F32X2_PTX() // PTX ISA 8.6
   NV_IF_ELSE_TARGET(
-    NV_IS_EXACTLY_SM_100,
+    NV_PROVIDES_SM_100,
     (asm("{"
          ".reg .b64 __lhs, __rhs, __result;"
          "mov.b64 __lhs, {%2, %3};"
@@ -126,12 +126,12 @@ __sub_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
 {
   ::float2 __result{};
 #  if _CCCL_HAS_SIMD_F32X2_INTRINSICS()
-  NV_IF_ELSE_TARGET(NV_IS_EXACTLY_SM_100,
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
                     (__result = ::__ffma2_rn(__lhs, __rhs, __add);),
                     (_CCCL_VERIFY(false, "cuda::std::simd::__fma_f32x2: Unsupported architecture");))
 #  elif _CCCL_HAS_SIMD_F32X2_PTX() // PTX ISA 8.6
   NV_IF_ELSE_TARGET(
-    NV_IS_EXACTLY_SM_100,
+    NV_PROVIDES_SM_100,
     (asm("{"
          ".reg .b64 __lhs, __rhs, __add, __result;"
          "mov.b64 __lhs, {%2, %3};"
