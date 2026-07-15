@@ -8,12 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/version>
+
 #include <cstdio>
 #include <cstring>
+#include <memory>
 
 #include <cccl/c/binary_search.h>
 #include <hostjit/codegen/cub_call.hpp>
 #include <util/build_utils.h>
+#include <util/first_call_gate.h>
 
 using namespace hostjit::codegen;
 
@@ -40,11 +44,17 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
-  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
-  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
-  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+#if CCCL_OS(WINDOWS)
+  build_ptr->first_call_state = nullptr;
+#endif
+  const std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  const std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* const cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* const ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
+#if CCCL_OS(WINDOWS)
+  auto first_call_state = std::make_unique<cccl::detail::first_call_gate>();
+#endif
 
   const char* find_fn =
     (mode == CCCL_BINARY_SEARCH_LOWER_BOUND) ? "cub::DeviceFind::LowerBound" : "cub::DeviceFind::UpperBound";
@@ -60,7 +70,10 @@ try
 
   build_ptr->cc = cc_major * 10 + cc_minor;
   cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
-  build_ptr->jit_compiler     = result.compiler;
+  build_ptr->jit_compiler = result.compiler;
+#if CCCL_OS(WINDOWS)
+  build_ptr->first_call_state = first_call_state.release();
+#endif
   build_ptr->binary_search_fn = result.fn_ptr;
 
   return CUDA_SUCCESS;
@@ -86,10 +99,25 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  auto fn = reinterpret_cast<binary_search_fn_t>(build.binary_search_fn);
+  const auto fn = reinterpret_cast<binary_search_fn_t>(build.binary_search_fn);
 
+#if CCCL_OS(WINDOWS)
+  if (!build.first_call_state)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const auto invoke = [&] {
+    return fn(
+      d_data.state, num_items, d_values.state, num_values, d_out.state, op.state, reinterpret_cast<void*>(stream));
+  };
+  // Empty calls return before DeviceTransform initializes its static launch configuration,
+  // so they must not complete the first-call gate.
+  const int status =
+    num_values == 0 ? invoke() : static_cast<cccl::detail::first_call_gate*>(build.first_call_state)->invoke(invoke);
+#else
   const int status =
     fn(d_data.state, num_items, d_values.state, num_values, d_out.state, op.state, reinterpret_cast<void*>(stream));
+#endif
   return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
 }
 catch (const std::exception& exc)
@@ -136,6 +164,10 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+#if CCCL_OS(WINDOWS)
+  delete static_cast<cccl::detail::first_call_gate*>(build_ptr->first_call_state);
+  build_ptr->first_call_state = nullptr;
+#endif
   cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->binary_search_fn = nullptr;
 
