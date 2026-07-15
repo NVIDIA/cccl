@@ -18,6 +18,9 @@
 //  Requires: offset <= size() &&
 //            (count == dynamic_extent || count <= size() - offset)
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 

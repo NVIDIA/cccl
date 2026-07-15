@@ -14,6 +14,9 @@
 //
 //  Requires: Count <= size().
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 

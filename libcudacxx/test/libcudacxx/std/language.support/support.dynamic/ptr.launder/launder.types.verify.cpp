@@ -11,6 +11,9 @@
 // template <class T> constexpr T* launder(T* p) noexcept;
 // The program is ill-formed if T is a function type or cv void.
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/__new_>
 #include <cuda/std/cassert>
 

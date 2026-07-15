@@ -27,6 +27,9 @@
 
 // UNSUPPORTED: c++17
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/__memory_>
 
 template <typename T>

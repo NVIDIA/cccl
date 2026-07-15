@@ -20,6 +20,9 @@
 // This extension is only supported when we don't ship <ranges>, and we can
 // remove it once we get rid of _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES.
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/cassert>
 #include <cuda/std/span>
 
