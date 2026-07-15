@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE_API inline void log_always([[maybe_unused]] const char* fmt, .
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 va_list args;
+                 ::std::va_list args;
                  va_start(args, fmt);
                  ::vprintf(fmt, args);
                  va_end(args);
@@ -65,7 +65,7 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
   NV_IF_TARGET(NV_IS_HOST, ({
                  if (logging_enabled())
                  {
-                   va_list args;
+                   ::std::va_list args;
                    va_start(args, fmt);
                    ::vprintf(fmt, args);
                    va_end(args);
