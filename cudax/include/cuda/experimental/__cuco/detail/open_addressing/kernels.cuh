@@ -249,9 +249,15 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
     {
       if (__idx < __n)
       {
-        using __value_t               = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
-        const __value_t __key         = *(__first + __idx);
-        const auto __found            = __ref.find(__key);
+        using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_t __key = *(__first + __idx);
+        const auto __found    = __ref.find(__key);
+        /*
+         * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
+         * sector stores from L2 to global memory. By writing results to shared memory and then
+         * synchronizing before writing back to global, we no longer rely on L1, preventing the
+         * increase in sector stores from L2 to global and improving performance.
+         */
         __output_buffer[__thread_idx] = __pred(*(__stencil + __idx)) ? __output(__found) : __sentinel;
       }
       __block.sync();
