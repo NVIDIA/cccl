@@ -5,6 +5,7 @@
 import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
 
@@ -31,10 +32,9 @@ def test_warp_reduction_of_integral_type(T):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(32, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, 32](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.min(h_input)
 
@@ -62,10 +62,9 @@ def test_warp_sum(T):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(32, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, 32](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.sum(h_input)
 

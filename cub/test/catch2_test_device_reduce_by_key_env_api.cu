@@ -25,7 +25,8 @@ struct ReduceByKeyPolicySelector
             .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
             .load_modifier     = cub::LOAD_DEFAULT,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+            .lookback_delay    = cub::LookbackDelayPolicy{
+                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
   }
 };
 // example-end reduce-by-key-policy-selector
@@ -63,6 +64,14 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[re
   d_aggregates_out.resize(5);
   CHECK(d_unique_out == expected_keys);
   CHECK(d_aggregates_out == expected_aggregates);
+}
+
+#else // _CCCL_STD_VER >= 2020
+
+// we need a dummy test for C++17, otherwise the return code of the test executable is 2 (not 0)
+C2H_TEST("cub::DeviceReduce::ReduceByKey dummy test", "[reduce][env]")
+{
+  SUCCEED();
 }
 
 #endif // _CCCL_STD_VER >= 2020

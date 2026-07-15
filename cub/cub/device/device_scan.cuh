@@ -26,6 +26,7 @@
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
@@ -33,6 +34,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1163,7 +1165,7 @@ struct DeviceScan
       d_in,
       d_out,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      detail::InputValue<InitValueT, InitValueIterT>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -1460,7 +1462,8 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+    return scan_impl_env(
+      d_in, d_out, scan_op, detail::InputValue<InitValueT, InitValueIterT>(init_value), num_items, env);
   }
 
   //! @}
@@ -2326,6 +2329,219 @@ struct DeviceScan
 
     return scan_impl_env<ForceInclusive::Yes>(
       d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
+  //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
+  //! is assigned to ``*d_out``.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
+  //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive prefix sum of an ``int`` device vector
+  //! with an initial value.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-future-init-env
+  //!     :end-before: example-end inclusive-scan-future-init-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueIterT
+  //!  **[inferred]** Random-access iterator type used to access the initial value on device
+  //!
+  //! @tparam InitValueBoundsT
+  //!  **[inferred]** Static bounds on `init_value`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
+  //!   is assigned to `*d_out`), provided as deferred value. The deferred value must model an
+  //!   iterator (i.e. the contained value should be dereferenceable to a value).
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueIterT,
+            typename InitValueBoundsT,
+            typename NumItemsT,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
+
+    static_assert(::cuda::std::indirectly_readable<InitValueIterT>, "The deferred value must model an iterator");
+    using __init_value_type = typename ::cuda::std::remove_cvref_t<decltype(init_value)>::__element_type;
+
+    auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
+
+    return scan_impl_env<ForceInclusive::Yes>(
+      d_in, d_out, scan_op, detail::InputValue<__init_value_type, InitValueIterT>(__fut), num_items, env);
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
+  //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
+  //! is assigned to ``*d_out``.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
+  //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive max-scan of an ``int`` device vector
+  //! with the initial value provided as a deferred device value.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin device-inclusive-scan-init-deferred
+  //!     :end-before: example-end device-inclusive-scan-init-deferred
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueIterT
+  //!  **[inferred]** Random-access iterator type used to access the initial value on device
+  //!
+  //! @tparam InitValueBoundsT
+  //!  **[inferred]** Static bounds on `init_value`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to the size in bytes of the `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
+  //!   is assigned to `*d_out`), provided as deferred value. The deferred value must model an
+  //!   iterator (i.e. the contained value should be dereferenceable to a value).
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within.
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueIterT,
+            typename InitValueBoundsT,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    NumItemsT num_items,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
+
+    static_assert(::cuda::std::indirectly_readable<InitValueIterT>, "The deferred value must model an iterator");
+    using __init_value_type = typename ::cuda::std::remove_cvref_t<decltype(init_value)>::__element_type;
+
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+
+    auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
+
+    return detail::scan::dispatch<ForceInclusive::Yes>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      detail::InputValue<__init_value_type, InitValueIterT>(__fut),
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @}

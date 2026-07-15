@@ -19,6 +19,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
@@ -39,6 +40,7 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/argument>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
@@ -121,6 +123,26 @@ inline constexpr bool is_non_deterministic_v =
 //!      :start-after: example-begin reduce-by-key-tuning
 //!      :end-before: example-end reduce-by-key-tuning
 //!
+//! Deferred problem sizes
+//! ====================================
+//!
+//! ``Reduce``, ``Sum``, ``Min``, ``Max``, and ``TransformReduce`` allow specifying the problem size from a value that
+//! resides in device memory through a single-value ``cuda::args::deferred`` argument. The deferred source may be a
+//! device pointer, a one-element span, or a random-access fancy iterator whose element is a non-``bool`` 32- or 64-bit
+//! integer.
+//!
+//! The problem size is read in stream order by the reduction kernels. Work that produces the count in the same stream
+//! is ordered automatically; a producer in another stream requires an event or an equivalent dependency. The source
+//! and its value must remain accessible and unchanged until all reduction kernels complete. The value must be
+//! nonnegative and ``[d_in, d_in + num_items)`` must be accessible. A temporary-storage query does not dereference the
+//! deferred source.
+//!
+//! Deferred reductions are CUDA Graph capturable. The pointed-to count may change between graph replays without
+//! updating or recapturing the graph. Compile-time and runtime bounds are accepted as caller preconditions, but do not
+//! currently change temporary storage, grid dimensions, or pass selection. Since the problem size is not available to
+//! the host, the first reduction pass launches CUB's maximum grid and may launch more blocks than the actual problem
+//! size needs. Extra blocks return without reducing input.
+//!
 //! Determinism
 //! ====================================
 //!
@@ -175,8 +197,9 @@ private:
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
     EnvT env)
   {
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = decltype(detail::reduce::template select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+    using args_traits_t = ::cuda::args::__traits<NumItemsT>;
+    using offset_t      = detail::choose_offset_t<typename args_traits_t::element_type>;
+    using accum_t       = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
       static_cast<detail::use_default*>(nullptr)));
 
     if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
@@ -187,8 +210,21 @@ private:
         policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-            storage, bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op, policy_selector);
+          return detail::rfa::dispatch<InputIteratorT,
+                                       OutputIteratorT,
+                                       decltype(detail::make_num_items_dispatch_arg(num_items)),
+                                       T,
+                                       TransformOpT,
+                                       accum_t>(
+            storage,
+            bytes,
+            d_in,
+            d_out,
+            detail::make_num_items_dispatch_arg(num_items),
+            init,
+            stream,
+            transform_op,
+            policy_selector);
         });
     }
     else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
@@ -202,7 +238,7 @@ private:
             bytes,
             d_in,
             THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-            static_cast<offset_t>(num_items),
+            detail::make_num_items_dispatch_arg(num_items),
             reduction_op,
             init,
             stream,
@@ -221,7 +257,7 @@ private:
             bytes,
             d_in,
             d_out,
-            static_cast<offset_t>(num_items),
+            detail::make_num_items_dispatch_arg(num_items),
             reduction_op,
             init,
             stream,
@@ -232,16 +268,15 @@ private:
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename ReductionOpT,
-    typename TransformOpT,
-    typename T,
-    typename NumItemsT,
-    typename EnvT,
-    typename AccumT = decltype(detail::reduce::template select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
-      static_cast<detail::use_default*>(nullptr)))>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT,
+            typename AccumT = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+              static_cast<detail::use_default*>(nullptr)))>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -470,11 +505,15 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::reduce::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), reduction_op, init, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      detail::make_num_items_dispatch_arg(num_items),
+      reduction_op,
+      init,
+      stream);
   }
 
   //! @rst
@@ -728,9 +767,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
 
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     // The output value type
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
@@ -741,7 +777,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       ::cuda::std::plus<>{},
       init_value_t{}, // zero-initialize
       stream);
@@ -836,7 +872,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
-    using OffsetT      = detail::choose_offset_t<NumItemsT>; // Signed integer type for global offsets
     using InputT       = detail::it_value_t<InputIteratorT>;
     using init_value_t = InputT;
     using limits_t     = ::cuda::std::numeric_limits<init_value_t>;
@@ -853,7 +888,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       ::cuda::minimum<>{},
       limits_t::max(),
       stream);
@@ -1484,8 +1519,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
-    // Signed integer type for global offsets
-    using OffsetT      = detail::choose_offset_t<NumItemsT>;
     using InputT       = detail::it_value_t<InputIteratorT>;
     using init_value_t = InputT;
     using limits_t     = ::cuda::std::numeric_limits<init_value_t>;
@@ -1502,7 +1535,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       ::cuda::maximum<>{},
       limits_t::lowest(),
       stream);
@@ -2093,14 +2126,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       reduction_op,
       init,
       stream,

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
@@ -35,6 +35,7 @@
 #  include <cuda/__cmath/round_up.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
@@ -308,8 +309,8 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
 
     __radix_sort::radix_sort<SORT_ITEMS>(
       policy,
-      thrust::raw_pointer_cast(&*keys.begin()),
-      thrust::raw_pointer_cast(&*values.begin()),
+      ::cuda::std::to_address(keys.begin()),
+      ::cuda::std::to_address(values.begin()),
       keys_last - keys_first,
       compare_op);
 
@@ -322,8 +323,8 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
   {
     __radix_sort::radix_sort<SORT_ITEMS>(
       policy,
-      thrust::raw_pointer_cast(&*keys.begin()),
-      thrust::raw_pointer_cast(&*keys.begin()),
+      ::cuda::std::to_address(keys.begin()),
+      ::cuda::std::to_address(keys.begin()),
       keys_last - keys_first,
       compare_op);
   }

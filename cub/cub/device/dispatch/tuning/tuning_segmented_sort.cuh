@@ -37,7 +37,7 @@ struct SegmentedSortRadixSortPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the internal digit-count scan
   int radix_bits; //!< Number of bits per radix digit pass
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedSortRadixSortPolicy& lhs, const SegmentedSortRadixSortPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -46,7 +46,7 @@ struct SegmentedSortRadixSortPolicy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedSortRadixSortPolicy& lhs, const SegmentedSortRadixSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -84,7 +84,7 @@ struct SegmentedSortSubWarpMergeSortPolicy
     return threads_per_warp * items_per_thread;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedSortSubWarpMergeSortPolicy& lhs, const SegmentedSortSubWarpMergeSortPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.threads_per_warp == rhs.threads_per_warp
@@ -92,7 +92,7 @@ struct SegmentedSortSubWarpMergeSortPolicy
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedSortSubWarpMergeSortPolicy& lhs, const SegmentedSortSubWarpMergeSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -119,14 +119,14 @@ struct SegmentedSortPolicy
   int partitioning_threshold; //!< Number of segments above which different algorithms will be used for different size
                               //!< buckets
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept
   {
     return lhs.large_segment == rhs.large_segment && lhs.medium_segment == rhs.medium_segment
         && lhs.small_segment == rhs.small_segment && lhs.partitioning_threshold == rhs.partitioning_threshold;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -405,7 +405,7 @@ struct policy_hub
   using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -438,7 +438,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -471,7 +471,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
+  struct Policy610 : detail::chained_policy<610, Policy610, Policy600>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -504,7 +504,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
+  struct Policy620 : detail::chained_policy<620, Policy620, Policy610>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 5 : 4;
@@ -537,7 +537,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
+  struct Policy700 : detail::chained_policy<700, Policy700, Policy620>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -570,7 +570,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
@@ -601,7 +601,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy860 : ChainedPolicy<860, Policy860, Policy800>
+  struct Policy860 : detail::chained_policy<860, Policy860, Policy800>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;

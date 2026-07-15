@@ -22,7 +22,9 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/thread.h>
 #include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
@@ -50,12 +52,14 @@ LLD_HAS_DRIVER(elf)
 #  include <llvm/Object/COFFImportFile.h>
 #endif
 
+#include <atomic>
 #include <charconv>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -68,26 +72,624 @@ LLD_HAS_DRIVER(elf)
 
 namespace libnvcc
 {
-static bool llvm_initialized = false;
+static std::once_flag llvm_init_flag;
 
 static void initialize_llvm()
 {
-  if (llvm_initialized)
+  std::call_once(llvm_init_flag, [] {
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86Target();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+    LLVMInitializeNVPTXTargetInfo();
+    LLVMInitializeNVPTXTarget();
+    LLVMInitializeNVPTXTargetMC();
+    LLVMInitializeNVPTXAsmPrinter();
+  });
+}
+
+// Embedding clang as a library bypasses the clang driver's
+// runWithSufficientStackSpace guard, so the frontend runs on the caller's stack.
+// On Windows the default main-thread stack is only 1 MB, which the deep
+// (recursive-descent / template-instantiation) frontend overflows on heavier
+// kernels such as radix_sort / segmented_reduce; Linux's 8 MB default hides it.
+// Run the frontend on a worker thread sized to match clang's own
+// DesiredStackSize (8 MB), which is the proven-sufficient value on Linux.
+inline constexpr unsigned kFrontendStackSize = 8u << 20;
+
+template <class Fn>
+static bool runWithLargeStack(Fn&& fn)
+{
+  bool result = false;
+  llvm::thread worker(std::optional<unsigned>(kFrontendStackSize), [&] {
+    result = fn();
+  });
+  worker.join();
+  return result;
+}
+
+struct CompilerOptions
+{
+  std::string cuda_toolkit_path;
+  std::string hostjit_include_path;
+  std::string clang_headers_path;
+  std::string device_pch_path;
+  std::string host_pch_path;
+  std::string entry_point_name;
+  std::vector<std::string> system_include_paths;
+  std::vector<std::string> include_paths;
+  std::vector<std::string> library_paths;
+  std::vector<std::string> device_bitcode_files;
+  std::vector<std::string> device_ltoir_files;
+  std::unordered_map<std::string, std::string> macro_definitions;
+  std::vector<std::string> extra_clang_args;
+  int sm_version         = 75;
+  int optimization_level = 2;
+  bool debug             = false;
+  bool verbose           = false;
+  bool trace_includes    = false;
+  bool keep_artifacts    = false;
+};
+
+struct CompilationResult
+{
+  bool success = false;
+  std::string object_file_path;
+  std::string diagnostics;
+};
+
+struct BitcodeResult
+{
+  bool success = false;
+  std::string diagnostics;
+};
+
+struct LinkResult
+{
+  bool success = false;
+  std::string library_path;
+  std::string diagnostics;
+};
+
+static bool pathExists(const std::filesystem::path& path);
+
+static void addDefaultCudaLibraryPath(CompilerOptions& options)
+{
+  if (!options.cuda_toolkit_path.empty())
   {
-    return;
+    std::filesystem::path lib64_path = std::filesystem::path(options.cuda_toolkit_path) / "lib64";
+    std::filesystem::path lib_path   = std::filesystem::path(options.cuda_toolkit_path) / "lib";
+
+    if (pathExists(lib64_path))
+    {
+      options.library_paths.push_back(lib64_path.string());
+    }
+    else if (pathExists(lib_path))
+    {
+      options.library_paths.push_back(lib_path.string());
+    }
+  }
+}
+
+static void setDefaultOptions(CompilerOptions& options)
+{
+  if (const char* env = std::getenv("CUDA_PATH"))
+  {
+    options.cuda_toolkit_path = env;
+  }
+  else if (const char* env = std::getenv("CUDA_HOME"))
+  {
+    options.cuda_toolkit_path = env;
+  }
+#ifdef CUDA_TOOLKIT_PATH
+  else
+  {
+    options.cuda_toolkit_path = CUDA_TOOLKIT_PATH;
+  }
+#endif
+
+  if (const char* env = std::getenv("HOSTJIT_INCLUDE_PATH"))
+  {
+    options.hostjit_include_path = env;
+  }
+#ifdef HOSTJIT_INCLUDE_DIR
+  else
+  {
+    options.hostjit_include_path = HOSTJIT_INCLUDE_DIR;
+  }
+#endif
+
+  if (const char* env = std::getenv("HOSTJIT_CLANG_PATH"))
+  {
+    options.clang_headers_path = env;
+  }
+#ifdef CLANG_HEADERS_DIR
+  else
+  {
+    options.clang_headers_path = CLANG_HEADERS_DIR;
+  }
+#endif
+}
+
+static bool pathExists(const std::filesystem::path& path)
+{
+  std::error_code ec;
+  return std::filesystem::exists(path, ec);
+}
+
+static std::filesystem::path tempDirectoryPath()
+{
+  std::error_code ec;
+  auto path = std::filesystem::temp_directory_path(ec);
+  if (!ec)
+  {
+    return path;
+  }
+#ifdef _WIN32
+  if (const char* env = std::getenv("TEMP"))
+  {
+    return env;
+  }
+  if (const char* env = std::getenv("TMP"))
+  {
+    return env;
+  }
+#endif
+  if (const char* env = std::getenv("TMPDIR"))
+  {
+    return env;
+  }
+  return ".";
+}
+
+static bool createDirectories(const std::filesystem::path& path, std::string& diagnostics)
+{
+  std::error_code ec;
+  std::filesystem::create_directories(path, ec);
+  if (ec)
+  {
+    diagnostics += "Failed to create directory " + path.string() + ": " + ec.message() + "\n";
+    return false;
+  }
+  return true;
+}
+
+static void removeAll(const std::filesystem::path& path)
+{
+  std::error_code ec;
+  std::filesystem::remove_all(path, ec);
+}
+
+template <typename Fn>
+static void forEachDirectoryEntry(const std::filesystem::path& dir, Fn&& fn)
+{
+  std::error_code ec;
+  for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec))
+  {
+    fn(*it);
+  }
+}
+
+static bool parseInt(const std::string& value, int& out)
+{
+  if (value.empty())
+  {
+    return false;
   }
 
-  LLVMInitializeX86TargetInfo();
-  LLVMInitializeX86Target();
-  LLVMInitializeX86TargetMC();
-  LLVMInitializeX86AsmPrinter();
-  LLVMInitializeX86AsmParser();
-  LLVMInitializeNVPTXTargetInfo();
-  LLVMInitializeNVPTXTarget();
-  LLVMInitializeNVPTXTargetMC();
-  LLVMInitializeNVPTXAsmPrinter();
+  int parsed        = 0;
+  const char* begin = value.data();
+  const char* end   = begin + value.size();
+  auto [ptr, ec]    = std::from_chars(begin, end, parsed);
+  if (ec != std::errc{} || ptr != end)
+  {
+    return false;
+  }
+  out = parsed;
+  return true;
+}
 
-  llvm_initialized = true;
+static bool parseGpuArchitecture(const std::string& value, int& sm)
+{
+  std::string arch = value;
+  if (arch.starts_with("sm_"))
+  {
+    arch.erase(0, 3);
+  }
+  return parseInt(arch, sm);
+}
+
+static bool parseMacroDefinition(const std::string& value, CompilerOptions& options)
+{
+  if (value.empty())
+  {
+    return false;
+  }
+  auto eq = value.find('=');
+  if (eq == std::string::npos)
+  {
+    options.macro_definitions[value] = "";
+  }
+  else if (eq == 0)
+  {
+    return false;
+  }
+  else
+  {
+    options.macro_definitions[value.substr(0, eq)] = value.substr(eq + 1);
+  }
+  return true;
+}
+
+static bool parseOptions(int num_options, const char* const* raw_options, CompilerOptions& options, std::string& error)
+{
+  if (num_options < 0)
+  {
+    error = "Option count must be non-negative";
+    return false;
+  }
+  if (num_options > 0 && raw_options == nullptr)
+  {
+    error = "Options array is null";
+    return false;
+  }
+
+  setDefaultOptions(options);
+
+  auto value_after_equals = [](std::string_view option, std::string_view prefix) -> std::string {
+    return std::string(option.substr(prefix.size()));
+  };
+
+  for (int i = 0; i < num_options; ++i)
+  {
+    if (raw_options[i] == nullptr)
+    {
+      error = "Option string is null";
+      return false;
+    }
+
+    std::string_view option(raw_options[i]);
+    if (option.starts_with("--cuda-path="))
+    {
+      options.cuda_toolkit_path = value_after_equals(option, "--cuda-path=");
+    }
+    else if (option.starts_with("--hostjit-include-path="))
+    {
+      options.hostjit_include_path = value_after_equals(option, "--hostjit-include-path=");
+    }
+    else if (option.starts_with("--clang-headers-path="))
+    {
+      options.clang_headers_path = value_after_equals(option, "--clang-headers-path=");
+    }
+    else if (option.starts_with("--system-include-path="))
+    {
+      options.system_include_paths.push_back(value_after_equals(option, "--system-include-path="));
+    }
+    else if (option.starts_with("-isystem") && option.size() > 8)
+    {
+      options.system_include_paths.emplace_back(option.substr(8));
+    }
+    else if (option == "-isystem")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-isystem requires an argument";
+        return false;
+      }
+      options.system_include_paths.emplace_back(raw_options[i]);
+    }
+    else if (option.starts_with("--include-path="))
+    {
+      options.include_paths.push_back(value_after_equals(option, "--include-path="));
+    }
+    else if (option.starts_with("-I") && option.size() > 2)
+    {
+      options.include_paths.emplace_back(option.substr(2));
+    }
+    else if (option == "-I")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-I requires an argument";
+        return false;
+      }
+      options.include_paths.emplace_back(raw_options[i]);
+    }
+    else if (option.starts_with("--library-path="))
+    {
+      options.library_paths.push_back(value_after_equals(option, "--library-path="));
+    }
+    else if (option.starts_with("-L") && option.size() > 2)
+    {
+      options.library_paths.emplace_back(option.substr(2));
+    }
+    else if (option == "-L")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-L requires an argument";
+        return false;
+      }
+      options.library_paths.emplace_back(raw_options[i]);
+    }
+    else if (option.starts_with("--device-bitcode="))
+    {
+      options.device_bitcode_files.push_back(value_after_equals(option, "--device-bitcode="));
+    }
+    else if (option.starts_with("--device-ltoir="))
+    {
+      options.device_ltoir_files.push_back(value_after_equals(option, "--device-ltoir="));
+    }
+    else if (option.starts_with("--define-macro="))
+    {
+      if (!parseMacroDefinition(value_after_equals(option, "--define-macro="), options))
+      {
+        error = "Invalid macro definition: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option.starts_with("-D") && option.size() > 2)
+    {
+      if (!parseMacroDefinition(std::string(option.substr(2)), options))
+      {
+        error = "Invalid macro definition: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option == "-D")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr || !parseMacroDefinition(raw_options[i], options))
+      {
+        error = "-D requires a macro definition";
+        return false;
+      }
+    }
+    else if (option.starts_with("--gpu-architecture="))
+    {
+      if (!parseGpuArchitecture(value_after_equals(option, "--gpu-architecture="), options.sm_version))
+      {
+        error = "Invalid GPU architecture: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option.starts_with("--optimization-level="))
+    {
+      if (!parseInt(value_after_equals(option, "--optimization-level="), options.optimization_level))
+      {
+        error = "Invalid optimization level: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option.starts_with("-O") && option.size() > 2)
+    {
+      if (!parseInt(std::string(option.substr(2)), options.optimization_level))
+      {
+        error = "Invalid optimization level: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option == "--debug")
+    {
+      options.debug = true;
+    }
+    else if (option == "--verbose")
+    {
+      options.verbose = true;
+    }
+    else if (option == "--trace-includes")
+    {
+      options.trace_includes = true;
+    }
+    else if (option == "--keep-artifacts")
+    {
+      options.keep_artifacts = true;
+    }
+    else if (option.starts_with("--entry-point="))
+    {
+      options.entry_point_name = value_after_equals(option, "--entry-point=");
+    }
+    else if (option.starts_with("--device-pch="))
+    {
+      options.device_pch_path = value_after_equals(option, "--device-pch=");
+    }
+    else if (option.starts_with("--host-pch="))
+    {
+      options.host_pch_path = value_after_equals(option, "--host-pch=");
+    }
+    else if (option.starts_with("-XClang="))
+    {
+      options.extra_clang_args.emplace_back(option.substr(8));
+    }
+    else if (option == "-XClang")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-XClang requires an argument";
+        return false;
+      }
+      options.extra_clang_args.emplace_back(raw_options[i]);
+    }
+    else
+    {
+      error = "Unknown option: " + std::string(option);
+      return false;
+    }
+  }
+
+  if (options.library_paths.empty())
+  {
+    addDefaultCudaLibraryPath(options);
+  }
+
+  return true;
+}
+
+static bool validateOptions(const CompilerOptions& options, std::string* error_message)
+{
+  if (options.cuda_toolkit_path.empty())
+  {
+    if (error_message)
+    {
+      *error_message = "CUDA toolkit path not found. Please pass --cuda-path or set CUDA_PATH/CUDA_HOME.";
+    }
+    return false;
+  }
+
+  if (!pathExists(options.cuda_toolkit_path))
+  {
+    if (error_message)
+    {
+      *error_message = "CUDA toolkit path does not exist: " + options.cuda_toolkit_path;
+    }
+    return false;
+  }
+
+  std::filesystem::path cuda_h = std::filesystem::path(options.cuda_toolkit_path) / "include" / "cuda.h";
+  if (!pathExists(cuda_h))
+  {
+    if (error_message)
+    {
+      *error_message = "CUDA headers not found at: " + cuda_h.string();
+    }
+    return false;
+  }
+
+  for (const auto& include_path : options.include_paths)
+  {
+    if (!pathExists(include_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Include path does not exist: " + include_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& include_path : options.system_include_paths)
+  {
+    if (!pathExists(include_path))
+    {
+      if (error_message)
+      {
+        *error_message = "System include path does not exist: " + include_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& library_path : options.library_paths)
+  {
+    if (!pathExists(library_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Library path does not exist: " + library_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& bitcode_path : options.device_bitcode_files)
+  {
+    if (!pathExists(bitcode_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Device bitcode path does not exist: " + bitcode_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& ltoir_path : options.device_ltoir_files)
+  {
+    if (!pathExists(ltoir_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Device LTOIR path does not exist: " + ltoir_path;
+      }
+      return false;
+    }
+  }
+
+  if (!options.device_pch_path.empty() && !pathExists(options.device_pch_path))
+  {
+    if (error_message)
+    {
+      *error_message = "Device PCH path does not exist: " + options.device_pch_path;
+    }
+    return false;
+  }
+
+  if (!options.host_pch_path.empty() && !pathExists(options.host_pch_path))
+  {
+    if (error_message)
+    {
+      *error_message = "Host PCH path does not exist: " + options.host_pch_path;
+    }
+    return false;
+  }
+
+  if (options.sm_version < 30 || options.sm_version > 150)
+  {
+    if (error_message)
+    {
+      *error_message = "Invalid SM version: " + std::to_string(options.sm_version) + " (must be between 30 and 150)";
+    }
+    return false;
+  }
+
+  if (options.optimization_level < 0 || options.optimization_level > 3)
+  {
+    if (error_message)
+    {
+      *error_message =
+        "Invalid optimization level: " + std::to_string(options.optimization_level) + " (must be between 0 and 3)";
+    }
+    return false;
+  }
+
+  return true;
+}
+
+static void appendExtraClangArgs(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  args.insert(args.end(), options.extra_clang_args.begin(), options.extra_clang_args.end());
+}
+
+static void appendSystemIncludePaths(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  for (const auto& include_path : options.system_include_paths)
+  {
+    args.push_back("-internal-isystem");
+    args.push_back(include_path);
+  }
+}
+
+static void appendIncludePaths(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  for (const auto& include_path : options.include_paths)
+  {
+    args.push_back("-I" + include_path);
+  }
+}
+
+static void appendMacroDefinitions(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  for (const auto& [macro_name, macro_value] : options.macro_definitions)
+  {
+    if (macro_value.empty())
+    {
+      args.push_back("-D" + macro_name);
+    }
+    else
+    {
+      args.push_back("-D" + macro_name + "=" + macro_value);
+    }
+  }
 }
 
 struct CompilerOptions
@@ -751,21 +1353,58 @@ public:
 
   // Write preamble to a persistent file and generate a PCH from it.
   // arg_strings[0] will be replaced with the persistent preamble path.
+  //
+  // Concurrent builds — other threads, or other processes sharing the
+  // persistent cache directory — may generate the same artifacts at the same
+  // time. All writes therefore go to a writer-unique temporary path followed
+  // by an atomic rename, so readers only ever observe complete files, and
+  // since the content is deterministic for a given path, whichever writer
+  // lands last is correct. The preamble is additionally left untouched when
+  // its content already matches: the PCH records the preamble file's
+  // identity, so a needless rewrite would invalidate concurrently generated
+  // PCHs.
   bool generatePCH(const std::string& pch_source,
                    const std::string& pch_source_path,
                    const std::string& pch_output_path,
                    std::vector<std::string> arg_strings,
                    std::string& diagnostics)
   {
-    // Write preamble to the persistent source path
-    {
-      std::ofstream f(pch_source_path);
-      if (!f)
+    static std::atomic<unsigned long> temp_counter{0};
+    const std::string temp_suffix =
+      ".tmp." + std::to_string(llvm::sys::Process::getProcessId()) + "." + std::to_string(temp_counter++);
+
+    const bool preamble_up_to_date = [&] {
+      std::ifstream existing(pch_source_path, std::ios::binary);
+      if (!existing)
       {
-        diagnostics += "Failed to write PCH preamble to " + pch_source_path;
         return false;
       }
-      f << pch_source;
+      std::stringstream contents;
+      contents << existing.rdbuf();
+      return contents.str() == pch_source;
+    }();
+
+    if (!preamble_up_to_date)
+    {
+      const std::string source_temp_path = pch_source_path + temp_suffix;
+      {
+        std::ofstream f(source_temp_path, std::ios::binary);
+        if (!f)
+        {
+          diagnostics += "Failed to write PCH preamble to " + source_temp_path;
+          return false;
+        }
+        f << pch_source;
+      }
+      std::error_code rename_error;
+      std::filesystem::rename(source_temp_path, pch_source_path, rename_error);
+      if (rename_error)
+      {
+        std::error_code ignored;
+        std::filesystem::remove(source_temp_path, ignored);
+        diagnostics += "Failed to move PCH preamble into place: " + rename_error.message();
+        return false;
+      }
     }
 
     // Replace the source file arg with the persistent path
@@ -797,15 +1436,39 @@ public:
 
     compiler.createDiagnostics(diag_engine.getClient(), false);
     compiler.createFileManager();
-    compiler.getFrontendOpts().OutputFile = pch_output_path;
+    const std::string output_temp_path    = pch_output_path + temp_suffix;
+    compiler.getFrontendOpts().OutputFile = output_temp_path;
 
     clang::GeneratePCHAction pch_action;
-    bool success = compiler.ExecuteAction(pch_action);
+    const bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(pch_action);
+    });
 
     diag_stream.flush();
     diagnostics += diag_output;
 
-    return success;
+    if (!success)
+    {
+      std::error_code ignored;
+      std::filesystem::remove(output_temp_path, ignored);
+      return false;
+    }
+
+    std::error_code rename_error;
+    std::filesystem::rename(output_temp_path, pch_output_path, rename_error);
+    if (rename_error)
+    {
+      std::error_code ignored;
+      std::filesystem::remove(output_temp_path, ignored);
+      // A concurrent writer may have landed the (identical) PCH first; that
+      // counts as success for this builder too.
+      if (!std::filesystem::exists(pch_output_path))
+      {
+        diagnostics += "Failed to move PCH into place: " + rename_error.message();
+        return false;
+      }
+    }
+    return true;
   }
 
   llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem>
@@ -979,7 +1642,9 @@ public:
     llvm::LLVMContext llvm_context;
 
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = compiler.ExecuteAction(emit_llvm_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
@@ -1345,7 +2010,9 @@ public:
 
     llvm::LLVMContext llvm_context;
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = compiler.ExecuteAction(emit_llvm_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (success)
     {
@@ -1418,8 +2085,12 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("-fms-compatibility");
     arg_strings.push_back("-fms-compatibility-version=19.40");
-    // We do not have access to the windows CRT, but we are only running single threaded anyway
-    // Otherwise we have undefined symbols like _tls_index and _Init_thread_epoch
+    // We do not have access to the windows CRT, so the guard support that
+    // threadsafe statics need (_tls_index, _Init_thread_epoch, ...) is
+    // unavailable and must be disabled. Generated code IS invoked from
+    // multiple threads: first_call_gate (util/first_call_gate.h) serializes
+    // the first call into each generated function so its function-local
+    // statics initialize race-free despite this flag.
     arg_strings.push_back("-fno-threadsafe-statics");
 #else
     arg_strings.push_back("-fgnuc-version=4.2.1");
@@ -1528,7 +2199,9 @@ public:
     }
 
     clang::EmitObjAction emit_action;
-    bool success = compiler.ExecuteAction(emit_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {

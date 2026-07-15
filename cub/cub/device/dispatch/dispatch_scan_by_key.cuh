@@ -125,20 +125,20 @@ template <typename PolicySelector,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
-    _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
-    _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const ValuesOutputIteratorT d_values_out,
+    const KeysInputIteratorT d_keys_in,
+    KeyT* const d_keys_prev_in,
+    const ValuesInputIteratorT d_values_in,
+    const ValuesOutputIteratorT d_values_out,
     ScanByKeyTileStateT tile_state,
-    _CCCL_GRID_CONSTANT const int start_tile,
+    const int start_tile,
     EqualityOp equality_op,
-    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
-    _CCCL_GRID_CONSTANT const InitValueT init_value,
-    _CCCL_GRID_CONSTANT const OffsetT num_items)
+    const ScanOpT scan_op,
+    const InitValueT init_value,
+    const OffsetT num_items)
 {
   static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
 
-  using scan_by_key_policy_t = AgentScanByKeyPolicy<
+  using scan_by_key_policy_t = agent_scan_by_key_policy<
     policy.threads_per_block,
     policy.items_per_thread,
     policy.load_algorithm,
@@ -170,10 +170,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
-  _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
+  const KeysInputIteratorT d_keys_in,
   cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
-  _CCCL_GRID_CONSTANT const OffsetT items_per_tile,
-  _CCCL_GRID_CONSTANT const int num_tiles)
+  const OffsetT items_per_tile,
+  const int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

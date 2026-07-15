@@ -37,6 +37,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
@@ -57,6 +59,7 @@ struct scanKernelParams
   const InputT* ptrIn;
   OutputT* ptrOut;
   warpspeed::tile_state_t<AccumT>* ptrTileStates;
+  ::cuda::std::uint32_t* atomicCounter;
   ::cuda::std::size_t numElem;
   int numStages;
 };
@@ -130,6 +133,15 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const warpspeed::Squad& squad,
     ::cuda::ptx::clusterlaunchcontrol_try_cancel(&refDestSmem.data(), refDestSmem.ptrCurBarrierRelease());
   }
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
+}
+
+_CCCL_DEVICE_API inline void squadGetNextBlockIdxAtomic(
+  const warpspeed::Squad& squad, warpspeed::SmemRef<uint4>& refDestSmem, ::cuda::std::uint32_t* atomicCounter)
+{
+  if (squad.isLeaderThread())
+  {
+    refDestSmem.data().x = ::atomicAdd(atomicCounter, 1u);
+  }
 }
 
 template <typename Tp, typename ScanOpT>
@@ -289,7 +301,9 @@ struct lookahead_scan_closure
   load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW) const
   {
     warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
-    squadGetNextBlockIdx(squad, refNextBlockIdxW);
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                      (squadGetNextBlockIdx(squad, refNextBlockIdxW);),
+                      (squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
@@ -307,7 +321,8 @@ struct lookahead_scan_closure
     bool is_first_tile,
     int& idxTilePrev,
     AccumT& AggrExclusiveCtaPrev,
-    int idxTile) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
+    int idxTile,
+    int num_tiles) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
   {
     warpspeed::SmemRef refAggrExclusiveCtaW = phaseAggrExclusiveCtaW.acquireRef();
 
@@ -317,7 +332,7 @@ struct lookahead_scan_closure
       {
         // The stable-order version updates idxTilePrev/AggrExclusiveCtaPrev itself
         AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread>(
-          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
+          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op, num_tiles);
         if (squad.isLeaderThread())
         {
           refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
@@ -326,7 +341,7 @@ struct lookahead_scan_closure
       else
       {
         AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
-          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
+          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op, num_tiles);
         if (squad.isLeaderThread())
         {
           refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
@@ -345,7 +360,8 @@ struct lookahead_scan_closure
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
-    int idxTile) const
+    int idxTile,
+    int num_tiles) const
   {
     const int valid_items_this_thread =
       cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
@@ -430,7 +446,8 @@ struct lookahead_scan_closure
     // Store tile aggregate for lookahead
     if (squad.isLeaderThread())
     {
-      warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile);
+      warpspeed::storeTileAggregate(
+        params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile, num_tiles);
     }
 
     // Store thread aggregate
@@ -707,17 +724,36 @@ struct lookahead_scan_closure
   // hot loops (even if that may seem the case from a first glance at the code).
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void dispatch_squad(warpspeed::Squad squad) // const // TODO(bgruber): enable const
   {
-    // Start with the tile indicated by blockIdx.x
-    int idxTile = specialRegisters.blockIdxX;
+    const int numTiles = static_cast<int>(::cuda::ceil_div(params.numElem, ::cuda::std::size_t(tile_size)));
+
     // Lookahead-specific variables:
     int idxTilePrev = 0;
     AccumT AggrExclusiveCtaPrev; // only valid in squadLookahead lane_0
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
-    // Loop over tiles
+    // Start with the tile indicated by blockIdx.x for sm100, but for sm90+, we use an atomic counter to determine the
+    // first tile
+    int idxTile = [&] {
+      int first_tile;
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (first_tile = specialRegisters.blockIdxX;), ({
+                          __shared__ int s_first_tile;
+                          if (specialRegisters.threadIdxX == 0)
+                          {
+                            s_first_tile = static_cast<int>(::atomicAdd(params.atomicCounter, 1u));
+                          }
+                          __syncthreads();
+                          first_tile = s_first_tile;
+                        }));
+      return first_tile;
+    }();
+
 #  pragma unroll 1
-    while (true)
+    // SM90 produces bad codegen and deadlocks with a `while (true)`, so it exits via the bound check.
+    // SM100 uses a explicit true condition and relies on the clusterlaunchcontrol exit below instead.
+    while ([&] {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (return true;), (return idxTile < numTiles;));
+    }())
     {
       // Get stages. When these objects go out of scope, the stage of the resource is automatically incremented.
       warpspeed::SmemStage stageNextBlockIdx      = res.smemNextBlockIdx.nextStage();
@@ -761,17 +797,29 @@ struct lookahead_scan_closure
         regNextBlockIdx                     = refNextBlockIdxR.data();
         refNextBlockIdxR.setFenceLdsToAsyncProxy();
       }
-      bool nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
+      const bool nextIdxTileValid = [&] {
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                          (return ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
+                          (return static_cast<int>(regNextBlockIdx.x) < numTiles;));
+      }();
 
       if (squad == squadReduce)
       {
         reduce_tile(
-          squad, phaseInOutRW, phaseThreadAndWarpAggrW, valid_items, is_first_tile, is_last_tile, loadInfo, idxTile);
+          squad,
+          phaseInOutRW,
+          phaseThreadAndWarpAggrW,
+          valid_items,
+          is_first_tile,
+          is_last_tile,
+          loadInfo,
+          idxTile,
+          numTiles);
       }
 
       if (squad == squadLookahead)
       {
-        lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile);
+        lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile, numTiles);
       }
 
       if (squad == squadScanStore)
@@ -808,7 +856,10 @@ struct lookahead_scan_closure
       {
         break;
       }
-      idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_100,
+        (idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);),
+        (idxTile = static_cast<int>(regNextBlockIdx.x);));
     }
 
     // epilogue: after the load squad finished, we can start ramping up the next kernel
@@ -867,10 +918,21 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
+  warpspeed::tile_state_t<AccumT>* tile_states,
+  const int num_temp_states,
+  [[maybe_unused]] ::cuda::std::uint32_t* atomic_counter)
 {
   const int tile_id = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+
+  // The atomic counter is only used (and thus only needs zeroing) on SM90.
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (), ({
+                 if (tile_id == 0 && atomic_counter != nullptr)
+                 {
+                   *atomic_counter = 0;
+                 }
+               }));
+
   if (tile_id >= num_temp_states)
   {
     return;
