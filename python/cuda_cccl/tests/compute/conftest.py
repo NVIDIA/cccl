@@ -88,13 +88,20 @@ def cuda_stream() -> Generator[Stream, None, None]:
 
 
 @pytest.fixture(scope="function", autouse=True)
-def verify_sass(request, monkeypatch):
+def verify_sass(request):
     if request.node.get_closest_marker("no_verify_sass"):
         return
 
     if not check_ldl_stl_in_sass:
-        print("not checking sass")
         return
+
+    # Pull monkeypatch dynamically rather than as a fixture parameter so this
+    # autouse fixture does not add monkeypatch to every test's static fixture
+    # closure. pytest-run-parallel treats monkeypatch as thread-unsafe based on
+    # that closure, so a parameter here would serialize the entire free-threaded
+    # parallel sweep -- even though this fixture only patches on the opt-in
+    # SASS-check path (check_ldl_stl_in_sass, off by default and in CI).
+    monkeypatch = request.getfixturevalue("monkeypatch")
 
     import cuda.compute._cccl_interop
 
@@ -124,8 +131,17 @@ def pytest_collection_modifyitems(config, items):
     serialization_skip = pytest.mark.skip(
         reason="serialization not supported on v2 (HostJIT) backend"
     )
+    # Under the pytest-run-parallel sweep (--parallel-threads > 1) skip the
+    # blanket raise_on_numba_import injection: it monkeypatches
+    # builtins.__import__, which pytest-run-parallel treats as thread-unsafe and
+    # would serialize every no_numba test, neutering the sweep.
+    #
+    # getoption returns the int 1 from the argparse default but a *string* for
+    # CLI-passed values ("2", "auto", "1"), so normalize to str before comparing
+    # -- a bare `> 1` would raise TypeError on the "2" string.
+    running_parallel = str(config.getoption("parallel_threads", 1)) != "1"
     for item in items:
-        if item.get_closest_marker("no_numba"):
+        if item.get_closest_marker("no_numba") and not running_parallel:
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
         if USING_V2 and item.get_closest_marker("serialization"):
