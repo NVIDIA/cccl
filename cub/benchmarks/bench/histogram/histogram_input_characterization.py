@@ -102,12 +102,13 @@ CHAR_N = 1_000_000
 CHAR_SEQ_SAMPLES = 4000
 CHAR_SEED = 42
 
-# Deliberately small, illustrative launch used only by the position overlay.
-# Four blocks make block 0's repeated grid-stride tiles readable at both the
-# contiguous-prefix and whole-sequence scales. This is not an occupancy claim
-# about B200; the benchmark itself chooses its real grid independently.
+# Deliberately small schematic used only by the position overlay. Dividing every
+# full-sequence view into four blocks over four rounds makes block 0's repeated
+# tiles readable and identical across shapes. This illustrates the grid-stride
+# pattern; it is not a claim about the production kernel's policy-dependent block
+# size or grid dimensions.
 CHAR_GRID_BLOCKS = 4
-CHAR_BLOCK_THREADS = 768
+CHAR_GRID_ROUNDS = 4
 
 # Bin count is PER SHAPE, drawn at the shape's natural scale (the original design
 # figures did the same). Two reasons it must not be one global value:
@@ -246,56 +247,47 @@ def draw_rankfreq(ax, counts):
     ax.grid(axis="y", linestyle=":", alpha=0.45)
 
 
-# Shapes whose interesting sequence structure lives at the WHOLE-sequence scale
-# (e.g. the hot bin steps across the full input, or poison transitions from its
-# short claim phase to its long miss phase), so the panel must span all N.
-# Everything else is shown as a CONTIGUOUS prefix: a periodic shape (sawtooth)
-# aliases into garbage if you linspace-subsample N points at a period that divides
-# the step, but a contiguous window never aliases and shows the true ramp; the
-# stale_resident scan is a uniform draw over its working set, well represented by a
-# contiguous window too. For i.i.d. shapes a contiguous window is just as
-# representative as a random subsample.
-_FULL_RANGE_SEQ_SHAPES = {"hash_synonym", "poison", "temporal_phases"}
+def sequence_sample_positions(n):
+    """Return one shape-independent sample of the full input-position domain."""
+    if n <= 0:
+        return np.empty(0, dtype=np.int64)
+    if n <= CHAR_SEQ_SAMPLES:
+        return np.arange(n, dtype=np.int64)
+    return np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64)
 
 
 def block_stride_spans(
     sequence_start,
     sequence_stop,
     grid_blocks=CHAR_GRID_BLOCKS,
-    block_threads=CHAR_BLOCK_THREADS,
+    grid_rounds=CHAR_GRID_ROUNDS,
     block_index=0,
 ):
-    """Return the displayed positions visited by one grid-striding block.
+    """Return block ``block_index`` tiles in a readable grid-stride schematic.
 
-    In the cache-spill kernel, block ``b`` visits the contiguous span
-    ``[b*block_threads, (b+1)*block_threads)`` and then repeats that span every
-    ``grid_blocks*block_threads`` input positions.  The kernel's four-way unroll
-    changes instruction grouping, not this sequence of spans.
+    The visible full-sequence domain is divided into ``grid_rounds`` groups of
+    ``grid_blocks`` equal tiles. Block ``b`` owns tile ``b`` in every group.
+    Production launch dimensions are policy-dependent; this intentionally shows
+    the access pattern without pretending that one hardware block size applies to
+    every single-, multi-channel, EVEN, and RANGE kernel in the figure set.
     """
     if (
         sequence_stop <= sequence_start
         or grid_blocks <= 0
-        or block_threads <= 0
+        or grid_rounds <= 0
         or block_index < 0
         or block_index >= grid_blocks
     ):
         return []
 
-    grid_stride = grid_blocks * block_threads
-    first_start = block_index * block_threads
-    iteration = max(0, (sequence_start - first_start) // grid_stride)
-    while first_start + iteration * grid_stride + block_threads <= sequence_start:
-        iteration += 1
-
-    spans = []
-    start = first_start + iteration * grid_stride
-    while start < sequence_stop:
-        spans.append(
-            (max(sequence_start, start), min(sequence_stop, start + block_threads))
+    tile_width = (sequence_stop - sequence_start) / (grid_blocks * grid_rounds)
+    return [
+        (
+            sequence_start + (round_index * grid_blocks + block_index) * tile_width,
+            sequence_start + (round_index * grid_blocks + block_index + 1) * tile_width,
         )
-        iteration += 1
-        start = first_start + iteration * grid_stride
-    return spans
+        for round_index in range(grid_rounds)
+    ]
 
 
 def draw_block_stride_overlay(
@@ -303,9 +295,9 @@ def draw_block_stride_overlay(
     sequence_start,
     sequence_stop,
     grid_blocks=CHAR_GRID_BLOCKS,
-    block_threads=CHAR_BLOCK_THREADS,
+    grid_rounds=CHAR_GRID_ROUNDS,
 ):
-    """Shade block 0's grid-strided tiles directly over the sequence data.
+    """Shade schematic block 0 tiles directly over the sequence data.
 
     ``axvspan`` takes x coordinates in data space and y coordinates in axes space,
     so every rectangle aligns with real input positions while covering the full
@@ -316,7 +308,7 @@ def draw_block_stride_overlay(
         sequence_start,
         sequence_stop,
         grid_blocks=grid_blocks,
-        block_threads=block_threads,
+        grid_rounds=grid_rounds,
     ):
         ax.axvspan(
             start,
@@ -334,34 +326,29 @@ def draw_block_stride_overlay(
 def validate_block_stride_overlay():
     """Regression checks for the illustrative block-0 sequence overlay.
 
-    These assertions intentionally cover both display regimes. A large real
-    grid accidentally substituted here makes the prefix contain only one band
-    and makes the whole-sequence bands rasterize as invisible hairlines—the two
-    failure modes this check prevents.
+    Every shape must use the same full-sequence domain, sampled positions, and
+    schematic band coordinates. The checks cover both geometry and the full-height
+    overlay requested for the position-vs-bin panel.
     """
-    prefix = block_stride_spans(0, CHAR_SEQ_SAMPLES)
-    expected_prefix = [(0, 768), (3072, 3840)]
-    if prefix != expected_prefix:
+    spans = block_stride_spans(0, CHAR_N)
+    expected_spans = [
+        (0.0, 62500.0),
+        (250000.0, 312500.0),
+        (500000.0, 562500.0),
+        (750000.0, 812500.0),
+    ]
+    if spans != expected_spans:
         raise AssertionError(
-            f"block-stride prefix regression: got {prefix}, expected {expected_prefix}"
+            f"block-stride span regression: got {spans}, expected {expected_spans}"
         )
 
-    whole = block_stride_spans(0, CHAR_N)
-    expected_count = (CHAR_N - 1) // (CHAR_GRID_BLOCKS * CHAR_BLOCK_THREADS) + 1
-    if len(whole) != expected_count:
-        raise AssertionError(
-            f"block-stride full-range count regression: got {len(whole)}, "
-            f"expected {expected_count}"
-        )
-    period = CHAR_GRID_BLOCKS * CHAR_BLOCK_THREADS
-    if any(b[0] - a[0] != period for a, b in zip(whole, whole[1:])):
-        raise AssertionError("block-stride full-range bands are not periodic")
-    covered = sum(stop - start for start, stop in whole)
+    covered = sum(stop - start for start, stop in spans)
     expected_fraction = 1.0 / CHAR_GRID_BLOCKS
-    if abs(covered / CHAR_N - expected_fraction) > CHAR_BLOCK_THREADS / CHAR_N:
+    if abs(covered / CHAR_N - expected_fraction) > 1e-12:
         raise AssertionError(
-            f"block-stride coverage regression: got {covered / CHAR_N:.6f}, "
-            f"expected approximately {expected_fraction:.6f}"
+            "block-stride coverage regression: "
+            f"got {covered / CHAR_N:.6f}, "
+            f"expected {expected_fraction:.6f}"
         )
 
     # axvspan must produce one patch per tile whose local y coordinates cover
@@ -369,13 +356,13 @@ def validate_block_stride_overlay():
     # detached schematic or a partial-height data-coordinate rectangle.
     fig, ax = plt.subplots()
     try:
-        draw_block_stride_overlay(ax, 0, CHAR_SEQ_SAMPLES)
-        if len(ax.patches) != len(expected_prefix):
+        draw_block_stride_overlay(ax, 0, CHAR_N)
+        if len(ax.patches) != len(expected_spans):
             raise AssertionError(
                 f"block-stride patch-count regression: got {len(ax.patches)}, "
-                f"expected {len(expected_prefix)}"
+                f"expected {len(expected_spans)}"
             )
-        for patch, (expected_start, expected_stop) in zip(ax.patches, expected_prefix):
+        for patch, (expected_start, expected_stop) in zip(ax.patches, expected_spans):
             if float(patch.get_y()) != 0.0 or float(patch.get_height()) != 1.0:
                 raise AssertionError(
                     "block-stride patch does not span full axes height: "
@@ -393,30 +380,46 @@ def validate_block_stride_overlay():
     finally:
         plt.close(fig)
 
+    # Exercise different shape names and value distributions through the public
+    # draw function. Both must retain the same full x domain and band geometry.
+    left_bins = np.arange(CHAR_N, dtype=np.int64) % 256
+    right_bins = np.full(CHAR_N, 42, dtype=np.int64)
+    fig, axes = plt.subplots(1, 2)
+    try:
+        draw_sequence(axes[0], left_bins, 256, shape="sawtooth")
+        draw_sequence(axes[1], right_bins, 256, shape="temporal_phases:0.10")
+        if axes[0].get_xlim() != axes[1].get_xlim() or axes[0].get_xlim() != (
+            0.0,
+            float(CHAR_N),
+        ):
+            raise AssertionError(
+                "sequence x-domain differs by shape: "
+                f"left={axes[0].get_xlim()}, right={axes[1].get_xlim()}"
+            )
+
+        def patch_bounds(ax):
+            return [
+                (float(patch.get_x()), float(patch.get_width())) for patch in ax.patches
+            ]
+
+        if patch_bounds(axes[0]) != patch_bounds(axes[1]):
+            raise AssertionError("block-stride patch positions differ by shape")
+    finally:
+        plt.close(fig)
+
     return {
-        "prefix_spans": prefix,
-        "full_range_spans": len(whole),
-        "full_range_coverage": covered / CHAR_N,
+        "schematic_spans": spans,
+        "full_sequence_stop": CHAR_N,
+        "coverage": covered / CHAR_N,
     }
 
 
-def draw_sequence(ax, bins, num_bins, shape=None, show_block_stride=True):
-    """bin index vs position in the input sequence, plus block-stride context."""
+def draw_sequence(ax, bins, num_bins, shape=None):
+    """Draw full-sequence bin index vs position with a block-stride overlay."""
     n = len(bins)
-    full_range = shape is not None and shape.split(":")[0] in _FULL_RANGE_SEQ_SHAPES
-    if full_range:
-        idx = (
-            np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64)
-            if n > CHAR_SEQ_SAMPLES
-            else np.arange(n)
-        )
-        xlabel = "position in input sequence (full range, subsampled)"
-    else:
-        w = min(n, CHAR_SEQ_SAMPLES)
-        idx = np.arange(w)  # contiguous prefix — never aliases periodic shapes
-        xlabel = f"position in input sequence (first {w:,})"
+    idx = sequence_sample_positions(n)
     sequence_start = 0
-    sequence_stop = n if full_range else w
+    sequence_stop = n
     ax.scatter(
         idx,
         bins[idx],
@@ -427,18 +430,16 @@ def draw_sequence(ax, bins, num_bins, shape=None, show_block_stride=True):
         zorder=2,
     )
     ax.set_title("position of values (bin index vs position in sequence)", fontsize=10)
-    if show_block_stride:
-        xlabel += (
-            f"\nblue bands: block 0 input spans "
-            f"({CHAR_GRID_BLOCKS} blocks × {CHAR_BLOCK_THREADS} threads)"
-        )
-    ax.set_xlabel(xlabel)
+    ax.set_xlabel(
+        "position in input sequence (full range, subsampled)\n"
+        f"blue: schematic block 0 ({CHAR_GRID_BLOCKS}-block grid × "
+        f"{CHAR_GRID_ROUNDS} rounds)"
+    )
     ax.set_ylabel("bin index")
     ax.set_xlim(sequence_start, sequence_stop)
     ax.set_ylim(-num_bins * 0.02, num_bins * 1.02)
     ax.grid(axis="y", linestyle=":", alpha=0.4)
-    if show_block_stride:
-        draw_block_stride_overlay(ax, sequence_start, sequence_stop)
+    draw_block_stride_overlay(ax, sequence_start, sequence_stop)
 
 
 # ---------------------------------------------------------------------------
@@ -474,10 +475,6 @@ def render_catalog(shapes, out, n, num_bins, seed, columns=3):
     rows = math.ceil(len(shapes) / columns)
     fig = plt.figure(figsize=(18 * columns, 5.2 * rows), constrained_layout=True)
     cards = fig.subfigures(rows, columns, squeeze=False)
-    fig.suptitle(
-        f"CUB histogram input characterizations (N={fmt_int(n)} samples, seed={seed})",
-        fontsize=18,
-    )
 
     for index, card in enumerate(cards.flat):
         if index >= len(shapes):
