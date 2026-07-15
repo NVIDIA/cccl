@@ -18,9 +18,13 @@ struct winner_config
   // IPT should br 32 (32 chunks x 32 lanes)
   static constexpr int kIPT =
     (kIptOverride != 0) ? kIptOverride : ((sizeof(KeyT) >= 16) ? 8 : (sizeof(KeyT) == 8 ? 16 : 32));
-  static constexpr int kNumCompWarps  = 8;
+  static_assert(kIPT >= 1 && kIPT <= 32, "kIPT must be in [1, 32]");
+  static constexpr int kNumCompWarps = 8;
+  static_assert(kNumCompWarps >= 1 && kNumCompWarps <= 31, "kNumCompWarps must be in [1, 31]");
   static constexpr int kNumStoreWarps = 8; // store warps; must divide or be a multiple of kNumCompWarps
-  static constexpr int kStages        = 5; // pipeline depth
+  static_assert(kNumStoreWarps == kNumCompWarps, "split store is unverified; kNumStoreWarps must equal kNumCompWarps");
+  static constexpr int kStages = 5; // pipeline depth
+  static_assert(kStages >= 1, "at least one pipeline stage");
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
   // so it can be SHALLOWER than the keys ring and this buys room for more kStages
   static constexpr int kPosBufStages = 3;
@@ -635,6 +639,11 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
 {
   static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
   static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
+  static_assert(Config::kIPT >= 1 && Config::kIPT <= 32, "kIPT must be in [1, 32]");
+  static_assert(Config::kNumCompWarps >= 1 && Config::kNumCompWarps <= 31, "kNumCompWarps must be in [1, 31]");
+  static_assert(Config::kNumStoreWarps == Config::kNumCompWarps,
+                "split store is unverified; kNumStoreWarps must equal kNumCompWarps");
+  static_assert(Config::kStages >= 1, "at least one pipeline stage");
   constexpr int kIPT                     = Config::kIPT;
   constexpr int kNumCompWarps            = Config::kNumCompWarps;
   constexpr int kNumStoreWarps           = Config::kNumStoreWarps;
