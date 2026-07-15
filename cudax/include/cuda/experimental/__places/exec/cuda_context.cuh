@@ -35,6 +35,8 @@
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+#include <functional>
+
 namespace cuda::experimental::places
 {
 /**
@@ -62,8 +64,7 @@ public:
    * @param pool_size Number of streams in the place's stream pool.
    */
   exec_place_cuda_ctx_impl(CUcontext ctx, int devid = -1, size_t pool_size = exec_place::impl::pool_size)
-      : exec_place_cuda_ctx_impl(
-          ctx, resolve_devid(ctx, devid), stream_pool(pool_size), data_place::device(resolve_devid(ctx, devid)))
+      : exec_place_cuda_ctx_impl(ctx, resolve_devid(ctx, devid), stream_pool(pool_size))
   {}
 
   /**
@@ -139,7 +140,8 @@ public:
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
     const auto& other = static_cast<const exec_place_cuda_ctx_impl&>(rhs);
-    return (other.driver_context_ < driver_context_) - (driver_context_ < other.driver_context_);
+    return ::std::less<CUcontext>{}(other.driver_context_, driver_context_)
+         - ::std::less<CUcontext>{}(driver_context_, other.driver_context_);
   }
 
   size_t hash() const override
@@ -162,16 +164,19 @@ public:
   {}
 
 protected:
+  exec_place_cuda_ctx_impl(CUcontext ctx, int devid, stream_pool pool)
+      : exec_place_cuda_ctx_impl(ctx, devid, mv(pool), data_place::device(devid))
+  {}
+
   static int resolve_devid(CUcontext ctx, int devid)
   {
-    if (devid >= 0)
-    {
-      return devid;
-    }
-
-    // Derive the device ordinal from the context
     ::cuda::__ensure_current_context guard{ctx};
-    return static_cast<int>(cuda_try<cuCtxGetDevice>());
+    const int context_devid = static_cast<int>(cuda_try<cuCtxGetDevice>());
+    if (devid >= 0 && devid != context_devid)
+    {
+      throw ::std::invalid_argument("CUcontext device ordinal does not match devid");
+    }
+    return context_devid;
   }
 
   int devid_                = -1;
@@ -248,6 +253,22 @@ UNITTEST("cuda_context exec_place rejects a null context")
   try
   {
     auto p = exec_place::cuda_context(nullptr, 0);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+};
+
+UNITTEST("cuda_context exec_place rejects a mismatched device ordinal")
+{
+  primary_ctx_guard guard;
+
+  bool thrown = false;
+  try
+  {
+    auto p = exec_place::cuda_context(guard.ctx, 1);
   }
   catch (const ::std::invalid_argument&)
   {
