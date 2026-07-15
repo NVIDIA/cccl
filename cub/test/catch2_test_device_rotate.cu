@@ -184,8 +184,12 @@ template <typename T>
 void check_edge_case(RotateTestHarness<T>& harness, EdgeCase const& tc)
 {
   harness.prepare(tc.arr_size, tc.rot_dist, tc.unaligned_elems);
-  auto const mismatch = harness.run_and_verify();
-  REQUIRE(mismatch == harness.kNoMismatch);
+  auto const mismatch_left = harness.run_and_verify();
+  REQUIRE(mismatch_left == harness.kNoMismatch);
+
+  harness.prepare(tc.arr_size, tc.arr_size - (tc.rot_dist % tc.arr_size), tc.unaligned_elems);
+  auto const mismatch_right = harness.run_and_verify();
+  REQUIRE(mismatch_right == harness.kNoMismatch);
 }
 
 template <typename T>
@@ -200,9 +204,7 @@ void run_random_tests(
 
   for (size_t i = 0; i < num_tests; ++i)
   {
-    harness.prepare(size_dist(gen), rot_dist(gen), unaligned_dist(gen));
-    auto const mismatch = harness.run_and_verify();
-    REQUIRE(mismatch == harness.kNoMismatch);
+    check_edge_case(harness, {size_dist(gen), rot_dist(gen), unaligned_dist(gen)});
   }
 }
 
@@ -431,7 +433,24 @@ C2H_TEST("DeviceRotate long all alignments at medium scale", "[device][rotate]",
   }
 }
 
-C2H_TEST("DeviceRotate head consumes positive region fallback", "[device][rotate]", rotate_types)
+TEST_CASE("DeviceRotate positive-small ordering alignment boundary", "[device][rotate]")
+{
+  constexpr size_t size            = 16'711'682;
+  constexpr size_t rotate_distance = size / 2;
+  constexpr uint32_t head_size     = 1;
+
+  auto const state = bfs_visit_order<uint8_t>(size, rotate_distance, head_size);
+  REQUIRE(state.ordering_.size() == 511);
+  REQUIRE(state.ordering_[0] == 0);
+  REQUIRE(state.ordering_[1] == 1);
+  REQUIRE(state.ordering_[2] == 2);
+  REQUIRE(state.max_distance_ == 256);
+
+  RotateTestHarness<uint8_t> harness;
+  check_edge_case(harness, {size, rotate_distance, 31});
+}
+
+C2H_TEST("DeviceRotate right short near-end alignments", "[device][rotate]", rotate_types)
 {
   using T = c2h::get<0, TestType>;
 
@@ -473,7 +492,6 @@ C2H_TEST("DeviceRotate maximal and near-boundary rotations", "[device][rotate]",
     {200'000, 200'000 - S, 1},
     {200'000, 200'000 - S + 1, 1},
     {200'000, 200'000 - S - 1, 1},
-    // naive algorithm path
     {100'000, 99'000, 0},
     {100'000, 99'000, 1},
     // sizes near BYTES_PER_SECTOR
@@ -567,10 +585,10 @@ C2H_TEST("DeviceRotate size zero and one", "[device][rotate]", rotate_types)
 }
 
 // ============================================================================
-// Long algorithm: 1-element positive region (no naive fallback)
+// Right short rotations just above the tiny-kernel size boundary
 // ============================================================================
 
-C2H_TEST("DeviceRotate long single-element positive region", "[device][rotate]", rotate_types)
+C2H_TEST("DeviceRotate right short just above tiny boundary", "[device][rotate]", rotate_types)
 {
   using T             = c2h::get<0, TestType>;
   constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
@@ -579,11 +597,11 @@ C2H_TEST("DeviceRotate long single-element positive region", "[device][rotate]",
   RotateTestHarness<T> harness;
 
   std::vector<EdgeCase> cases = {
-    // pos region = 1 element, head_size = 0 (aligned) — 1 pos tile with 1 elem
+    // Normalizes to a one-element right rotation.
     {TS + 2, TS + 1, 0},
-    // pos region = 2 elements
+    // Normalizes to a two-element right rotation.
     {TS + 3, TS + 1, 0},
-    // pos region = S elements (one sector worth)
+    // Normalizes to a one-sector right rotation.
     {TS + 1 + S, TS + 1, 0},
     // with alignment offsets
     {TS + 2, TS + 1, 1},
@@ -699,17 +717,17 @@ C2H_TEST("DeviceRotate short single tile with alignments", "[device][rotate]", r
 }
 
 // ============================================================================
-// Naive algorithm: explicit coverage of cases that produce high dep distance
+// Right short rotations at medium array sizes
 // ============================================================================
 
-C2H_TEST("DeviceRotate naive algorithm fallback", "[device][rotate]", rotate_types)
+C2H_TEST("DeviceRotate right short medium near-end distances", "[device][rotate]", rotate_types)
 {
   using T             = c2h::get<0, TestType>;
   constexpr size_t TS = rotate_short::TILE_BYTES / sizeof(T);
 
   RotateTestHarness<T> harness;
 
-  // rot_dist close to size/2 or large relative to size → high dep distance
+  // Each near-end left distance normalizes to a small right distance.
   std::vector<EdgeCase> cases = {
     {100'000, 99'000, 0},
     {100'000, 99'000, 1},
@@ -717,7 +735,7 @@ C2H_TEST("DeviceRotate naive algorithm fallback", "[device][rotate]", rotate_typ
     {100'000, 99'000, 31},
     {50'000, 49'000, 0},
     {50'000, 49'000, 1},
-    // rot_dist near size — always naive via head-consumes-positive fallback
+    // Very small normalized right distances.
     {200'000, 199'999, 1},
     {200'000, 199'999, 15},
     {200'000, 199'990, 1},
@@ -946,4 +964,3 @@ C2H_TEST("DeviceRotate random long tests", "[device][rotate]", rotate_types)
     }
   }
 }
-

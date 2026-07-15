@@ -20,7 +20,6 @@
 #include <cuda/std/functional>
 
 #include <algorithm>
-#include <limits>
 #include <memory>
 #include <new>
 #include <utility>
@@ -169,12 +168,14 @@ RotateAlgo get_algorithm_to_use(size_t rotate_distance, size_t max_distance, cud
   }
 }
 
-template <typename T>
+template <RotDir Dir, typename T>
 uint32_t compute_head_size(T const* d_array, size_t const size, size_t const rotate_distance)
 {
-  uint32_t const arr_misalignment = reinterpret_cast<uintptr_t>(d_array) % BYTES_PER_SECTOR;
-  uint32_t head_size              = arr_misalignment == 0 ? 0U : (BYTES_PER_SECTOR - arr_misalignment) / sizeof(T);
-  head_size                       = std::min(static_cast<size_t>(head_size), size - rotate_distance);
+  uintptr_t const boundary_address     = reinterpret_cast<uintptr_t>(d_array + (Dir == RotDir::Right ? size : 0));
+  uint32_t const boundary_misalignment = boundary_address % BYTES_PER_SECTOR;
+  uint32_t head_size = Dir == RotDir::Left ? ((BYTES_PER_SECTOR - boundary_misalignment) % BYTES_PER_SECTOR) / sizeof(T)
+                                           : boundary_misalignment / sizeof(T);
+  head_size          = std::min(static_cast<size_t>(head_size), size - rotate_distance);
   assert(head_size < BYTES_PER_SECTOR);
   return head_size;
 }
@@ -428,8 +429,7 @@ struct VisitInterval
 #if defined(__x86_64__) && defined(__GNUC__)
 __attribute__((target_clones("avx2", "default")))
 #endif
-uint32_t
-max_position_distance(int32_t const* source, int32_t const* target, uint32_t const count)
+uint32_t max_position_distance(int32_t const* source, int32_t const* target, uint32_t const count)
 {
   int32_t result = 0;
 #if defined(__clang__)
@@ -622,7 +622,7 @@ RotateState_t bfs_visit_order(size_t const arr_size, size_t const rot_dist, uint
   {
     return small_side_visit_order<SmallSide::Negative>(num_negative_tiles, num_positive_tiles, dependency_segments);
   }
-  // TODO: remove once rotate right implemented
+  // At an exact-half rotation, alignment rounding can make the positive side one tile smaller than the negative side.
   if (num_positive_tiles + 1 <= max_direct_dependency_distance)
   {
     return small_side_visit_order<SmallSide::Positive>(num_negative_tiles, num_positive_tiles, dependency_segments);
@@ -636,29 +636,22 @@ RotateState_t bfs_visit_order(size_t const arr_size, size_t const rot_dist, uint
 // Pure host-side logic, no device memory access.
 // ============================================================================
 
-template <typename T>
+template <RotDir Dir, typename T>
 void compute_temp_size_and_state(
   T* d_array, size_t size, size_t rotate_distance, cudaStream_t stream, size_t& temp_storage_bytes, RotateState_t& state)
 {
+  assert(rotate_distance > 0 && rotate_distance <= size / 2);
+  uint32_t const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
   if (rotate_distance <= SHORT_TILE_BYTES / sizeof(T))
   {
-    uint32_t const head_size_short = compute_head_size(d_array, size, rotate_distance);
     size_t const num_main_tiles =
-      cuda::ceil_div((size - rotate_distance - head_size_short) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
+      cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
     temp_storage_bytes = sizeof(int) + sizeof(device_flag_t) * num_main_tiles;
     state              = RotateState_t{};
     return;
   }
 
-  uint32_t const head_size = compute_head_size(d_array, size, rotate_distance);
-
-  // Edge case where head_size consumes the entire positive region, so fall back to naive algorithm.
-  if (size - rotate_distance <= static_cast<size_t>(head_size))
-  {
-    state.max_distance_ = std::numeric_limits<uint32_t>::max();
-    temp_storage_bytes  = rotate_distance * sizeof(T);
-    return;
-  }
+  assert(static_cast<size_t>(head_size) < size - rotate_distance);
 
   state                       = bfs_visit_order<T>(size, rotate_distance, head_size);
   const auto algorithm_to_use = get_algorithm_to_use<T>(rotate_distance, state.max_distance_, stream);
@@ -671,7 +664,7 @@ void compute_temp_size_and_state(
   }
   else
   {
-    // Naive algorithm: temp buffer to save the first rotate_distance elements,
+    // Naive algorithm: temp buffer to save the wrapped rotate_distance elements,
     // plus whatever DeviceTransform requires for its own temp storage.
     size_t transform_temp_bytes = 0;
     T* dummy_out                = nullptr;
@@ -695,7 +688,7 @@ void compute_temp_size_and_state(
 //   - The rotation is executed using the precomputed state
 // ============================================================================
 
-template <typename T>
+template <typename T, RotDir Dir = RotDir::Left>
 CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -707,7 +700,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
 {
   if constexpr (sizeof(T) != alignof(T))
   {
-    return dispatch(
+    return dispatch<uint8_t, Dir>(
       d_temp_storage,
       temp_storage_bytes,
       state,
@@ -732,16 +725,19 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
       temp_storage_bytes = 0;
       return cudaSuccess;
     }
+    if (rotate_distance > size / 2 && Dir == RotDir::Left)
+    {
+      return dispatch<T, RotDir::Right>(
+        d_temp_storage, temp_storage_bytes, state, d_array, size, size - rotate_distance, stream);
+    }
+    assert(rotate_distance <= size / 2);
 
     // Query pass: compute temp storage requirements and fill state
     if (d_temp_storage == nullptr)
     {
-      compute_temp_size_and_state(d_array, size, rotate_distance, stream, temp_storage_bytes, state);
+      compute_temp_size_and_state<Dir>(d_array, size, rotate_distance, stream, temp_storage_bytes, state);
       return cudaSuccess;
     }
-
-    int num_sms;
-    CUB_ROTATE_CHECK(get_num_sms(stream, num_sms));
 
     // Execution pass: use the precomputed state
     const auto algo_to_use = get_algorithm_to_use<T>(rotate_distance, state.max_distance_, stream);
@@ -749,19 +745,19 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
     if (algo_to_use == RotateAlgo::Short)
     {
       constexpr size_t TILE_SIZE = SHORT_TILE_BYTES / sizeof(T);
-      bool const is_tiny         = (2 * rotate_distance > size) || (size <= TILE_SIZE);
+      bool const is_tiny         = size <= TILE_SIZE;
 
       if (is_tiny)
       {
         const int shmem = static_cast<int>(size * sizeof(T));
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_short::rotate_tiny_kernel<T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
-        rotate_short::rotate_tiny_kernel<T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
+          rotate_short::rotate_tiny_kernel<Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        rotate_short::rotate_tiny_kernel<Dir, T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
       else
       {
-        auto const head_size = compute_head_size(d_array, size, rotate_distance);
+        auto const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
         size_t const num_main_tiles =
           cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
 
@@ -772,20 +768,14 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
         CUB_ROTATE_CHECK(
           get_launch_config(stream, rotate_short::TILE_BYTES * rotate_short::PIPELINE_STAGES, block_size, grid_size));
 
-        // Zero-initialize the temp buffer ([int counter][device_flag_t flags...]) with a plain
-        // async memset instead of a separate setup_kernel launch. The kernel's tile counter now
-        // counts UP from 0 (fetch_add) and maps each ascending claim to a descending run top, so
-        // 0 is the correct counter start and the flags start at 0 -- memset suffices. This removes
-        // a kernel launch + its host launch latency from the critical path, a large fixed-cost
-        // fraction for the small 256MiB arrays (~16x fewer tiles than the 4GiB arrays).
         CUB_ROTATE_CHECK(cudaMemsetAsync(d_temp_storage, 0, temp_storage_bytes, stream));
 
         // Multi-stage pipeline holds PIPELINE_STAGES tile buffers in dynamic shared memory.
         constexpr int dynamic_shmem = rotate_short::get_shmem_usage<T>();
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_short::rotate_short_kernel<T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
-        rotate_short::rotate_short_kernel<T><<<grid_size, block_size, dynamic_shmem, stream>>>(
-          d_array, size, d_temp_storage, temp_storage_bytes, rotate_distance, num_main_tiles, head_size);
+          rotate_short::rotate_short_kernel<Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
+        rotate_short::rotate_short_kernel<Dir, T><<<grid_size, block_size, dynamic_shmem, stream>>>(
+          d_array, size, d_temp_storage, rotate_distance, num_main_tiles, head_size);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
     }
@@ -796,9 +786,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
       {
         return cudaErrorInvalidValue;
       }
-      uint32_t const head_size = compute_head_size(d_array, size, rotate_distance);
+      uint32_t const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
+      int num_sms;
+      CUB_ROTATE_CHECK(get_num_sms(stream, num_sms));
 
-      rotate_long::setup_kernel<<<num_sms, 512, 0, stream>>>(d_temp_storage, temp_storage_bytes, num_tiles);
+      rotate_long::setup_kernel<<<num_sms, 512, 0, stream>>>(d_temp_storage, num_tiles);
       CUB_ROTATE_CHECK(cudaGetLastError());
       CUB_ROTATE_CHECK(cudaMemcpyAsync(
         reinterpret_cast<uint32_t*>(d_temp_storage) + 1,
@@ -817,12 +809,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
         (void*) &d_array,
         (void*) &size,
         (void*) &d_temp_storage,
-        (void*) &temp_storage_bytes,
         (void*) &rotate_distance,
         const_cast<void*>(static_cast<const void*>(&num_tiles)),
         const_cast<void*>(static_cast<const void*>(&head_size))};
       CUB_ROTATE_CHECK(cudaLaunchCooperativeKernel(
-        (void*) rotate_long::rotate_long_kernel<T>, grid_dim, block_dim, kernelArgs, 0, stream));
+        (void*) rotate_long::rotate_long_kernel<Dir, T>, grid_dim, block_dim, kernelArgs, 0, stream));
     }
     else
     {
@@ -830,31 +821,27 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
       cuda::std::identity id{};
       ::cuda::stream_ref env{stream};
 
-      // Copy first elems into tmp buffer
+      // Save the wrapped elements
+      auto* src = Dir == RotDir::Left ? d_array : d_array + size - rotate_distance;
       CUB_ROTATE_CHECK(cub::DeviceTransform::__transform_internal(
-        ::cuda::std::make_tuple(d_array), d_save_buf, rotate_distance, ::cuda::always_true{}, id, env));
+        ::cuda::std::make_tuple(src), d_save_buf, rotate_distance, ::cuda::always_true{}, id, env));
 
-      // Copy last elems chunk-wise into the start of the array
-      for (size_t offset = rotate_distance; offset < size; offset += rotate_distance)
+      // Shift the remaining region in chunks
+      size_t remaining = size - rotate_distance;
+      while (remaining > 0)
       {
-        size_t const elems_to_copy = std::min(rotate_distance, size - offset);
+        size_t const elems_to_copy = std::min(rotate_distance, remaining);
+        size_t const src_ix        = Dir == RotDir::Left ? size - remaining : remaining - elems_to_copy;
+        size_t const dst_ix        = Dir == RotDir::Left ? src_ix - rotate_distance : src_ix + rotate_distance;
         CUB_ROTATE_CHECK(cub::DeviceTransform::__transform_internal(
-          ::cuda::std::make_tuple(d_array + offset),
-          d_array + offset - rotate_distance,
-          elems_to_copy,
-          ::cuda::always_true{},
-          id,
-          env));
+          ::cuda::std::make_tuple(d_array + src_ix), d_array + dst_ix, elems_to_copy, ::cuda::always_true{}, id, env));
+        remaining -= elems_to_copy;
       }
 
-      // Copy saved elems into end of the array
+      // Restore the saved elements
+      auto* dst = Dir == RotDir::Left ? d_array + size - rotate_distance : d_array;
       CUB_ROTATE_CHECK(cub::DeviceTransform::__transform_internal(
-        ::cuda::std::make_tuple(d_save_buf),
-        d_array + size - rotate_distance,
-        rotate_distance,
-        ::cuda::always_true{},
-        id,
-        env));
+        ::cuda::std::make_tuple(d_save_buf), dst, rotate_distance, ::cuda::always_true{}, id, env));
     }
 
     return cudaSuccess;
