@@ -28,7 +28,8 @@ struct winner_config
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
   // so it can be SHALLOWER than the keys ring and this buys room for more kStages
   static constexpr int kPosBufStages = 3;
-  static_assert(kPosBufStages >= 2 && kPosBufStages <= kStages, "kPosBufStages should be 2 - kStages");
+  static_assert(kPosBufStages >= 1 && 2 * kPosBufStages >= kStages,
+                "pos ring parity wait aliases unless 2*kPosBufStages >= kStages");
   static constexpr int kPollMlp = 5; // how many loads each poll lane keeps in flight
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 32;
@@ -644,6 +645,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   static_assert(Config::kNumStoreWarps == Config::kNumCompWarps,
                 "split store is unverified; kNumStoreWarps must equal kNumCompWarps");
   static_assert(Config::kStages >= 1, "at least one pipeline stage");
+  static_assert(Config::kPosBufStages >= 1 && 2 * Config::kPosBufStages >= Config::kStages,
+                "pos ring parity wait aliases unless 2*kPosBufStages >= kStages");
   constexpr int kIPT                     = Config::kIPT;
   constexpr int kNumCompWarps            = Config::kNumCompWarps;
   constexpr int kNumStoreWarps           = Config::kNumStoreWarps;
