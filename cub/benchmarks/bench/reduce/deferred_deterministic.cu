@@ -1,10 +1,15 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+
+#include <cuda/argument>
 #include <cuda/execution.determinism.h>
 #include <cuda/execution.require.h>
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
 #include <nvbench_helper.cuh>
@@ -41,13 +46,17 @@ try
   const auto elements = static_cast<OffsetT>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
-  thrust::device_vector<T> out(1);
+  thrust::device_vector<T> out(1, thrust::no_init);
+  thrust::device_vector<OffsetT> device_num_items{elements};
 
-  const T* d_in = thrust::raw_pointer_cast(in.data());
-  T* d_out      = thrust::raw_pointer_cast(out.data());
+  auto d_in        = thrust::raw_pointer_cast(in.data());
+  auto d_out       = thrust::raw_pointer_cast(out.data());
+  auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
+
+  // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
-  state.add_global_memory_writes<T>(out.size());
+  state.add_global_memory_writes<T>(1);
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -61,7 +70,14 @@ try
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, elements, cuda::std::plus<>{}, init_value_t{}, env);
+      cub::DeviceReduce::Reduce,
+      "Reduce failed",
+      d_in,
+      d_out,
+      cuda::args::deferred{d_num_items},
+      cuda::std::plus<>{},
+      init_value_t{},
+      env);
   });
 }
 catch (const std::bad_alloc&)
