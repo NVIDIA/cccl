@@ -7,6 +7,7 @@ from operator import mul
 
 import numba
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 
@@ -61,10 +62,9 @@ def test_block_load(T, threads_per_block, items_per_thread, algorithm):
     dtype = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads_per_block * items_per_thread
     h_input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = h_input

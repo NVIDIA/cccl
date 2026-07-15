@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/atomic>
+#include <cuda/devices>
+#include <cuda/launch>
 #include <cuda/stream>
 
 #include <testing.cuh>
@@ -20,6 +23,35 @@ namespace test
 cuda::event_ref fn_takes_event_ref(cuda::event_ref ref)
 {
   return ref;
+}
+
+template <class Event>
+void test_event_uses_explicit_device_when_current_device_differs()
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  cuda::stream explicit_device_stream{explicit_device};
+  CCCLRT_REQUIRE(explicit_device_stream.device() == explicit_device);
+
+  Event ev = [&]() {
+    cuda::__ensure_current_context guard(current_device);
+    return Event(explicit_device);
+  }();
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    ev.record(explicit_device_stream);
+    ev.sync();
+    CCCLRT_REQUIRE(ev.is_done());
+  }
+
+  explicit_device_stream.sync();
 }
 } // namespace test
 } // namespace
@@ -102,6 +134,52 @@ C2H_CCCLRT_TEST("can construct an event with a device_ref", "[event]")
   ev.record(stream);
   ev.sync();
   CCCLRT_REQUIRE(ev.is_done());
+}
+
+C2H_CCCLRT_TEST("event device_ref constructors use the explicit device", "[event][multi_gpu]")
+{
+  ::test::test_event_uses_explicit_device_when_current_device_differs<cuda::event>();
+  ::test::test_event_uses_explicit_device_when_current_device_differs<cuda::timed_event>();
+}
+
+C2H_CCCLRT_TEST("can wait on an event from another device", "[event][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref event_device{0};
+  cuda::device_ref waiter_device{1};
+
+  cuda::stream event_stream{event_device};
+  cuda::stream waiter_stream{waiter_device};
+
+  cuda::atomic<int> gate = 0;
+  bool waiter_ran        = false;
+
+  cuda::host_launch(event_stream, [&gate]() {
+    while (gate != 1)
+      ;
+  });
+  cuda::event ev(event_stream);
+
+  {
+    cuda::__ensure_current_context guard(event_device);
+    waiter_stream.wait(ev);
+    cuda::host_launch(waiter_stream, [&waiter_ran]() {
+      waiter_ran = true;
+    });
+  }
+
+  CCCLRT_REQUIRE(!waiter_stream.is_done());
+  CCCLRT_REQUIRE(!waiter_ran);
+
+  gate = 1;
+  waiter_stream.sync();
+  event_stream.sync();
+
+  CCCLRT_REQUIRE(waiter_ran);
 }
 
 C2H_CCCLRT_TEST("can wait on an event", "[event]")

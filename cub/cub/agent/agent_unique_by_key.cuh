@@ -268,7 +268,7 @@ struct AgentUniqueByKey
     _CCCL_PRAGMA_NOUNROLL()
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
     {
-      items_out[num_selections_prefix + item] = GetShared(tag)[item];
+      items_out[num_selections_prefix + item] = GetShared(tag)[item]; // NOLINT(bugprone-misplaced-widening-cast)
     }
 
     __syncthreads();

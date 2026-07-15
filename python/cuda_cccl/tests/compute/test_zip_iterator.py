@@ -1,9 +1,9 @@
 # Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-import cupy as cp
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
@@ -24,24 +24,26 @@ def test_zip_iterator_basic(num_items):
     def sum_pairs(p1, p2):
         return Pair(p1[0] + p2[0], p1[1] + p2[1])
 
-    d_input1 = cp.arange(num_items, dtype=np.int64)
-    d_input2 = cp.arange(num_items, dtype=np.float32)
+    h_input1 = np.arange(num_items, dtype=np.int64)
+    h_input2 = np.arange(num_items, dtype=np.float32)
+    d_input1 = DeviceArray.from_numpy(h_input1)
+    d_input2 = DeviceArray.from_numpy(h_input2)
 
     zip_it = ZipIterator(d_input1, d_input2)
 
-    d_output = cp.empty(1, dtype=Pair.dtype)
+    d_output = DeviceArray.empty(1, Pair.dtype)
     h_init = Pair(0, 0.0)
 
     cuda.compute.reduce_into(
         d_in=zip_it, d_out=d_output, num_items=num_items, op=sum_pairs, h_init=h_init
     )
 
-    expected_first = d_input1.sum().get()
-    expected_second = d_input2.sum().get()
+    expected_first = h_input1.sum()
+    expected_second = h_input2.sum()
 
-    result = d_output.get()[0]
-    cp.testing.assert_array_equal(result["first"], expected_first)
-    cp.testing.assert_allclose(result["second"], expected_second, rtol=1e-6)
+    result = d_output.copy_to_host()[0]
+    np.testing.assert_array_equal(result["first"], expected_first)
+    np.testing.assert_allclose(result["second"], expected_second, rtol=1e-6)
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
@@ -53,23 +55,24 @@ def test_zip_iterator_with_counting_iterator(num_items):
         return p1 if p1[1] > p2[1] else p2
 
     counting_it = CountingIterator(np.int32(0))
-    arr = cp.arange(num_items, dtype=np.int32)
+    h_arr = np.arange(num_items, dtype=np.int32)
+    d_arr = DeviceArray.from_numpy(h_arr)
 
-    zip_it = ZipIterator(counting_it, arr)
+    zip_it = ZipIterator(counting_it, d_arr)
 
     dtype = np.dtype([("index", np.int32), ("value", np.int32)], align=True)
     h_init = np.asarray([(-1, -1)], dtype=dtype)
 
-    d_output = cp.empty(1, dtype=dtype)
+    d_output = DeviceArray.empty(1, dtype)
 
     cuda.compute.reduce_into(
         d_in=zip_it, d_out=d_output, num_items=num_items, op=max_by_value, h_init=h_init
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
-    expected_index = cp.argmax(arr).get()
-    expected_value = arr[expected_index].get()
+    expected_index = np.argmax(h_arr)
+    expected_value = h_arr[expected_index]
 
     assert result["index"] == expected_index
     assert result["value"] == expected_value
@@ -86,28 +89,27 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
         return p1 if p1[1] > p2[1] else p2
 
     counting_it = CountingIterator(np.int32(0))
-    arr = cp.arange(num_items, dtype=np.int32)
+    h_arr = np.arange(num_items, dtype=np.int32)
+    d_arr = DeviceArray.from_numpy(h_arr)
 
     def double_op(x):
         return x * 2
 
-    transform_it = TransformIterator(arr, double_op)
+    transform_it = TransformIterator(d_arr, double_op)
 
     zip_it = ZipIterator(counting_it, transform_it)
 
-    d_output = cp.empty(1, dtype=IndexValuePair.dtype)
-
-    result = d_output.get()[0]
+    d_output = DeviceArray.empty(1, IndexValuePair.dtype)
     h_init = IndexValuePair(-1, -1)
 
     cuda.compute.reduce_into(
         d_in=zip_it, d_out=d_output, num_items=num_items, op=max_by_value, h_init=h_init
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
-    expected_index = cp.argmax(arr).get()
-    expected_value = arr[expected_index].get() * 2
+    expected_index = np.argmax(h_arr)
+    expected_value = h_arr[expected_index] * 2
 
     assert result["index"] == expected_index
     assert result["value"] == expected_value
@@ -126,28 +128,30 @@ def test_zip_iterator_n_iterators(num_items):
     def sum_triples(t1, t2):
         return Triple(t1[0] + t2[0], t1[1] + t2[1], t1[2] + t2[2])
 
-    d_input1 = cp.arange(num_items, dtype=np.int64)
-    d_input2 = cp.arange(num_items, dtype=np.float32)
+    h_input1 = np.arange(num_items, dtype=np.int64)
+    h_input2 = np.arange(num_items, dtype=np.float32)
+    d_input1 = DeviceArray.from_numpy(h_input1)
+    d_input2 = DeviceArray.from_numpy(h_input2)
     counting_it = CountingIterator(np.int64(10))
 
     zip_it = ZipIterator(d_input1, d_input2, counting_it)
 
-    d_output = cp.empty(1, dtype=Triple.dtype)
+    d_output = DeviceArray.empty(1, Triple.dtype)
     h_init = Triple(0, 0.0, 0)
 
     cuda.compute.reduce_into(
         d_in=zip_it, d_out=d_output, num_items=num_items, op=sum_triples, h_init=h_init
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
-    expected_first = d_input1.sum().get()
-    expected_second = d_input2.sum().get()
-    expected_third = cp.arange(10, 10 + num_items).sum().get()
+    expected_first = h_input1.sum()
+    expected_second = h_input2.sum()
+    expected_third = np.arange(10, 10 + num_items).sum()
 
-    cp.testing.assert_array_equal(result["first"], expected_first)
-    cp.testing.assert_allclose(result["second"], expected_second, rtol=1e-6)
-    cp.testing.assert_array_equal(result["third"], expected_third)
+    np.testing.assert_array_equal(result["first"], expected_first)
+    np.testing.assert_allclose(result["second"], expected_second, rtol=1e-6)
+    np.testing.assert_array_equal(result["third"], expected_third)
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
@@ -161,20 +165,21 @@ def test_zip_iterator_single_iterator(num_items):
     def sum_singles(s1, s2):
         return Single(s1[0] + s2[0])
 
-    d_input = cp.arange(num_items, dtype=np.int64)
+    h_input = np.arange(num_items, dtype=np.int64)
+    d_input = DeviceArray.from_numpy(h_input)
 
     zip_it = ZipIterator(d_input)
 
-    d_output = cp.empty(1, dtype=Single.dtype)
+    d_output = DeviceArray.empty(1, Single.dtype)
     h_init = Single(0)
 
     cuda.compute.reduce_into(
         d_in=zip_it, d_out=d_output, num_items=num_items, op=sum_singles, h_init=h_init
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
-    expected_value = d_input.sum().get()
+    expected_value = h_input.sum()
     assert result["value"] == expected_value
 
 
@@ -189,14 +194,16 @@ def test_zip_iterator_with_transform(num_items):
         return TransformedPair(pair1[0] + pair2[0], pair1[1] * pair2[1])
 
     counting_it1 = CountingIterator(np.int32(0))
-    arr1 = cp.arange(num_items, dtype=np.int32)
-    zip_it1 = ZipIterator(counting_it1, arr1)
+    h_arr1 = np.arange(num_items, dtype=np.int32)
+    d_arr1 = DeviceArray.from_numpy(h_arr1)
+    zip_it1 = ZipIterator(counting_it1, d_arr1)
 
     counting_it2 = CountingIterator(np.int32(0))
-    arr2 = cp.arange(num_items, dtype=np.int32)
-    zip_it2 = ZipIterator(counting_it2, arr2)
+    h_arr2 = np.arange(num_items, dtype=np.int32)
+    d_arr2 = DeviceArray.from_numpy(h_arr2)
+    zip_it2 = ZipIterator(counting_it2, d_arr2)
 
-    d_output = cp.empty(num_items, dtype=TransformedPair.dtype)
+    d_output = DeviceArray.empty(num_items, TransformedPair.dtype)
 
     cuda.compute.binary_transform(
         d_in1=zip_it1,
@@ -206,10 +213,10 @@ def test_zip_iterator_with_transform(num_items):
         num_items=num_items,
     )
 
-    result = d_output.get()
+    result = d_output.copy_to_host()
 
-    expected_sum_indices = (arr1 + arr2).get()
-    expected_product_values = (arr1 * arr2).get()
+    expected_sum_indices = h_arr1 + h_arr2
+    expected_product_values = h_arr1 * h_arr2
 
     for i, result_item in enumerate(result):
         assert result_item["sum_indices"] == expected_sum_indices[i]
@@ -231,13 +238,15 @@ def test_zip_iterator_with_scan(num_items):
         return Pair(min(p1[0], p2[0]), min(p1[1], p2[1]))
 
     # Create two randomized arrays to make min operations interesting
-    arr1 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
-    arr2 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
+    h_arr1 = np.random.randint(0, 1000, num_items, dtype=np.int64)
+    h_arr2 = np.random.randint(0, 1000, num_items, dtype=np.int64)
+    d_arr1 = DeviceArray.from_numpy(h_arr1)
+    d_arr2 = DeviceArray.from_numpy(h_arr2)
 
-    zip_it = ZipIterator(arr1, arr2)
+    zip_it = ZipIterator(d_arr1, d_arr2)
 
-    d_output = cp.empty(num_items, dtype=Pair.dtype)
-    h_init = Pair(cp.iinfo(np.int64).max, cp.iinfo(np.int64).max)
+    d_output = DeviceArray.empty(num_items, Pair.dtype)
+    h_init = Pair(np.iinfo(np.int64).max, np.iinfo(np.int64).max)
 
     cuda.compute.inclusive_scan(
         d_in=zip_it,
@@ -247,11 +256,11 @@ def test_zip_iterator_with_scan(num_items):
         num_items=num_items,
     )
 
-    result = d_output.get()
+    result = d_output.copy_to_host()
 
     # Verify the scan operation produces running minimums for both arrays
-    expected_first_running_mins = np.minimum.accumulate(arr1.get())
-    expected_second_running_mins = np.minimum.accumulate(arr2.get())
+    expected_first_running_mins = np.minimum.accumulate(h_arr1)
+    expected_second_running_mins = np.minimum.accumulate(h_arr2)
 
     for i, result_item in enumerate(result):
         assert result_item["first_min"] == expected_first_running_mins[i]
@@ -261,10 +270,8 @@ def test_zip_iterator_with_scan(num_items):
 @pytest.mark.parametrize("num_items", [10, 1000])
 def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     """Test ZipIterator as output iterator with scan operations."""
-    import numba.cuda
-
     # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     if cc_major >= 8:
         monkeypatch.setattr(
             cuda.compute._cccl_interop,
@@ -272,13 +279,15 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
             False,
         )
 
-    d_in1 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
-    d_in2 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
+    h_in1 = np.random.randint(0, 1000, num_items, dtype=np.int64)
+    h_in2 = np.random.randint(0, 1000, num_items, dtype=np.int64)
+    d_in1 = DeviceArray.from_numpy(h_in1)
+    d_in2 = DeviceArray.from_numpy(h_in2)
 
     zip_it = ZipIterator(d_in1, d_in2)
 
-    d_out1 = cp.empty_like(d_in1)
-    d_out2 = cp.empty_like(d_in2)
+    d_out1 = DeviceArray.empty(h_in1.shape, h_in1.dtype)
+    d_out2 = DeviceArray.empty(h_in2.shape, h_in2.dtype)
 
     zip_out_it = ZipIterator(d_out1, d_out2)
 
@@ -293,20 +302,18 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
         num_items=num_items,
     )
 
-    in1 = d_in1.get()
-    in2 = d_in2.get()
-    expected_out1 = np.empty_like(in1)
-    expected_out2 = np.empty_like(in2)
+    expected_out1 = np.empty_like(h_in1)
+    expected_out2 = np.empty_like(h_in2)
 
     # First element is just the input
-    expected_out1[0] = in1[0]
-    expected_out2[0] = in2[0]
+    expected_out1[0] = h_in1[0]
+    expected_out2[0] = h_in2[0]
     for i in range(1, num_items):
-        expected_out1[i] = expected_out1[i - 1] + in1[i]
-        expected_out2[i] = expected_out2[i - 1] + in2[i]
+        expected_out1[i] = expected_out1[i - 1] + h_in1[i]
+        expected_out2[i] = expected_out2[i - 1] + h_in2[i]
 
-    np.testing.assert_array_equal(d_out1.get(), expected_out1)
-    np.testing.assert_array_equal(d_out2.get(), expected_out2)
+    np.testing.assert_array_equal(d_out1.copy_to_host(), expected_out1)
+    np.testing.assert_array_equal(d_out2.copy_to_host(), expected_out2)
 
 
 def test_nested_zip_iterators():
@@ -330,9 +337,12 @@ def test_nested_zip_iterators():
     num_items = 100
 
     # Create three input arrays
-    d_input_a = cp.arange(num_items, dtype=np.int32)
-    d_input_b = cp.arange(num_items, dtype=np.int64) * 2
-    d_input_c = cp.arange(num_items, dtype=np.float32) * 3.0
+    h_input_a = np.arange(num_items, dtype=np.int32)
+    h_input_b = np.arange(num_items, dtype=np.int64) * 2
+    h_input_c = np.arange(num_items, dtype=np.float32) * 3.0
+    d_input_a = DeviceArray.from_numpy(h_input_a)
+    d_input_b = DeviceArray.from_numpy(h_input_b)
+    d_input_c = DeviceArray.from_numpy(h_input_c)
 
     # Create an inner zip iterator combining a and b
     inner_zip = ZipIterator(d_input_a, d_input_b)
@@ -341,7 +351,7 @@ def test_nested_zip_iterators():
     outer_zip = ZipIterator(inner_zip, d_input_c)
 
     # Perform reduction
-    d_output = cp.empty(1, dtype=OuterTriple.dtype)
+    d_output = DeviceArray.empty(1, OuterTriple.dtype)
     h_init = OuterTriple(InnerPair(0, 0), 0.0)
 
     cuda.compute.reduce_into(
@@ -352,12 +362,12 @@ def test_nested_zip_iterators():
         h_init=h_init,
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
     # Calculate expected values
-    expected_first = d_input_a.sum().get()
-    expected_second = d_input_b.sum().get()
-    expected_third = d_input_c.sum().get()
+    expected_first = h_input_a.sum()
+    expected_second = h_input_b.sum()
+    expected_third = h_input_c.sum()
 
     assert result["inner"]["first"] == expected_first, (
         f"Expected inner.first={expected_first}, got {result['inner']['first']}"
@@ -386,14 +396,17 @@ def test_deeply_nested_zip_iterators():
 
     num_items = 100
 
-    d_input_a = cp.arange(num_items, dtype=np.int32)
-    d_input_b = cp.arange(num_items, dtype=np.float32)
-    d_input_c = cp.arange(num_items, dtype=np.int64)
+    h_input_a = np.arange(num_items, dtype=np.int32)
+    h_input_b = np.arange(num_items, dtype=np.float32)
+    h_input_c = np.arange(num_items, dtype=np.int64)
+    d_input_a = DeviceArray.from_numpy(h_input_a)
+    d_input_b = DeviceArray.from_numpy(h_input_b)
+    d_input_c = DeviceArray.from_numpy(h_input_c)
 
     inner_zip = ZipIterator(d_input_a, d_input_b)
     outer_zip = ZipIterator(inner_zip, d_input_c)
 
-    d_output = cp.empty(1, dtype=OuterPair.dtype)
+    d_output = DeviceArray.empty(1, OuterPair.dtype)
     h_init = OuterPair(InnerPair(0, 0.0), 0)
 
     cuda.compute.reduce_into(
@@ -404,13 +417,13 @@ def test_deeply_nested_zip_iterators():
         h_init=h_init,
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
     # outer_zip produces: {value_0: {value_0: int32, value_1: float32}, value_1: int64}
     # which maps to our OuterPair: {inner: {a: int32, b: float32}, c: int64}
-    expected_a = d_input_a.sum().get()  # int32
-    expected_b = d_input_b.sum().get()  # float32
-    expected_c = d_input_c.sum().get()  # int64
+    expected_a = h_input_a.sum()  # int32
+    expected_b = h_input_b.sum()  # float32
+    expected_c = h_input_c.sum()  # int64
 
     assert result["inner"]["a"] == expected_a
     assert np.isclose(result["inner"]["b"], expected_b)
@@ -426,9 +439,7 @@ def test_deeply_nested_zip_iterators():
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
-    import numba.cuda
-
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     if cc_major >= 8:
         monkeypatch.setattr(
             cuda.compute._cccl_interop,
@@ -446,15 +457,13 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
         h_in2[i]["x"] = float(i * 10)
         h_in2[i]["y"] = float(i * 20)
 
-    d_in1 = cp.empty(num_items, dtype=Vec2.dtype)
-    d_in2 = cp.empty(num_items, dtype=Vec2.dtype)
-    d_in1.set(h_in1)
-    d_in2.set(h_in2)
+    d_in1 = DeviceArray.from_numpy(h_in1)
+    d_in2 = DeviceArray.from_numpy(h_in2)
 
     zip_it = ZipIterator(d_in1, d_in2)
 
-    d_out1 = cp.empty_like(d_in1)
-    d_out2 = cp.empty_like(d_in2)
+    d_out1 = DeviceArray.empty(h_in1.shape, h_in1.dtype)
+    d_out2 = DeviceArray.empty(h_in2.shape, h_in2.dtype)
 
     zip_out_it = ZipIterator(d_out1, d_out2)
 
@@ -471,25 +480,23 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
         num_items=num_items,
     )
 
-    in1 = d_in1.get()
-    in2 = d_in2.get()
-    expected_out1 = np.empty_like(in1)
-    expected_out2 = np.empty_like(in2)
+    expected_out1 = np.empty_like(h_in1)
+    expected_out2 = np.empty_like(h_in2)
 
-    expected_out1[0] = in1[0]
-    expected_out2[0] = in2[0]
+    expected_out1[0] = h_in1[0]
+    expected_out2[0] = h_in2[0]
     for i in range(1, num_items):
-        expected_out1[i]["x"] = expected_out1[i - 1]["x"] + in1[i]["x"]
-        expected_out1[i]["y"] = expected_out1[i - 1]["y"] + in1[i]["y"]
-        expected_out2[i]["x"] = expected_out2[i - 1]["x"] + in2[i]["x"]
-        expected_out2[i]["y"] = expected_out2[i - 1]["y"] + in2[i]["y"]
+        expected_out1[i]["x"] = expected_out1[i - 1]["x"] + h_in1[i]["x"]
+        expected_out1[i]["y"] = expected_out1[i - 1]["y"] + h_in1[i]["y"]
+        expected_out2[i]["x"] = expected_out2[i - 1]["x"] + h_in2[i]["x"]
+        expected_out2[i]["y"] = expected_out2[i - 1]["y"] + h_in2[i]["y"]
 
-    np.testing.assert_array_equal(d_out1.get(), expected_out1)
-    np.testing.assert_array_equal(d_out2.get(), expected_out2)
+    np.testing.assert_array_equal(d_out1.copy_to_host(), expected_out1)
+    np.testing.assert_array_equal(d_out2.copy_to_host(), expected_out2)
 
 
 def test_zip_iterator_of_transform_iterator_kind():
-    arr = cp.arange(10, dtype=np.int64)
+    d_arr = DeviceArray.from_numpy(np.arange(10, dtype=np.int64))
 
     def f(x):
         return x
@@ -497,8 +504,8 @@ def test_zip_iterator_of_transform_iterator_kind():
     def g(x):
         return x + 1
 
-    it1 = ZipIterator(TransformIterator(arr, f))
-    it2 = ZipIterator(TransformIterator(arr, g))
+    it1 = ZipIterator(TransformIterator(d_arr, f))
+    it2 = ZipIterator(TransformIterator(d_arr, g))
     assert it1.kind != it2.kind
 
 
@@ -522,8 +529,10 @@ def test_caching_zip_iterator():
     # Create multiple instances with same structure
     iterators = []
     for i in range(5):
-        arr = cp.arange(i * 10, (i + 1) * 10, dtype=np.float32)
-        z = ZipIterator(arr)
+        d_arr = DeviceArray.from_numpy(
+            np.arange(i * 10, (i + 1) * 10, dtype=np.float32)
+        )
+        z = ZipIterator(d_arr)
         # Trigger compilation by accessing LTOIR
         z.get_advance_op()
         z.get_input_deref_op()
@@ -542,12 +551,12 @@ def test_caching_zip_iterator():
     # Test 4: Arrays with different dtypes should not share cache
     compile_cpp_op_code.cache_clear()
 
-    z_int32 = ZipIterator(cp.arange(10, dtype=np.int32))
+    z_int32 = ZipIterator(DeviceArray.from_numpy(np.arange(10, dtype=np.int32)))
     z_int32.get_advance_op()
     z_int32.get_input_deref_op()
     misses_after_first = compile_cpp_op_code.cache_info().misses
 
-    z_int64 = ZipIterator(cp.arange(10, dtype=np.int64))
+    z_int64 = ZipIterator(DeviceArray.from_numpy(np.arange(10, dtype=np.int64)))
     z_int64.get_advance_op()
     z_int64.get_input_deref_op()
     misses_after_second = compile_cpp_op_code.cache_info().misses
@@ -647,8 +656,10 @@ def test_zip_iterator_advance():
     num_items = 100
     offset = 10
 
-    d_input1 = cp.arange(num_items, dtype=np.int32)
-    d_input2 = cp.arange(num_items, dtype=np.int32) * 2
+    h_input1 = np.arange(num_items, dtype=np.int32)
+    h_input2 = np.arange(num_items, dtype=np.int32) * 2
+    d_input1 = DeviceArray.from_numpy(h_input1)
+    d_input2 = DeviceArray.from_numpy(h_input2)
 
     # Create base zip iterator
     zip_it = ZipIterator(d_input1, d_input2)
@@ -661,7 +672,7 @@ def test_zip_iterator_advance():
         return Pair(p1[0] + p2[0], p1[1] + p2[1])
 
     h_init = Pair(0, 0)
-    d_output = cp.empty(1, dtype=Pair.dtype)
+    d_output = DeviceArray.empty(1, Pair.dtype)
 
     remaining_items = num_items - offset
     cuda.compute.reduce_into(
@@ -672,11 +683,11 @@ def test_zip_iterator_advance():
         h_init=h_init,
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
     # Expected values should be sum from offset onwards
-    expected_first = d_input1[offset:].sum().get()
-    expected_second = d_input2[offset:].sum().get()
+    expected_first = h_input1[offset:].sum()
+    expected_second = h_input2[offset:].sum()
 
     assert result["first"] == expected_first
     assert result["second"] == expected_second
@@ -699,9 +710,12 @@ def test_nested_zip_iterator_advance():
     offset = 15
 
     # Create three input arrays
-    d_input_a = cp.arange(num_items, dtype=np.int32)
-    d_input_b = cp.arange(num_items, dtype=np.int64) * 2
-    d_input_c = cp.arange(num_items, dtype=np.float32) * 3.0
+    h_input_a = np.arange(num_items, dtype=np.int32)
+    h_input_b = np.arange(num_items, dtype=np.int64) * 2
+    h_input_c = np.arange(num_items, dtype=np.float32) * 3.0
+    d_input_a = DeviceArray.from_numpy(h_input_a)
+    d_input_b = DeviceArray.from_numpy(h_input_b)
+    d_input_c = DeviceArray.from_numpy(h_input_c)
 
     # Create nested zip: ZipIterator(ZipIterator(a, b), c)
     inner_zip = ZipIterator(d_input_a, d_input_b)
@@ -711,7 +725,7 @@ def test_nested_zip_iterator_advance():
     advanced_outer_zip = outer_zip + offset
 
     # Perform reduction from the advanced position
-    d_output = cp.empty(1, dtype=OuterTriple.dtype)
+    d_output = DeviceArray.empty(1, OuterTriple.dtype)
     h_init = OuterTriple(InnerPair(0, 0), 0.0)
 
     remaining_items = num_items - offset
@@ -723,12 +737,12 @@ def test_nested_zip_iterator_advance():
         h_init=h_init,
     )
 
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
 
     # Calculate expected values from offset onwards
-    expected_first = d_input_a[offset:].sum().get()
-    expected_second = d_input_b[offset:].sum().get()
-    expected_third = d_input_c[offset:].sum().get()
+    expected_first = h_input_a[offset:].sum()
+    expected_second = h_input_b[offset:].sum()
+    expected_third = h_input_c[offset:].sum()
 
     assert result["inner"]["first"] == expected_first, (
         f"Expected inner.first={expected_first}, got {result['inner']['first']}"

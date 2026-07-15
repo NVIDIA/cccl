@@ -180,25 +180,25 @@ template <typename LargeKernelT,
           typename EndOffsetIteratorT,
           typename KernelLauncherFactory>
 __launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
-  _CCCL_GRID_CONSTANT const LargeKernelT large_kernel,
-  _CCCL_GRID_CONSTANT const SmallKernelT small_kernel,
-  _CCCL_GRID_CONSTANT const local_segment_index_t num_segments,
-  _CCCL_GRID_CONSTANT KeyT* const d_current_keys,
-  _CCCL_GRID_CONSTANT KeyT* const d_final_keys,
+  const LargeKernelT large_kernel,
+  const SmallKernelT small_kernel,
+  const local_segment_index_t num_segments,
+  KeyT* const d_current_keys,
+  KeyT* const d_final_keys,
   device_double_buffer<KeyT> d_keys_double_buffer,
-  _CCCL_GRID_CONSTANT ValueT* const d_current_values,
-  _CCCL_GRID_CONSTANT ValueT* const d_final_values,
+  ValueT* const d_current_values,
+  ValueT* const d_final_values,
   device_double_buffer<ValueT> d_values_double_buffer,
-  _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
-  _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
-  _CCCL_GRID_CONSTANT local_segment_index_t* const group_sizes,
-  _CCCL_GRID_CONSTANT local_segment_index_t* const large_and_medium_segments_indices,
-  _CCCL_GRID_CONSTANT local_segment_index_t* const small_segments_indices,
-  _CCCL_GRID_CONSTANT const KernelLauncherFactory launcher_factory,
-  _CCCL_GRID_CONSTANT const int large_threads_per_block,
-  _CCCL_GRID_CONSTANT const int small_threads_per_block,
-  _CCCL_GRID_CONSTANT const int medium_segments_per_block,
-  _CCCL_GRID_CONSTANT const int small_segments_per_block)
+  const BeginOffsetIteratorT d_begin_offsets,
+  const EndOffsetIteratorT d_end_offsets,
+  local_segment_index_t* const group_sizes,
+  local_segment_index_t* const large_and_medium_segments_indices,
+  local_segment_index_t* const small_segments_indices,
+  const KernelLauncherFactory launcher_factory,
+  const int large_threads_per_block,
+  const int small_threads_per_block,
+  const int medium_segments_per_block,
+  const int small_segments_per_block)
 {
   // In case of CDP:
   // 1. each CTA has a different main stream
@@ -297,15 +297,15 @@ struct policy_selector_from_hub
   using max_policy = typename PolicyHub::MaxPolicy;
 
   // this is only called in device code, so we can ignore the cc parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_sort_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> SegmentedSortPolicy
   {
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
     using lp = typename ap::LargeSegmentPolicy;
     using sp = typename ap::SmallSegmentPolicy;
     using mp = typename ap::MediumSegmentPolicy;
 
-    return segmented_sort_policy{
-      segmented_radix_sort_policy{
+    return SegmentedSortPolicy{
+      SegmentedSortRadixSortPolicy{
         lp::BLOCK_THREADS,
         lp::ITEMS_PER_THREAD,
         lp::LOAD_ALGORITHM,
@@ -313,20 +313,20 @@ struct policy_selector_from_hub
         lp::RANK_ALGORITHM,
         lp::SCAN_ALGORITHM,
         lp::RADIX_BITS},
-      sub_warp_merge_sort_policy{
-        sp::BLOCK_THREADS,
-        sp::WARP_THREADS,
-        sp::ITEMS_PER_THREAD,
-        sp::LOAD_ALGORITHM,
-        sp::LOAD_MODIFIER,
-        sp::STORE_ALGORITHM},
-      sub_warp_merge_sort_policy{
+      SegmentedSortSubWarpMergeSortPolicy{
         mp::BLOCK_THREADS,
         mp::WARP_THREADS,
         mp::ITEMS_PER_THREAD,
         mp::LOAD_ALGORITHM,
         mp::LOAD_MODIFIER,
         mp::STORE_ALGORITHM},
+      SegmentedSortSubWarpMergeSortPolicy{
+        sp::BLOCK_THREADS,
+        sp::WARP_THREADS,
+        sp::ITEMS_PER_THREAD,
+        sp::LOAD_ALGORITHM,
+        sp::LOAD_MODIFIER,
+        sp::STORE_ALGORITHM},
       ap::PARTITIONING_THRESHOLD};
   }
 };
@@ -335,7 +335,8 @@ struct policy_selector_from_hub
 static constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
+//! Deprecated [Since 3.5]
 template <
   SortOrder Order,
   typename KeyT,
@@ -369,7 +370,7 @@ template <
     detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>,
     detail::choose_signed_offset<cub::detail::segmented_sort::global_segment_offset_t>::type>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchSegmentedSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") DispatchSegmentedSort
 {
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
@@ -1007,7 +1008,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   PartitionKernelSource& partition_kernel_source,
   KernelLauncherFactory& launcher_factory,
   PartitionPolicySelector partition_policy_selector,
-  const segmented_sort_policy& active_policy,
+  const SegmentedSortPolicy& active_policy,
   GetFinalOutputOp&& get_final_output)
 {
   constexpr auto num_segments_per_invocation_limit =
@@ -1160,7 +1161,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
 template <bool KeysOnly, typename PolicyGetter>
 CUB_RUNTIME_FUNCTION void check_policy(PolicyGetter policy_getter)
 {
-  [[maybe_unused]] CUB_DETAIL_CONSTEXPR_ISH segmented_sort_policy active_policy = policy_getter();
+  [[maybe_unused]] CUB_DETAIL_CONSTEXPR_ISH SegmentedSortPolicy active_policy = policy_getter();
 
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.large_segment.load_modifier != CacheLoadModifier::LOAD_LDG,
                                "The memory consistency model does not apply to texture accesses");
@@ -1192,7 +1193,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   device_double_buffer<KeyT>& d_keys_double_buffer,
   device_double_buffer<ValueT>& d_values_double_buffer,
   KernelLauncherFactory& launcher_factory,
-  const segmented_sort_policy& active_policy,
+  const SegmentedSortPolicy& active_policy,
   GetFinalOutputOp&& get_final_output)
 {
   const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
@@ -1311,7 +1312,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
     check_policy<keys_only>(policy_getter); // MSVC fails to evaluate static_asserts inside this lambda, so move them to
                                             // a function
-    CUB_DETAIL_CONSTEXPR_ISH const segmented_sort_policy active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const SegmentedSortPolicy active_policy = policy_getter();
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
@@ -1360,7 +1361,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     auto large_segments_selector = kernel_source.LargeSegmentsSelector(
       active_policy.medium_segment.items_per_tile(), d_begin_offsets, d_end_offsets);
     auto small_segments_selector = kernel_source.SmallSegmentsSelector(
-      active_policy.small_segment.items_per_tile() + 1, d_begin_offsets, d_end_offsets);
+      static_cast<OffsetT>(active_policy.small_segment.items_per_tile()) + 1, d_begin_offsets, d_end_offsets);
 
     auto device_partition_temp_storage = keys_slot->create_alias<uint8_t>();
     if (partition_segments)
