@@ -9,16 +9,12 @@ source-of-truth input generators in `histogram_input_design.py`.
 
 Layout (one image per InputShape, inside a folder per transform/channels/type):
   algo_perf_figs/<even|range>_<single|multi>_<I32|F64>/<input_shape>.png
-Each image:
-  * top row : input characterization for that shape -- distribution (log-y) and
-    position-in-sequence -- drawn by the SHARED functions in
-    histogram_input_characterization.py (so the characterization here matches the
-    standalone characterization figures exactly), plus an algorithm legend.
-  * below   : one performance graph per #input-elements; X = #bins (log2),
-    Y = GiB/s, one connect-the-dots line per algorithm present in the data
-    (markers = measured points, no fitted line). Two reference series stand out:
-    `default` (the shipping selector's pick, thick black) and `main` (upstream
-    main's default dispatch, dashed grey) -- the baseline this branch improves on.
+By default, performance graphs fill the left side while the input characterization,
+hit-rate graphs, and legends form a compact right sidebar. `--layout tall` retains
+the former top/middle/bottom arrangement. Each performance graph uses X = #bins and
+Y = speedup over upstream main, with one measured connect-the-dots series per
+algorithm. `default` (the shipping selector's pick, thick black) and `main`
+(upstream main's default dispatch, dash-dot red) are the two reference series.
 
 The `main` series is only drawn for InputShape generators that are byte-identical
 between upstream main and this branch (the sweep driver omits it elsewhere, since
@@ -84,8 +80,15 @@ ALGO_STYLE = {
     "gmem_privatized_nocache": (
         "#9467bd",
         "^",
-        "cooperative GMEM-privatized + no cache",
+        "GMEM-privatized + no cache + coalesce on spill",
         "-",
+        1.1,
+    ),
+    "gmem_privatized_agent": (
+        "#bcbd22",
+        "<",
+        "AgentHistogram GMEM-privatized + no cache",
+        "--",
         1.1,
     ),
     "hybrid": ("#e377c2", "P", "hybrid (SMEM+GMEM single-pass)", "--", 1.1),
@@ -93,9 +96,37 @@ ALGO_STYLE = {
     "gmem_privatized_single_probe": (
         "#17becf",
         "s",
-        "GMEM-privatized + single-probe SMEM cache",
+        "GMEM-privatized + single-probe cache + no coalesce",
         ":",
         1.1,
+    ),
+    "gmem_privatized_nocache_direct_spill": (
+        "#7b4ab5",
+        "v",
+        "GMEM-privatized + no cache + no coalesce",
+        ":",
+        1.2,
+    ),
+    "gmem_privatized_single_probe_coalesced_spill": (
+        "#007f7f",
+        "D",
+        "GMEM-privatized + single-probe cache + coalesce on spill",
+        "--",
+        1.2,
+    ),
+    "gmem_privatized_single_probe_rle_spill": (
+        "#0066cc",
+        "P",
+        "GMEM-privatized + single-probe cache + RLE on spill",
+        "-.",
+        1.2,
+    ),
+    "gmem_privatized_nocache_rle_spill": (
+        "#d95f02",
+        "X",
+        "GMEM-privatized + no cache + RLE on spill",
+        "-.",
+        1.2,
     ),
     "direct_cuckoo": (
         "#2ca02c",
@@ -157,10 +188,15 @@ ALGO_STYLE = {
 ALGO_TAG = {
     "smem_privatized": "SMP",
     "gmem_privatized_nocache": "GPN",
+    "gmem_privatized_agent": "GPA",
     "gmem_privatized_nocache:hybrid": "HYB",
     "hybrid": "HYB",
     "gmem_privatized_cuckoo": "GPC",
     "gmem_privatized_single_probe": "GPS",
+    "gmem_privatized_nocache_direct_spill": "GND",
+    "gmem_privatized_single_probe_coalesced_spill": "GSC",
+    "gmem_privatized_single_probe_rle_spill": "GSR",
+    "gmem_privatized_nocache_rle_spill": "GNR",
     "direct_cuckoo": "DAC",
     "direct_single_probe": "DAS",
     "direct_nocache": "DAN",
@@ -192,20 +228,51 @@ SELECTED_TAG_ALGO = {
     "SMP": "smem_privatized",
     "HYB": "hybrid",
     "GPN": "gmem_privatized_nocache",
+    "GPA": "gmem_privatized_agent",
     "GPC": "gmem_privatized_cuckoo",
     "GPS": "gmem_privatized_single_probe",
+    "GND": "gmem_privatized_nocache_direct_spill",
+    "GSC": "gmem_privatized_single_probe_coalesced_spill",
+    "GSR": "gmem_privatized_single_probe_rle_spill",
+    "GNR": "gmem_privatized_nocache_rle_spill",
     "DAC": "direct_cuckoo",
     "DAS": "direct_single_probe",
     "DAN": "direct_nocache",
 }
 
 
-def selected_tag_legend_handles(tags, legend_algos):
-    """Proxy legend handles for selected-point tags not decoded by a drawn series."""
-    decoded = {ALGO_TAG.get(algo) for algo in legend_algos}
+def algorithm_legend_handles(drawn_algos, selected_tags):
+    """Legend handles in canonical algorithm order, with references last.
+
+    A selected algorithm may not have a forced performance series in the input JSON
+    (DAS in the July-10 run). Insert that proxy at its normal algorithm-family position
+    rather than appending it after BAS/DEF. BAS and DEF are always the final entries.
+    """
     handles = []
-    for tag, algo in SELECTED_TAG_ALGO.items():
-        if tag not in tags or tag in decoded:
+    represented_tags = set()
+    selected_algos = {
+        algo for tag, algo in SELECTED_TAG_ALGO.items() if tag in selected_tags
+    }
+
+    for algo in (a for a in ALGO_ORDER if a not in ("main", "default")):
+        tag = ALGO_TAG.get(algo)
+        if algo in drawn_algos:
+            color, marker, name, linestyle, linewidth = ALGO_STYLE[algo]
+            handles.append(
+                plt.Line2D(
+                    [0],
+                    [0],
+                    color=color,
+                    marker=marker,
+                    linestyle=linestyle,
+                    lw=linewidth,
+                    label=f"{tag} — {name}" if tag else name,
+                )
+            )
+            if tag:
+                represented_tags.add(tag)
+            continue
+        if algo not in selected_algos or not tag or tag in represented_tags:
             continue
         color, marker, name, _linestyle, _linewidth = ALGO_STYLE[algo]
         handles.append(
@@ -219,7 +286,63 @@ def selected_tag_legend_handles(tags, legend_algos):
                 label=f"{tag} — selected default ran {name}",
             )
         )
+        represented_tags.add(tag)
+
+    # Reference entries are deliberately last: BAS, then DEF.
+    for algo in ("main", "default"):
+        if algo not in drawn_algos:
+            continue
+        color, marker, name, linestyle, linewidth = ALGO_STYLE[algo]
+        label = (
+            "BAS — baseline (upstream main), 1×" if algo == "main" else f"DEF — {name}"
+        )
+        handles.append(
+            plt.Line2D(
+                [0],
+                [0],
+                color=color,
+                marker=marker,
+                linestyle=linestyle,
+                lw=linewidth,
+                label=label,
+            )
+        )
     return handles
+
+
+def row_major_legend_handles(handles, ncols):
+    """Reorder handles so matplotlib's column-major legend reads row-major."""
+    if ncols <= 1 or len(handles) <= ncols:
+        return handles
+    nrows = math.ceil(len(handles) / ncols)
+    return [
+        handles[index]
+        for column in range(ncols)
+        for row in range(nrows)
+        for index in [row * ncols + column]
+        if index < len(handles)
+    ]
+
+
+def grouped_legend_handles(handles, ncols):
+    """Put the final BAS/DEF reference pair together on the last legend row."""
+    if ncols <= 1 or len(handles) < 2:
+        return handles
+    reference_count = 0
+    for handle in reversed(handles):
+        if handle.get_label().startswith(("BAS —", "DEF —")):
+            reference_count += 1
+        else:
+            break
+    if reference_count == 0:
+        return row_major_legend_handles(handles, ncols)
+    candidates, references = handles[:-reference_count], handles[-reference_count:]
+    padding = (-len(candidates)) % ncols
+    spacers = [
+        plt.Line2D([], [], linestyle="none", alpha=0.0, label="")
+        for _ in range(padding)
+    ]
+    return row_major_legend_handles(candidates + spacers + references, ncols)
 
 
 # Draw order: reference series last (on top). gmem/direct candidates first.
@@ -227,20 +350,59 @@ ALGO_ORDER = [
     "smem_privatized",
     "smem_static",
     "smem_dynamic",
-    "gmem_privatized_nocache",
-    "gmem_privatized_nocache__nocoal",
+    "gmem_privatized_agent",
     "hybrid",
     "gmem_privatized_cuckoo",
     "gmem_privatized_single_probe",
+    "gmem_privatized_nocache_direct_spill",
+    "gmem_privatized_single_probe_coalesced_spill",
+    "gmem_privatized_nocache",
+    "gmem_privatized_single_probe_rle_spill",
+    "gmem_privatized_nocache_rle_spill",
+    "gmem_privatized_nocache__nocoal",
     "direct_cuckoo",
-    "direct_cuckoo__nocoal",
     "direct_single_probe",
+    "direct_cuckoo__nocoal",
     "direct_single_probe__nocoal",
     "direct_nocache",
     "direct_nocache__nocoal",
     "main",
     "default",
 ]
+
+# Cache implementation represented by each hit-rate series. A title names every
+# algorithm that shares the cache design, then identifies the specific measured
+# series on its second line (e.g. DAS shares GPS's cache but was not measured here).
+HITRATE_CACHE_FAMILY = {
+    "direct_cuckoo": "cuckoo cache",
+    "gmem_privatized_cuckoo": "cuckoo cache",
+    "direct_single_probe": "single-probe cache",
+    "gmem_privatized_single_probe": "single-probe cache",
+    "gmem_privatized_single_probe_coalesced_spill": "single-probe cache",
+    "gmem_privatized_single_probe_rle_spill": "single-probe cache",
+}
+HITRATE_ALGO_ORDER = [
+    "direct_cuckoo",
+    "gmem_privatized_cuckoo",
+    "direct_single_probe",
+    "gmem_privatized_single_probe",
+    "gmem_privatized_single_probe_coalesced_spill",
+    "gmem_privatized_single_probe_rle_spill",
+]
+
+
+def hitrate_cache_title(algo, sample):
+    """Cache-type title with every algorithm tag that uses that cache."""
+    family = HITRATE_CACHE_FAMILY[algo]
+    tags = [
+        ALGO_TAG[other]
+        for other in HITRATE_ALGO_ORDER
+        if HITRATE_CACHE_FAMILY[other] == family
+    ]
+    return (
+        f"{family} ({', '.join(tags)})\n{ALGO_TAG[algo]} · {sample} hit rate vs #bins"
+    )
+
 
 # Plot the whole swept bin range. The force harness overrides both dispatch
 # gates (direct-atomic bin threshold and the hybrid kSplitBin guard) and every
@@ -608,7 +770,7 @@ def draw_hitrate(ax, hr_algo_cells, sample, shape, elements_list, title):
     """Cache hit rate (%) vs #bins, one series per #elements. hr_algo_cells is
     keyed 'SampleT|Bins|Elements|InputShape' -> {rate,hits,misses}. Legacy
     three-field keys are treated as I32-only."""
-    ax.set_title(title, fontsize=9)
+    ax.set_title(title, fontsize=8)
     ax.set_xlabel("# bins")
     ax.set_ylabel("cache hit rate (%)")
     any_pts = False
@@ -736,20 +898,27 @@ def geomean_selected_tags(per_algo_cells, sample, elements, shapes):
 
 
 def render_geomean(
-    binary_label, per_algo_cells, sample, elements_list, algos, shapes, outpath
+    binary_label,
+    per_algo_cells,
+    sample,
+    elements_list,
+    algos,
+    shapes,
+    outpath,
+    layout="wide",
 ):
     """One PNG: speedup-vs-#bins for each algorithm, GEOMEAN over all input shapes, one
     panel per element count. Same layout/style as render_one's middle grid, but WITHOUT
     the two input-characterization panels (a geomean is shape-agnostic) and without the
     per-shape hit-rate row. The legend takes the slot the characterization row vacated."""
-    ncols = 3
     nperf = len(elements_list)
+    ncols = 4 if layout == "wide" and nperf > 6 else 3
     perf_rows = (nperf + ncols - 1) // ncols
     free_slots = perf_rows * ncols - nperf
     # When the perf grid is exactly full (no free cell for the legend, e.g. 6 panels in a
     # 2x3 grid), add a dedicated short bottom ROW for the legend so it never overlaps the
     # panels' x-axis labels. A small height_ratio keeps that row compact.
-    needs_legend_row = free_slots == 0
+    needs_legend_row = layout == "wide" or free_slots == 0
     nrows = perf_rows + (1 if needs_legend_row else 0)
 
     fig = plt.figure(
@@ -760,11 +929,16 @@ def render_geomean(
 
     transform, channels = BINARY_META[binary_label]
     head = f"{transform.upper()} · {channels}-channel · {sample}  —  GEOMEAN over {len(shapes)} input shapes"
-    subtitle = (
-        "speedup vs baseline (×, log2) vs #bins per input size — geomean of GiB/s across all "
-        "shapes; one line per algorithm, baseline (upstream main) = 1×; default points tagged "
-        "with the selected algorithm"
-    )
+    if "main" in per_algo_cells:
+        subtitle = (
+            "speedup vs baseline (×, log2) vs #bins per input size — geomean of GiB/s across all "
+            "shapes; one line per algorithm, baseline (upstream main) = 1×; default points tagged "
+            "with the selected algorithm"
+        )
+    else:
+        subtitle = (
+            "absolute GiB/s vs #bins per input size — geomean across all input shapes"
+        )
     fig.suptitle(
         head + "\n" + "\n".join(textwrap.wrap(subtitle, width=140)), fontsize=12
     )
@@ -793,40 +967,11 @@ def render_geomean(
                 color="gray",
             )
 
-    # Legend, in a free grid cell if the perf grid leaves one, otherwise as a figure-level
-    # legend below the panels. Only series ACTUALLY drawn (in canonical order), plus the
-    # baseline line. Mirrors render_one's tag -> name decoding.
-    def _legend_label(a):
-        tag = ALGO_TAG.get(a)
-        return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
-
-    legend_algos = [a for a in ALGO_ORDER if a in drawn_algos and a != "main"]
-    handles = [
-        plt.Line2D(
-            [0],
-            [0],
-            color=ALGO_STYLE[a][0],
-            marker=ALGO_STYLE[a][1],
-            linestyle=ALGO_STYLE[a][3],
-            lw=ALGO_STYLE[a][4],
-            label=_legend_label(a),
-        )
-        for a in legend_algos
-    ]
-    if "main" in drawn_algos:  # the 1x baseline reference line
-        mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
-        handles.append(
-            plt.Line2D(
-                [0],
-                [0],
-                color=mc,
-                linestyle=mls,
-                lw=mlw,
-                label="BAS — baseline (upstream main), 1×",
-            )
-        )
-    handles.extend(selected_tag_legend_handles(selected_point_tags, legend_algos))
-    if free_slots > 0:
+    # Legend, in a free grid cell for the legacy tall layout when possible, otherwise
+    # in a compact dedicated row. The shared builder places selected-only proxies in
+    # family order and makes BAS/DEF the final entries.
+    handles = algorithm_legend_handles(drawn_algos, selected_point_tags)
+    if free_slots > 0 and not needs_legend_row:
         # Legend in the first unused panel cell of the last perf row.
         lax = fig.add_subplot(gs[perf_rows - 1, ncols - free_slots])
         lax.axis("off")
@@ -843,10 +988,11 @@ def render_geomean(
         # it cannot overlap the panels' "# bins" labels above it.
         lax = fig.add_subplot(gs[perf_rows, :])
         lax.axis("off")
+        legend_ncols = min(len(handles), 5)
         lax.legend(
-            handles=handles,
+            handles=grouped_legend_handles(handles, legend_ncols),
             loc="center",
-            ncol=min(len(handles), 5),
+            ncol=legend_ncols,
             fontsize=9,
             title="algorithms (tag — name)",
             title_fontsize=9,
@@ -866,10 +1012,9 @@ def render_one(
     algos,
     outpath,
     hr_for_binary=None,
+    layout="wide",
 ):
-    """One PNG: characterization top row + per-element-count perf grid, and (when
-    hit-rate data is supplied) a final row for each available cache algorithm
-    (one series per #elements)."""
+    """Render one per-shape PNG in the selectable wide or legacy tall layout."""
     bins, counts, char_bins = C.char_input(shape)
     hr_for_binary = hr_for_binary or {}
 
@@ -877,23 +1022,74 @@ def render_one(
         return any(_hitrate_key_parts(key)[0] == sample for key in cells)
 
     hitrate_algos = [
-        algo
-        for algo in (
-            "direct_cuckoo",
-            "gmem_privatized_single_probe",
-            "direct_single_probe",
-        )
-        if has_sample(hr_for_binary.get(algo, {}))
-    ][:2]
+        algo for algo in HITRATE_ALGO_ORDER if has_sample(hr_for_binary.get(algo, {}))
+    ]
     has_hr = bool(hitrate_algos)
 
-    ncols = 3
     nperf = len(elements_list)
-    perf_rows = (nperf + ncols - 1) // ncols
-    nrows = 1 + perf_rows + (1 if has_hr else 0)
+    if layout == "wide":
+        perf_cols = 4 if nperf > 6 else 3
+        perf_rows = (nperf + perf_cols - 1) // perf_cols
+        figure_height = max(8.8, 4.0 * perf_rows + 0.8)
+        fig = plt.figure(figsize=(5.0 * perf_cols + 11.5, figure_height))
+        outer = fig.add_gridspec(1, 2, width_ratios=[perf_cols, 2.35], wspace=0.12)
+        perf_gs = outer[0, 0].subgridspec(
+            perf_rows, perf_cols, hspace=0.38, wspace=0.40
+        )
+        perf_axes = [
+            fig.add_subplot(perf_gs[i // perf_cols, i % perf_cols])
+            for i in range(nperf)
+        ]
 
-    fig = plt.figure(figsize=(5.4 * ncols, 4.1 * nrows))
-    gs = fig.add_gridspec(nrows, ncols)
+        hr_rows = (len(hitrate_algos) + 1) // 2 if has_hr else 0
+        side_rows = 1 + hr_rows + 1  # characterization + hit rates + algorithm legend
+        side_gs = outer[0, 1].subgridspec(
+            side_rows,
+            2,
+            height_ratios=[1.0] + [1.0] * hr_rows + [0.72],
+            hspace=0.68,
+            wspace=0.32,
+        )
+        distribution_ax = fig.add_subplot(side_gs[0, 0])
+        sequence_ax = fig.add_subplot(side_gs[0, 1])
+        hitrate_axes = []
+        for i, _algo in enumerate(hitrate_algos):
+            hitrate_axes.append(fig.add_subplot(side_gs[1 + i // 2, i % 2]))
+        for row in range(hr_rows):
+            used = min(2, max(0, len(hitrate_algos) - 2 * row))
+            for column in range(used, 2):
+                fig.add_subplot(side_gs[1 + row, column]).axis("off")
+        bottom_gs = side_gs[-1, :].subgridspec(
+            1, 2, width_ratios=[1.55, 1.0], wspace=0.15
+        )
+        legend_ax = fig.add_subplot(bottom_gs[0, 0])
+        hitrate_legend_ax = fig.add_subplot(bottom_gs[0, 1])
+        hitrate_legend_ax.axis("off")
+    else:
+        perf_cols = 3
+        perf_rows = (nperf + perf_cols - 1) // perf_cols
+        hr_rows = (len(hitrate_algos) + 1) // 2 if has_hr else 0
+        nrows = 1 + perf_rows + hr_rows
+        fig = plt.figure(figsize=(5.4 * perf_cols, 4.1 * nrows))
+        gs = fig.add_gridspec(nrows, perf_cols)
+        distribution_ax = fig.add_subplot(gs[0, 0])
+        sequence_ax = fig.add_subplot(gs[0, 1])
+        legend_ax = fig.add_subplot(gs[0, 2])
+        perf_axes = [
+            fig.add_subplot(gs[1 + i // perf_cols, i % perf_cols]) for i in range(nperf)
+        ]
+        hitrate_axes = []
+        hitrate_legend_ax = None
+        for i, _algo in enumerate(hitrate_algos):
+            hitrate_axes.append(fig.add_subplot(gs[1 + perf_rows + i // 2, i % 2]))
+        for row in range(hr_rows):
+            used = min(2, max(0, len(hitrate_algos) - 2 * row))
+            for column in range(used, 2):
+                fig.add_subplot(gs[1 + perf_rows + row, column]).axis("off")
+            side_ax = fig.add_subplot(gs[1 + perf_rows + row, 2])
+            side_ax.axis("off")
+            if row == 0:
+                hitrate_legend_ax = side_ax
 
     transform, channels = BINARY_META[binary_label]
     blurb = C.SHAPE_BLURB.get(shape, "")
@@ -902,31 +1098,54 @@ def render_one(
     )
     if blurb:  # only add the parenthetical when a description exists (no empty "()")
         head += f"  ({blurb})"
-    head = "\n".join(textwrap.wrap(head, width=120))
-    hr_note = (
-        f"   bottom row: {sample} SMEM-cache hit rate vs #bins (series = #elements)"
-        if has_hr
-        else ""
+    wrap_width = 210 if layout == "wide" else 120
+    head = "\n".join(textwrap.wrap(head, width=wrap_width))
+    perf_note = (
+        "speedup vs baseline vs #bins; baseline (upstream main) = 1×; default points tagged "
+        "with the selected algorithm"
+        if "main" in per_algo_cells
+        else "absolute GiB/s vs #bins"
     )
-    subtitle = (
-        f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
-        f"middle: speedup vs baseline (×, log2) vs #bins per input size — one line per algorithm, "
-        f"baseline (upstream main) = 1×; default points tagged with the selected algorithm{hr_note}"
-    )
+    if layout == "wide":
+        sidebar_note = (
+            f"; cache hit rate vs #bins ({sample}, series = #elements)"
+            if has_hr
+            else ""
+        )
+        subtitle = (
+            f"left: {perf_note}, one panel per input size   "
+            f"right: input characterization (N={C.fmt_int(C.CHAR_N)}, "
+            f"bins={C.fmt_bins(char_bins)}){sidebar_note}"
+        )
+    else:
+        hr_note = (
+            f"   bottom: {sample} cache hit rate vs #bins (series = #elements)"
+            if has_hr
+            else ""
+        )
+        subtitle = (
+            f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, "
+            f"bins={C.fmt_bins(char_bins)})   middle: {perf_note}, one panel per input size"
+            f"{hr_note}"
+        )
     fig.suptitle(
-        head + "\n" + "\n".join(textwrap.wrap(subtitle, width=140)), fontsize=12
+        head + "\n" + "\n".join(textwrap.wrap(subtitle, width=wrap_width)),
+        fontsize=12,
     )
 
-    C.draw_distribution(fig.add_subplot(gs[0, 0]), counts, char_bins)
-    C.draw_sequence(fig.add_subplot(gs[0, 1]), bins, char_bins, shape=shape)
+    C.draw_distribution(distribution_ax, counts, char_bins)
+    C.draw_sequence(sequence_ax, bins, char_bins, shape=shape)
+    if layout == "wide":
+        distribution_ax.set_title(
+            "value distribution (count vs bin, log y)", fontsize=8
+        )
+        sequence_ax.set_title("position vs bin index", fontsize=8)
 
     # Draw the per-element-count perf panels FIRST, recording which series actually
     # produced points, so the legend lists only series present in this figure's data.
     drawn_algos = set()
     selected_point_tags = set()
-    for i, elements in enumerate(elements_list):
-        r, c = 1 + i // ncols, i % ncols
-        ax = fig.add_subplot(gs[r, c])
+    for ax, elements in zip(perf_axes, elements_list):
         series = perf_series(per_algo_cells, sample, elements, shape, algos)
         tags = selected_algo_tags(per_algo_cells, sample, elements, shape)
         selected_point_tags.update(tags.values())
@@ -945,85 +1164,52 @@ def render_one(
                 color="gray",
             )
 
-    # Legend (top-right slot): only series actually drawn above, plus the baseline line.
-    # Prefix each entry with its 3-letter tag so the legend decodes the tags annotated on
-    # the `default` series points (e.g. a "DAC" on the black line maps to its name here).
-    legend_ax = fig.add_subplot(gs[0, 2])
+    # The shared ordered legend puts selected-only DAS directly after DAC and keeps
+    # the two references, BAS and DEF, as the final entries.
     legend_ax.axis("off")
-
-    def _legend_label(a):
-        tag = ALGO_TAG.get(a)
-        return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
-
-    legend_algos = [a for a in ALGO_ORDER if a in drawn_algos and a != "main"]
-    handles = [
-        plt.Line2D(
-            [0],
-            [0],
-            color=ALGO_STYLE[a][0],
-            marker=ALGO_STYLE[a][1],
-            linestyle=ALGO_STYLE[a][3],
-            lw=ALGO_STYLE[a][4],
-            label=_legend_label(a),
-        )
-        for a in legend_algos
-    ]
-    if "main" in drawn_algos:
-        mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
-        handles.append(
-            plt.Line2D(
-                [0],
-                [0],
-                color=mc,
-                linestyle=mls,
-                lw=mlw,
-                label="BAS — baseline (upstream main), 1×",
-            )
-        )
-    handles.extend(selected_tag_legend_handles(selected_point_tags, legend_algos))
+    handles = algorithm_legend_handles(drawn_algos, selected_point_tags)
+    legend_ncols = 2 if layout == "wide" else 1
     legend_ax.legend(
-        handles=handles,
+        handles=grouped_legend_handles(handles, legend_ncols),
         loc="center",
-        fontsize=10,
+        ncol=legend_ncols,
+        fontsize=8.5 if layout == "wide" else 10,
         title="algorithms (tag — name)",
-        title_fontsize=10,
+        title_fontsize=9 if layout == "wide" else 10,
         frameon=True,
     )
 
     if has_hr:
-        hr_row = 1 + perf_rows
-        hr_axes = []
-        for column, algo in enumerate(hitrate_algos):
-            hr_ax = fig.add_subplot(gs[hr_row, column])
-            hr_axes.append(hr_ax)
+        for hr_ax, algo in zip(hitrate_axes, hitrate_algos):
             draw_hitrate(
                 hr_ax,
                 hr_for_binary.get(algo, {}),
                 sample,
                 shape,
                 elements_list,
-                f"{ALGO_TAG[algo]} — {ALGO_STYLE[algo][2]}\n{sample} hit rate vs #bins",
+                hitrate_cache_title(algo, sample),
             )
-        for column in range(len(hitrate_algos), 2):
-            fig.add_subplot(gs[hr_row, column]).axis("off")
-        # Third column of the hit-rate row: ONE shared series legend beside both
-        # graphs. Keeping the legend in its own panel prevents it from covering
-        # high-rate curves (or competing with explanatory text for space).
-        ax = fig.add_subplot(gs[hr_row, 2])
-        ax.axis("off")
-        handles, labels = hr_axes[0].get_legend_handles_labels()
-        if handles:
-            ax.legend(
-                handles,
-                labels,
-                loc="upper center",
+        # ONE shared #elements legend below the context graphs, beside the
+        # algorithm-series legend. It is never overlaid on a data panel.
+        hr_handles, hr_labels = hitrate_axes[0].get_legend_handles_labels()
+        if hr_handles and hitrate_legend_ax is not None:
+            hitrate_legend_ax.legend(
+                hr_handles,
+                hr_labels,
+                loc="center",
                 fontsize=8,
                 title="# elements",
                 title_fontsize=8,
                 frameon=True,
             )
 
-    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    if layout == "wide":
+        # Nested performance/sidebar GridSpecs already own their internal spacing;
+        # tight_layout does not understand that nesting and emits one warning per
+        # figure. Set only the outer margins here and leave each subgrid intact.
+        fig.subplots_adjust(left=0.035, right=0.985, bottom=0.065, top=0.86)
+    else:
+        fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
     plt.close(fig)
 
@@ -1048,6 +1234,12 @@ def main():
         "--outdir",
         default="algo_perf_figs",
         help="output directory for the per-shape PNGs",
+    )
+    ap.add_argument(
+        "--layout",
+        choices=("wide", "tall"),
+        default="wide",
+        help="figure arrangement: laptop-friendly wide sidebar (default) or legacy tall stack",
     )
     args = ap.parse_args()
 
@@ -1116,6 +1308,7 @@ def main():
                     algos,
                     outpath,
                     hr_for_binary,
+                    args.layout,
                 )
                 written.append(outpath)
             # One geomean-over-shapes figure per (binary, sample): the shape-agnostic
@@ -1123,7 +1316,14 @@ def main():
             # per-shape hit-rate row.
             geo_path = os.path.join(folder, "all_geomean.png")
             render_geomean(
-                binary_label, per_algo_cells, sample, elements, algos, shapes, geo_path
+                binary_label,
+                per_algo_cells,
+                sample,
+                elements,
+                algos,
+                shapes,
+                geo_path,
+                args.layout,
             )
             written.append(geo_path)
 
