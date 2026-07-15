@@ -2,16 +2,9 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
-#include <unittest/unittest.h>
+#include <cuda/functional>
 
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
+#include <unittest/unittest.h>
 
 template <typename Vector>
 void test_partition_point_simple()

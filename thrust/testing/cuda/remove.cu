@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/remove.h>
 
+#include <cuda/functional>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -55,15 +57,6 @@ __global__ void remove_copy_if_kernel(
   *result_end = thrust::remove_copy_if(exec, first, last, stencil_first, result, pred);
 }
 #endif
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct is_true

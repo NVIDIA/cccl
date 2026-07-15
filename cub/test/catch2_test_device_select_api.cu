@@ -9,6 +9,8 @@
 #include <thrust/equal.h>
 #include <thrust/memory.h>
 
+#include <cuda/functional>
+
 #include <cstddef>
 
 #include "cub_test_macros.h"

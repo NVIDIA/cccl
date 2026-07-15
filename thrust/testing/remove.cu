@@ -5,18 +5,11 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 
+#include <cuda/functional>
+
 #include <stdexcept>
 
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct is_true
