@@ -20,13 +20,18 @@
 #  include <cstdio>
 #endif // _CCCL_HOSTED()
 
+#ifdef _CCCL_DOXYGEN_INVOKED
+//! When defined, disables all logging code in CCCL
+#  define CCCL_DISABLE_LOGGING
+#endif // _CCCL_DOXYGEN_INVOKED
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
 //! Returns if logging is enabled
 [[nodiscard]] _CCCL_HOST_API inline bool logging_enabled() noexcept
 {
-#if _CCCL_HOSTED()
+#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
   return enabled;
 #else // _CCCL_HOSTED()
@@ -37,7 +42,7 @@ namespace detail
 //! Logs the message, independently of whether logging is enabled
 _CCCL_HOST_API inline void log_always([[maybe_unused]] const char* fmt, ...) noexcept
 {
-#if _CCCL_HOSTED()
+#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   va_list args;
   va_start(args, fmt);
   ::vprintf(fmt, args);
@@ -48,15 +53,15 @@ _CCCL_HOST_API inline void log_always([[maybe_unused]] const char* fmt, ...) noe
 //! Logs the message when logging is enabled
 _CCCL_HOST_API inline void log(const char* fmt, ...) noexcept
 {
+#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   if (logging_enabled())
   {
-#if _CCCL_HOSTED()
     va_list args;
     va_start(args, fmt);
     ::vprintf(fmt, args);
     va_end(args);
-#endif // _CCCL_HOSTED()
   }
+#endif // _CCCL_HOSTED()
 }
 } // namespace detail
 CUB_NAMESPACE_END
