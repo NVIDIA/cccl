@@ -259,7 +259,7 @@ struct bench_ref_even_op
       }
       if (bin >= 0)
       {
-        atomicAdd(d_hist[c] + bin, CounterT{1});
+        cub::detail::histogram::histogram_atomic_add(d_hist[c] + bin, CounterT{1});
       }
     }
   }
@@ -296,7 +296,7 @@ struct bench_ref_range_op
       const int bin                = idx - 1;
       if (bin >= 0 && bin < channel_num_bins)
       {
-        atomicAdd(d_hist[c] + bin, CounterT{1});
+        cub::detail::histogram::histogram_atomic_add(d_hist[c] + bin, CounterT{1});
       }
     }
   }

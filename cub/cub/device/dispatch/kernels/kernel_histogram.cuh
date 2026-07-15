@@ -2038,53 +2038,224 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 //!     grid-sync + atomic-free gather merges the slabs into the output. Used by
 //!     the privatized-spill variant of the same kernel.
 //!
-//! `target` is the per-channel base the kernel hands the probe (the shared output
-//! for output_atomic_spill, this block's slab base for private_block_spill), so the
-//! probe body is identical for both; only the atomic scope differs.
+//! `target` is the per-channel base the kernel hands the spill policy (the shared
+//! output for output_atomic_spill, this block's slab base for
+//! private_block_spill), so the probe body is independent of the target and
+//! atomic scope.
 struct output_atomic_spill
 {
+  static constexpr bool is_private              = false;
+  static constexpr bool defer_until_reconverged = false;
+
   template <typename CounterT, typename OutputCounterT>
   using target_type = OutputCounterT;
 
+  template <typename CounterT>
+  struct state
+  {};
+
   template <typename OutputCounterT, typename ContributionT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(OutputCounterT* target, int bin, ContributionT contribution)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void direct_spill(OutputCounterT* target, int bin, ContributionT contribution)
   {
-    atomicAdd(&target[bin], static_cast<OutputCounterT>(contribution));
+    histogram_atomic_add(&target[bin], static_cast<OutputCounterT>(contribution));
   }
+
+  template <typename CounterT, typename OutputCounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  spill(state<CounterT>&, OutputCounterT* target, int bin, ContributionT contribution)
+  {
+    if (bin >= 0)
+    {
+      direct_spill(target, bin, contribution);
+    }
+  }
+
+  template <typename CounterT, typename OutputCounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void finish(state<CounterT>&, OutputCounterT*)
+  {}
 };
 
 struct private_block_spill
 {
+  static constexpr bool is_private              = true;
+  static constexpr bool defer_until_reconverged = false;
+
   template <typename CounterT, typename OutputCounterT>
   using target_type = CounterT;
 
+  template <typename CounterT>
+  struct state
+  {};
+
   template <typename CounterT, typename ContributionT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, ContributionT contribution)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void direct_spill(CounterT* target, int bin, ContributionT contribution)
   {
     atomicAdd_block(&target[bin], static_cast<CounterT>(contribution));
   }
+
+  template <typename CounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  spill(state<CounterT>&, CounterT* target, int bin, ContributionT contribution)
+  {
+    if (bin >= 0)
+    {
+      direct_spill(target, bin, contribution);
+    }
+  }
+
+  template <typename CounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void finish(state<CounterT>&, CounterT*)
+  {}
 };
+
+//! Spill decorator that combines equal-bin contributions from the currently
+//! active warp lanes before calling the underlying atomic spill. The probe calls
+//! this from a reconverged site with `bin == -1` for cache hits, so cached misses
+//! from every probe branch participate in one peer-group operation. `contribution`
+//! is equal within each peer group in this kernel: normally one per lane; an
+//! already-combined wide-counter probe reaches this decorator on one active lane.
+template <typename AtomicSpillOp, typename PolicySelector>
+struct warp_coalesced_spill
+{
+  static constexpr bool is_private              = AtomicSpillOp::is_private;
+  static constexpr bool defer_until_reconverged = true;
+
+  template <typename CounterT, typename OutputCounterT>
+  using target_type = typename AtomicSpillOp::template target_type<CounterT, OutputCounterT>;
+
+  template <typename CounterT>
+  struct state
+  {};
+
+  template <typename CounterT, typename SpillCounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  spill(state<CounterT>&, SpillCounterT* target, int bin, ContributionT contribution)
+  {
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_70,
+      (
+        if constexpr (current_policy<PolicySelector>().warp_coalesce) {
+          const unsigned int active = __activemask();
+          const unsigned int peers  = __match_any_sync(active, static_cast<unsigned int>(bin));
+          const int leader          = __ffs(static_cast<int>(peers)) - 1;
+          const int lane_id         = static_cast<int>(threadIdx.x & 0x1f);
+          if (bin >= 0 && lane_id == leader)
+          {
+            AtomicSpillOp::direct_spill(
+              target, bin, static_cast<ContributionT>(contribution * static_cast<ContributionT>(__popc(peers))));
+          }
+        } else {
+          if (bin >= 0)
+          {
+            AtomicSpillOp::direct_spill(target, bin, contribution);
+          }
+        }),
+      (if (bin >= 0) { AtomicSpillOp::direct_spill(target, bin, contribution); }));
+  }
+
+  template <typename CounterT, typename SpillCounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void finish(state<CounterT>&, SpillCounterT*)
+  {}
+
+  template <typename SpillCounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void direct_spill(SpillCounterT* target, int bin, ContributionT contribution)
+  {
+    AtomicSpillOp::direct_spill(target, bin, contribution);
+  }
+};
+
+//! Spill decorator implementing the legacy per-thread run-length encoding idea,
+//! but only over cache-miss/no-cache spill events. Cache hits do not enter the
+//! pending run. A different missed bin flushes the previous `{bin,count}` pair;
+//! `finish` drains the final pair before cache flush / grid synchronization.
+template <typename AtomicSpillOp>
+struct rle_spill
+{
+  static constexpr bool is_private              = AtomicSpillOp::is_private;
+  static constexpr bool defer_until_reconverged = false;
+
+  template <typename CounterT, typename OutputCounterT>
+  using target_type = typename AtomicSpillOp::template target_type<CounterT, OutputCounterT>;
+
+  template <typename CounterT>
+  struct state
+  {
+    int pending_bin        = -1;
+    CounterT pending_count = CounterT{0};
+  };
+
+  template <typename CounterT, typename SpillCounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void finish(state<CounterT>& pending, SpillCounterT* target)
+  {
+    if (pending.pending_bin >= 0)
+    {
+      AtomicSpillOp::direct_spill(target, pending.pending_bin, pending.pending_count);
+      pending.pending_bin   = -1;
+      pending.pending_count = CounterT{0};
+    }
+  }
+
+  template <typename CounterT, typename SpillCounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  spill(state<CounterT>& pending, SpillCounterT* target, int bin, ContributionT contribution)
+  {
+    if (bin < 0)
+    {
+      return;
+    }
+    if (pending.pending_bin == bin)
+    {
+      pending.pending_count += static_cast<CounterT>(contribution);
+      return;
+    }
+    finish(pending, target);
+    pending.pending_bin   = bin;
+    pending.pending_count = static_cast<CounterT>(contribution);
+  }
+
+  template <typename SpillCounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void direct_spill(SpillCounterT* target, int bin, ContributionT contribution)
+  {
+    AtomicSpillOp::direct_spill(target, bin, contribution);
+  }
+};
+
+//! Handle a probe miss immediately for scalar spill policies, or leave it for
+//! the caller to process after reconvergence when the spill policy contains a
+//! warp collective. The compile-time scalar path preserves the original cache
+//! hit/miss control flow; only a coalesced-spill specialization pays for the
+//! deferred miss result.
+template <typename SpillOp, typename CounterT, typename SpillCounterT, typename ContributionT>
+static _CCCL_DEVICE _CCCL_FORCEINLINE bool probe_miss(
+  typename SpillOp::template state<CounterT>& spill_state, SpillCounterT* target, int bin, ContributionT contribution)
+{
+  if constexpr (!SpillOp::defer_until_reconverged)
+  {
+    SpillOp::spill(spill_state, target, bin, contribution);
+  }
+  return true;
+}
 
 //! 2-hash cuckoo cache update: on a primary-slot collision, try a secondary slot
 //! before spilling. `DisableSecondProbe` compiles the secondary probe out for the
 //! very-high-bin tier (hit rate ~0, so the second key read is pure waste).
 //!
-//! `SpillOp` (defaulted to output_atomic_spill, keeping every existing caller
-//! byte-identical) selects where a miss deposits its contribution: the shared
-//! output (device-scope) or this block's private slab (block-scope). `output` is
-//! whichever per-channel base the kernel passes for that spill policy.
+//! Returns false when the cache absorbs the contribution and true on a miss.
+//! Scalar SpillOps handle the miss in place. A SpillOp containing a warp
+//! collective defers it until the caller reconverges the divergent probe paths.
 template <bool DisableSecondProbe = false>
 struct cuckoo_cache_probe
 {
-  template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys,
-        CounterT* counts,
-        SpillCounterT* output,
-        int bin,
-        CounterT contribution,
-        int cache_mask,
-        int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
+  template <typename CounterT, typename SpillOp, typename SpillCounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool apply(
+    int* keys,
+    CounterT* counts,
+    typename SpillOp::template state<CounterT>& spill_state,
+    SpillCounterT* spill_target,
+    int bin,
+    CounterT contribution,
+    int cache_mask,
+    int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
     const unsigned int hash1 = static_cast<unsigned int>(bin) * cache_primary_hash_multiplier;
     const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
@@ -2094,6 +2265,7 @@ struct cuckoo_cache_probe
       // Primary hit: bump cache count.
       atomicAdd_block(&counts[slot1], contribution);
       CUB_HISTO_HIT(contribution);
+      return false;
     }
     else if (existing_key1 == -1)
     {
@@ -2103,12 +2275,13 @@ struct cuckoo_cache_probe
       {
         atomicAdd_block(&counts[slot1], contribution);
         CUB_HISTO_HIT(contribution);
+        return false;
       }
       else if constexpr (DisableSecondProbe)
       {
         // High-bin tier: no secondary probe -- spill.
-        SpillOp::spill(output, bin, contribution);
         CUB_HISTO_MISS(contribution);
+        return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
       }
       else
       {
@@ -2120,6 +2293,7 @@ struct cuckoo_cache_probe
         {
           atomicAdd_block(&counts[slot2], contribution);
           CUB_HISTO_HIT(contribution);
+          return false;
         }
         else if (existing_key2 == -1)
         {
@@ -2128,17 +2302,18 @@ struct cuckoo_cache_probe
           {
             atomicAdd_block(&counts[slot2], contribution);
             CUB_HISTO_HIT(contribution);
+            return false;
           }
           else
           {
-            SpillOp::spill(output, bin, contribution);
             CUB_HISTO_MISS(contribution);
+            return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
           }
         }
         else
         {
-          SpillOp::spill(output, bin, contribution);
           CUB_HISTO_MISS(contribution);
+          return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
         }
       }
     }
@@ -2146,8 +2321,8 @@ struct cuckoo_cache_probe
     {
       // High-bin tier: primary occupied by a different bin -> spill without a
       // secondary probe.
-      SpillOp::spill(output, bin, contribution);
       CUB_HISTO_MISS(contribution);
+      return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
     }
     else
     {
@@ -2159,6 +2334,7 @@ struct cuckoo_cache_probe
       {
         atomicAdd_block(&counts[slot2], contribution);
         CUB_HISTO_HIT(contribution);
+        return false;
       }
       else if (existing_key2 == -1)
       {
@@ -2167,17 +2343,18 @@ struct cuckoo_cache_probe
         {
           atomicAdd_block(&counts[slot2], contribution);
           CUB_HISTO_HIT(contribution);
+          return false;
         }
         else
         {
-          SpillOp::spill(output, bin, contribution);
           CUB_HISTO_MISS(contribution);
+          return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
         }
       }
       else
       {
-        SpillOp::spill(output, bin, contribution);
         CUB_HISTO_MISS(contribution);
+        return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
       }
     }
   }
@@ -2188,15 +2365,16 @@ struct cuckoo_cache_probe
 //! counts where the cache holds almost nothing.
 struct single_probe_cache
 {
-  template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys,
-        CounterT* counts,
-        SpillCounterT* output,
-        int bin,
-        CounterT contribution,
-        int cache_mask,
-        int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
+  template <typename CounterT, typename SpillOp, typename SpillCounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool apply(
+    int* keys,
+    CounterT* counts,
+    typename SpillOp::template state<CounterT>& spill_state,
+    SpillCounterT* spill_target,
+    int bin,
+    CounterT contribution,
+    int cache_mask,
+    int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
     const unsigned int hash = static_cast<unsigned int>(bin) * cache_primary_hash_multiplier;
     if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
@@ -2209,6 +2387,7 @@ struct single_probe_cache
         // Hit: bump cache count (block-scope atomic, ~10x cheaper).
         atomicAdd_block(&counts[slot], contribution);
         CUB_HISTO_HIT(contribution);
+        return false;
       }
       else if (existing_key == -1)
       {
@@ -2218,19 +2397,20 @@ struct single_probe_cache
         {
           atomicAdd_block(&counts[slot], contribution);
           CUB_HISTO_HIT(contribution);
+          return false;
         }
         else
         {
           // Lost the claim race to a different bin: spill.
-          SpillOp::spill(output, bin, contribution);
           CUB_HISTO_MISS(contribution);
+          return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
         }
       }
       else
       {
         // Collision (slot owned by another bin): single spill.
-        SpillOp::spill(output, bin, contribution);
         CUB_HISTO_MISS(contribution);
+        return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
       }
     }
     else
@@ -2279,9 +2459,10 @@ struct single_probe_cache
       {
         // All ways occupied by other live bins (or every empty way lost its CAS
         // race): single spill. Correctness: contribution added once.
-        SpillOp::spill(output, bin, contribution);
         CUB_HISTO_MISS(contribution);
+        return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
       }
+      return false;
     }
   }
 };
@@ -2298,22 +2479,23 @@ struct single_probe_cache
 //! cooperative no-cache / private-spill GMEM-privatized specialization.
 struct no_cache_probe
 {
-  template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys,
-        CounterT* counts,
-        SpillCounterT* output,
-        int bin,
-        CounterT contribution,
-        int cache_mask,
-        int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
+  template <typename CounterT, typename SpillOp, typename SpillCounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool apply(
+    int* keys,
+    CounterT* counts,
+    typename SpillOp::template state<CounterT>& spill_state,
+    SpillCounterT* spill_target,
+    int bin,
+    CounterT contribution,
+    int cache_mask,
+    int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
     (void) keys;
     (void) counts;
     (void) cache_mask;
     (void) cache_slot_log2;
-    SpillOp::spill(output, bin, contribution);
     CUB_HISTO_MISS(contribution);
+    return probe_miss<SpillOp>(spill_state, spill_target, bin, contribution);
   }
 };
 
@@ -2378,7 +2560,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     _CCCL_GRID_CONSTANT const OffsetT num_rows,
     _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
     _CCCL_GRID_CONSTANT const int cache_slots_per_channel,
-    // Private-spill variant only (SpillOp == private_block_spill): per-channel
+    // Private-spill variant only (`SpillOp::is_private`): per-channel
     // base of the ALL-BLOCKS private histogram slab; this block owns the slice
     // [block_id * num_bins, (block_id+1) * num_bins). Unused (and may be empty
     // null pointers) for the default output-spill variant.
@@ -2394,7 +2576,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // gather then sums the per-block slabs into the output. Boundedness note: a
   // cache miss can hit ANY bin, so each block's slab must be full-size
   // (num_bins), giving a num_blocks * num_bins footprint (see design doc).
-  constexpr bool kPrivateSpill   = ::cuda::std::is_same_v<SpillOp, private_block_spill>;
+  constexpr bool kPrivateSpill   = SpillOp::is_private;
   constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
   using SpillCounterT            = typename SpillOp::template target_type<CounterT, OutputCounterT>;
 
@@ -2414,6 +2596,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // private slab slice (base + block_id * num_bins). Hoisted once; the hot-path
   // probe and the flush both spill through it.
   SpillCounterT* spill_target[NumActiveChannels];
+  typename SpillOp::template state<CounterT> spill_state[NumActiveChannels]{};
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
@@ -2552,19 +2735,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // the replica index is always 0 and the count layout is byte-for-byte
   // identical to an unreplicated cache.
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
-  // Warp-coalesce is a PER-KERNEL decision, not a single global flag. Measured on B200
-  // with 32-bit counters (run_2026-06-15_coalesce, I32+F64 samples, 14 shapes): the
-  // __match_any_sync pre-merge HELPS the no-cache probe (no SMEM cache to absorb per-lane
-  // atomics, so lane-merging is the only contention relief: off/on 0.17-0.70x) but HURTS
-  // the cuckoo / single-probe caches (off/on 1.41-1.50x). That result does not transfer to
-  // wider counters: on SM100, ptxas lowers an unused-result shared u32 increment to the
-  // warp-combining ATOMS.POPC.INC.32 instruction, whereas a shared u64 add becomes a
-  // contended ATOMS.CAST.SPIN.64 retry loop. The cached wide-counter path therefore needs
-  // the explicit pre-merge that the u32 instruction supplies in hardware. Compile-time
-  // (zero runtime branch), still AND-ed with the policy flag so
-  // CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
-  constexpr bool kWarpCoalesce =
-    (kProbeIsNoCache || sizeof(CounterT) > sizeof(unsigned int)) && current_policy<PolicySelector>().warp_coalesce;
+  // Spill combining is owned by SpillOp. The only remaining pre-probe combining
+  // is the cached wide-local-counter compatibility path: SM100 lowers shared u32
+  // increments to the warp-combining ATOMS.POPC.INC.32 instruction, but shared
+  // u64 adds use a contended retry loop. Moving that cached-update concern into a
+  // ProbeOp decorator is intentionally separate future work.
+  constexpr bool kCoalesceBeforeProbe =
+    !kProbeIsNoCache && sizeof(CounterT) > sizeof(unsigned int) && current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask = kProbeIsNoCache ? 0 : cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
@@ -2664,32 +2841,46 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // loads in registers across the unrolled chunk).
     using SampleValueT = it_value_t<SampleIteratorT>;
 
-    // Single-source the leader's warp-coalesce + cache update so the pipelined
+    // Single-source the optional wide-counter pre-probe combine, cache update,
+    // and spill policy so the pipelined
     // (single-channel) and interleaved (multi-channel) loops below share
     // identical probe logic. The cache update itself is the pluggable `ProbeOp`
     // (cuckoo_cache_probe<> or single_probe_cache), called per (bin,
     // contribution); the kernel holds no probe-specific branches.
     auto probe = [&](int ch, int bin) {
-      // The cache update for one (bin, contribution). Factored so the
-      // warp_coalesce knob can drive it once per peer group (leader) or once per
-      // valid lane without duplicating the body.
+      // Scalar spill policies execute directly in the miss branch, preserving
+      // the cache hit path. A policy containing a warp collective defers the
+      // miss until all probe branches have reconverged; cache hits then pass
+      // bin=-1 so every lane participates in the collective safely.
       auto update = [&](int bin, CounterT contribution) {
-        ProbeOp::template apply<CounterT, SpillOp, SpillCounterT>(
-          s_cache_keys[ch],
-          s_cache_counts[ch],
-          spill_target[ch],
-          bin,
-          contribution,
-          cache_mask,
-          cache_slot_log2 CUB_HISTO_HITRATE_ARGS);
+        if constexpr (SpillOp::defer_until_reconverged)
+        {
+          const bool should_spill = ProbeOp::template apply<CounterT, SpillOp, SpillCounterT>(
+            s_cache_keys[ch],
+            s_cache_counts[ch],
+            spill_state[ch],
+            spill_target[ch],
+            bin,
+            contribution,
+            cache_mask,
+            cache_slot_log2 CUB_HISTO_HITRATE_ARGS);
+          SpillOp::spill(spill_state[ch], spill_target[ch], should_spill ? bin : -1, contribution);
+        }
+        else
+        {
+          (void) ProbeOp::template apply<CounterT, SpillOp, SpillCounterT>(
+            s_cache_keys[ch],
+            s_cache_counts[ch],
+            spill_state[ch],
+            spill_target[ch],
+            bin,
+            contribution,
+            cache_mask,
+            cache_slot_log2 CUB_HISTO_HITRATE_ARGS);
+        }
       };
 
-      // Warp-coalesce same-bin lanes into one cache update (gated by the
-      // warp_coalesce policy knob; on by default). When on, the lowest matching
-      // lane applies the popcount-summed contribution; when off, every valid
-      // lane applies 1. The inline form below keeps the on-path codegen
-      // byte-identical to the hand-tuned kernel (this kernel is register-pinned).
-      if constexpr (kWarpCoalesce)
+      if constexpr (kCoalesceBeforeProbe)
       {
         const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
         const int leader         = __ffs(static_cast<int>(peers)) - 1;
@@ -2893,6 +3084,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       }
     }
 
+    // Drain any per-thread spill-path state before the cache flush barrier. Cache
+    // entries themselves are already aggregated and are written directly through
+    // the underlying atomic target; applying miss-only coalescing/RLE to that
+    // one-thread-per-slot phase would add work without finding runs or peer groups.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      SpillOp::finish(spill_state[ch], spill_target[ch]);
+    }
+
     // After the sweep, flush every cache slot to the spill target (shared output
     // for output-spill; this block's private slab for private-spill). Each slot's
     // total is the sum of its `kCountReplicas` replicas. The block barrier ensures
@@ -2920,7 +3121,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             }
             if (cnt > CounterT{0})
             {
-              SpillOp::spill(spill_target[ch], key, cnt);
+              SpillOp::direct_spill(spill_target[ch], key, cnt);
             }
           }
         }
@@ -2930,7 +3131,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   else
   {
     // Slow path: row-strided input that is not flattenable to a single
-    // linear array. No coalescing here since it's the rare path.
+    // linear array. It bypasses the cache, but still uses the selected spill
+    // policy over the currently active lanes.
     for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
          pixel += static_cast<OffsetT>(total_threads))
     {
@@ -2952,11 +3154,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
           decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
         }
         const int num_bins = num_output_bins_wrapper[ch];
-        if (bin >= 0 && bin < num_bins)
-        {
-          SpillOp::spill(spill_target[ch], bin, CounterT{1});
-        }
+        SpillOp::spill(spill_state[ch], spill_target[ch], (bin >= 0 && bin < num_bins) ? bin : -1, CounterT{1});
       }
+    }
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      SpillOp::finish(spill_state[ch], spill_target[ch]);
     }
   }
 

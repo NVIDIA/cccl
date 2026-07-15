@@ -16,11 +16,10 @@ per shape, three panels each:
      with their real index (so e.g. `concentrated:0.0`'s hot bin reads as
      "bin 42", which is `seed % num_bins` -- deliberately scattered off zero --
      not "empty at zero").
-  2. rank-frequency       -- sorted count vs rank, log-log. Scale-free: a
-     power law is a straight line, while a single hot bin is one
-     point above an empty floor, hash_synonym a few high points over a flat
-     plateau. This panel reveals the distribution's shape regardless of bin
-     count, so it never "looks empty".
+  2. rank-frequency       -- sorted count vs rank, with a zero-based linear
+     count axis. A filled stair for every occupied rank keeps even a single hot
+     bin visible, while the logarithmic value-distribution panel retains the
+     detail in low-frequency tails.
   3. position of values   -- bin index vs position in the input sequence
      (subsampled). i.i.d. shapes smear vertically over their occupied bins;
      ORDERING shapes show their structure here (temporal_phases steps,
@@ -103,6 +102,15 @@ CHAR_N = 1_000_000
 CHAR_SEQ_SAMPLES = 4000
 CHAR_SEED = 42
 
+# Representative launch used by these single-channel EVEN characterizations on
+# B200.  This is the launch shape that the adversarial schedules are designed
+# around: 148 SMs x 2 resident CTAs = 296 blocks, with the SM100 EVEN policy's
+# 768-thread direct/cache-spill block.  In particular, poison's claim prefix is
+# sized to cover every block's first grid-stride accesses.  The position overlay
+# must model this launch rather than inventing a small illustrative grid.
+CHAR_GRID_BLOCKS = 296
+CHAR_BLOCK_THREADS = 768
+
 # Bin count is PER SHAPE, drawn at the shape's natural scale (the original design
 # figures did the same). Two reasons it must not be one global value:
 #  * the i.i.d. distribution shapes put their hot bin at seed % num_bins (= 42).
@@ -140,6 +148,7 @@ def fmt_bins(b: int) -> str:
 DIST_COLOR = "#2b8cbe"
 RANK_COLOR = "#6a51a3"
 SEQ_COLOR = "#cb181d"
+BLOCK_STRIDE_COLOR = "#2171b5"
 
 
 def fmt_int(v: int) -> str:
@@ -212,22 +221,31 @@ def draw_distribution(ax, counts, num_bins):
 
 
 def draw_rankfreq(ax, counts):
-    """Sorted count vs rank, log-log. Scale-free view of the distribution shape."""
+    """Sorted count vs rank on a zero-based linear count axis.
+
+    A filled stair rather than a point/line plot is intentional: for a
+    single-valued input there is only one occupied rank, and a lone marker is
+    nearly invisible in the combined catalog. Giving every rank a unit-width
+    interval makes that singleton distribution unambiguously visible.
+    """
     c = np.sort(counts[counts > 0])[::-1]
     if c.size == 0:
         ax.text(
             0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes
         )
+        ax.set_ylim(bottom=0)
         return
-    ranks = np.arange(1, c.size + 1)
-    ax.loglog(ranks, c, marker=".", ms=4, lw=1.1, color=RANK_COLOR)
+    rank_edges = np.arange(0.5, c.size + 1.5)
+    ax.stairs(c, rank_edges, fill=True, color=RANK_COLOR, alpha=0.8, linewidth=1.0)
     ax.set_title(
-        f"rank-frequency (sorted count vs rank, log-log) — {c.size} occupied bins",
+        f"rank-frequency (sorted count vs rank) — {c.size} occupied bins",
         fontsize=10,
     )
     ax.set_xlabel("rank (hottest = 1)")
     ax.set_ylabel("count")
-    ax.grid(True, which="both", linestyle=":", alpha=0.45)
+    ax.set_xlim(0.5, max(1.5, c.size + 0.5))
+    ax.set_ylim(0, max(1, int(c[0])) * 1.05)
+    ax.grid(axis="y", linestyle=":", alpha=0.45)
 
 
 # Shapes whose interesting sequence structure lives at the WHOLE-sequence scale
@@ -242,8 +260,81 @@ def draw_rankfreq(ax, counts):
 _FULL_RANGE_SEQ_SHAPES = {"hash_synonym", "poison", "temporal_phases"}
 
 
-def draw_sequence(ax, bins, num_bins, shape=None):
-    """bin index vs position in the input sequence."""
+def block_stride_spans(
+    sequence_start,
+    sequence_stop,
+    grid_blocks=CHAR_GRID_BLOCKS,
+    block_threads=CHAR_BLOCK_THREADS,
+    block_index=0,
+):
+    """Return the displayed positions visited by one grid-striding block.
+
+    In the cache-spill kernel, block ``b`` visits the contiguous span
+    ``[b*block_threads, (b+1)*block_threads)`` and then repeats that span every
+    ``grid_blocks*block_threads`` input positions.  The kernel's four-way unroll
+    changes instruction grouping, not this sequence of spans.
+    """
+    if (
+        sequence_stop <= sequence_start
+        or grid_blocks <= 0
+        or block_threads <= 0
+        or block_index < 0
+        or block_index >= grid_blocks
+    ):
+        return []
+
+    grid_stride = grid_blocks * block_threads
+    first_start = block_index * block_threads
+    iteration = max(0, (sequence_start - first_start) // grid_stride)
+    while first_start + iteration * grid_stride + block_threads <= sequence_start:
+        iteration += 1
+
+    spans = []
+    start = first_start + iteration * grid_stride
+    while start < sequence_stop:
+        spans.append(
+            (max(sequence_start, start), min(sequence_stop, start + block_threads))
+        )
+        iteration += 1
+        start = first_start + iteration * grid_stride
+    return spans
+
+
+def draw_block_stride_overlay(
+    ax,
+    sequence_start,
+    sequence_stop,
+    grid_blocks=CHAR_GRID_BLOCKS,
+    block_threads=CHAR_BLOCK_THREADS,
+):
+    """Shade block 0's grid-strided tiles directly over the sequence data.
+
+    ``axvspan`` takes x coordinates in data space and y coordinates in axes space,
+    so every rectangle aligns with real input positions while covering the full
+    height of the bin-index axis. The translucent patches are deliberately drawn
+    over the scatter points; there is no detached schematic or legend-like box.
+    """
+    for start, stop in block_stride_spans(
+        sequence_start,
+        sequence_stop,
+        grid_blocks=grid_blocks,
+        block_threads=block_threads,
+    ):
+        ax.axvspan(
+            start,
+            stop,
+            ymin=0,
+            ymax=1,
+            facecolor=BLOCK_STRIDE_COLOR,
+            edgecolor=BLOCK_STRIDE_COLOR,
+            linewidth=0.6,
+            alpha=0.16,
+            zorder=3,
+        )
+
+
+def draw_sequence(ax, bins, num_bins, shape=None, show_block_stride=True):
+    """bin index vs position in the input sequence, plus block-stride context."""
     n = len(bins)
     full_range = shape is not None and shape.split(":")[0] in _FULL_RANGE_SEQ_SHAPES
     if full_range:
@@ -257,12 +348,30 @@ def draw_sequence(ax, bins, num_bins, shape=None):
         w = min(n, CHAR_SEQ_SAMPLES)
         idx = np.arange(w)  # contiguous prefix — never aliases periodic shapes
         xlabel = f"position in input sequence (first {w:,})"
-    ax.scatter(idx, bins[idx], s=5, alpha=0.45, color=SEQ_COLOR, edgecolors="none")
+    sequence_start = 0
+    sequence_stop = n if full_range else w
+    ax.scatter(
+        idx,
+        bins[idx],
+        s=5,
+        alpha=0.45,
+        color=SEQ_COLOR,
+        edgecolors="none",
+        zorder=2,
+    )
     ax.set_title("position of values (bin index vs position in sequence)", fontsize=10)
+    if show_block_stride:
+        xlabel += (
+            f"\nblue bands: block 0 input spans "
+            f"({CHAR_GRID_BLOCKS} blocks × {CHAR_BLOCK_THREADS} threads)"
+        )
     ax.set_xlabel(xlabel)
     ax.set_ylabel("bin index")
+    ax.set_xlim(sequence_start, sequence_stop)
     ax.set_ylim(-num_bins * 0.02, num_bins * 1.02)
     ax.grid(axis="y", linestyle=":", alpha=0.4)
+    if show_block_stride:
+        draw_block_stride_overlay(ax, sequence_start, sequence_stop)
 
 
 # ---------------------------------------------------------------------------

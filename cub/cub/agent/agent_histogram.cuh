@@ -28,6 +28,7 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>
 
@@ -49,6 +50,25 @@ enum BlockHistogramMemoryPreference
 
 namespace detail::histogram
 {
+//! CUDA's legacy 64-bit integer atomicAdd overload is spelled in terms of
+//! `unsigned long long`, while `uint64_t` aliases `unsigned long` on LP64 hosts.
+//! Histogram counters are non-negative integral values, so route every 8-byte
+//! integral counter through the native unsigned 64-bit overload. This keeps the
+//! public/output counter type fixed-width without changing the stored bits or
+//! the generated device instruction.
+template <typename CounterT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void histogram_atomic_add(CounterT* address, CounterT value)
+{
+  if constexpr (::cuda::std::is_integral_v<CounterT> && sizeof(CounterT) == sizeof(unsigned long long))
+  {
+    atomicAdd(reinterpret_cast<unsigned long long*>(address), static_cast<unsigned long long>(value));
+  }
+  else
+  {
+    atomicAdd(address, value);
+  }
+}
+
 // Warp-level same-bin coalescing for atomic accumulation.
 //
 // When several lanes of a warp classify a sample into the same bin, folding
@@ -418,7 +438,7 @@ struct AgentHistogram
 
         if (output_bin >= 0)
         {
-          atomicAdd(&d_output_histograms[ch][output_bin], static_cast<OutputCounterT>(count));
+          histogram_atomic_add(&d_output_histograms[ch][output_bin], static_cast<OutputCounterT>(count));
         }
       }
     }
