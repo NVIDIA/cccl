@@ -15,7 +15,7 @@ Defined in the ``<cuda/bit>`` header.
 
    } // namespace cuda
 
-The function returns the zero-based index of the most significant set bit of ``value`` (that is, :math:`\lfloor \log_2 value \rfloor`), or ``-1`` if ``value`` is zero. It is the most-significant counterpart to :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>` (find first set).
+The function returns the zero-based index of the most significant set bit of ``value`` (that is, :math:`\lfloor \log_2 value \rfloor`), or ``-1`` if ``value`` is zero. It is the most-significant counterpart to ``cuda::bit_ffs`` (find first set).
 
 **Parameters**
 
