@@ -123,7 +123,6 @@ vector_base<T, Alloc>::vector_base(size_type n, const value_type& value, const A
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-template <typename T2>
 vector_base<T, Alloc>::vector_base(size_type n, default_init_t, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
