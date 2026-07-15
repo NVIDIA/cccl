@@ -33,11 +33,10 @@ TEST_FUNC constexpr bool test_constructibility()
   static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, volatile int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, const volatile int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<const int, Extent>, volatile int*, size_t>::value);
-  static_assert(!cuda::std::is_constructible<cuda::std::span<const int, Extent>, const volatile int*, size_t>::value,
-                "");
+  static_assert(!cuda::std::is_constructible<cuda::std::span<const int, Extent>, const volatile int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<volatile int, Extent>, const int*, size_t>::value);
-  static_assert(!cuda::std::is_constructible<cuda::std::span<volatile int, Extent>, const volatile int*, size_t>::value,
-                "");
+  static_assert(
+    !cuda::std::is_constructible<cuda::std::span<volatile int, Extent>, const volatile int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, double*, size_t>::value); // iterator
                                                                                                      // type differs
                                                                                                      // from span

@@ -33,9 +33,8 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
   MDS m(cuda::std::move(m_org));
   static_assert(
     cuda::std::is_trivially_move_constructible<MDS>::value
-      == (cuda::std::is_trivially_move_constructible<H>::value && cuda::std::is_trivially_move_constructible<M>::value
-          && cuda::std::is_trivially_move_constructible<A>::value),
-    "");
+    == (cuda::std::is_trivially_move_constructible<H>::value && cuda::std::is_trivially_move_constructible<M>::value
+        && cuda::std::is_trivially_move_constructible<A>::value));
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
   test_equality_mapping(m, map);
@@ -59,14 +58,12 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially copyable mapping
   static_assert(cuda::std::is_trivially_move_constructible<
-                  typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>::value,
-                "");
+                typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>::value);
   mixin_extents(handle, cuda::std::layout_left(), acc);
   mixin_extents(handle, cuda::std::layout_right(), acc);
   // make sure we test a not trivially copyable mapping
   static_assert(!cuda::std::is_trivially_move_constructible<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>::value,
-                "");
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>::value);
   mixin_extents(handle, layout_wrapping_integral<4>(), acc);
 }
 
@@ -77,7 +74,7 @@ TEST_FUNC constexpr void mixin_accessor()
   // make sure we test trivially constructible accessor and data_handle
   static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
-    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
+    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value);
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
 }
 
@@ -88,7 +85,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // make sure we test trivially constructible accessor and data_handle
   static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
-    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
+    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value);
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 

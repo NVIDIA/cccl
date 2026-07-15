@@ -35,7 +35,7 @@ namespace cuda::experimental::places
 class exec_place_cuda_stream_impl : public exec_place::impl
 {
 public:
-  exec_place_cuda_stream_impl(const decorated_stream& dstream)
+  exec_place_cuda_stream_impl(const augmented_stream& dstream)
       : exec_place::impl(data_place::device(dstream.dev_id))
       , dstream_(dstream)
       , dummy_pool_(dstream)
@@ -92,7 +92,7 @@ public:
   }
 
 private:
-  decorated_stream dstream_;
+  augmented_stream dstream_;
   mutable stream_pool dummy_pool_;
 };
 
@@ -100,10 +100,10 @@ inline exec_place exec_place::cuda_stream(cudaStream_t stream)
 {
   int devid = get_device_from_stream(stream);
   return exec_place{
-    ::std::make_shared<exec_place_cuda_stream_impl>(decorated_stream(stream, get_stream_id(stream), devid))};
+    ::std::make_shared<exec_place_cuda_stream_impl>(augmented_stream(stream, get_stream_id(stream), devid))};
 }
 
-inline exec_place exec_place::cuda_stream(const decorated_stream& dstream)
+inline exec_place exec_place::cuda_stream(const augmented_stream& dstream)
 {
   return exec_place{::std::make_shared<exec_place_cuda_stream_impl>(dstream)};
 }

@@ -528,10 +528,7 @@ struct block_size_extracting_op
   template <typename... Ts>
   __device__ auto operator()(Ts&&... args) const -> decltype(InnerOp{}(::cuda::std::forward<Ts>(args)...))
   {
-    if (threadIdx.x == 0)
-    {
-      atomicMax(ptr, blockDim.x);
-    }
+    atomicMax(ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return InnerOp{}(::cuda::std::forward<Ts>(args)...);
   }
 };
@@ -557,19 +554,13 @@ struct block_size_extracting_constant_iterator
 
   __device__ reference operator[](difference_type) const
   {
-    if (threadIdx.x == 0)
-    {
-      atomicMax(block_size_ptr, blockDim.x);
-    }
+    atomicMax(block_size_ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return value;
   }
 
   __device__ reference operator*() const
   {
-    if (threadIdx.x == 0)
-    {
-      atomicMax(block_size_ptr, blockDim.x);
-    }
+    atomicMax(block_size_ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return value;
   }
 

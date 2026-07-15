@@ -43,12 +43,12 @@ struct AgentBlockSort
 
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  static constexpr merge_sort_policy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS        = policy.threads_per_block;
-  static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
-  static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
+  static constexpr MergeSortPolicy policy = PolicyGetter{}();
+  static constexpr int BLOCK_THREADS      = policy.threads_per_block;
+  static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
+  static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT>;
+  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
   using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
   using ItemsLoadIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueInputIteratorT>;
@@ -378,10 +378,10 @@ struct AgentMerge
 
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  static constexpr merge_sort_policy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS        = policy.threads_per_block;
-  static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
-  static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
+  static constexpr MergeSortPolicy policy = PolicyGetter{}();
+  static constexpr int BLOCK_THREADS      = policy.threads_per_block;
+  static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
+  static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
   using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;
@@ -412,8 +412,8 @@ struct AgentMerge
     typename BlockStoreKeysPong::TempStorage store_keys_pong;
     typename BlockStoreItemsPong::TempStorage store_items_pong;
 
-    KeyT keys_shared[policy.items_per_tile() + 1];
-    ValueT items_shared[policy.items_per_tile() + 1];
+    KeyT keys_shared[ITEMS_PER_TILE + 1];
+    ValueT items_shared[ITEMS_PER_TILE + 1];
   };
 
   /// Alias wrapper allowing storage to be unioned
@@ -555,7 +555,7 @@ struct AgentMerge
     //
     int indices[ITEMS_PER_THREAD];
 
-    SerialMerge(
+    detail::serial_merge<policy.unroll>(
       &storage.keys_shared[0],
       keys1_beg_local,
       keys2_beg_local + num_keys1,

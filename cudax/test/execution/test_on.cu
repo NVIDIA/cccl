@@ -28,14 +28,14 @@ void simple_start_on_thread_test()
   ex::thread_context ctx;
   auto sch  = ctx.get_scheduler();
   auto sndr = ex::on(sch, ex::just() | ex::then([] {
-                            CUDAX_CHECK(::std::this_thread::get_id() != main_thread_id);
+                            CHECK(::std::this_thread::get_id() != main_thread_id);
                           }))
             | ex::then([]() -> int {
-                CUDAX_CHECK(::std::this_thread::get_id() == main_thread_id);
+                CHECK(::std::this_thread::get_id() == main_thread_id);
                 return 42;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 void simple_continue_on_thread_test()
@@ -43,14 +43,14 @@ void simple_continue_on_thread_test()
   ex::thread_context ctx;
   auto sch  = ctx.get_scheduler();
   auto sndr = ex::just() | ex::on(sch, ex::then([] {
-                                    CUDAX_CHECK(::std::this_thread::get_id() != main_thread_id);
+                                    CHECK(::std::this_thread::get_id() != main_thread_id);
                                   }))
             | ex::then([]() -> int {
-                CUDAX_CHECK(::std::this_thread::get_id() == main_thread_id);
+                CHECK(::std::this_thread::get_id() == main_thread_id);
                 return 42;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 void simple_start_on_stream_test()
@@ -64,7 +64,7 @@ void simple_start_on_stream_test()
                 return _on_device() ? -1 : i;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 void simple_continue_on_stream_test()
@@ -78,7 +78,7 @@ void simple_continue_on_stream_test()
                 return _on_device() ? -1 : i;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 void test_continues_on_updates_env()
@@ -93,7 +93,7 @@ void test_continues_on_updates_env()
                 return 42;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 namespace

@@ -66,7 +66,7 @@ C2H_TEST("write_env updates the receiver's environment", "[write_env][adaptors]"
             | ex::write_env(ex::prop{query1, 42});
 
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 struct fake_allocator
@@ -93,6 +93,6 @@ C2H_TEST("write_env prefers the passed env over the receiver's env", "[write_env
 
   auto env      = ex::prop{query1, 100};
   auto [result] = ex::sync_wait(std::move(sndr), env).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 #endif // _CCCL_HOST_COMPILATION()

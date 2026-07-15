@@ -83,7 +83,7 @@ __cccl_strncpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_
   _CharT* __dst_it = __dst;
   while (__n--)
   {
-    if ((*__dst_it++ = *__src++) == _CharT('\0'))
+    if ((*__dst_it++ = *__src++) == _CharT('\0')) // NOLINT(bugprone-assignment-in-if-condition)
     {
       while (__n--)
       {

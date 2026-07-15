@@ -30,16 +30,6 @@ namespace cuda::experimental::execution
 namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
 namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-alias-decls
 
-#define CUDART(call) REQUIRE((call) == cudaSuccess)
-
-#define CUDAX_REQUIRE(condition) REQUIRE(condition)
-
-#define CUDAX_CHECK(condition) CHECK(condition)
-
-#define CUDAX_FAIL(message) FAIL(message)
-
-#define CUDAX_CHECK_FALSE(condition) CHECK_FALSE(condition)
-
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
@@ -101,7 +91,7 @@ struct ccclrt_test_fixture
   }
   ~ccclrt_test_fixture()
   {
-    CUDAX_CHECK(count_driver_stack() == 0);
+    CHECK(count_driver_stack() == 0);
   }
 };
 } // namespace test
@@ -110,7 +100,7 @@ struct ccclrt_test_fixture
 // Test macro that should be used in all cccl-rt tests
 // It first empties the driver stack in case some other test has left it non-empty
 // and then runs the test. At the end it checks if it remained empty, which ensures
-// we don't accidentally initialize device 0 through CUDART usage and makes sure
+// we don't accidentally initialize device 0 through REQUIRE_CUDART usage and makes sure
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 

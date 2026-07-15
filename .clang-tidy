@@ -29,6 +29,13 @@ Checks:
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
   - 'clang-diagnostic-*'
+  - 'bugprone-*'
+  - '-bugprone-exception-escape'
+  - '-bugprone-crtp-constructor-accessibility'
+  - '-bugprone-argument-comment'
+  # This is just noise
+  - '-bugprone-signed-char-misuse'
+  - '-bugprone-multi-level-implicit-pointer-conversion'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -173,6 +180,25 @@ Checks:
   #
   # So better left disabled.
   - '-bugprone-macro-parentheses'
+
+  # TODO: Enable for clang-tidy-22
+  - '-modernize-avoid-c-style-cast'
+  - '-bugprone-signed-bitwise'
+  - '-bugprone-std-namespace-modification'
+  - '-clang-diagnostic-deprecated-attributes'
+  - '-bugprone-throwing-static-initialization'
+  - '-bugprone-unchecked-string-to-number-conversion'
+  - '-bugprone-invalid-enum-default-initialization'
+  - '-bugprone-derived-method-shadowing-base-method'
+  - '-bugprone-unsafe-to-allow-exceptions'
+  - '-bugprone-sizeof-expression'
+  - '-modernize-use-nullptr'
+  - '-bugprone-std-exception-baseclass'
+  - '-modernize-avoid-variadic-functions'
+  - '-modernize-type-traits'
+  - '-bugprone-random-generator-seed'
+  - '-bugprone-command-processor'
+
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
   # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on
@@ -182,7 +208,6 @@ Checks:
   - '-cppcoreguidelines-noexcept-move-operations'
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
-  # Covered by bugprone-narrowing-conversions
   - '-cppcoreguidelines-narrowing-conversions'
   # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'
@@ -245,7 +270,6 @@ CheckOptions:
   readability-simplify-boolean-expr.ChainedConditionalReturn: 'true'
   readability-simplify-boolean-expr.ChainedConditionalAssignment: 'true'
   bugprone-dangling-handle.HandleClasses: '::cuda::std::span;::cuda::std::mdspan'
-  bugprone-misplaced-widening-cast.CheckImplicitCasts: 'true'
   bugprone-unused-return-value.AllowCastToVoid: 'true'
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
@@ -297,4 +321,5 @@ CheckOptions:
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
   performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
   performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
+  bugprone-exception-escape.CheckMain: false
 ...

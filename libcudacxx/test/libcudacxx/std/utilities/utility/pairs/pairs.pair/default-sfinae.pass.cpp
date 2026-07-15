@@ -13,8 +13,6 @@
 // Test the SFINAE required by LWG Issue #2367.
 // is_default_constructible<pair>
 
-// UNSUPPORTED: msvc
-
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>

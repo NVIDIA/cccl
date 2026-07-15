@@ -23,6 +23,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
+
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct a_query_t
 {
 } a_query{};

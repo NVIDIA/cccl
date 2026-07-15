@@ -87,8 +87,10 @@ public:
   {
     if (last_partition)
     {
-      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
-      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+      user_num_selected_out_it[0] =
+        num_previously_selected_first() + num_selected_first; // NOLINT(bugprone-misplaced-widening-cast)
+      user_num_selected_out_it[1] =
+        num_previously_selected_second() + num_selected_second; // NOLINT(bugprone-misplaced-widening-cast)
     }
     else
     {
@@ -119,28 +121,28 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const FirstOutputIteratorT d_first_part_out,
-    _CCCL_GRID_CONSTANT const SecondOutputIteratorT d_second_part_out,
-    _CCCL_GRID_CONSTANT const UnselectedOutputIteratorT d_unselected_out,
-    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
+    const InputIteratorT d_in,
+    const FirstOutputIteratorT d_first_part_out,
+    const SecondOutputIteratorT d_second_part_out,
+    const UnselectedOutputIteratorT d_unselected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
   static constexpr auto active_policy = current_policy<PolicySelector>();
-  using AgentThreeWayPartitionPolicyT = AgentThreeWayPartitionPolicy<
+  using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
     active_policy.threads_per_block,
     active_policy.items_per_thread,
     active_policy.load_algorithm,
     active_policy.load_modifier,
-    active_policy.block_scan_algorithm,
-    delay_constructor_t<active_policy.delay_constructor.kind,
-                        active_policy.delay_constructor.delay,
-                        active_policy.delay_constructor.l2_write_latency>>;
+    active_policy.scan_algorithm,
+    delay_constructor_t<active_policy.lookback_delay.kind,
+                        active_policy.lookback_delay.delay,
+                        active_policy.lookback_delay.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<
@@ -195,9 +197,7 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
-  ScanTileStateT tile_state,
-  _CCCL_GRID_CONSTANT const int num_tiles,
-  _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
+  ScanTileStateT tile_state, const int num_tiles, const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

@@ -32,7 +32,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   using output_t       = cuda::std::conditional_t<(is_argmin || is_argmax), cuda::std::pair<int, T>, T>;
   using output_it_t    = output_t*;
   using accum_t        = output_t;
-  using init_t =
+  using init_value_t =
     cuda::std::conditional_t<(is_argmin || is_argmax), cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
   using offset_t          = OffsetT;
   using begin_offset_it_t = const offset_t*;
@@ -106,7 +106,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     d_begin_offsets,
     d_end_offsets,
     op_t{},
-    init_t{},
+    init_value_t{},
     guaranteed_max_seg_size,
     nullptr /* stream */);
 
@@ -123,7 +123,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
       d_begin_offsets,
       d_end_offsets,
       op_t{},
-      init_t{},
+      init_value_t{},
       guaranteed_max_seg_size,
       launch.get_stream());
   });

@@ -31,7 +31,6 @@
 #include <cuda/std/__simd/specializations/fixed_size_mask.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -120,7 +119,7 @@ public:
     return {};
   }
 
-  static constexpr integral_constant<__simd_size_type, __simd_size_v<__integer_from<_Bytes>, _Abi>> size{};
+  static constexpr __simd_size_constant<__simd_size_v<__integer_from<_Bytes>, _Abi>> size{};
 
   static constexpr auto __usize = size_t{size};
   static constexpr auto __size  = __simd_size_type{size};
@@ -353,14 +352,42 @@ public:
     return !__lhs && __rhs;
   }
 
-  // TODO(fbusato): [simd.mask.cond], basic_mask exposition only conditional operators
-  // friend constexpr basic_mask __simd_select_impl(
-  //   const basic_mask&, const basic_mask&, const basic_mask&) noexcept;
-  // friend constexpr basic_mask __simd_select_impl(
-  //   const basic_mask&, same_as<bool> auto, same_as<bool> auto) noexcept;
-  // template<class T0, class T1>
-  //   friend constexpr vec<see below, size()> __simd_select_impl(
-  //     const basic_mask&, const T0&, const T1&) noexcept;
+  // [simd.mask.cond], basic_mask exposition-only conditional operators
+
+  [[nodiscard]] _CCCL_API friend constexpr basic_mask
+  __simd_select_impl(const basic_mask& __mask, const basic_mask& __a, const basic_mask& __b) noexcept
+  {
+    basic_mask __result{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (__simd_size_type __i = 0; __i < __size; ++__i)
+    {
+      __result.__s_.__set(__i, (__mask[__i] ? __a[__i] : __b[__i]));
+    }
+    return __result;
+  }
+
+  _CCCL_TEMPLATE(typename _TpA, typename _TpB)
+  _CCCL_REQUIRES(same_as<_TpA, bool> _CCCL_AND same_as<_TpB, bool>)
+  [[nodiscard]] _CCCL_API friend constexpr basic_mask
+  __simd_select_impl(const basic_mask& __mask, const _TpA __a, const _TpB __b) noexcept
+  {
+    basic_mask __result{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (__simd_size_type __i = 0; __i < __size; ++__i)
+    {
+      __result.__s_.__set(__i, (__mask[__i] ? __a : __b));
+    }
+    return __result;
+  }
+
+  _CCCL_TEMPLATE(typename _TpA, typename _TpB)
+  _CCCL_REQUIRES(same_as<_TpA, _TpB> _CCCL_AND __is_vectorizable_v<_TpA> _CCCL_AND(sizeof(_TpA) == _Bytes))
+  [[nodiscard]] _CCCL_API friend constexpr vec<_TpA, __size>
+  __simd_select_impl(const basic_mask& __mask, const _TpA& __a, const _TpB& __b) noexcept
+  {
+    using _Vec = vec<_TpA, __size>;
+    return __simd_select_impl(__mask, _Vec{__a}, _Vec{__b});
+  }
 };
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 

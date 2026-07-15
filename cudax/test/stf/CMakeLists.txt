@@ -11,6 +11,7 @@ set(
   cpp/test_pick_stream.cu
   cpp/test_pick_stream_green_context.cu
   cpp/user_streams.cu
+  cpp/wait_token.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
@@ -68,6 +69,7 @@ set(
   local_stf/stackable_nested_while.cu
   local_stf/stackable_nested.cu
   local_stf/stackable_node_pool_growth.cu
+  local_stf/stream_ctx_lifetime_btb.cu
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu

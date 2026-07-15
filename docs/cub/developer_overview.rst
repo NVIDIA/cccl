@@ -10,6 +10,7 @@ CUB Developer Overview
    developer/block_scope
    developer/device_scope
    developer/nvtx
+   developer/test_overview
 
 This living document serves as a guide to the design of the internal structure of CUB.
 

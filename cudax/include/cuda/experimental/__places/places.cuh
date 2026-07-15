@@ -91,7 +91,15 @@ class data_place
   static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<data_place_interface>(&instance, [](data_place_interface*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies. Besides
+    // avoiding a redundant control block per call, this keeps the factory
+    // thread-safe if T ever derives from enable_shared_from_this: constructing
+    // a shared_ptr from a raw pointer writes the object's weak-this member, so
+    // doing it on every call would race across host threads. The guarded
+    // function-local static performs that write once; later calls only copy
+    // the handle (atomic refcount bump).
+    static ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
+    return handle;
   }
 
 public:
@@ -328,7 +336,7 @@ public:
     return pimpl_->hash();
   }
 
-  decorated_stream getDataStream(exec_place_resources& res) const;
+  augmented_stream getDataStream(exec_place_resources& res) const;
 
   /**
    * @brief Get the underlying interface pointer
@@ -510,7 +518,7 @@ public:
      * impls).
      *
      * Self-contained implementations (`exec_place_cuda_stream_impl`,
-     * `exec_place_green_ctx_impl`) override this method and ignore the
+     * `exec_place_cuda_ctx_impl`) override this method and ignore the
      * registry, returning their embedded pool instead.
      *
      * The grid implementation forwards `res` to its first sub-place.
@@ -542,7 +550,15 @@ public:
   static ::std::shared_ptr<impl> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<impl>(&instance, [](impl*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies.
+    // exec_place::impl derives from enable_shared_from_this, so constructing a
+    // shared_ptr from the raw &instance writes the object's weak-this member.
+    // Doing that on every call races when multiple host threads request the
+    // same singleton (e.g. concurrent parallel_for -> exec_place::current_device()).
+    // The guarded function-local static performs that write once; later calls
+    // only copy the handle (atomic refcount bump).
+    static ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
+    return handle;
   }
 
   exec_place() = default;
@@ -669,11 +685,11 @@ public:
   /// inline in `__stf/internal/async_resources_handle.cuh`.
   inline stream_pool& get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const;
 
-  decorated_stream getStream(exec_place_resources& res, bool for_computation = true) const;
+  augmented_stream getStream(exec_place_resources& res, bool for_computation = true) const;
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline decorated_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
+  inline augmented_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
                                     bool for_computation = true) const;
 
   cudaStream_t pick_stream(exec_place_resources& res, bool for_computation = true) const
@@ -765,7 +781,21 @@ public:
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place cuda_stream(cudaStream_t stream);
-  static exec_place cuda_stream(const decorated_stream& dstream);
+  static exec_place cuda_stream(const augmented_stream& dstream);
+
+  /**
+   * @brief Create an execution place from an externally-owned CUDA driver context
+   *
+   * The place is non-owning: the caller must keep the context alive while the
+   * place is in use. This is the natural entry point for contexts created by
+   * other libraries (e.g. green contexts converted with cuCtxFromGreenCtx, such
+   * as the ones produced by cuda.core in Python).
+   *
+   * @param ctx The CUDA driver context
+   * @param devid The device ordinal of the context, or -1 to derive it from the context
+   * @param pool_size Number of streams in the place's stream pool
+   */
+  static exec_place cuda_context(CUcontext ctx, int devid = -1, size_t pool_size = impl::pool_size);
 
   /**
    * @brief Returns the currently active device.
@@ -980,10 +1010,10 @@ auto exec_place::operator->*(Fun&& fun) const
   return ::std::forward<Fun>(fun)();
 }
 
-inline decorated_stream stream_pool::next(const exec_place& place)
+inline augmented_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
-  ::std::lock_guard<::std::mutex> locker(pimpl->mtx); // NOLINT(modernize-use-scoped-lock)
+  ::std::scoped_lock locker(pimpl->mtx);
   _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
 
   auto& result = pimpl->payload.at(pimpl->index);
@@ -1000,7 +1030,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
     if (stream_err == CUDA_ERROR_CONTEXT_IS_DESTROYED || stream_err == CUDA_ERROR_INVALID_CONTEXT
         || stream_err == CUDA_ERROR_INVALID_HANDLE || ctx == nullptr)
     {
-      result = decorated_stream(nullptr, k_no_stream_id, -1);
+      result = augmented_stream(nullptr, k_no_stream_id, -1);
     }
     else
     {
@@ -1026,7 +1056,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
+inline augmented_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
 {
   return get_stream_pool(for_computation, res).next(*this);
 }
@@ -1064,8 +1094,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   // Activation - no-op for host
@@ -1136,8 +1170,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   ::std::string to_string() const override
@@ -1228,19 +1266,30 @@ public:
 
 inline exec_place exec_place::device(int devid)
 {
-  static int ndevices;
-  static exec_place_device::impl* impls = [] {
-    ndevices    = cuda_try<cudaGetDeviceCount>();
-    auto result = static_cast<exec_place_device::impl*>(::operator new[](ndevices * sizeof(exec_place_device::impl)));
+  static const int ndevices = cuda_try<cudaGetDeviceCount>();
+  // One process-global ``shared_ptr`` per device, created exactly once in this
+  // function-local static initializer (guaranteed thread-safe init by the
+  // compiler). We hand out *copies* below.
+  //
+  // We must NOT re-create a ``shared_ptr`` from the raw object pointer on every
+  // call: ``exec_place::impl`` derives from ``enable_shared_from_this``, so each
+  // such construction writes the object's internal weak-this member. Because
+  // this path runs on every task submission and from every user thread,
+  // concurrent calls would race on that member (and on the freshly created
+  // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
+  // reference count, which is thread-safe.
+  static ::std::shared_ptr<exec_place::impl>* impls = [] {
+    auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
     for (int i : each(ndevices))
     {
-      new (result + i) exec_place_device::impl(i);
+      // no-op deleter: these device places are process-global singletons
+      result[i] = ::std::shared_ptr<exec_place::impl>(new exec_place_device::impl(i), [](exec_place::impl*) {});
     }
     return result;
   }();
   _CCCL_ASSERT(devid >= 0, "invalid device id");
   _CCCL_ASSERT(devid < ndevices, "invalid device id");
-  return ::std::shared_ptr<exec_place::impl>(&impls[devid], [](exec_place::impl*) {}); // no-op deleter
+  return impls[devid];
 }
 
 #ifdef UNITTESTED_FILE
@@ -1488,8 +1537,12 @@ inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t id
 inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
-  // Static instance - use no-op deleter instead of shared_from_this()
-  return ::std::shared_ptr<impl>(this, [](impl*) {});
+  // These device impls are always owned by the per-device ``shared_ptr``
+  // created in ``exec_place::device()``, so ``shared_from_this()`` is valid and
+  // (unlike re-wrapping ``this`` in a fresh ``shared_ptr``) does not mutate the
+  // enable_shared_from_this weak-this member -- it only bumps the atomic
+  // reference count, which is safe to call concurrently.
+  return shared_from_this();
 }
 
 //! Creates a grid by replicating an execution place multiple times
@@ -1743,7 +1796,7 @@ data_place data_place::composite(partitioner_t, const exec_place& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline decorated_stream data_place::getDataStream(exec_place_resources& res) const
+inline augmented_stream data_place::getDataStream(exec_place_resources& res) const
 {
   return affine_exec_place().getStream(res, false);
 }

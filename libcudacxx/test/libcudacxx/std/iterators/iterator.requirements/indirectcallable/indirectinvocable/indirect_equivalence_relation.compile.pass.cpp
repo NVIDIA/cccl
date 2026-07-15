@@ -61,9 +61,9 @@ static_assert(cuda::std::indirect_equivalence_relation<decltype(lambda), int*, l
 struct NotIndirectlyReadable
 {};
 static_assert(
-  !cuda::std::indirect_equivalence_relation<GoodRelation<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>, "");
+  !cuda::std::indirect_equivalence_relation<GoodRelation<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>);
 static_assert(
-  !cuda::std::indirect_equivalence_relation<GoodRelation<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>, "");
+  !cuda::std::indirect_equivalence_relation<GoodRelation<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>);
 #endif
 
 // Should fail when the function is not copy constructible

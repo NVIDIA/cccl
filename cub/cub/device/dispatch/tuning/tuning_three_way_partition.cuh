@@ -29,6 +29,42 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! The tuning policy for the three-way partition algorithms in @ref DevicePartition.
+struct ThreeWayPartitionPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
+  LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy configuring the delay used in decoupled lookback
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionPolicy& policy)
+  {
+    return os
+        << "ThreeWayPartitionPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
+        << ", .load_modifier = " << policy.load_modifier << ", .scan_algorithm = " << policy.scan_algorithm
+        << ", .lookback_delay = " << policy.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::three_way_partition
 {
 // TODO(bgruber): drop in CCCL 4.0
@@ -346,13 +382,13 @@ struct policy_hub
   template <typename DelayConstructor>
   struct DefaultPolicy
   {
-    using ThreeWayPartitionPolicy =
-      AgentThreeWayPartitionPolicy<256,
-                                   Nominal4BItemsToItems<InputT>(9),
-                                   BLOCK_LOAD_DIRECT,
-                                   LOAD_DEFAULT,
-                                   BLOCK_SCAN_WARP_SCANS,
-                                   DelayConstructor>;
+    using ThreeWayPartitionPolicy = agent_three_way_partition_policy<
+      256,
+      Nominal4BItemsToItems<InputT>(9),
+      BLOCK_LOAD_DIRECT,
+      LOAD_DEFAULT,
+      BLOCK_SCAN_WARP_SCANS,
+      DelayConstructor>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -360,24 +396,24 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
-  static _CCCL_HOST_DEVICE auto select_agent_policy(int)
-    -> AgentThreeWayPartitionPolicy<Tuning::threads,
-                                    Tuning::items,
-                                    Tuning::load_algorithm,
-                                    LOAD_DEFAULT,
-                                    BLOCK_SCAN_WARP_SCANS,
-                                    typename Tuning::delay_constructor>;
+  static _CCCL_HOST_DEVICE auto select_agent_policy(int) -> agent_three_way_partition_policy<
+    Tuning::threads,
+    Tuning::items,
+    Tuning::load_algorithm,
+    LOAD_DEFAULT,
+    BLOCK_SCAN_WARP_SCANS,
+    typename Tuning::delay_constructor>;
 
   template <typename Tuning>
   static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename DefaultPolicy<
     default_delay_constructor_t<typename accumulator_pack_t<OffsetT>::pack_t>>::ThreeWayPartitionPolicy;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
   {
     using ThreeWayPartitionPolicy = decltype(select_agent_policy<sm80_tuning<InputT, OffsetT>>(0));
   };
@@ -387,25 +423,25 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ThreeWayPartitionPolicy = decltype(select_agent_policy<sm90_tuning<InputT, OffsetT>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    static _CCCL_HOST_DEVICE auto select_agent_policy100(int)
-      -> AgentThreeWayPartitionPolicy<Tuning::threads,
-                                      Tuning::items,
-                                      Tuning::load_algorithm,
-                                      LOAD_DEFAULT,
-                                      BLOCK_SCAN_WARP_SCANS,
-                                      typename Tuning::delay_constructor>;
+    static _CCCL_HOST_DEVICE auto select_agent_policy100(int) -> agent_three_way_partition_policy<
+      Tuning::threads,
+      Tuning::items,
+      Tuning::load_algorithm,
+      LOAD_DEFAULT,
+      BLOCK_SCAN_WARP_SCANS,
+      typename Tuning::delay_constructor>;
 
     template <typename Tuning>
     static _CCCL_HOST_DEVICE auto select_agent_policy100(long) -> typename Policy900::ThreeWayPartitionPolicy;
@@ -416,44 +452,9 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-struct three_way_partition_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockScanAlgorithm block_scan_algorithm;
-  delay_constructor_policy delay_constructor;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
-  {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.block_scan_algorithm == rhs.block_scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const three_way_partition_policy& policy)
-  {
-    return os
-        << "three_way_partition_policy { .threads_per_block = " << policy.threads_per_block
-        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
-        << ", .load_modifier = " << policy.load_modifier << ", .block_scan_algorithm = " << policy.block_scan_algorithm
-        << ", .delay_constructor = " << policy.delay_constructor << " }";
-  }
-#endif // _CCCL_HOSTED()
-};
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept three_way_partition_policy_selector = policy_selector<T, three_way_partition_policy>;
+concept three_way_partition_policy_selector = policy_selector<T, ThreeWayPartitionPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -463,9 +464,9 @@ struct policy_selector
   int offset_size;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> three_way_partition_policy
+    -> ThreeWayPartitionPolicy
   {
-    const auto default_policy = three_way_partition_policy{
+    const auto default_policy = ThreeWayPartitionPolicy{
       256,
       nominal_4B_items_to_items(9, input_size),
       BLOCK_LOAD_DIRECT,
@@ -485,23 +486,23 @@ struct policy_selector
 
       if (offset_size == 4 && input_size == 4)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           512,
           11,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 72, 840}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 72, 840}};
       }
       if (offset_size == 4 && input_size == 8)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           10,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 8, 845}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 8, 845}};
       }
 
       // TODO(gonidelis): Add tunings for I128.
@@ -509,37 +510,37 @@ struct policy_selector
       if (offset_size == 8 && input_size == 2)
       {
         // trp_1.ipt_20.tpb_768.ns_544.dcid_5.l2w_500 1.064438  1.000000  1.069149  1.200658
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           768,
           20,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 544, 500}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 544, 500}};
       }
 
       if (offset_size == 8 && input_size == 4)
       {
         // trp_1.ipt_15.tpb_768.ns_144.dcid_6.l2w_280 1.099504  1.002083  1.095122  1.352941
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           768,
           15,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 144, 280}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 144, 280}};
       }
 
       if (offset_size == 8 && input_size == 8)
       {
         // trp_1.ipt_14.tpb_320.ns_872.dcid_7.l2w_620 1.083194  1.000000  1.078944  1.315789
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           320,
           14,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon, 872, 620}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 872, 620}};
       }
 
       // TODO(gonidelis): Add tunings for I128.
@@ -551,103 +552,103 @@ struct policy_selector
     {
       if (offset_size == 4 && input_size == 1)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           12,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 445}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 445}};
       }
       if (offset_size == 4 && input_size == 2)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           12,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 104, 512}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 104, 512}};
       }
       if (offset_size == 4 && input_size == 4)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           320,
           12,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1105}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1105}};
       }
       if (offset_size == 4 && input_size == 8)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           384,
           7,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 464, 1165}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 464, 1165}};
       }
       if (offset_size == 4 && input_size == 16)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           128,
           7,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1040}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1040}};
       }
       if (offset_size == 8 && input_size == 1)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           24,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 4, 285}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 4, 285}};
       }
       if (offset_size == 8 && input_size == 2)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           640,
           24,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 245}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 245}};
       }
       if (offset_size == 8 && input_size == 4)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           23,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 910}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 910}};
       }
       if (offset_size == 8 && input_size == 8)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           18,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1145}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1145}};
       }
       if (offset_size == 8 && input_size == 16)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           11,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1050}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1050}};
       }
       return default_policy;
     }
@@ -661,43 +662,43 @@ struct policy_selector
     {
       if (offset_size == 4 && input_size == 2)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           12,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 910}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 910}};
       }
       if (offset_size == 4 && input_size == 4)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           256,
           11,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1120}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1120}};
       }
       if (offset_size == 4 && input_size == 8)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           224,
           11,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 264, 1080}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 264, 1080}};
       }
       if (offset_size == 4 && input_size == 16)
       {
-        return three_way_partition_policy{
+        return ThreeWayPartitionPolicy{
           128,
           10,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 672, 1120}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 672, 1120}};
       }
       return default_policy;
     }
@@ -715,7 +716,7 @@ template <typename InputT, typename OffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> three_way_partition_policy
+    -> ThreeWayPartitionPolicy
   {
     constexpr auto selector = policy_selector{classify_type<InputT>, int{sizeof(InputT)}, int{sizeof(OffsetT)}};
     return selector(cc);

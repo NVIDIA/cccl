@@ -68,6 +68,33 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceSegmentedReduce}
+//! @determinism{run_to_run}
+//!
+//! Determinism
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! ``cub::DeviceSegmentedReduce`` supports ``not_guaranteed`` and ``run_to_run`` (default ``run_to_run``).
+//! ``gpu_to_gpu`` is not supported and is rejected at compile time. See the
+//! :ref:`determinism guarantees <cccl-determinism>` for what each level means.
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedReduce that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref SegmentedReducePolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-reduce-sum-policy-selector
+//!      :end-before: example-end segmented-reduce-sum-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-reduce-sum-tuning
+//!      :end-before: example-end segmented-reduce-sum-tuning
 //!
 //! @endrst
 struct DeviceSegmentedReduce
@@ -93,7 +120,7 @@ private:
     using input_value_t  = cub::detail::it_value_t<InputIteratorT>;
     using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<offset_t, input_value_t>>;
     using accum_t        = output_tuple_t;
-    using init_t         = detail::reduce::empty_problem_init_t<accum_t>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<accum_t>;
     using output_key_t   = typename output_tuple_t::first_type;
     using output_value_t = typename output_tuple_t::second_type;
 
@@ -109,12 +136,12 @@ private:
     constexpr bool is_min = ::cuda::std::is_same_v<ReductionOpT, cub::detail::arg_min>;
     auto sentinel =
       is_min ? ::cuda::std::numeric_limits<input_value_t>::max() : ::cuda::std::numeric_limits<input_value_t>::lowest();
-    init_t initial_value{accum_t(1, sentinel)};
+    init_value_t initial_value{accum_t(1, sentinel)};
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::segmented_reduce::segmented_reduce_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
 
     return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
       d_temp_storage,
@@ -157,7 +184,7 @@ private:
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
             typename ReductionOpT,
-            typename InitT,
+            typename InitValueT,
             typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t variable_size_env_impl(
     InputIteratorT d_in,
@@ -166,7 +193,7 @@ private:
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
-    InitT initial_value,
+    InitValueT initial_value,
     EnvT env)
   {
     using requirements_t = ::cuda::std::execution::
@@ -186,10 +213,8 @@ private:
         env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
           using default_policy_selector_t =
             detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
-          using policy_selector_t =
-            ::cuda::std::execution::__query_result_or_t<decltype(tuning),
-                                                        detail::segmented_reduce::segmented_reduce_policy,
-                                                        default_policy_selector_t>;
+          using policy_selector_t = ::cuda::std::execution::
+            __query_result_or_t<decltype(tuning), SegmentedReducePolicy, default_policy_selector_t>;
           // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
             d_temp_storage,
@@ -242,7 +267,7 @@ private:
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
-            typename InitT,
+            typename InitValueT,
             typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_env_impl(
     InputIteratorT d_in,
@@ -250,7 +275,7 @@ private:
     ::cuda::std::int64_t num_segments,
     OffsetT segment_size,
     ReductionOpT reduction_op,
-    InitT initial_value,
+    InitValueT initial_value,
     EnvT env)
   {
     using requirements_t = ::cuda::std::execution::
@@ -344,8 +369,7 @@ public:
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -590,8 +614,7 @@ public:
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -778,8 +801,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -830,9 +852,9 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
-    using init_t  = OutputT;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OutputT      = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_value_t = OutputT;
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
@@ -845,7 +867,7 @@ public:
         d_begin_offsets,
         d_end_offsets,
         ::cuda::std::plus<>{},
-        init_t{}, // zero-initialize
+        init_value_t{}, // zero-initialize
         0, // max_segment_size
         stream);
     }
@@ -897,7 +919,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -942,14 +964,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
-    using init_t  = OutputT;
-    using op_t    = ::cuda::std::plus<>;
-    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OutputT      = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_value_t = OutputT;
+    using op_t         = ::cuda::std::plus<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
     return variable_size_env_impl<AccumT, OffsetT>(
-      d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, init_t{}, env);
+      d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, init_value_t{}, env);
   }
 
   //! @rst
@@ -981,8 +1003,7 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1003,9 +1024,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1015,10 +1034,20 @@ public:
       int segment_size,
       cudaStream_t stream = nullptr)
   {
+    static_assert(!::cuda::std::is_same_v<InputIteratorT, void*>,
+                  "InputIteratorT must be a real iterator; void* has no iterator_traits::value_type.");
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
-    using init_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_value_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     return fixed_size_impl(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, ::cuda::std::plus{}, init_t{}, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::std::plus{},
+      init_value_t{},
+      stream);
   }
 
   //! @rst
@@ -1140,8 +1169,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1192,10 +1220,10 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = detail::it_value_t<InputIteratorT>;
-    using init_t  = InputT;
-    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
+    static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
@@ -1209,7 +1237,7 @@ public:
         d_begin_offsets,
         d_end_offsets,
         ::cuda::minimum<>{},
-        ::cuda::std::numeric_limits<init_t>::max(),
+        ::cuda::std::numeric_limits<init_value_t>::max(),
         0, // max_segment_size
         stream);
     }
@@ -1306,17 +1334,24 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Min");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = detail::it_value_t<InputIteratorT>;
-    using init_t  = InputT;
-    using op_t    = ::cuda::minimum<>;
-    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
+    using op_t         = ::cuda::minimum<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
-    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+    static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
     return variable_size_env_impl<AccumT, OffsetT>(
-      d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, ::cuda::std::numeric_limits<init_t>::max(), env);
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      op_t{},
+      ::cuda::std::numeric_limits<init_value_t>::max(),
+      env);
   }
 
   //! @rst
@@ -1347,8 +1382,7 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1533,8 +1567,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1594,7 +1627,7 @@ public:
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
     using OverrideAccumT = OutputTupleT;
-    using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
     static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
@@ -1604,7 +1637,7 @@ public:
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    InitT initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
@@ -1732,7 +1765,7 @@ public:
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
     using OverrideAccumT = OutputTupleT;
-    using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
     static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
@@ -1742,7 +1775,7 @@ public:
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    InitT initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     return variable_size_env_impl<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMin{}, initial_value, env);
@@ -1783,8 +1816,7 @@ public:
   //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1926,8 +1958,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1978,11 +2009,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = cub::detail::it_value_t<InputIteratorT>;
-    using init_t  = InputT;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
 
-    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+    static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
@@ -1996,7 +2027,7 @@ public:
         d_begin_offsets,
         d_end_offsets,
         ::cuda::maximum<>{},
-        ::cuda::std::numeric_limits<init_t>::lowest(),
+        ::cuda::std::numeric_limits<init_value_t>::lowest(),
         0, // max_segment_size
         stream);
     }
@@ -2093,13 +2124,13 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Max");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = cub::detail::it_value_t<InputIteratorT>;
-    using init_t  = InputT;
-    using op_t    = ::cuda::maximum<>;
-    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
+    using op_t         = ::cuda::maximum<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
-    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+    static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
     return variable_size_env_impl<AccumT, OffsetT>(
@@ -2109,7 +2140,7 @@ public:
       d_begin_offsets,
       d_end_offsets,
       op_t{},
-      ::cuda::std::numeric_limits<init_t>::lowest(),
+      ::cuda::std::numeric_limits<init_value_t>::lowest(),
       env);
   }
 
@@ -2141,8 +2172,7 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2327,9 +2357,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2387,7 +2415,7 @@ public:
     using InputValueT    = cub::detail::it_value_t<InputIteratorT>;
     using OutputTupleT   = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OverrideOffsetT, InputValueT>>;
     using OverrideAccumT = OutputTupleT;
-    using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
 
@@ -2399,7 +2427,7 @@ public:
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    InitT initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
@@ -2525,7 +2553,7 @@ public:
     using InputValueT    = cub::detail::it_value_t<InputIteratorT>;
     using OutputTupleT   = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OverrideOffsetT, InputValueT>>;
     using OverrideAccumT = OutputTupleT;
-    using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
 
@@ -2537,7 +2565,7 @@ public:
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    InitT initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return variable_size_env_impl<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMax{}, initial_value, env);
@@ -2580,9 +2608,7 @@ public:
   //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

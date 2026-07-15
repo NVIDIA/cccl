@@ -111,7 +111,7 @@ public:
    */
   [[nodiscard]] per_place_pools& get(const void* impl_key)
   {
-    ::std::lock_guard<::std::mutex> lock(mtx_);
+    ::std::scoped_lock lock(mtx_);
     auto it = map_.find(impl_key);
     if (it == map_.end())
     {
@@ -123,7 +123,7 @@ public:
   /// @brief Number of per-place entries currently cached. Mainly for tests.
   [[nodiscard]] ::std::size_t size() const
   {
-    ::std::lock_guard<::std::mutex> lock(mtx_);
+    ::std::scoped_lock lock(mtx_);
     return map_.size();
   }
 

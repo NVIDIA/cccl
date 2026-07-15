@@ -49,6 +49,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/pointer_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -72,13 +73,14 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
     _InputIterator __last,
     iter_difference_t<_InputIterator> __num_shifted)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType            = iter_difference_t<_InputIterator>;
     using value_type             = iter_value_t<_InputIterator>;
     const auto __count           = ::cuda::std::distance(__first, __last);
     const auto __count_remaining = static_cast<_OffsetType>(__count - __num_shifted);
     const auto __result          = __first + __num_shifted;
-
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
     if (2 * __num_shifted > __count)
     { // There is no overlap between the source and destination, so we can just copy

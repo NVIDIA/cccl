@@ -35,6 +35,7 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
+#include <mutex>
 #include <unordered_map>
 
 #include <cuda.h>
@@ -48,6 +49,27 @@ namespace cuda::experimental::stf
  * This class relies on a PIMPL idiom and can be passed by value. Creating a
  * new object of this type does not initialize any resource, as these will be
  * set lazily.
+ *
+ * @par Thread safety
+ * A single handle (and its copies, which share one PIMPL state) may be used
+ * concurrently by several host threads submitting work to the same context.
+ * The internal caches reached during task submission -- the cross-stream
+ * synchronization cache and the per-place stream-pool registry -- are
+ * mutex-guarded. This only makes the runtime's own bookkeeping race-free;
+ * conflicting accesses to the same logical data must still be ordered through
+ * the task dependency graph.
+ *
+ * @par Lifetime and CUDA teardown
+ * The handle caches resources bound to a live CUDA context: pools of
+ * ``cudaStream_t``, cached ``cudaGraphExec_t``, and cross-stream
+ * synchronization state. Before destroying a handle that was shared across
+ * contexts, perform a blocking synchronization on all work that used it --
+ * otherwise it would release streams still carrying in-flight work. For the
+ * same reason a handle must not survive a CUDA context teardown such as
+ * ``cudaDeviceReset()`` (or primary-context destruction by an external
+ * framework): its cached ``cudaStream_t`` / ``cudaGraphExec_t`` would become
+ * dangling. Synchronize, destroy the handle, and create a fresh one once CUDA
+ * has been relaunched.
  */
 class async_resources_handle
 {
@@ -79,6 +101,13 @@ private:
       }
 
       const auto key = ::std::pair(src, dst);
+
+      // This cache is shared by all tasks submitted in the context, including
+      // tasks submitted concurrently from different user threads. Guard the
+      // map against concurrent lookups/insertions which would otherwise race
+      // (e.g. a rehash triggered by a new stream pair corrupting buckets being
+      // traversed by another thread).
+      ::std::lock_guard<::std::mutex> guard(mtx);
 
       if (auto i = interactions.find(key); i != interactions.end())
       {
@@ -203,14 +232,11 @@ public:
 
   ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> cached_graphs_query(cudaGraph_t g)
   {
-    size_t nedges;
-    size_t nnodes;
-
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+    const size_t nnodes = cuda_try<cudaGraphGetNodes>(g, nullptr);
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+    const size_t nedges = cuda_try<cudaGraphGetEdges>(g, nullptr, nullptr, nullptr);
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+    const size_t nedges = cuda_try<cudaGraphGetEdges>(g, nullptr, nullptr);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     _CCCL_ASSERT(pimpl, "async_resources_handle is not initialized");
@@ -319,7 +345,7 @@ exec_place::get_stream_pool(bool for_computation, ::cuda::experimental::stf::asy
   return get_stream_pool(for_computation, h.get_place_resources());
 }
 
-[[nodiscard]] inline decorated_stream
+[[nodiscard]] inline augmented_stream
 exec_place::getStream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
 {
   return getStream(h.get_place_resources(), for_computation);

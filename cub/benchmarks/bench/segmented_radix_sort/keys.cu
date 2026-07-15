@@ -25,7 +25,7 @@ void seg_radix_sort(nvbench::state& state,
   const auto segments = offsets.size() - 1;
 
   thrust::device_vector<key_t> buffer_1 = generate(elements, entropy);
-  thrust::device_vector<key_t> buffer_2(elements);
+  thrust::device_vector<key_t> buffer_2(elements, thrust::no_init);
 
   const key_t* d_keys_1 = thrust::raw_pointer_cast(buffer_1.data());
   key_t* d_keys_2       = thrust::raw_pointer_cast(buffer_2.data());
@@ -38,29 +38,13 @@ void seg_radix_sort(nvbench::state& state,
   state.add_global_memory_writes<key_t>(elements);
   state.add_global_memory_reads<offset_t>(segments + 1);
 
-  std::size_t temp_storage_bytes{};
-  std::uint8_t* d_temp_storage{};
-  cub::DeviceSegmentedRadixSort::SortKeys(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_keys_1,
-    d_keys_2,
-    elements,
-    segments,
-    d_begin_offsets,
-    d_end_offsets,
-    begin_bit,
-    end_bit,
-    nullptr);
-
-  thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cub::DeviceSegmentedRadixSort::SortKeys(
-                 d_temp_storage,
-                 temp_storage_bytes,
+               const auto env = cub_bench_env(alloc, launch);
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceSegmentedRadixSort::SortKeys,
+                 "SortKeys failed",
                  d_keys_1,
                  d_keys_2,
                  elements,
@@ -69,7 +53,7 @@ void seg_radix_sort(nvbench::state& state,
                  d_end_offsets,
                  begin_bit,
                  end_bit,
-                 launch.get_stream());
+                 env);
              });
 }
 

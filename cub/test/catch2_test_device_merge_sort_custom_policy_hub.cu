@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the merge sort dispatcher
+
+// disable deprecation warnings for DispatchMergeSort
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_merge_sort.cuh>
@@ -14,15 +19,13 @@
 
 using namespace cub;
 
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the merge sort dispatcher after publishing the tuning API
-
 template <typename KeyIteratorT>
 struct my_policy_hub
 {
   using KeyT = cub::detail::it_value_t<KeyIteratorT>;
 
   // from Policy500 of the CUB merge sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using MergeSortPolicy =
       AgentMergeSortPolicy<256,

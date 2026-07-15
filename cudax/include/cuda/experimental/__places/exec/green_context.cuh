@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__places/data_place_interface.cuh>
+#include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
@@ -39,6 +40,18 @@
 
 namespace cuda::experimental::places
 {
+/* Get the unique ID associated with a context (overloaded) */
+inline unsigned long long get_cuda_context_id(CUcontext ctx)
+{
+  return cuda_try<cuCtxGetId>(ctx);
+}
+
+/* Get the unique ID associated with a green context (overloaded) */
+inline unsigned long long get_cuda_context_id(CUgreenCtx gctx)
+{
+  return get_cuda_context_id(cuda_try<cuCtxFromGreenCtx>(gctx));
+}
+
 /**
  * @brief data_place_interface implementation for green contexts
  *
@@ -65,7 +78,8 @@ public:
 
   ::std::string to_string() const override
   {
-    return "green_ctx(dev=" + ::std::to_string(view_.devid) + ")";
+    return "green_ctx(dev=" + ::std::to_string(view_.devid)
+         + ", ctx=" + ::std::to_string(get_cuda_context_id(view_.g_ctx)) + ")";
   }
 
   size_t hash() const override
@@ -106,6 +120,15 @@ public:
     return true;
   }
 
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+    prop.location.id         = view_.devid;
+    return cuMemCreate(handle, size, &prop, 0);
+  }
+
   ::std::shared_ptr<void> get_affine_exec_impl() const override;
 
 private:
@@ -121,20 +144,6 @@ private:
 inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 {
   return data_place(::std::make_shared<green_ctx_data_place_impl>(gc_view));
-}
-
-/* Get the unique ID associated with a context (overloaded) */
-inline unsigned long long get_cuda_context_id(CUcontext ctx)
-{
-  unsigned long long ctx_id;
-  cuda_try(cuCtxGetId(ctx, &ctx_id));
-  return ctx_id;
-}
-
-/* Get the unique ID associated with a green context (overloaded) */
-inline unsigned long long get_cuda_context_id(CUgreenCtx gctx)
-{
-  return get_cuda_context_id(cuda_try<cuCtxFromGreenCtx>(gctx));
 }
 
 /**
@@ -247,111 +256,24 @@ private:
   ::std::vector<CUgreenCtx> ctxs;
 };
 
-/**
- * @brief Implementation for green context execution places
+/*
+ * Green-context execution places are implemented with the generic
+ * externally-owned-context place (`exec_place_cuda_ctx_impl`): the only
+ * functional use of the CUgreenCtx is deriving its CUcontext, and
+ * cuCtxFromGreenCtx returns the same CUcontext on every call, so the
+ * conversion is done once here and the CUcontext is the canonical identity
+ * of the place. As a consequence, a place built from a green_ctx_view and a
+ * place built with exec_place::cuda_context() from the converted context
+ * compare equal, which is the desired semantics.
+ *
+ * The user is responsible for keeping the underlying CUgreenCtx alive while
+ * the place (and its stream pool) is in use.
  */
-class exec_place_green_ctx_impl : public exec_place::impl
-{
-public:
-  /**
-   * @brief Construct a green context execution place
-   *
-   * @param gc_view The green context view
-   * @param use_green_ctx_data_place If true, use a green context data place as the
-   *        affine data place. If false (default), use a regular device data place instead.
-   */
-  exec_place_green_ctx_impl(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
-      : exec_place::impl(
-          use_green_ctx_data_place ? make_green_ctx_data_place(gc_view) : data_place::device(gc_view.devid))
-      , devid_(gc_view.devid)
-      , g_ctx_(gc_view.g_ctx)
-      , pool_(mv(gc_view.pool))
-  {}
-
-  // This is used to implement deactivate and wrap an existing context
-  exec_place_green_ctx_impl(CUcontext saved_context)
-      : driver_context_(saved_context)
-  {}
-
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
-  {
-    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
-    return shared_from_this();
-  }
-
-  exec_place activate(size_t idx) const override
-  {
-    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
-
-    // Save the current context and transform it into a fake green context place
-    CUcontext current_ctx = cuda_try<cuCtxGetCurrent>();
-    exec_place result     = exec_place(::std::make_shared<exec_place_green_ctx_impl>(current_ctx));
-
-    // Convert the green context to a primary context
-    driver_context_ = cuda_try<cuCtxFromGreenCtx>(g_ctx_);
-    cuda_try(cuCtxSetCurrent(driver_context_));
-
-    return result;
-  }
-
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
-  {
-    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
-
-    auto prev_impl      = ::std::static_pointer_cast<exec_place_green_ctx_impl>(prev.get_impl());
-    CUcontext saved_ctx = prev_impl->driver_context_;
-
-#  ifdef DEBUG
-    CUcontext current_ctx = cuda_try<cuCtxGetCurrent>();
-    assert(get_cuda_context_id(current_ctx) == get_cuda_context_id(driver_context_));
-#  endif
-
-    cuda_try(cuCtxSetCurrent(saved_ctx));
-  }
-
-  bool is_device() const override
-  {
-    return true;
-  }
-
-  ::std::string to_string() const override
-  {
-    return "green_ctx(id=" + ::std::to_string(get_cuda_context_id(g_ctx_)) + " dev=" + ::std::to_string(devid_) + ")";
-  }
-
-  stream_pool& get_stream_pool(bool, exec_place_resources&, const exec_place&) const override
-  {
-    // Green-context places carry their own pool (constructed from the
-    // green_ctx_view) and bypass the registry. The user is responsible for
-    // keeping the underlying CUgreenCtx alive while the pool is in use.
-    return pool_;
-  }
-
-  int cmp(const exec_place::impl& rhs) const override
-  {
-    if (typeid(*this) != typeid(rhs))
-    {
-      return typeid(*this).before(typeid(rhs)) ? -1 : 1;
-    }
-    const auto& other = static_cast<const exec_place_green_ctx_impl&>(rhs);
-    return (other.g_ctx_ < g_ctx_) - (g_ctx_ < other.g_ctx_);
-  }
-
-  size_t hash() const override
-  {
-    return ::std::hash<CUgreenCtx>()(g_ctx_);
-  }
-
-private:
-  int devid_                        = -1;
-  CUgreenCtx g_ctx_                 = {};
-  mutable CUcontext driver_context_ = {};
-  mutable stream_pool pool_;
-};
-
 inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place)
 {
-  return exec_place(::std::make_shared<exec_place_green_ctx_impl>(gc_view, use_green_ctx_data_place));
+  CUcontext ctx     = cuda_try<cuCtxFromGreenCtx>(gc_view.g_ctx);
+  data_place affine = use_green_ctx_data_place ? make_green_ctx_data_place(gc_view) : data_place::device(gc_view.devid);
+  return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(ctx, gc_view.devid, gc_view.pool, mv(affine)));
 }
 
 inline ::std::shared_ptr<void> green_ctx_data_place_impl::get_affine_exec_impl() const
@@ -397,6 +319,27 @@ UNITTEST("green context exec_place equality")
   EXPECT(!(p0a == dev0));
 };
 
+UNITTEST("green_ctx place equals the cuda_context place wrapping the same partition")
+{
+  green_context_helper gc_helper(8, 0); // 8 SMs per green context
+
+  if (gc_helper.get_count() < 1)
+  {
+    return;
+  }
+
+  auto view = gc_helper.get_view(0);
+
+  // Identity is keyed on the converted CUcontext, which is a stable accessor
+  // (cuCtxFromGreenCtx returns the same handle on every call), so both
+  // construction routes must yield equal places.
+  auto p_green = exec_place::green_ctx(view);
+  auto p_ctx   = exec_place::cuda_context(cuda_try<cuCtxFromGreenCtx>(view.g_ctx), view.devid);
+
+  EXPECT(p_green == p_ctx);
+  EXPECT(!(p_green != p_ctx));
+};
+
 UNITTEST("green context data_place equality")
 {
   green_context_helper gc_helper(8, 0);
@@ -432,6 +375,40 @@ UNITTEST("green context data_place equality")
   EXPECT(!dp0a.is_device());
   EXPECT(dev0.is_resolved());
   EXPECT(dev0.is_device());
+};
+
+UNITTEST("green context data_place to_string distinguishes contexts on the same device")
+{
+  green_context_helper gc_helper(8, 0);
+
+  // Two green contexts on the same device are needed to exercise the fact that
+  // to_string() embeds the green context handle in addition to the device id.
+  if (gc_helper.get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
+
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  const ::std::string s0 = dp0.to_string();
+  const ::std::string s1 = dp1.to_string();
+
+  // Both places live on device 0 and expose the green context in their name.
+  EXPECT(s0.find("dev=0") != ::std::string::npos);
+  EXPECT(s1.find("dev=0") != ::std::string::npos);
+  EXPECT(s0.find("ctx=") != ::std::string::npos);
+  EXPECT(s1.find("ctx=") != ::std::string::npos);
+
+  // Different green contexts on the same device must produce different names.
+  EXPECT(s0 != s1);
+
+  // A fresh place for the same green context yields the same name.
+  auto dp0_copy = data_place::green_ctx(gc0_view);
+  EXPECT(dp0.to_string() == dp0_copy.to_string());
 };
 
 UNITTEST("green context exec_place equality with green_ctx_data_place flag")

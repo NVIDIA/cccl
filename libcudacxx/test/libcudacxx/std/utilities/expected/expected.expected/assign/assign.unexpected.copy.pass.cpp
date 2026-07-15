@@ -63,13 +63,11 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, const c
 
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyConstructible>&,
-                                          const cuda::std::unexpected<NotCopyConstructible>&>,
-              "");
+                                          const cuda::std::unexpected<NotCopyConstructible>&>);
 
 // !is_assignable_v<E&, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyAssignable>&,
-                                          const cuda::std::unexpected<NotCopyAssignable>&>,
-              "");
+                                          const cuda::std::unexpected<NotCopyAssignable>&>);
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept
@@ -83,26 +81,22 @@ struct MaybeNoexcept
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<true, false>>&,
-                                         const cuda::std::unexpected<int>&>,
-              "");
+                                         const cuda::std::unexpected<int>&>);
 
 // is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, true>>&,
-                                         const cuda::std::unexpected<int>&>,
-              "");
+                                         const cuda::std::unexpected<int>&>);
 
 // !is_nothrow_constructible_v<E, GF> && is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true, true>, MaybeNoexcept<false, false>>&,
-                                         const cuda::std::unexpected<int>&>,
-              "");
+                                         const cuda::std::unexpected<int>&>);
 
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&,
-                                          const cuda::std::unexpected<int>&>,
-              "");
+                                          const cuda::std::unexpected<int>&>);
 
 TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {

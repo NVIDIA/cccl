@@ -4,12 +4,13 @@ function Get-Python {
         Returns the path of the Python interpreter satisfying the supplied
         version, installing it via uv if necessary.
     .PARAMETER Version
-        A string in the form 'M.m' (e.g., '3.10', '3.13').
+        A string in the form 'M.m' (e.g., '3.10', '3.13') or a free-threaded
+        version such as '3.14t'.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [ValidatePattern('^\d+\.\d+$')]
+        [ValidatePattern('^\d+\.\d+t?$')]
         [string]$Version
     )
 

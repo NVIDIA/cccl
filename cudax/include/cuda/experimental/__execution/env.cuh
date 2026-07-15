@@ -303,7 +303,7 @@ public:
   //! @param __mr The any_resource passed in
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
-  _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
+  _CCCL_HIDE_FROM_ABI env_t(::cuda::mr::any_resource<_Properties...> __mr,
                             __stream_ref __stream                    = ::cuda::__invalid_stream(),
                             execution::any_execution_policy __policy = {}) noexcept
       : __mr_(::cuda::std::move(__mr))

@@ -34,12 +34,18 @@ The following factory methods create the most common execution places:
 - ``exec_place::device(id)`` -- a specific CUDA device
 - ``exec_place::host()`` -- the host CPU
 - ``exec_place::current_device()`` -- the CUDA device that is currently active
+- ``exec_place::cuda_context(ctx, devid)`` -- an externally-owned CUDA driver
+  context; the device ordinal is derived from the context when ``devid`` is
+  omitted
 
 When an execution place is activated, it sets the appropriate CUDA context
 (e.g. calls ``cudaSetDevice``). Each execution place also has an *affine*
 data place: the memory location naturally associated with it. For a device
 execution place the affine data place is the device's global memory; for
 the host it is pinned host memory (RAM).
+
+A CUDA-context execution place is non-owning. The caller must keep the
+``CUcontext`` alive while the place and any streams obtained from it are in use.
 
 .. _places-data-places:
 
@@ -478,7 +484,7 @@ over the different places of a grid.
        template <typename S_out, typename S_in>
        static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
 
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
+       void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims);
    };
 
 A partitioning class must implement an ``apply`` method which takes:
@@ -504,8 +510,8 @@ method which allows localized data allocators. This
 method indicates, for each entry of a shape, on which place this entry
 should *preferably* be allocated.
 
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are:
+``get_executor`` writes a ``pos4`` coordinate in the execution place
+grid into ``*result``, and its input arguments are:
 
 - a coordinate within the shape described as a ``pos4`` object
 - the dimension of the shape expressed as a ``dim4`` object

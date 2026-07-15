@@ -13,6 +13,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 #include <sstream>
 
@@ -29,15 +30,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, t
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
 
-using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
-
 C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>,
-         offset_types)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   // test edge cases around 16, 128, page size, and full tile
   const offset_t num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097, 100'000);
@@ -61,10 +59,9 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
 
 // note: because this uses a fancy iterator type, it will only test the fallback kernel
 C2H_TEST("DeviceTransform::Transform works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const auto num_items = detail::make_large_offset<offset_t>();
 
@@ -81,10 +78,9 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
 }
 
 C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const offset_t num_items = detail::make_large_offset<offset_t>();
 
@@ -115,12 +111,11 @@ struct times_seven
 // straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
 // and I64 offset types.
 C2H_TEST("DeviceTransform::Transform works with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::uint32_t;
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   const auto delta         = GENERATE(-123456, 123456);
   const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
@@ -141,6 +136,7 @@ try
 catch (const std::bad_alloc&)
 {
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
+  SUCCEED("allocation failure is not a test failure");
 }
 
 template <int Alignment>
@@ -151,7 +147,7 @@ struct overaligned_addable_and_equal_comparable_policy
   {
     __host__ __device__ static void check(const CustomType& obj)
     {
-      _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
+      _CCCL_VERIFY(cuda::std::is_sufficiently_aligned<Alignment>(&obj),
                    "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
     }
 
@@ -298,11 +294,10 @@ struct nstream_kernel
 // overwrites one input stream
 C2H_TEST("DeviceTransform::Transform BabelStream nstream",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
-         offset_types)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   const offset_t num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<type> a(num_items, thrust::no_init);
@@ -330,7 +325,8 @@ struct sum_five
   __host__ __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
     -> double
   {
-    return a + b + c + d + e;
+    return static_cast<double>(a) + static_cast<double>(b) + static_cast<double>(c) + static_cast<double>(d)
+         + static_cast<double>(e);
   }
 };
 
@@ -791,10 +787,10 @@ C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
   // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
   // it would synchronize
   fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
   thrust::reduce_into(
-    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, ::cuda::std::logical_and{});
+    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, cuda::std::logical_and{});
   REQUIRE(result[0]); // access finally synchronize
 }
 #endif

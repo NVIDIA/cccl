@@ -95,11 +95,11 @@ TEST_FUNC void test()
   assert(static_cast<cuda::std::size_t>(base(end) - oa) == cuda::std::min(sample_size, is));
   // sample() is deterministic but non-reproducible;
   // its results can vary between implementations.
-  _CCCL_ASSERT(cuda::std::equal(oa, oa + sample_size, oa1), "");
+  assert(cuda::std::equal(oa, oa + sample_size, oa1));
   end = cuda::std::sample(
     PopulationIterator(ia), PopulationIterator(ia + is), SampleIterator(oa), sample_size, cuda::std::move(g));
   assert(static_cast<cuda::std::size_t>(base(end) - oa) == cuda::std::min(sample_size, is));
-  _CCCL_ASSERT(cuda::std::equal(oa, oa + sample_size, oa2), "");
+  assert(cuda::std::equal(oa, oa + sample_size, oa2));
 }
 
 template <template <class...> class PopulationIteratorType,

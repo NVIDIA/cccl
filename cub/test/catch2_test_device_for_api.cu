@@ -355,3 +355,70 @@ C2H_TEST("Device for each copy works without temporary storage", "[for_each][dev
 
   REQUIRE(count == expected);
 }
+
+// Guard tests: each public DeviceFor method must resolve unambiguously
+// to the legacy temp-storage overload when called in its minimal form
+// (no explicit stream, all defaults left implicit), even though the env
+// and bare-stream overloads are also in scope. If the env-overload
+// SFINAE is wrong, these become "ambiguous overload" compile errors.
+
+struct noop_t
+{
+  __device__ void operator()(int) const {}
+};
+
+struct noop_ref_t
+{
+  __device__ void operator()(int&) const {}
+};
+
+C2H_TEST("DeviceFor::Bulk legacy size-query is unambiguous", "[for][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int n                     = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, n, noop_t{}));
+}
+
+C2H_TEST("DeviceFor::ForEachN legacy size-query is unambiguous", "[for][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int n                     = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, d_in, n, noop_ref_t{}));
+}
+
+C2H_TEST("DeviceFor::ForEach legacy size-query is unambiguous", "[for][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_first              = nullptr;
+  int* d_last               = nullptr;
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_ref_t{}));
+}
+
+C2H_TEST("DeviceFor::ForEachCopyN legacy size-query is unambiguous", "[for][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int n                     = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, d_in, n, noop_t{}));
+}
+
+C2H_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_first              = nullptr;
+  int* d_last               = nullptr;
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_t{}));
+}
+
+// todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up

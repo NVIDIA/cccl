@@ -28,10 +28,9 @@ TEST_FUNC constexpr bool tests()
   using BasePointerTraits = cuda::std::pointer_traits<Iter>;
   static_assert(cuda::std::is_same<typename PointerTraits::pointer, BoundedIter>::value);
   static_assert(
-    cuda::std::is_same<typename PointerTraits::element_type, typename BasePointerTraits::element_type>::value, "");
+    cuda::std::is_same<typename PointerTraits::element_type, typename BasePointerTraits::element_type>::value);
   static_assert(
-    cuda::std::is_same<typename PointerTraits::difference_type, typename BasePointerTraits::difference_type>::value,
-    "");
+    cuda::std::is_same<typename PointerTraits::difference_type, typename BasePointerTraits::difference_type>::value);
 
   {
     int array[]                                 = {0, 1, 2, 3, 4};

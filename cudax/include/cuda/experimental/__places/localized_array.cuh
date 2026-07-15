@@ -243,7 +243,7 @@ public:
         int set_access = 1;
         if (item_dev != d)
         {
-          cuda_try(cudaDeviceCanAccessPeer(&set_access, d, item_dev));
+          set_access = cuda_try<cudaDeviceCanAccessPeer>(d, item_dev);
 
           if (!set_access)
           {
@@ -358,8 +358,9 @@ private:
   template <typename F>
   pos4 index_to_grid_pos(size_t linearized_index, F&& delinearize)
   {
-    pos4 coords        = delinearize(linearized_index);
-    pos4 eplace_coords = mapper(coords, data_dims, grid.get_dims());
+    const pos4 coords = delinearize(linearized_index);
+    pos4 eplace_coords(0);
+    mapper(&eplace_coords, coords, data_dims, grid.get_dims());
     return eplace_coords;
   }
 

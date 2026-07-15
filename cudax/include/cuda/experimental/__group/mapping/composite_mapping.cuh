@@ -42,14 +42,14 @@ class composite_mapping
 {
   ::cuda::std::tuple<_Mappings...> __mappings_;
 
-  template <::cuda::std::size_t _Ip = 0, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  __map_impl(const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  template <::cuda::std::size_t _Ip = 0, class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto __map_impl(
+    const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
-    const auto __result = ::cuda::std::get<_Ip>(__mappings_).map(__parent, __prev_mapping_result);
+    const auto __result = ::cuda::std::get<_Ip>(__mappings_).map(__unit, __parent, __prev_mapping_result);
     if constexpr (_Ip + 1 < sizeof...(_Mappings))
     {
-      return __map_impl<_Ip + 1>(__parent, __result);
+      return __map_impl<_Ip + 1>(__unit, __parent, __result);
     }
     else
     {
@@ -68,16 +68,16 @@ public:
     return __mappings_;
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
-    return __map_impl(__parent, __prev_mapping_result);
+    return __map_impl(__unit, __parent, __prev_mapping_result);
   }
 };
 
 template <class... _Mappings>
-_CCCL_DEVICE composite_mapping(const _Mappings&...) -> composite_mapping<_Mappings...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES composite_mapping(const _Mappings&...) -> composite_mapping<_Mappings...>;
 
 _CCCL_TEMPLATE(class _Lhs, class _Rhs)
 _CCCL_REQUIRES(__is_group_mapping_v<_Lhs> _CCCL_AND __is_group_mapping_v<_Rhs>)

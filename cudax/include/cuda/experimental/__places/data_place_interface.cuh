@@ -52,8 +52,10 @@ using ::cuda::experimental::stf::pos4;
 // Forward declarations
 class exec_place;
 
-//! Function type for computing executor placement from data coordinates
-using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
+//! Function type for computing executor placement from data coordinates.
+//! Uses an out-pointer convention so the signature is trivially representable
+//! in FFI frameworks (ctypes, cffi, Rust) that cannot return C structs.
+using partition_fn_t = void (*)(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims);
 
 /**
  * @brief Abstract interface for data_place implementations

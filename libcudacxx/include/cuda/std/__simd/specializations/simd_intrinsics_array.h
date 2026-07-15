@@ -58,7 +58,7 @@ template <typename _Tp, __simd_size_type _Np>
 inline constexpr size_t __simd_storage_copy_size_u32<__simd_storage<_Tp, __fixed_size<_Np>>> = _Np * sizeof(_Tp);
 
 template <typename _SimdStorage, typename _SimdStorageU32 = __simd_storage_u32_t<_SimdStorage>>
-[[nodiscard]] _CCCL_API constexpr _SimdStorageU32 __to_unsigned_storage(const _SimdStorage& __s) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SimdStorageU32 __to_unsigned_storage(const _SimdStorage& __s) noexcept
 {
   _SimdStorageU32 __tmp{};
   const auto __input_data = ::cuda::std::assume_aligned<alignof(uint32_t)>(__s.__data);
@@ -67,7 +67,8 @@ template <typename _SimdStorage, typename _SimdStorageU32 = __simd_storage_u32_t
 }
 
 template <typename _SimdStorage, typename _SimdStorageU32 = __simd_storage_u32_t<_SimdStorage>>
-[[nodiscard]] _CCCL_API constexpr _SimdStorage __copy_from_unsigned_storage(const _SimdStorageU32& __tmp) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SimdStorage
+__copy_from_unsigned_storage(const _SimdStorageU32& __tmp) noexcept
 {
   _SimdStorage __result{};
   const auto __result_ptr = ::cuda::std::assume_aligned<alignof(uint32_t)>(__result.__data);
@@ -75,51 +76,35 @@ template <typename _SimdStorage, typename _SimdStorageU32 = __simd_storage_u32_t
   return __result;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// device-only functions
+
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 
-//----------------------------------------------------------------------------------------------------------------------
-// SIMD Packed Integer Addition over Array<uint32_t, N>
-
-template <typename _Tp, size_t _Np>
+template <size_t _Np>
 [[nodiscard]] _CCCL_DEVICE_API constexpr __array_u32_t<_Np>
 __vadd_16bit_x2(const __array_u32_t<_Np>& __lhs_u, const __array_u32_t<_Np>& __rhs_u) noexcept
 {
-  static_assert(sizeof(_Tp) == 2, "Unsupported element type");
   __array_u32_t<_Np> __result_u;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (size_t __i = 0; __i < _Np; ++__i)
   {
-    if constexpr (is_unsigned_v<_Tp>)
-    {
-      __result_u[__i] = ::cuda::std::simd::__vadd_u16x2(__lhs_u[__i], __rhs_u[__i]);
-    }
-    else
-    {
-      __result_u[__i] = ::cuda::std::simd::__vadd_s16x2(__lhs_u[__i], __rhs_u[__i]);
-    }
+    __result_u[__i] = ::cuda::std::simd::__vadd_16x2(__lhs_u[__i], __rhs_u[__i]);
   }
   return __result_u;
 }
 
 #  if _CCCL_HAS_SIMD_8BIT()
 
-template <typename _Tp, size_t _Np>
+template <size_t _Np>
 [[nodiscard]] _CCCL_DEVICE_API constexpr __array_u32_t<_Np>
 __vadd_8bit_x4(const __array_u32_t<_Np>& __lhs_u, const __array_u32_t<_Np>& __rhs_u) noexcept
 {
-  static_assert(sizeof(_Tp) == 1, "Unsupported element type");
   __array_u32_t<_Np> __result_u;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (size_t __i = 0; __i < _Np; ++__i)
   {
-    if constexpr (is_unsigned_v<_Tp>)
-    {
-      __result_u[__i] = ::cuda::std::simd::__vadd_u8x4(__lhs_u[__i], __rhs_u[__i]);
-    }
-    else
-    {
-      __result_u[__i] = ::cuda::std::simd::__vadd_s8x4(__lhs_u[__i], __rhs_u[__i]);
-    }
+    __result_u[__i] = ::cuda::std::simd::__vadd_8x4(__lhs_u[__i], __rhs_u[__i]);
   }
   return __result_u;
 }

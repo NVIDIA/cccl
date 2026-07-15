@@ -31,39 +31,26 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-//----------------------------------------------------------------------------------------------------------------------
-// SIMD Packed Integer Addition
+// Wrapping half-word/byte add produces bit-identical results for signed and unsigned operands (no saturation, no
+// cross-lane carry), so a single intrinsic is used for both signednesses.
 
 [[nodiscard]] _CCCL_DEVICE_API inline uint32_t
-__vadd_u16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
+__vadd_16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
   NV_IF_TARGET(NV_PROVIDES_SM_90,
                (return ::__vadd2(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_u16x2: Unsupported architecture"); return uint32_t{};));
-}
-
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
-__vadd_s16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
-{
-  // prevent MSVC warning
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               ({
-                 uint32_t __result{};
-                 asm("add.s16x2 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_s16x2: Unsupported architecture"); return uint32_t{};));
+               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_16x2: Unsupported architecture"); return uint32_t{};));
 }
 
 #  if _CCCL_HAS_SIMD_8BIT()
 
 [[nodiscard]] _CCCL_DEVICE_API inline uint32_t
-__vadd_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
+__vadd_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
   NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
                (return ::__vadd4(__lhs, __rhs);), //
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_u8x4: Unsupported architecture"); return uint32_t{};));
+               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_8x4: Unsupported architecture"); return uint32_t{};));
 #    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
   NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
                ({

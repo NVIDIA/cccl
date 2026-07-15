@@ -133,7 +133,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   const offset_t medium_size = num_items / 128;
   const offset_t large_size  = num_items / 16;
 
-  assert(small_size > 0);
+  REQUIRE(small_size > 0);
 
   // Range of segment sizes to generate
   // Note that the segment range [0, 1] may also include one last segment with more than 1 items
@@ -177,12 +177,13 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     {
       compute_exclusive_scan_reference(
         h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
         h_ref.begin() + h_segment_offsets[i],
         output_t{},
         op_t{});
 
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
 
@@ -193,7 +194,8 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
   }
@@ -216,12 +218,13 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     {
       compute_inclusive_scan_reference(
         h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
         h_ref.begin() + h_segment_offsets[i],
         scan_op,
         h_accum_t{});
 
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
 
@@ -237,7 +240,8 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
       for (offset_t i = 0; i < num_segments; ++i)
       {
-        bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+        bool correct = check_segment(
+          h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
         REQUIRE(correct);
       }
     }
@@ -276,12 +280,13 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     {
       compute_inclusive_scan_reference(
         h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
         h_ref.begin() + h_segment_offsets[i],
         scan_op,
         h_accum_t{init_value});
       // Verify result
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
 
@@ -294,7 +299,8 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     for (offset_t i = 0; i < num_segments; ++i)
     {
       // Verify result
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
   }
@@ -313,12 +319,13 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     {
       compute_exclusive_scan_reference(
         h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
         h_ref.begin() + h_segment_offsets[i],
         output_t{},
         cuda::std::plus<>{});
 
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
 
@@ -329,7 +336,8 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
   }
@@ -347,12 +355,13 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     {
       compute_inclusive_scan_reference(
         h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
         h_ref.begin() + h_segment_offsets[i],
         cuda::std::plus<>{},
         output_t{});
 
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
 
@@ -363,7 +372,8 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
   }

@@ -11,6 +11,7 @@
 
 // See llvm.org/PR20855
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -98,17 +99,13 @@ TEST_FUNC void compile_tests()
 
 TEST_FUNC void allocator_tests()
 {
-  // cuda::std::allocator not supported
-  // cuda::std::allocator<void> alloc;
+  cuda::std::allocator<void> alloc;
   int x = 42;
   {
     cuda::std::tuple<int&> t(cuda::std::ref(x));
     assert(&cuda::std::get<0>(t) == &x);
-    // cuda::std::allocator not supported
-    /*
     cuda::std::tuple<int&> t1(cuda::std::allocator_arg, alloc, cuda::std::ref(x));
     assert(&cuda::std::get<0>(t1) == &x);
-    */
   }
   {
     auto r         = cuda::std::ref(x);
@@ -117,26 +114,20 @@ TEST_FUNC void allocator_tests()
     assert(&cuda::std::get<0>(t) == &x);
     cuda::std::tuple<int&> t1(cr);
     assert(&cuda::std::get<0>(t1) == &x);
-    // cuda::std::allocator not supported
-    /*
     cuda::std::tuple<int&> t2(cuda::std::allocator_arg, alloc, r);
     assert(&cuda::std::get<0>(t2) == &x);
     cuda::std::tuple<int&> t3(cuda::std::allocator_arg, alloc, cr);
     assert(&cuda::std::get<0>(t3) == &x);
-    */
   }
   {
     cuda::std::tuple<int const&> t(cuda::std::ref(x));
     assert(&cuda::std::get<0>(t) == &x);
     cuda::std::tuple<int const&> t2(cuda::std::cref(x));
     assert(&cuda::std::get<0>(t2) == &x);
-    // cuda::std::allocator not supported
-    /*
     cuda::std::tuple<int const&> t3(cuda::std::allocator_arg, alloc, cuda::std::ref(x));
     assert(&cuda::std::get<0>(t3) == &x);
     cuda::std::tuple<int const&> t4(cuda::std::allocator_arg, alloc, cuda::std::cref(x));
     assert(&cuda::std::get<0>(t4) == &x);
-    */
   }
   {
     auto r  = cuda::std::ref(x);
@@ -145,13 +136,10 @@ TEST_FUNC void allocator_tests()
     assert(&cuda::std::get<0>(t) == &x);
     cuda::std::tuple<int const&> t2(cr);
     assert(&cuda::std::get<0>(t2) == &x);
-    // cuda::std::allocator not supported
-    /*
     cuda::std::tuple<int const&> t3(cuda::std::allocator_arg, alloc, r);
     assert(&cuda::std::get<0>(t3) == &x);
     cuda::std::tuple<int const&> t4(cuda::std::allocator_arg, alloc, cr);
     assert(&cuda::std::get<0>(t4) == &x);
-    */
   }
 }
 

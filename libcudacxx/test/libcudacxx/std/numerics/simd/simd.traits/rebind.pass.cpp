@@ -17,6 +17,7 @@
 // template<class T, class V> using rebind_t = typename rebind<T, V>::type;
 
 #include <cuda/std/__simd_>
+#include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -50,9 +51,9 @@ TEST_FUNC void test_rebind_vec_sizes()
 template <typename NewT, typename OldT, int N>
 TEST_FUNC void test_rebind_mask()
 {
-  using OldMask = simd::basic_mask<sizeof(OldT), simd::fixed_size<N>>;
+  using OldMask = simd::mask<OldT, N>;
   using Result  = simd::rebind_t<NewT, OldMask>;
-  static_assert(cuda::std::is_same_v<Result, simd::basic_mask<sizeof(NewT), simd::fixed_size<N>>>);
+  static_assert(cuda::std::is_same_v<Result, simd::mask<NewT, N>>);
   static_assert(Result::size() == N);
 }
 
@@ -95,6 +96,10 @@ TEST_FUNC void test()
   test_rebind_mask_sizes<char, int>();
   test_rebind_mask_sizes<double, int>();
   test_rebind_mask_sizes<short, long long>();
+  test_rebind_mask_sizes<cuda::std::complex<float>, int>();
+#if _CCCL_HAS_INT128()
+  test_rebind_mask_sizes<cuda::std::complex<double>, int>();
+#endif // _CCCL_HAS_INT128()
 
   // rebind_t alias matches rebind::type
   test_rebind_t_alias<float, simd::vec<int, 4>>();

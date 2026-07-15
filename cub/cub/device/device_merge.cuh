@@ -22,11 +22,32 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! @rst
 //! DeviceMerge provides device-wide, parallel operations for merging two sorted sequences of values (called keys) or
 //! key-value pairs in device-accessible memory. The sorting order is determined by a comparison functor (default:
-//! less-than), which has to establish a [strict weak ordering].
+//! less-than), which has to establish a `strict weak ordering
+//! <https://en.cppreference.com/w/cpp/concepts/strict_weak_order>`_.
 //!
-//! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceMerge that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref MergePolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin merge-keys-policy-selector
+//!      :end-before: example-end merge-keys-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin merge-keys-tuning
+//!      :end-before: example-end merge-keys-tuning
+//!
+//! @endrst
 struct DeviceMerge
 {
   //! @rst
@@ -59,8 +80,9 @@ struct DeviceMerge
   //! @tparam CompareOp **[deduced]** Binary predicate to compare the input iterator's value types. Must have a
   //! signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
   //!
-  //! @param[in] d_temp_storage Device-accessible allocation of temporary storage. When `nullptr`, the required
-  //! allocation size is written to `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
   //! @param[in,out] temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation.
   //! @param[in] keys_in1 Iterator to the beginning of the first sorted input sequence.
   //! @param[in] num_keys1 Number of keys in the first input sequence.
@@ -193,7 +215,7 @@ struct DeviceMerge
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
     using default_policy_selector =
-      detail::merge::policy_selector_from_types<detail::it_value_t<KeyIteratorIn1>, NullType, int64_t>;
+      detail::merge::policy_selector_from_types<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, int64_t>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::merge::dispatch(
@@ -248,8 +270,9 @@ struct DeviceMerge
   //! @tparam CompareOp **[deduced]** Binary predicate to compare the key input iterator's value types. Must have a
   //! signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
   //!
-  //! @param[in] d_temp_storage Device-accessible allocation of temporary storage. When `nullptr`, the required
-  //! allocation size is written to `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
   //! @param[in,out] temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation.
   //! @param[in] keys_in1 Iterator to the beginning of the keys of the first sorted input sequence.
   //! @param[in] values_in1 Iterator to the beginning of the values of the first sorted input sequence.
@@ -417,7 +440,7 @@ struct DeviceMerge
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
     using default_policy_selector = detail::merge::
-      policy_selector_from_types<detail::it_value_t<KeyIteratorIn1>, detail::it_value_t<ValueIteratorIn1>, int64_t>;
+      policy_selector_from_types<KeyIteratorIn1, ValueIteratorIn1, KeyIteratorIn2, ValueIteratorIn2, int64_t>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::merge::dispatch(

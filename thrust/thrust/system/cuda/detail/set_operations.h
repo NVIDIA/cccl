@@ -198,13 +198,15 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
-  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-    NOMINAL_4B_ITEMS_PER_THREAD,
-    ::cuda::std::max(
-      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                        (::cuda::std::max) (1,
+                                            static_cast<int>(
+                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
+                                              / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -213,13 +215,15 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
-  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-    NOMINAL_4B_ITEMS_PER_THREAD,
-    ::cuda::std::max(
-      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                        (::cuda::std::max) (1,
+                                            static_cast<int>(
+                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
+                                              / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -416,9 +420,9 @@ struct SetOpAgent
       }
       __syncthreads();
 
-      for (int item = threadIdx.x; item < tile_output_count; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
       {
-        output[tile_output_prefix + item] = shared[item];
+        output[tile_output_prefix + item] = shared[item]; // NOLINT(bugprone-misplaced-widening-cast)
       }
     }
 
@@ -594,7 +598,7 @@ struct SetOpAgent
 
       if (IS_LAST_TILE && threadIdx.x == 0)
       {
-        *output_count = tile_output_prefix + tile_output_count;
+        *output_count = static_cast<std::size_t>(tile_output_prefix) + tile_output_count;
       }
     }
 
@@ -632,8 +636,8 @@ struct SetOpAgent
         , partitions(partitions_)
         , output_count(output_count_)
     {
-      int tile_idx  = blockIdx.x;
-      int num_tiles = gridDim.x;
+      int tile_idx  = static_cast<int>(blockIdx.x);
+      int num_tiles = static_cast<int>(gridDim.x);
 
       if (tile_idx < num_tiles - 1)
       {
@@ -709,7 +713,7 @@ struct PartitionAgent
     int items_per_tile,
     char* /*shmem*/)
   {
-    Size partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
+    Size partition_idx = static_cast<Size>(blockDim.x) * blockIdx.x + threadIdx.x;
     if (partition_idx < num_partitions)
     {
       Size partition_at = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);

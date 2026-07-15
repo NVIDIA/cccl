@@ -22,12 +22,16 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
 using __simd_size_type = ptrdiff_t;
+
+template <__simd_size_type _Np>
+using __simd_size_constant = integral_constant<__simd_size_type, _Np>;
 
 // [simd.expos.abi], simd ABI tags
 template <__simd_size_type _Np>

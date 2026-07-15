@@ -83,6 +83,24 @@ struct __stride_compare
   }
 };
 
+//! @brief Computes the mode permutation that orders a tensor by ascending absolute stride.
+//!
+//! @param[in] __tensor Raw tensor whose stride order is inspected
+//! @return Mode permutation sorted by ascending absolute stride
+template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::array<::cuda::std::size_t, _MaxRank>
+__stride_order(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
+{
+  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __perm{};
+  for (::cuda::std::size_t __i = 0; __i < _MaxRank; ++__i)
+  {
+    __perm[__i] = __i;
+  }
+  ::cuda::std::stable_sort(
+    __perm.begin(), __perm.begin() + __tensor.__rank, __stride_compare<_StrideT, _MaxRank>{__tensor.__strides});
+  return __perm;
+}
+
 //! @brief Reorders tensor modes by ascending absolute stride.
 //!
 //! After sorting, mode 0 has the smallest absolute stride (innermost) and mode rank-1 has the largest (outermost).
@@ -96,13 +114,7 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __rank_t       = typename __raw_tensor_t::__rank_t;
   const auto __rank    = __tensor.__rank;
-  ::cuda::std::array<__rank_t, _MaxRank> __perm{};
-  for (__rank_t __i = 0; __i < __rank; ++__i)
-  {
-    __perm[__i] = __i;
-  }
-  ::cuda::std::stable_sort(
-    __perm.begin(), __perm.begin() + __rank, __stride_compare<_StrideT, _MaxRank>{__tensor.__strides});
+  const auto __perm    = ::cuda::experimental::__stride_order(__tensor);
 
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
   for (__rank_t __i = 0; __i < __rank; ++__i)
