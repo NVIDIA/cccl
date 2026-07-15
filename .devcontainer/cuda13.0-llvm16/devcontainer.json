@@ -16,6 +16,11 @@
     "-c",
     "set -euo pipefail; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/.{aws,cache,config}; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/{build,wheelhouse}; if test -z \"${localEnv:WSLENV}\"; then docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/build\" --opt o=bind cccl-build >/dev/null; docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/wheelhouse\" --opt o=bind cccl-wheelhouse >/dev/null; else docker volume create cccl-build >/dev/null; docker volume create cccl-wheelhouse >/dev/null; fi;"
   ],
+  "postCreateCommand": [
+    "/bin/bash",
+    "-c",
+    "if ${USE_SCCACHE_DIST:-false} && test -z \"${DISABLE_SCCACHE:+x}\" && test -z \"${SCCACHE_DIST_URL:-}\"; then echo \"export SCCACHE_DIST_URL='https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com'\" >> /home/coder/.bashrc; fi"
+  ],
   "postAttachCommand": [
     "/bin/bash",
     "-c",
@@ -38,6 +43,8 @@
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda13.0-llvm16",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
+    "USE_SCCACHE_DIST": "${localEnv:USE_SCCACHE_DIST:true}",
+    "DISABLE_SCCACHE": "${localEnv:DISABLE_SCCACHE:}",
     "CCCL_CUDA_VERSION": "13.0",
     "CCCL_HOST_COMPILER": "llvm",
     "CCCL_HOST_COMPILER_VERSION": "16",
