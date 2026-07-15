@@ -1550,7 +1550,7 @@ cdef class task:
         self._t = NULL
 
     def start(self):
-        # This is ignored if this is not a graph task
+        # This is ignored if this is not a graph task
         stf_task_enable_capture(self._t)
 
         stf_task_start(self._t)
@@ -1910,7 +1910,7 @@ cdef class async_resources:
 
 cdef class context:
     cdef stf_ctx_handle _ctx
-    # Is this a context that we have borrowed ?
+    # Is this a context that we have borrowed ?
     cdef bint _borrowed
     # Python-only primary-context retain. This is intentionally kept out of the
     # C++ core and exists only to shield Python interop with frameworks that
