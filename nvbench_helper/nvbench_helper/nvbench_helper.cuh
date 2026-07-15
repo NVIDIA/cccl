@@ -283,6 +283,11 @@ void gen_host(seed_t seed, cuda::std::span<T> data, bit_entropy entropy, T min, 
 template <typename T>
 void gen_device(seed_t seed, cuda::std::span<T> data, bit_entropy entropy, T min, T max);
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <typename T>
+void gen_device(seed_t seed, cuda::stream_ref stream, cuda::std::span<T> data, bit_entropy entropy, T min, T max);
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 template <typename T>
 void gen_uniform_key_segments_host(
   seed_t seed, cuda::std::span<T> data, std::size_t min_segment_size, std::size_t max_segment_size);
@@ -335,7 +340,7 @@ struct generator_base_t
     stream.sync();
 
     cuda::std::span<T> span(buffer.data(), buffer.size());
-    gen_device(m_seed, span, m_entropy, min, max);
+    gen_device(m_seed, stream, span, m_entropy, min, max);
 
     ++m_seed;
     return buffer;

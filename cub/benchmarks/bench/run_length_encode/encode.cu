@@ -53,7 +53,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   auto num_runs_out = cuda::make_buffer<offset_t>(stream, pinned_memory_resource(), 1, cuda::no_init);
   auto out_counts   = cuda::make_device_buffer<RunLengthT>(stream, device, elements, cuda::no_init);
   auto out_keys     = cuda::make_device_buffer<T>(stream, device, elements, cuda::no_init);
-  auto in_keys =
+  const auto in_keys =
     generate.uniform.key_segments(elements, min_segment_size, max_segment_size).device_buffer<T>(stream, device);
 
   const T* d_in_keys       = in_keys.data();

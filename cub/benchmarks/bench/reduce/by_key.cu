@@ -49,11 +49,11 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
   const auto device = stream.device();
   caching_allocator_t alloc;
 
-  auto num_runs_out = cuda::make_buffer<OffsetT>(stream, pinned_memory_resource(), 1, cuda::no_init);
-  auto in_vals      = cuda::make_device_buffer<ValueT>(stream, device, elements, ValueT{});
-  auto out_vals     = cuda::make_device_buffer<ValueT>(stream, device, elements, cuda::no_init);
-  auto out_keys     = cuda::make_device_buffer<KeyT>(stream, device, elements, cuda::no_init);
-  auto in_keys =
+  auto num_runs_out  = cuda::make_buffer<OffsetT>(stream, pinned_memory_resource(), 1, cuda::no_init);
+  const auto in_vals = cuda::make_device_buffer<ValueT>(stream, device, elements, ValueT{});
+  auto out_vals      = cuda::make_device_buffer<ValueT>(stream, device, elements, cuda::no_init);
+  auto out_keys      = cuda::make_device_buffer<KeyT>(stream, device, elements, cuda::no_init);
+  const auto in_keys =
     generate.uniform.key_segments(elements, min_segment_size, max_segment_size).device_buffer<KeyT>(stream, device);
 
   const KeyT* d_in_keys   = in_keys.data();
