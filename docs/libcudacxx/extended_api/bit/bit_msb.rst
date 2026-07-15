@@ -10,7 +10,7 @@ Defined in the ``<cuda/bit>`` header.
    namespace cuda {
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
    int bit_msb(T value) noexcept;
 
    } // namespace cuda
@@ -41,6 +41,7 @@ Example
     #include <cuda/bit>
     #include <cuda/std/cassert>
     #include <cuda/std/cstdint>
+    #include <cuda_runtime_api.h>
 
     __global__ void bit_msb_kernel() {
         assert(cuda::bit_msb(uint32_t{0}) == -1);

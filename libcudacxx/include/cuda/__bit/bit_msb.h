@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,7 +40,9 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int bit_msb(const _Tp __value) noexcept
 {
-  return static_cast<int>(::cuda::std::__bit_log2(__value));
+  const auto __ret = static_cast<int>(::cuda::std::__bit_log2(__value));
+  _CCCL_ASSUME(__ret >= -1 && __ret < ::cuda::std::numeric_limits<_Tp>::digits);
+  return __ret;
 }
 
 _CCCL_END_NAMESPACE_CUDA
