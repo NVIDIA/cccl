@@ -28,39 +28,45 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-//! Returns if logging is enabled
-[[nodiscard]] _CCCL_HOST_API inline bool logging_enabled() noexcept
+//! Returns if logging is enabled CCCL_EXPERIMENTAL_LOGGING. (always false in device code)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool logging_enabled() noexcept
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
-  static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
-  return enabled;
-#else // _CCCL_HOSTED()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
+                 return enabled;
+               }));
+#endif // _CCCL_HOSTED()
   return false;
+}
+
+//! Logs the message when called from host code, independently of whether logging is enabled
+_CCCL_HOST_DEVICE_API inline void log_always([[maybe_unused]] const char* fmt, ...) noexcept
+{
+#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 va_list args;
+                 va_start(args, fmt);
+                 ::vprintf(fmt, args);
+                 va_end(args);
+               }));
 #endif // _CCCL_HOSTED()
 }
 
-//! Logs the message, independently of whether logging is enabled
-_CCCL_HOST_API inline void log_always([[maybe_unused]] const char* fmt, ...) noexcept
+//! Logs the message when called from host code and logging is enabled
+_CCCL_HOST_DEVICE_API inline void log(const char* fmt, ...) noexcept
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
-  va_list args;
-  va_start(args, fmt);
-  ::vprintf(fmt, args);
-  va_end(args);
-#endif // _CCCL_HOSTED()
-}
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 if (logging_enabled())
+                 {
+                   va_list args;
+                   va_start(args, fmt);
+                   ::vprintf(fmt, args);
+                   va_end(args);
+                 }
+               }));
 
-//! Logs the message when logging is enabled
-_CCCL_HOST_API inline void log(const char* fmt, ...) noexcept
-{
-#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
-  if (logging_enabled())
-  {
-    va_list args;
-    va_start(args, fmt);
-    ::vprintf(fmt, args);
-    va_end(args);
-  }
 #endif // _CCCL_HOSTED()
 }
 } // namespace detail
