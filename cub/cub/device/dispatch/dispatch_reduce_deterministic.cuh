@@ -269,7 +269,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
       }
     }();
 
-// Log device_reduce_sweep_kernel configuration
+    // Log device_reduce_sweep_kernel configuration
     log("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
         "per thread, %d SM occupancy\n",
         current_grid_size,
