@@ -27,6 +27,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
+#include <cuda/experimental/group.cuh>
 
 #include <cooperative_groups.h>
 
@@ -157,32 +158,32 @@ __insert_if_n(_InputIt __first, detail::__index_type __n, _StencilIt __stencil, 
 }
 
 //! @brief Contains test with predicate.
-template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __contains_if_n(
-  _InputIt __first,
-  detail::__index_type __n,
-  _StencilIt __stencil,
-  _Predicate __pred,
-  _OutputIt __output_begin,
-  _Ref __ref)
+template <int _TileSize>
+struct __contains_if_n_kernel
 {
-  const auto __block       = ::cooperative_groups::this_thread_block();
-  const auto __loop_stride = detail::__grid_stride() / _CgSize;
-  auto __idx               = detail::__global_thread_id() / _CgSize;
-
-  while (__idx < __n)
+  template <class _Config, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+  _CCCL_DEVICE_API void operator()(
+    _Config __config,
+    _InputIt __first,
+    detail::__index_type __n,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin,
+    _Ref __ref) const
   {
-    const auto __tile     = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
-    using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
-    const __value_t __key = *(__first + __idx);
-    const auto __found    = __pred(*(__stencil + __idx)) ? __ref.contains(__tile, __key) : false;
-    if (__tile.thread_rank() == 0)
+    const group __tile{gpu_thread, this_warp{__config}, group_by<_TileSize>{}, lane_synchronizer{}};
+
+    for (auto __i = __tile.rank(grid); __i < __n; __i += __tile.count(grid))
     {
-      *(__output_begin + __idx) = __found;
+      const auto __key   = *(__first + __i);
+      const auto __found = __pred(*(__stencil + __i)) ? __ref.contains(__tile, __key) : false;
+      if (gpu_thread.is_root_rank(__tile))
+      {
+        *(__output_begin + __i) = __found;
+      }
     }
-    __idx += __loop_stride;
   }
-}
+};
 } // namespace cuda::experimental::cuco::__open_addressing
 
 _CCCL_DIAG_POP

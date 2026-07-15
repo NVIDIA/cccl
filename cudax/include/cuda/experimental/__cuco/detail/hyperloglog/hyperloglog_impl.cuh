@@ -28,12 +28,15 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/in_range.h>
 #include <cuda/atomic>
+#include <cuda/hierarchy>
+#include <cuda/launch>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/span>
 
@@ -41,6 +44,7 @@
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
+#include <cuda/experimental/group.cuh>
 
 #include <cooperative_groups.h>
 
@@ -123,10 +127,26 @@ public:
   //! @tparam _CG CUDA Cooperative Group type
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
-  template <class _CG>
+  _CCCL_TEMPLATE(class _CG)
+  _CCCL_REQUIRES((!is_group<_CG>) )
   _CCCL_DEVICE_API constexpr void __clear(_CG __group) noexcept
   {
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
+    {
+      __sketch[__i] = 0;
+    }
+  }
+
+  //! @brief Resets the estimator, i.e., clears the current count estimate.
+  //!
+  //! @tparam _Group Group type
+  //!
+  //! @param __group Group this operation is executed in
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(is_group<_Group>)
+  _CCCL_DEVICE_API constexpr void __clear(const _Group& __group) noexcept
+  {
+    for (auto __i = gpu_thread.rank_as<int>(__group); __i < __sketch.size(); __i += gpu_thread.count_as<int>(__group))
     {
       __sketch[__i] = 0;
     }
@@ -149,8 +169,8 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   _CCCL_HOST_API constexpr void __clear_async(::cuda::stream_ref __stream)
   {
-    constexpr auto __block_size = 1024;
-    ::cuda::experimental::cuco::__hyperloglog_ns::__clear<<<1, __block_size, 0, __stream.get()>>>(*this);
+    const auto __config = ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<1024>());
+    ::cuda::launch(__stream, __config, __hyperloglog_ns::__clear_kernel{}, *this);
   }
 
   //! @brief Adds an item to the estimator.
@@ -176,11 +196,19 @@ public:
   template <class _InputIt>
   _CCCL_HOST_API constexpr void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
-    const auto __num_items = ::cuda::std::distance(__first, __last);
+    // todo(dabayer): We want to use cuda::launch here, but it doesn't support auto block and grid dims selection based
+    // on the occupancy. This means that we need to implement parts of cuda::launch ourselves here in a very ugly way..
+
+    auto __num_items = ::cuda::std::distance(__first, __last);
     if (__num_items == 0)
     {
       return;
     }
+
+    // We will use 1D grid and blocks with dynamically known size.
+    using _Config = decltype(::cuda::make_config(
+      ::cuda::grid_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{}),
+      ::cuda::block_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{})));
 
     int __grid_size         = 0;
     int __block_size        = 0;
@@ -201,16 +229,16 @@ public:
       {
         using ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized;
         case 2:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<2, __hyperloglog_impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<2, _Config, __hyperloglog_impl>);
           break;
         case 4:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<4, __hyperloglog_impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<4, _Config, __hyperloglog_impl>);
           break;
         case 8:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<8, __hyperloglog_impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<8, _Config, __hyperloglog_impl>);
           break;
         case 16:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<16, __hyperloglog_impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<16, _Config, __hyperloglog_impl>);
           break;
       };
     }
@@ -230,10 +258,13 @@ public:
           __kernel,
           __shmem_bytes);
 
-        const auto __ptr      = ::cuda::std::to_address(__first);
-        void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
-                                 const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
-                                 reinterpret_cast<void*>(this)};
+        auto __config = ::cuda::make_config(
+          ::cuda::grid_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{__grid_size, 1, 1}),
+          ::cuda::block_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{__block_size, 1, 1}));
+        auto __ptr = ::cuda::std::to_address(__first);
+
+        void* __kernel_args[] = {
+          ::cuda::std::addressof(__config), ::cuda::std::addressof(__ptr), ::cuda::std::addressof(__num_items), this};
         _CCCL_TRY_CUDA_API(
           ::cudaLaunchKernel,
           "cudaLaunchKernel failed",
@@ -248,10 +279,8 @@ public:
     else
     {
       __kernel = reinterpret_cast<const void*>(
-        ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, __hyperloglog_impl>);
-      void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__first)),
-                               const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
-                               reinterpret_cast<void*>(this)};
+        ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_Config, _InputIt, __hyperloglog_impl>);
+
       if (__try_reserve_shmem(__kernel, __shmem_bytes))
       {
         _CCCL_TRY_CUDA_API(
@@ -261,6 +290,13 @@ public:
           &__block_size,
           __kernel,
           __shmem_bytes);
+
+        auto __config = ::cuda::make_config(
+          ::cuda::grid_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{__grid_size, 1, 1}),
+          ::cuda::block_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{__block_size, 1, 1}));
+
+        void* __kernel_args[] = {
+          ::cuda::std::addressof(__config), ::cuda::std::addressof(__first), ::cuda::std::addressof(__num_items), this};
 
         _CCCL_TRY_CUDA_API(
           ::cudaLaunchKernel,
@@ -277,7 +313,7 @@ public:
         // Computes sketch directly in global memory. (Fallback path in case there is not enough
         // shared memory available)
         __kernel = reinterpret_cast<const void*>(
-          ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, __hyperloglog_impl>);
+          ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_Config, _InputIt, __hyperloglog_impl>);
 
         _CCCL_TRY_CUDA_API(
           ::cudaOccupancyMaxPotentialBlockSize,
@@ -286,6 +322,13 @@ public:
           &__block_size,
           __kernel,
           0);
+
+        auto __config = ::cuda::make_config(
+          ::cuda::grid_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{__grid_size, 1, 1}),
+          ::cuda::block_dims(::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>{__block_size, 1, 1}));
+
+        void* __kernel_args[] = {
+          ::cuda::std::addressof(__config), ::cuda::std::addressof(__first), ::cuda::std::addressof(__num_items), this};
 
         _CCCL_TRY_CUDA_API(
           ::cudaLaunchKernel,
@@ -328,7 +371,8 @@ public:
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
-  template <class _CG, ::cuda::thread_scope _OtherScope>
+  _CCCL_TEMPLATE(class _CG, ::cuda::thread_scope _OtherScope)
+  _CCCL_REQUIRES((!is_group<_CG>) )
   _CCCL_DEVICE_API constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
   {
     if (__other.__precision != __precision)
@@ -337,6 +381,30 @@ public:
     }
 
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
+    {
+      __update_max(__i, __other.__sketch[__i]);
+    }
+  }
+
+  //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
+  //!
+  //! @throw If __sketch_bytes() != other.__sketch_bytes(), then terminates execution with a device __trap()
+  //!
+  //! @tparam _Group Group type
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __group Group this operation is executed in
+  //! @param __other Other estimator reference to be merged into `*this`
+  _CCCL_TEMPLATE(class _Group, ::cuda::thread_scope _OtherScope)
+  _CCCL_REQUIRES(is_group<_Group>)
+  _CCCL_DEVICE_API constexpr void __merge(const _Group& __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
+  {
+    if (__other.__precision != __precision)
+    {
+      _CCCL_THROW(::std::invalid_argument, "Cannot merge estimators with different sketch sizes");
+    }
+
+    for (auto __i = gpu_thread.rank_as<int>(__group); __i < __sketch.size(); __i += gpu_thread.count_as<int>(__group))
     {
       __update_max(__i, __other.__sketch[__i]);
     }
@@ -359,9 +427,8 @@ public:
     {
       _CCCL_THROW(::std::invalid_argument, "Cannot merge estimators with different sketch sizes");
     }
-
-    constexpr auto __block_size = 1024;
-    ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
+    const auto __config = ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<1024>());
+    ::cuda::launch(__stream, __config, __hyperloglog_ns::__merge_kernel{}, __other, *this);
   }
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator.

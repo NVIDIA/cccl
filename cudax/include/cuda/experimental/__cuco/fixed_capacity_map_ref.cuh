@@ -312,6 +312,22 @@ public:
   {
     return __impl.contains(__group, __key);
   }
+
+  //! @brief Group variant of `contains`.
+  //!
+  //! @tparam _Group Group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Group of size `cg_size` performing this lookup
+  //! @param __key The key to search for
+  //!
+  //! @return `true` if the key is found
+  _CCCL_TEMPLATE(class _Group, class _ProbeKey = key_type)
+  _CCCL_REQUIRES(is_group<_Group>)
+  [[nodiscard]] _CCCL_DEVICE_API bool contains(const _Group& __group, _ProbeKey __key) const noexcept
+  {
+    return __impl.contains(__group, __key);
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco
