@@ -41,6 +41,25 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
+
+//! @def CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+//!
+//! Specific to cub::DeviceBatchedTopK (it has no effect on any other CUB algorithm).
+//!
+//! By default, cub::DeviceBatchedTopK fails at compile time (via `static_assert`) when the requested configuration
+//! cannot be served on *every* compute capability the translation unit is being compiled for. Some requests (a
+//! deterministic result, or a segment too large for the single-block backend) require the SM90+ cluster backend, so
+//! they cannot compile when a pre-SM90 compute capability is among the targets.
+//!
+//! Define this macro (before including any CUB header) to suppress that compile-time check and defer the diagnosis to
+//! runtime instead: on a device that cannot serve the request, dispatch returns `cudaErrorNotSupported`. This is
+//! useful when a single translation unit must compile the full configuration space across a mix of compute
+//! capabilities and decide what is runnable at runtime. CUB's own tests and benchmarks define it for this reason.
+#  define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+
+#endif // _CCCL_DOXYGEN_INVOKED
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -418,7 +437,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!    - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
 //!      ``(determinism::not_guaranteed, tie_break::unspecified)`` is supported, and every segment must fit a single
 //!      thread block. Deterministic / tie-break requests and larger segments require the SM 9.0+ cluster backend and
-//!      are diagnosed at compile time (or, in relaxed builds, at runtime as ``cudaErrorNotSupported``).
+//!      are diagnosed at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
+//!      runtime as ``cudaErrorNotSupported``).
 //!    - **Hopper and newer (compute capability >= 9.0):** all five acknowledged ``(determinism, tie_break)`` pairs are
 //!      supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run, unspecified)``, and ``(gpu_to_gpu,
 //!      {unspecified, prefer_smaller_index, prefer_larger_index})`` -- and larger segments are handled by the cluster

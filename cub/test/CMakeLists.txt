@@ -294,7 +294,7 @@ function(
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 
-  # The unsupported-arch xfail test omits the _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
+  # The unsupported-arch xfail test omits the CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
   # keeps the strict compile-time diagnostic. Pin it to 89-virtual (the highest arch without cluster support) so the
   # deterministic request it issues has no viable backend and the static_assert fires regardless of the preset's archs.
   if (

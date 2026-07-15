@@ -20,7 +20,7 @@
 #include <c2h/catch2_test_helper.h>
 
 // Low-level gate: skips the current test case when a request that must use the SM90+ cluster backend has no
-// cluster-capable target in the build. With `_CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test
+// cluster-capable target in the build. With `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test
 // sources do), such a request fails at runtime with cudaErrorNotSupported rather than at compile time. `needs_cluster`
 // must be true when the caller knows the configuration requires the cluster backend; prefer
 // skip_if_batched_topk_backend_unavailable(), which derives it from the request.

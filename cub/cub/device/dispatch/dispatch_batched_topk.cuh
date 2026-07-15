@@ -871,7 +871,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_baseline_arm(
 }
 
 #if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
-// Returns true if at least one architecture in the compile target list (`CMAKE_CUDA_ARCHITECTURES`, exposed as
+// Returns true if at least one architecture this translation unit targets (the compile target list exposed as
 // `::cuda::__target_compute_capabilities()`) resolves to the `unsupported` backend for `PolicySelector` -- e.g. a
 // deterministic request while a pre-SM90 target is present in the list. Used to turn a would-be runtime
 // `cudaErrorNotSupported` into a compile-time diagnostic (see the static_assert in `dispatch`).
@@ -993,21 +993,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                                                 selector_override_adaptor<PolicySelectorOverride, default_selector_t>>;
 
 #if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
-  && !defined(_CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
-  // Strict mode (default): fail at compile time if the request cannot be served on *any* architecture in
-  // `CMAKE_CUDA_ARCHITECTURES` (e.g. a deterministic / large-segment request while a pre-SM90 target is present, since
-  // the cluster backend requires SM90+). This is the least-surprising UX for callers building the default multi-arch
-  // preset. Define `_CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` to defer the diagnosis to runtime instead (the dispatch
-  // then returns `cudaErrorNotSupported` on unsupported devices); CUB's own tests and benchmarks do this so they can
-  // compile the full configuration space across all target architectures and skip at runtime where unsupported.
+  && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
+  // Strict mode (default): fail at compile time if the request cannot be served on *any* architecture this translation
+  // unit targets (e.g. a deterministic / large-segment request while a pre-SM90 target is present, since the cluster
+  // backend requires SM90+). This is the least-surprising UX for callers whose build targets multiple architectures.
+  // Define `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` to defer the diagnosis to runtime instead (the dispatch then
+  // returns `cudaErrorNotSupported` on unsupported devices); CUB's own tests and benchmarks do this so they can compile
+  // the full configuration space across all target architectures and skip at runtime where unsupported.
   static_assert(
     !any_target_cc_unsupported<selector_t>(),
-    "cub::DeviceBatchedTopK: the requested top-k configuration is not supported on at least one architecture in "
-    "CMAKE_CUDA_ARCHITECTURES (the deterministic / large-segment cluster backend requires SM90+). Remove the "
-    "unsupported architecture(s), relax the request, or define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the "
+    "cub::DeviceBatchedTopK: the requested top-k configuration is not supported on at least one architecture this "
+    "translation unit targets (the deterministic / large-segment cluster backend requires SM90+). Remove the "
+    "unsupported architecture(s), relax the request, or define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the "
     "diagnosis to runtime (cudaErrorNotSupported).");
 #endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
-       // && !defined(_CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
+       // && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
 
   // The supported maximum segment size (2^21) is enforced at compile time at the public entry; a statically negative
   // lower bound is allowed and negative runtime sizes are clamped to 0 (see detail::params::get_segment_size). A

@@ -74,8 +74,8 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
      - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
        ``(not_guaranteed, unspecified)`` is supported, and every segment must fit a single thread
        block. Deterministic / tie-break requests and larger segments require the SM 9.0+ cluster
-       backend and are diagnosed at compile time (or at runtime as ``cudaErrorNotSupported`` in
-       relaxed builds).
+       backend and are diagnosed at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT``
+       is defined, deferred to runtime as ``cudaErrorNotSupported``).
      - **Hopper and newer (compute capability >= 9.0):** every acknowledged ``(determinism,
        tie_break)`` pair is supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run,
        unspecified)``, and ``(gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index})``

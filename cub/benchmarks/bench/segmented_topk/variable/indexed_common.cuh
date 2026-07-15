@@ -12,9 +12,9 @@
 
 // Defer the unsupported-architecture diagnosis to the dispatch's runtime check so these benchmarks compile for the full
 // configuration space (including deterministic / large-segment requests, which only the SM90+ cluster backend serves)
-// across all target architectures, including pre-SM90. See _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in
-// cub/device/dispatch/dispatch_batched_topk.cuh. Must precede the CUB includes below.
-#define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+// across all target architectures, including pre-SM90. See CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in
+// cub/device/device_batched_topk.cuh. Must precede the CUB includes below.
+#define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_batched_topk.cuh>

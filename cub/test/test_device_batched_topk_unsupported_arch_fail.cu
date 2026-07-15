@@ -15,12 +15,12 @@
 #include <iostream>
 
 // Verifies the strict unsupported-architecture diagnostic in cub::DeviceBatchedTopK (see
-// _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in cub/device/dispatch/dispatch_batched_topk.cuh). A deterministic
+// CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in cub/device/device_batched_topk.cuh). A deterministic
 // (gpu_to_gpu) request can only be served by the SM90+ cluster backend; when the translation unit targets an
 // architecture that cannot run it (this target is pinned to a pre-SM90 arch via CUDA_ARCHITECTURES in CMakeLists.txt),
 // the default (strict) mode must fail to compile rather than defer the failure to a runtime cudaErrorNotSupported.
 //
-// This is the only batched/segmented top-k test built *without* _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT, so it
+// This is the only batched/segmented top-k test built *without* CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT, so it
 // exercises the strict path that CUB's other top-k tests intentionally opt out of.
 
 int main()
