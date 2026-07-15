@@ -47,6 +47,8 @@ It derives from :cpp:class:`cuda::stream_ref`, provides all of its functionality
 :cpp:class:`cuda::stream_ref` is expected.
 It can be constructed for a specific :cpp:class:`cuda::device_ref`, moved (but not copied), and converted from or to a
 ``cudaStream_t`` via ``from_native_handle``/``release()``.
+Constructing a new :cpp:struct:`cuda::stream` always creates a non-blocking stream; see
+:ref:`non-blocking stream creation <cccl-runtime-cudart-non-blocking-streams>` for CUDA Runtime interop details.
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 

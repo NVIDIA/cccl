@@ -401,7 +401,7 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram][device]"
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("Histogram build result has AoT metadata populated", "[histogram][device][aot]")
+C2H_TEST("Histogram build result has serialization metadata populated", "[histogram][device][serialization]")
 {
   using T = int32_t;
 
@@ -444,7 +444,7 @@ C2H_TEST("Histogram build result has AoT metadata populated", "[histogram][devic
   REQUIRE(CUDA_SUCCESS == cccl_device_histogram_cleanup(&build));
 }
 
-C2H_TEST("Histogram compile/load round-trip", "[histogram][device][aot]")
+C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization]")
 {
   using T = int32_t;
 

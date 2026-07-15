@@ -16,55 +16,52 @@
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
+#include "archetypes.h"
 #include "test_macros.h"
 
-struct NonAssignable
+struct CountAssign
 {
-  NonAssignable& operator=(NonAssignable const&) = delete;
-  NonAssignable& operator=(NonAssignable&&)      = delete;
+  int copied              = 0;
+  int moved               = 0;
+  constexpr CountAssign() = default;
+  TEST_FUNC constexpr CountAssign& operator=(CountAssign const&)
+  {
+    ++copied;
+    return *this;
+  }
+  TEST_FUNC constexpr CountAssign& operator=(CountAssign&&)
+  {
+    ++moved;
+    return *this;
+  }
 };
-struct CopyAssignable
+
+struct NotAssignable
 {
-  CopyAssignable()                                 = default;
-  CopyAssignable& operator=(CopyAssignable const&) = default;
-  CopyAssignable& operator=(CopyAssignable&&)      = delete;
+  NotAssignable& operator=(NotAssignable const&) = delete;
+  NotAssignable& operator=(NotAssignable&&)      = delete;
 };
+
 struct MoveAssignable
 {
-  MoveAssignable()                                 = default;
   MoveAssignable& operator=(MoveAssignable const&) = delete;
   MoveAssignable& operator=(MoveAssignable&&)      = default;
 };
 
-struct CountAssign
+struct CopyAssignable
 {
-  STATIC_MEMBER_VAR(copied, int)
-  STATIC_MEMBER_VAR(moved, int)
-  TEST_FUNC static void reset()
-  {
-    copied() = moved() = 0;
-  }
-  CountAssign() = default;
-  TEST_FUNC CountAssign& operator=(CountAssign const&)
-  {
-    ++copied();
-    return *this;
-  }
-  TEST_FUNC CountAssign& operator=(CountAssign&&)
-  {
-    ++moved();
-    return *this;
-  }
+  CopyAssignable& operator=(CopyAssignable const&) = default;
+  CopyAssignable& operator=(CopyAssignable&&)      = delete;
 };
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   {
-    using P = cuda::std::pair<cuda::std::unique_ptr<int>, int>;
-    P p1(cuda::std::unique_ptr<int>(new int(3)), 4);
+    typedef cuda::std::pair<ConstexprTestTypes::MoveOnly, int> P;
+    P p1(3, 4);
     P p2;
     p2 = cuda::std::move(p1);
-    assert(*p2.first == 3);
+    assert(p2.first.value == 3);
     assert(p2.second == 4);
   }
   {
@@ -80,30 +77,71 @@ int main(int, char**)
     assert(p1.second == y2);
   }
   {
-    using P = cuda::std::pair<int, NonAssignable>;
+    using P = cuda::std::pair<int, ConstexprTestTypes::DefaultOnly>;
     static_assert(!cuda::std::is_move_assignable<P>::value);
   }
   {
     // The move decays to the copy constructor
-    CountAssign::reset();
-    using P = cuda::std::pair<CountAssign, CopyAssignable>;
+    using P = cuda::std::pair<CountAssign, ConstexprTestTypes::CopyOnly>;
     static_assert(cuda::std::is_move_assignable<P>::value);
     P p;
     P p2;
     p = cuda::std::move(p2);
-    assert(CountAssign::moved() == 0);
-    assert(CountAssign::copied() == 1);
+    assert(p.first.moved == 0);
+    assert(p.first.copied == 1);
+    assert(p2.first.moved == 0);
+    assert(p2.first.copied == 0);
   }
   {
-    CountAssign::reset();
-    using P = cuda::std::pair<CountAssign, MoveAssignable>;
+    using P = cuda::std::pair<CountAssign, ConstexprTestTypes::MoveOnly>;
     static_assert(cuda::std::is_move_assignable<P>::value);
     P p;
     P p2;
     p = cuda::std::move(p2);
-    assert(CountAssign::moved() == 1);
-    assert(CountAssign::copied() == 0);
+    assert(p.first.moved == 1);
+    assert(p.first.copied == 0);
+    assert(p2.first.moved == 0);
+    assert(p2.first.copied == 0);
   }
+  {
+    using P1 = cuda::std::pair<int, NotAssignable>;
+    using P2 = cuda::std::pair<NotAssignable, int>;
+    using P3 = cuda::std::pair<NotAssignable, NotAssignable>;
+    static_assert(!cuda::std::is_move_assignable<P1>::value);
+    static_assert(!cuda::std::is_move_assignable<P2>::value);
+    static_assert(!cuda::std::is_move_assignable<P3>::value);
+  }
+  {
+    // We assign through the reference and don't move out of the incoming ref,
+    // so this doesn't work (but would if the type were CopyAssignable).
+    using P1 = cuda::std::pair<MoveAssignable&, int>;
+    static_assert(!cuda::std::is_move_assignable<P1>::value);
+
+    // ... works if it's CopyAssignable
+    using P2 = cuda::std::pair<CopyAssignable&, int>;
+    static_assert(cuda::std::is_move_assignable<P2>::value);
+
+    // For rvalue-references, we can move-assign if the type is MoveAssignable
+    // or CopyAssignable (since in the worst case the move will decay into a copy).
+    using P3 = cuda::std::pair<MoveAssignable&&, int>;
+    using P4 = cuda::std::pair<CopyAssignable&&, int>;
+    static_assert(cuda::std::is_move_assignable<P3>::value);
+    static_assert(cuda::std::is_move_assignable<P4>::value);
+
+    // In all cases, we can't move-assign if the types are not assignable,
+    // since we assign through the reference.
+    using P5 = cuda::std::pair<NotAssignable&, int>;
+    using P6 = cuda::std::pair<NotAssignable&&, int>;
+    static_assert(!cuda::std::is_move_assignable<P5>::value);
+    static_assert(!cuda::std::is_move_assignable<P6>::value);
+  }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

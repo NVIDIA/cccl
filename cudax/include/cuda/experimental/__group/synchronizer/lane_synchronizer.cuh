@@ -78,7 +78,7 @@ public:
     static_assert(__group_mapping_result<_MappingResult>);
     if (__mapping_result.is_valid())
     {
-      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) == __mapping_result.count(),
+      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) == __mapping_result.unit_count(),
                    "lane_synchronizer can only synchronize units within the same warp");
     }
     return {};

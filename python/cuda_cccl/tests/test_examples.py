@@ -11,10 +11,13 @@ coop and compute directories to ensure they execute without errors.
 """
 
 import importlib
+import importlib.util
 import inspect
 import sys
 import traceback
 from pathlib import Path
+
+import pytest
 
 
 def discover_examples():
@@ -153,6 +156,11 @@ def create_test_functions():
         globals()[test_name] = make_test_func(module_name, display_name)
         globals()[test_name].__name__ = test_name
         globals()[test_name].__doc__ = f"Test {display_name} examples"
+        if module_name.startswith("compute.examples."):
+            globals()[test_name] = pytest.mark.skipif(
+                importlib.util.find_spec("cupy") is None,
+                reason="cuda.compute examples require the optional CuPy dependency",
+            )(globals()[test_name])
 
 
 # Create test functions for pytest
