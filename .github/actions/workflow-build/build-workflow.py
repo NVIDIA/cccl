@@ -610,8 +610,8 @@ def generate_dispatch_job_json(matrix_job, job_type):
         # Only use the build cluster for Linux jobs
         and not is_windows(matrix_job)
         and (
-            # Use the build cluster for 1 of 2 cudax jobs
-            (project["id"] == "cudax" and random.randint(0, 1) == 0)
+            # Use the build cluster for 1 of 10 cudax jobs
+            (project["id"] == "cudax" and random.randint(0, 9) == 0)
             or
             # Use the build cluster for 1 of 10 CUB jobs
             (project["id"] == "cub" and random.randint(0, 9) == 0)
