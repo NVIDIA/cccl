@@ -356,13 +356,14 @@ _CCCL_HOST_API void reduce(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  reduce(::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
-         ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
-         ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
-         ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
-         ::cuda::std::move(__init),
-         ::cuda::std::move(__op),
-         ::cuda::std::move(__ident));
+  ::cuda::experimental::reduce(
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
+    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
+    ::cuda::std::move(__init),
+    ::cuda::std::move(__op),
+    ::cuda::std::move(__ident));
 }
 } // namespace cuda::experimental
 
