@@ -102,13 +102,11 @@ CHAR_N = 1_000_000
 CHAR_SEQ_SAMPLES = 4000
 CHAR_SEED = 42
 
-# Representative launch used by these single-channel EVEN characterizations on
-# B200.  This is the launch shape that the adversarial schedules are designed
-# around: 148 SMs x 2 resident CTAs = 296 blocks, with the SM100 EVEN policy's
-# 768-thread direct/cache-spill block.  In particular, poison's claim prefix is
-# sized to cover every block's first grid-stride accesses.  The position overlay
-# must model this launch rather than inventing a small illustrative grid.
-CHAR_GRID_BLOCKS = 296
+# Deliberately small, illustrative launch used only by the position overlay.
+# Four blocks make block 0's repeated grid-stride tiles readable at both the
+# contiguous-prefix and whole-sequence scales. This is not an occupancy claim
+# about B200; the benchmark itself chooses its real grid independently.
+CHAR_GRID_BLOCKS = 4
 CHAR_BLOCK_THREADS = 768
 
 # Bin count is PER SHAPE, drawn at the shape's natural scale (the original design
@@ -333,6 +331,75 @@ def draw_block_stride_overlay(
         )
 
 
+def validate_block_stride_overlay():
+    """Regression checks for the illustrative block-0 sequence overlay.
+
+    These assertions intentionally cover both display regimes. A large real
+    grid accidentally substituted here makes the prefix contain only one band
+    and makes the whole-sequence bands rasterize as invisible hairlines—the two
+    failure modes this check prevents.
+    """
+    prefix = block_stride_spans(0, CHAR_SEQ_SAMPLES)
+    expected_prefix = [(0, 768), (3072, 3840)]
+    if prefix != expected_prefix:
+        raise AssertionError(
+            f"block-stride prefix regression: got {prefix}, expected {expected_prefix}"
+        )
+
+    whole = block_stride_spans(0, CHAR_N)
+    expected_count = (CHAR_N - 1) // (CHAR_GRID_BLOCKS * CHAR_BLOCK_THREADS) + 1
+    if len(whole) != expected_count:
+        raise AssertionError(
+            f"block-stride full-range count regression: got {len(whole)}, "
+            f"expected {expected_count}"
+        )
+    period = CHAR_GRID_BLOCKS * CHAR_BLOCK_THREADS
+    if any(b[0] - a[0] != period for a, b in zip(whole, whole[1:])):
+        raise AssertionError("block-stride full-range bands are not periodic")
+    covered = sum(stop - start for start, stop in whole)
+    expected_fraction = 1.0 / CHAR_GRID_BLOCKS
+    if abs(covered / CHAR_N - expected_fraction) > CHAR_BLOCK_THREADS / CHAR_N:
+        raise AssertionError(
+            f"block-stride coverage regression: got {covered / CHAR_N:.6f}, "
+            f"expected approximately {expected_fraction:.6f}"
+        )
+
+    # axvspan must produce one patch per tile whose local y coordinates cover
+    # the complete [0, 1] axes height. This catches a regression back to a
+    # detached schematic or a partial-height data-coordinate rectangle.
+    fig, ax = plt.subplots()
+    try:
+        draw_block_stride_overlay(ax, 0, CHAR_SEQ_SAMPLES)
+        if len(ax.patches) != len(expected_prefix):
+            raise AssertionError(
+                f"block-stride patch-count regression: got {len(ax.patches)}, "
+                f"expected {len(expected_prefix)}"
+            )
+        for patch, (expected_start, expected_stop) in zip(ax.patches, expected_prefix):
+            if float(patch.get_y()) != 0.0 or float(patch.get_height()) != 1.0:
+                raise AssertionError(
+                    "block-stride patch does not span full axes height: "
+                    f"y={patch.get_y()}, height={patch.get_height()}"
+                )
+            if (
+                float(patch.get_x()) != expected_start
+                or float(patch.get_width()) != expected_stop - expected_start
+            ):
+                raise AssertionError(
+                    "block-stride patch does not align to its input span: "
+                    f"x={patch.get_x()}, width={patch.get_width()}, "
+                    f"expected=({expected_start}, {expected_stop})"
+                )
+    finally:
+        plt.close(fig)
+
+    return {
+        "prefix_spans": prefix,
+        "full_range_spans": len(whole),
+        "full_range_coverage": covered / CHAR_N,
+    }
+
+
 def draw_sequence(ax, bins, num_bins, shape=None, show_block_stride=True):
     """bin index vs position in the input sequence, plus block-stride context."""
     n = len(bins)
@@ -469,6 +536,9 @@ def main():
         help="also render all selected shapes into one catalog PNG",
     )
     args = ap.parse_args()
+
+    overlay_validation = validate_block_stride_overlay()
+    print(f"Block-stride overlay validation: {overlay_validation}")
 
     os.makedirs(args.outdir, exist_ok=True)
     print(
