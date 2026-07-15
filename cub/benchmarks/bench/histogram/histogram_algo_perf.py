@@ -1243,6 +1243,11 @@ def main():
     )
     args = ap.parse_args()
 
+    # The characterization helper is shared with the standalone catalog. Keep
+    # its block-0 grid-stride overlay under the same executable regression check
+    # when rendering composite performance figures directly.
+    C.validate_block_stride_overlay()
+
     if not os.path.exists(args.results):
         raise SystemExit(f"missing results JSON: {args.results} (pass --results)")
     data = json.load(open(args.results))
