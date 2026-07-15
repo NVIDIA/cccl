@@ -41,6 +41,7 @@ namespace detail
 }
 
 //! Logs the message when called from host code, independently of whether logging is enabled
+_CCCL_ATTRIBUTE_FORMAT(__printf__, 1, 2)
 _CCCL_HOST_DEVICE_API inline void log_always([[maybe_unused]] const char* fmt, ...) noexcept
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
@@ -54,7 +55,8 @@ _CCCL_HOST_DEVICE_API inline void log_always([[maybe_unused]] const char* fmt, .
 }
 
 //! Logs the message when called from host code and logging is enabled
-_CCCL_HOST_DEVICE_API inline void log(const char* fmt, ...) noexcept
+_CCCL_ATTRIBUTE_FORMAT(__printf__, 1, 2)
+_CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noexcept
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
