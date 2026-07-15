@@ -467,8 +467,8 @@ namespace
 {
 struct CompareFirst
 {
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE bool operator()(::cuda::std::pair<T, U> const& lhs, ::cuda::std::pair<T, U> const& rhs) const
+  template <typename T>
+  _CCCL_HOST_DEVICE bool operator()(T const& lhs, T const& rhs) const
   {
     return lhs.first == rhs.first;
   }
