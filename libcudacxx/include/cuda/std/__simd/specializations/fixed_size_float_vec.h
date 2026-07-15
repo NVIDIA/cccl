@@ -48,11 +48,11 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
 
   _CCCL_HOST_DEVICE_API static constexpr void __increment(_SimdStorage& __s) noexcept
   {
-    [[maybe_unused]] constexpr _SimdStorage __one = __base::__broadcast(1.0f);
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                     __s = ::cuda::std::simd::__plus_f32x2(__s, __one);
+                     constexpr _SimdStorage __one = __base::__broadcast(1.0f);
+                     __s                          = ::cuda::std::simd::__plus_f32x2(__s, __one);
                      return;
                    }));
     }
@@ -61,11 +61,11 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
 
   _CCCL_HOST_DEVICE_API static constexpr void __decrement(_SimdStorage& __s) noexcept
   {
-    [[maybe_unused]] constexpr _SimdStorage __one = __base::__broadcast(1.0f);
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                     __s = ::cuda::std::simd::__minus_f32x2(__s, __one);
+                     constexpr _SimdStorage __one = __base::__broadcast(1.0f);
+                     __s                          = ::cuda::std::simd::__minus_f32x2(__s, __one);
                      return;
                    }));
     }
@@ -74,10 +74,12 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage __unary_minus(const _SimdStorage& __s) noexcept
   {
-    [[maybe_unused]] constexpr _SimdStorage __zero = __base::__broadcast(0.0f);
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::cuda::std::simd::__minus_f32x2(__zero, __s);))
+      NV_IF_TARGET(NV_PROVIDES_SM_100, ({
+                     constexpr _SimdStorage __zero = __base::__broadcast(0.0f);
+                     return ::cuda::std::simd::__minus_f32x2(__zero, __s);
+                   }));
     }
     return __base::__unary_minus(__s);
   }
