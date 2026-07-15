@@ -32,12 +32,15 @@ namespace detail
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool logging_enabled() noexcept
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
-  NV_IF_TARGET(NV_IS_HOST, ({
+  NV_IF_TARGET(NV_IS_HOST,
+               ({
                  static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
                  return enabled;
-               }));
-#endif // _CCCL_HOSTED()
+               }),
+               ({ return false; }));
+#else // _CCCL_HOSTED()
   return false;
+#endif // _CCCL_HOSTED()
 }
 
 //! Logs the message when called from host code, independently of whether logging is enabled
