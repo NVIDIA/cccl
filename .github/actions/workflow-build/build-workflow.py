@@ -602,43 +602,48 @@ def generate_dispatch_job_json(matrix_job, job_type):
     command = generate_dispatch_job_command(matrix_job, job_type, job_info)
     job_prefix = job_info["invoke"]["prefix"]
 
-    if (
-        # Only use the build cluster for build jobs
-        job_prefix == "build"
-        # Only use the build cluster for CPU jobs
-        and not job_info["gpu"]
-        # Only use the build cluster for Linux jobs
-        and not is_windows(matrix_job)
-        and (
-            # Use the build cluster for 1 of 10 cudax jobs
-            (project["id"] == "cudax" and random.randint(0, 9) == 0)
-            or
-            # Use the build cluster for 1 of 10 CUB jobs
-            (project["id"] == "cub" and random.randint(0, 9) == 0)
-            or
-            # Use the build cluster for 1 of 10 Thrust jobs
-            (project["id"] == "thrust" and random.randint(0, 9) == 0)
-            or
-            # Use the build cluster for 1 of 10 libcu++ jobs
-            (project["id"] == "libcudacxx" and random.randint(0, 9) == 0)
-            or
-            # Don't use the build cluster for other project's jobs
-            False
-        )
-    ):
-        matrix_job["use_sccache_dist"] = True
-        matrix_job["environment"] = matrix_job.get("environment") or []
-        if "USE_SCCACHE_DIST=1" not in matrix_job["environment"]:
-            matrix_job["environment"].append("USE_SCCACHE_DIST=1")
-        # Over-subscribe -j to keep the build cluster busy if *not* ClangCUDA
-        # or Python. ClangCUDA can use the build cluster for C++ files, but not
-        # CUDA, and we'll OOM if we try to compile too many at once.
+    # Skip if this has already been decided for this job
+    if "use_sccache_dist" not in matrix_job:
         if (
-            ("clang" not in matrix_job["cudacxx"])
-            and not command.endswith("_python.sh")
-            and ("PARALLEL_LEVEL=0" not in matrix_job["environment"])
+            # Only use the build cluster for build jobs
+            job_prefix == "build"
+            # Only use the build cluster for CPU jobs
+            and not job_info["gpu"]
+            # Only use the build cluster for Linux jobs
+            and not is_windows(matrix_job)
+            and (
+                # Use the build cluster for 1 of 10 cudax jobs
+                (project["id"] == "cudax" and random.randint(0, 9) == 0)
+                or
+                # Use the build cluster for 1 of 10 CUB jobs
+                (project["id"] == "cub" and random.randint(0, 9) == 0)
+                or
+                # Use the build cluster for 1 of 10 Thrust jobs
+                (project["id"] == "thrust" and random.randint(0, 9) == 0)
+                or
+                # Use the build cluster for 1 of 10 libcu++ jobs
+                (project["id"] == "libcudacxx" and random.randint(0, 9) == 0)
+                or
+                # Don't use the build cluster for other project's jobs
+                False
+            )
         ):
-            matrix_job["environment"].append("PARALLEL_LEVEL=0")
+            matrix_job["use_sccache_dist"] = True
+            matrix_job["environment"] = matrix_job.get("environment") or []
+            matrix_job["environment"].append("USE_SCCACHE_DIST=true")
+            # Over-subscribe -j to keep the build cluster busy if *not* ClangCUDA
+            # or Python. ClangCUDA can use the build cluster for C++ files, but not
+            # CUDA, and we'll OOM if we try to compile too many at once.
+            if (
+                ("clang" not in matrix_job["cudacxx"])
+                and not command.endswith("_python.sh")
+                and ("PARALLEL_LEVEL=0" not in matrix_job["environment"])
+            ):
+                matrix_job["environment"].append("PARALLEL_LEVEL=0")
+        else:
+            matrix_job["use_sccache_dist"] = False
+            matrix_job["environment"] = matrix_job.get("environment") or []
+            matrix_job["environment"].append("USE_SCCACHE_DIST=false")
 
     return {
         "cuda": generate_dispatch_job_ctk_version(matrix_job, job_type),

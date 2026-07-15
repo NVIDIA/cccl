@@ -214,7 +214,7 @@ runs:
         source ci/util/workflow/common.sh
 
         # Set up build cluster auth
-        if grep -q 'USE_SCCACHE_DIST=1' <<< "${ENVARGS:-}"; then
+        if grep -q 'USE_SCCACHE_DIST=true' <<< "${ENVARGS:-}"; then
           SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
 
           SCCACHE_DIST_AUTH_TOKEN="$(
