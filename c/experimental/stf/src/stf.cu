@@ -221,9 +221,6 @@ stf_exec_place_handle stf_exec_place_current_device(void)
 
 stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
 {
-  _CCCL_ASSERT(ctx != nullptr, "CUcontext must not be null");
-  // A null context in release builds throws in exec_place::cuda_context and is
-  // mapped to a null handle (with a stderr trace) by stf_try_allocate.
   return to_opaque(stf_try_allocate([ctx, dev_id] {
     return new exec_place(exec_place::cuda_context(ctx, dev_id));
   }));
