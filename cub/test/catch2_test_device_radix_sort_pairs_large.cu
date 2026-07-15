@@ -1,0 +1,97 @@
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
+
+// Large-memory DeviceRadixSort::SortPairs tests, split out from catch2_test_device_radix_sort_pairs.cu
+// so they can be run serially (tagged [large-mem]) without serializing the small tests in that file.
+
+#include "insert_nested_NVTX_range_guard.h"
+
+#include <cub/device/device_radix_sort.cuh>
+#include <cub/util_type.cuh>
+
+#include <thrust/memory.h>
+
+#include <cuda/std/type_traits>
+
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <new> // bad_alloc
+
+#include "catch2_large_array_sort_helper.cuh"
+#include "catch2_radix_sort_helper.cuh"
+#include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+
+// %PARAM% TEST_LAUNCH lid 0:1:2
+
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
+
+template <typename key_t, typename value_t, typename num_items_t>
+void do_large_offset_test(std::size_t num_items)
+{
+  const bool is_descending = GENERATE(false, true);
+
+  CAPTURE(num_items, is_descending);
+
+  try
+  {
+    large_array_sort_helper<key_t, value_t> arrays;
+    arrays.initialize_for_stable_pair_sort(C2H_SEED(1), num_items, is_descending);
+
+    TIME(c2h::cpu_timer timer);
+
+    double_buffer_sort_t action(is_descending);
+    action.initialize();
+    const num_items_t typed_num_items = static_cast<num_items_t>(num_items);
+    launch(action, arrays.keys_buffer, arrays.values_buffer, typed_num_items, begin_bit<key_t>(), end_bit<key_t>());
+
+    TIME(timer.print_elapsed_seconds_and_reset("Device sort"));
+
+    arrays.keys_buffer.selector   = action.selector();
+    arrays.values_buffer.selector = action.selector();
+    action.finalize();
+
+    auto& keys   = arrays.keys_buffer.selector == 0 ? arrays.keys_in : arrays.keys_out;
+    auto& values = arrays.values_buffer.selector == 0 ? arrays.values_in : arrays.values_out;
+
+    arrays.verify_stable_pair_sort(num_items, is_descending, keys, values);
+  }
+  catch ([[maybe_unused]] std::bad_alloc& e)
+  {
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
+    const std::size_t num_bytes = num_items * (sizeof(key_t) + sizeof(value_t));
+    std::cerr
+      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
+#endif // DEBUG_CHECKED_ALLOC_FAILURE
+    SUCCEED("allocation failure is not a test failure");
+  }
+}
+
+C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
+         "[large-mem][large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
+{
+  using key_t       = std::uint8_t;
+  using value_t     = std::uint8_t;
+  using num_items_t = std::uint32_t;
+
+  // Test problem size at the maximum offset value to ensure that internal calculations do not overflow.
+  const std::size_t num_items = cuda::std::numeric_limits<num_items_t>::max();
+
+  do_large_offset_test<key_t, value_t, num_items_t>(num_items);
+}
+
+C2H_TEST("DeviceRadixSort::SortPairs: Large Offsets",
+         "[large-mem][large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
+{
+  using key_t       = std::uint8_t;
+  using value_t     = std::uint8_t;
+  using num_items_t = std::uint64_t;
+
+  constexpr std::size_t min_num_items = std::size_t{1} << 32;
+  constexpr std::size_t max_num_items = min_num_items + (std::size_t{1} << 30);
+  const std::size_t num_items         = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
+
+  do_large_offset_test<key_t, value_t, num_items_t>(num_items);
+}
