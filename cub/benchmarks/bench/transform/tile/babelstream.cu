@@ -109,14 +109,15 @@ template <typename T>
 static void mul(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = state.get_int64("Elements{io}");
-  thrust::device_vector<T> b(n, startB);
-  thrust::device_vector<T> c(n, startC);
+  const auto n         = state.get_int64("Elements{io}");
+  const bool unaligned = state.get_string("Aligned") == "no";
+  thrust::device_vector<T> b(n + unaligned, startB);
+  thrust::device_vector<T> c(n + unaligned, startC);
 
   state.add_element_count(n);
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
-  bench_transform(state, cuda::std::tuple{c.begin()}, b.begin(), n, mul_op{});
+  bench_transform(state, cuda::std::tuple{c.begin() + unaligned}, b.begin() + unaligned, n, mul_op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -126,21 +127,24 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
   .set_name("tile_mul")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
+  .add_string_axis("Aligned", {"yes", "no"});
 
 template <typename T>
 static void add(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = state.get_int64("Elements{io}");
-  thrust::device_vector<T> a(n, startA);
-  thrust::device_vector<T> b(n, startB);
-  thrust::device_vector<T> c(n, startC);
+  const auto n         = state.get_int64("Elements{io}");
+  const bool unaligned = state.get_string("Aligned") == "no";
+  thrust::device_vector<T> a(n + unaligned, startA);
+  thrust::device_vector<T> b(n + unaligned, startB);
+  thrust::device_vector<T> c(n + unaligned, startC);
 
   state.add_element_count(n);
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
-  bench_transform(state, cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, add_op{});
+  bench_transform(
+    state, cuda::std::tuple{a.begin() + unaligned, b.begin() + unaligned}, c.begin() + unaligned, n, add_op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -150,21 +154,24 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
   .set_name("tile_add")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
+  .add_string_axis("Aligned", {"yes", "no"});
 
 template <typename T>
 static void triad(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = state.get_int64("Elements{io}");
-  thrust::device_vector<T> a(n, startA);
-  thrust::device_vector<T> b(n, startB);
-  thrust::device_vector<T> c(n, startC);
+  const auto n         = state.get_int64("Elements{io}");
+  const bool unaligned = state.get_string("Aligned") == "no";
+  thrust::device_vector<T> a(n + unaligned, startA);
+  thrust::device_vector<T> b(n + unaligned, startB);
+  thrust::device_vector<T> c(n + unaligned, startC);
 
   state.add_element_count(n);
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
-  bench_transform(state, cuda::std::tuple{b.begin(), c.begin()}, a.begin(), n, triad_op{});
+  bench_transform(
+    state, cuda::std::tuple{b.begin() + unaligned, c.begin() + unaligned}, a.begin() + unaligned, n, triad_op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -174,21 +181,28 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
   .set_name("tile_triad")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
+  .add_string_axis("Aligned", {"yes", "no"});
 
 template <typename T>
 static void nstream(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = state.get_int64("Elements{io}");
-  thrust::device_vector<T> a(n, startA);
-  thrust::device_vector<T> b(n, startB);
-  thrust::device_vector<T> c(n, startC);
+  const auto n         = state.get_int64("Elements{io}");
+  const bool unaligned = state.get_string("Aligned") == "no";
+  thrust::device_vector<T> a(n + unaligned, startA);
+  thrust::device_vector<T> b(n + unaligned, startB);
+  thrust::device_vector<T> c(n + unaligned, startC);
 
   state.add_element_count(n);
   state.add_global_memory_reads<T>(3 * n);
   state.add_global_memory_writes<T>(n);
-  bench_transform(state, cuda::std::tuple{a.begin(), b.begin(), c.begin()}, a.begin(), n, nstream_op{});
+  bench_transform(
+    state,
+    cuda::std::tuple{a.begin() + unaligned, b.begin() + unaligned, c.begin() + unaligned},
+    a.begin() + unaligned,
+    n,
+    nstream_op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -198,4 +212,5 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
   .set_name("tile_nstream")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
+  .add_string_axis("Aligned", {"yes", "no"});
