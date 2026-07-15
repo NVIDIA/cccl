@@ -212,6 +212,60 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
     }
     return __base::__minus(__lhs, __rhs);
   }
+
+  // Min/max operations
+
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
+  __min(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
+  {
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      [[maybe_unused]] const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+      [[maybe_unused]] const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+      if constexpr (sizeof(_Tp) == 2)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_90,
+                     (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
+                               ::cuda::std::simd::__vmin_16bit_x2<_Tp>(__lhs_u, __rhs_u));))
+      }
+#  if _CCCL_HAS_SIMD_8BIT()
+      else if constexpr (sizeof(_Tp) == 1)
+      {
+        NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
+                     (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
+                               ::cuda::std::simd::__vmin_8bit_x4<_Tp>(__lhs_u, __rhs_u));))
+      }
+#  endif // _CCCL_HAS_SIMD_8BIT()
+    }
+    return __base::__min(__lhs, __rhs);
+  }
+
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
+  __max(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
+  {
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      [[maybe_unused]] const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+      [[maybe_unused]] const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+      if constexpr (sizeof(_Tp) == 2)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_90,
+                     (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
+                               ::cuda::std::simd::__vmax_16bit_x2<_Tp>(__lhs_u, __rhs_u));))
+      }
+#  if _CCCL_HAS_SIMD_8BIT()
+      else if constexpr (sizeof(_Tp) == 1)
+      {
+        NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
+                     (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
+                               ::cuda::std::simd::__vmax_8bit_x4<_Tp>(__lhs_u, __rhs_u));))
+      }
+#  endif // _CCCL_HAS_SIMD_8BIT()
+    }
+    return __base::__max(__lhs, __rhs);
+  }
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 };
 

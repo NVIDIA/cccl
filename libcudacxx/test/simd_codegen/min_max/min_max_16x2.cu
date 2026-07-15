@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__simd/specializations/min_max_optimization.h>
 #include <cuda/std/__simd_> // IWYU pragma: keep
 
 namespace simd = cuda::std::simd;

@@ -58,20 +58,8 @@ __vadd_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_
                  asm("add.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
                  return __result;
                }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_u8x4: Unsupported architecture"); return uint32_t{};));
+               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_8x4: Unsupported architecture"); return uint32_t{};));
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
-}
-
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
-__vadd_s8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
-{
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
-               ({
-                 uint32_t __result{};
-                 asm("add.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
-                 return __result;
-               }),
-               (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_s8x4: Unsupported architecture"); return uint32_t{};));
 }
 
 #  endif // _CCCL_HAS_SIMD_8BIT()
