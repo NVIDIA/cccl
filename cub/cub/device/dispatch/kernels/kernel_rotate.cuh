@@ -91,16 +91,15 @@ __device__ inline void overcopy_memcpy_async(
 
 // Copies a tile from shared memory to global memory through registers.
 // Buffers up to MAX_REGS_PER_THREAD uint32_t registers worth of data from shmem
-// BEFORE calling sync_op.sync(), to maximally overlap the atomic polling with other work, then writes to gmem AFTER.  Any remaining
-// iterations that do not fit in the register budget are processed post-sync.
-// sync_op must provide sync() and thread_rank().
+// BEFORE calling sync_op.sync(), to maximally overlap the atomic polling with other work, then writes to gmem AFTER.
+// Any remaining iterations that do not fit in the register budget are processed post-sync. sync_op must provide sync()
+// and thread_rank().
 //
 // MAX_REGS_PER_THREAD should be set to REGS_PER_SM / (BLOCKS_PER_SM * BLOCK_SIZE)
 // so that the register buffering does not reduce occupancy.
 template <typename T, int NUM_THREADS, int TILE_BYTES, int MAX_REGS_PER_THREAD, typename SyncOp>
 __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t const bytes_to_load, SyncOp& sync_op)
 {
-  static_assert(TILE_BYTES % (NUM_THREADS * static_cast<int>(sizeof(uint32_t))) == 0);
   constexpr int REGS_PER_T     = TILE_BYTES / (NUM_THREADS * static_cast<int>(sizeof(uint32_t)));
   constexpr int ITERS          = REGS_PER_T / 4; // each uint4 = 4 regs
   constexpr int CHUNK_REGS     = cuda::std::min(MAX_REGS_PER_THREAD, REGS_PER_T);
@@ -153,9 +152,9 @@ __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t co
       uint4* new_dst    = reinterpret_cast<uint4*>(dst);
 
       // s = words `src` is above the 16B boundary; in {1,2,3} in this branch.
-      uint32_t const s         = (static_cast<uint32_t>(reinterpret_cast<uintptr_t>(src)) % sizeof(uint4)) / sizeof(uint32_t);
+      uint32_t const s = (static_cast<uint32_t>(reinterpret_cast<uintptr_t>(src)) % sizeof(uint4)) / sizeof(uint32_t);
       uint4 const* aligned_src = reinterpret_cast<uint4 const*>(new_src - s);
-      bool const is_top_lane      = (tid % WS) == (WS - 1);
+      bool const is_top_lane   = (tid % WS) == (WS - 1);
 
       auto load_funnel = [&](int k) -> uint4 {
         int const j   = tid + k * NUM_THREADS;
@@ -280,15 +279,14 @@ __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t co
   }
 }
 
-
 // ============================================================================
 // Tile coordinate helpers (host + device)
 // ============================================================================
 
-struct Dependencies
+struct DependencyRange
 {
-  int32_t deps_[3];
-  uint8_t num_dependencies_;
+  uint32_t begin_;
+  uint32_t end_;
 };
 
 namespace tile_detail
@@ -380,26 +378,21 @@ get_num_negative_tiles(size_t const rot_dist, uint32_t const nominal_tile_size, 
   return cuda::ceil_div(rot_dist - neg_head_size, nominal_tile_size);
 }
 
-__host__ __device__ uint32_t get_num_positive_tiles(
+uint32_t get_num_positive_tiles(
   size_t const arr_size, size_t const rot_dist, uint32_t const nominal_tile_size, uint32_t const head_size)
 {
   return cuda::ceil_div(arr_size - rot_dist - head_size, nominal_tile_size);
 }
 
-template <typename T>
-__host__ __device__ Dependencies get_dependencies(
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE DependencyRange get_dependencies(
   size_t const arr_size,
   size_t const rot_dist,
   uint32_t const nominal_tile_size,
   int32_t const tile_ix,
-  uint32_t const /*num_tiles*/,
-  uint32_t const head_size)
+  uint32_t const head_size,
+  uint32_t const neg_head_size,
+  uint32_t const num_negative_tiles)
 {
-  Dependencies item_deps{{0, 0, 0}, 0};
-
-  uint32_t const neg_head_size = get_neg_head_size<T>(arr_size, rot_dist, head_size);
-  uint32_t const num_neg       = get_num_negative_tiles(rot_dist, nominal_tile_size, neg_head_size);
-
   size_t overwrite_start =
     get_overwrite_start(arr_size, rot_dist, nominal_tile_size, tile_ix, head_size, neg_head_size);
   uint32_t const tile_size = get_tile_size(
@@ -422,70 +415,33 @@ __host__ __device__ Dependencies get_dependencies(
     overwrite_start = arr_size - rot_dist;
   }
 
-  auto snap = [&](size_t pos) -> int32_t {
+  auto snap_to_order = [&](size_t pos) -> uint32_t {
     if (pos < neg_head_size)
     {
-      return -1; // pos head src -> tile -1
+      return 0;
     }
     if (pos < rot_dist)
     {
-      return -static_cast<int32_t>((pos - neg_head_size) / nominal_tile_size + 1);
+      return static_cast<uint32_t>((pos - neg_head_size) / nominal_tile_size);
     }
     if (pos < rot_dist + head_size)
     {
-      return 0; // pos head src -> tile 0
+      return num_negative_tiles;
     }
-    return static_cast<int32_t>((pos - rot_dist - head_size) / nominal_tile_size);
+    return num_negative_tiles + static_cast<uint32_t>((pos - rot_dist - head_size) / nominal_tile_size);
   };
 
-  int32_t cur        = snap(overwrite_start);
-  int32_t const last = snap(overwrite_end);
-
-  auto advance = [&]() {
-    if (cur < 0)
-    {
-      cur--;
-      if (static_cast<uint32_t>(cuda::std::abs(cur)) > num_neg)
-      {
-        cur = 0; // jump from -num_neg past pos head to BFS pos 0
-      }
-    }
-    else
-    {
-      cur++;
-    }
-  };
-  auto should_continue = [&]() {
-    return ((cuda::std::abs(cur) <= cuda::std::abs(last)) || ((cur < 0) && (last >= 0))) && !(last < 0 && cur >= 0);
-  };
-
-  item_deps.deps_[0]          = cur;
-  item_deps.num_dependencies_ = 1;
-  advance();
-  if (should_continue())
-  {
-    item_deps.deps_[1]          = cur;
-    item_deps.num_dependencies_ = 2;
-    advance();
-    if (should_continue())
-    {
-      item_deps.deps_[2]          = cur;
-      item_deps.num_dependencies_ = 3;
-    }
-  }
-  return item_deps;
+  uint32_t const first_order = snap_to_order(overwrite_start);
+  uint32_t const last_order  = snap_to_order(overwrite_end);
+  assert(first_order <= last_order && last_order - first_order < 3);
+  return {first_order, last_order + 1};
 }
 
-__host__ __device__ int32_t arr_ix_to_tile_ix(size_t const arr_ix, uint32_t const num_negative_tiles)
+__host__ __device__ int32_t arr_ix_to_tile_ix(uint32_t const arr_ix, uint32_t const num_negative_tiles)
 {
   return arr_ix < num_negative_tiles
          ? -static_cast<int32_t>(arr_ix + 1)
          : (static_cast<int32_t>(arr_ix - num_negative_tiles));
-};
-
-__host__ __device__ size_t tile_ix_to_arr_ix(int32_t const tile_ix, uint32_t const num_negative_tiles)
-{
-  return tile_ix < 0 ? cuda::std::abs(tile_ix + 1) : static_cast<size_t>(tile_ix + num_negative_tiles);
 };
 } // namespace tile_detail
 
@@ -573,7 +529,8 @@ __global__ void rotate_short_kernel(
   assert(2 * rotate_distance <= size);
   assert(size > TILE_SIZE);
 
-  constexpr int SLOT_BYTES = cuda::round_up((TILE_SIZE + ELEMS_PER_SECTOR) * static_cast<int>(sizeof(T)), BYTES_PER_SECTOR);
+  constexpr int SLOT_BYTES =
+    cuda::round_up((TILE_SIZE + ELEMS_PER_SECTOR) * static_cast<int>(sizeof(T)), BYTES_PER_SECTOR);
   constexpr int SLOT_ELEMS = SLOT_BYTES / static_cast<int>(sizeof(T));
   alignas(BYTES_PER_SECTOR) extern __shared__ unsigned char smem_raw[];
   T(*cache)[SLOT_ELEMS] = reinterpret_cast<T(*)[SLOT_ELEMS]>(smem_raw);
@@ -788,7 +745,6 @@ __global__ void rotate_short_kernel(
     // Refill the freed slot, keeping a load in flight to overlap the next store.
     try_issue();
   }
-
 }
 } // namespace rotate_short
 
@@ -832,7 +788,7 @@ __global__ void rotate_long_kernel(
   alignas(BYTES_PER_SECTOR) __shared__ T cache[TILE_SIZE + ELEMS_PER_SECTOR]; // +ELEMS_PER_SECTOR to avoid shmem bank
                                                                               // conflicts when writing back to global
                                                                               // memory
-  __shared__ int tile_ordering_ix;
+  __shared__ uint32_t tile_ordering_ix;
   // Tile -1 owns the negative head used for sector alignment of the negative tiles destinations.
   // Tile 0 owns the positive head used for sector alignment of the positive tiles destinations.
   __shared__ T head_tile_cache[ELEMS_PER_SECTOR];
@@ -840,11 +796,12 @@ __global__ void rotate_long_kernel(
   __shared__ cuda::barrier<cuda::thread_scope_block> bar;
 
   auto* tiles_processed  = reinterpret_cast<cuda::atomic<uint32_t, cuda::thread_scope_device>*>(d_temp_storage);
-  auto* processing_order = reinterpret_cast<int32_t*>(tiles_processed + 1); // first uint32_t is the counter of
-                                                                            // processed items
+  auto* processing_order = reinterpret_cast<uint32_t*>(tiles_processed + 1); // first uint32_t is the counter of
+                                                                             // processed items
   auto* flags = reinterpret_cast<device_flag_t*>(processing_order + num_tiles);
 
-  uint32_t const neg_head_size = tile_detail::get_neg_head_size<T>(size, rotate_distance, head_size);
+  uint32_t const neg_head_size      = tile_detail::get_neg_head_size<T>(size, rotate_distance, head_size);
+  uint32_t const num_negative_tiles = tile_detail::get_num_negative_tiles(rotate_distance, TILE_SIZE, neg_head_size);
 
   auto const tid = threadIdx.x;
   auto cta       = cooperative_groups::this_thread_block();
@@ -865,7 +822,8 @@ __global__ void rotate_long_kernel(
     {
       return;
     }
-    auto const curr_tile = processing_order[curr_tile_ordering_ix];
+    auto const curr_tile_index = processing_order[curr_tile_ordering_ix];
+    auto const curr_tile       = tile_detail::arr_ix_to_tile_ix(curr_tile_index, num_negative_tiles);
     auto const curr_tile_start =
       tile_detail::get_tile_start(rotate_distance, TILE_SIZE, curr_tile, head_size, neg_head_size);
     auto const curr_tile_size = tile_detail::get_tile_size(
@@ -895,19 +853,14 @@ __global__ void rotate_long_kernel(
 
     if (tid == 0)
     {
-      auto const num_negative_tiles = tile_detail::get_num_negative_tiles(rotate_distance, TILE_SIZE, neg_head_size);
-      flags[tile_detail::tile_ix_to_arr_ix(curr_tile, num_negative_tiles)].store(1, cuda::memory_order_release);
-      flags[tile_detail::tile_ix_to_arr_ix(curr_tile, num_negative_tiles)].notify_all();
+      flags[curr_tile_index].store(1, cuda::memory_order_release);
+      flags[curr_tile_index].notify_all();
       // Poll dependencies
-      auto const deps =
-        tile_detail::get_dependencies<T>(size, rotate_distance, TILE_SIZE, curr_tile, num_tiles, head_size);
-      // static loop to keep deps in registers
-      for (int i = 0; i < 3; ++i)
+      auto const dependencies = tile_detail::get_dependencies(
+        size, rotate_distance, TILE_SIZE, curr_tile, head_size, neg_head_size, num_negative_tiles);
+      for (uint32_t dependency = dependencies.begin_; dependency < dependencies.end_; ++dependency)
       {
-        if (i < deps.num_dependencies_)
-        {
-          flags[tile_detail::tile_ix_to_arr_ix(deps.deps_[i], num_negative_tiles)].wait(0, cuda::memory_order_acquire);
-        }
+        flags[dependency].wait(0, cuda::memory_order_acquire);
       }
     }
 
