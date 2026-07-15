@@ -181,6 +181,9 @@ cudax_add_catch2_test(test_target group.mapping.group_by
 cudax_add_catch2_test(test_target group.mapping.identity_mapping
     group/mapping/identity_mapping.cu
 )
+cudax_add_catch2_test(test_target group.mapping.take
+    group/mapping/take.cu
+)
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )

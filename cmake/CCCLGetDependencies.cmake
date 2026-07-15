@@ -122,6 +122,6 @@ endmacro()
 
 macro(cccl_get_nccl)
   list(APPEND CMAKE_MODULE_PATH "${_cccl_find_module_dir}")
-  find_package(NCCL ${ARGV})
+  find_package(NCCL ${ARGN})
   list(POP_BACK CMAKE_MODULE_PATH)
 endmacro()

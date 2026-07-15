@@ -37,7 +37,7 @@ struct SegmentedSortRadixSortPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the internal digit-count scan
   int radix_bits; //!< Number of bits per radix digit pass
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedSortRadixSortPolicy& lhs, const SegmentedSortRadixSortPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -46,7 +46,7 @@ struct SegmentedSortRadixSortPolicy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedSortRadixSortPolicy& lhs, const SegmentedSortRadixSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -84,7 +84,7 @@ struct SegmentedSortSubWarpMergeSortPolicy
     return threads_per_warp * items_per_thread;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedSortSubWarpMergeSortPolicy& lhs, const SegmentedSortSubWarpMergeSortPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.threads_per_warp == rhs.threads_per_warp
@@ -92,7 +92,7 @@ struct SegmentedSortSubWarpMergeSortPolicy
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedSortSubWarpMergeSortPolicy& lhs, const SegmentedSortSubWarpMergeSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -119,14 +119,14 @@ struct SegmentedSortPolicy
   int partitioning_threshold; //!< Number of segments above which different algorithms will be used for different size
                               //!< buckets
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept
   {
     return lhs.large_segment == rhs.large_segment && lhs.medium_segment == rhs.medium_segment
         && lhs.small_segment == rhs.small_segment && lhs.partitioning_threshold == rhs.partitioning_threshold;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

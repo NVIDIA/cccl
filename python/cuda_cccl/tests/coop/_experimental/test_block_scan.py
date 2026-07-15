@@ -17,6 +17,7 @@ from operator import mul
 import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import (
     NUMBA_TYPES_TO_NP,
     Complex,
@@ -152,11 +153,10 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     dtype_np = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads * items_per_thread
     h_input = random_int(items_per_tile, dtype_np)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype_np)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype_np)
 
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     if mode == "inclusive":
@@ -248,11 +248,10 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
             tile_offset += tile_items
 
     h_input = np.arange(num_elements, dtype=np.int32)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.to_device(np.zeros(num_elements, dtype=np.int32))
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.from_numpy(np.zeros(num_elements, dtype=np.int32))
 
     kernel[num_segments, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     h_output = d_output.copy_to_host()
     ref = np.zeros_like(h_input)
@@ -438,10 +437,9 @@ def test_block_scan_user_defined_type(
     # Account for a Complex type containing two int32 values.
     total_items = num_threads * items_per_thread * 2
     h_input = random_int(total_items, "int32")
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(total_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(total_items, dtype=np.int32)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     h_output = d_output.copy_to_host()
     real_vals = h_input[:num_elements]
@@ -538,11 +536,10 @@ def test_block_scan_with_callable(
     dtype_np = NUMBA_TYPES_TO_NP[T]
     total_items = num_threads * items_per_thread
     h_input = random_int(total_items, dtype_np)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(total_items, dtype=dtype_np)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(total_items, dtype=dtype_np)
 
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
 
@@ -709,11 +706,10 @@ def test_block_scan_with_prefix_op_multi_items(
     dtype_np = NUMBA_TYPES_TO_NP[T]
     total_items = num_threads * items_per_thread
     h_input = random_int(total_items, dtype_np)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(total_items, dtype=dtype_np)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(total_items, dtype=dtype_np)
 
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
 
@@ -822,12 +818,11 @@ def test_block_scan_known_ops(
     else:
         h_input = random_int(total_items, dtype_np)
 
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(total_items, dtype=dtype_np)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(total_items, dtype=dtype_np)
 
     k = kernel[1, threads_per_block]
     k(d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
 

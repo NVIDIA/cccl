@@ -108,6 +108,19 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
+        # Create a swapfile
+        DISK_SIZE="$(df --output=size / | tail -n1 | tr -d 'K' | awk '{ print $1 * 1024 }')"
+        MEM_BYTES="$(free -b | head -n 2 | tail -n 1 | tr -s '[:blank:]' | cut -d' ' -f2)"
+        SWAP_SIZE="$(swapon --show=SIZE --noheadings --bytes | head -n 1 || echo 0)"
+        if [[ "${SWAP_SIZE:-0}" -eq 0 ]]; then
+          SWAP_SIZE="$(((DISK_SIZE / 4) > MEM_BYTES ? MEM_BYTES : (DISK_SIZE / 4)))"
+          sudo fallocate -l "$((SWAP_SIZE / 1024 / 1024 / 1024))G" /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+        fi
+        sudo sysctl vm.swappiness=10
+
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
 

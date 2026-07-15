@@ -72,6 +72,10 @@ For development or to access the latest features:
    cd cccl/python/cuda_cccl
    pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
 
+The test extras do not install CuPy. To also run the CuPy-based
+``cuda.compute`` examples, install CuPy separately, for example
+``pip install cupy-cuda13x``.
+
 
 Development Setup
 ~~~~~~~~~~~~~~~~~~
