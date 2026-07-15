@@ -45,7 +45,8 @@ EXCLUDE_SYMBOLS        = *detail* *RESERVED* *reserved* *__* _A* _B* _C* _D* _E*
 
 # Path for @snippet references to test/example files
 EXAMPLE_PATH           = ../../cudax/include/cuda/experimental/__stf/utility \
-                         ../../cudax/test/multi_gpu/algorithms
+                         ../../cudax/test/multi_gpu/algorithms \
+                         ../../cudax/test/coop/reduce
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
 EXTENSION_MAPPING      = cuh=C++ cu=C++
