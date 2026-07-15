@@ -13,12 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/cstdarg>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/cstdlib>
-
-#if _CCCL_HOSTED()
-#  include <cstdarg>
-#  include <cstdio>
-#endif // _CCCL_HOSTED()
 
 #ifdef _CCCL_DOXYGEN_INVOKED
 //! When defined, disables all logging code in CCCL
