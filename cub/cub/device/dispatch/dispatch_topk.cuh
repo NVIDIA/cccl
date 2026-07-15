@@ -35,6 +35,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
