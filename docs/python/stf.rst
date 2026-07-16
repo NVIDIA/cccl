@@ -9,13 +9,9 @@ or write that data; STF infers dependencies and orchestrates execution and data
 movement. For the full description of the model, see the
 :ref:`C++ CUDASTF documentation <stf>`.
 
-The module ships in the standalone ``cuda-stf`` wheel; install it with
-``pip install cuda-stf[cu13]`` (or ``[cu12]``). The bindings previously shipped
-as part of ``cuda-cccl``, but now live in the standalone, self-contained
-``cuda-stf`` package. It ships the STF/cudax headers and CUDA-version detection
-needed by the bindings, so it has no hard dependency on ``cuda-cccl``. Install
-``cuda-cccl`` alongside it when using ``cuda.compute`` or compiling external C++
-code that also needs the lower-level libcudacxx, CUB, or Thrust headers.
+Install the module with ``pip install cuda-stf[cu13]`` (or ``[cu12]``). Install
+``cuda-cccl`` as well when using ``cuda.compute`` or compiling external C++ code
+that needs the libcudacxx, CUB, or Thrust headers.
 
 The module is exposed under the ``_experimental`` subpackage because the Python
 API is still evolving and may change without notice. CUDASTF is currently Linux-only.

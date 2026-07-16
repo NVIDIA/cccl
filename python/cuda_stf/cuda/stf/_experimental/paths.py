@@ -9,12 +9,9 @@ STF C ABI that the Python bindings use. Importing this module is cheap: it does
 *not* load the STF extension (``_stf_bindings_impl``) or preload CUDA libraries,
 so it is safe to use from build scripts.
 
-cuda-stf ships its own include root (see :func:`get_include_paths`) containing
-the C STF header ``cccl/c/experimental/stf/stf.h`` and the cudax headers
-``cuda/experimental/*.cuh``. The lower-level libcudacxx/CUB/Thrust headers those
-cudax headers ``#include`` are *not* shipped here; they are owned by cuda-cccl.
-When cuda-cccl is installed, :func:`get_include_paths` transparently adds its
-include root so C++ compilation works; otherwise only the STF root is returned.
+The ``stf`` include path contains the C STF and cudax headers. When cuda-cccl is
+installed, :func:`get_include_paths` also returns its libcudacxx, CUB, and Thrust
+include paths.
 """
 
 from __future__ import annotations
@@ -106,12 +103,7 @@ def get_stf_include_dir() -> Path:
 
 
 def _cccl_base_include_root() -> Optional[Path]:
-    """Best-effort libcudacxx/CUB/Thrust include root from cuda-cccl.
-
-    cuda-cccl is an optional peer: it provides the lower-level headers the STF
-    cudax headers ``#include``. Returns ``None`` when cuda-cccl is not
-    installed, in which case only the STF headers are available.
-    """
+    """Return cuda-cccl's include root when available."""
     try:
         from cuda.cccl.headers.include_paths import (  # noqa: PLC0415
             get_include_paths as _get_cccl_include_paths,
@@ -140,11 +132,9 @@ def _cuda_toolkit_include() -> Optional[Path]:
 def get_include_paths() -> IncludePaths:
     """Return the include paths needed to compile against the STF C/C++ API.
 
-    The ``stf`` field points at cuda-stf's own include root (containing the C
-    STF header ``cccl/c/experimental/stf/stf.h`` and the cudax headers
-    ``cuda/experimental/*.cuh``). The ``libcudacxx``/``cub``/``thrust`` fields
-    point at cuda-cccl's include root when it is installed (required to compile
-    the cudax C++ headers); they are ``None`` otherwise.
+    The ``stf`` field contains the C STF and cudax headers. The ``libcudacxx``,
+    ``cub``, and ``thrust`` fields contain cuda-cccl's include root when
+    available and are ``None`` otherwise.
     """
     stf_incl = get_stf_include_dir()
     cccl_incl = _cccl_base_include_root()

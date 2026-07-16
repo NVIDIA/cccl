@@ -40,9 +40,7 @@ find_one_wheel() {
   echo "${wheels[0]}"
 }
 
-# Fetch or build the cuda_stf wheel. cuda-stf is standalone (ships its own STF
-# bindings, headers, and CUDA version detection), so only its wheel is needed.
-# cuda-cccl is pulled from the test extra for the cuda.compute interop tests.
+# Fetch or build the cuda_stf wheel.
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   stf_artifact_name=$(CCCL_WHEEL_KIND=stf "$ci_dir/util/workflow/get_wheel_artifact_name.sh")
   "$ci_dir/util/artifacts/download.sh" "${stf_artifact_name}" /home/coder/cccl/
@@ -50,8 +48,7 @@ else
   "$ci_dir/build_cuda_stf_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_stf with its test extra (which also pulls in cuda-cccl for the
-# cuda.compute interop tests).
+# Install cuda_stf with its test dependencies.
 CUDA_STF_WHEEL_PATH="$(find_one_wheel 'cuda_stf-*.whl')"
 python -m pip install "${CUDA_STF_WHEEL_PATH}[test-cu${cuda_major_version}]"
 

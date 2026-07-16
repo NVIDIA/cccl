@@ -26,11 +26,8 @@ pip install cuda-stf[sysctk13]  # For CUDA 13.x (system CUDA toolkit)
 pip install cuda-stf[sysctk12]  # For CUDA 12.x (system CUDA toolkit)
 ```
 
-`cuda-stf` is self-contained: it ships its own STF/cudax headers and CUDA
-version detection, so it has no hard dependency on `cuda-cccl`. Installing
-`cuda-cccl` alongside it is optional and only needed to compile external C++
-code against the cudax headers (it supplies the lower-level
-libcudacxx/CUB/Thrust headers).
+Install `cuda-cccl` as well when compiling external C++ code against the cudax
+headers; it supplies the libcudacxx, CUB, and Thrust headers.
 
 **Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with
 Compute Capability 7.5+, Linux.

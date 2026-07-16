@@ -23,8 +23,6 @@ from cuda.stf._experimental.paths import (
 
 @pytest.fixture
 def include_root():
-    # cuda-stf ships its own include root with the cudax + C STF headers. It is
-    # also exposed via get_include_paths().stf.
     assert get_include_paths().stf == get_stf_include_dir()
     return get_stf_include_dir()
 

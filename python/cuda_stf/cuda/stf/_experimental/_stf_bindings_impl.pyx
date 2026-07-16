@@ -417,18 +417,11 @@ def _logical_data_default_dtype(dtype):
     return np.float64 if dtype is None else dtype
 
 
-# Adapted from cuda.compute._utils.protocols.validate_and_get_stream.
-# We intentionally copy the ~15 lines here rather than importing
-# cuda.compute, to avoid pulling in that (heavy) package as a dependency
-# for such a small utility. Factoring these stream/CAI helpers into a
-# shared, lightweight common module would be useful future work.
 cdef uintptr_t _get_stream_pointer(object stream) except? 0:
     """Resolve a user stream to a raw CUstream pointer (0 == null stream).
 
     Accepts None, a raw integer pointer, or any object implementing the
-    __cuda_stream__ protocol. Mirrors
-    cuda.compute._utils.protocols.validate_and_get_stream but additionally
-    permits plain-int pointers for backward compatibility.
+    __cuda_stream__ protocol.
     """
     cdef object cuda_stream
     cdef object stream_property

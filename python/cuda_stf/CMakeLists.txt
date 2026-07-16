@@ -34,8 +34,7 @@ message(
 set(_cccl_root ../..)
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
 
-# cuda-stf only needs cccl.c.experimental.stf (and cudax). The c.parallel
-# libraries belong to cuda-cccl; keep them off here.
+# Only build the C STF library and cudax targets needed by this wheel.
 set(CCCL_ENABLE_C_PARALLEL OFF)
 set(CCCL_ENABLE_C_PARALLEL_V2 OFF)
 
@@ -52,13 +51,8 @@ set(cudax_ENABLE_TESTING OFF)
 set(cudax_ENABLE_EXAMPLES OFF)
 set(cudax_ENABLE_HEADER_TESTING OFF)
 
-# Build the CCCL targets (cccl.c.experimental.stf and cudax) but do NOT ship
-# the libcudacxx/CUB/Thrust headers from here: those are owned by cuda-cccl and
-# shipping them again would bloat the wheel and duplicate cuda-cccl's headers.
-# We install only the cudax and C STF headers that cuda-cccl does not provide
-# (see below), placing them in cuda-stf's own include root so the package stays
-# importable/usable without cuda-cccl. cuda.stf._experimental.paths augments
-# these with cuda-cccl's libcudacxx/CUB/Thrust root when it is installed.
+# Install the cudax and C STF headers into this wheel. libcudacxx, CUB, and
+# Thrust headers are available through cuda-cccl when needed by C++ consumers.
 set(libcudacxx_ENABLE_INSTALL_RULES OFF)
 set(CUB_ENABLE_INSTALL_RULES OFF)
 set(Thrust_ENABLE_INSTALL_RULES OFF)
@@ -113,9 +107,8 @@ endif()
 
 set(_stf_install_dir "cuda/stf/_experimental/${CUDA_VERSION_DIR}")
 
-# cuda-stf's own include root, independent of cuda-cccl. It is not
-# CUDA-version-specific (headers are identical across cu12/cu13), so it lives
-# outside the cu12/cu13 extension directories.
+# Headers are identical across cu12/cu13, so keep them outside the
+# CUDA-version-specific extension directories.
 set(_stf_include_dir "cuda/stf/_experimental/include")
 
 install(TARGETS cccl.c.experimental.stf DESTINATION "${_stf_install_dir}/cccl")

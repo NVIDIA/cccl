@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-# cmake>=3.30 mirrors cuda-cccl: STF builds cccl.c.experimental.stf and cudax
-# through the top-level CCCL project, which requires a recent FindCUDAToolkit.
+# STF builds cccl.c.experimental.stf and cudax through the top-level CCCL
+# project, which requires a recent FindCUDAToolkit.
 requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
@@ -35,14 +35,6 @@ dependencies = [
   "cuda-core",
   "typing_extensions",
 ]
-# Note: cuda-stf has no hard dependency on cuda-cccl. It ships its own CUDA
-# version-detection helper (cuda.stf._experimental._cuda_version_utils) and its
-# own STF/cudax headers. cuda-cccl is an optional peer: when installed,
-# cuda.stf._experimental.paths.get_include_paths() adds its libcudacxx/CUB/
-# Thrust include root so external C++ code can compile against the cudax
-# headers. The interop tests also use cuda.compute, so cuda-cccl is pulled in
-# by the test extras below.
-
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
@@ -83,8 +75,7 @@ sysctk13 = [
   "numba>=0.60.0",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
-# The test extras add cuda-cccl: the interop tests exercise cuda.compute, and
-# get_include_paths()'s C++ header path resolves libcudacxx/CUB/Thrust from it.
+# The tests exercise cuda.compute and C++ header discovery from cuda-cccl.
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296
