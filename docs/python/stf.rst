@@ -197,6 +197,53 @@ Places
   ``data_place.host()``, ``data_place.device(device_id)``, ``data_place.managed()``.
   Use when creating logical data or in a dependency, e.g. ``lZ.rw(data_place.device(1))``.
 
+Localizing tensor allocations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A structured partition describes how tensor coordinates map onto a grid of execution
+places. The same partition can back a composite data place, whose geometry-aware
+allocation localizes each allocation block on the device owning most of its elements.
+For example, on a system with two CUDA devices, distribute the rows of a row-major
+NumPy-shaped tensor between them::
+
+    import math
+
+    import numpy as np
+
+    import cuda.stf._experimental as stf
+
+    stf.machine_init()
+
+    numpy_shape = (4096, 8192)  # (ny, nx), last dimension contiguous
+    stf_dims = tuple(reversed(numpy_shape))  # (nx, ny), dimension 0 contiguous
+    dtype = np.dtype(np.float32)
+
+    grid = stf.exec_place_grid.from_devices([0, 1])
+
+    # Keep contiguous X rows intact and distribute Y bands over grid axis 0.
+    partition = stf.cute_partition.from_spec(
+        stf_dims,
+        (None, ("blocked", 0)),
+        grid.dims,
+    )
+
+    place = stf.data_place.composite_cute(grid, partition)
+    ptr = place.allocate(stf_dims, elemsize=dtype.itemsize)
+
+    try:
+        # Use ptr through CUDA Python, Numba, CuPy, or another CUDA
+        # interoperability layer.
+        ...
+    finally:
+        place.deallocate(ptr, math.prod(stf_dims) * dtype.itemsize)
+
+The dimensions and per-dimension specification above use STF's
+dimension-0-fastest convention, so a NumPy shape must be reversed together with any
+axis-specific partition choices. ``allocate()`` returns a raw CUDA pointer rather than
+a NumPy array; an interoperability layer must wrap that pointer before a Python array
+library can use it. Partitioning the slow Y dimension gives each device contiguous row
+bands and avoids interleaving owners within the allocation granularity.
+
 Tokens
 ------
 
