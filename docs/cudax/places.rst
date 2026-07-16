@@ -431,6 +431,39 @@ It is possible to query the *shape* of the grid using ``get_dims()``,
 which returns a ``dim4`` object. Individual places can be accessed by
 multi-dimensional position using ``get_place(pos4)``.
 
+Reshaping and collapsing grid axes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An existing grid can be viewed with different dimensions using
+``reshape()``. The new dimensions must contain exactly the same number of
+places:
+
+.. code:: c++
+
+   exec_place cube = make_grid(my_places, dim4(2, 3, 4));
+   exec_place flat = cube.reshape(dim4(24));
+
+Reshaping changes only the grid coordinate system. It preserves dimension-0-
+fastest linear order, so ``flat.get_place(i) == cube.get_place(i)`` for every
+linear index ``i``. It does not reorder, replicate, or remove places.
+
+``collapse_axes(first, last)`` is a convenience operation that combines a
+contiguous inclusive range of axes. The collapsed extent is the product of
+the selected extents; later axes shift left and trailing extents become one:
+
+.. code:: c++
+
+   exec_place grid = make_grid(my_places, dim4(2, 3, 4));
+
+   exec_place grid_6x4 = grid.collapse_axes(0, 1); // dim4(6, 4)
+   exec_place grid_2x12 = grid.collapse_axes(1, 2); // dim4(2, 12)
+   exec_place grid_24 = grid.collapse_axes(0, 3); // dim4(24)
+
+These operations are useful when a partition should consume several axes of
+a processor grid as one logical axis. They are coordinate transformations,
+not :ref:`places-partitioning`: the latter decomposes a place into constituent
+resources.
+
 .. _places-partitioning:
 
 Partitioning grids
