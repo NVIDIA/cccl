@@ -93,6 +93,7 @@ public:
   using value_type = _Tp;
   using mask_type  = basic_mask<sizeof(value_type), _Abi>;
 
+private:
   template <typename, typename, typename>
   friend class basic_vec;
 
@@ -133,6 +134,7 @@ public:
     __s_.__set(__i, __v);
   }
 
+public:
   using abi_type = _Abi;
 
   using iterator       = __simd_iterator<basic_vec>;

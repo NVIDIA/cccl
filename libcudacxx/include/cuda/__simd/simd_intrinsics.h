@@ -23,7 +23,6 @@
 
 #if _CCCL_HAS_SIMD_SAT()
 
-#  include <cuda/std/__internal/features.h>
 #  include <cuda/std/cstdint>
 
 #  include <nv/target>
