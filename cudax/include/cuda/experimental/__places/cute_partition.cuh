@@ -362,6 +362,18 @@ private:
       }
     }
 
+    // Without replication, every grid axis with extent > 1 must be bound to a
+    // tensor dimension; otherwise owner() pins that axis to coordinate 0 and
+    // the remaining places on that axis own no bytes. Relax this only if
+    // replication is introduced.
+    if (num_places() != grid_dims_.size())
+    {
+      throw ::std::invalid_argument(
+        "cute_partition: the partition leaves grid places unused (a grid axis with extent > 1 is bound to no "
+        "tensor dimension; replication is not supported). Collapse the unused grid axes or bind them to a "
+        "tensor dimension.");
+    }
+
     for (size_t d = 0; d < 4; d++)
     {
       if (true_dims_.get(d) < 1 || true_dims_.get(d) > padded_dims_.get(d))
@@ -436,8 +448,9 @@ private:
  * Each entry of `spec` describes how the corresponding tensor dimension maps
  * onto the grid ("blocked over axis 0", ...). Split dimensions are padded up
  * to divisibility, which is what makes the resulting layout exact (see the
- * file-level documentation). Grid axes not referenced by any entry receive
- * coordinate 0 (data is not replicated onto them).
+ * file-level documentation). Every grid axis with extent > 1 must be bound by
+ * some entry; unbound axes would leave those places idle (replication is not
+ * supported) and are rejected at construction time.
  *
  * @param true_dims True tensor extents (dimension 0 fastest)
  * @param spec One entry per tensor dimension (at most 4)
@@ -856,6 +869,31 @@ UNITTEST("cute_partition validation rejects inexact layouts")
     thrown = true;
   }
   EXPECT(thrown);
+};
+
+UNITTEST("make_partition rejects partitions that leave grid places unused")
+{
+  const dim4 true_dims(64);
+  const dim4 grid_dims(6, 4);
+
+  // Blocked on axis 0 only: 6 of 24 places would own data; axes 1..3 idle.
+  bool thrown = false;
+  try
+  {
+    make_partition(true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  // Binding every grid axis uses all places.
+  auto part = make_partition(
+    dim4(12, 8),
+    {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}},
+    grid_dims);
+  EXPECT(part.num_places() == grid_dims.size());
 };
 #endif // UNITTESTED_FILE
 } // namespace cuda::experimental::places
