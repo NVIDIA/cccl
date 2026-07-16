@@ -40,13 +40,16 @@ struct winner_config
   static constexpr int kWarpTileSize = 32 * kIPT;
   static constexpr int kTileSize     = kNumCompWarps * kWarpTileSize;
   static_assert(kTileSize <= 0xffff, "per-tile run_count/open_len must fit the 16-bit state-word fields");
+  static_assert(kTileSize <= 32768, "staged head positions must fit signed 16-bit");
   static constexpr int kNumWarps   = 1 /*load*/ + kNumCompWarps + 1 /*poll*/ + kNumStoreWarps + 1 /*bookkeeper*/;
   static constexpr int kNumThreads = kNumWarps * 32;
+  static_assert(kNumThreads <= 1024, "a CTA is capped at 1024 threads");
   // for each input tile, we need to store the keys and in-tile positions
   // for in tile position we can just do unsigned int16 since tile size is never bigger than 2^16
   // each key slot carries kSlotPad extra leading elements
   // we overcopy one 16B chunk to the left, so that we get the last tiles boundary element
-  static constexpr int kSlotPad    = 16 / sizeof(KeyT); // elements; 16 bytes = cp_async_bulk quantum
+  static constexpr int kSlotPad = 16 / sizeof(KeyT); // elements; 16 bytes = cp_async_bulk quantum
+  static_assert(16 % sizeof(KeyT) == 0 && alignof(KeyT) <= 16, "KeyT must evenly divide the 16B cp_async_bulk quantum");
   static constexpr int kSlotStride = kTileSize + kSlotPad + (alignof(KeyT) < 16 ? 16 / (int) sizeof(KeyT) : 0);
   static constexpr size_t kDynSmem =
     (size_t) kStages * kSlotStride * sizeof(KeyT) + (size_t) kPosBufStages * kTileSize * sizeof(short);
@@ -648,6 +651,9 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   static_assert(Config::kStages >= 1, "at least one pipeline stage");
   static_assert(Config::kPosBufStages >= 1 && 2 * Config::kPosBufStages >= Config::kStages,
                 "pos ring parity wait aliases unless 2*kPosBufStages >= kStages");
+  static_assert(Config::kTileSize <= 0xffff && Config::kTileSize <= 32768,
+                "kTileSize must fit the 16-bit state words and signed 16-bit staged positions");
+  static_assert(Config::kNumThreads <= 1024, "a CTA is capped at 1024 threads");
   constexpr int kIPT                     = Config::kIPT;
   constexpr int kNumCompWarps            = Config::kNumCompWarps;
   constexpr int kNumStoreWarps           = Config::kNumStoreWarps;
