@@ -217,7 +217,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
 
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
-  __min(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
+  __min_simd(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -240,12 +240,12 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
       }
 #  endif // _CCCL_HAS_SIMD_8BIT()
     }
-    return __base::__min(__lhs, __rhs);
+    return __base::__min_simd(__lhs, __rhs);
   }
 
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API static constexpr __simd_storage_t
-  __max(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
+  __max_simd(const __simd_storage_t& __lhs, const __simd_storage_t& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -268,7 +268,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
       }
 #  endif // _CCCL_HAS_SIMD_8BIT()
     }
-    return __base::__max(__lhs, __rhs);
+    return __base::__max_simd(__lhs, __rhs);
   }
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 };

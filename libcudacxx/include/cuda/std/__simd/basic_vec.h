@@ -137,13 +137,13 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_min_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
-    return basic_vec{_Impl::__min(__lhs.__s_, __rhs.__s_), __storage_tag};
+    return basic_vec{_Impl::__min_simd(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_max_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
-    return basic_vec{_Impl::__max(__lhs.__s_, __rhs.__s_), __storage_tag};
+    return basic_vec{_Impl::__max_simd(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
 public:

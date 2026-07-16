@@ -192,7 +192,7 @@ struct __fixed_size_operations
   // Min/max operations
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
-  __min(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
+  __min_simd(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
     _SimdStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -204,7 +204,7 @@ struct __fixed_size_operations
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
-  __max(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
+  __max_simd(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
     _SimdStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
