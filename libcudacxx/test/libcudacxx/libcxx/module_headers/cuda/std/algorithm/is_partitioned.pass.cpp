@@ -8,23 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/functional>
 #include <cuda/std/algorithm.is_partitioned.h>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-struct is_partitioned_is_even
-{
-  TEST_FUNC constexpr bool operator()(int x) const
-  {
-    return x % 2 == 0;
-  }
-};
-
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 1, 3};
-  assert(cuda::std::is_partitioned(a, a + 4, is_partitioned_is_even{}));
+  assert(cuda::std::is_partitioned(a, a + 4, cuda::__is_even<int>{}));
 
   return true;
 }

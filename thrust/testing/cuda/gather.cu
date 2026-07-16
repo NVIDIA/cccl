@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/gather.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -100,15 +102,6 @@ __global__ void gather_if_kernel(
   thrust::gather_if(exec, map_first, map_last, stencil_first, elements_first, result, pred);
 }
 
-template <typename T>
-struct is_even_gather_if
-{
-  _CCCL_HOST_DEVICE bool operator()(const T i) const
-  {
-    return (i % 2) == 0;
-  }
-};
-
 template <typename T, typename ExecutionPolicy>
 void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
 {
@@ -143,12 +136,7 @@ void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
   thrust::device_vector<T> d_output(n);
 
   thrust::gather_if(
-    h_map.begin(),
-    h_map.end(),
-    h_stencil.begin(),
-    h_source.begin(),
-    h_output.begin(),
-    is_even_gather_if<unsigned int>());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even<unsigned int>());
 
   gather_if_kernel<<<1, 1>>>(
     exec,
@@ -157,7 +145,7 @@ void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
     d_stencil.begin(),
     d_source.begin(),
     d_output.begin(),
-    is_even_gather_if<unsigned int>());
+    cuda::__is_even<unsigned int>());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
