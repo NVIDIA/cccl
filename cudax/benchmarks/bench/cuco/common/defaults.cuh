@@ -23,6 +23,12 @@ namespace cuda::experimental::cuco::benchmark::defaults
 using key_type_range = ::nvbench::type_list<::nvbench::int32_t, ::nvbench::int64_t>;
 //! Value types covered by the default CUCO benchmark type axes.
 using value_type_range = ::nvbench::type_list<::nvbench::int32_t, ::nvbench::int64_t>;
+//! Item types covered by HyperLogLog benchmarks.
+#if _CCCL_HAS_INT128()
+using hll_type_range = ::nvbench::type_list<::nvbench::int32_t, ::nvbench::int64_t, __int128_t>;
+#else
+using hll_type_range = ::nvbench::type_list<::nvbench::int32_t, ::nvbench::int64_t>;
+#endif // _CCCL_HAS_INT128()
 
 //! Default number of inputs used when sweeping another benchmark axis.
 inline constexpr auto n = ::nvbench::int64_t{100'000'000};
