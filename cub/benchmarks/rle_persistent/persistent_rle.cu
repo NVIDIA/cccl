@@ -31,6 +31,7 @@ struct winner_config
   static_assert(kPosBufStages >= 1 && 2 * kPosBufStages >= kStages,
                 "pos ring parity wait aliases unless 2*kPosBufStages >= kStages");
   static constexpr int kPollMlp = 5; // how many loads each poll lane keeps in flight
+  static_assert(kPollMlp >= 3, "the dense poll fold window is hard-coded 96 = 32*3 tiles per pass");
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 32;
   // when should we pre calculate in registers?
