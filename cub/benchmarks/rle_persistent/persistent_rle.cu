@@ -452,52 +452,13 @@ struct HeadFlagDecodeT
     const int head_bit_in_word =
       nth_set_bit(flag_word, (run_rank_in_word < flag_word_run_count) ? run_rank_in_word : 0);
     const int head_pos_in_warp_tile = flag_word_idx * 32 + head_bit_in_word;
-    // where does my run end?
-    // try find the position of next head in word
+    // where does my run end? try find the position of next head in word
     const int next_head_in_word = flag_word_idx * 32 + __ffs(flag_word & (~1u << head_bit_in_word)) - 1;
-    // does my word contain a head after mine? if not, next_head_in_word is garbage, and we use
-    // first_head_after_word
+    // does my word contain a head after mine? if not, next_head_in_word is garbage, and we use first_head_after_word
     const int next_head_pos = (run_rank_in_word + 1 < flag_word_run_count) ? next_head_in_word : first_head_after_word;
     return {head_pos_in_warp_tile, next_head_pos};
   }
 };
-
-// drain writes [run_begin, run_end) of warp tile (warp_tile_id)'s staged output into the global arrays.
-// Per run: gather its key from the run's head position -> d_unique,
-// and write its length -> d_counts (= next run's head pos - this run's head pos).
-// The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
-template <class KeyT, class LenT, class OffT>
-__device__ __forceinline__ void drain_warp_tile_runs(
-  KeyT* d_unique,
-  LenT* d_counts,
-  const KeyT* tile_keys,
-  int skip_elems,
-  const short* run_positions,
-  OffT curr_prefix_run_count,
-  int warp_tile_id,
-  int warp_tile_offset,
-  int runs_before_warp_tile,
-  int warp_tile_run_count,
-  int run_begin,
-  int run_end,
-  int lane_id)
-{
-  const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
-#pragma unroll 2
-  // if staged
-  for (int run_idx = run_begin + lane_id; run_idx < run_end; run_idx += 32)
-  {
-    const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
-    const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
-    d_unique[global_run_idx]  = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
-    if (run_idx + 1 < warp_tile_run_count)
-    {
-      // within-warp delta (next head - this head); the last run is fixed separately
-      const int run_length     = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
-      d_counts[global_run_idx] = run_length;
-    }
-  }
-}
 
 template <int kChunkCap, class Config, class OffT>
 __device__ __forceinline__ void poll_fold_windows(
@@ -623,8 +584,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
   static_assert(Config::kIPT >= 1 && Config::kIPT <= 32, "kIPT must be in [1, 32]");
   static_assert(Config::kNumCompWarps >= 1 && Config::kNumCompWarps <= 31, "kNumCompWarps must be in [1, 31]");
-  static_assert(Config::kNumStoreWarps == Config::kNumCompWarps,
-                "split store is unverified; kNumStoreWarps must equal kNumCompWarps");
+  static_assert(Config::kNumStoreWarps == Config::kNumCompWarps, "kNumStoreWarps must equal kNumCompWarps");
   static_assert(Config::kStages >= 1, "at least one pipeline stage");
   static_assert(Config::kPosBufStages >= 1 && 2 * Config::kPosBufStages >= Config::kStages,
                 "pos ring parity wait aliases unless 2*kPosBufStages >= kStages");
@@ -999,20 +959,26 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const OffT curr_prefix_run_count = wait_prefixed_and_read();
           // wait for staged_warp_tile (3/3)
           wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
-          drain_warp_tile_runs(
-            d_unique,
-            d_counts,
-            tile_keys,
-            skip_elems,
-            run_positions,
-            curr_prefix_run_count,
-            warp_tile_id,
-            warp_tile_id * kWarpTileSize,
-            runs_before_warp_tile,
-            warp_tile_run_count,
-            0,
-            warp_tile_run_count,
-            lane_id);
+          // drain writes warp tile (warp_tile_id)'s staged output into the global arrays.
+          // Per run: gather its key from the run's head position -> d_unique,
+          // and write its length -> d_counts (= next run's head pos - this run's head pos).
+          // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
+          const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
+          const int warp_tile_offset              = warp_tile_id * kWarpTileSize;
+#pragma unroll 2
+          for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
+          {
+            const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+            const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
+            d_unique[global_run_idx]  = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
+            if (run_idx + 1 < warp_tile_run_count)
+            {
+              // within-warp delta (next head - this head); the last run is fixed separately
+              const int run_length =
+                (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+              d_counts[global_run_idx] = run_length;
+            }
+          }
           __syncwarp();
           if (lane_id == 0)
           {
