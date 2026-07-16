@@ -26,12 +26,12 @@ PTX Instructions
    instructions/exit
    instructions/fence
    instructions/getctarank
+   instructions/mapa
    instructions/mbarrier_init
    instructions/mbarrier_inval
    instructions/mbarrier_arrive
    instructions/mbarrier_expect_tx
-   instructions/mbarrier_test_wait
-   instructions/mbarrier_try_wait
+   instructions/mbarrier_wait
    instructions/multimem_ld_reduce
    instructions/multimem_red
    instructions/multimem_st
@@ -55,11 +55,8 @@ PTX Instructions
    instructions/setmaxnreg
    instructions/special_registers
    instructions/applypriority_async_bulk
-   instructions/cp_async_bulk_multicast
    instructions/cp_async_bulk_prefetch
    instructions/cp_async_bulk_prefetch_tensor
-   instructions/cp_async_bulk_tensor_gather_scatter
-   instructions/cp_async_bulk_tensor_multicast
    instructions/cp_async_mbarrier_arrive_noinc
    instructions/fabric_submit
    instructions/fabric_try_get
@@ -67,27 +64,12 @@ PTX Instructions
    instructions/fabric_try_put
    instructions/fabric_try_red
    instructions/fabric_wait
-   instructions/fence_mbarrier_init
-   instructions/fence_proxy_alias
-   instructions/fence_proxy_async
-   instructions/fence_proxy_async_generic_sync_restrict
-   instructions/fence_proxy_fabric_fabric_alias
-   instructions/fence_proxy_fabric_generic_alias
-   instructions/fence_proxy_generic_fabric_alias
-   instructions/fence_proxy_tensormap_generic
-   instructions/fence_sync_restrict
    instructions/ldmatrix
-   instructions/mbarrier_arrive_drop
-   instructions/mbarrier_arrive_expect_tx
-   instructions/mbarrier_arrive_no_complete
    instructions/mbarrier_check_layout
    instructions/mbarrier_complete_tx
    instructions/mbarrier_pending_count
-   instructions/mbarrier_test_wait_parity
-   instructions/mbarrier_try_wait_parity
    instructions/prefetch
    instructions/stmatrix
-   instructions/tcgen05_mma_sp
 
 
 Instructions by section
@@ -332,6 +314,8 @@ Instructions by section
      - No
    * - `cvt.pack <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack>`__
      - No
+   * - :ref:`mapa <libcudacxx-ptx-instructions-mapa>`
+     - No
    * - :ref:`getctarank <libcudacxx-ptx-instructions-getctarank>`
      - CCCL 2.4.0 / CUDA 12.5
 
@@ -351,16 +335,10 @@ Instructions by section
      - CCCL 2.4.0 / CUDA 12.5
    * - :ref:`cp.reduce.async.bulk <libcudacxx-ptx-instructions-cp-reduce-async-bulk>`
      - CCCL 2.4.0 / CUDA 12.5
-   * - :ref:`cp.async.bulk.multicast <libcudacxx-ptx-instructions-cp-async-bulk-multicast>`
-     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`cp.async.bulk.prefetch <libcudacxx-ptx-instructions-cp-async-bulk-prefetch>`
      - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`cp.reduce.async.bulk <libcudacxx-ptx-instructions-cp-async-bulk-tensor>`
+   * - :ref:`cp.async.bulk.tensor <libcudacxx-ptx-instructions-cp-async-bulk-tensor>`
      - CCCL 2.4.0 / CUDA 12.5
-   * - :ref:`cp.async.bulk.tensor.gather_scatter <libcudacxx-ptx-instructions-cp-async-bulk-tensor-gather-scatter>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`cp.async.bulk.tensor.multicast <libcudacxx-ptx-instructions-cp-async-bulk-tensor-multicast>`
-     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`cp.reduce.async.bulk.tensor <libcudacxx-ptx-instructions-cp-reduce-async-bulk-tensor>`
      - CCCL 2.4.0 / CUDA 12.5
    * - :ref:`cp.async.bulk.prefetch.tensor <libcudacxx-ptx-instructions-cp-async-bulk-prefetch-tensor>`
@@ -441,24 +419,6 @@ Instructions by section
      - No
    * - :ref:`fence <libcudacxx-ptx-instructions-fence>`
      - CCCL 2.4.0 / CUDA 12.5
-   * - :ref:`fence.mbarrier_init <libcudacxx-ptx-instructions-fence-mbarrier-init>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.alias <libcudacxx-ptx-instructions-fence-proxy-alias>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.async <libcudacxx-ptx-instructions-fence-proxy-async>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.async::generic.sync_restrict <libcudacxx-ptx-instructions-fence-proxy-async-generic-sync-restrict>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.fabric::fabric.alias <libcudacxx-ptx-instructions-fence-proxy-fabric-fabric-alias>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.fabric::generic.alias <libcudacxx-ptx-instructions-fence-proxy-fabric-generic-alias>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.generic::fabric.alias <libcudacxx-ptx-instructions-fence-proxy-generic-fabric-alias>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.proxy.tensormap::generic <libcudacxx-ptx-instructions-fence-proxy-tensormap-generic>`
-     - CCCL 3.4.0 / CUDA 13.4
-   * - :ref:`fence.sync_restrict <libcudacxx-ptx-instructions-fence-sync-restrict>`
-     - CCCL 3.4.0 / CUDA 13.4
    * - `atom <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom>`__
      - No
    * - `red <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red>`__
@@ -595,8 +555,6 @@ Instructions by section
      - CCCL 2.8 / CUDA 12.9
    * - :ref:`tcgen05.mma <libcudacxx-ptx-instructions-tcgen05-mma>`
      - CCCL 2.8 / CUDA 12.9
-   * - :ref:`tcgen05.mma.sp <libcudacxx-ptx-instructions-tcgen05-mma-sp>`
-     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`tcgen05.mma.ws <libcudacxx-ptx-instructions-tcgen05-mma-ws>`
      - CCCL 2.8 / CUDA 12.9
    * - :ref:`tcgen05.shift <libcudacxx-ptx-instructions-tcgen05-shift>`
