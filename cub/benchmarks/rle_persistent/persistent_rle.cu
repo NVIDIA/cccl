@@ -4,6 +4,8 @@
 #include <cuda/ptx>
 #include <cuda/std/complex>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <cuda_runtime_api.h>
 
@@ -537,6 +539,8 @@ __device__ __forceinline__ void poll_fold_windows(
   int& dense_mode)
 {
   constexpr int kPollMlp = Config::kPollMlp;
+  static_assert(kChunkCap >= 1 && kChunkCap <= 32 * kPollMlp,
+                "the fold window must be covered by the MLP loops; a nonpositive window never advances");
   while (last_seen_tile_id < tile_id)
   {
     const int remain = tile_id - last_seen_tile_id;
@@ -658,6 +662,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   static_assert(Config::kNumThreads <= 1024, "a CTA is capped at 1024 threads");
   static_assert(Config::kBufPerLane * ((int) sizeof(KeyT) + 4) <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
+  static_assert(cuda::std::is_integral_v<OffT> && Config::kTileSize <= cuda::std::numeric_limits<OffT>::max(),
+                "OffT must be an integer type wide enough for one tile");
   constexpr int kIPT                     = Config::kIPT;
   constexpr int kNumCompWarps            = Config::kNumCompWarps;
   constexpr int kNumStoreWarps           = Config::kNumStoreWarps;
