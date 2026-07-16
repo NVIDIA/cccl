@@ -109,22 +109,22 @@ struct BlockPrefetch
         // One elected thread issues a single TMA bulk prefetch for the whole tile.
         // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
         // Requires SM_90+; on older architectures fall back to the strided L2 prefetch.
-        NV_IF_ELSE_TARGET(
-          NV_PROVIDES_SM_90,
-          ({
-            if (::cuda::device::__block_elect_one())
-            {
-              // srcMem must be 16-byte aligned per PTX ISA; align the range outward on both ends to compensate
-              const auto* aligned_base = ::cuda::align_down(src_ptr, 16);
-              const auto* aligned_end  = ::cuda::align_up(src_ptr + total_bytes, 16);
-              const auto aligned_size  = static_cast<unsigned>(aligned_end - aligned_base);
-              asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
-                           :
-                           : "l"(::__cvta_generic_to_global(aligned_base)), "r"(aligned_size)
-                           : "memory");
-            }
-          }),
-          ({ __strided_prefetch<LoadPrefetch::l2>(src_ptr, total_bytes); }))
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                          ({
+                            if (::cuda::device::__block_elect_one())
+                            {
+                              // srcMem must be 16-byte aligned per PTX ISA; align the range outward on both ends to
+                              // compensate
+                              const auto* aligned_base = ::cuda::align_down(src_ptr, 16);
+                              const auto* aligned_end  = ::cuda::align_up(src_ptr + total_bytes, 16);
+                              const auto aligned_size  = static_cast<unsigned>(aligned_end - aligned_base);
+                              asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
+                                           :
+                                           : "l"(::__cvta_generic_to_global(aligned_base)), "r"(aligned_size)
+                                           : "memory");
+                            }
+                          }),
+                          ({ __strided_prefetch<LoadPrefetch::l2>(src_ptr, total_bytes); }))
       }
       else
       {
@@ -139,18 +139,20 @@ private:
   template <LoadPrefetch Level>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void __strided_prefetch(const char* src_ptr, int total_bytes)
   {
+    const int start    = static_cast<int>(threadIdx.x) * PrefetchStride;
+    constexpr int step = ThreadsPerBlock * PrefetchStride;
     _CCCL_PRAGMA_NOUNROLL()
-    for (int offset = static_cast<int>(threadIdx.x) * PrefetchStride; offset < total_bytes;
-         offset += ThreadsPerBlock * PrefetchStride)
+    for (int offset = start; offset < total_bytes; offset += step)
     {
+      const auto gmem_ptr = ::__cvta_generic_to_global(src_ptr + offset);
       // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
       if constexpr (Level == LoadPrefetch::l1)
       {
-        asm volatile("prefetch.global.L1 [%0];" : : "l"(::__cvta_generic_to_global(src_ptr + offset)) : "memory");
+        asm volatile("prefetch.global.L1 [%0];" : : "l"(gmem_ptr) : "memory");
       }
       else
       {
-        asm volatile("prefetch.global.L2 [%0];" : : "l"(::__cvta_generic_to_global(src_ptr + offset)) : "memory");
+        asm volatile("prefetch.global.L2 [%0];" : : "l"(gmem_ptr) : "memory");
       }
     }
   }
