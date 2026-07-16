@@ -59,8 +59,8 @@ void test_partition(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
   { // random access
-    auto res =
-      cuda::std::partition(policy, random_access_iterator{raw}, random_access_iterator{raw + size}, cuda::__is_even<T>{});
+    auto res = cuda::std::partition(
+      policy, random_access_iterator{raw}, random_access_iterator{raw + size}, cuda::__is_even<T>{});
     CHECK(res == random_access_iterator{raw + mid});
     CHECK(cuda::std::equal(policy,
                            input.begin(),

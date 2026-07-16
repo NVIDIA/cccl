@@ -57,7 +57,15 @@ C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
 
   using policy_hub_t = my_policy_hub<value_t>;
   using dispatch_t =
-    DispatchSelectIf<value_t*, NullType*, value_t*, offset_t*, cuda::__is_even<int>, NullType, offset_t, SelectImpl::Select, policy_hub_t>;
+    DispatchSelectIf<value_t*,
+                     NullType*,
+                     value_t*,
+                     offset_t*,
+                     cuda::__is_even<int>,
+                     NullType,
+                     offset_t,
+                     SelectImpl::Select,
+                     policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

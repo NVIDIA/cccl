@@ -42,7 +42,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(
     nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      do_not_optimize(cuda::std::copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), cuda::__is_even<T>{}));
+      do_not_optimize(
+        cuda::std::copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), cuda::__is_even<T>{}));
     });
 }
 

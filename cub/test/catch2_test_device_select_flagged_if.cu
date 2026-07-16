@@ -66,7 +66,7 @@ struct is_even_t
   template <template <typename> class... Policies>
   __host__ __device__ bool operator()(c2h::custom_type_t<Policies> elem) const
   {
-   return cuda::__is_even<int>{}(elem.key);
+    return cuda::__is_even<int>{}(elem.key);
   }
 };
 
