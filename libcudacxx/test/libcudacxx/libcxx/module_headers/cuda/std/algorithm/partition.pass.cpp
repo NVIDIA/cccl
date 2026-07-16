@@ -11,23 +11,16 @@
 // UNSUPPORTED: enable-tile
 // error: a return statement inside a loop is not currently supported in a tile function
 
+#include <cuda/functional>
 #include <cuda/std/algorithm.partition.h>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-struct partition_is_even
-{
-  TEST_FUNC constexpr bool operator()(int x) const
-  {
-    return x % 2 == 0;
-  }
-};
-
 TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 2, 3, 4};
-  auto p  = cuda::std::partition(a, a + 4, partition_is_even{});
+  auto p  = cuda::std::partition(a, a + 4, cuda::__is_even<int>{});
   assert(p == a + 2);
 
   return true;

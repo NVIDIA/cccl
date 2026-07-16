@@ -8,25 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/functional>
 #include <cuda/std/algorithm.partition_copy.h>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
-
-struct partition_copy_is_even
-{
-  TEST_FUNC constexpr bool operator()(int x) const
-  {
-    return x % 2 == 0;
-  }
-};
 
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3, 4};
   int t[4]          = {};
   int f[4]          = {};
-  auto p            = cuda::std::partition_copy(a, a + 4, t, f, partition_copy_is_even{});
+  auto p            = cuda::std::partition_copy(a, a + 4, t, f, cuda::__is_even<int>{});
   assert(p.first == t + 2 && p.second == f + 2);
 
   return true;

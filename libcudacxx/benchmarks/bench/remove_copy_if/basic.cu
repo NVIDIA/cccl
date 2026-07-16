@@ -17,15 +17,6 @@
 
 #include "nvbench_helper.cuh"
 
-struct is_even
-{
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return static_cast<int>(val) % 2 == 0;
-  }
-};
-
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
