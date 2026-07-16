@@ -19,13 +19,14 @@
 
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__memory/pointer_traits.h>
 
 #include <nv/target>
 
@@ -69,11 +70,12 @@ inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
 }
 #endif // _CCCL_HOSTED()
 
-// Prefetch hints require a raw address, so only contiguous iterators qualify.
+// Prefetch hints require a raw address, so only contiguous iterators qualify. thrust::is_contiguous_iterator
+// covers raw pointers, std/libcu++ contiguous iterators, thrust vector iterators, and proclaimed types.
 // Note: ``cub::CacheModifiedInputIterator`` does not qualify: it routes loads through an explicit cache path
 // (e.g. ``LOAD_NC``) that a prefetch hint would defeat.
 template <typename It>
-inline constexpr bool can_prefetch_from = ::cuda::std::contiguous_iterator<It> && ::cuda::std::__can_to_address<It>;
+inline constexpr bool can_prefetch_from = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>;
 
 //! A block-scope collective that cooperatively emits global-memory prefetch hints for a tile. The block size
 //! ``ThreadsPerBlock`` is fixed on the type; the cache level (``PrefetchLevel``) and the per-cache-line hint
@@ -101,7 +103,7 @@ struct BlockPrefetch
       _CCCL_ASSERT(items_to_prefetch >= 0, "items_to_prefetch must be non-negative");
 
       const int total_bytes = items_to_prefetch * int{sizeof(it_value_t<It>)};
-      const auto src_ptr    = ::cuda::ptr_rebind<char>(::cuda::std::to_address(tile_base));
+      const auto src_ptr    = ::cuda::ptr_rebind<char>(THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(tile_base));
 
       if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {

@@ -4,6 +4,7 @@
 #include <cub/detail/prefetch.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <thrust/device_vector.h>
 #include <thrust/universal_vector.h>
 
 #include <cuda/buffer>
@@ -23,6 +24,10 @@
 // Compile-time coverage of the trait that gates every hint.
 static_assert(cub::detail::can_prefetch_from<int*>, "raw pointers are contiguous and must be prefetchable");
 static_assert(cub::detail::can_prefetch_from<const double*>, "const raw pointers must be prefetchable");
+static_assert(cub::detail::can_prefetch_from<thrust::device_vector<int>::iterator>,
+              "thrust vector iterators are contiguous and must be prefetchable");
+static_assert(cub::detail::can_prefetch_from<thrust::universal_vector<int>::iterator>,
+              "thrust universal_vector iterators are contiguous and must be prefetchable");
 static_assert(!cub::detail::can_prefetch_from<cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, int>>,
               "CacheModifiedInputIterator routes through an explicit cache path and must be rejected");
 
@@ -107,26 +112,25 @@ C2H_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][
   test_block_prefetch<type, threads_in_block, level>(d_input, in);
 }
 
-C2H_TEST("BlockPrefetch is safe with thrust vector iterators", "[prefetch][block]")
+C2H_TEST("BlockPrefetch works with thrust vector iterators", "[prefetch][block]", load_prefetch_levels)
 {
-  using type                     = int;
-  constexpr int threads_in_block = 128;
+  using type                                = int;
+  constexpr int threads_in_block            = 128;
+  constexpr cub::detail::LoadPrefetch level = c2h::get<0, TestType>::value;
 
   const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
-  CAPTURE(num_items, threads_in_block);
+  CAPTURE(num_items, threads_in_block, level);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input);
 
-  // Wrapped thrust iterators do not model cuda::std::contiguous_iterator, so the trait rejects them and
-  // Prefetch must compile to a safe no-op while the copy-through still works. If thrust iterators ever gain
-  // contiguous conformance these asserts flip and this test should start expecting real prefetches.
-  STATIC_REQUIRE(!cub::detail::can_prefetch_from<decltype(d_input.cbegin())>);
-  test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::l2>(d_input, d_input.cbegin());
+  // thrust vector iterators are contiguous (thrust::is_contiguous_iterator), so hints flow through them.
+  STATIC_REQUIRE(cub::detail::can_prefetch_from<decltype(d_input.cbegin())>);
+  test_block_prefetch<type, threads_in_block, level>(d_input, d_input.cbegin());
 
   thrust::universal_vector<type> universal_input(d_input.begin(), d_input.end());
-  STATIC_REQUIRE(!cub::detail::can_prefetch_from<decltype(universal_input.cbegin())>);
-  test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::l2>(d_input, universal_input.cbegin());
+  STATIC_REQUIRE(cub::detail::can_prefetch_from<decltype(universal_input.cbegin())>);
+  test_block_prefetch<type, threads_in_block, level>(d_input, universal_input.cbegin());
 }
 
 C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]", load_prefetch_levels)
