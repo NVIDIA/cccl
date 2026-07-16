@@ -474,7 +474,7 @@ template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API fpemu<_FpType, _Acc> fpemu<_FpType, _Acc>::operator-() const noexcept
 {
   fpemu __temp(*this);
-  __temp.bits = __fp64emu_neg(__temp.bits);
+  __temp.__bits_ = __fp64emu_neg(__temp.__bits_);
   return __temp;
 }
 
@@ -588,7 +588,7 @@ template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API fpemu_unpacked<_FpType, _Acc> fpemu_unpacked<_FpType, _Acc>::operator-() const noexcept
 {
   fpemu_unpacked __temp(*this);
-  __temp.bits = __fp64emu_unpacked_neg(__temp.bits);
+  __temp.__bits_ = __fp64emu_unpacked_neg(__temp.__bits_);
   return __temp;
 }
 

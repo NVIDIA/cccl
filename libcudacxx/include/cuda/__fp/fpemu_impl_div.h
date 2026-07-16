@@ -35,8 +35,10 @@
 //! through appropriate decorators and provide bit-exact results matching hardware
 //! floating point units.
 
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
+#include <cuda/std/__bit/countl.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -84,7 +86,7 @@ _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_div_recip32(uint32_t __b32) noexce
   int64_t __e     = (int64_t) (_CCCL_FPEMU_SIGN_64 - __prod); // 2^63 - prod
   uint64_t __ae   = (uint64_t) (__e < 0 ? -__e : __e);
   uint64_t __lo   = __r * __ae; // low 64 bits of r*ae
-  uint64_t __hi   = __internal_fp64emu_mulhi64(__r, __ae);
+  uint64_t __hi   = ::cuda::mul_hi(__r, __ae);
   uint64_t __corr = (__hi << 1) | (__lo >> 63); // (r*ae) >> 63
   __r             = (__e < 0) ? (__r - __corr) : (__r + __corr);
   if (__r > 0xFFFFFFFFULL)
@@ -238,7 +240,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x, __fpbits64 
         return (__fpbits64) (((uint64_t) __sign_z << 63) | _CCCL_FPEMU_INF_64); // x / 0 -> inf
       }
     }
-    int __mant_b_shft = __internal_clzll((int64_t) __mant_b) - 11;
+    int __mant_b_shft = ::cuda::std::countl_zero((uint64_t) __mant_b) - 11;
     // normalize subnormal b
     __exp_b  = 1 - __mant_b_shft;
     __mant_b = __mant_b << __mant_b_shft;
@@ -249,7 +251,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x, __fpbits64 
     {
       return (__fpbits64) ((uint64_t) __sign_z << 63); // 0 / x -> 0
     }
-    int __mant_a_shft = __internal_clzll((int64_t) __mant_a) - 11;
+    int __mant_a_shft = ::cuda::std::countl_zero((uint64_t) __mant_a) - 11;
     // normalize subnormal a
     __exp_a  = 1 - __mant_a_shft;
     __mant_a = __mant_a << __mant_a_shft;
@@ -522,19 +524,19 @@ _CCCL_API fpemu<double, _Acc> operator/(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_high_ddiv_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_high_ddiv_rn(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_ddiv_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_ddiv_rn(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_low_ddiv_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_low_ddiv_rn(__x.__bits_, __y.__bits_));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_ddiv_rn(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_ddiv_rn(__x.__bits_, __y.__bits_));
   }
 } // operator /
 
@@ -583,19 +585,19 @@ operator/(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_ddiv(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_ddiv(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_ddiv(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_ddiv(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_ddiv(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_ddiv(__x.__bits_, __y.__bits_));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_ddiv(__x.bits, __y.bits));
+    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_ddiv(__x.__bits_, __y.__bits_));
   }
 } // operator/
 

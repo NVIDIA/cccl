@@ -35,6 +35,7 @@
 
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
+#include <cuda/std/__bit/countl.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -165,7 +166,8 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   // Normalize mantissa_r
   // use reinterpret_cast to avoid slowdown from bit_cast
   uint64_t* __m = reinterpret_cast<uint64_t*>(&__mantissa_r);
-  int __nzeros  = (__m[1] == 0) ? (__internal_clzll(__m[0] + 64)) : (__internal_clzll(__m[1] << 1));
+  int __nzeros  = (__m[1] == 0) ? (::cuda::std::countl_zero((uint64_t) (__m[0] + 64)))
+                                : (::cuda::std::countl_zero((uint64_t) (__m[1] << 1)));
 
   // Shift mantissa_r
   __mantissa_r = (__nzeros == 0) ? (__mantissa_r >> 1) : (__mantissa_r << (__nzeros - 1));

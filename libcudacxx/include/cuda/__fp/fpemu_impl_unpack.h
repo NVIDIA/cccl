@@ -45,10 +45,11 @@
 //! lean unpack/pack and do not use these routines.
 //!
 //! They depend only on the primitives/constants in fpemu_impl.h
-//! (bit_cast, __round, __fp64_ovfl_sat, __internal_clzll, the FP64_* masks,
+//! (bit_cast, __round, __fp64_ovfl_sat, ::cuda::std::countl_zero, the FP64_* masks,
 //! EXTRA_BITS, BIAS, ...).
 
 #include <cuda/__fp/fpemu_impl.h>
+#include <cuda/std/__bit/countl.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -75,7 +76,7 @@ _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) 
   // Normalize denormals: leading-zero count of the magnitude (clamped so a
   // normal stays at shift == EXTRA_BITS, and a true zero maps to the zero band).
   uint64_t __abs_a = __fpemu_bit_cast<uint64_t>(__a32);
-  int __nzeros     = __internal_clzll(__abs_a);
+  int __nzeros     = ::cuda::std::countl_zero(__abs_a);
   if (__nzeros < 11)
   {
     __nzeros = 11;

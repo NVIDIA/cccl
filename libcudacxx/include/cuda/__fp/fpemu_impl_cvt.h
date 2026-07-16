@@ -37,6 +37,7 @@
 
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
+#include <cuda/std/__bit/countl.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -441,7 +442,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_float_to_fpbits64(float __x) noe
   // Subnormal float → normalize
   if (__exp == 0)
   {
-    int32_t __nz = __internal_clz((int) __frac) - (32 - _CCCL_FP32_MANT_BITS - 1);
+    int32_t __nz = ::cuda::std::countl_zero((uint32_t) __frac) - (32 - _CCCL_FP32_MANT_BITS - 1);
     __frac       = (__frac << __nz) & ((1u << _CCCL_FP32_MANT_BITS) - 1);
     __exp        = 1 - __nz;
   }
@@ -463,7 +464,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_int_to_fpbits64(int32_t __x) noe
   uint64_t __sign  = (__x < 0) ? (1ULL << 63) : 0ULL;
   uint32_t __abs_x = (uint32_t) ((__x < 0) ? -(int64_t) __x : (int64_t) __x);
 
-  int32_t __nz        = __internal_clz((int) __abs_x);
+  int32_t __nz        = ::cuda::std::countl_zero((uint32_t) __abs_x);
   uint64_t __exp      = (uint64_t) (_CCCL_FP64_BIAS + 31 - __nz);
   uint64_t __mantissa = ((uint64_t) __abs_x << (21 + __nz)) & __fpemu_mantissa_mask;
 
@@ -478,7 +479,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_uint_to_fpbits64(uint32_t __x) n
     return (__fpbits64) 0;
   }
 
-  int32_t __nz        = __internal_clz((int) __x);
+  int32_t __nz        = ::cuda::std::countl_zero((uint32_t) __x);
   uint64_t __exp      = (uint64_t) (_CCCL_FP64_BIAS + 31 - __nz);
   uint64_t __mantissa = ((uint64_t) __x << (21 + __nz)) & __fpemu_mantissa_mask;
 
@@ -496,7 +497,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ll_to_fpbits64(int64_t __x) noex
   uint64_t __sign  = (__x < 0) ? (1ULL << 63) : 0ULL;
   uint64_t __abs_a = (__x < 0) ? -(uint64_t) __x : (uint64_t) __x;
 
-  int32_t __nz  = __internal_clzll((int64_t) __abs_a);
+  int32_t __nz  = ::cuda::std::countl_zero((uint64_t) __abs_a);
   int32_t __exp = _CCCL_FP64_BIAS + 63 - __nz;
 
   if (__nz >= 11)
@@ -534,7 +535,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ull_to_fpbits64(uint64_t __x) no
     return (__fpbits64) 0;
   }
 
-  int32_t __nz  = __internal_clzll((int64_t) __x);
+  int32_t __nz  = ::cuda::std::countl_zero((uint64_t) __x);
   int32_t __exp = _CCCL_FP64_BIAS + 63 - __nz;
 
   if (__nz >= 11)
@@ -1182,14 +1183,14 @@ namespace cuda::experimental
 template <typename _FpType, fpemu_accuracy _Met>
 template <fpemu_accuracy _Acc2>
 _CCCL_API inline fpemu<_FpType, _Met>::fpemu(const fpemu<double, _Acc2>& __src) noexcept
-    : bits(__fpemu_bit_cast<__fpbits64>(__src))
+    : __bits_(__fpemu_bit_cast<__fpbits64>(__src))
 {}
 
 // Converting constructor from the unpacked representation (packs to the 64-bit form).
 template <typename _FpType, fpemu_accuracy _Met>
 template <fpemu_accuracy _Acc2>
 _CCCL_API inline fpemu<_FpType, _Met>::fpemu(const fpemu_unpacked<double, _Acc2>& __src) noexcept
-    : bits(__fp64emu_pack_rn(__fpemu_bit_cast<__fpbits64_unpacked>(__src)))
+    : __bits_(__fp64emu_pack_rn(__fpemu_bit_cast<__fpbits64_unpacked>(__src)))
 {}
 
 /*
@@ -1199,13 +1200,13 @@ _CCCL_API inline fpemu<_FpType, _Met>::fpemu(const fpemu_unpacked<double, _Acc2>
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<_FpType, _Acc>::fpemu(double __d) noexcept
 {
-  bits = __fp64emu_from_double(__d);
+  __bits_ = __fp64emu_from_double(__d);
 }
 // from float
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<_FpType, _Acc>::fpemu(float __d) noexcept
 {
-  bits = __fp64emu_from_float(__d);
+  __bits_ = __fp64emu_from_float(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<double, _Acc> __float2double(float __x) noexcept
@@ -1216,7 +1217,7 @@ _CCCL_API inline fpemu<double, _Acc> __float2double(float __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu<_FpType, _Acc>::__set_from_int32(int32_t __d) noexcept
 {
-  bits = __fp64emu_from_int(__d);
+  __bits_ = __fp64emu_from_int(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<double, _Acc> __int2double(int32_t __x) noexcept
@@ -1227,7 +1228,7 @@ _CCCL_API inline fpemu<double, _Acc> __int2double(int32_t __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu<_FpType, _Acc>::__set_from_int32(uint32_t __d) noexcept
 {
-  bits = __fp64emu_from_uint(__d);
+  __bits_ = __fp64emu_from_uint(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<double, _Acc> __uint2double(uint32_t __x) noexcept
@@ -1238,7 +1239,7 @@ _CCCL_API inline fpemu<double, _Acc> __uint2double(uint32_t __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu<_FpType, _Acc>::__set_from_int64(int64_t __d) noexcept
 {
-  bits = __fp64emu_from_ll(__d);
+  __bits_ = __fp64emu_from_ll(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<double, _Acc> __ll2double(int64_t __x) noexcept
@@ -1249,7 +1250,7 @@ _CCCL_API inline fpemu<double, _Acc> __ll2double(int64_t __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu<_FpType, _Acc>::__set_from_int64(uint64_t __d) noexcept
 {
-  bits = __fp64emu_from_ull(__d);
+  __bits_ = __fp64emu_from_ull(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<double, _Acc> __ull2double(uint64_t __x) noexcept
@@ -1264,13 +1265,13 @@ _CCCL_API inline fpemu<double, _Acc> __ull2double(uint64_t __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<_FpType, _Acc>::operator double() const noexcept
 {
-  return __fp64emu_to_double(bits);
+  return __fp64emu_to_double(__bits_);
 }
 // to float
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline fpemu<_FpType, _Acc>::operator float() const noexcept
 {
-  return __fp64emu_to_float(bits);
+  return __fp64emu_to_float(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline float __double2float(fpemu<double, _Acc> __x) noexcept
@@ -1281,7 +1282,7 @@ _CCCL_API inline float __double2float(fpemu<double, _Acc> __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline int32_t fpemu<_FpType, _Acc>::__to_integer(int32_t) const noexcept
 {
-  return __fp64emu_to_int_rz(bits);
+  return __fp64emu_to_int_rz(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline int32_t __double2int_rn(fpemu<double, _Acc> __x) noexcept
@@ -1307,7 +1308,7 @@ _CCCL_API inline int32_t __double2int_rd(fpemu<double, _Acc> __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline uint32_t fpemu<_FpType, _Acc>::__to_integer(uint32_t) const noexcept
 {
-  return __fp64emu_to_uint_rz(bits);
+  return __fp64emu_to_uint_rz(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline uint32_t __double2uint_rn(fpemu<double, _Acc> __x) noexcept
@@ -1333,7 +1334,7 @@ _CCCL_API inline uint32_t __double2uint_rd(fpemu<double, _Acc> __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline int64_t fpemu<_FpType, _Acc>::__to_integer(int64_t) const noexcept
 {
-  return __fp64emu_to_ll_rz(bits);
+  return __fp64emu_to_ll_rz(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline int64_t __double2ll_rn(fpemu<double, _Acc> __x) noexcept
@@ -1359,7 +1360,7 @@ _CCCL_API inline int64_t __double2ll_rd(fpemu<double, _Acc> __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline uint64_t fpemu<_FpType, _Acc>::__to_integer(uint64_t) const noexcept
 {
-  return __fp64emu_to_ull_rz(bits);
+  return __fp64emu_to_ull_rz(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline uint64_t __double2ull_rn(fpemu<double, _Acc> __x) noexcept
@@ -1388,14 +1389,14 @@ _CCCL_API inline uint64_t __double2ull_rd(fpemu<double, _Acc> __x) noexcept
 template <typename _FpType, fpemu_accuracy _Met>
 template <fpemu_accuracy _Acc2>
 _CCCL_API inline fpemu_unpacked<_FpType, _Met>::fpemu_unpacked(const fpemu_unpacked<double, _Acc2>& __src) noexcept
-    : bits(__fpemu_bit_cast<__fpbits64_unpacked>(__src))
+    : __bits_(__fpemu_bit_cast<__fpbits64_unpacked>(__src))
 {}
 
 // Converting constructor from the packed representation (unpacks the 64-bit form).
 template <typename _FpType, fpemu_accuracy _Met>
 template <fpemu_accuracy _Acc2>
 _CCCL_API inline fpemu_unpacked<_FpType, _Met>::fpemu_unpacked(const fpemu<double, _Acc2>& __src) noexcept
-    : bits(__fp64emu_unpack(__fpemu_bit_cast<__fpbits64>(__src)))
+    : __bits_(__fp64emu_unpack(__fpemu_bit_cast<__fpbits64>(__src)))
 {}
 
 /*
@@ -1407,22 +1408,22 @@ _CCCL_API inline fpemu_unpacked<_FpType, _Acc>::fpemu_unpacked(double __d) noexc
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    bits = __fp64emu_unpacked_high_from_double(__d);
+    __bits_ = __fp64emu_unpacked_high_from_double(__d);
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    bits = __fp64emu_unpacked_mid_from_double(__d);
+    __bits_ = __fp64emu_unpacked_mid_from_double(__d);
   }
   else
   {
-    bits = __fp64emu_unpacked_from_double(__d);
+    __bits_ = __fp64emu_unpacked_from_double(__d);
   }
 }
 // from float
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<_FpType, _Acc>::fpemu_unpacked(float __d) noexcept
 {
-  bits = __fp64emu_unpacked_from_float(__d);
+  __bits_ = __fp64emu_unpacked_from_float(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<double, _Acc> __float2double(float __x) noexcept
@@ -1433,7 +1434,7 @@ _CCCL_API inline fpemu_unpacked<double, _Acc> __float2double(float __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu_unpacked<_FpType, _Acc>::__set_from_int32(int32_t __d) noexcept
 {
-  bits = __fp64emu_unpacked_from_int(__d);
+  __bits_ = __fp64emu_unpacked_from_int(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<double, _Acc> __int2double(int32_t __x) noexcept
@@ -1444,7 +1445,7 @@ _CCCL_API inline fpemu_unpacked<double, _Acc> __int2double(int32_t __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu_unpacked<_FpType, _Acc>::__set_from_int32(uint32_t __d) noexcept
 {
-  bits = __fp64emu_unpacked_from_uint(__d);
+  __bits_ = __fp64emu_unpacked_from_uint(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<double, _Acc> __uint2double(uint32_t __x) noexcept
@@ -1455,7 +1456,7 @@ _CCCL_API inline fpemu_unpacked<double, _Acc> __uint2double(uint32_t __x) noexce
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu_unpacked<_FpType, _Acc>::__set_from_int64(int64_t __d) noexcept
 {
-  bits = __fp64emu_unpacked_from_ll(__d);
+  __bits_ = __fp64emu_unpacked_from_ll(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<double, _Acc> __ll2double(int64_t __x) noexcept
@@ -1466,7 +1467,7 @@ _CCCL_API inline fpemu_unpacked<double, _Acc> __ll2double(int64_t __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline void fpemu_unpacked<_FpType, _Acc>::__set_from_int64(uint64_t __d) noexcept
 {
-  bits = __fp64emu_unpacked_from_ull(__d);
+  __bits_ = __fp64emu_unpacked_from_ull(__d);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<double, _Acc> __ull2double(uint64_t __x) noexcept
@@ -1483,22 +1484,22 @@ _CCCL_API inline fpemu_unpacked<_FpType, _Acc>::operator double() const noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fp64emu_unpacked_high_to_double(bits);
+    return __fp64emu_unpacked_high_to_double(__bits_);
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fp64emu_unpacked_mid_to_double(bits);
+    return __fp64emu_unpacked_mid_to_double(__bits_);
   }
   else
   {
-    return __fp64emu_unpacked_to_double(bits);
+    return __fp64emu_unpacked_to_double(__bits_);
   }
 }
 // to float
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline fpemu_unpacked<_FpType, _Acc>::operator float() const noexcept
 {
-  return __fp64emu_unpacked_to_float(bits);
+  return __fp64emu_unpacked_to_float(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline float __double2float(fpemu_unpacked<double, _Acc> __x) noexcept
@@ -1509,7 +1510,7 @@ _CCCL_API inline float __double2float(fpemu_unpacked<double, _Acc> __x) noexcept
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline int32_t fpemu_unpacked<_FpType, _Acc>::__to_integer(int32_t) const noexcept
 {
-  return __fp64emu_unpacked_to_int(bits);
+  return __fp64emu_unpacked_to_int(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline int32_t __double2int_rz(fpemu_unpacked<double, _Acc> __x) noexcept
@@ -1520,7 +1521,7 @@ _CCCL_API inline int32_t __double2int_rz(fpemu_unpacked<double, _Acc> __x) noexc
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline uint32_t fpemu_unpacked<_FpType, _Acc>::__to_integer(uint32_t) const noexcept
 {
-  return __fp64emu_unpacked_to_uint(bits);
+  return __fp64emu_unpacked_to_uint(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline uint32_t __double2uint_rz(fpemu_unpacked<double, _Acc> __x) noexcept
@@ -1531,7 +1532,7 @@ _CCCL_API inline uint32_t __double2uint_rz(fpemu_unpacked<double, _Acc> __x) noe
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline int64_t fpemu_unpacked<_FpType, _Acc>::__to_integer(int64_t) const noexcept
 {
-  return __fp64emu_unpacked_to_ll(bits);
+  return __fp64emu_unpacked_to_ll(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline int64_t __double2ll_rz(fpemu_unpacked<double, _Acc> __x) noexcept
@@ -1542,7 +1543,7 @@ _CCCL_API inline int64_t __double2ll_rz(fpemu_unpacked<double, _Acc> __x) noexce
 template <typename _FpType, fpemu_accuracy _Acc>
 _CCCL_API inline uint64_t fpemu_unpacked<_FpType, _Acc>::__to_integer(uint64_t) const noexcept
 {
-  return __fp64emu_unpacked_to_ull(bits);
+  return __fp64emu_unpacked_to_ull(__bits_);
 }
 template <fpemu_accuracy _Acc>
 _CCCL_API inline uint64_t __double2ull_rz(fpemu_unpacked<double, _Acc> __x) noexcept

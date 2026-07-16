@@ -140,7 +140,7 @@ private:
   // fpemu_common.h). Private: fpemu<double> is trivially copyable and bit-identical
   // to its 64-bit IEEE-754 representation, so use bit_cast to reinterpret it; no
   // raw-bits accessor is provided.
-  __fpbits64 bits;
+  __fpbits64 __bits_;
 
 public:
   /*
@@ -148,7 +148,7 @@ public:
   */
   // Basic constructors
   _CCCL_API constexpr fpemu() noexcept
-      : bits{0u}
+      : __bits_{0u}
   {}
   /*
   // Defaulted copy constructor (trivially copyable)
@@ -166,7 +166,7 @@ public:
   */
   template <typename _Dummy = void>
   _CCCL_API fpemu(const volatile fpemu& __other) noexcept
-      : bits{__other.bits}
+      : __bits_{__other.__bits_}
   {}
 
   // Defaulted copy assignment operator (trivially copyable)
@@ -180,7 +180,7 @@ public:
   template <typename _Dummy = void>
   _CCCL_API void operator=(const fpemu& __other) volatile noexcept
   {
-    bits = __other.bits;
+    __bits_ = __other.__bits_;
   }
 
   /*
@@ -190,7 +190,7 @@ public:
   template <typename _Dummy = void>
   _CCCL_API fpemu& operator=(const volatile fpemu& __other) noexcept
   {
-    bits = __other.bits;
+    __bits_ = __other.__bits_;
     return *this;
   }
 
@@ -482,7 +482,7 @@ private:
   // is defined in fpemu_common.h). Private: fpemu_unpacked<double> is trivially
   // copyable and bit-identical to its __fpbits64_unpacked representation, so use
   // bit_cast to reinterpret it; no raw-bits accessor is provided.
-  __fpbits64_unpacked bits;
+  __fpbits64_unpacked __bits_;
 
 public:
   /*
@@ -490,7 +490,7 @@ public:
   */
   // Basic constructors
   _CCCL_API constexpr fpemu_unpacked() noexcept
-      : bits{0u, 0, 0}
+      : __bits_{0u, 0, 0}
   {}
   /*
   // Defaulted copy constructor (trivially copyable)
@@ -509,9 +509,9 @@ public:
   template <typename _Dummy = void>
   _CCCL_API fpemu_unpacked(const volatile fpemu_unpacked& __other) noexcept
   {
-    bits.sign     = __other.bits.sign;
-    bits.exponent = __other.bits.exponent;
-    bits.mantissa = __other.bits.mantissa;
+    __bits_.sign     = __other.__bits_.sign;
+    __bits_.exponent = __other.__bits_.exponent;
+    __bits_.mantissa = __other.__bits_.mantissa;
   }
 
   // Defaulted copy assignment operator (trivially copyable)
@@ -525,9 +525,9 @@ public:
   template <typename _Dummy = void>
   _CCCL_API void operator=(const fpemu_unpacked& __other) volatile noexcept
   {
-    bits.sign     = __other.bits.sign;
-    bits.exponent = __other.bits.exponent;
-    bits.mantissa = __other.bits.mantissa;
+    __bits_.sign     = __other.__bits_.sign;
+    __bits_.exponent = __other.__bits_.exponent;
+    __bits_.mantissa = __other.__bits_.mantissa;
   }
 
   /*
@@ -537,9 +537,9 @@ public:
   template <typename _Dummy = void>
   _CCCL_API fpemu_unpacked& operator=(const volatile fpemu_unpacked& __other) noexcept
   {
-    bits.sign     = __other.bits.sign;
-    bits.exponent = __other.bits.exponent;
-    bits.mantissa = __other.bits.mantissa;
+    __bits_.sign     = __other.__bits_.sign;
+    __bits_.exponent = __other.__bits_.exponent;
+    __bits_.mantissa = __other.__bits_.mantissa;
     return *this;
   }
   /*

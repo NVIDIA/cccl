@@ -48,6 +48,7 @@
 
 #include <cuda/__fp/fpemu_common.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/countl.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -199,8 +200,6 @@ enum struct __fpemu_rounding
 
 #if defined(__CUDA_LIBDEVICE__)
 // Map CUDA built-ins to NVVM analogs
-#  define __clz(x)         __builtin_clz(x)
-#  define __clzll(x)       __builtin_clzll(x)
 #  define __umul64hi(x, y) __nvvm_mulhi_ull(x, y)
 #  define __ddiv_rn(x, y)  __nvvm_div_rn_d((x), (y))
 #  define __dadd_rn(x, y)  __nvvm_add_rn_d((x), (y))
@@ -442,89 +441,6 @@ struct __uint32x4
   __uint32x2 lo;
   __uint32x2 hi;
 };
-
-#ifndef __CUDA_ARCH__
-//! @brief Count leading zeros in a 32-bit integer
-//!
-//! This function counts the number of leading zeros in a 32-bit integer.
-//! It works by shifting the integer right until the most significant bit is found.
-//!
-//! @param x The 32-bit integer to count leading zeros in
-//! @return The number of leading zeros in the integer
-_CCCL_TRIVIAL_API int __internal_clz(int __x) noexcept
-{
-  if (__x == 0)
-  {
-    return 32;
-  }
-
-  int __n          = 0;
-  unsigned int __u = (unsigned int) __x;
-
-  if ((__u >> 16) == 0)
-  {
-    __n += 16;
-    __u <<= 16;
-  }
-  if ((__u >> 24) == 0)
-  {
-    __n += 8;
-    __u <<= 8;
-  }
-  if ((__u >> 28) == 0)
-  {
-    __n += 4;
-    __u <<= 4;
-  }
-  if ((__u >> 30) == 0)
-  {
-    __n += 2;
-    __u <<= 2;
-  }
-  if ((__u >> 31) == 0)
-  {
-    __n += 1;
-  }
-
-  return __n;
-}
-
-//! @brief Count leading zeros in a 64-bit integer
-//!
-//! This function counts the number of leading zeros in a 64-bit integer.
-//! It works by shifting the integer right until the most significant bit is found.
-//!
-//! @param x The 64-bit integer to count leading zeros in
-//! @return The number of leading zeros in the integer
-_CCCL_TRIVIAL_API int __internal_clzll(int64_t __x) noexcept
-{
-  uint64_t __ux = (uint64_t) __x;
-  if (__ux == 0)
-  {
-    return 64;
-  }
-
-  int __count = 0;
-  for (int __i = 63; __i >= 0; --__i)
-  {
-    if (__ux & (1ULL << __i))
-    {
-      break;
-    }
-    __count++;
-  }
-  return __count;
-}
-#else
-_CCCL_TRIVIAL_API int __internal_clz(int __x) noexcept
-{
-  return __clz(__x);
-}
-_CCCL_TRIVIAL_API int __internal_clzll(int64_t __x) noexcept
-{
-  return __clzll(__x);
-}
-#endif //__CUDA_ARCH__
 
 #undef _CCCL_FPEMU_MAX
 #if defined(__CUDA_ARCH__) && !defined(__CUDA_LIBDEVICE__)
@@ -1237,7 +1153,7 @@ _CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
 _CCCL_TRIVIAL_API int32_t __flo_s64(__uint32x2 __x) noexcept
 {
   int64_t __x64 = __fpemu_bit_cast<int64_t>(__x);
-  return __internal_clzll(__x64 << 1);
+  return ::cuda::std::countl_zero((uint64_t) (__x64 << 1));
 } //__flo_s64
 
 //! @brief Find the position of the most significant set bit in an unsigned 64-bit value
@@ -1251,7 +1167,7 @@ _CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
 {
   uint64_t __x64 = __fpemu_bit_cast<uint64_t>(__x);
   // Skip sign bit
-  return __internal_clzll(__x64 & _CCCL_FPEMU_ABS_64);
+  return ::cuda::std::countl_zero((uint64_t) (__x64 & _CCCL_FPEMU_ABS_64));
 } //__flo_u64
 
 //! @brief Add two 64-bit unsigned integers
@@ -1357,22 +1273,6 @@ _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool _
 // Shared fixed-point helpers for the native fp64 divide and square root
 // implementations (fpemu_impl_div.h / fpemu_impl_sqrt.h).
 // ============================================================================
-
-//! @brief High 64 bits of a 64x64 -> 128 unsigned multiply (host/device).
-_CCCL_TRIVIAL_API uint64_t __internal_fp64emu_mulhi64(uint64_t __a, uint64_t __b) noexcept
-{
-#if defined(__CUDA_ARCH__)
-  return __umul64hi(__a, __b);
-#elif defined(__SIZEOF_INT128__)
-  return (uint64_t) (((unsigned __int128) __a * (unsigned __int128) __b) >> 64);
-#else
-  uint64_t al = (uint32_t) a, ah = a >> 32;
-  uint64_t bl = (uint32_t) b, bh = b >> 32;
-  uint64_t ll = al * bl, lh = al * bh, hl = ah * bl, hh = ah * bh;
-  uint64_t mid = (ll >> 32) + (uint32_t) lh + (uint32_t) hl;
-  return hh + (lh >> 32) + (hl >> 32) + (mid >> 32);
-#endif
-} // __internal_fp64emu_mulhi64
 
 //! @brief Right shift keeping a sticky bit.
 _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_shr_jam64(uint64_t __a, uint32_t __dist) noexcept
