@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // UNSUPPORTED: libcpp-has-no-threads
 
 // <cuda/ptx>
@@ -14,7 +15,8 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
-#include "generated/mbarrier_try_wait.h"
+#include "generated/tcgen05_mma.h"
+#include "generated/tcgen05_mma_sp.h"
 
 int main(int, char**)
 {

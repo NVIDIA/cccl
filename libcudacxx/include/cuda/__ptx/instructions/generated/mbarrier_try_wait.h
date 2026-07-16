@@ -334,7 +334,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait(
         : "r"(__as_ptr_smem(__addr)), "l"(__state)
         : "memory");
   }
-  isReportSeen = isReportSeen_tmp;
+  __isReportSeen = static_cast<bool>(__isReportSeen_tmp);
   return static_cast<bool>(__waitComplete);
 }
 #endif // __cccl_ptx_isa >= 940
@@ -427,7 +427,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait(
         : "r"(__as_ptr_smem(__addr)), "l"(__state), "r"(__suspendTimeHint)
         : "memory");
   }
-  isReportSeen = isReportSeen_tmp;
+  __isReportSeen = static_cast<bool>(__isReportSeen_tmp);
   return static_cast<bool>(__waitComplete);
 }
 #endif // __cccl_ptx_isa >= 940
