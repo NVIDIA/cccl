@@ -88,7 +88,6 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 
   static_assert(::cuda::std::ranges::sized_range<_InputRange>);
 
-  const auto __num_items = ::cuda::std::ranges::size(__inputs);
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
   // sendcount.
@@ -100,17 +99,16 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 
   __CUDAX_MULTI_GPU_DISPATCH(
     __logical_device,
-    __num_items,
     CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-    (::cuda::std::ranges::begin(__inputs),
-     // Similarly to above, prepare for the comm calls later. In order for those to be
-     // in-place, the sendbuff = recvbuff + rank, so we need to place our partial result
-     // there
-     __buff.begin() + __rank,
-     __num_items_fixed,
-     ::cuda::std::move(__op),
-     __rank == __ROOT_RANK ? __init : __ident,
-     __env));
+    ::cuda::std::ranges::begin(__inputs),
+    // Similarly to above, prepare for the comm calls later. In order for those to be
+    // in-place, the sendbuff = recvbuff + rank, so we need to place our partial result
+    // there
+    __buff.begin() + __rank,
+    ::cuda::std::ranges::size(__inputs),
+    ::cuda::std::move(__op),
+    __rank == __ROOT_RANK ? __init : __ident,
+    __env);
 
   return __buff;
 }
@@ -155,13 +153,15 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
   for (auto&& [__comm, __env, __buffer, __out] :
        ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
   {
-    const auto __num_items = __buffer.size();
-
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
-      __num_items,
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-      (__buffer.begin(), __out, __num_items_fixed, __op, CUB_NS_QUALIFIER::detail::reduce::no_init, __env));
+      __buffer.begin(),
+      __out,
+      __buffer.size(),
+      __op,
+      CUB_NS_QUALIFIER::detail::reduce::no_init,
+      __env);
   }
 }
 } // namespace __detail::__reduce
