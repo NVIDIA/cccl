@@ -46,12 +46,12 @@ MULTI_GPU_TEST("inclusive_scan single-comm, overloads default values", )
   out.reserve(comms.size());
   envs.reserve(comms.size());
 
-  constexpr auto values_per_rank = 3;
+  constexpr auto values_per_rank = 10;
 
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
-    const auto first                                  = static_cast<T>(comms[i].rank() * values_per_rank + 1);
-    const cuda::std::array<T, values_per_rank> values = {first, first + 1, first + 2};
+    std::vector<T> values(values_per_rank);
+    std::iota(values.begin(), values.end(), static_cast<T>(comms[i].rank() * values_per_rank + 1));
 
     in.emplace_back(cuda::make_device_buffer<T>(streams[i], comms[i].logical_device().underlying_device(), values));
     out.emplace_back(cuda::make_device_buffer<T>(
