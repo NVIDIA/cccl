@@ -59,6 +59,61 @@ class TestExecPlaceGrid:
         assert ep.size == 1
         assert ep.dims == (1, 1, 1, 1)
 
+    def test_grid_reshape_preserves_linear_place_order(self):
+        places = [
+            stf.exec_place.host() if i % 2 == 0 else stf.exec_place.device(0)
+            for i in range(24)
+        ]
+        grid = stf.exec_place_grid.create(places, grid_dims=(2, 3, 4))
+
+        reshaped = grid.reshape((6, 4))
+        flattened = grid.reshape((24,))
+
+        assert reshaped.dims == (6, 4, 1, 1)
+        assert flattened.dims == (24, 1, 1, 1)
+        assert [reshaped[i].kind for i in range(24)] == [
+            grid[i].kind for i in range(24)
+        ]
+        assert [flattened[i].kind for i in range(24)] == [
+            grid[i].kind for i in range(24)
+        ]
+
+    def test_grid_collapse_axes(self):
+        places = [stf.exec_place.device(0) for _ in range(24)]
+        grid = stf.exec_place_grid.create(places, grid_dims=(2, 3, 4))
+
+        assert grid.collapse_axes(0, 1).dims == (6, 4, 1, 1)
+        assert grid.collapse_axes(1, 2).dims == (2, 12, 1, 1)
+        assert grid.collapse_axes(0, 3).dims == (24, 1, 1, 1)
+
+    def test_grid_transformations_reject_invalid_inputs(self):
+        places = [stf.exec_place.device(0) for _ in range(6)]
+        grid = stf.exec_place_grid.create(places, grid_dims=(2, 3))
+
+        with pytest.raises(ValueError, match="cannot reshape"):
+            grid.reshape((2, 2))
+        with pytest.raises(ValueError, match="between 1 and 4"):
+            grid.reshape(())
+        with pytest.raises(ValueError, match="invalid axis range"):
+            grid.collapse_axes(2, 1)
+        with pytest.raises(ValueError, match="invalid axis range"):
+            grid.collapse_axes(0, 4)
+
+        with pytest.raises(RuntimeError, match="failed to create"):
+            stf.exec_place_grid.create(places, grid_dims=(2, 2))
+
+    def test_reshaped_grid_lifetime_is_independent(self):
+        import gc
+
+        places = [stf.exec_place.device(0) for _ in range(6)]
+        grid = stf.exec_place_grid.create(places, grid_dims=(2, 3))
+        reshaped = grid.reshape((6,))
+        del grid
+        gc.collect()
+
+        assert reshaped.dims == (6, 1, 1, 1)
+        assert reshaped[5].kind == "device"
+
 
 class TestCompositeDataPlace:
     def test_composite_basic(self):
