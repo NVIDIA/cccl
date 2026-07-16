@@ -57,7 +57,18 @@ namespace detail
 //!
 //! @tparam IsDeterministic
 //!   Whether the reduction is deterministic
-template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ, bool IsDeterministic = true>
+//!
+//! @tparam WarpAggregateThreshold
+//!   Minimum number of warps required to use the parallel warp-0 reduction path.
+//!   -1 (default): only use parallel path when HW redux is available.
+//!   0: always use sequential path.
+//!   >0: use parallel path when warps >= threshold.
+template <typename T,
+          int BlockDimX,
+          int BlockDimY,
+          int BlockDimZ,
+          bool IsDeterministic       = true,
+          int WarpAggregateThreshold = -1>
 struct BlockReduceWarpReductions
 {
   /// The thread block size in threads
@@ -176,12 +187,17 @@ struct BlockReduceWarpReductions
     // Below this number of warps the parallel warp-0 reduction is not worthwhile compared to a
     // single-thread sequential loop over the warp aggregates.
     // When __reduce_<op>_sync is available (redux), the parallel path is a single HW instruction,
-    // so we use a lower threshold.
+    // so the default threshold (-1) enables it at 2+ warps.
     // Without HW redux the shuffle-based path is not faster than the sequential unrolled loop
-    // over at most 31 warp aggregates, so we disable it.
+    // over at most 31 warp aggregates, so we disable it by default.
     // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
+    constexpr int effective_threshold =
+      (WarpAggregateThreshold == -1) ? (is_warp_redux_op_supported<ReductionOp, T> ? 2 : warps + 1)
+      : (WarpAggregateThreshold == 0)
+        ? (warps + 1)
+        : WarpAggregateThreshold;
     constexpr bool use_parallel_reduction =
-      is_warp_redux_op_supported<ReductionOp, T> && (warps >= 2) && (threads_per_block >= warp_threads)
+      (warps >= effective_threshold) && (threads_per_block >= warp_threads)
       && ::cuda::has_identity_element_v<ReductionOp, T>;
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
