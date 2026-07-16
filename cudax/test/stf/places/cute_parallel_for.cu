@@ -23,10 +23,6 @@
 
 using namespace cuda::experimental::stf;
 
-using cuda::experimental::places::dim_policy;
-using cuda::experimental::places::dim_spec;
-using cuda::experimental::places::make_partition;
-
 namespace
 {
 void test_cute_composite_cache(const exec_place& grid)
