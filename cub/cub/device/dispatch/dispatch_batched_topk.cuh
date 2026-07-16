@@ -147,6 +147,7 @@ template <typename SegmentSizeParameterT>
       MinChunksPerBlock,                                                                          \
       CopyItemsPerThread,                                                                         \
       cdp_cluster_blocks,                                                                         \
+      policy.min_blocks_per_sm,                                                                   \
       Determinism,                                                                                \
       TieBreak,                                                                                   \
       KeyInputItItT,                                                                              \
@@ -657,6 +658,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
       static_assert(block_tile_capacity >= static_cast<::cuda::std::uint32_t>(layout_t::chunk_items),
                     "Portable SMEM is too small to fit even one load-aligned chunk for the device-launch (CDP) path");
 
+      // Explicit-cluster semantics (`_CCCL_CLUSTER_DIMS`): the launch grid counts blocks, so one cluster spans every
+      // `cdp_cluster_blocks` blocks; the cluster width itself is fixed by the kernel attributes.
       const auto grid_blocks =
         static_cast<::cuda::std::uint64_t>(num_seg_val) * static_cast<::cuda::std::uint64_t>(cdp_cluster_blocks);
       if (grid_blocks > static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<int>::max()))

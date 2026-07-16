@@ -109,6 +109,28 @@
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)
 #endif // ^^^ no __block_size__ attribute ^^^
 
+// __cluster_dims__ attribute (nvcc, nvrtc, and clang-cuda 22+, hopper+): pins the cluster dimension at compile time
+// with explicit-cluster launch semantics, so unlike _CCCL_BLOCK_SIZE it also works for device-side (CDP) launches.
+// This attribute should be used only for cluster launches on sm90+.
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 22)) \
+  && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_CLUSTER_DIMS(...) __cluster_dims__(__VA_ARGS__)
+#else // ^^^ has __cluster_dims__ attribute ^^^ / vvv no __cluster_dims__ attribute vvv
+#  define _CCCL_CLUSTER_DIMS(...)
+#endif // ^^^ no __cluster_dims__ attribute ^^^
+
+// `_CCCL_LAUNCH_BOUNDS` plus the optional third `maxBlocksPerCluster` operand, which nvcc, nvrtc, and clang-cuda 18+
+// (clang gained `.maxclusterrank` in 18) accept on the SM90+ device pass but reject on host/pre-SM90 passes. So emit it
+// only there and fall back to the 2-argument form elsewhere -- those passes never launch clusters.
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 18)) \
+  && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_LAUNCH_BOUNDS_CLUSTER(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER) \
+    _CCCL_LAUNCH_BOUNDS(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER)
+#else // ^^^ SM90+ device pass ^^^ / vvv host / pre-SM90 / non-CUDA pass vvv
+#  define _CCCL_LAUNCH_BOUNDS_CLUSTER(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER) \
+    _CCCL_LAUNCH_BOUNDS(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM)
+#endif // SM90+ CUDA device pass (nvcc / nvrtc / clang-cuda)
+
 #if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."

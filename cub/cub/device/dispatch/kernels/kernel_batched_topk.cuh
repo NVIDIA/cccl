@@ -158,9 +158,9 @@ struct cluster_kernel_args
 // Launch-bounds helpers
 // -----------------------------------------------------------------------------
 // The two backends use different `__launch_bounds__` shapes (baseline: just threads_per_block; cluster: threads plus a
-// min-blocks-per-SM). We resolve both per architecture from the selected policy. `find_smallest_covering_policy` (which
-// carries a hard `static_assert`) is only ever touched inside the `backend == baseline` branch, so an oversize bound
-// routed to the cluster/unsupported backend never trips it.
+// min-blocks-per-SM and an optional max-blocks-per-cluster cap). We resolve all three per architecture from the
+// selected policy. `find_smallest_covering_policy` (which carries a hard `static_assert`) is only ever touched inside
+// the `backend == baseline` branch, so an oversize bound routed to the cluster/unsupported backend never trips it.
 _CCCL_EXEC_CHECK_DISABLE
 template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_threads_per_block_helper() noexcept
@@ -184,7 +184,7 @@ template <class PolicySelector, class SegmentSizeParameterT, class... AgentParam
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+template <class PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_min_blocks_per_sm_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
@@ -199,19 +199,43 @@ template <class PolicySelector, class SegmentSizeParameterT, class... AgentParam
   }
 }
 
+// Third `__launch_bounds__` argument (`maxBlocksPerCluster`): the cluster policy's `max_blocks_per_cluster` cap. The
+// host arm launches a dynamic cluster width, so this is the only compile-time width hint `ptxas` sees, and
+// `launch_cluster_arm` clamps the launch to `<= max_blocks_per_cluster`. `0` disables the cap.
+_CCCL_EXEC_CHECK_DISABLE
+template <class PolicySelector>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_max_blocks_per_cluster_helper() noexcept
+{
+  constexpr auto policy = current_policy<PolicySelector>();
+  if constexpr (policy.backend == topk_backend::cluster)
+  {
+    return policy.cluster.max_blocks_per_cluster;
+  }
+  else
+  {
+    // baseline / unsupported: not a cluster launch, so no cluster-width cap.
+    return 0;
+  }
+}
+
 // Variable templates force constant evaluation of the helpers, otherwise nvcc reports a "bad attribute argument
 // substitution" error on the `__launch_bounds__` below (same pattern as `transform_kernel`).
 template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
 inline constexpr int topk_threads_per_block =
   topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
 
-template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
-inline constexpr int topk_min_blocks_per_sm =
-  topk_min_blocks_per_sm_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
+template <class PolicySelector>
+inline constexpr int topk_min_blocks_per_sm = topk_min_blocks_per_sm_helper<PolicySelector>();
+
+template <class PolicySelector>
+inline constexpr int topk_max_blocks_per_cluster = topk_max_blocks_per_cluster_helper<PolicySelector>();
 
 // -----------------------------------------------------------------------------
 // Global kernel entry point (single symbol for both backends)
 // -----------------------------------------------------------------------------
+// Launch bounds: only `topk_threads_per_block` takes the full kernel type list (its baseline branch runs the
+// covering-policy search); min/max-blocks depend on `PolicySelector` alone. The parentheses around
+// `topk_threads_per_block<...>` hide its template commas from the fixed-arity `_CCCL_LAUNCH_BOUNDS_CLUSTER(a, b, c)`.
 template <typename PolicySelector,
           typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -222,43 +246,31 @@ template <typename PolicySelector,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT,
           typename LargeSegmentTileOffsetT>
-__launch_bounds__(
-  topk_threads_per_block<
-    PolicySelector,
-    SegmentSizeParameterT,
-    KeyInputItItT,
-    KeyOutputItItT,
-    ValueInputItItT,
-    ValueOutputItItT,
-    SegmentSizeParameterT,
-    KParameterT,
-    SelectDirectionParameterT,
-    NumSegmentsParameterT,
-    LargeSegmentTileOffsetT>,
-  topk_min_blocks_per_sm<
-    PolicySelector,
-    SegmentSizeParameterT,
-    KeyInputItItT,
-    KeyOutputItItT,
-    ValueInputItItT,
-    ValueOutputItItT,
-    SegmentSizeParameterT,
-    KParameterT,
-    SelectDirectionParameterT,
-    NumSegmentsParameterT,
-    LargeSegmentTileOffsetT>)
-  _CCCL_KERNEL_ATTRIBUTES void device_batched_topk_kernel(
-    KeyInputItItT d_key_segments_it,
-    KeyOutputItItT d_key_segments_out_it,
-    ValueInputItItT d_value_segments_it,
-    ValueOutputItItT d_value_segments_out_it,
-    SegmentSizeParameterT segment_sizes,
-    KParameterT k,
-    SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments,
-    baseline_kernel_args<typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type, LargeSegmentTileOffsetT>
-      base_args,
-    [[maybe_unused]] cluster_kernel_args clus_args)
+_CCCL_LAUNCH_BOUNDS_CLUSTER((topk_threads_per_block<PolicySelector,
+                                                    SegmentSizeParameterT,
+                                                    KeyInputItItT,
+                                                    KeyOutputItItT,
+                                                    ValueInputItItT,
+                                                    ValueOutputItItT,
+                                                    SegmentSizeParameterT,
+                                                    KParameterT,
+                                                    SelectDirectionParameterT,
+                                                    NumSegmentsParameterT,
+                                                    LargeSegmentTileOffsetT>),
+                            topk_min_blocks_per_sm<PolicySelector>,
+                            topk_max_blocks_per_cluster<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES void
+device_batched_topk_kernel(
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueInputItItT d_value_segments_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k,
+  SelectDirectionParameterT select_directions,
+  NumSegmentsParameterT num_segments,
+  baseline_kernel_args<typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type, LargeSegmentTileOffsetT>
+    base_args,
+  [[maybe_unused]] cluster_kernel_args clus_args)
 {
   constexpr auto policy = current_policy<PolicySelector>();
 
@@ -303,7 +315,7 @@ __launch_bounds__(
   }
   else if constexpr (policy.backend == topk_backend::cluster)
   {
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
       (using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
          policy.cluster.threads_per_block,
@@ -353,7 +365,9 @@ __launch_bounds__(
          key_slots,
          clus_args.block_tile_capacity);
 
-       agent.Process();));
+       agent.Process();),
+      // Cluster-policy kernels are only ever launched on SM90+, so the sub-SM90 device pass is unreachable at runtime.
+      (_CCCL_UNREACHABLE();));
   }
   else
   {
@@ -363,13 +377,12 @@ __launch_bounds__(
 }
 
 #ifdef CUB_RDC_ENABLED
-// CDP-only static-cluster kernel: compile-time `__cluster_dims__` so a device-side (CDP) triple-chevron launch needs no
-// `cudaFuncSetAttribute` (device-side launches cannot opt into dynamic cluster dimensions the way the host
-// `device_batched_topk_kernel` does). It mirrors that kernel's cluster arm with a fixed cluster dim, and is consumed by
-// the CDP arm of `launch_cluster_arm` (see `CUB_TOPK_CLUSTER_DEVICE_LAUNCH` in dispatch_batched_topk.cuh).
-// `ClusterBlocks` is the compile-time cluster width the CDP arm picks: `<= max_portable_cluster_blocks` (device
-// launches can't opt into non-portable cluster sizes), and further narrowed when the policy's `max_blocks_per_cluster`
-// cap is tighter.
+// CDP-only static-cluster kernel: a compile-time `__cluster_dims__` (via `_CCCL_CLUSTER_DIMS`) lets a device-side (CDP)
+// triple-chevron launch skip the `cudaFuncSetAttribute` dynamic-cluster-dim call the host `device_batched_topk_kernel`
+// relies on (device launches can't make it). Mirrors that kernel's cluster arm; consumed by
+// `CUB_TOPK_CLUSTER_DEVICE_LAUNCH` in dispatch_batched_topk.cuh. `ClusterBlocks` is the cluster width (<=
+// `max_portable_cluster_blocks`, narrowed by the policy's `max_blocks_per_cluster`); `MinBlocksPerSm` forwards the
+// `min_blocks_per_sm` hint via `_CCCL_LAUNCH_BOUNDS`, active under EWP but stubbed under RDC (#902).
 template <int ThreadsPerBlock,
           int HistogramItemsPerThread,
           int PipelineStages,
@@ -381,6 +394,7 @@ template <int ThreadsPerBlock,
           int MinChunksPerBlock,
           int CopyItemsPerThread,
           int ClusterBlocks,
+          int MinBlocksPerSm,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -391,66 +405,74 @@ template <int ThreadsPerBlock,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterBlocks, 1, 1)
-  _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_cluster_kernel_static(
-    KeyInputItItT d_key_segments_it,
-    KeyOutputItItT d_key_segments_out_it,
-    ValueInputItItT d_value_segments_it,
-    ValueOutputItItT d_value_segments_out_it,
-    SegmentSizeParameterT segment_sizes,
-    KParameterT k_param,
-    SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments,
-    ::cuda::std::uint32_t block_tile_capacity)
+_CCCL_CLUSTER_DIMS(ClusterBlocks, 1, 1) _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock, MinBlocksPerSm)
+_CCCL_KERNEL_ATTRIBUTES void
+device_segmented_topk_cluster_kernel_static(
+  [[maybe_unused]] KeyInputItItT d_key_segments_it,
+  [[maybe_unused]] KeyOutputItItT d_key_segments_out_it,
+  [[maybe_unused]] ValueInputItItT d_value_segments_it,
+  [[maybe_unused]] ValueOutputItItT d_value_segments_out_it,
+  [[maybe_unused]] SegmentSizeParameterT segment_sizes,
+  [[maybe_unused]] KParameterT k_param,
+  [[maybe_unused]] SelectDirectionParameterT select_directions,
+  [[maybe_unused]] NumSegmentsParameterT num_segments,
+  [[maybe_unused]] ::cuda::std::uint32_t block_tile_capacity)
 {
-  using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
-    ThreadsPerBlock,
-    HistogramItemsPerThread,
-    PipelineStages,
-    ChunkBytes,
-    LoadAlignBytes,
-    BitsPerPass,
-    TieBreakItemsPerThread,
-    SingleBlockMaxSegSize,
-    MinChunksPerBlock,
-    CopyItemsPerThread,
-    Determinism,
-    TieBreak,
-    KeyInputItItT,
-    KeyOutputItItT,
-    ValueInputItItT,
-    ValueOutputItItT,
-    SegmentSizeParameterT,
-    KParameterT,
-    SelectDirectionParameterT,
-    NumSegmentsParameterT>;
+  // The agent's cluster/async PTX only assembles on SM90+, so gate the whole body on `NV_PROVIDES_SM_90`: host and
+  // sub-SM90 device passes emit an empty kernel and never instantiate the agent (the CDP arm only launches this on
+  // SM90+). Mirrors the cluster arm of `device_batched_topk_kernel`.
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
+       ThreadsPerBlock,
+       HistogramItemsPerThread,
+       PipelineStages,
+       ChunkBytes,
+       LoadAlignBytes,
+       BitsPerPass,
+       TieBreakItemsPerThread,
+       SingleBlockMaxSegSize,
+       MinChunksPerBlock,
+       CopyItemsPerThread,
+       Determinism,
+       TieBreak,
+       KeyInputItItT,
+       KeyOutputItItT,
+       ValueInputItItT,
+       ValueOutputItItT,
+       SegmentSizeParameterT,
+       KParameterT,
+       SelectDirectionParameterT,
+       NumSegmentsParameterT>;
 
-  __shared__ typename agent_t::TempStorage temp_storage;
-  extern __shared__ char topk_cluster_smem[];
-  char* key_slots = topk_cluster_smem;
-  // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same `load_align`
-  // alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves `base_padding_bytes` for this.
-  {
-    ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
-    smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
-    asm("" : "+r"(smem32));
-    key_slots = static_cast<char*>(__cvta_shared_to_generic(smem32));
-  }
+     __shared__ typename agent_t::TempStorage temp_storage;
+     extern __shared__ char topk_cluster_smem[];
+     char* key_slots = topk_cluster_smem;
+     // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same `load_align`
+     // alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves `base_padding_bytes`.
+     {
+       ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
+       smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
+       asm("" : "+r"(smem32));
+       key_slots = static_cast<char*>(__cvta_shared_to_generic(smem32));
+     }
 
-  agent_t agent(
-    temp_storage,
-    d_key_segments_it,
-    d_key_segments_out_it,
-    d_value_segments_it,
-    d_value_segments_out_it,
-    segment_sizes,
-    k_param,
-    select_directions,
-    num_segments,
-    key_slots,
-    block_tile_capacity);
+     agent_t agent(
+       temp_storage,
+       d_key_segments_it,
+       d_key_segments_out_it,
+       d_value_segments_it,
+       d_value_segments_out_it,
+       segment_sizes,
+       k_param,
+       select_directions,
+       num_segments,
+       key_slots,
+       block_tile_capacity);
 
-  agent.Process();
+     agent.Process();),
+    // Cluster-policy kernels are only ever launched on SM90+, so the sub-SM90 device pass is unreachable at runtime.
+    (_CCCL_UNREACHABLE();));
 }
 #endif // CUB_RDC_ENABLED
 } // namespace detail::batched_topk
