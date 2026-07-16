@@ -1,0 +1,97 @@
+name: Test OpenAI API Smoke
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+
+permissions:
+  contents: read
+
+jobs:
+  openai-smoke:
+    name: OpenAI API smoke
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_MODEL: gpt-5-mini
+      SMOKE_MARKER: CCCL_OPENAI_SMOKE_TEST_OK
+    steps:
+      - name: Ask OpenAI for a fixed marker
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const {
+            GITHUB_STEP_SUMMARY,
+            OPENAI_API_KEY,
+            OPENAI_MODEL,
+            SMOKE_MARKER,
+          } = process.env;
+
+          function extractOutputText(data) {
+            if (typeof data.output_text === "string") {
+              return data.output_text;
+            }
+
+            return (data.output || [])
+              .flatMap((item) => item.content || [])
+              .map((content) => content.text || "")
+              .filter(Boolean)
+              .join("\n");
+          }
+
+          async function main() {
+            if (!OPENAI_API_KEY) {
+              throw new Error("OPENAI_API_KEY secret is not set.");
+            }
+
+            const response = await fetch("https://api.openai.com/v1/responses", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: OPENAI_MODEL,
+                input: `Reply with exactly this marker and no other text: ${SMOKE_MARKER}`,
+              }),
+            });
+
+            const raw = await response.text();
+            if (!response.ok) {
+              console.error(raw);
+              throw new Error(`OpenAI Responses API failed with HTTP ${response.status}.`);
+            }
+
+            const outputText = extractOutputText(JSON.parse(raw)).trim();
+            console.log(outputText);
+
+            if (!outputText.includes(SMOKE_MARKER)) {
+              throw new Error(`OpenAI response did not include ${SMOKE_MARKER}.`);
+            }
+
+            if (GITHUB_STEP_SUMMARY) {
+              fs.appendFileSync(
+                GITHUB_STEP_SUMMARY,
+                [
+                  "## OpenAI API Smoke Test",
+                  "",
+                  `Model: \`${OPENAI_MODEL}\``,
+                  `Marker found: \`${SMOKE_MARKER}\``,
+                  "",
+                ].join("\n")
+              );
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
