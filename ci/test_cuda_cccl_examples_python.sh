@@ -21,10 +21,11 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus
-# pytest-benchmark for the host-benchmark smoke test below.
+# Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus the
+# benchmark-smoke deps: pytest-benchmark (host-overhead), and cuda-bench + PyYAML
+# (throughput; PyYAML is needed by run_benchmarks.py --quick).
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark "cuda-bench[cu${cuda_major_version}]" pyyaml
 
 # Run tests for parallel module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
@@ -35,3 +36,10 @@ python -m pytest -n 6 test_examples.py
 # of silently surviving until someone runs the perf suite.
 cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/host/"
 python -m pytest -v --benchmark-disable .
+
+# Smoke-test the throughput (nvbench) benchmarks the same way. --profile runs
+# each configuration once (no sampling); --quick uses the reduced quick_configs
+# axes (one dtype, smallest size) so every benchmark harness still imports,
+# registers, launches, and completes.
+cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/"
+python run_benchmarks.py --py --profile --quick
