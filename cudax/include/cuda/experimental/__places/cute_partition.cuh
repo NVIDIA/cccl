@@ -378,6 +378,7 @@ public:
   auto apply(const S& s, pos4 place_position, dim4 grid_dims) const
   {
     constexpr size_t rank = S::rank();
+    validate_iteration_rank<rank>();
 
     for (size_t d = 0; d < rank; d++)
     {
@@ -414,6 +415,8 @@ public:
   template <size_t dims>
   auto apply(const box<dims>& b, pos4 place_position, dim4 grid_dims) const
   {
+    validate_iteration_rank<dims>();
+
     ::std::array<size_t, dims> lo{};
     ::std::array<size_t, dims> hi{};
     for (size_t d = 0; d < dims; d++)
@@ -526,6 +529,20 @@ public:
   }
 
 private:
+  template <size_t rank>
+  void validate_iteration_rank() const
+  {
+    static_assert(rank <= 4, "cute_partition supports at most four-dimensional iteration");
+    for (size_t d = rank; d < 4; d++)
+    {
+      if (padded_dims_.get(d) != 1)
+      {
+        throw ::std::invalid_argument("cute_partition::apply: the iteration rank does not match the partition's "
+                                      "extents");
+      }
+    }
+  }
+
   template <size_t rank>
   cute_sub_shape<rank> apply_region(
     const ::std::array<size_t, rank>& lo,
@@ -1066,6 +1083,28 @@ UNITTEST("cute_partition comparison includes complete dimensions")
 
   EXPECT(a != b);
   EXPECT(!(a.owner(pos4(0, 1)) == b.owner(pos4(0, 1))));
+};
+
+UNITTEST("cute_partition rejects lower-rank iteration")
+{
+  // Dimension 1 has a true extent of one but is padded to two by its split;
+  // omitting it would still discard ownership coordinates and duplicate work.
+  const dim4 true_dims(8, 1);
+  const dim4 grid_dims(2, 2);
+  const auto part =
+    make_partition(true_dims, {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}}, grid_dims);
+  const box<1> line({0ul, 8ul});
+
+  bool thrown = false;
+  try
+  {
+    part.apply(line, pos4(0), grid_dims);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
 };
 
 UNITTEST("cute_partition validation rejects inexact layouts")

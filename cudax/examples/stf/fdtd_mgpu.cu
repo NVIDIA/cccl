@@ -176,9 +176,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   // entry to split any other dimension). Interior boxes below iterate each
   // place's owned coordinates restricted to the box, and uneven sizes are
   // handled by predication.
-  using cuda::experimental::places::dim_policy;
-  using cuda::experimental::places::dim_spec;
-  auto part = cuda::experimental::places::make_partition(
+  auto part = make_partition(
     dim4(SIZE_X, SIZE_Y, SIZE_Z), {dim_spec{}, dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, where.get_dims());
   auto lEx = ctx.logical_data(data_shape);
   auto lEy = ctx.logical_data(data_shape);
@@ -226,10 +224,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   const size_t center_y = SIZE_Y / 2;
   const size_t center_z = SIZE_Z / 2;
 
-  /* Index shapes for Electric fields, Magnetic fields, and the indices where there is a source */
+  // Index shapes for the electric and magnetic fields
   box Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
   box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
-  box source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
   ctx.repeat(timesteps)->*[&](context ctx, size_t n) {
     // Update the electric fields
@@ -250,18 +247,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
                     + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
       };
 
-    // Update Ez
+    // Update Ez and inject the point source in the same volumetric pass
     ctx.parallel_for(part, where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
         Ez(i, j, k) = Ez(i, j, k)
                     + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
+        if (i == center_x && j == center_y && k == center_z)
+        {
+          Ez(i, j, k) += Source(n * DT, i * DX, j * DY, k * DZ);
+        }
       };
-
-    // Add the source function at the center of the grid
-    ctx.parallel_for(part, where, source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-      Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
-    };
 
     // Update the magnetic fields
 

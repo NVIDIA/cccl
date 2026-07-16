@@ -18,6 +18,7 @@
  * and the data placement (composite data place backed by the partition).
  */
 
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
@@ -36,6 +37,22 @@ void test_cute_composite_cache(const exec_place& grid)
   };
 
   reserved::composite_slice_cache cache;
+
+  const dim4 mismatched_dims(n / 2);
+  const auto mismatched_delinearize = [mismatched_dims](size_t ind) {
+    return mismatched_dims.index_to_pos(ind);
+  };
+  bool mismatch_thrown = false;
+  try
+  {
+    (void) cache.get(place, mismatched_delinearize, n / 2, sizeof(size_t), mismatched_dims);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    mismatch_thrown = true;
+  }
+  EXPECT(mismatch_thrown);
+
   auto [first, first_prereqs] = cache.get(place, delinearize, n, sizeof(size_t), data_dims);
   EXPECT(first_prereqs.empty());
   const auto first_base = first->get_base_ptr();
@@ -51,6 +68,25 @@ void test_cute_composite_cache(const exec_place& grid)
 
   cache.put(equivalent_place, mv(second), second_prereqs, n, sizeof(size_t), data_dims);
   EXPECT(cache.deinit().empty());
+}
+
+void test_cute_graph_backend(const exec_place& grid)
+{
+  const size_t n = 1023;
+  graph_ctx ctx;
+  auto data       = ctx.logical_data(shape_of<slice<size_t>>(n));
+  const auto part = make_partition(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+
+  ctx.parallel_for(part, grid, data.shape(), data.write())->*[] _CCCL_DEVICE(size_t i, auto values) {
+    values(i) = 5 * i + 3;
+  };
+  ctx.host_launch(data.read())->*[=](auto values) {
+    for (size_t i = 0; i < n; i++)
+    {
+      EXPECT(values(i) == 5 * i + 3);
+    }
+  };
+  ctx.finalize();
 }
 } // namespace
 
@@ -220,6 +256,7 @@ int main()
   }
 
   ctx.finalize();
+  test_cute_graph_backend(grid);
 
   printf("cute_parallel_for: all checks passed\n");
   return 0;

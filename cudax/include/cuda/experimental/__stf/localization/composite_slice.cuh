@@ -32,6 +32,7 @@
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 
+#include <stdexcept>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved
@@ -245,13 +246,15 @@ public:
 
     if (const auto* cute_place = as_cute_composite(place))
     {
+      const auto& partition = cute_place->get_partition();
+      if (!(data_dims == partition.true_dims()))
+      {
+        throw ::std::invalid_argument("cute composite data_place: requested extents do not match the partition's true "
+                                      "extents");
+      }
+
       auto entry = cute_partition_cache.get(
-        place.affine_exec_place(),
-        cute_place->get_partition(),
-        ::std::forward<F>(delinearize),
-        total_size,
-        elem_size,
-        data_dims);
+        place.affine_exec_place(), partition, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
       event_list prereqs = mv(entry->prereqs);
       return {mv(entry->array), mv(prereqs)};
     }
