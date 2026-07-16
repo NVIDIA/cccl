@@ -687,14 +687,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   __shared__ int warp_last_heads[kStages][kNumCompWarps]; // per compute warp last head idx (-1 if none)
 
   // for POLL to pass STORE packed [open_len_prefix:32][run_count_prefix:32]
-  // we need to double buffer this because STORE will arrive empty immediately after reading the data
-  // i.e. when POLL start to write g+kStage's prefix data, STORE and BOOKKEEPER might still have not read
-  // the prefix data. therefore, we MUST to double buffer this to ensure it is safe.
-  // the proof is as follows: with double buffering, the hazard becomes when POLL for g+2*kStage start to write,
-  // could STORE and BOOKKEEPER still wait on the prefix data of g+kStage? This CANNOT happen, because for us to
-  // start loading g+2*kStage, STORE and BOOKKEEPER must have all arrived empty for g+kStage, which means they have
-  // fully processed the data for g.
-  __shared__ PrefixT prefix_packed[kStages][2];
+  __shared__ PrefixT prefix_packed[kStages];
 
   // STORE --pos_buf_free--> COMPUTE staging (only when kPosBufStages < kStages; if = then it is mapped 1:1)
   // all store warps arrive after they no longer need the data in the pos slot; compute waits before re-staging into it
@@ -705,7 +698,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
   __shared__ cuda::std::uint64_t full[kStages];
-  __shared__ cuda::std::uint64_t computed[kStages], prefixed[kStages][2], empty[kStages];
+  __shared__ cuda::std::uint64_t computed[kStages], prefixed[kStages], empty[kStages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
   // instead of waiting for all 8 compute warps (warp 0 is always slower!!)
@@ -727,8 +720,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
     {
       ptx::mbarrier_init(&full[slot_id], 1);
       ptx::mbarrier_init(&computed[slot_id], kNumCompWarps); // every compute warp arrives
-      ptx::mbarrier_init(&prefixed[slot_id][0], 1);
-      ptx::mbarrier_init(&prefixed[slot_id][1], 1);
+      ptx::mbarrier_init(&prefixed[slot_id], 1);
       ptx::mbarrier_init(&empty[slot_id], kNumStoreWarps + 1); // store warps + the bookkeeper
       for (int cw = 0; cw < kNumCompWarps; ++cw)
       {
@@ -912,7 +904,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           {
             if (lane_id == 0)
             {
-              ptx::mbarrier_arrive(&prefixed[slot_id][slot_gen & 1]);
+              ptx::mbarrier_arrive(&prefixed[slot_id]);
             }
             break;
           }
@@ -927,13 +919,11 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             poll_dense_mode,
             curr_prefix_run_count,
             curr_prefix_open_length);
-          // no wait needed before overwriting the prefix slot since we can prove this is safe with double buffering
-          // (proof see above at barrier initiation)
           __syncwarp();
           if (lane_id == 0)
           {
-            prefix_packed[slot_id][slot_gen & 1] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
-            ptx::mbarrier_arrive(&prefixed[slot_id][slot_gen & 1]); // prefix ready, store may proceed
+            prefix_packed[slot_id] = PrefixT::pack(curr_prefix_run_count, curr_prefix_open_length);
+            ptx::mbarrier_arrive(&prefixed[slot_id]); // prefix ready, store may proceed
           }
         }
       }
@@ -969,9 +959,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const short* run_positions = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
           // wait for prefixed (2/3)
           auto wait_prefixed_and_read = [&]() {
-            wait_parity(&prefixed[slot_id][(pipeline_gen / kStages) & 1],
-                        (unsigned) ((pipeline_gen / kStages / 2) & 1));
-            return prefix_packed[slot_id][(pipeline_gen / kStages) & 1].run_count();
+            wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
+            return prefix_packed[slot_id].run_count();
           };
           const int warp_tile_id          = store_warp_idx;
           const int warp_tile_run_count   = __shfl_sync(kFullMask, lane_warp_tile_run_count, warp_tile_id);
@@ -1009,7 +998,6 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
               {
                 ptx::mbarrier_arrive(&pos_buf_free[pipeline_gen % kPosBufStages]);
               }
-              ptx::mbarrier_arrive(&empty[slot_id]); // with register buffers we can arrive early
             }
             const OffT global_runs_before_warp_tile = wait_prefixed_and_read() + runs_before_warp_tile;
 #pragma unroll
@@ -1029,6 +1017,10 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                   d_counts[global_run_idx] = buf_run_length[it];
                 }
               }
+            }
+            if (lane_id == 0)
+            {
+              ptx::mbarrier_arrive(&empty[slot_id]);
             }
             continue;
           } // reg buf
@@ -1086,8 +1078,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const int tile_total_runs =
             __shfl_sync(kFullMask, lane_runs_before_warp_tile + lane_warp_tile_run_count, kNumCompWarps - 1);
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(kFullMask, lane_warp_tile_run_count > 0);
-          wait_parity(&prefixed[slot_id][(pipeline_gen / kStages) & 1], (unsigned) ((pipeline_gen / kStages / 2) & 1));
-          const PrefixT packed_prefix        = prefix_packed[slot_id][(pipeline_gen / kStages) & 1];
+          wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
+          const PrefixT packed_prefix        = prefix_packed[slot_id];
           const OffT curr_prefix_run_count   = packed_prefix.run_count();
           const OffT curr_prefix_open_length = packed_prefix.open_len();
           // per-warp-tile boundary: a warp-tile's last run is closed by the next nonempty warp-tile's
