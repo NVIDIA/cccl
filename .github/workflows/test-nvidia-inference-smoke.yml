@@ -1,0 +1,231 @@
+name: Test NVIDIA Inference Hub Smoke
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+
+permissions:
+  contents: read
+
+jobs:
+  inference-hub-smoke:
+    name: NVIDIA Inference Hub smoke
+    runs-on: ubuntu-latest
+    env:
+      INFERENCE_BASE_URL: https://inference-api.nvidia.com/v1
+      SMOKE_MARKER: CCCL_NVIDIA_INFERENCE_SMOKE_TEST_OK
+    steps:
+      - name: Ask NVIDIA Inference Hub for a fixed marker
+        env:
+          NVINFERENCE_API_KEY: ${{ secrets.NVINFERENCE_API_KEY }}
+          INFERENCE_MODEL: ${{ vars.INFERENCE_MODEL }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const {
+            GITHUB_STEP_SUMMARY,
+            INFERENCE_API_KEY,
+            INFERENCE_BASE_URL,
+            INFERENCE_MODEL,
+            NVINFERENCE_API_KEY,
+            SMOKE_MARKER,
+          } = process.env;
+
+          const inferenceApiKey = NVINFERENCE_API_KEY || INFERENCE_API_KEY;
+          const baseUrl = (INFERENCE_BASE_URL || "https://inference-api.nvidia.com/v1").replace(/\/+$/, "");
+          const requestedModel = (INFERENCE_MODEL || "").trim();
+
+          function summarizeBody(raw) {
+            if (!raw) {
+              return "<empty response body>";
+            }
+
+            try {
+              const data = JSON.parse(raw);
+              return JSON.stringify(data, null, 2);
+            } catch {
+              return raw;
+            }
+          }
+
+          async function inferenceRequest(path, options = {}) {
+            const response = await fetch(`${baseUrl}${path}`, {
+              ...options,
+              headers: {
+                Authorization: `Bearer ${inferenceApiKey}`,
+                "Content-Type": "application/json",
+                ...(options.headers || {}),
+              },
+            });
+
+            const raw = await response.text();
+            if (!response.ok) {
+              const error = new Error(
+                `Inference Hub ${path} failed with HTTP ${response.status}:\n${summarizeBody(raw)}`
+              );
+              error.status = response.status;
+              error.body = raw;
+              throw error;
+            }
+
+            return raw ? JSON.parse(raw) : {};
+          }
+
+          function modelIdsFromList(data) {
+            const models = Array.isArray(data.data)
+              ? data.data
+              : Array.isArray(data.models)
+                ? data.models
+                : [];
+
+            return models
+              .map((model) => (typeof model === "string" ? model : model.id))
+              .filter(Boolean);
+          }
+
+          function unique(items) {
+            return [...new Set(items)];
+          }
+
+          function looksLikeChatModel(model) {
+            const excluded = /(embedding|rerank|image|video|audio|tts|whisper|clip|veo|imagen|moderation)/i;
+            const included = /(chat|instruct|gpt|claude|llama|nemotron|mistral|mixtral|qwen|deepseek|gemini|phi)/i;
+            return included.test(model) && !excluded.test(model);
+          }
+
+          function outputTextFromChatCompletion(data) {
+            return (data.choices || [])
+              .map((choice) => choice.message?.content || choice.text || "")
+              .filter(Boolean)
+              .join("\n")
+              .trim();
+          }
+
+          async function tryChatCompletion(model) {
+            const data = await inferenceRequest("/chat/completions", {
+              method: "POST",
+              body: JSON.stringify({
+                model,
+                messages: [
+                  {
+                    role: "user",
+                    content: `Reply with exactly this marker and no other text: ${SMOKE_MARKER}`,
+                  },
+                ],
+                temperature: 0,
+                max_tokens: 32,
+                stream: false,
+              }),
+            });
+
+            const outputText = outputTextFromChatCompletion(data);
+            console.log(outputText);
+
+            if (!outputText.includes(SMOKE_MARKER)) {
+              throw new Error(`Inference Hub response from ${model} did not include ${SMOKE_MARKER}.`);
+            }
+
+            return outputText;
+          }
+
+          async function main() {
+            if (!inferenceApiKey) {
+              throw new Error("NVINFERENCE_API_KEY secret is not set.");
+            }
+
+            const modelsData = await inferenceRequest("/models");
+            const modelIds = modelIdsFromList(modelsData);
+
+            if (modelIds.length === 0) {
+              throw new Error("Inference Hub /models returned no model IDs for this key.");
+            }
+
+            if (requestedModel && !modelIds.includes(requestedModel)) {
+              throw new Error(
+                [
+                  `Configured INFERENCE_MODEL '${requestedModel}' is not listed for this key.`,
+                  `The key can see ${modelIds.length} model(s).`,
+                  `First listed models: ${modelIds.slice(0, 10).join(", ")}`,
+                ].join("\n")
+              );
+            }
+
+            const preferredModels = [
+              "nvidia/meta/llama-3.3-70b-instruct",
+              "azure/openai/gpt-4o-mini",
+              "openai/openai/gpt-5-nano",
+              "aws/anthropic/claude-haiku-4-5-v1",
+            ];
+
+            const candidateModels = requestedModel
+              ? [requestedModel]
+              : unique([
+                  ...preferredModels.filter((model) => modelIds.includes(model)),
+                  ...modelIds.filter(looksLikeChatModel),
+                ]).slice(0, 10);
+
+            if (candidateModels.length === 0) {
+              throw new Error(
+                [
+                  "Could not identify a chat completion model from /models.",
+                  "Set the INFERENCE_MODEL repository variable to a chat model ID returned by /models.",
+                  `First listed models: ${modelIds.slice(0, 10).join(", ")}`,
+                ].join("\n")
+              );
+            }
+
+            let selectedModel = "";
+            let lastError = undefined;
+
+            for (const model of candidateModels) {
+              try {
+                await tryChatCompletion(model);
+                selectedModel = model;
+                break;
+              } catch (error) {
+                lastError = error;
+                console.warn(`Model '${model}' failed smoke attempt: ${error.message}`);
+                if (requestedModel) {
+                  throw error;
+                }
+              }
+            }
+
+            if (!selectedModel) {
+              throw new Error(
+                [
+                  "No candidate Inference Hub model completed the smoke request.",
+                  `Tried: ${candidateModels.join(", ")}`,
+                  lastError ? `Last error: ${lastError.message}` : "",
+                ].filter(Boolean).join("\n")
+              );
+            }
+
+            if (GITHUB_STEP_SUMMARY) {
+              fs.appendFileSync(
+                GITHUB_STEP_SUMMARY,
+                [
+                  "## NVIDIA Inference Hub Smoke Test",
+                  "",
+                  `Base URL: \`${baseUrl}\``,
+                  `Model used: \`${selectedModel}\``,
+                  `Models visible to key: \`${modelIds.length}\``,
+                  `Marker found: \`${SMOKE_MARKER}\``,
+                  "",
+                ].join("\n")
+              );
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
