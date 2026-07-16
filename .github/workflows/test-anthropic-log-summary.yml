@@ -1,4 +1,4 @@
-name: Test Anthropic GHA Log Summary
+name: Test Anthropic API Smoke
 
 defaults:
   run:
@@ -10,154 +10,19 @@ on:
       - "pull-request/[0-9]+"
 
 permissions:
-  actions: read
   contents: read
 
 jobs:
-  intentional-failure:
-    name: Intentional failure
+  anthropic-smoke:
+    name: Anthropic API smoke
     runs-on: ubuntu-latest
-    steps:
-      - name: Emit a recognizable failure
-        run: |
-          echo "CCCL_ANTHROPIC_LOG_SUMMARY_SMOKE_TEST_MARKER: intentional failure for log summary"
-          echo "::error::Intentional failure for Anthropic log-summary smoke test"
-          exit 42
-
-  summarize:
-    name: Upload failed log and ask Anthropic
-    needs: intentional-failure
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
     env:
-      FAILED_JOB_NAME: Intentional failure
-      LOG_DIR: gha-logs
-      LOG_FILE: gha-logs/intentional-failure.log
-      LOG_MARKER: CCCL_ANTHROPIC_LOG_SUMMARY_SMOKE_TEST_MARKER
+      ANTHROPIC_MODEL: claude-sonnet-4-6
+      SMOKE_MARKER: CCCL_ANTHROPIC_SMOKE_TEST_OK
     steps:
-      - name: Fetch failed job log
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          mkdir -p "${LOG_DIR}"
-
-          node <<'NODE'
-          const fs = require("node:fs");
-
-          const {
-            FAILED_JOB_NAME,
-            GITHUB_TOKEN,
-            LOG_FILE,
-            LOG_MARKER,
-            REPOSITORY,
-            RUN_ID,
-          } = process.env;
-
-          function sleep(ms) {
-            return new Promise((resolve) => setTimeout(resolve, ms));
-          }
-
-          async function fetchGitHubJson(url) {
-            const response = await fetch(url, {
-              headers: {
-                Accept: "application/vnd.github+json",
-                Authorization: `Bearer ${GITHUB_TOKEN}`,
-                "X-GitHub-Api-Version": "2022-11-28",
-              },
-            });
-
-            const text = await response.text();
-            if (!response.ok) {
-              throw new Error(`GitHub API request failed with HTTP ${response.status}: ${text}`);
-            }
-
-            return JSON.parse(text);
-          }
-
-          async function fetchJobLog(jobId) {
-            const url = `https://api.github.com/repos/${REPOSITORY}/actions/jobs/${jobId}/logs`;
-            let lastError;
-
-            for (let attempt = 1; attempt <= 5; ++attempt) {
-              const response = await fetch(url, {
-                headers: {
-                  Accept: "application/vnd.github+json",
-                  Authorization: `Bearer ${GITHUB_TOKEN}`,
-                  "X-GitHub-Api-Version": "2022-11-28",
-                },
-              });
-
-              if (response.ok) {
-                return response.text();
-              }
-
-              lastError = new Error(`Job log request failed with HTTP ${response.status}: ${await response.text()}`);
-              await sleep(attempt * 2000);
-            }
-
-            throw lastError;
-          }
-
-          async function main() {
-            if (!GITHUB_TOKEN) {
-              throw new Error("GITHUB_TOKEN is not available.");
-            }
-
-            const jobsUrl = `https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100`;
-            const jobs = await fetchGitHubJson(jobsUrl);
-            const failedJob = jobs.jobs.find((job) => job.name === FAILED_JOB_NAME && job.conclusion === "failure");
-
-            if (!failedJob) {
-              throw new Error(`Could not find failed job named "${FAILED_JOB_NAME}" in run ${RUN_ID}.`);
-            }
-
-            const logText = await fetchJobLog(failedJob.id);
-            if (!logText.includes(LOG_MARKER)) {
-              throw new Error(`Fetched log for "${FAILED_JOB_NAME}" does not contain ${LOG_MARKER}.`);
-            }
-
-            fs.writeFileSync(LOG_FILE, logText);
-            fs.writeFileSync(
-              `${LOG_FILE}.json`,
-              `${JSON.stringify(
-                {
-                  job_id: failedJob.id,
-                  job_name: failedJob.name,
-                  conclusion: failedJob.conclusion,
-                  html_url: failedJob.html_url,
-                  marker: LOG_MARKER,
-                  marker_found: true,
-                  run_id: RUN_ID,
-                },
-                null,
-                2
-              )}\n`
-            );
-          }
-
-          main().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
-          NODE
-
-      - name: Upload failed job log
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          name: anthropic-smoke-test-failed-job-log-${{ github.run_id }}
-          path: gha-logs/
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Ask Anthropic to summarize failed job log
+      - name: Ask Anthropic for a fixed marker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ANTHROPIC_MODEL: claude-sonnet-4-6
         run: |
           node <<'NODE'
           const fs = require("node:fs");
@@ -165,53 +30,14 @@ jobs:
           const {
             ANTHROPIC_API_KEY,
             ANTHROPIC_MODEL,
-            GITHUB_RUN_ID,
             GITHUB_STEP_SUMMARY,
-            LOG_FILE,
-            LOG_MARKER,
+            SMOKE_MARKER,
           } = process.env;
 
           async function main() {
             if (!ANTHROPIC_API_KEY) {
               throw new Error("ANTHROPIC_API_KEY secret is not set.");
             }
-
-            const logText = fs.readFileSync(LOG_FILE, "utf8");
-            const maxLogChars = 80000;
-            const logExcerpt =
-              logText.length > maxLogChars
-                ? `[truncated to last ${maxLogChars} chars]\n${logText.slice(-maxLogChars)}`
-                : logText;
-
-            const body = {
-              model: ANTHROPIC_MODEL || "claude-sonnet-4-6",
-              max_tokens: 1200,
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: [
-                        "Summarize this GitHub Actions failed-job log for a smoke test.",
-                        `Confirm whether the log contains ${LOG_MARKER}.`,
-                        "Identify the failed command or failing step, and keep the summary concise.",
-                        "",
-                        "Return Markdown with these headings:",
-                        "Summary",
-                        "Marker",
-                        "Failure",
-                        "",
-                        "Log:",
-                        "```text",
-                        logExcerpt,
-                        "```",
-                      ].join("\n"),
-                    },
-                  ],
-                },
-              ],
-            };
 
             const response = await fetch("https://api.anthropic.com/v1/messages", {
               method: "POST",
@@ -220,7 +46,16 @@ jobs:
                 "anthropic-version": "2023-06-01",
                 "x-api-key": ANTHROPIC_API_KEY,
               },
-              body: JSON.stringify(body),
+              body: JSON.stringify({
+                model: ANTHROPIC_MODEL,
+                max_tokens: 32,
+                messages: [
+                  {
+                    role: "user",
+                    content: `Reply with exactly this marker and no other text: ${SMOKE_MARKER}`,
+                  },
+                ],
+              }),
             });
 
             const raw = await response.text();
@@ -233,24 +68,26 @@ jobs:
             const outputText = (data.content || [])
               .map((content) => content.text || "")
               .filter(Boolean)
-              .join("\n");
-
-            if (!outputText) {
-              throw new Error("Anthropic response did not contain text output.");
-            }
+              .join("\n")
+              .trim();
 
             console.log(outputText);
 
+            if (!outputText.includes(SMOKE_MARKER)) {
+              throw new Error(`Anthropic response did not include ${SMOKE_MARKER}.`);
+            }
+
             if (GITHUB_STEP_SUMMARY) {
-              const summary = [
-                "## Anthropic GHA Log Summary Smoke Test",
-                "",
-                `Uploaded artifact: \`anthropic-smoke-test-failed-job-log-${GITHUB_RUN_ID}\``,
-                "",
-                outputText,
-                "",
-              ].join("\n");
-              fs.appendFileSync(GITHUB_STEP_SUMMARY, summary);
+              fs.appendFileSync(
+                GITHUB_STEP_SUMMARY,
+                [
+                  "## Anthropic API Smoke Test",
+                  "",
+                  `Model: \`${ANTHROPIC_MODEL}\``,
+                  `Marker found: \`${SMOKE_MARKER}\``,
+                  "",
+                ].join("\n")
+              );
             }
           }
 
