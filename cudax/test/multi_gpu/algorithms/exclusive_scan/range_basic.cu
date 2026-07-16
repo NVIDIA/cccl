@@ -265,8 +265,7 @@ MULTI_GPU_TEST("exclusive_scan, multiple elements per rank", value_types, operat
   constexpr auto values_per_rank = 10;
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    const auto v                                      = make_value<T>(r);
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, v);
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
