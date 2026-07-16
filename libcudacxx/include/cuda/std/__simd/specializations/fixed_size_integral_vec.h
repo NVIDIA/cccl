@@ -225,9 +225,11 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
       [[maybe_unused]] const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
       if constexpr (sizeof(_Tp) == 2)
       {
+#  if !_CCCL_HAS_SIMD_16BIT_MIN_MAX_COMPILER_OPTIMIZATION()
         NV_IF_TARGET(NV_PROVIDES_SM_90,
                      (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
                                ::cuda::std::simd::__vmin_16bit_x2<_Tp>(__lhs_u, __rhs_u));))
+#  endif // !_CCCL_HAS_SIMD_16BIT_MIN_MAX_COMPILER_OPTIMIZATION()
       }
 #  if _CCCL_HAS_SIMD_8BIT()
       else if constexpr (sizeof(_Tp) == 1)
@@ -251,9 +253,11 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
       [[maybe_unused]] const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
       if constexpr (sizeof(_Tp) == 2)
       {
+#  if !_CCCL_HAS_SIMD_16BIT_MIN_MAX_COMPILER_OPTIMIZATION()
         NV_IF_TARGET(NV_PROVIDES_SM_90,
                      (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
                                ::cuda::std::simd::__vmax_16bit_x2<_Tp>(__lhs_u, __rhs_u));))
+#  endif // !_CCCL_HAS_SIMD_16BIT_MIN_MAX_COMPILER_OPTIMIZATION()
       }
 #  if _CCCL_HAS_SIMD_8BIT()
       else if constexpr (sizeof(_Tp) == 1)
