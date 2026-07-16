@@ -60,5 +60,5 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(fill, NVBENCH_TYPE_AXES(integral_types))
   .set_name("fill")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4))
-  .add_string_axis("Aligned", {"yes", "no"});
+  .add_string_axis("Aligned", {"yes", "no"})
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

@@ -83,8 +83,8 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
   .set_name("mul")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
-  .add_string_axis("Aligned", {"yes", "no"});
+  .add_string_axis("Aligned", {"yes", "no"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
 static void add(nvbench::state& state, nvbench::type_list<T>)
@@ -117,8 +117,8 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
   .set_name("add")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
-  .add_string_axis("Aligned", {"yes", "no"});
+  .add_string_axis("Aligned", {"yes", "no"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
 static void triad(nvbench::state& state, nvbench::type_list<T>)
@@ -152,8 +152,8 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
   .set_name("triad")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
-  .add_string_axis("Aligned", {"yes", "no"});
+  .add_string_axis("Aligned", {"yes", "no"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
 static void nstream(nvbench::state& state, nvbench::type_list<T>)
@@ -187,5 +187,5 @@ catch (const std::bad_alloc&)
 NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
   .set_name("nstream")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers)
-  .add_string_axis("Aligned", {"yes", "no"});
+  .add_string_axis("Aligned", {"yes", "no"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
