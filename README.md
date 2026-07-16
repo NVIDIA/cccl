@@ -282,7 +282,7 @@ but at least the most recent host compiler of any supported older CUDA Toolkit.
 We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
 But we will not invest significant time in triaging or fixing issues for older compilers.
 
-In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst) for more information on exactly what we test.
 
 ### GPU Architectures
 
@@ -314,7 +314,7 @@ For each CUDA version, builds are completed against all supported host compilers
 
 The testing strategy and matrix are constantly evolving.
 The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
-For more information about our CI pipeline, see [here](ci-overview.md).
+For more information about our CI pipeline, see [here](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Versioning
 
@@ -476,7 +476,7 @@ CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
 
 ## CI Pipeline Overview
 
-For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md).
+For a detailed overview of the CI pipeline, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Related Projects
 
