@@ -482,12 +482,14 @@ __device__ __forceinline__ void poll_fold_windows(
     const int lane_tile_count                = (chunk - lane_id + 31) >> 5;
     TilePartialStateT packed_words[kPollMlp] = {}; // must zero initialize
     bool ready;
+    // first, all tile state in window must be ready
     do
     {
       ready = true;
 #pragma unroll
       for (int i = 0; i < kPollMlp; ++i)
       {
+        // we only try if that state is not published
         if (i < lane_tile_count && packed_words[i].published_tag() != kTilePublished)
         {
           packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i * 32);
@@ -498,22 +500,24 @@ __device__ __forceinline__ void poll_fold_windows(
         }
       }
     } while (__ballot_sync(kFullMask, !ready) != 0u);
-    int lane_run_count = 0, lane_last_runs_rel = -1;
+    int lane_run_count = 0, lane_last_tile_with_runs_in_chunk = -1;
+    // now, we fold the window
 #pragma unroll
     for (int i = 0; i < kPollMlp; ++i)
     {
       if (i < lane_tile_count)
       {
         lane_run_count += packed_words[i].run_count();
-        lane_last_runs_rel = (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_runs_rel;
+        lane_last_tile_with_runs_in_chunk =
+          (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_tile_with_runs_in_chunk;
       }
     }
-    const int t_star_rel = __reduce_max_sync(kFullMask, lane_last_runs_rel);
-    int lane_open_length = 0;
+    const int last_tile_with_runs_in_chunk = __reduce_max_sync(kFullMask, lane_last_tile_with_runs_in_chunk);
+    int lane_open_length                   = 0;
 #pragma unroll
     for (int i = 0; i < kPollMlp; ++i)
     {
-      if (i < lane_tile_count && i * 32 + lane_id >= t_star_rel)
+      if (i < lane_tile_count && i * 32 + lane_id >= last_tile_with_runs_in_chunk)
       {
         lane_open_length += packed_words[i].open_len();
       }
