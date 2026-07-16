@@ -141,6 +141,28 @@ public:
   virtual void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const = 0;
 
   /**
+   * @brief Allocate memory at this place for a tensor with the given extents
+   *
+   * The default implementation ignores the tensor geometry and forwards to the
+   * byte-count allocate(); places whose physical placement depends on the
+   * geometry (composite places, whose partitioner maps element coordinates to
+   * places) override it with the real implementation.
+   *
+   * Extents follow the dimension-0-fastest linearization convention of
+   * dim4::get_index() (the STF slice convention). Row-major callers should
+   * present reversed extents (and a coordinate-reversing partitioner).
+   *
+   * @param data_dims Extents of the tensor
+   * @param elemsize Size of one element in bytes
+   * @param stream CUDA stream for stream-ordered allocations
+   * @return Pointer to allocated memory
+   */
+  virtual void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream) const
+  {
+    return allocate(static_cast<::std::ptrdiff_t>(data_dims.size() * elemsize), stream);
+  }
+
+  /**
    * @brief Deallocate memory at this place
    *
    * @param ptr Pointer to memory to deallocate
