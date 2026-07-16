@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! The FindIf algorithms that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref FindIfPolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::FindIfPolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
@@ -50,7 +50,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! The ``LowerBoundSortedValues`` and ``UpperBoundSortedValues`` algorithms that accept an environment can be tuned by
 //! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a
-//! @ref FindBoundSortedValuesPolicy, as shown in the example below:
+//! :cpp:struct:`cub::FindBoundSortedValuesPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_bound_sorted_values_env_api.cu
 //!      :language: c++
