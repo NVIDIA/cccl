@@ -9,6 +9,8 @@
 
 #include <cub/config.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -1009,7 +1011,7 @@ public:
       {
         InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
       }
-      else if constexpr (::cuda::std::contiguous_iterator<RandomAccessIterator>
+      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
                          && ::cuda::std::__can_to_address<RandomAccessIterator>)
       {
         InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);

@@ -21,6 +21,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -838,7 +840,8 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (::cuda::std::contiguous_iterator<OutputIteratorT> && ::cuda::std::__can_to_address<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
+                    && ::cuda::std::__can_to_address<OutputIteratorT>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
