@@ -516,7 +516,7 @@ Supported benchmarks:
     for bench in benchmarks_to_run:
         results = all_results.get(bench, {})
         for key in ("cpp_status", "py_status"):
-            if (results.get(key) or {}).get("status") not in (None, "ok"):
+            if results.get(key, {}).get("status") not in (None, "ok"):
                 failed.append(bench)
                 break
     if failed:
