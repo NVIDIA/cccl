@@ -18,11 +18,11 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
@@ -33,7 +33,7 @@ template <class T, typename = void>
 inline constexpr bool has_native_shfl_v = false;
 
 template <class T>
-inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_sync(0u, T{}, 0))>> = true;
+inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(::__shfl_xor_sync(0u, T{}, 0))>> = true;
 
 //! @rst
 //! The WarpBitonicSort class provides methods for sorting items partitioned across a CUDA warp
@@ -114,7 +114,7 @@ class WarpBitonicSort
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  _CCCL_FORCEINLINE WarpBitonicSort() = default;
+  WarpBitonicSort() = default;
 
 public:
   struct TempStorage : Uninitialized<_TempStorage>
@@ -125,9 +125,8 @@ public:
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
   //!
   //! @par
-  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-  //!   are equivalent: neither one is less than the other. It is not guaranteed
-  //!   that the relative order of these two elements will be preserved by sort.
+  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
+  //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //!
   //! @tparam CompareOp Comparison functor type
@@ -143,14 +142,12 @@ public:
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
   //!
   //! @par
-  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-  //!   are equivalent: neither one is less than the other. It is not guaranteed
-  //!   that the relative order of these two elements will be preserved by sort.
+  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
+  //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //! - All threads in the calling warp must agree on the same value for `valid_items`.
-  //! - The value of `oob_default` is assigned to all keys that are out of
-  //!   `valid_items` boundaries. It's expected that `oob_default` is ordered
-  //!   after any key in the `valid_items` boundaries.
+  //! - The value of `oob_default` is assigned to all keys that are out of `valid_items` boundaries. It's expected that
+  //!   `oob_default` is ordered after any key in the `valid_items` boundaries.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -176,9 +173,8 @@ public:
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
   //!
   //! @par
-  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-  //!   are equivalent: neither one is less than the other. It is not guaranteed
-  //!   that the relative order of these two elements will be preserved by sort.
+  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
+  //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //! - All threads in the calling warp must agree on the same value for `valid_items`.
   //! - Keys out of `valid_items` boundary may get overwritten.
@@ -207,9 +203,8 @@ public:
   //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
   //!
   //! @par
-  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-  //!   are equivalent: neither one is less than the other. It is not guaranteed
-  //!   that the relative order of these two elements will be preserved by sort.
+  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
+  //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //!
   //! @tparam CompareOp Comparison functor type
@@ -227,14 +222,12 @@ public:
   //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
   //!
   //! @par
-  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-  //!   are equivalent: neither one is less than the other. It is not guaranteed
-  //!   that the relative order of these two elements will be preserved by sort.
+  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
+  //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //! - All threads in the calling warp must agree on the same value for `valid_items`.
-  //! - The value of `oob_default` is assigned to all keys that are out of
-  //!   `valid_items` boundaries. It's expected that `oob_default` is ordered
-  //!   after any key in the `valid_items` boundaries.
+  //! - The value of `oob_default` is assigned to all keys that are out of `valid_items` boundaries. It's expected that
+  //!   `oob_default` is ordered after any key in the `valid_items` boundaries.
   //! - Values out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
@@ -267,9 +260,8 @@ public:
   //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
   //!
   //! @par
-  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-  //!   are equivalent: neither one is less than the other. It is not guaranteed
-  //!   that the relative order of these two elements will be preserved by sort.
+  //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are equivalent: neither one is less than
+  //!   the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //! - All threads in the calling warp must agree on the same value for `valid_items`.
   //! - Keys and values out of `valid_items` boundary may get overwritten.
@@ -357,15 +349,12 @@ private:
       }
       if (should_swap)
       {
-        KeyT tmp_k = key;
-        key        = other_key;
-        other_key  = tmp_k;
+        using ::cuda::std::swap;
+        swap(key, other_key);
 
         if constexpr (!keys_only)
         {
-          ValueT tmp_v    = values[i];
-          values[i]       = values[other_i];
-          values[other_i] = tmp_v;
+          swap(values[i], values[other_i]);
         }
       }
     }
@@ -437,15 +426,12 @@ private:
       }
       if (should_swap && other_i * warp_threads + lane < valid_items)
       {
-        KeyT tmp_k = key;
-        key        = other_key;
-        other_key  = tmp_k;
+        using ::cuda::std::swap;
+        swap(key, other_key);
 
         if constexpr (!keys_only)
         {
-          ValueT tmp_v    = values[i];
-          values[i]       = values[other_i];
-          values[other_i] = tmp_v;
+          swap(values[i], values[other_i]);
         }
       }
     }
@@ -476,11 +462,11 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
   static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
   static_assert(LogicalWarpThreads == detail::warp_threads,
-                  "Logical warp smaller than architectural warp size are not yet supported");
+                "Logical warp smaller than architectural warp size are not yet supported");
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  _CCCL_FORCEINLINE WarpBitonicSort() = default;
+  WarpBitonicSort() = default;
 
 public:
   struct TempStorage : Uninitialized<_TempStorage>
@@ -641,7 +627,7 @@ private:
       KeyT other_key;
       if constexpr (has_native_shfl_v<KeyT>)
       {
-        other_key = __shfl_xor_sync(full_warp_mask, key, stride);
+        other_key = ::__shfl_xor_sync(full_warp_mask, key, stride);
       }
       else
       {
@@ -653,7 +639,7 @@ private:
       {
         if constexpr (has_native_shfl_v<ValueT>)
         {
-          other_value = __shfl_xor_sync(full_warp_mask, *values, stride);
+          other_value = ::__shfl_xor_sync(full_warp_mask, *values, stride);
         }
         else
         {

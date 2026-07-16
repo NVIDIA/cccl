@@ -68,7 +68,7 @@ __device__ __forceinline__ static void sink(T (&values)[Size])
 }
 
 template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T>
-__launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(_CCCL_GRID_CONSTANT const ActionT action)
+__launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const ActionT action)
 {
   auto data = generate_random_data<T>();
   cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
@@ -81,7 +81,7 @@ __launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(_CCCL
 // benchmark results.
 // For keys-only benchmarks, set ValueT to void.
 template <int ItemsPerThread, typename KeyT, typename ValueT, typename ActionT, typename... Args>
-__global__ static void benchmark_kernel(int num_iterations, _CCCL_GRID_CONSTANT const ActionT action, Args... args)
+__global__ static void benchmark_kernel(int num_iterations, const ActionT action, Args... args)
 {
   constexpr int warp_threads = 32;
   constexpr bool has_values  = !cuda::std::is_void_v<ValueT>;
