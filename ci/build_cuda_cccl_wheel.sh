@@ -91,6 +91,15 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   python -m pip install --upgrade 'cmake>=3.27'
 fi
 
+# When CCCL_C_PARALLEL_SANITIZE_THREAD is set (=1/true/on), instrument the
+# c.parallel (v1) host code with ThreadSanitizer for the free-threaded TSan
+# nightly lane. Host-only; the libtsan runtime stays external (the shared
+# build_cuda_cccl_python.sh --excludes it from auditwheel).
+if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  export CMAKE_ARGS="${CMAKE_ARGS:-} -DCCCL_C_PARALLEL_SANITIZE_THREAD=ON"
+  echo "Building wheel with ThreadSanitizer-instrumented c.parallel: CMAKE_ARGS=${CMAKE_ARGS}"
+fi
+
 # Build the wheel
 python -m pip wheel --no-deps --verbose --wheel-dir dist .
 
