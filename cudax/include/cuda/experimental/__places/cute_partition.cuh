@@ -889,10 +889,8 @@ UNITTEST("make_partition rejects partitions that leave grid places unused")
   EXPECT(thrown);
 
   // Binding every grid axis uses all places.
-  auto part = make_partition(
-    dim4(12, 8),
-    {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}},
-    grid_dims);
+  auto part =
+    make_partition(dim4(12, 8), {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}}, grid_dims);
   EXPECT(part.num_places() == grid_dims.size());
 };
 #endif // UNITTESTED_FILE
