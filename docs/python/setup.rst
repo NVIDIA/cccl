@@ -50,6 +50,11 @@ For a minimal install without Numba (useful when you supply your own
    pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
    pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 
+Free-threaded Python support is currently validated on Linux with the
+``minimal-cu12`` and ``minimal-cu13`` extras. The full ``cu12`` and ``cu13``
+extras depend on Numba CUDA and are not currently supported in free-threaded
+Python.
+
 Install from conda-forge
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

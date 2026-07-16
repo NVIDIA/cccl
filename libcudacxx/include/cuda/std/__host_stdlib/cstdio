@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___UTILITY_BROADCASTED_CUH
-#define _CUDA_EXPERIMENTAL___UTILITY_BROADCASTED_CUH
+#ifndef _CUDA_STD___HOST_STDLIB_CSTDIO
+#define _CUDA_STD___HOST_STDLIB_CSTDIO
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/prologue.h>
+#if _CCCL_HOSTED()
+#  include <cstdio>
+#endif // _CCCL_HOSTED()
 
-namespace cuda::experimental
-{
-enum class broadcasted_t : unsigned char
-{
-};
-_CCCL_GLOBAL_CONSTANT broadcasted_t broadcasted{};
-} // namespace cuda::experimental
-
-#include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CUDA_EXPERIMENTAL___UTILITY_BROADCASTED_CUH
+#endif // _CUDA_STD___HOST_STDLIB_CSTDIO

@@ -154,7 +154,7 @@ enum BlockReduceAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -166,9 +166,8 @@ namespace detail
       return "BLOCK_REDUCE_WARP_REDUCTIONS";
     case BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
       return "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
-    default:
-      return "<unknown BlockReduceAlgorithm>";
   }
+  return "<unknown BlockReduceAlgorithm>";
 }
 } // namespace detail
 

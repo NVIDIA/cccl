@@ -518,7 +518,7 @@ public:
      * impls).
      *
      * Self-contained implementations (`exec_place_cuda_stream_impl`,
-     * `exec_place_green_ctx_impl`) override this method and ignore the
+     * `exec_place_cuda_ctx_impl`) override this method and ignore the
      * registry, returning their embedded pool instead.
      *
      * The grid implementation forwards `res` to its first sub-place.
@@ -782,6 +782,20 @@ public:
 
   static exec_place cuda_stream(cudaStream_t stream);
   static exec_place cuda_stream(const augmented_stream& dstream);
+
+  /**
+   * @brief Create an execution place from an externally-owned CUDA driver context
+   *
+   * The place is non-owning: the caller must keep the context alive while the
+   * place is in use. This is the natural entry point for contexts created by
+   * other libraries (e.g. green contexts converted with cuCtxFromGreenCtx, such
+   * as the ones produced by cuda.core in Python).
+   *
+   * @param ctx The CUDA driver context
+   * @param devid The device ordinal of the context, or -1 to derive it from the context
+   * @param pool_size Number of streams in the place's stream pool
+   */
+  static exec_place cuda_context(CUcontext ctx, int devid = -1, size_t pool_size = impl::pool_size);
 
   /**
    * @brief Returns the currently active device.

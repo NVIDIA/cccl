@@ -161,7 +161,8 @@ PREDEFINED = \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
     "THRUST_NAMESPACE_END=}" \
-    "THRUST_PREVENT_MACRO_SUBSTITUTION"
+    "THRUST_PREVENT_MACRO_SUBSTITUTION" \
+    "_CCCL_HOSTED()=1"
 
 # IMPORTANT: Aliases for custom commands
 # The rst alias enables embedding reStructuredText in doxygen comments

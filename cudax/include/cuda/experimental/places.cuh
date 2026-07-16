@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
