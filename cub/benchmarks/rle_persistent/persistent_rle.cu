@@ -1136,32 +1136,4 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       }
     });
 }
-
-template <class KeyT, class LenT, class NumRunsT, class OffT, class Config = winner_config<KeyT>>
-inline cudaError_t persistent_rle_launch(
-  const KeyT* d_keys,
-  KeyT* d_unique,
-  LenT* d_counts,
-  NumRunsT* d_num_runs,
-  TilePartialStateT* tile_state,
-  OffT num_items,
-  int num_tiles,
-  cudaStream_t stream)
-{
-  constexpr size_t kDynSmem = Config::kDynSmem;
-  constexpr int kNumThreads = Config::kNumThreads;
-
-  const cudaError_t error = cudaFuncSetAttribute(
-    persistent_rle<KeyT, LenT, NumRunsT, OffT, Config>, cudaFuncAttributeMaxDynamicSharedMemorySize, (int) kDynSmem);
-  if (error != cudaSuccess)
-  {
-    return error;
-  }
-
-  const int blocks = num_tiles;
-
-  persistent_rle<KeyT, LenT, NumRunsT, OffT, Config><<<blocks, kNumThreads, kDynSmem, stream>>>(
-    d_keys, d_unique, d_counts, d_num_runs, tile_state, num_items, num_tiles);
-  return cudaPeekAtLastError();
-}
 } // namespace rle_impl
