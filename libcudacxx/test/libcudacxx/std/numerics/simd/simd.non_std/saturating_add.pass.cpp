@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/__simd/saturating_add.h>
+// <cuda/simd>
 
 // template<class T, class Abi>
 //   constexpr basic_vec<T, Abi> cuda::simd::saturating_add(
@@ -40,14 +40,14 @@ inline constexpr bool has_saturating_add<
 template <typename T, int N>
 TEST_FUNC constexpr void test_values(cuda::std::array<T, N> lhs_values, cuda::std::array<T, N> rhs_values)
 {
-  using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  Vec lhs(lhs_values);
-  Vec rhs(rhs_values);
+  using vec_t = simd::basic_vec<T, simd::fixed_size<N>>;
+  vec_t lhs(lhs_values);
+  vec_t rhs(rhs_values);
 
-  static_assert(cuda::std::is_same_v<decltype(cuda::simd::saturating_add(lhs, rhs)), Vec>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::simd::saturating_add(lhs, rhs)), vec_t>);
   static_assert(noexcept(cuda::simd::saturating_add(lhs, rhs)));
 
-  Vec result = cuda::simd::saturating_add(lhs, rhs);
+  vec_t result = cuda::simd::saturating_add(lhs, rhs);
   for (int i = 0; i < N; ++i)
   {
     assert(result[i] == cuda::std::saturating_add(lhs_values[i], rhs_values[i]));
@@ -87,8 +87,9 @@ TEST_FUNC constexpr void test_size()
 template <typename T>
 TEST_FUNC constexpr void test()
 {
-  test_size<T, 4>();
   test_size<T, 3>();
+  test_size<T, 4>();
+  test_size<T, 5>();
 }
 
 TEST_FUNC constexpr bool test_all()
@@ -120,5 +121,6 @@ int main(int, char**)
 {
   assert(test_all());
   static_assert(test_all());
+
   return 0;
 }

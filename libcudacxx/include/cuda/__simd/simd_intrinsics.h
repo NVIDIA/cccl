@@ -43,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
                  return __result;
                }))
 #  endif // _CCCL_HAS_SIMD_SAT_INTRINSICS() || _CCCL_HAS_SIMD_SAT_PTX()
-  _CCCL_VERIFY(false, "cuda::__simd::__vadd_sat_u16x2: Unsupported architecture");
+  _CCCL_VERIFY(false, "cuda::simd::__vadd_sat_u16x2: Unsupported architecture");
   return ::cuda::std::uint32_t{};
 }
 
@@ -59,7 +59,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
                  return __result;
                }))
 #  endif // _CCCL_HAS_SIMD_SAT_INTRINSICS() || _CCCL_HAS_SIMD_SAT_PTX()
-  _CCCL_VERIFY(false, "cuda::__simd::__vadd_sat_s16x2: Unsupported architecture");
+  _CCCL_VERIFY(false, "cuda::simd::__vadd_sat_s16x2: Unsupported architecture");
   return ::cuda::std::uint32_t{};
 }
 
@@ -75,7 +75,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
                  return __result;
                }))
 #  endif // _CCCL_HAS_SIMD_SAT_INTRINSICS() || _CCCL_HAS_SIMD_SAT_PTX()
-  _CCCL_VERIFY(false, "cuda::__simd::__vadd_sat_u8x4: Unsupported architecture");
+  _CCCL_VERIFY(false, "cuda::simd::__vadd_sat_u8x4: Unsupported architecture");
   return ::cuda::std::uint32_t{};
 }
 
@@ -91,7 +91,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
                  return __result;
                }))
 #  endif // _CCCL_HAS_SIMD_SAT_INTRINSICS() || _CCCL_HAS_SIMD_SAT_PTX()
-  _CCCL_VERIFY(false, "cuda::__simd::__vadd_sat_s8x4: Unsupported architecture");
+  _CCCL_VERIFY(false, "cuda::simd::__vadd_sat_s8x4: Unsupported architecture");
   return ::cuda::std::uint32_t{};
 }
 

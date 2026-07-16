@@ -134,6 +134,13 @@ private:
     __s_.__set(__i, __v);
   }
 
+  template <typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  __simd_saturating_add_impl(const basic_vec& __lhs, const basic_vec& __rhs, const _Operation& __operation) noexcept
+  {
+    return basic_vec{__operation(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
 public:
   using abi_type = _Abi;
 

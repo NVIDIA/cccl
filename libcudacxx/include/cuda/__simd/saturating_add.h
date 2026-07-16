@@ -29,7 +29,6 @@
 #include <cuda/std/cstdint>
 #if _CCCL_HAS_SIMD_SAT()
 #  include <cuda/__simd/simd_intrinsics_array.h>
-#  include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #  include <cuda/std/__simd/specializations/simd_intrinsics_array.h>
 #endif // _CCCL_HAS_SIMD_SAT()
 
@@ -39,48 +38,58 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
+template <typename _Tp, typename _Abi>
+struct __saturating_add_operation
+{
+  template <typename _Storage>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Storage
+  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  {
+#if _CCCL_HAS_SIMD_SAT()
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t) || sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
+      {
+        NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                       using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<_Storage>;
+                       const auto __lhs_u         = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+                       const auto __rhs_u         = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+                       __unsigned_storage_t __result_u{};
+                       if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
+                       {
+                         __result_u = ::cuda::simd::__vadd_sat_16bit_x2<_Tp>(__lhs_u, __rhs_u);
+                       }
+                       else
+                       {
+                         __result_u = ::cuda::simd::__vadd_sat_8bit_x4<_Tp>(__lhs_u, __rhs_u);
+                       }
+                       return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
+                     }));
+      }
+    }
+#endif // _CCCL_HAS_SIMD_SAT()
+
+    constexpr auto __size = ::cuda::std::simd::basic_vec<_Tp, _Abi>::size();
+    _Storage __result{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
+    {
+      __result.__data[__i] = ::cuda::std::saturating_add(__lhs.__data[__i], __rhs.__data[__i]);
+    }
+    return __result;
+  }
+};
+
+//! @brief Performs element-wise saturating addition.
+//! @param __lhs The left-hand side input vector.
+//! @param __rhs The right-hand side input vector.
+//! @return A vector containing the saturated sum of each pair of input elements.
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::simd::basic_vec<_Tp, _Abi> saturating_add(
   const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs, const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __rhs) noexcept
 {
-  using __basic_vec_t    = ::cuda::std::simd::basic_vec<_Tp, _Abi>;
-  using __simd_storage_t = typename __basic_vec_t::_Storage;
-  constexpr auto __size  = __basic_vec_t::__size;
-
-#if _CCCL_HAS_SIMD_SAT()
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  {
-    if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t) || sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
-    {
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
-                     using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<__simd_storage_t>;
-                     const auto __lhs_u         = ::cuda::std::simd::__to_unsigned_storage(__lhs.__s_);
-                     const auto __rhs_u         = ::cuda::std::simd::__to_unsigned_storage(__rhs.__s_);
-                     __unsigned_storage_t __result_u{};
-                     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
-                     {
-                       __result_u = ::cuda::simd::__vadd_sat_16bit_x2<_Tp>(__lhs_u, __rhs_u);
-                     }
-                     else
-                     {
-                       __result_u = ::cuda::simd::__vadd_sat_8bit_x4<_Tp>(__lhs_u, __rhs_u);
-                     }
-                     const auto __result_s =
-                       ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(__result_u);
-                     return __basic_vec_t{__result_s, __basic_vec_t::__storage_tag};
-                   }));
-    }
-  }
-#endif // _CCCL_HAS_SIMD_SAT()
-
-  __simd_storage_t __result{};
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
-  {
-    __result.__data[__i] = ::cuda::std::saturating_add(__lhs.__s_.__data[__i], __rhs.__s_.__data[__i]);
-  }
-  return __basic_vec_t{__result, __basic_vec_t::__storage_tag};
+  return __simd_saturating_add_impl(__lhs, __rhs, __saturating_add_operation<_Tp, _Abi>{}); // ADL
 }
 
 _CCCL_END_NAMESPACE_CUDA_SIMD
