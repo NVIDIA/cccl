@@ -290,7 +290,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
 
   using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   // `num_segments > 0` and `max_seg_size > 0` here: the generic `dispatch` returns for the empty-batch cases (no
-  // segments, or a non-positive max segment size) before selecting an arm.
+  // segments, or a non-positive max segment size) before invoking this launch arm.
   const auto num_seg_val = detail::params::get_param(num_segments, num_segments_val_t{0});
 
   // Cluster launches require compute capability 9.0+.
@@ -808,7 +808,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_baseline_arm(
     }
 
     // `num_segments > 0` and the max segment size > 0 here: the generic `dispatch` returns for the empty-batch cases
-    // (no segments, or a non-positive max segment size) before selecting an arm.
+    // (no segments, or a non-positive max segment size) before invoking this launch arm.
 
     if constexpr (any_small_segments)
     {
@@ -935,16 +935,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                 "plain integral): a per-segment sequence is not a meaningful segment count, and a single deferred "
                 "(device-resident) value is meaningful but not yet supported (resolve the count on the host).");
 
-  // No work to launch when the batch is empty: no segments, or the tightest known max segment size is non-positive
-  // (every segment empty; e.g. a uniform negative size the kernel clamps to 0). A negative `num_segments` is out of
-  // contract (non-negative is a documented precondition), hence `== 0` not `<= 0`. Guard only the actual launch: the
-  // query pass (`d_temp_storage == nullptr`) must fall through so the chosen arm still reports `temp_storage_bytes`.
-  if (d_temp_storage != nullptr
-      && (detail::params::get_param(num_segments, 0) == 0 || runtime_max_segment_size(segment_sizes) <= 0))
-  {
-    return cudaSuccess;
-  }
-
   // The selection direction is a compile-time constant carried as `::cuda::args::constant<Dir>`. Wrap it into the
   // internal discrete param the kernel/agent expect (both host arms take the wrapped form).
   const auto select_directions    = wrap_select_direction(select_direction);
@@ -1026,10 +1016,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
+  // Empty batch = no work to launch: no segments, or a non-positive tightest max segment size (every segment empty,
+  // e.g. a uniform negative size clamped to 0). `== 0` not `<= 0` for `num_segments`, as a negative count is out of
+  // contract. Consulted only on the launch (`d_temp_storage != nullptr`) of a *supported* arm below: the query pass
+  // falls through to size `temp_storage_bytes`, and the unsupported arm ignores it so an unavailable request still
+  // fails with cudaErrorNotSupported rather than being masked into success.
+  const auto empty_batch_no_launch = [&] {
+    return d_temp_storage != nullptr
+        && (detail::params::get_param(num_segments, 0) == 0 || runtime_max_segment_size(segment_sizes) <= 0);
+  };
+
   return detail::dispatch_compute_cap(selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
     if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_backend::baseline)
     {
+      if (empty_batch_no_launch())
+      {
+        return cudaSuccess;
+      }
       return launch_baseline_arm<selector_t, LargeSegmentTileOffsetT>(
         d_temp_storage,
         temp_storage_bytes,
@@ -1045,6 +1049,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_backend::cluster)
     {
+      if (empty_batch_no_launch())
+      {
+        return cudaSuccess;
+      }
       return launch_cluster_arm<selector_t, LargeSegmentTileOffsetT>(
         policy_getter,
         d_temp_storage,

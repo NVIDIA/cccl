@@ -9,63 +9,82 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_baseline_policy
 #include <cub/util_device.cuh> // cub::PtxVersion
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/remove.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
 
-// Low-level gate: skips the current test case when a request that must use the SM90+ cluster backend has no
-// cluster-capable target in the build. With `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test
-// sources do), such a request fails at runtime with cudaErrorNotSupported rather than at compile time. `needs_cluster`
-// must be true when the caller knows the configuration requires the cluster backend; prefer
-// skip_if_batched_topk_backend_unavailable(), which derives it from the request.
+// Low-level predicate: true when a request that must use the SM90+ cluster backend has no cluster-capable target in the
+// build. With `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test sources do), such a request
+// degrades to a runtime cudaErrorNotSupported rather than a compile-time error; callers dispatch it, verify that error
+// (via expect_batched_topk_unsupported_and_skip), and skip the result-correctness checks. `needs_cluster` must be true
+// when the caller knows the configuration requires the cluster backend; prefer batched_topk_backend_unavailable(),
+// which derives it from the request.
 //
 // Uses cub::PtxVersion (the compiled compute capability the dispatch resolves via PtxComputeCap), not cub::SmVersion
 // (the physical device): the two diverge when compiling for a virtual architecture below the device (e.g. `89-virtual`
 // on an SM120 GPU), where the cluster arm is never emitted and the dispatch returns cudaErrorNotSupported -- exactly
-// what this skip must catch.
-inline void skip_if_batched_topk_cluster_unavailable(bool needs_cluster)
+// what this must catch.
+inline bool batched_topk_cluster_backend_unavailable(bool needs_cluster)
 {
   if (!needs_cluster)
   {
-    return;
+    return false;
   }
   int ptx_version = 0;
   REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
   constexpr int cluster_min_ptx_version = 900; // SM 9.0
-  if (ptx_version < cluster_min_ptx_version)
-  {
-    SKIP("This top-k configuration requires the SM90+ cluster backend (a deterministic / tie-break request or a "
-         "segment size beyond the baseline backend's capacity); the current build has no SM90+ target that can serve "
-         "it.");
-  }
+  return ptx_version < cluster_min_ptx_version;
 }
 
-// Skips the current test case when the batched top-k configuration cannot run in the current build. The request needs
-// the cluster backend if it is deterministic / has a concrete tie-break, or if `static_max_segment_size` exceeds the
-// baseline backend's coverage; skips if that backend is unavailable. Deriving the size decision here (rather than a
-// precomputed `oversize` bool) keeps the threshold in one place. Pass the same maximum segment size the test hands to
-// the dispatch: its `cuda::args::bounds<...>` upper bound (or, for an un-annotated narrow type, that type's maximum;
-// a type whose maximum exceeds 2^21 no longer compiles without a bound). Note that `oversize`
-// uses only the tile-size bound `baseline_max_covered_segment_size`; the dispatch's `baseline_can_cover_v` additionally
-// checks the agent's shared-memory fit, so a borderline size the bound deems baseline-coverable could still route to
-// the cluster backend (such a case would fail rather than skip if the cluster backend is unavailable).
+// True when the batched top-k configuration cannot run in the current build (see
+// batched_topk_cluster_backend_unavailable). The request needs the cluster backend if it is deterministic / has a
+// concrete tie-break, or if `static_max_segment_size` exceeds the baseline backend's coverage. Deriving the size
+// decision here (rather than a precomputed `oversize` bool) keeps the threshold in one place. Pass the same maximum
+// segment size the test hands to the dispatch: its `cuda::args::bounds<...>` upper bound (or, for an un-annotated
+// narrow type, that type's maximum; a type whose maximum exceeds 2^21 no longer compiles without a bound). Note that
+// `oversize` uses only the tile-size bound `baseline_max_covered_segment_size`; the dispatch's `baseline_can_cover_v`
+// additionally checks the agent's shared-memory fit, so a borderline size the bound deems baseline-coverable could
+// still route to the cluster backend (such a case would fail rather than skip if the cluster backend is unavailable).
 template <cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
           cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified>
-void skip_if_batched_topk_backend_unavailable(cuda::std::int64_t static_max_segment_size)
+bool batched_topk_backend_unavailable(cuda::std::int64_t static_max_segment_size)
 {
   constexpr bool deterministic = Determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed
                               || TieBreak != cuda::execution::tie_break::__tie_break_t::__unspecified;
   const bool oversize =
     static_max_segment_size
     > cub::detail::batched_topk::baseline_max_covered_segment_size(cub::detail::batched_topk::make_baseline_policy());
-  skip_if_batched_topk_cluster_unavailable(deterministic || oversize);
+  return batched_topk_cluster_backend_unavailable(deterministic || oversize);
+}
+
+// Runs the two-phase direct-API dispatch `dispatch(d_temp_storage, temp_storage_bytes)` (temp-size query, then launch)
+// for a request whose backend is unavailable in this build, and verifies it degraded gracefully at runtime: the query
+// still succeeds (returns a placeholder size), while the launch must return cudaErrorNotSupported
+// (CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT defers the would-be compile-time diagnostic to runtime). Then skips the
+// result-correctness checks, which need a device that can run the request. Callers gate this on
+// batched_topk_backend_unavailable() (or batched_topk_cluster_backend_unavailable() when the request is already known
+// to require the cluster backend); `dispatch` forwards to the direct-API entry point (host-side; the runtime error is
+// backend-selection driven and independent of the launch variant under test).
+template <class DispatchFn>
+void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
+{
+  cuda::std::size_t temp_storage_bytes = 0;
+  REQUIRE(dispatch(nullptr, temp_storage_bytes) == cudaSuccess);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(dispatch(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes) == cudaErrorNotSupported);
+  SKIP("This batched top-k request routes to the SM90+ cluster backend, which the compute capability this dispatch "
+       "resolved to does not provide; the dispatch reported cudaErrorNotSupported at runtime "
+       "(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT) as expected. Skipping the result-correctness checks.");
 }
 
 // Whole-`topk_policy` tuning override that forces the cluster backend and pins otherwise heuristic / hardware-derived

@@ -295,14 +295,21 @@ function(
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 
   # The unsupported-arch xfail test omits the CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
-  # keeps the strict compile-time diagnostic. Pin it to 89-virtual (the highest arch without cluster support) so the
-  # deterministic request it issues has no viable backend and the static_assert fires regardless of the preset's archs.
-  if (
-    "${test_src}" MATCHES "test_device_batched_topk_unsupported_arch_fail\\.cu"
-  )
+  # keeps the strict compile-time diagnostic. Its two %PARAM% variants pin their own arch lists (independent of the
+  # preset) so the diagnostic fires regardless: `arch_0` a single pre-SM90 arch (89-virtual, the highest without cluster
+  # support), and `arch_1` a mixed list adding a cluster-capable 90-virtual to show the diagnostic fires when *any*
+  # targeted arch is unsupported.
+  if ("${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_0$")
     set_target_properties(
       ${test_target}
       PROPERTIES CUDA_ARCHITECTURES "89-virtual"
+    )
+  elseif (
+    "${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_1$"
+  )
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual;90-virtual"
     )
   endif()
 
