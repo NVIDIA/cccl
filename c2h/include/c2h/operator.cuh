@@ -5,6 +5,7 @@
 #include <cuda/functional>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
 #include <c2h/custom_type.h>
@@ -99,6 +100,26 @@ inline const c2h::custom_type_t<Policies...> identity_v<cuda::maximum<>, c2h::cu
 template <template <typename> class... Policies>
 inline const c2h::custom_type_t<Policies...> identity_v<cuda::minimum<>, c2h::custom_type_t<Policies...>> =
   cuda::std::numeric_limits<c2h::custom_type_t<Policies...>>::max();
+
+/***********************************************************************************************************************
+ * Test operators
+ **********************************************************************************************************************/
+
+template <class ExpectedOffsetT = void>
+struct incrementer_t
+{
+  int* d_counts;
+
+  template <class OffsetT, class... Args>
+  __device__ void operator()(OffsetT i, Args...)
+  {
+    static_assert(cuda::std::is_void_v<ExpectedOffsetT> || cuda::std::is_same_v<ExpectedOffsetT, OffsetT>,
+                  "ExpectedOffsetT and OffsetT must be the same type");
+    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
+  }
+};
+
+incrementer_t(int*) -> incrementer_t<>;
 
 struct custom_plus : cuda::std::plus<>
 {};
