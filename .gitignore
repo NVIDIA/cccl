@@ -7,7 +7,6 @@ build*/
 .aws
 .config
 _deps/catch2-src/
-.vscode/
 _site/
 .devcontainer/local*
 compile_commands.json
@@ -26,3 +25,7 @@ bench-artifacts/
 CLAUDE.local.md
 .codegraph/*
 .cursor/rules/codegraph.mdc
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
