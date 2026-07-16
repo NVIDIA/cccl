@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/move.h>
+
 #include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -94,9 +94,12 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
     const auto released_handle = comm.release();
 
     // comm contains the null handle after release
-    REQUIRE(comm.native_handle() == NCCL_COMM_NULL);
+    REQUIRE(comm.native_handle() == ncclComm_t{NCCL_COMM_NULL});
     REQUIRE(released_handle == handle);
     //! [nccl_communicator_release]
+
+    // so that we clean up properly
+    [[maybe_unused]] const auto _ = cudax::nccl_communicator{handle};
   }
 
   SECTION("move construction")
@@ -108,7 +111,7 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
     auto destination = cudax::nccl_communicator{cuda::std::move(source)};
 
     // moved-from communicator is now invalid
-    REQUIRE(source.native_handle() == NCCL_COMM_NULL);
+    REQUIRE(source.native_handle() == ncclComm_t{NCCL_COMM_NULL});
     REQUIRE(destination.native_handle() == handle);
     //! [nccl_communicator_move_construction]
   }
@@ -124,7 +127,7 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
 
     destination = cuda::std::move(source);
 
-    REQUIRE(source.native_handle() == NCCL_COMM_NULL);
+    REQUIRE(source.native_handle() == ncclComm_t{NCCL_COMM_NULL});
     REQUIRE(destination.native_handle() == handle);
     //! [nccl_communicator_move_assignment]
   }
