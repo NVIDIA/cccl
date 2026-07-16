@@ -70,7 +70,11 @@ class NoopBuildResult:
 
     def __getattr__(self, name: str) -> Any:
         if name in NoopBuildResult._COMPUTE_METHODS:
-            return lambda *args, **kwargs: _noop_return(self._return_kind)
+
+            def noop_compute(*args, **kwargs):
+                return _noop_return(self._return_kind)
+
+            return noop_compute
         return getattr(self._real_build_result, name)
 
 
@@ -96,12 +100,10 @@ def patch_wrapper_to_skip_native_compute(
     read through it. ``_Select`` owns no build result of its own — it delegates
     to a nested three-way-partition wrapper — so recurse into ``partitioner``.
     """
-    bound = getattr(wrapper, "_bound_build_result", None)
-    if bound is not None:
+    if (bound := getattr(wrapper, "_bound_build_result", None)) is not None:
         wrapper._bound_build_result = NoopBuildResult(bound, return_kind)
 
-    partitioner = getattr(wrapper, "partitioner", None)
-    if partitioner is not None:
+    if (partitioner := getattr(wrapper, "partitioner", None)) is not None:
         patch_wrapper_to_skip_native_compute(partitioner, return_kind)
 
 

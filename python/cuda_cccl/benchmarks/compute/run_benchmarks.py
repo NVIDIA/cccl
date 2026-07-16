@@ -512,15 +512,13 @@ Supported benchmarks:
 
     # Exit non-zero if any benchmark failed so CI (e.g. the --profile smoke gate)
     # catches benchmark rot instead of silently passing on printed warnings.
-    failed = sorted(
-        bench
-        for bench in benchmarks_to_run
-        if any(
-            (all_results.get(bench, {}).get(key) or {}).get("status")
-            not in (None, "ok")
-            for key in ("cpp_status", "py_status")
-        )
-    )
+    failed = []
+    for bench in benchmarks_to_run:
+        results = all_results.get(bench, {})
+        for key in ("cpp_status", "py_status"):
+            if (results.get(key) or {}).get("status") not in (None, "ok"):
+                failed.append(bench)
+                break
     if failed:
         print(f"ERROR: {len(failed)} benchmark(s) failed: {failed}")
         sys.exit(1)
