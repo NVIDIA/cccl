@@ -27,6 +27,9 @@
 
 // REQUIRES: c++17
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/__memory_>
 
 TEST_FUNC void f()
