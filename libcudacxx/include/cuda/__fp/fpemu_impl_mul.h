@@ -69,7 +69,7 @@ namespace cuda::experimental
 //! @param y     Second operand (__fpbits64)
 //! @return      Product as __fpbits64
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_accurate(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dmul(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   uint64_t __a = __x;
   uint64_t __b = __y;
@@ -190,7 +190,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_accurate(__fpbits64 __x, __
   // (+checks for NAN,INF,0)
   __result = __pack<_Acc, _Rm>(__is_sign_c, __exp_c, __man_c_32x2);
   return __result;
-} // __internal_fp64emu_dmul_accurate
+} // __internal_fp64emu_high_dmul
 
 //! @brief Version 2.0 emulation of the double-precision multiplication function.
 //!
@@ -209,7 +209,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_accurate(__fpbits64 __x, __
 //! This version is designed for improved accuracy and performance, and is suitable for both
 //! host and device execution.
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_def(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dmul(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__x);
   __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__y);
@@ -320,7 +320,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_def(__fpbits64 __x, __fpbit
 
   __result = __fpemu_bit_cast<uint64_t>(__result_32x2);
   return __result;
-} // __internal_fp64emu_dmul_def
+} // __internal_fp64emu_mid_dmul
 
 //! @brief Fast double-precision multiplication for FPEMU
 //!
@@ -330,7 +330,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_def(__fpbits64 __x, __fpbit
 //! and mantissa fields of the operands. The multiplication is performed according to the specified rounding mode,
 //! accuracy, range, and engine template parameters.
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_fast(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_low_dmul(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__x);
   __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__y);
@@ -414,7 +414,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul_fast(__fpbits64 __x, __fpbi
 
   __result = __fpemu_bit_cast<uint64_t>(__result_32x2);
   return __result;
-} // __internal_fp64emu_dmul_fast
+} // __internal_fp64emu_low_dmul
 
 //! @brief Pure MUL core on the unpacked representation (unified path).
 //!
@@ -624,23 +624,23 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul(__fpbits64 __x, __fpbits64 
 #else
     if constexpr (__acc_used == fpemu_accuracy::high)
     {
-      return __internal_fp64emu_dmul_accurate<_Rm, __acc_used>(__x, __y);
+      return __internal_fp64emu_high_dmul<_Rm, __acc_used>(__x, __y);
     }
     else if constexpr (__acc_used == fpemu_accuracy::mid)
     {
-      return __internal_fp64emu_dmul_def<_Rm, __acc_used>(__x, __y);
+      return __internal_fp64emu_mid_dmul<_Rm, __acc_used>(__x, __y);
     }
     else if constexpr (__acc_used == fpemu_accuracy::low)
     {
 #  if _CCCL_FP64EMU_DMUL_FP32_FAST_ENABLE == 1
-      return __internal_fp64emu_dmul_fast<_Rm, __acc_used>(__x, __y);
+      return __internal_fp64emu_low_dmul<_Rm, __acc_used>(__x, __y);
 #  else
-      return __internal_fp64emu_dmul_def<_Rm, __acc_used>(__x, __y);
+      return __internal_fp64emu_mid_dmul<_Rm, __acc_used>(__x, __y);
 #  endif
     }
     else
     {
-      return __internal_fp64emu_dmul_def<_Rm, __acc_used>(__x, __y);
+      return __internal_fp64emu_mid_dmul<_Rm, __acc_used>(__x, __y);
     }
 #endif
   }
