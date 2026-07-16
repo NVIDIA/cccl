@@ -455,6 +455,23 @@ class nccl_error final
 
 // ==========================================================================================
 
+[[nodiscard]] _CCCL_HOST_API inline __ncclResult_t __ncclCommDestroyNoThrow(__ncclComm_t __comm) noexcept
+{
+  static auto* const __fn = _CCCL_LOAD_NCCL_SYMBOL(ncclCommDestroy, __ncclResult_t (*)(__ncclComm_t));
+
+  return __fn(__comm);
+}
+
+_CCCL_HOST_API inline void __ncclCommDestroy(__ncclComm_t __comm)
+{
+  if (const auto __ret = ::cuda::experimental::__nccl::__ncclCommDestroyNoThrow(__comm); __ret != __ncclSuccess)
+  {
+    _CCCL_THROW(::cuda::experimental::__nccl::nccl_error, __ret, "Error in ncclCommDestroy", "ncclCommDestroy");
+  }
+}
+
+// ==========================================================================================
+
 [[nodiscard]] _CCCL_HOST_API inline int __ncclCommCount(__ncclComm_t __comm)
 {
   static auto* const __fn = _CCCL_LOAD_NCCL_SYMBOL(ncclCommCount, __ncclResult_t (*)(__ncclComm_t, int*));

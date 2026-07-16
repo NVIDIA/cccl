@@ -722,6 +722,19 @@ public:
   }
 
 private:
+  friend class nccl_communicator;
+
+  _CCCL_HOST_API nccl_communicator_ref(
+    native_handle_type __comm,
+    ::cuda::experimental::logical_device __device,
+    ::cuda::std::int32_t __rank,
+    ::cuda::std::int32_t __size) noexcept
+      : __comm_{__comm}
+      , __device_{::cuda::std::move(__device)}
+      , __rank_{__rank}
+      , __size_{__size}
+  {}
+
   native_handle_type __comm_{};
   ::cuda::experimental::logical_device __device_;
   // Cache these so we can make the accessors noexcept
