@@ -91,7 +91,7 @@ struct BlockPrefetch
   //! @param tile_base Iterator to the first item of the calling block's tile.
   //! @param items_to_prefetch Total number of items in the tile, across all threads of the block — NOT a
   //!   per-thread count. Same semantics as ``BlockLoad::Load``'s ``block_items_end``: pass e.g.
-  //!   ``min(num_remaining, TILE_ITEMS)`` for a partial tile.
+  //!   ``min(num_remaining, TILE_ITEMS)`` for a partial tile. Must be non-negative.
   template <typename It>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Prefetch(It tile_base, int items_to_prefetch)
   {
@@ -99,13 +99,10 @@ struct BlockPrefetch
     {
       // The tile is strided by the linear thread id, which this implementation derives from threadIdx.x alone
       _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "BlockPrefetch requires a one-dimensional thread block");
+      _CCCL_ASSERT(items_to_prefetch >= 0, "items_to_prefetch must be non-negative");
 
-      const int total_bytes = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
+      const int total_bytes = items_to_prefetch * int{sizeof(it_value_t<It>)};
       const auto src_ptr    = ::cuda::ptr_rebind<char>(::cuda::std::to_address(tile_base));
-      if (total_bytes <= 0)
-      {
-        return;
-      }
 
       if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {
