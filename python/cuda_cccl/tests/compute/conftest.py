@@ -137,9 +137,13 @@ def pytest_collection_modifyitems(config, items):
     # would serialize every no_numba test, neutering the sweep.
     #
     # getoption returns the int 1 from the argparse default but a *string* for
-    # CLI-passed values ("2", "auto", "1"), so normalize to str before comparing
-    # -- a bare `> 1` would raise TypeError on the "2" string.
-    running_parallel = str(config.getoption("parallel_threads", 1)) != "1"
+    # CLI-passed values ("2", "auto"). Only bypass for an explicit numeric thread
+    # count > 1 (what CI passes): "auto" is left to inject the guard so a run the
+    # plugin executes single-threaded (e.g. "auto" resolving to 1 logical CPU) is
+    # not mistaken for a parallel run. (A bare `> 1` would also TypeError on the
+    # "2" string.)
+    parallel_threads = str(config.getoption("parallel_threads", 1))
+    running_parallel = parallel_threads.isdigit() and int(parallel_threads) > 1
     for item in items:
         if item.get_closest_marker("no_numba") and not running_parallel:
             if "raise_on_numba_import" not in item.fixturenames:
