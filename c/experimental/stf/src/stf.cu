@@ -340,11 +340,28 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
   {
     cpp_places.push_back(*from_opaque_const(places[i]));
   }
-  exec_place grid = (grid_dims != nullptr)
-                    ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
-                    : make_grid(::std::move(cpp_places));
-  return to_opaque(stf_try_allocate([g = ::std::move(grid)]() mutable {
-    return new exec_place(::std::move(g));
+  const bool shaped = grid_dims != nullptr;
+  const dim4 dims   = shaped ? dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t) : dim4(count, 1, 1, 1);
+  return to_opaque(stf_try_allocate([cpp_places = ::std::move(cpp_places), dims, shaped]() mutable {
+    return new exec_place(shaped ? make_grid(::std::move(cpp_places), dims) : make_grid(::std::move(cpp_places)));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid must not be null");
+  _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    const dim4 dims(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t);
+    return new exec_place(from_opaque_const(grid)->reshape(dims));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(from_opaque_const(grid)->collapse_axes(first_axis, last_axis));
   }));
 }
 

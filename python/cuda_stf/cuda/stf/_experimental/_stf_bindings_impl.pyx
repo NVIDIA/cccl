@@ -138,6 +138,8 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     # Grid factories
     stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
     stf_exec_place_handle stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims)
+    stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims)
+    stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis)
     void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
 
     # exec_place_scope
@@ -1247,6 +1249,53 @@ cdef class exec_place:
 
     def __getitem__(self, size_t idx):
         return self.get_place(idx)
+
+    def reshape(self, grid_dims):
+        """Return a grid with new dimensions and the same linear place order.
+
+        ``math.prod(grid_dims)`` must equal :attr:`size`, and every extent
+        must be positive. Reshaping changes only the coordinate system; it
+        does not reorder, replicate, or remove places.
+        """
+        if len(grid_dims) < 1 or len(grid_dims) > 4:
+            raise ValueError("grid_dims must contain between 1 and 4 extents")
+        cdef stf_dim4 dims
+        dims.x = int(grid_dims[0])
+        dims.y = int(grid_dims[1]) if len(grid_dims) > 1 else 1
+        dims.z = int(grid_dims[2]) if len(grid_dims) > 2 else 1
+        dims.t = int(grid_dims[3]) if len(grid_dims) > 3 else 1
+        cdef stf_exec_place_handle h = stf_exec_place_grid_reshape(self._h, &dims)
+        if h == NULL:
+            raise ValueError(
+                f"cannot reshape a grid of {self.size} places to {tuple(grid_dims)!r}"
+            )
+        cdef exec_place_grid result = exec_place_grid.__new__(exec_place_grid)
+        result._h = h
+        return result
+
+    def collapse_axes(self, int first_axis, int last_axis):
+        """Collapse a contiguous inclusive range of grid axes.
+
+        The selected extents are replaced by their product. Later axes shift
+        left, trailing extents become one, and linear place order is
+        preserved.
+        """
+        if first_axis < 0 or last_axis < 0:
+            raise ValueError(
+                f"invalid axis range [{first_axis}, {last_axis}]; expected "
+                "0 <= first_axis <= last_axis < 4"
+            )
+        cdef stf_exec_place_handle h = stf_exec_place_grid_collapse_axes(
+            self._h, first_axis, last_axis
+        )
+        if h == NULL:
+            raise ValueError(
+                f"invalid axis range [{first_axis}, {last_axis}]; expected "
+                "0 <= first_axis <= last_axis < 4"
+            )
+        cdef exec_place_grid result = exec_place_grid.__new__(exec_place_grid)
+        result._h = h
+        return result
 
 
 cdef class exec_place_grid(exec_place):

@@ -509,6 +509,73 @@ C2H_TEST("exec_place_get_place on grid", "[places][accessor][grid]")
   stf_exec_place_grid_destroy(grid);
 }
 
+C2H_TEST("exec place grid reshape and collapse preserve linear order", "[places][grid][reshape]")
+{
+  constexpr size_t nplaces = 24;
+  stf_exec_place_handle places[nplaces];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = (i % 2 == 0) ? stf_exec_place_host() : stf_exec_place_device(0);
+  }
+
+  const stf_dim4 original_dims     = {2, 3, 4, 1};
+  const stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, &original_dims);
+  REQUIRE(grid != nullptr);
+  const stf_dim4 invalid_grid_dims = {2, 2, 1, 1};
+  REQUIRE(stf_exec_place_grid_create(places, nplaces, &invalid_grid_dims) == nullptr);
+  for (const auto place : places)
+  {
+    stf_exec_place_destroy(place);
+  }
+
+  const stf_dim4 reshaped_dims         = {6, 4, 1, 1};
+  const stf_exec_place_handle reshaped = stf_exec_place_grid_reshape(grid, &reshaped_dims);
+  REQUIRE(reshaped != nullptr);
+
+  const stf_exec_place_handle collapsed = stf_exec_place_grid_collapse_axes(grid, 0, 1);
+  REQUIRE(collapsed != nullptr);
+
+  stf_dim4 actual_dims;
+  stf_exec_place_get_dims(reshaped, &actual_dims);
+  REQUIRE(actual_dims.x == 6);
+  REQUIRE(actual_dims.y == 4);
+  REQUIRE(actual_dims.z == 1);
+  REQUIRE(actual_dims.t == 1);
+  stf_exec_place_get_dims(collapsed, &actual_dims);
+  REQUIRE(actual_dims.x == 6);
+  REQUIRE(actual_dims.y == 4);
+  REQUIRE(actual_dims.z == 1);
+  REQUIRE(actual_dims.t == 1);
+
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    const stf_exec_place_handle original_place  = stf_exec_place_get_place(grid, i);
+    const stf_exec_place_handle reshaped_place  = stf_exec_place_get_place(reshaped, i);
+    const stf_exec_place_handle collapsed_place = stf_exec_place_get_place(collapsed, i);
+    REQUIRE(original_place != nullptr);
+    REQUIRE(reshaped_place != nullptr);
+    REQUIRE(collapsed_place != nullptr);
+    REQUIRE(stf_exec_place_is_host(original_place) == (i % 2 == 0));
+    REQUIRE(stf_exec_place_is_host(reshaped_place) == stf_exec_place_is_host(original_place));
+    REQUIRE(stf_exec_place_is_host(collapsed_place) == stf_exec_place_is_host(original_place));
+    stf_exec_place_destroy(collapsed_place);
+    stf_exec_place_destroy(reshaped_place);
+    stf_exec_place_destroy(original_place);
+  }
+
+  stf_exec_place_grid_destroy(grid);
+  REQUIRE(stf_exec_place_size(reshaped) == nplaces);
+  REQUIRE(stf_exec_place_size(collapsed) == nplaces);
+
+  const stf_dim4 invalid_dims = {2, 2, 1, 1};
+  REQUIRE(stf_exec_place_grid_reshape(reshaped, &invalid_dims) == nullptr);
+  REQUIRE(stf_exec_place_grid_collapse_axes(reshaped, 2, 1) == nullptr);
+  REQUIRE(stf_exec_place_grid_collapse_axes(reshaped, 0, 4) == nullptr);
+
+  stf_exec_place_grid_destroy(collapsed);
+  stf_exec_place_grid_destroy(reshaped);
+}
+
 C2H_TEST("exec_place_get_place on scalar", "[places][accessor]")
 {
   stf_exec_place_handle dev0 = stf_exec_place_device(0);

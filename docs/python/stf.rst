@@ -190,6 +190,20 @@ Places
   argument to ``ctx.task(...)``: ``exec_place.device(device_id)`` or ``exec_place.host()``.
   Example: ``ctx.task(exec_place.device(0), lX.read(), lY.rw())``.
 
+  ``exec_place_grid.create(places, grid_dims=...)`` arranges places into a
+  dimension-0-fastest processor grid. Existing grids can be viewed with new
+  dimensions without reordering, replicating, or removing places::
+
+      grid = exec_place_grid.create(places, grid_dims=(2, 3, 4))
+      flat = grid.reshape((24,))
+      grid_6x4 = grid.collapse_axes(0, 1)
+
+  ``reshape()`` requires the new extents to have the same product as
+  ``grid.size``. ``collapse_axes(first, last)`` merges a contiguous inclusive
+  axis range; for example, collapsing axes 0 and 1 above produces dimensions
+  ``(6, 4, 1, 1)``. Both return independently owned grid wrappers with the same
+  linear place order.
+
 .. _stf-data-place:
 
 * **Data place** (``data_place``) -- where logical data lives: ``data_place.affine()``
