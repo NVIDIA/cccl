@@ -126,9 +126,9 @@ struct cached_localized_array
  * @brief Cached localized array whose placement is described by a
  *        cute_partition value.
  *
- * Unlike partition_fn_t, a cute_partition is stateful. Keep its value with
- * the cached allocation so independently constructed equivalent composite
- * places can reuse the same VMM mapping.
+ * A cute_partition's ownership mapping is defined by the object value, not
+ * just its type. Keep that value with the cached allocation so independently
+ * constructed equivalent composite places can reuse the same VMM mapping.
  */
 struct cached_cute_localized_array
 {
@@ -223,8 +223,7 @@ public:
     EXPECT(place.is_composite());
     EXPECT(a.get());
 
-    if (const auto* cute_place =
-          dynamic_cast<const ::cuda::experimental::places::data_place_cute_composite*>(place.get_impl().get()))
+    if (const auto* cute_place = as_cute_composite(place))
     {
       auto entry = ::std::make_unique<cached_cute_localized_array>(
         place.affine_exec_place(), cute_place->get_partition(), total_size, elem_size, data_dims, mv(a));
@@ -244,8 +243,7 @@ public:
   {
     EXPECT(place.is_composite());
 
-    if (const auto* cute_place =
-          dynamic_cast<const ::cuda::experimental::places::data_place_cute_composite*>(place.get_impl().get()))
+    if (const auto* cute_place = as_cute_composite(place))
     {
       auto entry = cute_partition_cache.get(
         place.affine_exec_place(),
@@ -270,6 +268,13 @@ public:
   }
 
 private:
+  using cute_composite_place = ::cuda::experimental::places::data_place_cute_composite;
+
+  static const cute_composite_place* as_cute_composite(const data_place& place)
+  {
+    return dynamic_cast<const cute_composite_place*>(place.get_impl().get());
+  }
+
   linear_pool<cached_localized_array> partition_fn_cache;
   linear_pool<cached_cute_localized_array> cute_partition_cache;
 };
