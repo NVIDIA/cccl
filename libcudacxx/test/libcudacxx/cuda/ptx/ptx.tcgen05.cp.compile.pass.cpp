@@ -15,7 +15,7 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
-#include "generated/tcgen05_alloc_cta_group_1.h"
+#include "generated/tcgen05_cp.h"
 
 int main(int, char**)
 {
