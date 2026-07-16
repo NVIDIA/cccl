@@ -6,11 +6,6 @@ defaults:
 
 on:
   workflow_dispatch:
-    inputs:
-      run_id:
-        description: "Workflow run ID to summarize. Defaults to the latest failed run on this branch."
-        required: false
-        type: string
   push:
     branches:
       - "pull-request/[0-9]+"
@@ -20,278 +15,113 @@ permissions:
   contents: read
 
 jobs:
-  inference-hub-log-summary:
-    name: NVIDIA Inference Hub log summary
+  intentional-failure:
+    name: Intentional failure
     runs-on: ubuntu-latest
+    steps:
+      - name: Fail on purpose
+        run: |
+          echo "This job fails on purpose to test NVIDIA Inference Hub log summarization."
+          echo "CCCL_INFERENCE_SMOKE_FAILURE: pretend a CUDA compile failed while building cub.test.example."
+          echo "::error file=ci/smoke/inference_hub,line=1::Intentional smoke-test failure for log summarization."
+          exit 42
+
+  summarize-log:
+    name: Summarize failed log with NVIDIA Inference Hub
+    runs-on: ubuntu-latest
+    needs: intentional-failure
+    if: ${{ always() && needs.intentional-failure.result == 'failure' }}
     env:
       INFERENCE_BASE_URL: https://inference-api.nvidia.com/v1
-      DEFAULT_INFERENCE_MODEL: nvidia/meta/llama-3.3-70b-instruct
-      LOG_SUMMARY_DIR: gha-log-summary
+      INFERENCE_MODEL: ${{ vars.INFERENCE_MODEL || 'nvidia/meta/llama-3.3-70b-instruct' }}
     steps:
-      - name: Collect failed workflow log
-        id: collect-log
+      - name: Fetch failed job log
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_RUN_ID: ${{ inputs.run_id }}
         run: |
-          mkdir -p "${LOG_SUMMARY_DIR}"
-
-          run_id="${REQUESTED_RUN_ID:-}"
-          if [[ -z "${run_id}" ]]; then
-            run_id="$(
-              gh run list \
-                --repo "${GITHUB_REPOSITORY}" \
-                --branch "${GITHUB_REF_NAME}" \
-                --status completed \
-                --limit 30 \
-                --json databaseId,conclusion \
-                --jq '[.[] | select(.conclusion == "failure")][0].databaseId // ""'
-            )"
-          fi
-
-          if [[ -z "${run_id}" ]]; then
-            {
-              echo "No failed workflow run was found on branch '${GITHUB_REF_NAME}'."
-              echo "Run this workflow manually with a workflow run ID to summarize a specific failure."
-            } >&2
-            exit 1
-          fi
-
-          echo "${run_id}" > "${LOG_SUMMARY_DIR}/run-id.txt"
-          echo "run_id=${run_id}" >> "${GITHUB_OUTPUT}"
-
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" \
-            > "${LOG_SUMMARY_DIR}/run.json"
-
-          if ! gh run view "${run_id}" \
+          # Give GitHub a moment to make the failed job log available.
+          sleep 10
+          gh run view "${GITHUB_RUN_ID}" \
             --repo "${GITHUB_REPOSITORY}" \
             --log-failed \
-            > "${LOG_SUMMARY_DIR}/failed-run.log"; then
-            echo "gh run view --log-failed failed; downloading the full workflow log archive instead." >&2
-            gh api \
-              -H "Accept: application/vnd.github+json" \
-              "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/logs" \
-              > "${LOG_SUMMARY_DIR}/run-logs.zip"
-            unzip -q "${LOG_SUMMARY_DIR}/run-logs.zip" -d "${LOG_SUMMARY_DIR}/logs"
-            find "${LOG_SUMMARY_DIR}/logs" -type f -print0 \
-              | sort -z \
-              | xargs -0 awk 'FNR == 1 { print "\n===== " FILENAME " =====" } { print }' \
-              > "${LOG_SUMMARY_DIR}/failed-run.log"
-          fi
+            > failed-job.log
+          cat failed-job.log
 
-          if [[ ! -s "${LOG_SUMMARY_DIR}/failed-run.log" ]]; then
-            echo "Collected log is empty for workflow run ${run_id}." >&2
-            exit 1
-          fi
-
-      - name: Upload failed workflow log
-        uses: actions/upload-artifact@v4
-        with:
-          name: failed-workflow-log-${{ steps.collect-log.outputs.run_id }}
-          path: |
-            ${{ env.LOG_SUMMARY_DIR }}/failed-run.log
-            ${{ env.LOG_SUMMARY_DIR }}/run-id.txt
-            ${{ env.LOG_SUMMARY_DIR }}/run.json
-          if-no-files-found: error
-
-      - name: Ask NVIDIA Inference Hub to summarize the log
+      - name: Summarize failed job log
         env:
           NVINFERENCE_API_KEY: ${{ secrets.NVINFERENCE_API_KEY }}
-          INFERENCE_MODEL: ${{ vars.INFERENCE_MODEL }}
         run: |
           node <<'NODE'
           const fs = require("node:fs");
-          const path = require("node:path");
 
           const {
-            DEFAULT_INFERENCE_MODEL,
-            GITHUB_STEP_SUMMARY,
             INFERENCE_BASE_URL,
             INFERENCE_MODEL,
-            LOG_SUMMARY_DIR,
             NVINFERENCE_API_KEY,
           } = process.env;
-
-          const baseUrl = (INFERENCE_BASE_URL || "https://inference-api.nvidia.com/v1").replace(/\/+$/, "");
-          const model = (INFERENCE_MODEL || DEFAULT_INFERENCE_MODEL || "").trim();
-          const logSummaryDir = LOG_SUMMARY_DIR || "gha-log-summary";
-          const logPath = path.join(logSummaryDir, "failed-run.log");
-          const runPath = path.join(logSummaryDir, "run.json");
-          const summaryPath = path.join(logSummaryDir, "inference-summary.md");
-          const maxLogChars = 120000;
 
           if (!NVINFERENCE_API_KEY) {
             throw new Error("NVINFERENCE_API_KEY secret is not set.");
           }
 
-          if (!model) {
-            throw new Error("No Inference Hub model configured.");
-          }
+          const baseUrl = (INFERENCE_BASE_URL || "https://inference-api.nvidia.com/v1").replace(/\/+$/, "");
+          const model = INFERENCE_MODEL || "nvidia/meta/llama-3.3-70b-instruct";
+          const log = fs.readFileSync("failed-job.log", "utf8").slice(-60000);
 
-          function summarizeBody(raw) {
-            if (!raw) {
-              return "<empty response body>";
-            }
-
-            try {
-              return JSON.stringify(JSON.parse(raw), null, 2);
-            } catch {
-              return raw;
-            }
-          }
-
-          async function inferenceRequest(path, options = {}) {
-            const response = await fetch(`${baseUrl}${path}`, {
-              ...options,
+          async function main() {
+            const response = await fetch(`${baseUrl}/chat/completions`, {
+              method: "POST",
               headers: {
                 Authorization: `Bearer ${NVINFERENCE_API_KEY}`,
                 "Content-Type": "application/json",
-                ...(options.headers || {}),
               },
-            });
-
-            const raw = await response.text();
-            if (!response.ok) {
-              throw new Error(
-                `Inference Hub ${path} failed with HTTP ${response.status}:\n${summarizeBody(raw)}`
-              );
-            }
-
-            return raw ? JSON.parse(raw) : {};
-          }
-
-          function modelIdsFromList(data) {
-            const models = Array.isArray(data.data)
-              ? data.data
-              : Array.isArray(data.models)
-                ? data.models
-                : [];
-
-            return models
-              .map((entry) => (typeof entry === "string" ? entry : entry.id))
-              .filter(Boolean);
-          }
-
-          function truncateMiddle(text, maxChars) {
-            if (text.length <= maxChars) {
-              return text;
-            }
-
-            const headChars = Math.floor(maxChars * 0.55);
-            const tailChars = maxChars - headChars;
-            const omitted = text.length - maxChars;
-
-            return [
-              text.slice(0, headChars),
-              "",
-              `... omitted ${omitted} characters from the middle of the log ...`,
-              "",
-              text.slice(-tailChars),
-            ].join("\n");
-          }
-
-          function outputTextFromChatCompletion(data) {
-            return (data.choices || [])
-              .map((choice) => choice.message?.content || choice.text || "")
-              .filter(Boolean)
-              .join("\n")
-              .trim();
-          }
-
-          function runMetadata(run) {
-            return [
-              `Run ID: ${run.id || run.database_id || "unknown"}`,
-              `Workflow: ${run.name || "unknown"}`,
-              `Conclusion: ${run.conclusion || "unknown"}`,
-              `Branch: ${run.head_branch || "unknown"}`,
-              `SHA: ${run.head_sha || "unknown"}`,
-              `URL: ${run.html_url || "unknown"}`,
-            ].join("\n");
-          }
-
-          async function main() {
-            const models = modelIdsFromList(await inferenceRequest("/models"));
-            if (!models.includes(model)) {
-              throw new Error(
-                [
-                  `Configured model '${model}' is not listed for this key.`,
-                  `The key can see ${models.length} model(s).`,
-                  `First listed models: ${models.slice(0, 10).join(", ")}`,
-                  "Set the INFERENCE_MODEL repository variable to one of the listed chat models if needed.",
-                ].join("\n")
-              );
-            }
-
-            const run = JSON.parse(fs.readFileSync(runPath, "utf8"));
-            const rawLog = fs.readFileSync(logPath, "utf8");
-            const log = truncateMiddle(rawLog, maxLogChars);
-
-            const prompt = [
-              "Summarize this GitHub Actions failure for a CCCL developer.",
-              "",
-              "Focus on:",
-              "- the most likely root cause",
-              "- the exact failing job/step/test/error",
-              "- the first file, command, or dependency to inspect",
-              "- whether this looks like CI infrastructure, credentials, environment, or product code",
-              "- concise next actions",
-              "",
-              "Avoid generic advice. If the log is inconclusive, say what evidence is missing.",
-              "",
-              "Workflow metadata:",
-              runMetadata(run),
-              "",
-              "Failed log:",
-              "```text",
-              log,
-              "```",
-            ].join("\n");
-
-            const data = await inferenceRequest("/chat/completions", {
-              method: "POST",
               body: JSON.stringify({
                 model,
                 messages: [
                   {
                     role: "system",
-                    content: "You are a terse, accurate CI failure triage assistant.",
+                    content: "You summarize GitHub Actions failures tersely and accurately.",
                   },
                   {
                     role: "user",
-                    content: prompt,
+                    content: [
+                      "Summarize this failed GitHub Actions log.",
+                      "Include the root cause, failing step, and next action.",
+                      "",
+                      "```text",
+                      log,
+                      "```",
+                    ].join("\n"),
                   },
                 ],
                 temperature: 0.2,
-                max_tokens: 1200,
+                max_tokens: 600,
                 stream: false,
               }),
             });
 
-            const summary = outputTextFromChatCompletion(data);
+            const raw = await response.text();
+            if (!response.ok) {
+              console.error(raw);
+              throw new Error(`Inference Hub failed with HTTP ${response.status}.`);
+            }
+
+            const data = JSON.parse(raw);
+            const summary = (data.choices || [])
+              .map((choice) => choice.message?.content || choice.text || "")
+              .filter(Boolean)
+              .join("\n")
+              .trim();
+
             if (!summary) {
               throw new Error("Inference Hub returned an empty summary.");
             }
 
-            fs.writeFileSync(summaryPath, `${summary}\n`);
+            console.log("");
+            console.log("===== NVIDIA Inference Hub Summary =====");
+            console.log(`Model: ${model}`);
+            console.log("");
             console.log(summary);
-
-            if (GITHUB_STEP_SUMMARY) {
-              fs.appendFileSync(
-                GITHUB_STEP_SUMMARY,
-                [
-                  "## NVIDIA Inference Hub Log Summary",
-                  "",
-                  `Run: [${run.id || run.database_id || "unknown"}](${run.html_url || ""})`,
-                  `Model: \`${model}\``,
-                  `Log artifact: \`failed-workflow-log-${run.id || run.database_id || "unknown"}\``,
-                  "",
-                  "### Summary",
-                  "",
-                  summary,
-                  "",
-                ].join("\n")
-              );
-            }
           }
 
           main().catch((error) => {
@@ -299,10 +129,3 @@ jobs:
             process.exit(1);
           });
           NODE
-
-      - name: Upload Inference Hub summary
-        uses: actions/upload-artifact@v4
-        with:
-          name: inference-log-summary-${{ steps.collect-log.outputs.run_id }}
-          path: ${{ env.LOG_SUMMARY_DIR }}/inference-summary.md
-          if-no-files-found: error
