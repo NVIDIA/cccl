@@ -30,7 +30,7 @@ fi
 # full cu* extras because those pull in numba/numba-cuda.
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
-python -m pip install pytest pytest-xdist pytest-run-parallel
+python -m pip install pytest pytest-xdist
 
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 -v compute/test_no_numba.py
@@ -57,6 +57,10 @@ if [[ "${py_version}" == "3.14t" ]]; then
   # kernels and stays reproducible across runners, unlike =auto (the runner's
   # logical-core count).
   #
+  # pytest-run-parallel is only used by this sweep, so install it on the 3.14t
+  # path rather than for every minimal (e.g. non-free-threaded 3.14) run.
+  python -m pip install pytest-run-parallel
+
   # Fail fast if the interpreter is not actually GIL-free (wrong build /
   # PYTHON_GIL=1): pytest-run-parallel does NOT catch a GIL that is enabled from
   # the start -- it would run threads GIL-serialized and pass vacuously. (A GIL
