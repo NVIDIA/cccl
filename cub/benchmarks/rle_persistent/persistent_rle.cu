@@ -262,47 +262,18 @@ __device__ __forceinline__ void load_tile_keys(
   if (lane_id == 0)
   {
     // if it is not first tile, we overcopy 16B to the left to get last key from last tile
-    const unsigned nbytes = (unsigned) (((size_t) tile_len + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
-    if (alignof(KeyT) < 16 && base_skip != 0)
-    {
-      const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
-      ptx::cp_async_bulk_ignore_oob(
-        ptx::space_shared,
-        ptx::space_global,
-        slot + (first_tile ? kSlotPad : 0),
-        (const KeyT*) ((const char*) (d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad)) - base_skip),
-        span_bytes,
-        first_tile ? base_skip : 0u,
-        last_tile ? (span_bytes - base_skip - nbytes) : 0u,
-        full_bar);
-    }
-    // for every tile except the last...
-    else if (tile_len == kTileSize)
-    {
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, nbytes);
-      ptx::cp_async_bulk(
-        ptx::space_shared,
-        ptx::space_global,
-        slot + (first_tile ? kSlotPad : 0),
-        d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
-        nbytes,
-        full_bar);
-    }
-    else
-    {
-      const unsigned span_bytes = (nbytes + 15u) & ~15u;
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
-      ptx::cp_async_bulk_ignore_oob(
-        ptx::space_shared,
-        ptx::space_global,
-        slot + (first_tile ? kSlotPad : 0),
-        d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
-        span_bytes,
-        0u,
-        span_bytes - nbytes,
-        full_bar);
-    }
+    const unsigned nbytes     = (unsigned) (((size_t) tile_len + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
+    const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
+    ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
+    ptx::cp_async_bulk_ignore_oob(
+      ptx::space_shared,
+      ptx::space_global,
+      slot + (first_tile ? kSlotPad : 0),
+      (const KeyT*) ((const char*) (d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad)) - base_skip),
+      span_bytes,
+      first_tile ? base_skip : 0u,
+      last_tile ? (span_bytes - base_skip - nbytes) : 0u,
+      full_bar);
   }
   __syncwarp();
 }
