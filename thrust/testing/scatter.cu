@@ -5,6 +5,8 @@
 #include <thrust/scatter.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -190,9 +192,9 @@ void test_scatter_if(const size_t n)
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
   thrust::scatter_if(
-    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), is_even_scatter_if<unsigned int>());
+    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), cuda::__is_even<unsigned int>());
   thrust::scatter_if(
-    d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), is_even_scatter_if<unsigned int>());
+    d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), cuda::__is_even<unsigned int>());
 
   REQUIRE(h_output == d_output);
 }
@@ -221,14 +223,14 @@ void test_scatter_if_to_discard_iterator(const size_t n)
     h_map.begin(),
     h_map.begin(),
     thrust::make_discard_iterator(),
-    is_even_scatter_if<unsigned int>());
+    cuda::__is_even<unsigned int>());
   thrust::scatter_if(
     d_input.begin(),
     d_input.end(),
     d_map.begin(),
     d_map.begin(),
     thrust::make_discard_iterator(),
-    is_even_scatter_if<unsigned int>());
+    cuda::__is_even<unsigned int>());
 }
 DECLARE_VARIABLE_UNITTEST(test_scatter_if_to_discard_iterator);
 

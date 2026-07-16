@@ -8,23 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/functional>
 #include <cuda/std/algorithm.find_if.h>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-struct find_if_is_even
-{
-  TEST_FUNC constexpr bool operator()(int x) const
-  {
-    return x % 2 == 0;
-  }
-};
-
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3};
-  assert(*cuda::std::find_if(a, a + 3, find_if_is_even{}) == 2);
+  assert(*cuda::std::find_if(a, a + 3, cuda::__is_even<int>{}) == 2);
 
   return true;
 }
