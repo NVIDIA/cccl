@@ -651,7 +651,7 @@ public:
    * @param[in] dims New grid dimensions
    * @return A grid over the same places with dimensions @p dims
    */
-  [[nodiscard]] exec_place reshape(const dim4& dims) const;
+  [[nodiscard]] _CCCL_HOST_API exec_place reshape(const dim4& dims) const;
 
   /**
    * @brief Collapse a contiguous inclusive range of grid axes
@@ -664,7 +664,7 @@ public:
    * @param[in] last_axis Last axis to collapse (inclusive)
    * @return A grid over the same places with the selected axes collapsed
    */
-  [[nodiscard]] exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
 
   // ===== Activation =====
 
@@ -1541,7 +1541,7 @@ inline exec_place make_grid(::std::vector<exec_place> places)
   return make_grid(mv(places), dim4(n, 1, 1, 1));
 }
 
-inline exec_place exec_place::reshape(const dim4& dims) const
+_CCCL_HOST_API inline exec_place exec_place::reshape(const dim4& dims) const
 {
   ::std::vector<exec_place> places;
   places.reserve(size());
@@ -1552,7 +1552,7 @@ inline exec_place exec_place::reshape(const dim4& dims) const
   return ::cuda::experimental::places::make_grid(::cuda::experimental::stf::mv(places), dims);
 }
 
-inline exec_place exec_place::collapse_axes(const size_t first_axis, const size_t last_axis) const
+_CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_axis, const size_t last_axis) const
 {
   if (first_axis > last_axis || last_axis > 3)
   {
