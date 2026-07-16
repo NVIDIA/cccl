@@ -85,11 +85,17 @@ inline cudaError_t persistent_rle_encode(
   {
     error = cudaDeviceGetAttribute(&smem_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, device);
   }
+  cudaFuncAttributes kernel_attr{};
+  if (error == cudaSuccess)
+  {
+    error = cudaFuncGetAttributes(&kernel_attr, persistent_rle<KeyT, LenT, NumRunsT, OffT, Config>);
+  }
   if (error != cudaSuccess)
   {
     return error;
   }
-  if (!persistent_rle_gate(tiles, d_keys, d_temp_storage, cc_major, smem_optin, Config::kDynSmem))
+  if (!persistent_rle_gate(
+        tiles, d_keys, d_temp_storage, cc_major, smem_optin, Config::kDynSmem + kernel_attr.sharedSizeBytes))
   {
     if (route_taken)
     {
@@ -102,11 +108,18 @@ inline cudaError_t persistent_rle_encode(
   {
     *route_taken = RleRoute::persistent;
   }
-  auto* states          = (TilePartialStateT*) d_temp_storage;
+  auto* states = (TilePartialStateT*) d_temp_storage;
+  error        = cudaFuncSetAttribute(persistent_rle<KeyT, LenT, NumRunsT, OffT, Config>,
+                               cudaFuncAttributeMaxDynamicSharedMemorySize,
+                               (int) Config::kDynSmem);
+  if (error != cudaSuccess)
+  {
+    return error;
+  }
   const int init_blocks = (int) ((tiles + 255) / 256);
   rle_init_states<<<init_blocks, 256, 0, stream>>>(states, tiles);
-  error = persistent_rle_launch<KeyT, LenT, NumRunsT, OffT, Config>(
-    d_keys, d_unique, d_counts, d_num_runs, states, num_items, (int) tiles, stream);
-  return error;
+  persistent_rle<KeyT, LenT, NumRunsT, OffT, Config><<<(int) tiles, Config::kNumThreads, Config::kDynSmem, stream>>>(
+    d_keys, d_unique, d_counts, d_num_runs, states, num_items, (int) tiles);
+  return cudaPeekAtLastError();
 }
 } // namespace rle_impl
