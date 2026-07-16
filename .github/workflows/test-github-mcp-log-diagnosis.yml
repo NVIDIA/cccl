@@ -1,12 +1,9 @@
 name: Test GitHub MCP Log Diagnosis
 
 on:
-  workflow_dispatch:
-    inputs:
-      model:
-        description: "OpenAI model to use for the smoke test."
-        required: false
-        default: "gpt-5-mini"
+  push:
+    branches:
+      - "pull-request/[0-9]+"
 
 permissions:
   actions: read
@@ -35,7 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: ${{ inputs.model }}
+          OPENAI_MODEL: "gpt-5-mini"
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
