@@ -633,7 +633,7 @@ splits whatever shape it is handed, knows nothing about the tensor it will be
 applied to, and always dispatches along the outermost dimension. A
 *structured partition* (``cute_partition``) is the complementary tool: it
 describes, dimension by dimension, how **one specific tensor** maps onto a
-grid of places -- in the spirit of JAX's ``PartitionSpec``.
+grid of places.
 
 .. code:: c++
 

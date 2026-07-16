@@ -77,7 +77,7 @@ struct layout_leaf
 };
 
 /**
- * @brief Per-dimension entry of a JAX-like partition specification
+ * @brief Available policies for a tensor dimension in a structured partition
  *
  * Describes how one tensor dimension maps onto the grid: not at all (whole),
  * or distributed over one grid axis with a named policy.
@@ -91,7 +91,7 @@ enum class dim_policy
 };
 
 /**
- * @brief One entry of a JAX-like partition specification (see dim_policy)
+ * @brief Partition specification for one tensor dimension (see dim_policy)
  */
 struct dim_spec
 {
@@ -104,8 +104,8 @@ struct dim_spec
  * @brief A structured description of a tensor partition over a grid of places
  *
  * See the file-level documentation for the representation. Construct either
- * directly from leaves (expert form) or through make_partition() (JAX-like
- * per-dimension specification).
+ * directly from leaves (expert form) or through make_partition()
+ * (per-dimension specification).
  */
 class cute_partition
 {
@@ -431,7 +431,7 @@ private:
 };
 
 /**
- * @brief Build a partition from a JAX-like per-dimension specification
+ * @brief Build a partition from a per-dimension specification
  *
  * Each entry of `spec` describes how the corresponding tensor dimension maps
  * onto the grid ("blocked over axis 0", ...). Split dimensions are padded up

@@ -12,7 +12,7 @@
  * @file
  *
  * @brief AXPY over data distributed across the machine's devices with a
- * JAX-like partition specification
+ * structured partition specification
  *
  * The partition ("dimension 0, blocked over the grid of devices") is
  * expressed once as a cute_partition. The same description is then used to:
@@ -66,7 +66,7 @@ int main()
 
   const size_t N = 4 * 1024 * 1024;
 
-  // "Dimension 0, blocked over grid axis 0" - the JAX-like specification
+  // "Dimension 0, blocked over grid axis 0" - the per-dimension specification
   auto part = ::cuda::experimental::places::make_partition(
     dim4(N), {::cuda::experimental::places::dim_spec{dim_policy::blocked, 0, 0}}, all_devs.get_dims());
 
