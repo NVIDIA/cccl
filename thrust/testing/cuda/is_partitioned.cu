@@ -104,17 +104,23 @@ void TestIsPartitionedCudaStreams()
 }
 DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
 
+struct is_even_no_const
+{
+  __host__ __device__ bool operator()(int x)
+  {
+    return (x & 1) == 0;
+  }
+};
+
 void TestIsPartitionedWithNonConstPredicate()
 {
   thrust::device_vector<int> partitioned   = {0, 2, 4, 1, 3, 5};
   thrust::device_vector<int> unpartitioned = {0, 1, 2, 3};
 
   ASSERT_EQUAL_QUIET(
-    true,
-    thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), cuda::__is_even_no_const<int>{}));
+    true, thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), is_even_no_const{}));
 
-  ASSERT_EQUAL_QUIET(false,
-                     thrust::is_partitioned(
-                       thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), cuda::__is_even_no_const<int>{}));
+  ASSERT_EQUAL_QUIET(
+    false, thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_no_const{}));
 }
 DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);
