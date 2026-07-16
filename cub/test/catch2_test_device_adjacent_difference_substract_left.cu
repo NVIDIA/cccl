@@ -271,6 +271,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy accepts cuda::device_buffer
   const auto output_it = thrust::raw_pointer_cast(output.data());
 
   adjacent_difference_subtract_left_copy(input.begin(), output_it, input.size(), cuda::std::minus<>{}, stream.get());
+  stream.sync();
 
   const c2h::host_vector<type> expected{2, 3, 4, 5, 6};
   REQUIRE(output == expected);
