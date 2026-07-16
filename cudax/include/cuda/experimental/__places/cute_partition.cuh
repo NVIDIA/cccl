@@ -451,48 +451,62 @@ public:
   //! Structural comparison (used for data place ordering)
   int cmp(const cute_partition& o) const
   {
-    auto cmp_sizes = [](size_t a, size_t b) {
+    const auto cmp_sizes = [](size_t a, size_t b) {
       return (a < b) ? -1 : (a > b) ? 1 : 0;
     };
-    if (int c = cmp_sizes(padded_dims_.size(), o.padded_dims_.size()))
+    const auto cmp_dims = [&cmp_sizes](const dim4& a, const dim4& b) {
+      for (size_t axis = 0; axis < 4; axis++)
+      {
+        if (const int c = cmp_sizes(a.get(axis), b.get(axis)))
+        {
+          return c;
+        }
+      }
+      return 0;
+    };
+    if (const int c = cmp_dims(padded_dims_, o.padded_dims_))
     {
       return c;
     }
-    if (int c = cmp_sizes(true_dims_.size(), o.true_dims_.size()))
+    if (const int c = cmp_dims(true_dims_, o.true_dims_))
     {
       return c;
     }
-    if (int c = cmp_sizes(num_place_leaves_, o.num_place_leaves_))
+    if (const int c = cmp_dims(grid_dims_, o.grid_dims_))
     {
       return c;
     }
-    if (int c = cmp_sizes(num_local_leaves_, o.num_local_leaves_))
+    if (const int c = cmp_sizes(num_place_leaves_, o.num_place_leaves_))
+    {
+      return c;
+    }
+    if (const int c = cmp_sizes(num_local_leaves_, o.num_local_leaves_))
     {
       return c;
     }
     for (size_t k = 0; k < num_place_leaves_; k++)
     {
-      if (int c = cmp_sizes(place_leaves_[k].extent, o.place_leaves_[k].extent))
+      if (const int c = cmp_sizes(place_leaves_[k].extent, o.place_leaves_[k].extent))
       {
         return c;
       }
-      if (int c =
+      if (const int c =
             cmp_sizes(static_cast<size_t>(place_leaves_[k].stride), static_cast<size_t>(o.place_leaves_[k].stride)))
       {
         return c;
       }
-      if (int c = cmp_sizes(static_cast<size_t>(place_axes_[k]), static_cast<size_t>(o.place_axes_[k])))
+      if (const int c = cmp_sizes(static_cast<size_t>(place_axes_[k]), static_cast<size_t>(o.place_axes_[k])))
       {
         return c;
       }
     }
     for (size_t k = 0; k < num_local_leaves_; k++)
     {
-      if (int c = cmp_sizes(local_leaves_[k].extent, o.local_leaves_[k].extent))
+      if (const int c = cmp_sizes(local_leaves_[k].extent, o.local_leaves_[k].extent))
       {
         return c;
       }
-      if (int c =
+      if (const int c =
             cmp_sizes(static_cast<size_t>(local_leaves_[k].stride), static_cast<size_t>(o.local_leaves_[k].stride)))
       {
         return c;
@@ -504,6 +518,11 @@ public:
   bool operator==(const cute_partition& o) const
   {
     return cmp(o) == 0;
+  }
+
+  bool operator!=(const cute_partition& o) const
+  {
+    return !(*this == o);
   }
 
 private:
@@ -828,9 +847,8 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
  * object is stored on the place. Because a padded partition is intrinsically
  * specific to one tensor, such a place is per-tensor by nature; the reusable
  * shape-free policy object remains the partition_fn_t composite. This place
- * currently serves the raw allocation path only (allocate_nd(data_dims,
- * elemsize)); routing it through the STF runtime's logical data path is a
- * recorded follow-up.
+ * supports both shaped raw allocations (allocate_nd(data_dims, elemsize)) and
+ * STF logical data.
  */
 class data_place_cute_composite final : public data_place_interface
 {
@@ -890,11 +908,9 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    // NOTE: routing this place through the logical data path is a recorded
-    // follow-up; do not suggest it in the message meanwhile.
     throw ::std::runtime_error(
-      "cute-partition composite data_place serves raw allocation only: use allocate_nd with the partition's true "
-      "extents");
+      "cute-partition composite data_place cannot allocate from a byte count alone: use allocate_nd with the "
+      "partition's true extents or allocate through logical data");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -1036,6 +1052,20 @@ UNITTEST("cute_partition owner matches blocked_partition get_executor")
     blocked_partition_custom<0>::get_executor(&expected, pos4(x), true_dims, grid_dims);
     EXPECT(part.owner(pos4(x)) == expected);
   }
+};
+
+UNITTEST("cute_partition comparison includes complete dimensions")
+{
+  const dim4 true_dims(2, 4);
+  const dim4 grid_dims(2);
+
+  // These layouts have the same total padded size and identical leaves, but
+  // their multidimensional strides map coordinates to different owners.
+  const cute_partition a({{2, 1}}, {0}, {{6, 2}}, dim4(2, 6), true_dims, grid_dims);
+  const cute_partition b({{2, 1}}, {0}, {{6, 2}}, dim4(3, 4), true_dims, grid_dims);
+
+  EXPECT(a != b);
+  EXPECT(!(a.owner(pos4(0, 1)) == b.owner(pos4(0, 1))));
 };
 
 UNITTEST("cute_partition validation rejects inexact layouts")

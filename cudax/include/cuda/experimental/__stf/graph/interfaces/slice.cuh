@@ -25,7 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
@@ -88,7 +87,6 @@ public:
       return;
     }
 
-    exec_place grid   = memory_node.affine_exec_place();
     size_t total_size = this->shape.size();
 
     // Get the extents stored as a dim4
@@ -111,30 +109,8 @@ public:
       }
     };
 
-    // Composite places backed by a structured partition carry a stateful
-    // owner function; allocate directly (such arrays are parked in the cache
-    // on deallocation and released at finalization - recycling them is a
-    // recorded follow-up).
-    if (auto* cute_place =
-          dynamic_cast<const ::cuda::experimental::places::data_place_cute_composite*>(memory_node.get_impl().get()))
-    {
-      auto part     = cute_place->get_partition(); // trivially copyable
-      auto cute_arr = ::std::make_unique<localized_array>(
-        grid,
-        ::std::function<pos4(size_t)>([part, delinearize](size_t ind) {
-          return part.owner(delinearize(ind));
-        }),
-        total_size,
-        sizeof(T),
-        data_dims);
-      T* cute_base = static_cast<T*>(cute_arr->get_base_ptr());
-      *extra_args  = cute_arr.release();
-      local_desc   = this->shape.create(cute_base);
-      return;
-    }
-
-    auto [array, cached_prereqs] = bctx.get_composite_cache().get(
-      memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
+    auto [array,
+          cached_prereqs] = bctx.get_composite_cache().get(memory_node, delinearize, total_size, sizeof(T), data_dims);
     assert(array);
     prereqs.merge(mv(cached_prereqs));
     T* base_ptr = static_cast<T*>(array->get_base_ptr());
@@ -178,7 +154,13 @@ public:
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
     auto* array = static_cast<localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<localized_array>(array), prereqs);
+    bctx.get_composite_cache().put(
+      memory_node,
+      ::std::unique_ptr<localized_array>(array),
+      prereqs,
+      this->shape.size(),
+      sizeof(T),
+      this->shape.get_data_dims());
   }
 
   /// @brief Implementation of interface primitive

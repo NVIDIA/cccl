@@ -18,6 +18,7 @@
  * and the data placement (composite data place backed by the partition).
  */
 
+#include <cuda/experimental/__stf/localization/composite_slice.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 using namespace cuda::experimental::stf;
@@ -25,6 +26,37 @@ using namespace cuda::experimental::stf;
 using cuda::experimental::places::dim_policy;
 using cuda::experimental::places::dim_spec;
 using cuda::experimental::places::make_partition;
+
+namespace
+{
+void test_cute_composite_cache(const exec_place& grid)
+{
+  const size_t n = 4096;
+  const dim4 data_dims(n);
+  const auto part        = make_partition(data_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+  const auto place       = cuda::experimental::places::make_composite_data_place(grid, part);
+  const auto delinearize = [data_dims](size_t ind) {
+    return data_dims.index_to_pos(ind);
+  };
+
+  reserved::composite_slice_cache cache;
+  auto [first, first_prereqs] = cache.get(place, delinearize, n, sizeof(size_t), data_dims);
+  EXPECT(first_prereqs.empty());
+  const auto first_base = first->get_base_ptr();
+
+  cache.put(place, mv(first), first_prereqs, n, sizeof(size_t), data_dims);
+
+  // A separately constructed but equivalent place must find the same cached
+  // VMM allocation through the value-keyed CuTe pool.
+  const auto equivalent_place   = cuda::experimental::places::make_composite_data_place(grid, part);
+  auto [second, second_prereqs] = cache.get(equivalent_place, delinearize, n, sizeof(size_t), data_dims);
+  EXPECT(second_prereqs.empty());
+  EXPECT(second->get_base_ptr() == first_base);
+
+  cache.put(equivalent_place, mv(second), second_prereqs, n, sizeof(size_t), data_dims);
+  EXPECT(cache.deinit().empty());
+}
+} // namespace
 
 int main()
 {
@@ -38,6 +70,8 @@ int main()
   places.push_back(exec_place::device(0));
   places.push_back(exec_place::device(ndevs > 1 ? 1 : 0));
   auto grid = make_grid(mv(places));
+
+  test_cute_composite_cache(grid);
 
   // 1-D: dimension 0 blocked over the grid
   {

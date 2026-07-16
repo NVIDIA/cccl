@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
@@ -122,6 +123,72 @@ struct cached_localized_array
 };
 
 /**
+ * @brief Cached localized array whose placement is described by a
+ *        cute_partition value.
+ *
+ * Unlike partition_fn_t, a cute_partition is stateful. Keep its value with
+ * the cached allocation so independently constructed equivalent composite
+ * places can reuse the same VMM mapping.
+ */
+struct cached_cute_localized_array
+{
+  template <typename F>
+  explicit cached_cute_localized_array(
+    exec_place grid_,
+    ::cuda::experimental::places::cute_partition partition_,
+    F&& delinearize,
+    size_t total_size,
+    size_t elem_size,
+    dim4 data_dims_)
+      : grid(mv(grid_))
+      , partition(mv(partition_))
+      , total_size_bytes(total_size * elem_size)
+      , data_dims(data_dims_)
+      , elemsize(elem_size)
+  {
+    const auto owner_of = ::std::function<pos4(size_t)>(
+      [partition = this->partition, delinearize = ::std::forward<F>(delinearize)](size_t ind) {
+        return partition.owner(delinearize(ind));
+      });
+    array = ::std::make_unique<localized_array>(grid, owner_of, total_size, elem_size, data_dims);
+  }
+
+  explicit cached_cute_localized_array(
+    exec_place grid_,
+    ::cuda::experimental::places::cute_partition partition_,
+    size_t total_size,
+    size_t elem_size,
+    dim4 data_dims_,
+    ::std::unique_ptr<localized_array> array_)
+      : grid(mv(grid_))
+      , partition(mv(partition_))
+      , total_size_bytes(total_size * elem_size)
+      , data_dims(data_dims_)
+      , elemsize(elem_size)
+      , array(mv(array_))
+  {}
+
+  template <typename... P>
+  bool operator==(::std::tuple<P&...> t) const
+  {
+    // tuple arguments:
+    // 0: grid, 1: partition, 2: delinearize function, 3: total size,
+    // 4: element size, 5: data dimensions
+    return grid == ::std::get<0>(t) && partition == ::std::get<1>(t)
+        && total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t) && elemsize == ::std::get<4>(t)
+        && data_dims == ::std::get<5>(t);
+  }
+
+  exec_place grid;
+  ::cuda::experimental::places::cute_partition partition;
+  size_t total_size_bytes;
+  dim4 data_dims;
+  size_t elemsize;
+  ::std::unique_ptr<localized_array> array;
+  event_list prereqs;
+};
+
+/**
  * @brief A very simple allocation cache for slices in composite data places
  */
 class composite_slice_cache
@@ -135,33 +202,75 @@ public:
   [[nodiscard]] event_list deinit()
   {
     event_list result;
-    cache.each([&](auto& entry) {
+    partition_fn_cache.each([&](auto& entry) {
+      result.merge(mv(entry.prereqs));
+      entry.prereqs.clear();
+    });
+    cute_partition_cache.each([&](auto& entry) {
       result.merge(mv(entry.prereqs));
       entry.prereqs.clear();
     });
     return result;
   }
 
-  void put(::std::unique_ptr<localized_array> a, const event_list& prereqs)
+  void put(const data_place& place,
+           ::std::unique_ptr<localized_array> a,
+           const event_list& prereqs,
+           size_t total_size,
+           size_t elem_size,
+           dim4 data_dims)
   {
+    EXPECT(place.is_composite());
     EXPECT(a.get());
+
+    if (const auto* cute_place =
+          dynamic_cast<const ::cuda::experimental::places::data_place_cute_composite*>(place.get_impl().get()))
+    {
+      auto entry = ::std::make_unique<cached_cute_localized_array>(
+        place.affine_exec_place(), cute_place->get_partition(), total_size, elem_size, data_dims, mv(a));
+      entry->prereqs.merge(prereqs);
+      cute_partition_cache.put(mv(entry));
+      return;
+    }
+
     auto entry = ::std::make_unique<cached_localized_array>(mv(a));
     entry->prereqs.merge(prereqs);
-    cache.put(mv(entry));
+    partition_fn_cache.put(mv(entry));
   }
 
   template <typename F>
-  ::std::pair<::std::unique_ptr<localized_array>, event_list> get(
-    const data_place& place, partition_fn_t mapper, F&& delinearize, size_t total_size, size_t elem_size, dim4 data_dims)
+  ::std::pair<::std::unique_ptr<localized_array>, event_list>
+  get(const data_place& place, F&& delinearize, size_t total_size, size_t elem_size, dim4 data_dims)
   {
     EXPECT(place.is_composite());
-    auto entry =
-      cache.get(place.affine_exec_place(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+
+    if (const auto* cute_place =
+          dynamic_cast<const ::cuda::experimental::places::data_place_cute_composite*>(place.get_impl().get()))
+    {
+      auto entry = cute_partition_cache.get(
+        place.affine_exec_place(),
+        cute_place->get_partition(),
+        ::std::forward<F>(delinearize),
+        total_size,
+        elem_size,
+        data_dims);
+      event_list prereqs = mv(entry->prereqs);
+      return {mv(entry->array), mv(prereqs)};
+    }
+
+    auto entry = partition_fn_cache.get(
+      place.affine_exec_place(),
+      place.get_partitioner(),
+      ::std::forward<F>(delinearize),
+      total_size,
+      elem_size,
+      data_dims);
     event_list prereqs = mv(entry->prereqs);
     return {mv(entry->array), mv(prereqs)};
   }
 
 private:
-  linear_pool<cached_localized_array> cache;
+  linear_pool<cached_localized_array> partition_fn_cache;
+  linear_pool<cached_cute_localized_array> cute_partition_cache;
 };
 } // end namespace cuda::experimental::stf::reserved
