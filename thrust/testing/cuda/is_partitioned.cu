@@ -110,10 +110,11 @@ void TestIsPartitionedWithNonConstPredicate()
   thrust::device_vector<int> unpartitioned = {0, 1, 2, 3};
 
   ASSERT_EQUAL_QUIET(
-    true, thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), cuda::__is_even_no_const<int>{}));
+    true,
+    thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), cuda::__is_even_no_const<int>{}));
 
-  ASSERT_EQUAL_QUIET(
-    false,
-    thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), cuda::__is_even_no_const<int>{}));
+  ASSERT_EQUAL_QUIET(false,
+                     thrust::is_partitioned(
+                       thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), cuda::__is_even_no_const<int>{}));
 }
 DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);
