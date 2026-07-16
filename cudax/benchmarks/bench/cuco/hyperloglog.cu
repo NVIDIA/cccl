@@ -41,10 +41,10 @@ void add_relative_error_summary(
     cuda::std::abs(static_cast<double>(estimated_cardinality) / static_cast<double>(num_items) - 1.0);
   estimator.clear(stream);
 
-  auto& summary = state.add_summary("MeanRelativeError");
-  summary.set_string("hint", "MRelErr");
-  summary.set_string("short_name", "MeanRelativeError");
-  summary.set_string("description", "Mean relative approximation error.");
+  auto& summary = state.add_summary("RelativeError");
+  summary.set_string("hint", "RelErr");
+  summary.set_string("short_name", "RelativeError");
+  summary.set_string("description", "Relative approximation error.");
   summary.set_float64("value", relative_error);
 }
 } // namespace
