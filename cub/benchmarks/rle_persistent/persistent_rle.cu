@@ -34,8 +34,6 @@ struct winner_config
   static_assert(kPollMlp >= 3, "the dense poll fold window is hard-coded 96 = 32*3 tiles per pass");
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 32;
-  // when should we pre calculate in registers?
-  static constexpr int kRegBufMaxRuns = (sizeof(KeyT) <= 4) ? 256 : (sizeof(KeyT) == 8 ? 128 : 64);
 
   static constexpr int kWarpTileSize = 32 * kIPT;
   static constexpr int kTileSize     = kNumCompWarps * kWarpTileSize;
@@ -660,7 +658,6 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   constexpr int kStages                  = Config::kStages;
   constexpr int kPosBufStages            = Config::kPosBufStages;
   constexpr int kHeadPosStagingThreshold = Config::kHeadPosStagingThreshold;
-  constexpr int kRegBufMaxRuns           = Config::kRegBufMaxRuns;
   constexpr int kWarpTileSize            = Config::kWarpTileSize;
   constexpr int kTileSize                = Config::kTileSize;
   constexpr int kSlotPad                 = Config::kSlotPad;
@@ -969,51 +966,30 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           const int runs_before_warp_tile = __shfl_sync(kFullMask, lane_runs_before_warp_tile, warp_tile_id);
           // if our register budget allows it and it is worth it, we can buffer intermediate results in register
           // and arrive empty early. this buys 2.5% BWUtil at the worst segments
-          if (warp_tile_run_count >= 1 && warp_tile_run_count <= kRegBufMaxRuns)
+          if (warp_tile_run_count >= 1 && warp_tile_run_count < kHeadPosStagingThreshold)
           {
             // wait for staged_warp_tile (3/3)
             wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
-            constexpr int kBufPerLane = ((kRegBufMaxRuns + 31) / 32 > 0) ? (kRegBufMaxRuns + 31) / 32 : 1;
+            constexpr int kBufPerLane =
+              ((kHeadPosStagingThreshold - 1 + 31) / 32 > 0) ? (kHeadPosStagingThreshold - 1 + 31) / 32 : 1;
             KeyT buf_key[kBufPerLane];
             int buf_run_length[kBufPerLane];
             const int warp_tile_offset = warp_tile_id * kWarpTileSize;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
-            if (warp_tile_run_count < kHeadPosStagingThreshold)
-            {
-              const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
+            const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
 #pragma unroll
-              for (int it = 0; it < kBufPerLane; ++it)
-              {
-                if (it >= num_rounds)
-                {
-                  break;
-                }
-                const int run_idx  = it * 32 + lane_id;
-                const RunSpanT run = dec.decode_run(run_idx);
-                buf_key[it]        = (run_idx < warp_tile_run_count)
-                                     ? tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems]
-                                     : KeyT{};
-                buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
-              }
-            } // if not staged
-            else
+            for (int it = 0; it < kBufPerLane; ++it)
             {
-#pragma unroll
-              for (int it = 0; it < kBufPerLane; ++it)
+              if (it >= num_rounds)
               {
-                if (it >= num_rounds)
-                {
-                  break;
-                }
-                const int run_idx  = it * 32 + lane_id;
-                const bool act     = run_idx < warp_tile_run_count;
-                const int head_pos = act ? (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)] : 0;
-                buf_key[it]        = tile_keys[head_pos + skip_elems];
-                buf_run_length[it] =
-                  (act && run_idx + 1 < warp_tile_run_count)
-                    ? (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos
-                    : 0;
+                break;
               }
+              const int run_idx  = it * 32 + lane_id;
+              const RunSpanT run = dec.decode_run(run_idx);
+              buf_key[it]        = (run_idx < warp_tile_run_count)
+                                   ? tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems]
+                                   : KeyT{};
+              buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
             __syncwarp();
             if (lane_id == 0)
