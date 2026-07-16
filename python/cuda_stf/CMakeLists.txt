@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-cmake_minimum_required(VERSION 3.30...3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30)
 
 # CUDASTF ships Linux-only. Fail early on other platforms rather than producing
 # an empty wheel.
@@ -69,38 +69,37 @@ add_subdirectory(${_cccl_root} _parent_cccl)
 # ---------------------------------------------------------------------------
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
-get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
-
 set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)
 execute_process(
   COMMAND ${CYTHON_version_command}
   OUTPUT_VARIABLE CYTHON_version_output
-  ERROR_VARIABLE CYTHON_version_error
-  RESULT_VARIABLE CYTHON_version_result
+  ERROR_VARIABLE CYTHON_version_output
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_STRIP_TRAILING_WHITESPACE
+  COMMAND_ERROR_IS_FATAL ANY
 )
 
-if (NOT ${CYTHON_version_result} EQUAL 0)
-  set(_error_msg "Command \"${CYTHON_version_command}\" failed with")
-  set(_error_msg "${_error_msg} output:\n${CYTHON_version_error}")
-  message(FATAL_ERROR "${_error_msg}")
+if ("${CYTHON_version_output}" MATCHES "^[Cc]ython version ([^,]+)")
+  set(CYTHON_VERSION "${CMAKE_MATCH_1}")
 else()
-  if ("${CYTHON_version_output}" MATCHES "^[Cc]ython version ([^,]+)")
-    set(CYTHON_VERSION "${CMAKE_MATCH_1}")
-  else()
-    if ("${CYTHON_version_error}" MATCHES "^[Cc]ython version ([^,]+)")
-      set(CYTHON_VERSION "${CMAKE_MATCH_1}")
-    endif()
-  endif()
+  message(
+    FATAL_ERROR
+    "Failed to parse Cython version from:\n${CYTHON_version_output}"
+  )
 endif()
 
 # -3 generates source for Python 3
 # -M generates depfile
 # -t cythonizes if PYX is newer than preexisting output
 # -w sets working directory
-set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_stf_SOURCE_DIR}\"")
-string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
+set(
+  CYTHON_FLAGS
+  -3
+  -M
+  -t
+  -w
+  "${cuda_stf_SOURCE_DIR}"
+)
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 
@@ -118,8 +117,6 @@ set(_stf_install_dir "cuda/stf/_experimental/${CUDA_VERSION_DIR}")
 # CUDA-version-specific (headers are identical across cu12/cu13), so it lives
 # outside the cu12/cu13 extension directories.
 set(_stf_include_dir "cuda/stf/_experimental/include")
-
-file(MAKE_DIRECTORY "${_stf_install_dir}/cccl")
 
 install(TARGETS cccl.c.experimental.stf DESTINATION "${_stf_install_dir}/cccl")
 
@@ -153,10 +150,10 @@ set(_stf_depfile "${cuda_stf_BINARY_DIR}/_stf_bindings_impl.c.dep")
 
 add_custom_command(
   OUTPUT "${_stf_generated_extension_src}"
-  COMMAND "${Python3_EXECUTABLE}" -m cython
-  # gersemi: off
-  ARGS
-    ${CYTHON_FLAGS_LIST}
+  COMMAND
+    "${Python3_EXECUTABLE}" -m cython
+    # gersemi: off
+    ${CYTHON_FLAGS}
     "${stf_pyx_source_file}"
     --output-file "${_stf_generated_extension_src}"
   # gersemi: on
@@ -165,10 +162,6 @@ add_custom_command(
   COMMENT "Cythonizing ${stf_pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
 )
 
-set_source_files_properties(
-  "${_stf_generated_extension_src}"
-  PROPERTIES GENERATED TRUE
-)
 add_custom_target(
   cythonize_stf_bindings_impl
   ALL
