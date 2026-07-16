@@ -84,6 +84,7 @@ TEST_FUNC constexpr bool test_type()
   test_mul_overflow<Res, L, R>(17, 14, 238);
   test_mul_overflow<Res, L, R>(-254, 127, -32258);
   test_mul_overflow<Res, L, R>(1657, -13748, -22780436);
+  test_mul_overflow<Res, L, R>(-50000, -50000, 2500000000);
   test_mul_overflow<Res, L, R>(-2147483647, 4294967295, -9223372030412324865);
   if constexpr (cuda::std::is_unsigned_v<L> && cuda::std::is_unsigned_v<Res>)
   {
@@ -93,74 +94,46 @@ TEST_FUNC constexpr bool test_type()
       static_cast<Res>(cuda::std::numeric_limits<L>::max()) << 2,
       sizeof(L) >= sizeof(Res));
   }
-  return true;
-}
 
-TEST_FUNC constexpr void test_corner_cases()
-{
-  // 1. Boundary edge-cases
+  // 5. Test T_MIN * T_MIN and T_MAX * T_MAX
+  if constexpr (sizeof(L) < sizeof(cuda::std::__cccl_uintmax_t) && sizeof(R) < sizeof(cuda::std::__cccl_uintmax_t))
   {
-    using T             = cuda::std::int32_t;
-    using U             = cuda::std::uint32_t;
-    constexpr auto max  = cuda::std::numeric_limits<T>::max();
-    constexpr auto min  = cuda::std::numeric_limits<T>::min();
-    constexpr auto umax = cuda::std::numeric_limits<U>::max();
-    test_mul_overflow<T, T, T>(min, min, T{0}, true);
-    test_mul_overflow<U, T, T>(2, max, U{max} * 2u, false);
-    test_mul_overflow<U, U, U>(umax, 2ull, umax - 1ull, true);
-  }
-
-  // 2. Explicit wider Result type
-  {
-    using T             = cuda::std::int32_t;
-    using T2x           = cuda::std::int64_t;
-    using U             = cuda::std::uint32_t;
-    using U2x           = cuda::std::uint64_t;
-    constexpr auto min  = cuda::std::numeric_limits<T>::min();
-    constexpr auto max  = cuda::std::numeric_limits<T>::max();
-    constexpr auto umax = cuda::std::numeric_limits<U>::max();
-    test_mul_overflow<T2x, T, T>(min, -1, T2x{min} * (-1ll), false);
-    test_mul_overflow<T2x, T, T>(min, min, T2x{min} * T2x{min}, false);
-    test_mul_overflow<T2x, T, T>(max, max, T2x{max} * T2x{max}, false);
-    test_mul_overflow<U2x, U, U>(umax, umax, U2x{umax} * U2x{umax}, false);
-    test_mul_overflow<T2x, U, U>(umax, umax, -8589934591, true);
-  }
-
-  // 3. Both operands negative, large magnitude (non-overflow and overflow)
-  {
-    using T = cuda::std::int32_t;
-    test_mul_overflow<T, T, T>(-40000, -50000, 2000000000, false);
-    test_mul_overflow<T, T, T>(-50000, -50000, -1794967296, true);
-  }
-
-  // 4. Overflow from downcasting
-  {
-    using T   = cuda::std::int8_t;
-    using T4x = cuda::std::int32_t;
-    using U4x = cuda::std::uint32_t;
-    test_mul_overflow<T, T4x, T4x>(1000, 1000, T{64}, true);
-    test_mul_overflow<T, U4x, T>(T{17}, U4x{14}, T{-18}, true);
+    constexpr auto __max_nbits = cuda::std::max(cuda::std::__num_bits_v<L>, cuda::std::__num_bits_v<R>);
+    using _Up = cuda::std::__make_nbit_int_t<2 * __max_nbits, cuda::std::is_signed_v<L> || cuda::std::is_signed_v<R>>;
+    test_mul_overflow<Res, L, R>(cuda::std::numeric_limits<L>::min(),
+                                 cuda::std::numeric_limits<R>::min(),
+                                 _Up{cuda::std::numeric_limits<L>::min()} * _Up{cuda::std::numeric_limits<R>::min()});
+    test_mul_overflow<Res, L, R>(cuda::std::numeric_limits<L>::max(),
+                                 cuda::std::numeric_limits<R>::max(),
+                                 _Up{cuda::std::numeric_limits<L>::max()} * _Up{cuda::std::numeric_limits<R>::max()});
   }
 
 #if _CCCL_HAS_INT128()
-  // 5. __uint128_t
+  // 6. Test __uint128_t multiplication and overflow cases
+  if constexpr (cuda::std::is_same_v<Res, __uint128_t> && cuda::std::is_same_v<R, __uint128_t>)
   {
-    using U               = cuda::std::uint64_t;
-    using U2x             = __uint128_t;
-    constexpr auto umax2x = cuda::std::numeric_limits<U2x>::max();
-
-    test_mul_overflow<U2x, U2x, U2x>(3, 4, 12, false);
-    test_mul_overflow<U2x, U2x, U2x>(
-      U2x{~0ull}, // 2^64 - 1
-      U2x{1ull} << 63, // 2^63
-      (U2x{0x7fffffffffffffffULL} << 64) | U2x{0x8000000000000000ULL},
-      false);
-    test_mul_overflow<U2x, U2x, U2x>(U2x{1} << 100, U2x{1} << 100, U2x{0}, true);
-    test_mul_overflow<U2x, U2x, U2x>(umax2x, U2x{2}, umax2x - 1, true);
-    test_mul_overflow<U2x, U2x, U2x>(umax2x, U2x{0}, U2x{0}, false);
-    test_mul_overflow<U2x, U, U2x>(~0ull, U2x{5} << 100, (U2x{0xffffffb000000000ULL} << 64) | U2x{0}, true);
+    if constexpr (cuda::std::is_same_v<L, __uint128_t>)
+    {
+      test_mul_overflow<Res, L, R>(
+        __uint128_t{~0ull}, // 2^64 - 1
+        __uint128_t{1ull} << 63, // 2^63
+        (__uint128_t{0x7fffffffffffffffULL} << 64) | __uint128_t{0x8000000000000000ULL},
+        false);
+      test_mul_overflow<Res, L, R>(__uint128_t{1} << 100, __uint128_t{1} << 100, __uint128_t{0}, true);
+      test_mul_overflow<Res, L, R>(
+        cuda::std::numeric_limits<__uint128_t>::max(),
+        __uint128_t{2},
+        cuda::std::numeric_limits<__uint128_t>::max() - 1,
+        true);
+    }
+    else if constexpr (cuda::std::is_same_v<L, unsigned long long>)
+    {
+      test_mul_overflow<Res, L, R>(
+        ~0ull, __uint128_t{5} << 100, __uint128_t{0xffffffb000000000ULL} << 64 | __uint128_t{0}, true);
+    }
   }
 #endif // _CCCL_HAS_INT128()
+  return true;
 }
 
 using TypeList = cuda::std::tuple<
@@ -184,11 +157,11 @@ using TypeList = cuda::std::tuple<
 using TypeListIndexSeq = cuda::std::make_index_sequence<cuda::std::tuple_size_v<TypeList>>;
 
 template <class... Ts, cuda::std::size_t... Is>
-TEST_FUNC constexpr void test_exhaustive(cuda::std::index_sequence<Is...>)
+TEST_FUNC constexpr void test(cuda::std::index_sequence<Is...>)
 {
   if constexpr (sizeof...(Ts) < 3)
   {
-    (test_exhaustive<Ts..., cuda::std::tuple_element_t<Is, TypeList>>(TypeListIndexSeq{}), ...);
+    (test<Ts..., cuda::std::tuple_element_t<Is, TypeList>>(TypeListIndexSeq{}), ...);
   }
   else
   {
@@ -199,7 +172,6 @@ TEST_FUNC constexpr void test_exhaustive(cuda::std::index_sequence<Is...>)
 
 int main(int arg, char** argv)
 {
-  test_exhaustive(TypeListIndexSeq{});
-  test_corner_cases();
+  test(TypeListIndexSeq{});
   return 0;
 }
