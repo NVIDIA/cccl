@@ -34,6 +34,10 @@ struct winner_config
   static_assert(kPollMlp >= 3, "the dense poll fold window is hard-coded 96 = 32*3 tiles per pass");
   // when should compute warps stage?
   static constexpr int kHeadPosStagingThreshold = 32;
+  // store buffers one key + one length per reg-buf round in registers
+  static constexpr int kBufPerLane =
+    ((kHeadPosStagingThreshold - 1 + 31) / 32 > 0) ? (kHeadPosStagingThreshold - 1 + 31) / 32 : 1;
+  static_assert(kBufPerLane * ((int) sizeof(KeyT) + 4) <= 64, "reg-buf rounds must fit the 64B/lane register budget");
 
   static constexpr int kWarpTileSize = 32 * kIPT;
   static constexpr int kTileSize     = kNumCompWarps * kWarpTileSize;
@@ -652,6 +656,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   static_assert(Config::kTileSize <= 0xffff && Config::kTileSize <= 32768,
                 "kTileSize must fit the 16-bit state words and signed 16-bit staged positions");
   static_assert(Config::kNumThreads <= 1024, "a CTA is capped at 1024 threads");
+  static_assert(Config::kBufPerLane * ((int) sizeof(KeyT) + 4) <= 64,
+                "reg-buf rounds must fit the 64B/lane register budget");
   constexpr int kIPT                     = Config::kIPT;
   constexpr int kNumCompWarps            = Config::kNumCompWarps;
   constexpr int kNumStoreWarps           = Config::kNumStoreWarps;
@@ -970,8 +976,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           {
             // wait for staged_warp_tile (3/3)
             wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
-            constexpr int kBufPerLane =
-              ((kHeadPosStagingThreshold - 1 + 31) / 32 > 0) ? (kHeadPosStagingThreshold - 1 + 31) / 32 : 1;
+            constexpr int kBufPerLane = Config::kBufPerLane;
             KeyT buf_key[kBufPerLane];
             int buf_run_length[kBufPerLane];
             const int warp_tile_offset = warp_tile_id * kWarpTileSize;
