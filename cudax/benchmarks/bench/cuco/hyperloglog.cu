@@ -20,7 +20,6 @@
 #include <cuda/experimental/__cuco/hyperloglog.cuh>
 
 #include "common/defaults.cuh"
-#include "common/type_strings.cuh"
 #include <nvbench/nvbench.cuh>
 
 namespace cudax = cuda::experimental;
@@ -28,12 +27,12 @@ namespace bench = cudax::cuco::benchmark;
 
 namespace
 {
-template <typename T>
+template <typename Key>
 void add_relative_error_summary(
   nvbench::state& state,
-  cudax::cuco::hyperloglog<T>& estimator,
+  cudax::cuco::hyperloglog<Key>& estimator,
   cuda::stream_ref stream,
-  T* first,
+  Key* first,
   cuda::std::size_t num_items)
 {
   estimator.add(stream, first, first + num_items);
@@ -53,10 +52,10 @@ void add_relative_error_summary(
 /**
  * @brief A benchmark evaluating `cudax::cuco::hyperloglog` end-to-end performance.
  */
-template <typename T>
-void hyperloglog_e2e(nvbench::state& state, nvbench::type_list<T>)
+template <typename Key>
+void hyperloglog_e2e(nvbench::state& state, nvbench::type_list<Key>)
 {
-  using estimator_type      = cudax::cuco::hyperloglog<T>;
+  using estimator_type      = cudax::cuco::hyperloglog<Key>;
   using sketch_size_kb_type = typename estimator_type::sketch_size_kb;
 
   const auto num_items      = static_cast<cuda::std::size_t>(state.get_int64("NumInputs"));
@@ -66,14 +65,14 @@ void hyperloglog_e2e(nvbench::state& state, nvbench::type_list<T>)
   cuda::stream stream{device};
   const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
-  auto items = cuda::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
-  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
+  auto items = cuda::make_device_buffer<Key>(stream, device, num_items, cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), Key{0});
 
   estimator_type estimator{stream, mr, sketch_size_kb};
   stream.sync();
 
   state.add_element_count(num_items);
-  state.add_global_memory_reads<T>(num_items, "InputSize");
+  state.add_global_memory_reads<Key>(num_items, "InputSize");
 
   add_relative_error_summary(state, estimator, stream, items.data(), num_items);
 
@@ -90,10 +89,10 @@ void hyperloglog_e2e(nvbench::state& state, nvbench::type_list<T>)
 /**
  * @brief A benchmark evaluating `cudax::cuco::hyperloglog::add_async` performance.
  */
-template <typename T>
-void hyperloglog_add(nvbench::state& state, nvbench::type_list<T>)
+template <typename Key>
+void hyperloglog_add(nvbench::state& state, nvbench::type_list<Key>)
 {
-  using estimator_type      = cudax::cuco::hyperloglog<T>;
+  using estimator_type      = cudax::cuco::hyperloglog<Key>;
   using sketch_size_kb_type = typename estimator_type::sketch_size_kb;
 
   const auto num_items      = static_cast<cuda::std::size_t>(state.get_int64("NumInputs"));
@@ -103,14 +102,14 @@ void hyperloglog_add(nvbench::state& state, nvbench::type_list<T>)
   cuda::stream stream{device};
   const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
-  auto items = cuda::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
-  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
+  auto items = cuda::make_device_buffer<Key>(stream, device, num_items, cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), Key{0});
 
   estimator_type estimator{stream, mr, sketch_size_kb};
   stream.sync();
 
   state.add_element_count(num_items);
-  state.add_global_memory_reads<T>(num_items, "InputSize");
+  state.add_global_memory_reads<Key>(num_items, "InputSize");
 
   state.exec(nvbench::exec_tag::timer, [&](nvbench::launch& launch, auto& timer) {
     timer.start();
@@ -121,14 +120,14 @@ void hyperloglog_add(nvbench::state& state, nvbench::type_list<T>)
   });
 }
 
-NVBENCH_BENCH_TYPES(hyperloglog_e2e, NVBENCH_TYPE_AXES(bench::defaults::hll_type_range))
+NVBENCH_BENCH_TYPES(hyperloglog_e2e, NVBENCH_TYPE_AXES(bench::defaults::key_type_range))
   .set_name("hyperloglog_e2e")
-  .set_type_axes_names({"T"})
+  .set_type_axes_names({"Key"})
   .add_int64_power_of_two_axis("NumInputs", {30})
   .add_int64_axis("SketchSizeKB", {8, 16, 32, 64, 128, 256});
 
-NVBENCH_BENCH_TYPES(hyperloglog_add, NVBENCH_TYPE_AXES(bench::defaults::hll_type_range))
+NVBENCH_BENCH_TYPES(hyperloglog_add, NVBENCH_TYPE_AXES(bench::defaults::key_type_range))
   .set_name("hyperloglog_add")
-  .set_type_axes_names({"T"})
+  .set_type_axes_names({"Key"})
   .add_int64_power_of_two_axis("NumInputs", {30})
   .add_int64_axis("SketchSizeKB", {8, 16, 32, 64, 128, 256});
