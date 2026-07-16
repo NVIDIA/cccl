@@ -80,7 +80,7 @@ public:
     // NAIVE method !
     // cudaMemcpyAsync is an overload set (cuda_runtime.h alternate-spelling wrapper),
     // so it keeps the runtime-status cuda_try form.
-    cuda_try<cudaMemcpyAsync<void*, void*>>(dst, src, sz, kind, s);
+    cuda_try(cudaMemcpyAsync(dst, src, sz, kind, s));
   }
 
   void stream_data_allocate(
