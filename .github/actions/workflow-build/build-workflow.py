@@ -616,7 +616,6 @@ def generate_dispatch_job_json(matrix_job, job_type):
 
 
 def annotate_job_for_build_cluster(matrix_job, job_type, use_build_cluster_if_possible):
-
     job_info = get_job_type_info(job_type)
     project = get_project(matrix_job["project"])
     job_prefix = job_info["invoke"]["prefix"]
@@ -639,7 +638,7 @@ def annotate_job_for_build_cluster(matrix_job, job_type, use_build_cluster_if_po
         # Over-subscribe -j to keep the build cluster busy if *not* ClangCUDA
         # or Python. ClangCUDA can use the build cluster for C++ files, but not
         # CUDA, and we'll OOM if we try to compile too many at once.
-        if ("clang" not in matrix_job["cudacxx"]):
+        if "clang" not in matrix_job["cudacxx"]:
             matrix_job["environment"].append("PARALLEL_LEVEL=0")
 
     return matrix_job
@@ -682,12 +681,8 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
         producer_matrix_job = matrix_job
 
     producer_json = generate_dispatch_job_json(
-        annotate_job_for_build_cluster(
-            producer_matrix_job,
-            producer_job_type,
-            True
-        ),
-        producer_job_type
+        annotate_job_for_build_cluster(producer_matrix_job, producer_job_type, True),
+        producer_job_type,
     )
 
     consumers_json = []
@@ -721,7 +716,9 @@ def generate_dispatch_group_jobs(matrix_job):
 
     for producer, consumers in two_stage.items():
         dispatch_group_jobs["two_stage"].append(
-            generate_dispatch_two_stage_json(matrix_job, producer, sorted(list(consumers)))
+            generate_dispatch_two_stage_json(
+                matrix_job, producer, sorted(list(consumers))
+            )
         )
 
     for job_type in standalone:
@@ -731,9 +728,9 @@ def generate_dispatch_group_jobs(matrix_job):
                     matrix_job,
                     job_type,
                     # Only use the build cluster for 10% of standalone jobs
-                    random.randint(0, 9) == 0
+                    random.randint(0, 9) == 0,
                 ),
-                job_type
+                job_type,
             )
         )
 
@@ -763,10 +760,14 @@ def compare_dispatch_jobs(job1, job2):
     "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
     envs1 = [
-        x for x in json.loads(job1["environment"]) if x not in ["USE_SCCACHE_DIST=true", "PARALLEL_LEVEL=0"]
+        x
+        for x in json.loads(job1["environment"])
+        if x not in ["USE_SCCACHE_DIST=true", "PARALLEL_LEVEL=0"]
     ]
     envs2 = [
-        x for x in json.loads(job2["environment"]) if x not in ["USE_SCCACHE_DIST=true", "PARALLEL_LEVEL=0"]
+        x
+        for x in json.loads(job2["environment"])
+        if x not in ["USE_SCCACHE_DIST=true", "PARALLEL_LEVEL=0"]
     ]
     return (
         job1["name"] == job2["name"]
