@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/util_arch.cuh>
+
 #include <cuda/std/limits>
 
 #include <string>
@@ -10,7 +12,7 @@
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
-inline constexpr int warp_threads                     = 32;
+inline constexpr int warp_threads                     = cub::detail::warp_threads;
 inline constexpr int num_iterations                   = 100;
 inline constexpr int block_dim_for_throughput_mode    = 128;
 inline constexpr int grid_threads_for_throughput_mode = 1 << 28;

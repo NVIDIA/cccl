@@ -13,9 +13,9 @@
 template <typename T>
 __device__ __forceinline__ static T generate_random_data()
 {
-  constexpr unsigned int size = cuda::ceil_div(sizeof(T), sizeof(uint32_t));
+  constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
-  for (unsigned int i = 0; i < size; i++)
+  for (int i = 0; i < size; i++)
   {
     data[i] = cuda::ptx::get_sreg_clock();
   }
@@ -24,12 +24,14 @@ __device__ __forceinline__ static T generate_random_data()
   return ret;
 }
 
+// When benchmarking algorithms sensitive to data distribution, each thread should use a different seed to get different
+// data.
 template <typename T>
 __device__ __forceinline__ static T generate_random_data(uint32_t& seed)
 {
-  constexpr unsigned int size = cuda::ceil_div(sizeof(T), sizeof(uint32_t));
+  constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
-  for (unsigned int i = 0; i < size; i++)
+  for (int i = 0; i < size; i++)
   {
     // https://en.wikipedia.org/wiki/Linear_congruential_generator
     seed    = 1664525 * seed + 1013904223;
@@ -86,6 +88,7 @@ __global__ static void benchmark_kernel(int num_iterations, const ActionT action
   constexpr int warp_threads = 32;
   constexpr bool has_values  = !cuda::std::is_void_v<ValueT>;
   KeyT keys[ItemsPerThread];
+  // when ValueT=void, declare values as char array
   [[maybe_unused]] cuda::std::conditional_t<has_values, ValueT, char> values[ItemsPerThread];
   const auto tid = threadIdx.x;
   // Shift tid by 7 to reduce the likelihood of threads within a warp getting monotonically increasing data

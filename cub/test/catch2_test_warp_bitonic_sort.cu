@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_bitonic_sort.cuh>
 
 #include <thrust/iterator/zip_iterator.h>
@@ -13,6 +14,8 @@
 
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
+
+using cub::detail::warp_threads;
 
 struct CustomLess
 {
@@ -35,8 +38,6 @@ struct CustomLess
     }
   };
 };
-
-inline constexpr int warp_threads = cub::detail::warp_threads;
 
 /**
  * @brief Kernel to dispatch to the appropriate WarpBitonicSort member function, sorting keys-only.
