@@ -1,10 +1,10 @@
 {
-  "image": "rapidsai/devcontainers:26.08-cpp-mambaforge",
+  "image": "rapidsai/devcontainers:26.10-cpp-mambaforge",
   "runArgs": [
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.08-cuda13.2-conda",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.10-cuda13.3-conda",
     "--ulimit",
     "nofile=500000"
   ],
@@ -14,7 +14,7 @@
   "containerEnv": {
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",
-    "CUDA_VERSION": "13.2",
+    "CUDA_VERSION": "13.3",
     "CUDAARCHS": "75-real",
     "DEFAULT_CONDA_ENV": "rapids",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "true",
@@ -87,7 +87,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind"
   ],
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.8": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.10": {}
   },
   "overrideFeatureInstallOrder": [
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"

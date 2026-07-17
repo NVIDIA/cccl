@@ -1,0 +1,9 @@
+{
+  "features": {
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.10": {
+      "version": "26.10.0",
+      "resolved": "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils@sha256:2b0bdef63ec38dfdc005118696df32446899e4ea3b0840027f3d2323948792b3",
+      "integrity": "sha256:2b0bdef63ec38dfdc005118696df32446899e4ea3b0840027f3d2323948792b3"
+    }
+  }
+}
