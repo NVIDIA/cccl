@@ -41,10 +41,19 @@ jobs:
         run: |
           # Give GitHub a moment to make the failed job log available.
           sleep 10
-          gh run view "${GITHUB_RUN_ID}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --log-failed \
-            > failed-job.log
+          for attempt in 1 2 3 4 5; do
+            if gh run view "${GITHUB_RUN_ID}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --log-failed \
+              > failed-job.log; then
+              break
+            fi
+
+            echo "Failed to fetch failed-job log on attempt ${attempt}; retrying."
+            sleep 10
+          done
+
+          test -s failed-job.log
           cat failed-job.log
 
       - name: Summarize failed job log
