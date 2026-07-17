@@ -124,10 +124,73 @@ def numba_task(ctx, *args, symbol=None):
     return _NumbaTaskContext()
 
 
+class _stf_bound_kernel:
+    """A Numba STF kernel bound to a specific launch configuration.
+
+    Returned by ``stf_kernel_decorator.__getitem__``. It captures the launch
+    configuration immutably so that indexing the same decorator with different
+    configurations (possibly from interleaved or concurrent callers) never
+    clobbers a shared config: each ``kernel[...]`` yields a fresh binding, while
+    the (expensive) Numba compilation stays cached on the shared decorator.
+    """
+
+    __slots__ = ("_decorator", "_grid_dim", "_block_dim", "_ctx", "_exec_pl")
+
+    def __init__(self, decorator, grid_dim, block_dim, ctx, exec_pl):
+        self._decorator = decorator
+        self._grid_dim = grid_dim
+        self._block_dim = block_dim
+        self._ctx = ctx
+        self._exec_pl = exec_pl
+
+    def __call__(self, *args, **kwargs):
+        gridDim = self._grid_dim
+        blockDim = self._block_dim
+        ctx = self._ctx
+        exec_pl = self._exec_pl
+
+        _, dep_type, _ = _import_stf_types()
+        dep_items = []
+        for i, a in enumerate(args):
+            if isinstance(a, dep_type):
+                if ctx is None:
+                    ld = a.get_ld()
+                    ctx = ld.borrow_ctx_handle()
+                dep_items.append((i, a))
+
+        if ctx is None:
+            raise TypeError(
+                "No STF context could be inferred. Provide at least one dep argument "
+                "or pass an explicit context via kernel[grid, block, exec_place, ctx]."
+            )
+
+        cuda = _import_numba_cuda()
+        task_args = [exec_pl] if exec_pl else []
+        task_args.extend(a for _, a in dep_items)
+
+        compiled_kernel = self._decorator._get_compiled_kernel()
+
+        with ctx.task(*task_args) as t:
+            dev_args = list(args)
+            for dep_index, (pos, _) in enumerate(dep_items):
+                cai = t.get_arg_cai(dep_index)
+                dev_args[pos] = cuda.from_cuda_array_interface(
+                    cai.__cuda_array_interface__, owner=None, sync=False
+                )
+
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            compiled_kernel[gridDim, blockDim, nb_stream](*dev_args, **kwargs)
+
+        return None
+
+
 class stf_kernel_decorator:
     """Decorator-class wrapper around a Numba CUDA kernel for STF.
 
-    Created by :func:`jit`; not intended for direct instantiation.
+    Created by :func:`jit`; not intended for direct instantiation. Indexing
+    (``kernel[grid, block, ...]``) returns a fresh :class:`_stf_bound_kernel`
+    so launch configuration is never shared mutable state; only the compiled
+    kernel is cached (and shared) here.
     """
 
     def __init__(self, pyfunc, jit_args, jit_kwargs):
@@ -135,7 +198,17 @@ class stf_kernel_decorator:
         self._jit_args = jit_args
         self._jit_kwargs = jit_kwargs
         self._compiled_kernel = None
-        self._launch_cfg = None
+
+    def _get_compiled_kernel(self):
+        # First call compiles; later calls reuse the cached kernel. Numba's
+        # own dispatcher is idempotent, so an occasional concurrent double
+        # compile is harmless (last assignment wins on an equivalent object).
+        if self._compiled_kernel is None:
+            cuda = _import_numba_cuda()
+            self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(
+                self._pyfunc
+            )
+        return self._compiled_kernel
 
     def __getitem__(self, cfg):
         if not isinstance(cfg, (tuple, list)):
@@ -166,55 +239,14 @@ class stf_kernel_decorator:
         if ctx is not None and not isinstance(ctx, context_type):
             raise TypeError("4th item must be an STF context (or None to infer)")
 
-        self._launch_cfg = (grid_dim, block_dim, ctx, exec_pl)
-        return self
+        return _stf_bound_kernel(self, grid_dim, block_dim, ctx, exec_pl)
 
     def __call__(self, *args, **kwargs):
-        if self._launch_cfg is None:
-            raise RuntimeError(
-                "launch configuration missing -- use kernel[grid, block], "
-                "kernel[grid, block, exec_place], or "
-                "kernel[grid, block, exec_place, ctx](...)"
-            )
-
-        gridDim, blockDim, ctx, exec_pl = self._launch_cfg
-
-        _, dep_type, _ = _import_stf_types()
-        dep_items = []
-        for i, a in enumerate(args):
-            if isinstance(a, dep_type):
-                if ctx is None:
-                    ld = a.get_ld()
-                    ctx = ld.borrow_ctx_handle()
-                dep_items.append((i, a))
-
-        if ctx is None:
-            raise TypeError(
-                "No STF context could be inferred. Provide at least one dep argument "
-                "or pass an explicit context via kernel[grid, block, exec_place, ctx]."
-            )
-
-        cuda = _import_numba_cuda()
-        task_args = [exec_pl] if exec_pl else []
-        task_args.extend(a for _, a in dep_items)
-
-        with ctx.task(*task_args) as t:
-            dev_args = list(args)
-            for dep_index, (pos, _) in enumerate(dep_items):
-                cai = t.get_arg_cai(dep_index)
-                dev_args[pos] = cuda.from_cuda_array_interface(
-                    cai.__cuda_array_interface__, owner=None, sync=False
-                )
-
-            if self._compiled_kernel is None:
-                self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(
-                    self._pyfunc
-                )
-
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            self._compiled_kernel[gridDim, blockDim, nb_stream](*dev_args, **kwargs)
-
-        return None
+        raise RuntimeError(
+            "launch configuration missing -- use kernel[grid, block], "
+            "kernel[grid, block, exec_place], or "
+            "kernel[grid, block, exec_place, ctx](...)"
+        )
 
 
 def jit(*jit_args, **jit_kwargs):

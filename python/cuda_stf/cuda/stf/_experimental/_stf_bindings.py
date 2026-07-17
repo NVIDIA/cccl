@@ -23,6 +23,36 @@ from cuda.pathfinder import (  # type: ignore[import-not-found]
 
 _SUPPORTED_CUDA_VERSIONS = {12, 13}
 
+# Deliberate public API of the compiled bindings. Exporting an explicit list
+# (rather than every non-underscore name in the extension module) avoids
+# leaking implementation imports such as ``np``, ``ctypes``, ``warnings`` and
+# ``IntFlag`` into ``cuda.stf._experimental._stf_bindings``.
+_BINDING_EXPORTS = (
+    "AccessMode",
+    "CudaStream",
+    "LaunchableGraph",
+    "async_resources",
+    "context",
+    "cuda_kernel",
+    "data_place",
+    "dep",
+    "exec_place",
+    "exec_place_grid",
+    "exec_place_resources",
+    "green_context_helper",
+    "green_ctx_view",
+    "logical_data",
+    "machine_init",
+    "read",
+    "rw",
+    "stackable_context",
+    "stackable_logical_data",
+    "stackable_task",
+    "stf_cai",
+    "task",
+    "write",
+)
+
 
 def _load_cuda_libraries():
     for libname in ("nvrtc", "nvJitLink"):
@@ -55,9 +85,20 @@ def _select_cuda_extra():
 
 
 def _export_public_symbols(bindings_module):
-    for name, value in bindings_module.__dict__.items():
-        if not name.startswith("_"):
-            globals()[name] = value
+    missing = []
+    for name in _BINDING_EXPORTS:
+        try:
+            globals()[name] = getattr(bindings_module, name)
+        except AttributeError:
+            missing.append(name)
+    if missing:
+        raise ImportError(
+            "CUDASTF bindings extension is missing expected symbols: "
+            + ", ".join(sorted(missing))
+        )
+
+
+__all__ = list(_BINDING_EXPORTS)
 
 
 _load_cuda_libraries()

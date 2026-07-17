@@ -207,7 +207,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
 * **cuda.coop._experimental** — Block/warp-level primitives for Numba CUDA
-* **cuda.stf._experimental** — Stream Task Flow (CUDASTF) Python bindings, shipped in the standalone `cuda-stf` package (Linux only)
+* **cuda.stf._experimental** — Sequential Task Flow (CUDASTF) Python bindings in the `cuda-stf` package (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -278,7 +278,7 @@ Test organization:
 
 ## Continuous Integration (CI)
 
-See `ci-overview.md` for detailed examples and troubleshooting guidance.
+See `docs/infrastructure/ci/references/ci_overview.rst` for detailed examples and troubleshooting guidance.
 
 CCCL's CI is built on GitHub Actions and relies on a dynamically generated job matrix plus several helper scripts.
 
@@ -367,7 +367,7 @@ When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills
 
 * Validate changes with builds/tests; report results.
 * Run `pre-commit` before committing.
-* Review `CONTRIBUTING.md` and `ci-overview.md` before starting work.
+* Review `CONTRIBUTING.md` and `docs/infrastructure/ci/references/ci_overview.rst` before starting work.
 
 ### Performance Tips
 

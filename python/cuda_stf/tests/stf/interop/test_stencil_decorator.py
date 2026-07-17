@@ -71,19 +71,13 @@ def test_numba2d(monkeypatch):
 
     ctx.finalize()
 
-    u_out_ref = np.zeros_like(u)
-
-    for i in range(1, nx - 1):  # skip boundaries
-        for j in range(1, ny - 1):
-            u_out_ref[i, j] = (u[i - 1, j] - 2.0 * u[i, j] + u[i + 1, j]) / dx**2 + (
-                u[i, j - 1] - 2.0 * u[i, j] + u[i, j + 1]
-            ) / dy**2
-
-    # copy boundaries
-    u_out_ref[0, :] = u[0, :]
-    u_out_ref[-1, :] = u[-1, :]
-    u_out_ref[:, 0] = u[:, 0]
-    u_out_ref[:, -1] = u[:, -1]
+    # Vectorized reference: starting from a copy leaves the boundary cells at
+    # their input values (matching the kernel's copy-through), and the interior
+    # is a single fused slice expression instead of a ~1M-iteration Python loop.
+    u_out_ref = u.copy()
+    u_out_ref[1:-1, 1:-1] = (
+        u[:-2, 1:-1] - 2.0 * u[1:-1, 1:-1] + u[2:, 1:-1]
+    ) / dx**2 + (u[1:-1, :-2] - 2.0 * u[1:-1, 1:-1] + u[1:-1, 2:]) / dy**2
 
     # compare with the GPU result
     assert np.allclose(u_out, u_out_ref, rtol=1e-6, atol=1e-6)

@@ -26,12 +26,14 @@ def test_jacobi_stackable_pytorch():
 
     A_host = np.zeros((m, n), dtype=np.float64)
     Anew_host = np.zeros((m, n), dtype=np.float64)
+    # Host-backed residual so we can assert convergence after finalize.
+    residual_host = np.zeros((1,), dtype=np.float64)
 
     ctx = stf.stackable_context()
 
     lA = ctx.logical_data(A_host, name="A")
     lAnew = ctx.logical_data(Anew_host, name="Anew")
-    lresidual = ctx.logical_data_empty((1,), np.float64, name="residual")
+    lresidual = ctx.logical_data(residual_host, name="residual")
 
     # Initialize: A(i,j) = 1.0 if i==j else -1.0
     with pytorch_task(ctx, lA.write(), lAnew.write()) as (tA, tAnew):
@@ -61,8 +63,31 @@ def test_jacobi_stackable_pytorch():
 
     ctx.finalize()
 
-    # The host arrays should be updated after finalize
-    print(f"Jacobi converged (PyTorch) with tolerance {tol}")
+    # The loop can only exit with residual <= tol; a non-finite or too-large
+    # final residual means the solve diverged or never ran.
+    assert np.isfinite(residual_host[0]), (
+        f"Jacobi residual is non-finite ({residual_host[0]})"
+    )
+    assert residual_host[0] <= tol, (
+        f"Jacobi residual {residual_host[0]} exceeds tolerance {tol}"
+    )
+
+    # Interior-only updates leave the boundary at its initial values
+    # (A[i,j] = 1 on the diagonal else -1).
+    init_full = np.where(np.eye(m, n, dtype=bool), 1.0, -1.0)
+    assert np.allclose(A_host[0, :], init_full[0, :])
+    assert np.allclose(A_host[-1, :], init_full[-1, :])
+    assert np.allclose(A_host[:, 0], init_full[:, 0])
+    assert np.allclose(A_host[:, -1], init_full[:, -1])
+
+    # Interior must have evolved and stayed finite.
+    interior = (slice(1, m - 1), slice(1, n - 1))
+    assert np.all(np.isfinite(A_host))
+    assert not np.allclose(A_host[interior], init_full[interior]), (
+        "Jacobi interior did not evolve from its initial state"
+    )
+
+    print(f"Jacobi converged (PyTorch) with residual {residual_host[0]} <= {tol}")
 
 
 def test_graph_scope_pytorch():

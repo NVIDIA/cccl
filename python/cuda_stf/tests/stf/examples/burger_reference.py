@@ -167,15 +167,19 @@ def newton_solve(
     it = 0
     while it < max_newton:
         tRes = residual_fn(tU, tU_prev, N, h, dt, nu)
-        norm2 = torch.dot(tRes, tRes)
         tA_val = assemble_jacobian_fn(tU, N, h, dt, nu)
 
         tDelta, _ = bicgstab_solve(tA_val, -tRes, N, tol=1e-8, max_iter=max_cg)
         tU = tU + tDelta
         it += 1
 
-        if it % NEWTON_CHECK_EVERY == 0 and norm2.item() <= newton_tol_sq:
-            break
+        # Test convergence on the *updated* state, not the pre-step residual:
+        # judging the old residual lags one step and burns an extra BiCGSTAB
+        # solve after the solution has already converged.
+        if it % NEWTON_CHECK_EVERY == 0:
+            tRes_new = residual_fn(tU, tU_prev, N, h, dt, nu)
+            if torch.dot(tRes_new, tRes_new).item() <= newton_tol_sq:
+                break
     return tU, it
 
 

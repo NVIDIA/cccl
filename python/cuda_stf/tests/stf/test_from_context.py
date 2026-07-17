@@ -15,6 +15,33 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 
 
+def _cuda_core_error_type():
+    """Exception cuda.core raises for *driver* failures.
+
+    Used to narrow green-context skips to genuine "not supported" driver
+    errors, so programming bugs (AttributeError, TypeError, ...) still fail
+    the test instead of being silently skipped.
+    """
+    try:
+        from cuda.core._utils.cuda_utils import CUDAError
+
+        return CUDAError
+    except ImportError:
+        return RuntimeError
+
+
+_CUDA_CORE_ERROR = _cuda_core_error_type()
+
+
+def _skip_if_no_green_context_capability():
+    """Skip only when the platform genuinely lacks green-context support."""
+    from cuda.bindings import runtime as cudart
+
+    err, version = cudart.cudaRuntimeGetVersion()
+    if int(err) == 0 and version < 12040:
+        pytest.skip("green contexts require CUDA >= 12.4")
+
+
 def _require_cuda_core_device():
     try:
         from cuda.core import Device
@@ -23,7 +50,7 @@ def _require_cuda_core_device():
     try:
         dev = Device(0)
         dev.set_current()
-    except Exception as exc:
+    except _CUDA_CORE_ERROR as exc:
         pytest.skip(f"no usable CUDA device: {exc}")
     return dev
 
@@ -34,10 +61,11 @@ def _require_green_context(dev, sm_count=8):
         from cuda.core._device_resources import SMResourceOptions
     except ImportError:
         pytest.skip("cuda-core >= 1.0 with green-context support is required")
+    _skip_if_no_green_context_capability()
     try:
         groups, _remainder = dev.resources.sm.split(SMResourceOptions(count=sm_count))
-    except Exception as exc:
-        pytest.skip(f"green context support unavailable: {exc}")
+    except _CUDA_CORE_ERROR as exc:
+        pytest.skip(f"green context not supported on this platform: {exc}")
     if not groups:
         pytest.skip("device SM resource could not be split")
     return dev.create_context(ContextOptions(resources=[groups[0]]))

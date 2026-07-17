@@ -7,11 +7,25 @@ source "$ci_dir/pyenv_helper.sh"
 
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
-if [[ -z "${cuda_major_version}" ]]; then
-  echo "Failed to detect CUDA major version from nvcc" >&2
+if ! command -v nvcc >/dev/null 2>&1; then
+  echo "nvcc not found on PATH; cannot determine the CUDA version for cuda-stf extras" >&2
   exit 1
 fi
+# 'nvcc --version' prints e.g. "Cuda compilation tools, release 13.1, V13.1.1".
+cuda_release=$(nvcc --version | sed -n 's/.*release \([0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -1)
+cuda_major_version="${cuda_release%%.*}"
+if [[ -z "${cuda_major_version}" ]]; then
+  echo "Failed to detect CUDA major version from 'nvcc --version' output:" >&2
+  nvcc --version >&2
+  exit 1
+fi
+case "${cuda_major_version}" in
+  12 | 13) ;;
+  *)
+    echo "Unsupported CUDA major version '${cuda_major_version}': cuda-stf ships only cu12 and cu13 extras" >&2
+    exit 1
+    ;;
+esac
 
 setup_python_env "${py_version}"
 
@@ -40,20 +54,29 @@ find_one_wheel() {
   echo "${wheels[0]}"
 }
 
-# Fetch or build the cuda_stf wheel. cuda-stf is standalone (ships its own STF
-# bindings, headers, and CUDA version detection), so only its wheel is needed.
-# cuda-cccl is pulled from the test extra for the cuda.compute interop tests.
+# Fetch or build the current-branch cuda_cccl and cuda_stf wheels. Both come
+# from a single combined producer job so the STF tests exercise the PR's
+# cuda-cccl (not a released one from PyPI).
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+  # cuda-cccl is uploaded by the combined STF producer under the 'cccl-stf'
+  # kind (see ci/build_cuda_stf_combined_python.sh) to avoid colliding with the
+  # regular build_py_wheel 'wheel-cccl-...' artifact.
+  cccl_artifact_name=$(CCCL_WHEEL_KIND=cccl-stf "$ci_dir/util/workflow/get_wheel_artifact_name.sh")
+  "$ci_dir/util/artifacts/download.sh" "${cccl_artifact_name}" /home/coder/cccl/
   stf_artifact_name=$(CCCL_WHEEL_KIND=stf "$ci_dir/util/workflow/get_wheel_artifact_name.sh")
   "$ci_dir/util/artifacts/download.sh" "${stf_artifact_name}" /home/coder/cccl/
 else
-  "$ci_dir/build_cuda_stf_python.sh" -py-version "${py_version}"
+  "$ci_dir/build_cuda_stf_combined_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_stf with its test extra (which also pulls in cuda-cccl for the
-# cuda.compute interop tests).
+# Install both local wheels in a single resolver invocation so pip binds the
+# local cuda_cccl to satisfy cuda-stf's dependency instead of resolving it
+# from PyPI.
+CUDA_CCCL_WHEEL_PATH="$(find_one_wheel 'cuda_cccl-*.whl')"
 CUDA_STF_WHEEL_PATH="$(find_one_wheel 'cuda_stf-*.whl')"
-python -m pip install "${CUDA_STF_WHEEL_PATH}[test-cu${cuda_major_version}]"
+python -m pip install \
+    "${CUDA_CCCL_WHEEL_PATH}" \
+    "${CUDA_STF_WHEEL_PATH}[test-cu${cuda_major_version}]"
 
 # Run STF tests and examples
 cd "/home/coder/cccl/python/cuda_stf/tests/"

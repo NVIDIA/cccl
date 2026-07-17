@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Fill / init for STF logical data. Uses cuda.core.Buffer.fill for 1/2/4-byte;
-single fallback (CuPy) for 8-byte.
+Fill / init for STF logical data.
+
+Uses ``cuda.core.Buffer.fill`` for 1/2/4-byte element types and CUDA-driver
+strided 32-bit memsets for 8-byte types, so no optional third-party package
+(e.g. CuPy) is required for any supported element size.
 """
 
 import numpy as np
@@ -16,8 +19,10 @@ def init_logical_data(ctx, ld, value, data_place=None, exec_place=None):
     """
     Initialize a logical data with a constant value.
 
-    Uses cuda.core.Buffer.fill for 1/2/4-byte element types. For 8-byte types
-    (e.g. float64, int64) uses CuPy if available; otherwise raises.
+    Uses ``cuda.core.Buffer.fill`` for 1/2/4-byte element types and a pair of
+    CUDA-driver strided 32-bit memsets for 8-byte types (e.g. float64, int64).
+    All fills are enqueued on the task's stream, so they are correctly ordered
+    with the rest of the task's work and require no host synchronization.
 
     Parameters
     ----------
@@ -34,8 +39,9 @@ def init_logical_data(ctx, ld, value, data_place=None, exec_place=None):
 
     Raises
     ------
-    ImportError
-        If dtype is 8-byte and CuPy is not installed.
+    ValueError
+        If the element type has an unsupported size (not 1, 2, 4, or 8 bytes)
+        and ``value`` is nonzero.
     """
     dep_arg = ld.write(data_place) if data_place else ld.write()
 
@@ -50,36 +56,54 @@ def init_logical_data(ctx, ld, value, data_place=None, exec_place=None):
         ptr = cai["data"][0]
         shape = tuple(cai["shape"])
         dtype = np.dtype(cai["typestr"])
-        size = int(np.prod(shape)) * dtype.itemsize
+        # An empty shape () is a 0-d scalar, i.e. exactly one element (np.prod
+        # of an empty product is 1); it must not be treated as zero elements.
+        count = int(np.prod(shape))
+        size = count * dtype.itemsize
 
-        core_stream = Stream.from_handle(t.stream_ptr())
+        if count == 0 or size == 0:
+            return
+
+        stream_ptr = t.stream_ptr()
+        core_stream = Stream.from_handle(stream_ptr)
         buf = Buffer.from_handle(ptr, size, owner=None)
 
         # A bytewise zero fill is valid for any numeric dtype, including 8-byte
         # types that cannot use cuda.core's nonzero fill patterns.
         if value == 0 or value == 0.0:
-            fill_val = 0
-            buf.fill(fill_val, stream=core_stream)
+            buf.fill(0, stream=core_stream)
         elif dtype.itemsize in (1, 2, 4):
             fill_val = np.array([value], dtype=dtype).tobytes()
             buf.fill(fill_val, stream=core_stream)
+        elif dtype.itemsize == 8:
+            _fill_8byte_driver(dtype, value, ptr, count, stream_ptr)
         else:
-            # 8-byte: single fallback via CuPy
-            _fill_8byte_cupy(shape, dtype, value, ptr, size, t.stream_ptr())
+            raise ValueError(
+                f"cannot fill dtype {dtype!r} (itemsize {dtype.itemsize}) with a "
+                "nonzero value; only 1/2/4/8-byte element types are supported"
+            )
 
 
-def _fill_8byte_cupy(shape, dtype, value, ptr, size, stream_ptr):
-    """Fill 8-byte buffer using CuPy. Raises ImportError if CuPy not available."""
-    try:
-        import cupy as cp
-    except ImportError:
-        raise ImportError(
-            "Fill for 8-byte dtypes (e.g. float64) requires CuPy. "
-            "Install CuPy or use a 1/2/4-byte dtype (e.g. np.float32)."
-        ) from None
+def _fill_8byte_driver(dtype, value, ptr, count, stream_ptr):
+    """Fill ``count`` 8-byte elements at ``ptr`` with ``value`` on ``stream_ptr``.
 
-    mem = cp.cuda.UnownedMemory(ptr, size, owner=None)
-    memptr = cp.cuda.MemoryPointer(mem, 0)
-    arr = cp.ndarray(shape, dtype=dtype, memptr=memptr)
-    with cp.cuda.ExternalStream(stream_ptr):
-        arr.fill(value)
+    ``cuMemsetD*32`` only fills 32-bit patterns, so an arbitrary 8-byte value
+    is written as two strided 32-bit memsets (low then high half), treating the
+    buffer as ``count`` rows of one 32-bit word with an 8-byte row pitch.
+    """
+    from cuda.bindings import driver
+
+    raw = np.array([value], dtype=dtype).tobytes()  # exactly 8 bytes
+    low = int.from_bytes(raw[0:4], "little")
+    high = int.from_bytes(raw[4:8], "little")
+
+    # Row 0..count-1: word at row offset 0 gets the low half, offset 4 the high.
+    _memset_d2d32(driver, int(ptr), 8, low, count, stream_ptr)
+    _memset_d2d32(driver, int(ptr) + 4, 8, high, count, stream_ptr)
+
+
+def _memset_d2d32(driver, dst, pitch, value, height, stream_ptr):
+    """cuMemsetD2D32Async wrapper: fill ``height`` rows of one 32-bit word."""
+    (err,) = driver.cuMemsetD2D32Async(dst, pitch, value, 1, height, stream_ptr)
+    if int(err) != 0:
+        raise RuntimeError(f"cuMemsetD2D32Async failed with error code {int(err)}")

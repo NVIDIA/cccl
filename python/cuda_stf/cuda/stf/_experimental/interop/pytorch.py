@@ -105,11 +105,30 @@ def pytorch_task(ctx, *args):
             return (tensors,)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            try:
-                if self._stream_ctx is not None:
+            # Always run both cleanups (stream exit and task end), then decide
+            # what to raise. Exception precedence: a failure in the body wins,
+            # then a stream-cleanup failure, then a task-cleanup failure. This
+            # guarantees the task is always ended even if the stream context
+            # exit raises, and never lets cleanup mask the user's own error.
+            stream_exc = None
+            task_exc = None
+            if self._stream_ctx is not None:
+                try:
                     self._stream_ctx.__exit__(exc_type, exc_val, exc_tb)
-            finally:
+                except BaseException as e:  # noqa: BLE001
+                    stream_exc = e
+            try:
                 t.end()
+            except BaseException as e:  # noqa: BLE001
+                task_exc = e
+
+            if exc_type is not None:
+                # Preserve the in-flight body exception; do not mask it.
+                return False
+            if stream_exc is not None:
+                raise stream_exc
+            if task_exc is not None:
+                raise task_exc
             return False
 
     return _PyTorchTaskContext()

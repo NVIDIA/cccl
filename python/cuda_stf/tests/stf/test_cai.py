@@ -29,3 +29,32 @@ def test_get_arg_cai_preserves_structured_dtype_descr():
     assert cai["typestr"].startswith("|V")
     assert cai["descr"] == dtype.descr
     assert np.dtype(cai["descr"]) == dtype
+
+
+class _FakeCAI:
+    """Minimal CUDA Array Interface exporter with a configurable stream."""
+
+    def __init__(self, stream):
+        self.__cuda_array_interface__ = {
+            "version": 3,
+            "shape": (4,),
+            "typestr": "<f4",
+            "data": (1 << 20, False),
+            "strides": None,
+            "stream": stream,
+        }
+
+
+@pytest.mark.parametrize("stream", [1, 2, 12345])
+def test_logical_data_rejects_producer_stream(stream):
+    """Importing a CAI object that advertises a producer stream is rejected.
+
+    STF does not yet order imported data behind an external producer stream, so
+    rather than silently racing we raise until that plumbing exists.
+    """
+    ctx = stf.context()
+    try:
+        with pytest.raises(NotImplementedError, match="producer stream"):
+            ctx.logical_data(_FakeCAI(stream), stf.data_place.device(0))
+    finally:
+        ctx.finalize()

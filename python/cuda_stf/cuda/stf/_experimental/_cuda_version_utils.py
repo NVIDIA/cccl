@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUDA version detection utilities for cuda-stf.
-
-A small self-contained copy of the equivalent helper in cuda-cccl. It is
-duplicated here (rather than imported from ``cuda.cccl``) so that cuda-stf does
-not carry a hard runtime dependency on cuda-cccl just to pick the cu12/cu13
-extension.
-"""
+"""CUDA version detection utilities for cuda-stf."""
 
 from __future__ import annotations
 
