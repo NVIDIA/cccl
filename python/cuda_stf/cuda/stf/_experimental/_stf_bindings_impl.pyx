@@ -2234,10 +2234,19 @@ cdef class context:
         else:
             self._ctx = NULL
 
-        # Drop the keep-alive on the shared async_resources only after the
-        # context has been finalized -- until then the C++ ctx holds a copy
-        # that the underlying shared state must still back.
-        self._handle_ref = None
+        # Drop the keep-alive on the shared async_resources once no pending
+        # work can still reference it. For a default context stf_ctx_finalize()
+        # has blocked until all work -- including the queued resource release --
+        # completed, so it is safe to release now. For a caller-stream context
+        # finalize() is asynchronous: that release runs later on the caller's
+        # stream, so destroying the async_resources here (when e.g. a temporary
+        # ``handle=async_resources()`` has no other reference) would free it
+        # before that work runs. Keep it on the context object until __dealloc__
+        # instead; the caller must synchronize their stream before releasing or
+        # reusing resources (see the finalize() semantics documented above), so
+        # by the time this context is collected the stream work has completed.
+        if was_blocking:
+            self._handle_ref = None
 
         if pin is not None:
             pin.release()
