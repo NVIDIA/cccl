@@ -35,6 +35,9 @@
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
+#include <type_traits>
+#include <utility>
+
 namespace cuda::experimental::stf
 {
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -51,14 +54,19 @@ namespace reserved
 //! enumerated coordinates outside the predicate are skipped, which is how
 //! interior regions and padding phantoms are handled (predication rather than
 //! restructured iteration).
+//!
+//! NVCC 12.0 fails to discard this specialization when cuda::std::void_t is
+//! used and T has no contains member. Keep this detector on host standard
+//! traits for supported-toolkit compatibility.
 template <typename T, typename = void>
-struct shape_has_contains : ::cuda::std::false_type
+struct shape_has_contains : ::std::false_type
 {};
 
 template <typename T>
-struct shape_has_contains<T,
-                          ::cuda::std::void_t<decltype(::cuda::std::declval<const T&>().contains(
-                            ::cuda::std::declval<const T&>().index_to_coords(size_t{})))>> : ::cuda::std::true_type
+struct shape_has_contains<
+  T,
+  ::std::void_t<decltype(::std::declval<const T&>().contains(::std::declval<const T&>().index_to_coords(size_t{})))>>
+    : ::std::true_type
 {};
 
 template <typename _Fn, typename _Tuple>
