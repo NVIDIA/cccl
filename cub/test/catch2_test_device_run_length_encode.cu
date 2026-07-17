@@ -5,6 +5,8 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
@@ -12,6 +14,7 @@
 #include <algorithm>
 #include <limits>
 #include <numeric>
+#include <random>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
@@ -89,6 +92,108 @@ public:
     return index + k;
   }
 };
+
+constexpr long long segment_grid_tile_size(std::size_t key_size)
+{
+  return (key_size >= 16) ? 2048 : (key_size == 8) ? 4096 : 8192;
+}
+
+template <class KeyT>
+KeyT make_segment_key(int value)
+{
+  return KeyT(value);
+}
+
+template <>
+ulonglong2 make_segment_key<ulonglong2>(int value)
+{
+  return {static_cast<unsigned long long>(value), static_cast<unsigned long long>(value)};
+}
+
+// max_seg > 0: run lengths uniform in [1, max_seg]; max_seg == 0: one constant key for the whole
+// input; max_seg < 0: every run exactly -max_seg long (deterministic run head positions)
+template <class KeyT>
+c2h::host_vector<KeyT> generate_segmented_keys(long long num_items, int max_seg, unsigned seed)
+{
+  c2h::host_vector<KeyT> keys(static_cast<std::size_t>(num_items));
+  if (max_seg == 0)
+  {
+    thrust::fill(keys.begin(), keys.end(), make_segment_key<KeyT>(7));
+    return keys;
+  }
+  std::mt19937 rng(seed);
+  std::uniform_int_distribution<int> segment_length(1, std::max(1, max_seg));
+  std::uniform_int_distribution<int> key_value(0, 1000000);
+  long long i = 0;
+  KeyT prev   = make_segment_key<KeyT>(-1);
+  while (i < num_items)
+  {
+    const int run_length = (max_seg < 0) ? -max_seg : segment_length(rng);
+    KeyT value           = make_segment_key<KeyT>(key_value(rng));
+    // narrow key types can wrap onto the previous run's key; retry a few times to keep runs
+    // distinct (a residual collision only merges two runs; the reference uses the final keys)
+    for (int tries = 0; value == prev && tries < 8; ++tries)
+    {
+      value = make_segment_key<KeyT>(key_value(rng));
+    }
+    prev                = value;
+    const long long end = std::min(i + run_length, num_items);
+    for (; i < end; ++i)
+    {
+      keys[static_cast<std::size_t>(i)] = value;
+    }
+  }
+  return keys;
+}
+
+template <class KeyT, class OffsetT>
+void test_segmented_encode(long long num_items, int max_seg, int elem_offset, unsigned seed)
+{
+  CAPTURE(c2h::type_name<KeyT>(), c2h::type_name<OffsetT>(), num_items, max_seg, elem_offset, seed);
+
+  const auto h_keys = generate_segmented_keys<KeyT>(num_items, max_seg, seed);
+
+  c2h::host_vector<KeyT> ref_unique;
+  c2h::host_vector<int> ref_counts;
+  for (long long i = 0; i < num_items;)
+  {
+    long long j = i + 1;
+    while (j < num_items && h_keys[static_cast<std::size_t>(j)] == h_keys[static_cast<std::size_t>(i)])
+    {
+      ++j;
+    }
+    ref_unique.push_back(h_keys[static_cast<std::size_t>(i)]);
+    ref_counts.push_back(static_cast<int>(j - i));
+    i = j;
+  }
+  const auto ref_num_runs = static_cast<OffsetT>(ref_unique.size());
+
+  // exact-size input allocation: reading past num_items would trip the sanitizers. The
+  // elem_offset elements in front of the input are set EQUAL to the first key: reading before
+  // the input would extend the first run and fail the count comparison.
+  c2h::device_vector<KeyT> d_keys_alloc(static_cast<std::size_t>(num_items) + elem_offset);
+  thrust::copy(c2h::device_policy, h_keys.begin(), h_keys.end(), d_keys_alloc.begin() + elem_offset);
+  thrust::fill(c2h::device_policy, d_keys_alloc.begin(), d_keys_alloc.begin() + elem_offset, h_keys.front());
+
+  // exact-size outputs; counts are sentinel-filled with 0, which no run can produce
+  c2h::device_vector<KeyT> d_unique(ref_unique.size(), make_segment_key<KeyT>(42424242));
+  c2h::device_vector<int> d_counts(ref_counts.size(), 0);
+  c2h::device_vector<OffsetT> d_num_runs(1, OffsetT{-1});
+
+  run_length_encode(
+    thrust::raw_pointer_cast(d_keys_alloc.data()) + elem_offset,
+    thrust::raw_pointer_cast(d_unique.data()),
+    thrust::raw_pointer_cast(d_counts.data()),
+    thrust::raw_pointer_cast(d_num_runs.data()),
+    static_cast<OffsetT>(num_items));
+
+  REQUIRE(d_num_runs.front() == ref_num_runs);
+  REQUIRE(c2h::host_vector<KeyT>(d_unique) == ref_unique);
+  REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
+}
+
+// the five key size classes: 1, 2, 4, 8 and 16 bytes
+using segment_key_types = c2h::type_list<std::int8_t, std::int16_t, std::uint32_t, std::int64_t, ulonglong2>;
 
 C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
@@ -421,4 +526,88 @@ try
 catch (std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+}
+
+C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
+         "[device][run_length_encode]",
+         segment_key_types,
+         offset_types)
+{
+  using key_t    = typename c2h::get<0, TestType>;
+  using offset_t = typename c2h::get<1, TestType>;
+
+  constexpr long long tile      = segment_grid_tile_size(sizeof(key_t));
+  constexpr long long warp_tile = tile / 8;
+
+  struct segment_grid_case
+  {
+    long long num_items;
+    int max_seg;
+  };
+  const segment_grid_case cases[] = {
+    {200000, 2}, // mid-size, dense
+    {150000, 3}, // mid-size, different tile alignment
+    {tile, 1}, // single tile, all runs of length 1
+    {tile, 1000000}, // single tile, one run
+    {3 * tile + 7, 1}, // partial tail tile, dense
+    {3 * tile + 1, 1000000}, // run crossing into a one-element tail tile
+    {(1 << 20) + 12345, 2}, // partial tail, mid density
+    {64 * tile + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
+    {64 * tile + 7, 100}, // a couple of runs per warp of input
+    {64 * tile, -40}, // deterministic runs: several run heads per 32-element window
+    {64 * tile, -31}, // deterministic runs: run count per warp-tile just above one full warp
+    {64 * tile, -4}, // deterministic runs: run count per warp-tile exactly at a power of two
+    {64 * tile, -3}, // deterministic runs: run count per warp-tile just above a power of two
+    {64 * tile, -static_cast<int>(warp_tile + 1)}, // run head drifts through every in-warp-tile offset
+    {64 * tile, 0}, // one constant run over the whole input
+    {64 * tile, -static_cast<int>(tile)}, // run length == tile: a run head at element 0 of every tile
+  };
+
+  for (const segment_grid_case& grid_case : cases)
+  {
+    // deterministic run lengths (max_seg <= 0) only vary in key values; one seed suffices
+    const int num_seeds = (grid_case.max_seg > 0) ? 2 : 1;
+    for (int seed = 0; seed < num_seeds; ++seed)
+    {
+      test_segmented_encode<key_t, offset_t>(grid_case.num_items, grid_case.max_seg, 0, seed == 0 ? 1u : 42u);
+    }
+  }
+}
+
+C2H_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
+         "[device][run_length_encode]",
+         c2h::type_list<std::uint32_t, std::int8_t>)
+{
+  using key_t = typename c2h::get<0, TestType>;
+
+  constexpr long long tile = segment_grid_tile_size(sizeof(key_t));
+
+  test_segmented_encode<key_t, int>(1030 * tile + 7, 1, 1, 1u); // misaligned input, dense, partial tail
+  test_segmented_encode<key_t, int>(1024 * tile, -static_cast<int>(tile), 0, 1u); // a head at every tile start
+  // one-element run whose head is the only element of a one-element final tile
+  test_segmented_encode<key_t, int>(1024 * tile + 1, -static_cast<int>(1024 * tile), 0, 1u);
+  test_segmented_encode<key_t, int>(1024 * tile, 0, 0, 1u); // one constant run over the whole input
+  // run length == tile + 1: the run head position drifts through every in-tile offset
+  test_segmented_encode<key_t, int>(1200 * tile + 3, -static_cast<int>(tile + 1), 0, 1u);
+}
+
+C2H_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
+         "[device][run_length_encode]",
+         segment_key_types)
+{
+  using key_t = typename c2h::get<0, TestType>;
+
+  constexpr long long tile    = segment_grid_tile_size(sizeof(key_t));
+  constexpr int offsets_swept = static_cast<int>(32 / sizeof(key_t));
+
+  // sweeps every sub-16B misalignment of the input pointer plus the two 16B-aligned shifted bases
+  for (int elem_offset = 1; elem_offset <= offsets_swept; ++elem_offset)
+  {
+    test_segmented_encode<key_t, int>(3 * tile + 7, 32, elem_offset, 1u);
+    if ((elem_offset * sizeof(key_t)) % 16 == 0)
+    {
+      // aligned shifted base with a run boundary at every tile boundary
+      test_segmented_encode<key_t, int>(3 * tile + 7, -static_cast<int>(tile), elem_offset, 1u);
+    }
+  }
 }
