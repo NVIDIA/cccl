@@ -396,8 +396,15 @@ _mapper_cfunc_type = ctypes.CFUNCTYPE(
     None, ctypes.POINTER(_mapper_pos4), _mapper_pos4, _mapper_dim4, _mapper_dim4)
 
 
-def _make_mapper_callback(mapper):
+def _make_mapper_callback(mapper, data_rank, grid_rank):
     """Wrap a Python partitioner as a C function pointer for stf_data_place_composite.
+
+    The Python mapper sees the public C-order contract: it receives
+    ``(data_coords, data_dims, grid_dims)`` as C-order tuples of ``data_rank``
+    (respectively ``grid_rank``) entries, and returns the owning place's grid
+    coordinates as a C-order tuple of ``grid_rank`` entries (or a plain int
+    for a 1-D grid). The trampoline converts to and from the native
+    dimension-0-fastest representation.
 
     Returns (callback_object, c_function_pointer_as_int, errors_list).
     The caller must prevent GC of callback_object for the lifetime of the
@@ -405,6 +412,10 @@ def _make_mapper_callback(mapper):
     through the C caller: they are recorded in errors_list (and printed), and
     the mapper resolves to place (0, 0, 0, 0) for that element.
     """
+    if not 1 <= data_rank <= 4:
+        raise ValueError(f"data_rank must be between 1 and 4, got {data_rank}")
+    if not 1 <= grid_rank <= 4:
+        raise ValueError(f"grid_rank must be between 1 and 4, got {grid_rank}")
     errors = []
 
     def _trampoline(result_ptr, c_coords, c_data_dims, c_grid_dims):
@@ -413,14 +424,20 @@ def _make_mapper_callback(mapper):
         result_ptr[0].z = 0
         result_ptr[0].t = 0
         try:
-            coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
-            data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
-            grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
-            rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
-            result_ptr[0].x = int(rx)
-            result_ptr[0].y = int(ry)
-            result_ptr[0].z = int(rz)
-            result_ptr[0].t = int(rt)
+            coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)[:data_rank][::-1]
+            data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)[:data_rank][::-1]
+            grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)[:grid_rank][::-1]
+            result = mapper(coords, data_dims, grid_dims)
+            if isinstance(result, int):
+                result = (result,)
+            if len(result) != grid_rank:
+                raise ValueError(
+                    f"mapper returned {len(result)} grid coordinates, expected {grid_rank}")
+            native = tuple(int(c) for c in result)[::-1]
+            result_ptr[0].x = native[0]
+            result_ptr[0].y = native[1] if grid_rank > 1 else 0
+            result_ptr[0].z = native[2] if grid_rank > 2 else 0
+            result_ptr[0].t = native[3] if grid_rank > 3 else 0
         except BaseException as exc:  # noqa: BLE001 - must not cross the C boundary
             if not errors:
                 import traceback
@@ -1207,10 +1224,11 @@ cdef class exec_place:
 
     @property
     def dims(self):
-        """Grid dimensions as (x, y, z, t). Scalar places return (1, 1, 1, 1)."""
+        """Grid dimensions as a C-order tuple. Scalar places return ``(1,)``;
+        grids return a tuple of their grid rank (see exec_place_grid)."""
         cdef stf_dim4 d
         stf_exec_place_get_dims(self._h, &d)
-        return (d.x, d.y, d.z, d.t)
+        return _native_to_public((d.x, d.y, d.z, d.t), _exec_place_grid_rank(self))
 
     @property
     def size(self):
@@ -1306,12 +1324,20 @@ cdef class exec_place_grid(exec_place):
     """Grid of execution places (a subclass of exec_place).
 
     Use wherever an exec_place is expected.  Create with ``from_devices()``
-    or ``create()``.
+    or ``create()``. Grid shapes and axes follow the public C-order contract;
+    the grid's rank is stored at creation.
     """
     cdef object _mapper_keep_alive  # prevent GC of ctypes callback if mapper was set
+    cdef int _grid_rank
 
     def __cinit__(self):
         self._mapper_keep_alive = None
+        self._grid_rank = 1
+
+    @property
+    def grid_rank(self):
+        """Rank of the grid (number of public dimensions)."""
+        return self._grid_rank
 
     @staticmethod
     def from_devices(device_ids):
@@ -1338,21 +1364,27 @@ cdef class exec_place_grid(exec_place):
         return g
 
     @staticmethod
-    def create(places, grid_dims=None, mapper=None):
+    def create(places, grid_dims=None, mapper=None, *, data_rank=None):
         """Create a grid from a list of exec_place objects.
 
         Parameters
         ----------
         places : list of exec_place
-            Individual execution places that form the grid.
+            Individual execution places that form the grid, enumerated in
+            C-order linear order over ``grid_dims``.
         grid_dims : tuple of int, optional
-            Shape of the grid as ``(x, y, z, t)``.  If *None*, a 1-D
-            grid of length ``len(places)`` is used.
+            C-order shape of the grid.  If *None*, a 1-D grid of length
+            ``len(places)`` is used.
         mapper : callable, optional
             If provided, a composite data place is created from this
             partitioner and set as the grid's affine data place so that
             dependencies with ``data_place.affine()`` resolve automatically.
-            Signature: ``(data_coords, data_dims, grid_dims) -> (x, y, z, t)``.
+            Signature: ``(data_coords, data_dims, grid_dims) -> grid_coords``,
+            all C-order tuples (see :meth:`data_place.composite`).
+        data_rank : int, keyword-only
+            Rank of the tensors the mapper partitions. Required when
+            ``mapper`` is a Python callable (the callback is shape-free, so
+            the rank cannot be inferred).
         """
         cdef size_t n = len(places)
         if n == 0:
@@ -1375,40 +1407,66 @@ cdef class exec_place_grid(exec_place):
 
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
         if grid_dims is not None:
-            dims.x = int(grid_dims[0])
-            dims.y = int(grid_dims[1]) if len(grid_dims) > 1 else 1
-            dims.z = int(grid_dims[2]) if len(grid_dims) > 2 else 1
-            dims.t = int(grid_dims[3]) if len(grid_dims) > 3 else 1
+            public_grid = _validate_extents(grid_dims, "grid_dims")
+            _fill_dim4_c_order(public_grid, &dims, u"grid_dims")
             g._h = stf_exec_place_grid_create(c_places, n, &dims)
+            g._grid_rank = len(public_grid)
         else:
             g._h = stf_exec_place_grid_create(c_places, n, NULL)
+            g._grid_rank = 1
 
         if g._h == NULL:
             raise RuntimeError("failed to create exec_place grid")
 
         if mapper is not None:
-            dplace = data_place.composite(g, mapper)
+            dplace = data_place.composite(g, mapper, data_rank=data_rank)
             g.set_affine_data_place(dplace)
             g._mapper_keep_alive = dplace
 
         return g
 
 
-def _pad_dims_tuple(dims):
-    """Normalize an int or a sequence of up to 4 extents into a 4-tuple
-    (missing dimensions padded with 1)."""
+cdef int _exec_place_grid_rank(exec_place place):
+    """Grid rank of an exec place: the stored rank for Python-created grids,
+    1 for scalar places (their native dims are (1, 1, 1, 1))."""
+    if isinstance(place, exec_place_grid):
+        return (<exec_place_grid>place)._grid_rank
+    return 1
+
+
+# -- C-order boundary -------------------------------------------------------
+#
+# The Python contract is C/row-major: public shapes, per-dimension
+# specifications, callback coordinates, and grid axes all use C order (axis 0
+# outermost/slowest). The C ABI and the C++ implementation remain
+# dimension-0-fastest; the helpers below are the only place the two
+# conventions meet. Rank is always explicit (stored on wrapper objects or
+# passed as an argument): it is never inferred by trimming extent-1
+# dimensions, which are legitimate.
+
+def _validate_extents(dims, what="shape"):
+    """Validate an int or a sequence of 1 to 4 positive integral extents and
+    return it as a tuple (public C order, untouched)."""
+    if isinstance(dims, bool):
+        raise TypeError(f"{what} must be an int or a sequence of ints")
     if isinstance(dims, int):
         dims = (dims,)
     dims = tuple(dims)
-    if len(dims) > 4:
-        raise ValueError(f"at most 4 dimensions are supported, got {len(dims)}")
-    return dims + (1,) * (4 - len(dims))
+    if not 1 <= len(dims) <= 4:
+        raise ValueError(f"{what} must have 1 to 4 dimensions, got {len(dims)}")
+    for e in dims:
+        if isinstance(e, bool) or not isinstance(e, int):
+            raise TypeError(f"{what} extents must be ints, got {e!r}")
+        if e <= 0:
+            raise ValueError(f"{what} extents must be positive, got {e}")
+    return dims
 
 
-cdef int _fill_dim4(object dims, stf_dim4* out) except -1:
-    """Convert an int or a sequence of up to 4 extents into an stf_dim4
-    (missing dimensions padded with 1)."""
-    padded = _pad_dims_tuple(dims)
+cdef int _fill_dim4_c_order(object dims, stf_dim4* out, str what=u"shape") except -1:
+    """Convert a public C-order shape into a native dimension-0-fastest
+    stf_dim4: reverse the active dimensions, then pad with trailing 1s."""
+    rev = _validate_extents(dims, what)[::-1]
+    padded = rev + (1,) * (4 - len(rev))
     out.x = <uint64_t>padded[0]
     out.y = <uint64_t>padded[1]
     out.z = <uint64_t>padded[2]
@@ -1416,11 +1474,38 @@ cdef int _fill_dim4(object dims, stf_dim4* out) except -1:
     return 0
 
 
-def partition_fn_blocked(int dim=-1):
-    """Native blocked partition function for a given dimension (-1 = the
-    highest-rank dimension), as an int usable wherever a mapper is expected
-    (no FFI callback cost)."""
-    return <uintptr_t>stf_partition_fn_blocked(dim)
+def _native_to_public(native, int rank):
+    """Convert a native (x, y, z, t) tuple back to a public C-order tuple of
+    the stored rank."""
+    return tuple(native[:rank])[::-1]
+
+
+def _public_axis_to_native(axis, int rank, what="axis"):
+    """Map a public C-order axis to the native dimension index."""
+    if isinstance(axis, bool) or not isinstance(axis, int):
+        raise TypeError(f"{what} must be an int, got {axis!r}")
+    if not 0 <= axis < rank:
+        raise ValueError(f"{what} {axis} is out of range for rank {rank}")
+    return rank - 1 - axis
+
+
+def partition_fn_blocked(int axis=0, data_rank=None):
+    """Native blocked partition function along a public (C-order) tensor
+    axis, as an int usable wherever a mapper is expected (no FFI callback
+    cost).
+
+    ``axis`` 0 (the outermost dimension) needs no ``data_rank``: it always
+    maps to the native highest-rank dimension. Any other axis requires
+    ``data_rank`` so the public axis can be mapped to the native dimension.
+    """
+    if axis == 0 and data_rank is None:
+        # Native -1 selects the highest-rank dimension, which is always the
+        # public outermost axis regardless of rank.
+        return <uintptr_t>stf_partition_fn_blocked(-1)
+    if data_rank is None:
+        raise ValueError("partition_fn_blocked requires data_rank for a nonzero axis")
+    return <uintptr_t>stf_partition_fn_blocked(
+        <int>_public_axis_to_native(axis, data_rank, "partition_fn_blocked axis"))
 
 
 def partition_fn_cyclic():
@@ -1439,11 +1524,17 @@ cdef class cute_partition:
 
     Build one from a JAX-like per-dimension specification with
     :meth:`from_spec`, or directly from flattened leaves with
-    :meth:`from_leaves`. Strides are in linear element units, dimension 0
-    fastest; row-major callers should reverse their dimensions.
+    :meth:`from_leaves`. All shapes, axes, and leaves use the public C/row-
+    major contract: axis 0 is the outermost (slowest) dimension and the last
+    leaf is the fastest. Strides are in linear element units over the padded
+    extents. The stored tensor and grid ranks make the conversion to the
+    native dimension-0-fastest representation exact (extent-1 dimensions are
+    preserved, never trimmed).
     """
 
     cdef stf_cute_partition_handle _h
+    cdef int _rank
+    cdef int _grid_rank
 
     def __init__(self):
         raise TypeError("use cute_partition.from_spec() or cute_partition.from_leaves()")
@@ -1455,26 +1546,35 @@ cdef class cute_partition:
 
     @staticmethod
     def from_spec(true_dims, spec, grid_dims):
-        """Build a partition from one entry per tensor dimension.
+        """Build a partition from one entry per tensor dimension (C order).
 
         Each entry is ``None`` (dimension not distributed) or a tuple:
         ``("blocked", axis)``, ``("cyclic", axis)``, or
-        ``("block_cyclic", axis, block)``, where *axis* is the grid axis the
-        dimension distributes over. Split dimensions are padded up to
-        divisibility (coordinates beyond the true extents own no bytes).
+        ``("block_cyclic", axis, block)``, where *axis* is the C-order grid
+        axis the dimension distributes over. ``spec`` must have exactly one
+        entry per dimension of ``true_dims``, in the same C order. Split
+        dimensions are padded up to divisibility (coordinates beyond the true
+        extents own no bytes).
 
         Example - 3-D tensor, dimension 1 blocked over grid axis 0::
 
-            part = cute_partition.from_spec((nx, ny, nz), (None, ("blocked", 0), None), (nplaces,))
+            part = cute_partition.from_spec((nz, ny, nx), (None, ("blocked", 0), None), (nplaces,))
         """
+        public_dims = _validate_extents(true_dims, "true_dims")
+        public_grid = _validate_extents(grid_dims, "grid_dims")
+        cdef int rank = len(public_dims)
+        cdef int grid_rank = len(public_grid)
+        if len(spec) != rank:
+            raise ValueError(
+                f"spec must have one entry per dimension of true_dims "
+                f"({rank}), got {len(spec)}")
         cdef stf_dim4 td, gd
-        _fill_dim4(true_dims, &td)
-        _fill_dim4(grid_dims, &gd)
-        if len(spec) > 4:
-            raise ValueError(f"at most 4 dimensions are supported, got {len(spec)}")
+        _fill_dim4_c_order(public_dims, &td, u"true_dims")
+        _fill_dim4_c_order(public_grid, &gd, u"grid_dims")
         cdef stf_partition_dim_spec[4] c_spec
-        cdef size_t rank = len(spec)
-        for i, entry in enumerate(spec):
+        # Native dimension i describes public dimension rank-1-i: reverse the
+        # spec together with the extents, and remap each grid axis.
+        for i, entry in enumerate(reversed(tuple(spec))):
             if entry is None:
                 c_spec[i].policy = 0
                 c_spec[i].mesh_axis = -1
@@ -1484,26 +1584,37 @@ cdef class cute_partition:
             if policy is None:
                 raise ValueError(f"unknown policy {entry[0]!r}; expected one of {sorted(_DIM_POLICIES)}")
             c_spec[i].policy = policy
-            c_spec[i].mesh_axis = entry[1]
+            c_spec[i].mesh_axis = _public_axis_to_native(entry[1], grid_rank, "grid axis")
             c_spec[i].block = entry[2] if policy == 3 else 0
         cdef cute_partition p = cute_partition.__new__(cute_partition)
-        p._h = stf_cute_partition_create(&td, &gd, c_spec, rank)
+        p._h = stf_cute_partition_create(&td, &gd, c_spec, <size_t>rank)
         if p._h == NULL:
             raise ValueError("invalid partition specification (see stderr for the underlying error)")
+        p._rank = rank
+        p._grid_rank = grid_rank
         return p
 
     @staticmethod
     def from_leaves(place_leaves, local_leaves, padded_dims, true_dims, grid_dims):
-        """Build a partition from flattened leaves (expert form).
+        """Build a partition from flattened leaves (expert form, C order).
 
         ``place_leaves`` is a sequence of ``(extent, stride, grid_axis)``
-        tuples and ``local_leaves`` of ``(extent, stride)`` tuples, leaf 0
-        fastest. The leaves must tile the padded extents exactly.
+        tuples and ``local_leaves`` of ``(extent, stride)`` tuples, the last
+        leaf fastest (matching a row-major reading). Grid axes are C-order.
+        The leaves must tile the padded extents exactly.
         """
+        public_padded = _validate_extents(padded_dims, "padded_dims")
+        public_dims = _validate_extents(true_dims, "true_dims")
+        public_grid = _validate_extents(grid_dims, "grid_dims")
+        cdef int rank = len(public_dims)
+        cdef int grid_rank = len(public_grid)
+        if len(public_padded) != rank:
+            raise ValueError(
+                f"padded_dims rank {len(public_padded)} does not match true_dims rank {rank}")
         cdef stf_dim4 pd, td, gd
-        _fill_dim4(padded_dims, &pd)
-        _fill_dim4(true_dims, &td)
-        _fill_dim4(grid_dims, &gd)
+        _fill_dim4_c_order(public_padded, &pd, u"padded_dims")
+        _fill_dim4_c_order(public_dims, &td, u"true_dims")
+        _fill_dim4_c_order(public_grid, &gd, u"grid_dims")
         cdef size_t np_ = len(place_leaves)
         cdef size_t nl = len(local_leaves)
         if np_ > 16 or nl > 16:
@@ -1513,15 +1624,13 @@ cdef class cute_partition:
         cdef int64_t[16] p_str
         cdef int64_t[16] l_str
         cdef int[16] p_axes
-        for i, (e, st, a) in enumerate(place_leaves):
-            if i >= <Py_ssize_t>np_:
-                raise ValueError("place_leaves yielded more items than its length")
+        # Public leaves are last-fastest; the native representation is
+        # leaf-0-fastest: reverse the leaf order and remap the grid axes.
+        for i, (e, st, a) in enumerate(reversed(tuple(place_leaves))):
             p_ext[i] = <uint64_t>e
             p_str[i] = <int64_t>st
-            p_axes[i] = <int>a
-        for i, (e, st) in enumerate(local_leaves):
-            if i >= <Py_ssize_t>nl:
-                raise ValueError("local_leaves yielded more items than its length")
+            p_axes[i] = <int>_public_axis_to_native(a, grid_rank, "place-leaf grid axis")
+        for i, (e, st) in enumerate(reversed(tuple(local_leaves))):
             l_ext[i] = <uint64_t>e
             l_str[i] = <int64_t>st
         cdef cute_partition p = cute_partition.__new__(cute_partition)
@@ -1529,32 +1638,46 @@ cdef class cute_partition:
             p_ext, p_str, p_axes, np_, l_ext, l_str, nl, &pd, &td, &gd)
         if p._h == NULL:
             raise ValueError("leaves do not describe an exact partition of the padded extents")
+        p._rank = rank
+        p._grid_rank = grid_rank
         return p
 
     @property
+    def rank(self):
+        """Tensor rank (number of public dimensions)."""
+        return self._rank
+
+    @property
+    def grid_rank(self):
+        """Rank of the grid of places."""
+        return self._grid_rank
+
+    @property
     def true_dims(self):
-        """True tensor extents (4-tuple, trailing 1s for unused dimensions)."""
+        """True tensor extents (C-order tuple of :attr:`rank` entries)."""
         cdef stf_dim4 d
         stf_cute_partition_true_dims(self._h, &d)
-        return (d.x, d.y, d.z, d.t)
+        return _native_to_public((d.x, d.y, d.z, d.t), self._rank)
 
     @property
     def padded_dims(self):
-        """Padded tensor extents the leaf strides refer to (4-tuple)."""
+        """Padded tensor extents the leaf strides refer to (C-order tuple)."""
         cdef stf_dim4 d
         stf_cute_partition_padded_dims(self._h, &d)
-        return (d.x, d.y, d.z, d.t)
+        return _native_to_public((d.x, d.y, d.z, d.t), self._rank)
 
     @property
     def grid_dims(self):
-        """Extents of the grid of places (4-tuple)."""
+        """Extents of the grid of places (C-order tuple of :attr:`grid_rank`
+        entries)."""
         cdef stf_dim4 d
         stf_cute_partition_grid_dims(self._h, &d)
-        return (d.x, d.y, d.z, d.t)
+        return _native_to_public((d.x, d.y, d.z, d.t), self._grid_rank)
 
     @property
     def place_leaves(self):
-        """Leaves of the place mode as ``(extent, stride, grid_axis)`` tuples."""
+        """Leaves of the place mode as ``(extent, stride, grid_axis)`` tuples,
+        last leaf fastest, grid axes C-order."""
         cdef size_t n = stf_cute_partition_num_place_leaves(self._h)
         cdef uint64_t[16] ext
         cdef int64_t[16] str_
@@ -1563,11 +1686,13 @@ cdef class cute_partition:
             raise ValueError("at most 16 leaves are supported per mode")
         if n > 0:
             stf_cute_partition_get_place_leaves(self._h, ext, str_, axes)
-        return [(ext[i], str_[i], axes[i]) for i in range(n)]
+        return [(ext[i], str_[i], self._grid_rank - 1 - axes[i])
+                for i in reversed(range(n))]
 
     @property
     def local_leaves(self):
-        """Leaves of the local mode as ``(extent, stride)`` tuples."""
+        """Leaves of the local mode as ``(extent, stride)`` tuples, last leaf
+        fastest."""
         cdef size_t n = stf_cute_partition_num_local_leaves(self._h)
         cdef uint64_t[16] ext
         cdef int64_t[16] str_
@@ -1575,12 +1700,46 @@ cdef class cute_partition:
             raise ValueError("at most 16 leaves are supported per mode")
         if n > 0:
             stf_cute_partition_get_local_leaves(self._h, ext, str_)
-        return [(ext[i], str_[i]) for i in range(n)]
+        return [(ext[i], str_[i]) for i in reversed(range(n))]
 
     def place_offset(self, place_index):
         """Linear element offset (in the padded space) of a place's first
-        element, given the place's linear index in place-mode order."""
+        element, given the place's linear index in *place-mode* order (the
+        leaf order of :attr:`place_leaves`). Note this is not the execution
+        grid's linear place order when tensor dimensions map to grid axes in
+        a different order; see :meth:`grid_place_offset`.
+        """
         return stf_cute_partition_place_offset(self._h, <uint64_t>place_index)
+
+    def grid_place_offset(self, place_index):
+        """Linear element offset (in the padded space) of the first element
+        owned by the place at linear index ``place_index`` in the execution
+        grid's C-order enumeration (identical to the native linear order).
+        """
+        cdef stf_dim4 gd
+        stf_cute_partition_grid_dims(self._h, &gd)
+        cdef uint64_t total = gd.x * gd.y * gd.z * gd.t
+        if not 0 <= place_index < total:
+            raise ValueError(f"place_index {place_index} out of range for {total} places")
+        # Decode the grid-linear index into native grid coordinates
+        # (dimension 0 fastest), then dot with the place leaves through their
+        # native grid-axis bindings.
+        cdef uint64_t rem = <uint64_t>place_index
+        native_extents = (gd.x, gd.y, gd.z, gd.t)
+        coords = []
+        for e in native_extents:
+            coords.append(rem % e)
+            rem //= e
+        cdef size_t n = stf_cute_partition_num_place_leaves(self._h)
+        cdef uint64_t[16] ext
+        cdef int64_t[16] str_
+        cdef int[16] axes
+        if n > 0:
+            stf_cute_partition_get_place_leaves(self._h, ext, str_, axes)
+        cdef int64_t offset = 0
+        for i in range(n):
+            offset += <int64_t>coords[axes[i]] * str_[i]
+        return offset
 
 
 class placement_stats:
@@ -1623,7 +1782,9 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
 
     ``mapper`` is a :class:`cute_partition`, a native partition function
     pointer (int, see :func:`partition_fn_blocked`), or a Python callable
-    ``(data_coords, data_dims, grid_dims) -> (x, y, z, t)``. Note the callable
+    ``(data_coords, data_dims, grid_dims) -> grid_coords`` where every tuple
+    is C-order (``data_coords``/``data_dims`` have ``len(data_dims)`` entries
+    and ``grid_dims``/``grid_coords`` the grid's rank). Note the callable
     form crosses the GIL for every probe: the structured/native forms are the
     fast path.
 
@@ -1645,7 +1806,7 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
     try:
         if isinstance(mapper, cute_partition):
             part = <cute_partition>mapper
-            if data_dims is not None and tuple(part.true_dims) != tuple(_pad_dims_tuple(data_dims)):
+            if data_dims is not None and _validate_extents(data_dims, "data_dims") != tuple(part.true_dims):
                 raise ValueError(
                     f"data_dims {data_dims} do not match the partition's true extents {part.true_dims} "
                     "(pass None to use the partition's extents)")
@@ -1653,7 +1814,8 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
                 grid._h, part._h, <uint64_t>elemsize, <uint64_t>probes, <uint64_t>block_size,
                 &c_stats, per_pos)
         else:
-            _fill_dim4(data_dims, &dims)
+            public_dims = _validate_extents(data_dims, "data_dims")
+            _fill_dim4_c_order(public_dims, &dims, u"data_dims")
             mapper_errors = None
             if isinstance(mapper, bool):
                 raise TypeError("mapper must not be a bool")
@@ -1663,7 +1825,8 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
                 ptr_val = <uintptr_t>mapper
                 keep_alive = None
             elif callable(mapper):
-                keep_alive, c_ptr, mapper_errors = _make_mapper_callback(mapper)
+                keep_alive, c_ptr, mapper_errors = _make_mapper_callback(
+                    mapper, len(public_dims), _exec_place_grid_rank(grid))
                 ptr_val = c_ptr
             else:
                 raise TypeError(
@@ -1770,35 +1933,40 @@ cdef class data_place:
         return p
 
     @staticmethod
-    def composite(exec_place grid, object mapper):
+    def composite(exec_place grid, object mapper, *, data_rank=None):
         """Create a composite data place: grid of execution places + partition function.
 
         The partitioner (mapper) is a callable with signature::
 
-            (data_coords, data_dims, grid_dims) -> (x, y, z, t)
+            (data_coords, data_dims, grid_dims) -> grid_coords
 
-        Each argument/return is a 4-tuple of integers:
+        Every argument and the return value are C-order tuples of integers:
+        ``data_coords`` and ``data_dims`` have ``data_rank`` entries,
+        ``grid_dims`` and the returned ``grid_coords`` have the grid's rank
+        (a plain int is accepted for a 1-D grid).
 
         - *data_coords*: logical position in the data
         - *data_dims*: full shape of the data
         - *grid_dims*: shape of the execution place grid
         - return: position in the grid (which place owns this data element)
 
-        Example — blocked partition along first dimension::
+        Example — blocked partition along the outermost dimension::
 
             def blocked_1d(data_coords, data_dims, grid_dims):
                 n = data_dims[0]
                 nplaces = grid_dims[0]
                 part_size = max((n + nplaces - 1) // nplaces, 1)
-                place_x = min(data_coords[0] // part_size, nplaces - 1)
-                return (place_x, 0, 0, 0)
+                return min(data_coords[0] // part_size, nplaces - 1)
 
             grid = exec_place_grid.from_devices([0, 1])
-            dplace = data_place.composite(grid, blocked_1d)
+            dplace = data_place.composite(grid, blocked_1d, data_rank=1)
 
-        Instead of a Python callable, a native partition function pointer (as
-        returned by :func:`partition_fn_blocked` / :func:`partition_fn_cyclic`)
-        can be passed as an int, avoiding any FFI callback cost.
+        ``data_rank`` is required for Python callables: the callback API is
+        shape-free, so the tensor rank cannot be inferred. Instead of a
+        Python callable, a native partition function pointer (as returned by
+        :func:`partition_fn_blocked` / :func:`partition_fn_cyclic`) can be
+        passed as an int, avoiding any FFI callback cost (and any need for
+        ``data_rank``).
         """
         cdef data_place p = data_place.__new__(data_place)
         cdef uintptr_t ptr_val
@@ -1809,12 +1977,17 @@ cdef class data_place:
                 raise ValueError("mapper function pointer must not be NULL")
             ptr_val = <uintptr_t>mapper
         elif callable(mapper):
-            callback_obj, c_ptr, _errors = _make_mapper_callback(mapper)
+            if data_rank is None:
+                raise ValueError(
+                    "data_place.composite requires data_rank for a Python mapper "
+                    "(the callback is shape-free, so the tensor rank cannot be inferred)")
+            callback_obj, c_ptr, _errors = _make_mapper_callback(
+                mapper, data_rank, _exec_place_grid_rank(grid))
             p._mapper_callback = callback_obj
             ptr_val = c_ptr
         else:
             raise TypeError(
-                "mapper must be callable (data_coords, data_dims, grid_dims) -> (x, y, z, t) "
+                "mapper must be callable (data_coords, data_dims, grid_dims) -> grid_coords "
                 "or a native partition function pointer (int)")
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
@@ -1849,8 +2022,8 @@ cdef class data_place:
         Parameters
         ----------
         size_or_dims : int or sequence of int
-            Either a byte count, or the tensor extents (dimension 0 fastest,
-            at most 4). Composite places require the extents form: their
+            Either a byte count, or the tensor extents (C order, at most 4
+            dimensions). Composite places require the extents form: their
             partitioner maps element coordinates to places, which a byte
             count alone cannot express.
         stream : optional
@@ -1877,7 +2050,7 @@ cdef class data_place:
         cdef stf_dim4 dims
         cdef void* ptr
         if isinstance(size_or_dims, (tuple, list)):
-            _fill_dim4(size_or_dims, &dims)
+            _fill_dim4_c_order(size_or_dims, &dims, u"extents")
             ptr = stf_data_place_allocate_nd(self._h, &dims, <uint64_t>elemsize, s)
             if ptr == NULL:
                 raise MemoryError(
@@ -1921,6 +2094,8 @@ cdef class task:
     cdef list _lds_args
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
+    # Grid rank of the exec place set through set_exec_place (1 = scalar)
+    cdef int _grid_rank
 
     def __cinit__(self, context ctx):
         self._t = stf_task_create(ctx._ctx)
@@ -1929,6 +2104,7 @@ cdef class task:
         self._ctx = ctx._ctx
         self._lds_args = []
         self._alive = ctx._alive
+        self._grid_rank = 1
 
     def __dealloc__(self):
         # See stackable_logical_data.__dealloc__ for why a None _alive must
@@ -1988,6 +2164,7 @@ cdef class task:
 
         cdef exec_place ep = <exec_place> exec_p
         stf_task_set_exec_place(self._t, ep._h)
+        self._grid_rank = _exec_place_grid_rank(ep)
 
     def stream_ptr(self):
         """Return a :class:`CudaStream` for this task's CUDA stream.
@@ -2000,14 +2177,15 @@ cdef class task:
         return CudaStream(<uintptr_t>s)
 
     def get_grid_dims(self):
-        """When the task's exec place is a grid, return (x, y, z, t) shape.
+        """When the task's exec place is a grid, return its C-order shape
+        (rank taken from the grid set with :meth:`set_exec_place`).
 
         Call after start(). Returns None if the task is not on a grid.
         """
         cdef stf_dim4 dims
         if stf_task_get_grid_dims(self._t, &dims) != 0:
             return None
-        return (dims.x, dims.y, dims.z, dims.t)
+        return _native_to_public((dims.x, dims.y, dims.z, dims.t), self._grid_rank)
 
     def get_stream_at_index(self, size_t place_index):
         """When the task's exec place is a grid, return the CUstream for the
@@ -2029,7 +2207,9 @@ cdef class task:
         dims = self.get_grid_dims()
         if dims is None:
             return [self.stream_ptr()]
-        cdef size_t n = dims[0] * dims[1] * dims[2] * dims[3]
+        cdef size_t n = 1
+        for e in dims:
+            n *= e
         return [self.get_stream_at_index(i) for i in range(n)]
 
     def get_arg(self, index) -> int:

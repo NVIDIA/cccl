@@ -58,8 +58,9 @@ class DeviceArray:
     stream : optional
         CUDA stream for stream-ordered allocation.
     dims : sequence of int, optional
-        Tensor extents (dimension 0 fastest) describing the geometry of the
-        allocation, when the flat array backs a multi-dimensional tensor.
+        Tensor extents (C order, like a NumPy shape) describing the geometry
+        of the allocation, when the flat array backs a multi-dimensional
+        tensor.
         Required for composite places backed by a structured partition,
         whose extents must match the partition's tensor;
         ``prod(dims) * elemsize`` must equal ``size * itemsize``. Defaults
@@ -83,7 +84,14 @@ class DeviceArray:
     )
 
     def __init__(
-        self, size: int, dtype, dplace: "data_place", stream=None, *, dims=None, elemsize=None
+        self,
+        size: int,
+        dtype,
+        dplace: "data_place",
+        stream=None,
+        *,
+        dims=None,
+        elemsize=None,
     ):
         if size < 0:
             raise ValueError("DeviceArray size must be non-negative")
