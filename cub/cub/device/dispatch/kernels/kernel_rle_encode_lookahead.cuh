@@ -102,7 +102,6 @@ __device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_
 
 // CRITICAL: from choose_signed_offset, it is guaranteed that OffT covers the whole index space.
 // Therefore, in the kernel, the type of the prefix (run_count, open_len) should always be OffT.
-// How do we pack them? if P is 32 bit, we compact them into 1 dword. Otherwise, 2 dwords!
 template <class OffT, bool = (sizeof(OffT) > 4)>
 struct PrefixT;
 
@@ -194,6 +193,7 @@ __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
 // width = how many low lanes participate, i.e. lanes [0, width): lane i returns lane_value(0) + ... + lane_value(i).
 // lanes in [width, 32) must still call this, but their return values are unspecified.
 // (TODO) Nan: swapping this with cub::WarpScan caused perf regression (-3% in worst cases). This needs investigation.
+// The primary suspect is cub::WarpScan uses asm VOLITALE and it could change codegen
 template <int width>
 __device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
 {
@@ -366,9 +366,10 @@ struct RunSpanT
   int next_head_pos;
 };
 
-// the compute warp judged this warp tile too sparse to be worth the position-staging
-// and it has decided to write only the 32 head-flag words
-// one warp tile is 32 chunks x 32 elements so lane i owns word i
+// the compute warp may deem this warp tile too sparse to be worth the position-staging, and in that case it will write
+// only the 32 head-flag words. Then, it is up to the store warps to "decode" the positions from the headflags.
+// one warp tile is 32 chunks x 32 elements, so lane i owns word i.
+// This buys 2.5% BWUtil in the MaxSegSize{2^4, 2^6, 2^8}
 struct HeadFlagDecodeT
 {
   unsigned lane_head_flag_word;
@@ -416,8 +417,8 @@ struct HeadFlagDecodeT
         flag_word_idx = candidate_word_idx;
       }
     }
-    // the lane knows the index of the word containing its head
-    // now we need to convert it to the element position
+    // the lane now knows the index of the word containing its head, and we need to convert it to the element
+    // position
     // where is my head in the word?
     const int run_rank_in_word = run_idx - __shfl_sync(full_mask, lane_runs_before_word, flag_word_idx);
     // get the actual word
