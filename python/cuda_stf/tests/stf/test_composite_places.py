@@ -216,7 +216,7 @@ class TestCompositeTask:
         for a grid just as it is for a scalar task.
         """
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -264,7 +264,7 @@ class TestCompositeTask:
             raise RuntimeError("mapper boom")
 
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, broken_mapper)
+        dplace = stf.data_place.composite(grid, broken_mapper, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -280,10 +280,10 @@ class TestCompositeTask:
         """A mapper returning coordinates outside the grid surfaces an error."""
 
         def out_of_range_mapper(data_coords, data_dims, grid_dims):
-            return (grid_dims[0] + 5, 0, 0, 0)
+            return grid_dims[0] + 5
 
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, out_of_range_mapper)
+        dplace = stf.data_place.composite(grid, out_of_range_mapper, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
@@ -304,7 +304,7 @@ class TestCompositeTask:
             return blocked_mapper_1d(data_coords, data_dims, grid_dims)
 
         grid = stf.exec_place_grid.from_devices([0, 0])
-        dplace = stf.data_place.composite(grid, counting_mapper)
+        dplace = stf.data_place.composite(grid, counting_mapper, data_rank=1)
         grid.set_affine_data_place(dplace)
 
         ctx = stf.context()
