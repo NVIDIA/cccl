@@ -10,6 +10,12 @@ import cuda.stf._experimental as stf  # noqa: E402
 from cuda.bindings import runtime as cudart  # noqa: E402
 
 
+def _require_device():
+    err, count = cudart.cudaGetDeviceCount()
+    if err != cudart.cudaError_t.cudaSuccess or count == 0:
+        pytest.skip("no usable CUDA device")
+
+
 def _require_green_context_helper(sm_count=1, dev_id=0):
     if not hasattr(stf, "green_context_helper"):
         pytest.skip("green context STF bindings are not available")
@@ -267,14 +273,87 @@ def test_device_array_rejects_negative_size():
         stf.DeviceArray(-1, np.float32, stf.data_place.host())
 
 
-def test_device_array_from_host_rejects_non_1d_input():
-    """from_host keeps DeviceArray semantics intentionally 1-D."""
+def test_device_array_shaped_roundtrip():
+    """A multi-dimensional DeviceArray preserves its C-order shape through
+    the CUDA Array Interface and host round trips (non-square so an order
+    reversal would be visible)."""
     import numpy as np
 
-    with pytest.raises(ValueError, match="1-D"):
-        stf.DeviceArray.from_host(
-            np.zeros((2, 2), dtype=np.float32), stf.data_place.host()
-        )
+    _require_device()
+    stf.machine_init()
+    dp = stf.data_place.device(0)
+
+    h = np.arange(24, dtype=np.float32).reshape(2, 3, 4)
+    d = stf.DeviceArray.from_host(h, dp)
+    assert d.shape == (2, 3, 4)
+    assert d.ndim == 3
+    assert d.size == 24
+    cai = d.__cuda_array_interface__
+    assert cai["shape"] == (2, 3, 4)
+    assert cai["strides"] is None  # compact C-contiguous
+    out = d.copy_to_host()
+    assert out.shape == (2, 3, 4)
+    assert np.array_equal(out, h)
+
+
+def test_device_array_reshape_view():
+    """reshape() returns a non-owning view that keeps the owner alive and
+    shares storage; -1 infers one dimension."""
+    import gc
+
+    import numpy as np
+
+    _require_device()
+    stf.machine_init()
+    dp = stf.data_place.device(0)
+
+    h = np.arange(24, dtype=np.float32).reshape(2, 3, 4)
+    d = stf.DeviceArray.from_host(h, dp)
+
+    collapsed = d.reshape(6, 4)
+    assert collapsed.shape == (6, 4)
+    flat = collapsed.reshape(-1)
+    assert flat.shape == (24,)
+    assert (
+        flat.__cuda_array_interface__["data"][0]
+        == d.__cuda_array_interface__["data"][0]
+    )
+
+    # The view keeps the allocation alive after the owner reference is gone
+    del d, collapsed
+    gc.collect()
+    out = flat.copy_to_host()
+    assert np.array_equal(out, np.arange(24, dtype=np.float32))
+
+    with pytest.raises(ValueError, match="elements"):
+        flat.reshape(5, 5)
+    with pytest.raises(ValueError, match="one dimension"):
+        flat.reshape(-1, -1)
+    with pytest.raises(IndexError, match="1-D"):
+        flat.reshape(6, 4)[0:2]
+
+
+def test_device_array_tensor_of_tiles_allocation():
+    """A rank-4 tensor-of-tiles DeviceArray allocates through composite_cute
+    with its own shape as the allocation geometry, and adjacent tile axes and
+    payload axes collapse with a plain reshape."""
+    import numpy as np
+
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.create([stf.exec_place.device(0)] * 4, grid_dims=(2, 2))
+
+    tiles, tile = (2, 2), (512, 256)
+    shape = tiles + tile
+    part = stf.cute_partition.from_spec(
+        shape, (("blocked", 0), ("blocked", 1), None, None), (2, 2)
+    )
+    dpc = stf.data_place.composite_cute(grid, part)
+
+    d = stf.DeviceArray(shape, np.float32, dpc)
+    assert d.shape == shape
+    collapsed = d.reshape(tiles[0] * tiles[1], tile[0] * tile[1])
+    assert collapsed.shape == (4, 512 * 256)
 
 
 def test_device_array_roundtrip():
