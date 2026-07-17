@@ -188,7 +188,8 @@ enum class algorithm : unsigned char
   // by dispatch selects the kernel's HybridSplit instantiation. Merged to one
   // enumerator per the design doc. Single-channel for the hybrid (smem_split>0) sub-case.
   // Reachable via dispatch_by_algorithm + the CUB_HISTO_FORCE_ALGO hook; no longer
-  // auto-selected (the high-bin region routes to direct_single_probe).
+  // auto-selected (the high-bin region routes to the single-probe + RLE-spill
+  // cooperative kernel).
   gmem_privatized_nocache,
 
   // No-cache front-end on the cooperative CacheSpillKernel, with block-private
@@ -251,17 +252,10 @@ struct selector_features
 //      classify cost scale with the active channel count), so multi-channel RANGE /
 //      >3-channel cells past the relevant cap fall through to the high-bin region.
 //
-//   2. High-bin region: the single-channel SMEM+GMEM `gmem_privatized_nocache`
-//      (smem_split>0, the merged hybrid member) and the two CacheSpillKernel caches
-//      (`direct_single_probe` / `direct_cuckoo`). Single-channel uses the on-chip
-//      hybrid where the histogram fits AND the input amortizes its setup (the 65536
-//      and 131072 tiers above their per-transform pixel floors); above 131072 (the
-//      262144 and 1048576 tiers) the histogram exceeds the hybrid's on-chip working
-//      set, so direct atomics win. Multi-channel uses the direct caches. The cuckoo
-//      and single-probe caches measure within noise, so single-probe (the leaner
-//      probe) is the default and cuckoo serves the larger multi bin tiers. (The
-//      proposed `gmem_privatized_{cuckoo,single_probe}` are never returned here —
-//      they are reachable-but-unselected; see the design doc's Decision.)
+//   2. High-bin region: use the cooperative GMEM-privatized kernel with a
+//      single-probe SMEM cache and RLE on cache spill. It keeps 32-bit local/cache
+//      counters when the final output is wider, avoids shared-output atomic
+//      contention, and gathers the block-private slabs into the final histogram.
 template <bool IsByteSample>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features const& f)
 {
@@ -321,44 +315,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   }
 
   // -----------------------------------------------------------------------
-  // High-bin region (num_bins above the on-chip privatized cap: 65536 / 131072 /
-  // 262144 / 1048576).
-  //
-  // The choice is among: the single-channel SMEM+GMEM hybrid (the smem_split>0
-  // member of `gmem_privatized_nocache`); the two CacheSpillKernel caches
-  // (`direct_cuckoo`, `direct_single_probe`); and the cooperative pure-gather (the
-  // smem_split==0 member of `gmem_privatized_nocache`). The selector cannot observe input entropy (a runtime
-  // data property), so each rule picks the algorithm with the best GiB/s GEOMEAN
-  // over the input-distribution mix (uniform / skewed / single-hot-bin) for that
-  // (channels, sample-width, bin-tier, pixel-count) regime, measured by sweeping
-  // every algorithm across the full benchmark matrix on the target architecture.
-  //
-  // Two facts shape the rules. (1) The cuckoo and single-probe caches perform
-  // within noise of each other across the whole single-channel region (both are
-  // really direct GMEM atomics once bins far exceed the few-thousand cache
-  // slots), so single-probe -- the leaner inner loop -- is the single
-  // direct-atomic default. (2) The on-chip hybrid kernel wins the 65536 and 131072
-  // tiers at large input, where keeping the whole modest histogram in SMEM beats
-  // atomics into a large GMEM output; it loses at small input (its per-block setup
-  // is not amortized), and from the 262144 tier up (the histogram exceeds its
-  // on-chip working set, so the direct-atomic cache wins at every input size --
-  // measured hybrid/direct 0.68..1.00 across the 262144 grid).
+  // High-bin region (above the on-chip privatized cap). The selector is
+  // intentionally shape-blind, so use the best general-purpose cooperative
+  // cache/spill combination across the complete shape mix.
   // -----------------------------------------------------------------------
 
-  // Above the on-chip privatized cap, one algorithm wins across the whole high-bin
-  // region for every (channels, sample-width, bin-tier, pixel-count) regime: the
-  // direct-atomic single-probe cache, run with warp-coalescing DISABLED. Measured on
-  // B200 (sm_100) over the full benchmark matrix (run_2026-06-15_coalesce, I32+F64,
-  // 14 shapes), it is the per-cell best or within ~2% at every off-chip tier and beats
-  // the previous routing (hybrid / gather / cuckoo) by geomean 1.3-1.7x. The hybrid
-  // (smem_split>0 gmem_privatized member) and the cuckoo cache were each retired from
-  // the selector: single-probe matched or beat them everywhere once coalescing was
-  // turned off on the cache kernels (the coalesce penalty -- a __match_any_sync whose
-  // dependent atomic stalls when a warp's bins are distinct -- was what made the
-  // direct-atomic caches look weak in the older sweeps). single-probe is also the
-  // leaner probe, so this is simpler AND faster. Both transforms, both sample widths,
-  // both counter widths, single- and multi-channel collapse to this one rule.
-  return algorithm::direct_single_probe;
+  return algorithm::gmem_privatized_single_probe_rle_spill;
 }
 
 // The device's per-CTA opt-in dynamic-SMEM limit (cudaDevAttrMaxSharedMemoryPerBlockOptin),
