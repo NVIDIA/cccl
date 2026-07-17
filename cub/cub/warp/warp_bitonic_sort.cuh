@@ -297,15 +297,16 @@ private:
 
   int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
+  static constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
+  static constexpr int second_half_len = ItemsPerThread - first_half_len;
+  using SortFirstHalfT                 = WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>;
+  using SortSecondHalfT                = WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>;
+
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
-    constexpr int second_half_len = ItemsPerThread - first_half_len;
-
-    WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, !Reverse>(
-      keys, values, compare_op);
-    WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, Reverse>(
+    SortFirstHalfT{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
+    SortSecondHalfT{}.template sort<CompareOp, Reverse>(
       keys + first_half_len, (keys_only ? nullptr : values + first_half_len), compare_op);
     merge<CompareOp, Reverse>(keys, values, compare_op);
   }
@@ -327,15 +328,10 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
-    constexpr int second_half_len = ItemsPerThread - first_half_len;
-    constexpr int stride          = first_half_len;
-    static_assert(first_half_len >= second_half_len);
-
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
     {
-      const int other_i = i + stride;
+      const int other_i = i + first_half_len;
       KeyT& key         = keys[i];
       KeyT& other_key   = keys[other_i];
       bool should_swap;
@@ -359,23 +355,18 @@ private:
       }
     }
 
-    WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
-      keys, values, compare_op);
-    WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
+    SortFirstHalfT{}.template merge<CompareOp, Reverse>(keys, values, compare_op);
+    SortSecondHalfT{}.template merge<CompareOp, Reverse>(
       keys + first_half_len, (keys_only ? nullptr : values + first_half_len), compare_op);
   }
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
-    constexpr int second_half_len = ItemsPerThread - first_half_len;
-
     if (valid_items > first_half_len * warp_threads)
     {
-      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, !Reverse>(
-        keys, values, compare_op);
-      WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, Reverse>(
+      SortFirstHalfT{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
+      SortSecondHalfT{}.template sort<CompareOp, Reverse>(
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
@@ -384,8 +375,7 @@ private:
     }
     else
     {
-      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template sort<CompareOp, Reverse>(
-        keys, values, compare_op, valid_items);
+      SortFirstHalfT{}.template sort<CompareOp, Reverse>(keys, values, compare_op, valid_items);
     }
   }
 
@@ -404,15 +394,10 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
-    constexpr int second_half_len = ItemsPerThread - first_half_len;
-    constexpr int stride          = first_half_len;
-    static_assert(first_half_len >= second_half_len);
-
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
     {
-      const int other_i = i + stride;
+      const int other_i = i + first_half_len;
       KeyT& key         = keys[i];
       KeyT& other_key   = keys[other_i];
       bool should_swap;
@@ -438,9 +423,8 @@ private:
 
     if (valid_items > first_half_len * warp_threads)
     {
-      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
-        keys, values, compare_op);
-      WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
+      SortFirstHalfT{}.template merge<CompareOp, Reverse>(keys, values, compare_op);
+      SortSecondHalfT{}.template merge<CompareOp, Reverse>(
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
@@ -448,8 +432,7 @@ private:
     }
     else
     {
-      WarpBitonicSort<KeyT, first_half_len, LogicalWarpThreads, ValueT>{}.template merge<CompareOp, Reverse>(
-        keys, values, compare_op, valid_items);
+      SortFirstHalfT{}.template merge<CompareOp, Reverse>(keys, values, compare_op, valid_items);
     }
   }
 };
