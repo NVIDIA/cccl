@@ -60,8 +60,8 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceSegmentedRadixSort that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref SegmentedRadixSortPolicy, as shown in the
-//! example below:
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedRadixSortPolicy`, as shown
+//! in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
 //!      :language: c++

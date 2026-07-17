@@ -81,8 +81,8 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceSegmentedReduce that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref SegmentedReducePolicy, as shown in the
-//! example below:
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedReducePolicy`, as shown in
+//! the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
 //!      :language: c++

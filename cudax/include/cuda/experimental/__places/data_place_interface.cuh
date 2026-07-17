@@ -207,6 +207,15 @@ public:
   // === Composite-specific (throw by default) ===
 
   /**
+   * @brief Whether this place is a composite place (data distributed over a
+   * grid of places by a partitioner)
+   */
+  virtual bool is_composite() const
+  {
+    return false;
+  }
+
+  /**
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place
    */
