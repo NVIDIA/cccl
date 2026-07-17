@@ -26,6 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/pair.h>
+
 #include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
@@ -66,7 +73,7 @@ public:
     {
       T* e = it->get();
       assert(e);
-      if (*e == ::std::tuple<const P&...>(p...))
+      if (*e == ::cuda::std::tuple<const P&...>(p...))
       {
         it->release();
         if (it + 1 < payload.end())
@@ -78,7 +85,7 @@ public:
       }
     }
 
-    return ::std::make_unique<T>(::std::forward<P>(p)...);
+    return ::std::make_unique<T>(::cuda::std::forward<P>(p)...);
   }
 
   template <typename F>
@@ -108,13 +115,14 @@ struct cached_localized_array
       : array(mv(arr))
   {}
 
-  template <typename... Args, typename = ::std::enable_if_t<::std::is_constructible_v<localized_array, Args...>>>
+  template <typename... Args,
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<localized_array, Args...>>>
   explicit cached_localized_array(Args&&... args)
-      : array(::std::make_unique<localized_array>(::std::forward<Args>(args)...))
+      : array(::std::make_unique<localized_array>(::cuda::std::forward<Args>(args)...))
   {}
 
   template <typename... P>
-  bool operator==(::std::tuple<P&...> t) const
+  bool operator==(::cuda::std::tuple<P&...> t) const
   {
     return *array == t;
   }
@@ -149,7 +157,7 @@ struct cached_cute_localized_array
       , elemsize(elem_size)
   {
     const auto owner_of = ::std::function<pos4(size_t)>(
-      [partition = this->partition, delinearize = ::std::forward<F>(delinearize)](size_t ind) {
+      [partition = this->partition, delinearize = ::cuda::std::forward<F>(delinearize)](size_t ind) {
         return partition.owner(delinearize(ind));
       });
     array = ::std::make_unique<localized_array>(grid, owner_of, total_size, elem_size, data_dims);
@@ -171,14 +179,14 @@ struct cached_cute_localized_array
   {}
 
   template <typename... P>
-  bool operator==(::std::tuple<P&...> t) const
+  bool operator==(::cuda::std::tuple<P&...> t) const
   {
     // tuple arguments:
     // 0: grid, 1: partition, 2: delinearize function, 3: total size,
     // 4: element size, 5: data dimensions
-    return grid == ::std::get<0>(t) && partition == ::std::get<1>(t)
-        && total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t) && elemsize == ::std::get<4>(t)
-        && data_dims == ::std::get<5>(t);
+    return grid == ::cuda::std::get<0>(t) && partition == ::cuda::std::get<1>(t)
+        && total_size_bytes == ::cuda::std::get<3>(t) * ::cuda::std::get<4>(t) && elemsize == ::cuda::std::get<4>(t)
+        && data_dims == ::cuda::std::get<5>(t);
   }
 
   exec_place grid;
@@ -240,7 +248,7 @@ public:
   }
 
   template <typename F>
-  ::std::pair<::std::unique_ptr<localized_array>, event_list>
+  ::cuda::std::pair<::std::unique_ptr<localized_array>, event_list>
   get(const data_place& place, F&& delinearize, size_t total_size, size_t elem_size, dim4 data_dims)
   {
     EXPECT(place.is_composite());
@@ -255,7 +263,7 @@ public:
       }
 
       auto entry = cute_partition_cache.get(
-        place.affine_exec_place(), partition, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+        place.affine_exec_place(), partition, ::cuda::std::forward<F>(delinearize), total_size, elem_size, data_dims);
       event_list prereqs = mv(entry->prereqs);
       return {mv(entry->array), mv(prereqs)};
     }
@@ -263,7 +271,7 @@ public:
     auto entry = partition_fn_cache.get(
       place.affine_exec_place(),
       place.get_partitioner(),
-      ::std::forward<F>(delinearize),
+      ::cuda::std::forward<F>(delinearize),
       total_size,
       elem_size,
       data_dims);

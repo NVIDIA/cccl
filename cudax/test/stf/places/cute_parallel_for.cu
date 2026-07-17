@@ -39,14 +39,16 @@ void test_cute_composite_cache(const exec_place& grid)
 
   reserved::composite_slice_cache cache;
 
-  const dim4 mismatched_dims(n / 2);
+  // Equal element counts are insufficient: a different tensor shape changes
+  // delinearization and therefore ownership.
+  const dim4 mismatched_dims(n / 2, 2);
   const auto mismatched_delinearize = [mismatched_dims](size_t ind) {
     return mismatched_dims.index_to_pos(ind);
   };
   bool mismatch_thrown = false;
   try
   {
-    (void) cache.get(place, mismatched_delinearize, n / 2, sizeof(size_t), mismatched_dims);
+    (void) cache.get(place, mismatched_delinearize, n, sizeof(size_t), mismatched_dims);
   }
   catch (const ::std::invalid_argument&)
   {
