@@ -55,19 +55,21 @@ namespace reserved
 //! interior regions and padding phantoms are handled (predication rather than
 //! restructured iteration).
 //!
-//! NVCC 12.0 fails to discard this specialization when cuda::std::void_t is
-//! used and T has no contains member. Keep this detector on host standard
-//! traits for supported-toolkit compatibility.
-template <typename T, typename = void>
-struct shape_has_contains : ::std::false_type
-{};
+//! NVCC 12.0 may diagnose a missing contains member even in a discarded
+//! if constexpr branch. Keep the member access inside overload SFINAE so it
+//! is never instantiated for ordinary shapes.
+template <typename _Shape, typename _Coords>
+_CCCL_HOST_DEVICE_API constexpr auto __shape_contains(const _Shape& __shape, const _Coords& __coords, int)
+  -> decltype(static_cast<bool>(__shape.contains(__coords)))
+{
+  return static_cast<bool>(__shape.contains(__coords));
+}
 
-template <typename T>
-struct shape_has_contains<
-  T,
-  ::std::void_t<decltype(::std::declval<const T&>().contains(::std::declval<const T&>().index_to_coords(size_t{})))>>
-    : ::std::true_type
-{};
+template <typename _Shape, typename _Coords>
+_CCCL_HOST_DEVICE_API constexpr bool __shape_contains(const _Shape&, const _Coords&, long)
+{
+  return true;
+}
 
 template <typename _Fn, typename _Tuple>
 _CCCL_HOST_DEVICE_API constexpr decltype(auto) __apply_coords(_Fn&& __fn, _Tuple&& __coords)
@@ -107,12 +109,9 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
     for (; i < n; i += step)
     {
       auto coords = shape.index_to_coords(i);
-      if constexpr (shape_has_contains<shape_t>::value)
+      if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
       {
-        if (!shape.contains(coords))
-        {
-          continue;
-        }
+        continue;
       }
       ::cuda::experimental::stf::reserved::__apply_coords(explode_coords, mv(coords));
     }
@@ -357,12 +356,9 @@ __global__ void loop_redux(
     for (; i < n; i += step)
     {
       auto coords = shape.index_to_coords(i);
-      if constexpr (shape_has_contains<shape_t>::value)
+      if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
       {
-        if (!shape.contains(coords))
-        {
-          continue;
-        }
+        continue;
       }
       ::cuda::experimental::stf::reserved::__apply_coords(explode_coords, mv(coords));
     }
@@ -1104,12 +1100,9 @@ public:
           f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
         };
         auto coords = shape.index_to_coords(i);
-        if constexpr (shape_has_contains<sub_shape_t>::value)
+        if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
         {
-          if (!shape.contains(coords))
-          {
-            return;
-          }
+          return;
         }
         ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
       };
