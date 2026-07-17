@@ -23,6 +23,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
+#include <cub/device/dispatch/dispatch_rle_encode_lookahead.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
@@ -243,6 +244,40 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       offset_t>;
 
+    // the lookahead implementation is host-dispatch-only (its shared-memory opt-in is a host-side runtime call);
+    // the CDP path below always dispatches the streaming implementation
+    bool lookahead_handled            = false;
+    const cudaError_t lookahead_error = detail::rle::encode::try_dispatch_lookahead(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_unique_out,
+      d_counts_out,
+      d_num_runs_out,
+      static_cast<offset_t>(num_items),
+      stream,
+      policy_selector_t{},
+      [&](size_t& streaming_bytes) {
+        return detail::reduce_by_key::dispatch_streaming(
+          nullptr,
+          streaming_bytes,
+          d_in,
+          d_unique_out,
+          lengths_input_iterator_t(length_t{1}),
+          d_counts_out,
+          d_num_runs_out,
+          equality_op{},
+          reduction_op{},
+          static_cast<offset_t>(num_items),
+          stream,
+          __policy_selector_adapter<policy_selector_t>{});
+      },
+      lookahead_handled);
+    if (lookahead_handled)
+    {
+      return lookahead_error;
+    }
+
     return detail::reduce_by_key::dispatch_streaming(
       d_temp_storage,
       temp_storage_bytes,
@@ -363,6 +398,40 @@ struct DeviceRunLengthEncode
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        // the lookahead implementation is host-dispatch-only (its shared-memory opt-in is a host-side runtime
+        // call); the CDP path below always dispatches the streaming implementation
+        bool lookahead_handled            = false;
+        const cudaError_t lookahead_error = detail::rle::encode::try_dispatch_lookahead(
+          storage,
+          bytes,
+          d_in,
+          d_unique_out,
+          d_counts_out,
+          d_num_runs_out,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector,
+          [&](size_t& streaming_bytes) {
+            return detail::reduce_by_key::dispatch_streaming(
+              nullptr,
+              streaming_bytes,
+              d_in,
+              d_unique_out,
+              lengths_input_iterator_t(length_t{1}),
+              d_counts_out,
+              d_num_runs_out,
+              equality_op{},
+              reduction_op{},
+              static_cast<offset_t>(num_items),
+              stream,
+              __policy_selector_adapter<decltype(policy_selector)>{});
+          },
+          lookahead_handled);
+        if (lookahead_handled)
+        {
+          return lookahead_error;
+        }
+
         return detail::reduce_by_key::dispatch_streaming(
           storage,
           bytes,

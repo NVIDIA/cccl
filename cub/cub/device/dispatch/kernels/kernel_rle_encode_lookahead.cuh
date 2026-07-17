@@ -1100,10 +1100,9 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
                   "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
   }
-  else
-  {
-    static_assert(sizeof(KeyT) == 0, "Implementation bug: the lookahead RLE encode kernel requires a lookahead policy");
-  }
+  // for a lookback policy this kernel compiles to an empty stub: the fatbin carries this symbol for every
+  // target architecture, and targets whose policy resolves to lookback must still compile (the host dispatch
+  // never launches the kernel on such devices)
 }
 } // namespace detail::rle::encode
 
