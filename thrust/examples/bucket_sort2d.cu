@@ -37,8 +37,8 @@ struct point_to_bucket_index
   __host__ __device__ unsigned int operator()(const vec2& v) const
   {
     // find the raster indices of p's bucket
-    unsigned int x = static_cast<unsigned int>(cuda::std::get<0>(v) * width);
-    unsigned int y = static_cast<unsigned int>(cuda::std::get<1>(v) * height);
+    unsigned int x = static_cast<unsigned int>(cuda::std::get<0>(v) * static_cast<float>(width));
+    unsigned int y = static_cast<unsigned int>(cuda::std::get<1>(v) * static_cast<float>(height));
 
     // return the bucket's linear index
     return y * width + x;
@@ -78,11 +78,19 @@ int main()
   // find the beginning of each bucket's list of points
   thrust::counting_iterator<unsigned int> search_begin(0);
   thrust::lower_bound(
-    bucket_indices.begin(), bucket_indices.end(), search_begin, search_begin + w * h, bucket_begin.begin());
+    bucket_indices.begin(),
+    bucket_indices.end(),
+    search_begin,
+    search_begin + static_cast<decltype(search_begin)::difference_type>(w) * h,
+    bucket_begin.begin());
 
   // find the end of each bucket's list of points
   thrust::upper_bound(
-    bucket_indices.begin(), bucket_indices.end(), search_begin, search_begin + w * h, bucket_end.begin());
+    bucket_indices.begin(),
+    bucket_indices.end(),
+    search_begin,
+    search_begin + static_cast<decltype(search_begin)::difference_type>(w) * h,
+    bucket_end.begin());
 
   // write out bucket (150, 50)'s list of points
   unsigned int bucket_idx = 50 * w + 150;

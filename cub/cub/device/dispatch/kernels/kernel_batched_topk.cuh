@@ -20,8 +20,8 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__argument_>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/argument>
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,7 +39,7 @@ private:
     worker_policy worker_per_segment_policy;
     multi_worker_policy multi_worker_per_segment_policy;
   };
-  static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::__argument::__traits<SegmentSizeParameterT>::highest;
+  static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::args::__traits<SegmentSizeParameterT>::highest;
   static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
 
   template <int Index>
@@ -81,7 +81,11 @@ private:
 
 public:
   // TODO (elstehle): extend support for variable-size segments
-  static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
+  static_assert(selected_index >= 0,
+                "cub::DeviceBatchedTopK currently supports only segments small enough to be processed by a single "
+                "thread block (one worker per segment). No policy could cover the statically-known maximum segment "
+                "size within the shared-memory limit. Reduce the maximum segment size encoded in the segment-size "
+                "argument annotation.");
   static constexpr policy_t policy = {
     active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
 
@@ -133,8 +137,8 @@ __launch_bounds__(int(
     KParameterT k,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    batched_topk_counters<typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type>* d_counters,
-    typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type* d_large_segments_ids,
+    batched_topk_counters<typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type>* d_counters,
+    typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type* d_large_segments_ids,
     LargeSegmentTileOffsetT* d_large_segments_tile_offsets)
 {
   using agent_t = typename find_smallest_covering_policy<
@@ -151,7 +155,7 @@ __launch_bounds__(int(
     LargeSegmentTileOffsetT>::agent_t;
 
   // Static Assertions (Constraints)
-  static_assert(agent_t::tile_size >= ::cuda::__argument::__traits<SegmentSizeParameterT>::highest,
+  static_assert(agent_t::tile_size >= ::cuda::args::__traits<SegmentSizeParameterT>::highest,
                 "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
   static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
                 "Static shared memory per block must not exceed 48KB limit.");

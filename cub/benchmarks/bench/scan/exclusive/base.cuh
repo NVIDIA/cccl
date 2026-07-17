@@ -18,9 +18,9 @@ try
   using init_value_t             = T;
   using accum_t [[maybe_unused]] = ::cuda::std::__accumulator_t<op_t, init_value_t, T>;
   using offset_t                 = cub::detail::choose_offset_t<OffsetT>;
-#if USES_WARPSPEED()
-  static_assert(sizeof(offset_t) == sizeof(size_t)); // warpspeed scan uses size_t internally
-#endif // USES_WARPSPEED()
+#if USES_LOOKAHEAD()
+  static_assert(sizeof(offset_t) == sizeof(size_t)); // lookahead scan uses size_t internally
+#endif // USES_LOOKAHEAD()
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())
@@ -65,7 +65,24 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, scan_offset_types))
+// __half and __nv_bfloat16 are added for full (non-tuning) runs; CUB has fast paths for them (see #9587).
+#ifdef TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
+using value_types =
+  push_back_t<all_types
+#  if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __half
+#  endif
+#  if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __nv_bfloat16
+#  endif
+              >;
+#endif
+
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(value_types, scan_offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

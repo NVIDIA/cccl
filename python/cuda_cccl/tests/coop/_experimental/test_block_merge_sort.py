@@ -8,6 +8,7 @@ from operator import mul
 import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 
@@ -51,10 +52,9 @@ def test_block_merge_sort(T, threads_per_block, items_per_thread):
     dtype = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads_per_block * items_per_thread
     input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input)
@@ -103,10 +103,9 @@ def test_block_merge_sort_descending(T, threads_per_block, items_per_thread):
     dtype = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads_per_block * items_per_thread
     input = random_int(items_per_tile, dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input, reverse=True)
@@ -151,10 +150,9 @@ def test_block_merge_sort_user_defined_type():
     items_per_tile = threads_per_block * items_per_thread
     input = np.random.random(items_per_tile) + 1j * np.random.random(items_per_tile)
     input = input.astype(dtype)
-    d_input = cuda.to_device(input)
-    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    d_input = DeviceArray.from_numpy(input)
+    d_output = DeviceArray.empty(items_per_tile, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
 
     output = d_output.copy_to_host()
     reference = sorted(input, reverse=True, key=lambda x: x.real)

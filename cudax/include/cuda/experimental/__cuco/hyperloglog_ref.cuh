@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_HYPERLOGLOG_REF_CUH
 #define _CUDAX___CUCO_HYPERLOGLOG_REF_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/span>
-#include <cuda/stream>
 
-#include <cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh>
 #include <cuda/experimental/__cuco/hll_policies.cuh>
 
 #include <cooperative_groups.h>
@@ -108,11 +108,11 @@ public:
   //! @tparam _CG CUDA Cooperative Group type
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
-  template <class _CG>
-  _CCCL_DEVICE constexpr ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>>
-  clear(_CG __group) noexcept
+  _CCCL_TEMPLATE(class _CG)
+  _CCCL_REQUIRES((!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>) )
+  _CCCL_DEVICE_API constexpr void clear(_CG __group) noexcept
   {
-    // The enable_if above is to work around an incompatibility between host and device
+    // The constraint above is to work around an incompatibility between host and device
     // overload preference for clang and NVCC. See
     // https://llvm.org/docs/CompileCudaWithLLVM.html#overloading-based-on-host-and-device-attributes
     // for further reading, but the bottom line is when:
@@ -136,7 +136,7 @@ public:
     // `clear(::cuda::stream_ref)` on this class is only __host__, it will take lower priority
     // that `clear(_CG)`, and we get:
     //
-    // cudax/include/cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh:131:28: error: no member named
+    // cudax/include/cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh:131:28: error: no member named
     // 'thread_rank' in 'cuda::stream_ref' [clang-diagnostic-error]
     //
     // 131 | for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
@@ -147,7 +147,7 @@ public:
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST constexpr void clear_async(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) noexcept
+  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream) noexcept
   {
     __impl.__clear_async(__stream);
   }
@@ -158,7 +158,7 @@ public:
   //! `clear_async`.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST constexpr void clear(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  _CCCL_HOST_API constexpr void clear(::cuda::stream_ref __stream)
   {
     __impl.__clear(__stream);
   }
@@ -166,7 +166,7 @@ public:
   //! @brief Adds an item to the estimator.
   //!
   //! @param __item The item to be counted
-  _CCCL_DEVICE constexpr void add(const _Tp& __item) noexcept
+  _CCCL_DEVICE_API constexpr void add(const _Tp& __item) noexcept
   {
     __impl.__add(__item);
   }
@@ -177,12 +177,11 @@ public:
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
   //! _Tp></tt> is `true`
   //!
+  //! @param __stream CUDA stream this operation is executed in
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
-  //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  _CCCL_HOST constexpr void
-  add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  _CCCL_HOST_API constexpr void add_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
     __impl.__add_async(__first, __last, __stream);
   }
@@ -196,12 +195,11 @@ public:
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
   //! _Tp></tt> is `true`
   //!
+  //! @param __stream CUDA stream this operation is executed in
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
-  //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  _CCCL_HOST constexpr void
-  add(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  _CCCL_HOST_API constexpr void add(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
     __impl.__add(__first, __last, __stream);
   }
@@ -215,9 +213,13 @@ public:
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
-  template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void merge(_CG __group, const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other)
+  _CCCL_TEMPLATE(class _CG, ::cuda::thread_scope _OtherScope)
+  _CCCL_REQUIRES((!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>) )
+  _CCCL_DEVICE_API constexpr void merge(_CG __group, const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other)
   {
+    // The constraint above works around the same host/device overload preference issue as
+    // documented in `clear(_CG)`: `merge(_CG, ...)` would otherwise conflict with
+    // `merge(::cuda::stream_ref, ...)` when called from `hyperloglog::merge(::cuda::stream_ref, ...)`.
     __impl.__merge(__group, __other.__impl);
   }
 
@@ -226,14 +228,13 @@ public:
   //!
   //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
-  // Review: For host-side merges, consider validating `__other` is on the same device.
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
-  //! @param __other Other estimator reference to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __other Other estimator reference to be merged into `*this`
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge_async(const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other,
-                                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  _CCCL_HOST_API constexpr void
+  merge_async(::cuda::stream_ref __stream, const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other)
   {
     __impl.__merge_async(__other.__impl, __stream);
   }
@@ -247,11 +248,11 @@ public:
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
-  //! @param __other Other estimator reference to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __other Other estimator reference to be merged into `*this`
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge(const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other,
-                                  ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  _CCCL_HOST_API constexpr void
+  merge(::cuda::stream_ref __stream, const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other)
   {
     __impl.__merge(__other.__impl, __stream);
   }
@@ -261,7 +262,7 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t
   estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     return __impl.__estimate(__group);
@@ -274,13 +275,13 @@ public:
   //! @tparam _HostMemoryResource Host memory resource used for allocating the host buffer required to
   //! compute the final estimate by copying the sketch from device to host
   //!
-  //! @param __host_mr Host memory resource used for copying the sketch
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __host_mr Host memory resource used for copying the sketch
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
-  [[nodiscard]] _CCCL_HOST constexpr ::cuda::std::size_t estimate(
-    _HostMemoryResource __host_mr = {}, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) const
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t
+  estimate(::cuda::stream_ref __stream, _HostMemoryResource __host_mr = {}) const
   {
     return __impl.__estimate(__host_mr, __stream);
   }

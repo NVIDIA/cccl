@@ -26,12 +26,16 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_three_way_partition_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
   CUkernel three_way_partition_init_kernel;
   CUkernel three_way_partition_kernel;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  char* three_way_partition_init_kernel_lowered_name;
+  char* three_way_partition_kernel_lowered_name;
 } cccl_device_three_way_partition_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
@@ -69,6 +73,25 @@ CCCL_C_API CUresult cccl_device_three_way_partition_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_three_way_partition_compile(
+  cccl_device_three_way_partition_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_first_part_out,
+  cccl_iterator_t d_second_part_out,
+  cccl_iterator_t d_unselected_out,
+  cccl_iterator_t d_num_selected_out,
+  cccl_op_t select_first_part_op,
+  cccl_op_t select_second_part_op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_three_way_partition_load(cccl_device_three_way_partition_build_result_t* build);
+
 CCCL_C_API CUresult cccl_device_three_way_partition(
   cccl_device_three_way_partition_build_result_t build,
   void* d_temp_storage,
@@ -82,6 +105,26 @@ CCCL_C_API CUresult cccl_device_three_way_partition(
   cccl_op_t select_second_part_op,
   uint64_t num_items,
   CUstream stream);
+
+CCCL_C_API CUresult cccl_device_three_way_partition_link_ltoir(
+  cccl_device_three_way_partition_build_result_t* build,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs);
+
+// Serializes a populated build_result into a self-describing byte buffer.
+// On success *out_buf points to a heap allocation that the caller must free
+// with cccl_serialization_buffer_free, and *out_size holds its length. The build_result
+// itself is not modified. CUlibrary/CUkernel handles are not serialized.
+CCCL_C_API CUresult cccl_device_three_way_partition_serialize(
+  const cccl_device_three_way_partition_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by cccl_device_three_way_partition_serialize.
+// On success build is populated as if by compile(); CUlibrary/CUkernel handles
+// remain null until cccl_device_three_way_partition_load is called. On failure build is
+// left unchanged and a non-success CUresult is returned.
+CCCL_C_API CUresult cccl_device_three_way_partition_deserialize(
+  cccl_device_three_way_partition_build_result_t* build, const void* buf, size_t size);
 
 CCCL_C_API CUresult cccl_device_three_way_partition_cleanup(cccl_device_three_way_partition_build_result_t* bld_ptr);
 

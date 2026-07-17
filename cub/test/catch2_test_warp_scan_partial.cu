@@ -62,7 +62,8 @@ struct sum_aggregate_op_t
       scan.InclusiveScanPartial(thread_data, thread_data, cuda::std::plus<>{}, valid_items, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LogicalWarpThreads == m_target_thread_id)
     {
@@ -108,7 +109,8 @@ struct min_aggregate_op_t
       scan.InclusiveScanPartial(thread_data, thread_data, cuda::minimum<>{}, valid_items, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LogicalWarpThreads == m_target_thread_id)
     {
@@ -156,7 +158,8 @@ struct min_init_value_aggregate_op_t
       scan.InclusiveScanPartial(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LogicalWarpThreads == m_target_thread_id)
     {
@@ -566,10 +569,12 @@ C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp
   c2h::host_vector<type> h_inclusive_out = d_in;
   for (int i = 0; i < tile_size; i += logical_warp_threads)
   {
-    thrust::fill(
-      h_exclusive_out.begin() + i + bounded_valid_items, h_exclusive_out.begin() + i + logical_warp_threads, filler);
-    thrust::fill(
-      h_inclusive_out.begin() + i + bounded_valid_items, h_inclusive_out.begin() + i + logical_warp_threads, filler);
+    thrust::fill(h_exclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + bounded_valid_items,
+                 h_exclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + logical_warp_threads,
+                 filler);
+    thrust::fill(h_inclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + bounded_valid_items,
+                 h_inclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + logical_warp_threads,
+                 filler);
   }
 
   compute_host_reference(
@@ -637,10 +642,12 @@ C2H_TEST("Partial warp combination custom scan works with initial value", "[scan
   c2h::host_vector<type> h_inclusive_out = d_in;
   for (size_t i = 0; i < tile_size; i += logical_warp_threads)
   {
-    thrust::fill(
-      h_exclusive_out.begin() + i + bounded_valid_items, h_exclusive_out.begin() + i + logical_warp_threads, filler);
-    thrust::fill(
-      h_inclusive_out.begin() + i + bounded_valid_items, h_inclusive_out.begin() + i + logical_warp_threads, filler);
+    thrust::fill(h_exclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + bounded_valid_items,
+                 h_exclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + logical_warp_threads,
+                 filler);
+    thrust::fill(h_inclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + bounded_valid_items,
+                 h_inclusive_out.begin() + static_cast<std::ptrdiff_t>(i) + logical_warp_threads,
+                 filler);
   }
 
   compute_host_reference(

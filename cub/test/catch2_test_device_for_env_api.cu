@@ -182,7 +182,7 @@ struct ForPolicySelector
 };
 // example-end bulk-policy-selector
 
-C2H_TEST("cub::DeviceFor::Bulk env-based API with tuning", "[for][env]")
+C2H_TEST("cub::DeviceFor::Bulk accepts a custom policy selector", "[for][env]")
 {
   // example-begin bulk-tuning
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};

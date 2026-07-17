@@ -41,9 +41,11 @@ CUB_NAMESPACE_BEGIN
 //! @rst
 //! DeviceFor provides device-wide, parallel operations for iterating over data elements.
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ForPolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ForPolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
@@ -123,7 +125,7 @@ struct DeviceFor
   };
 
   template <class OffsetT, class OpT, class EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, const EnvT& env = {})
   {
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     [[maybe_unused]] const auto tuning_env =
@@ -136,7 +138,7 @@ struct DeviceFor
 
   template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env)
+  __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, const EnvT& env)
   {
     // We tried to detect if we can still use vectorization from the non-Copy CUB APIs, but it's disabled for now:
     constexpr bool allow_vectorization =
@@ -218,8 +220,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -288,8 +289,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -361,8 +361,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -440,8 +439,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -516,8 +514,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -631,7 +628,7 @@ public:
             class OpT,
             class EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, EnvT env = {})
+  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
@@ -737,7 +734,7 @@ public:
             class EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
+  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
     return __for_each_n(first, num_items, op, env);
@@ -832,7 +829,7 @@ public:
             class EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
+  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
@@ -934,7 +931,7 @@ public:
             class EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
+  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
     return __for_each_n<true>(first, num_items, op, env);
@@ -1030,7 +1027,7 @@ public:
             class EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
+  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
@@ -1099,8 +1096,7 @@ public:
   //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1206,7 +1202,7 @@ public:
             typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, EnvT env = {})
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, const EnvT& env = {})
   {
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
     return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, env);
@@ -1305,7 +1301,8 @@ public:
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping> _CCCL_AND(
     !::cuda::std::is_convertible_v<EnvT, cudaStream_t>))
-  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     return __for_each_in_extents(layout_mapping, op, env);
@@ -1324,7 +1321,7 @@ public:
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
   CUB_RUNTIME_FUNCTION static cudaError_t
-  __for_each_in_extents(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
+  __for_each_in_extents(const LayoutMapping& layout_mapping, OpType op, const EnvT& env = {})
   {
     using namespace cub::detail;
     using extents_type                   = typename LayoutMapping::extents_type;

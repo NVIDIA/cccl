@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_HLL_POLICIES_CUH
 #define _CUDAX___CUCO_HLL_POLICIES_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__cuco/__hyperloglog/default_policy.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/default_policy.cuh>
 
 #endif // _CUDAX___CUCO_HLL_POLICIES_CUH
