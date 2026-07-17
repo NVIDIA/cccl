@@ -193,7 +193,7 @@ __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
 // width = how many low lanes participate, i.e. lanes [0, width): lane i returns lane_value(0) + ... + lane_value(i).
 // lanes in [width, 32) must still call this, but their return values are unspecified.
 // (TODO) Nan: swapping this with cub::WarpScan caused perf regression (-3% in worst cases). This needs investigation.
-// The primary suspect is cub::WarpScan uses asm VOLITALE and it could change codegen
+// The primary suspect is cub::WarpScan uses asm VOLATILE and it could change codegen
 template <int width>
 __device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
 {
@@ -451,7 +451,7 @@ __device__ __forceinline__ void poll_fold_windows(
 {
   constexpr int poll_loads_per_lane = current_policy<PolicySelector>().lookahead.poll_loads_per_lane;
   static_assert(window_size_cap >= 1 && window_size_cap <= 32 * poll_loads_per_lane,
-                "the fold window must be covered by the MLP loops; a nonpositive window never advances");
+                "the fold window must be covered by the lanes");
   while (last_seen_tile_id < tile_id)
   {
     const int remain = tile_id - last_seen_tile_id;
@@ -532,7 +532,13 @@ __device__ __forceinline__ void poll_and_fold(
   OffT& curr_prefix_run_count,
   OffT& curr_prefix_open_length)
 {
+  // adaptive poll: we decide the window size based on the density of the runs. this buys ~5% BWUtil
+  // the 2 window sizes: 96 and 160 = 32 * 5 are decided by the # of SM on blackwell
+  // i.e. since we know the residency is 1 CTA per SM, each generation is 148 tiles ahead
+  // therefore, with window_size=96, we split it in 2. with window_size=160 we do it in one pass.
   if (dense_mode)
+  // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
+  // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some overlapping
   {
     poll_fold_windows<96, PolicySelector>(
       tile_partial_states,
@@ -544,6 +550,7 @@ __device__ __forceinline__ void poll_and_fold(
       dense_mode);
   }
   else
+  // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
   {
     poll_fold_windows<32 * current_policy<PolicySelector>().lookahead.poll_loads_per_lane, PolicySelector>(
       tile_partial_states,
@@ -558,7 +565,7 @@ __device__ __forceinline__ void poll_and_fold(
   curr_prefix_open_length = last_seen_prefix_open_length;
 }
 
-// we aim for 1 block/SM since it is easier to manage resources: do not need to worry about occupancy anymore
+// we aim for 1 block/SM since it is easier to manage resources: we do not need to worry about occupancy anymore
 template <typename PolicySelector, class KeyT, class LenT, class NumRunsT, class OffT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   const KeyT* __restrict__ d_keys,
@@ -614,7 +621,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   __shared__ PrefixT prefix_packed[key_ring_stages];
 
   // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where pos_ring_stages < key_ring_stages);
-  // if it is mapped 1:1, then this would have been protected by empty / fall as well
+  // if it is mapped 1:1, then this would have been protected by empty / fall as well, but here we need an extra barrier
   __shared__ cuda::std::uint64_t pos_buf_free[pos_ring_stages];
   // LOAD --full--> COMPUTE & POLL
   // COMPUTE(all warps) --computed--> COMPUTE w0, then cw0 calculates & publishes this tile's aggregate to the global
@@ -786,6 +793,27 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           {
             head_flag_buf[slot_id][compute_warp_id * 32 + lane_id] = my_flags;
           }
+          // CRITICAL: When stage_flags is true, we skip waiting on the pos_buf barriers too. This buys 3% BWUtil in
+          // some cells. Generally, skipping a wait like this would cause a race (phasebit can only encode parity).
+          // But we can prove, when 2 * pos_ring_stages >= key_ring_stages, this race would not happen.
+          // Proof. let's say P = pos_ring_stages and S = key_ring_stages, and we are at pipeline_generation g with
+          // g / P = n. Let's say for g, stage_flags is false, so g is waiting for phase (n - 1) to complete, i.e.
+          // the phase bit of the barrier is no longer (n - 1) % 2. If g - P waits and arrives properly, this is
+          // sound. However, if g - P skipped the wait, when the barrier is no longer (n - 1) % 2, it could also mean
+          // it just flipped from (n - 3) % 2, i.e. g - 2P could also be using the slot! This is a race/hazard:
+          // For this slot, we have 3 dependence types:
+          //   1. RAW: ST warps of gen g must read the slot after COMPUTE warps wrote them, i.e. write(g) must be
+          //      before reads(g). This is protected by staged_warp_tile.
+          //   2. WAR: COMPUTE warps of gen g must write after the ST warps finish reading g - P / g - 2P's, i.e.
+          //      reads(g- P, g - 2P, ...) must happen before write(g). This is now unprotected after the wait is
+          //      skipped. We are going to prove that with 2P >= S, this is guaranteed.
+          //   3. WAW: write(g - 2P) must happen before write(g). This is guaranteed because each CW write to
+          //      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_idx)], i.e. each segment only has 1 writer.
+          //      WAW is guaranteed by the progression of each CW.
+          // On WAR: notice that when g is in flight, load's wait on empty(g - S) must have passed. This means for all
+          // store warps STw, they must have arrived empty(h) for all h <= g - S. Given 2P >= S, they all must have
+          // arrived empty(g - 2P). Since we always arrive pos_buf_free before empty, this means they all must have
+          // arrived pos_buf_free(g - 2P) too. So there is no race.
           else
           {
             if constexpr (pos_ring_stages < key_ring_stages)
