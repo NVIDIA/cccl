@@ -57,7 +57,7 @@ void test_block_prefetch(const c2h::device_vector<T>& d_input, InputIteratorT in
   REQUIRE(d_input == d_output);
 }
 
-using types            = c2h::type_list<std::uint8_t, std::int32_t, std::int64_t>;
+using types            = c2h::type_list<uint8_t, int32_t, int64_t>;
 using threads_in_block = c2h::enum_type_list<int, 32, 128>;
 using load_prefetch_levels =
   c2h::enum_type_list<cub::detail::LoadPrefetch,
@@ -147,8 +147,8 @@ C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]",
 
   // Managed memory is host- and device-accessible, so the buffer can be filled from the host and read in the kernel.
   cuda::mr::legacy_managed_memory_resource mr;
-  auto buf = cuda::make_buffer<type>(
-    cuda::stream_ref{cudaStream_t{}}, mr, static_cast<cuda::std::size_t>(num_items), cuda::no_init);
+  auto buf =
+    cuda::make_buffer<type>(cuda::stream_ref{cudaStream_t{}}, mr, static_cast<size_t>(num_items), cuda::no_init);
   REQUIRE(cudaSuccess
           == cudaMemcpy(cuda::std::to_address(buf.begin()),
                         thrust::raw_pointer_cast(d_input.data()),
@@ -160,7 +160,7 @@ C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]",
   test_block_prefetch<type, threads_in_block, level>(d_input, buf.begin());
 }
 
-C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h::type_list<std::uint8_t, std::int32_t>)
+C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h::type_list<uint8_t, int32_t>)
 {
   using type                     = c2h::get<0, TestType>;
   constexpr int threads_in_block = 128;

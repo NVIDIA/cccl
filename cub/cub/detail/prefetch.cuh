@@ -94,7 +94,7 @@ struct BlockPrefetch
   //! @param items_to_prefetch Total number of items in the tile, across all threads of the block — NOT a
   //!   per-thread count. Must be non-negative.
   template <typename It>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Prefetch(It tile_base, int items_to_prefetch)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE void Prefetch(It tile_base, int items_to_prefetch)
   {
     if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<It>)
     {
@@ -138,7 +138,7 @@ private:
   //! The block's threads cooperatively walk ``[src_ptr, src_ptr + total_bytes)`` in ``PrefetchStride``-byte
   //! steps, each issuing one prefetch hint per cache line targeting ``Level`` (``l1`` or ``l2``).
   template <LoadPrefetch Level>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void __strided_prefetch(const char* src_ptr, int total_bytes)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE void __strided_prefetch(const char* src_ptr, int total_bytes)
   {
     const int start    = static_cast<int>(threadIdx.x) * PrefetchStride;
     constexpr int step = ThreadsPerBlock * PrefetchStride;
