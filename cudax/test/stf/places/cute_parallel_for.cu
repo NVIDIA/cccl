@@ -64,7 +64,8 @@ void test_cute_composite_cache(const exec_place& grid)
 
   // A separately constructed but equivalent place must find the same cached
   // VMM allocation through the value-keyed CuTe pool.
-  const auto equivalent_place   = cuda::experimental::places::make_composite_data_place(grid, part);
+  const auto equivalent_part    = make_partition(data_dims, partition_spec{blocked<0>}, grid.get_dims());
+  const auto equivalent_place   = cuda::experimental::places::make_composite_data_place(grid, equivalent_part);
   auto [second, second_prereqs] = cache.get(equivalent_place, delinearize, n, sizeof(size_t), data_dims);
   EXPECT(second_prereqs.empty());
   EXPECT(second->get_base_ptr() == first_base);
@@ -250,17 +251,18 @@ int main()
   // Boundary-style thin regions: iterate the face with a classic scale-free
   // partitioner (tight, no discarded lanes) while keeping placement on the
   // cute composite through explicit deps. This relies on separately
-  // constructed cute composites comparing equal (same instance identity, no
-  // duplication) - guarded here.
+  // constructed equal partitions producing the same composite identity -
+  // guarded here.
   {
     const size_t nx = 64, ny = 32;
     auto lF = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
-    auto part = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
-    auto dist = cuda::experimental::places::make_composite_data_place(grid, part);
+    auto part                  = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
+    auto dist                  = cuda::experimental::places::make_composite_data_place(grid, part);
+    const auto equivalent_part = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
 
-    EXPECT(dist == cuda::experimental::places::make_composite_data_place(grid, part),
-           "cute composites from the same partition must compare equal");
+    EXPECT(dist == cuda::experimental::places::make_composite_data_place(grid, equivalent_part),
+           "cute composites from equal partitions must compare equal");
 
     // Volumetric pass placed and decomposed by the partition
     ctx.parallel_for(part, grid, lF.shape(), lF.write())->*[] _CCCL_DEVICE(size_t x, size_t y, auto f) {

@@ -506,12 +506,14 @@ public:
     ::cuda::std::array<size_t, dims> hi{};
     for (size_t d = 0; d < dims; d++)
     {
-      if (b.get_begin(d) < 0 || static_cast<size_t>(b.get_end(d)) > true_dims_.get(d))
+      const auto lo_bound = b.get_begin(d);
+      const auto hi_bound = b.get_end(d);
+      if (lo_bound < 0 || lo_bound > hi_bound || static_cast<size_t>(hi_bound) > true_dims_.get(d))
       {
         throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
       }
-      lo[d] = static_cast<size_t>(b.get_begin(d));
-      hi[d] = static_cast<size_t>(b.get_end(d));
+      lo[d] = static_cast<size_t>(lo_bound);
+      hi[d] = static_cast<size_t>(hi_bound);
     }
     return apply_region<dims>(lo, hi, place_position, grid_dims);
   }
@@ -980,12 +982,14 @@ public:
     ::cuda::std::array<size_t, rank> hi{};
     for (size_t d = 0; d < rank; d++)
     {
-      if (b.get_begin(d) < 0 || static_cast<size_t>(b.get_end(d)) > true_dims_.get(d))
+      const auto lo_bound = b.get_begin(d);
+      const auto hi_bound = b.get_end(d);
+      if (lo_bound < 0 || lo_bound > hi_bound || static_cast<size_t>(hi_bound) > true_dims_.get(d))
       {
         throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
       }
-      lo[d] = static_cast<size_t>(b.get_begin(d));
-      hi[d] = static_cast<size_t>(b.get_end(d));
+      lo[d] = static_cast<size_t>(lo_bound);
+      hi[d] = static_cast<size_t>(hi_bound);
     }
     return apply_region(lo, hi, place_position, grid_dims);
   }
@@ -1655,6 +1659,30 @@ UNITTEST("cute_partition rejects lower-rank iteration")
     thrown = true;
   }
   EXPECT(thrown);
+};
+
+UNITTEST("cute partitions reject reversed regions")
+{
+  const dim4 dims(8);
+  const dim4 grid(2);
+  const auto part       = make_partition(dims, partition_spec{blocked<0>}, grid);
+  const auto descriptor = part.descriptor();
+  const box<1> reversed({6ul, 2ul});
+
+  const auto rejects = [&](const auto& partition) {
+    try
+    {
+      (void) partition.apply(reversed, pos4(0), grid);
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      return true;
+    }
+    return false;
+  };
+
+  EXPECT(rejects(part));
+  EXPECT(rejects(descriptor));
 };
 
 UNITTEST("cute_partition validation rejects inexact layouts")
