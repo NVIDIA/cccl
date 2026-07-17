@@ -584,7 +584,7 @@ private:
   {
     // Each stage divides the inputs into groups and sorts within each group.
     // Sort direction of each group should be adjusted to maintain the bitonic property.
-    bool group_reverse = Reverse;
+    unsigned int group_reverse = Reverse;
     if constexpr (Stage == 4)
     {
       // The last stage contains only one group, and the sort direction is just Reverse
@@ -595,9 +595,8 @@ private:
       // 16 groups of 2 elements, stage 1 sorts 8 groups of 4 elements, and so on.
       //
       // Group ID (starting from 0) is "lane >> (Stage + 1)".
-      // Odd groups sort in reverse order.
-      // So group_reverse = (lane >> (Stage + 1)) & 1, equal to the following:
-      group_reverse ^= static_cast<bool>((lane >> Stage) & 2);
+      // Odd groups sort in reverse order, so "& 1".
+      group_reverse ^= (lane >> (Stage + 1)) & 1;
     }
     else
     {
@@ -608,7 +607,7 @@ private:
       // 2. Reverse direction for groups whose ID has an odd number of set bits
       //    (i.e., groups 1, 2, 4, 7, etc.). Because group ID < 16 (at most 4 set
       //    bits), this means IDs with 1 or 3 set bits.
-      group_reverse ^= static_cast<bool>(Stage & 1);
+      group_reverse ^= Stage & 1;
       const int num_set_bits = ::cuda::std::popcount((static_cast<unsigned>(lane) >> (Stage + 1)));
       group_reverse ^= (num_set_bits == 1 || num_set_bits == 3);
     }
