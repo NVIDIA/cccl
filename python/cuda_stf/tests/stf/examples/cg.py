@@ -59,20 +59,35 @@ def stf_matvec(ctx, lA, lx, ly):
 # --- CG solver -----------------------------------------------------------
 
 
-def cg_solver(ctx, lA, lX, lB, N, tol=1e-10):
+def cg_solver(ctx, lA, lX, lB, N, tol=1e-10, max_iter=None):
     """
     Solve A * X = B with the Conjugate Gradient method.
 
     All temporaries are created as stackable logical data so they are
     automatically managed across while_loop iterations.
+
+    ``max_iter`` bounds the device-side while loop so a non-converging or
+    ill-conditioned system terminates instead of replaying forever. CG
+    converges in at most ``N`` steps in exact arithmetic, so the default
+    leaves headroom for round-off; convergence is verified on the host after
+    :meth:`finalize`.
     """
+    if max_iter is None:
+        max_iter = 2 * N + 50
+
     lR = ctx.logical_data_empty((N,), np.float64, name="R")
     lP = ctx.logical_data_empty((N,), np.float64, name="P")
     lrsold = ctx.logical_data_empty((1,), np.float64, name="rsold")
+    # Device-side iteration counter used to enforce the iteration cap.
+    liter = ctx.logical_data_empty((1,), np.float64, name="iter")
 
     # X = 0 (initial guess)
     with pytorch_task(ctx, lX.write()) as (tX,):
         tX.zero_()
+
+    # iter = 0
+    with pytorch_task(ctx, liter.write()) as (tIt,):
+        tIt.zero_()
 
     # R = B  (residual r = b − A·0 = b)
     with pytorch_task(ctx, lR.write(), lB.read()) as (tR, tB):
@@ -124,10 +139,24 @@ def cg_solver(ctx, lA, lX, lB, N, tol=1e-10):
         # rsnew = R'R
         stf_dot(ctx, lR, lR, lrsnew)
 
-        # Condition: continue while residual norm² exceeds tolerance².
-        # This sets the predicate for the *next* replay — the P and rsold
-        # updates below still execute in the current iteration.
-        loop.continue_while(lrsnew, ">", tol_sq)
+        # Iteration guard: control = rsnew while iterating, forced to 0
+        # (<= tol²) once the iteration cap is reached so the loop terminates
+        # instead of hanging on a non-converging system.
+        lctrl = ctx.logical_data_empty((1,), np.float64, name="ctrl")
+        with pytorch_task(ctx, lctrl.write(), lrsnew.read(), liter.rw()) as (
+            tCtrl,
+            tRsnew,
+            tIt,
+        ):
+            tIt += 1.0
+            capped = tIt.squeeze() >= float(max_iter)
+            tCtrl.copy_(torch.where(capped, torch.zeros_like(tRsnew), tRsnew))
+
+        # Condition: continue while residual norm² exceeds tolerance² and the
+        # iteration cap has not been hit. This sets the predicate for the
+        # *next* replay — the P and rsold updates below still execute in the
+        # current iteration.
+        loop.continue_while(lctrl, ">", tol_sq)
 
         # P = R + beta·P   (beta = rsnew / rsold)
         with pytorch_task(ctx, lP.rw(), lR.read(), lrsnew.read(), lrsold.read()) as (
@@ -180,12 +209,22 @@ def test_cg_solver():
     ctx.finalize()
 
     error = np.max(np.abs(X_host - X_ref))
+    residual_norm = float(np.linalg.norm(B_host - A_host @ X_host))
+    b_norm = float(np.linalg.norm(B_host))
     print("=== CG solver (PyTorch + stackable_context) ===")
     print(f"Matrix: {N}x{N} tridiagonal SPD")
     print(f"Max error vs numpy.linalg.solve: {error:.2e}")
+    print(f"Residual norm ||b - A x||: {residual_norm:.2e}")
 
-    assert not np.any(np.isnan(X_host)), "NaN in solution"
-    assert not np.any(np.isinf(X_host)), "Inf in solution"
+    # Finite check first: a non-finite result means the iteration diverged.
+    assert np.all(np.isfinite(X_host)), "CG produced non-finite values"
+    # A large residual means CG stalled or hit the iteration cap without
+    # converging; report it explicitly rather than only comparing to X_ref.
+    assert residual_norm <= 1e-5 * max(1.0, b_norm), (
+        f"CG did not converge: residual norm {residual_norm:.2e} "
+        f"(relative {residual_norm / max(1.0, b_norm):.2e}); "
+        "it may have hit the iteration cap or stalled"
+    )
     assert np.allclose(X_host, X_ref, atol=1e-6), (
         f"CG solution does not match reference (max error = {error:.2e})"
     )

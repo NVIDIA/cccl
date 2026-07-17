@@ -207,6 +207,28 @@ class TestCompositeTask:
 
         ctx.finalize()
 
+    def test_task_on_grid_get_arg_cai_has_no_stream(self):
+        """get_arg_cai() works on a multi-place grid and advertises no stream.
+
+        The CUDA Array Interface deliberately carries no stream (``stream`` is
+        ``None``): STF enforces the per-place dependencies, and the caller drives
+        each place on its own place stream. A ``None`` stream is therefore valid
+        for a grid just as it is for a scalar task.
+        """
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        grid.set_affine_data_place(dplace)
+
+        ctx = stf.context()
+        X = np.zeros(4, dtype=np.float32)
+        lX = ctx.logical_data(X)
+
+        with ctx.task(grid, lX.rw()) as t:
+            cai = t.get_arg_cai(0)
+            assert cai.__cuda_array_interface__["stream"] is None
+
+        ctx.finalize()
+
     def test_task_get_grid_dims_none_for_scalar(self):
         """get_grid_dims() returns None when exec place is not a grid."""
         ctx = stf.context()
@@ -230,6 +252,70 @@ class TestCompositeTask:
             assert ptrs[0] != 0
 
         ctx.finalize()
+
+    def test_composite_mapper_exception_propagates(self):
+        """A mapper that raises surfaces as a Python error from the task start.
+
+        The ctypes callback cannot raise through the C boundary, so the failure
+        must be captured and re-raised right after the synchronous submit.
+        """
+
+        def broken_mapper(data_coords, data_dims, grid_dims):
+            raise RuntimeError("mapper boom")
+
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        dplace = stf.data_place.composite(grid, broken_mapper)
+        grid.set_affine_data_place(dplace)
+
+        ctx = stf.context()
+        X = np.zeros(8, dtype=np.float32)
+        lX = ctx.logical_data(X)
+
+        with pytest.raises(RuntimeError, match="mapper boom"):
+            with ctx.task(grid, lX.rw()):
+                pass
+        ctx.finalize()
+
+    def test_composite_mapper_out_of_range_propagates(self):
+        """A mapper returning coordinates outside the grid surfaces an error."""
+
+        def out_of_range_mapper(data_coords, data_dims, grid_dims):
+            return (grid_dims[0] + 5, 0, 0, 0)
+
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        dplace = stf.data_place.composite(grid, out_of_range_mapper)
+        grid.set_affine_data_place(dplace)
+
+        ctx = stf.context()
+        X = np.zeros(8, dtype=np.float32)
+        lX = ctx.logical_data(X)
+
+        with pytest.raises(ValueError, match="out-of-range"):
+            with ctx.task(grid, lX.rw()):
+                pass
+        ctx.finalize()
+
+    def test_configured_composite_place_invokes_mapper(self):
+        """Running a task on a grid with a composite affine place calls the mapper."""
+        calls = []
+
+        def counting_mapper(data_coords, data_dims, grid_dims):
+            calls.append((tuple(data_coords), tuple(grid_dims)))
+            return blocked_mapper_1d(data_coords, data_dims, grid_dims)
+
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        dplace = stf.data_place.composite(grid, counting_mapper)
+        grid.set_affine_data_place(dplace)
+
+        ctx = stf.context()
+        X = np.arange(64, dtype=np.float32)
+        lX = ctx.logical_data(X)
+
+        with ctx.task(grid, lX.rw()):
+            pass
+        ctx.finalize()
+
+        assert calls, "composite mapper was never invoked"
 
     def test_task_on_grid_with_composite_dep(self):
         """Task on exec_place_grid; affine set so deps use lX.rw() without explicit dplace."""

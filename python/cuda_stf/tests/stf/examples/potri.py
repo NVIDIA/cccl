@@ -37,9 +37,17 @@ original transpose as-is because they apply it to a full operand buffer.
 
 import ctypes
 import sys
+import time
 
 import numpy as np
 import pytest
+
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+# This must come before the optional CuPy / nvmath imports so a build without
+# the STF bindings skips cleanly instead of raising a misleading dependency
+# ImportError first.
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
+import cuda.stf._experimental as stf  # noqa: E402
 
 try:
     import cupy as cp
@@ -55,10 +63,6 @@ except ImportError:
     raise ImportError(
         "This example requires nvmath-python. Install it with: pip install 'nvmath-python[cu13]'"
     ) from None
-
-# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
-pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Direct cuBLAS / cuSOLVER helpers
@@ -1027,8 +1031,6 @@ def main(N=512, NB=128, check_result=False):
         Aref.fill(hilbert)
 
     # Measure performance
-    import time
-
     start_time = time.time()
 
     print("\n" + "=" * 60)

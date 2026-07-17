@@ -9,13 +9,9 @@ or write that data; STF infers dependencies and orchestrates execution and data
 movement. For the full description of the model, see the
 :ref:`C++ CUDASTF documentation <stf>`.
 
-The module ships in the standalone ``cuda-stf`` wheel; install it with
-``pip install cuda-stf[cu13]`` (or ``[cu12]``). The bindings previously shipped
-as part of ``cuda-cccl``, but now live in the standalone, self-contained
-``cuda-stf`` package. It ships the STF/cudax headers and CUDA-version detection
-needed by the bindings, so it has no hard dependency on ``cuda-cccl``. Install
-``cuda-cccl`` alongside it when using ``cuda.compute`` or compiling external C++
-code that also needs the lower-level libcudacxx, CUB, or Thrust headers.
+Install the module with ``pip install cuda-stf[cu13]`` (or ``[cu12]``). Install
+``cuda-cccl`` as well when using ``cuda.compute`` or compiling external C++ code
+that needs the libcudacxx, CUB, or Thrust headers.
 
 The module is exposed under the ``_experimental`` subpackage because the Python
 API is still evolving and may change without notice. CUDASTF is currently Linux-only.
@@ -55,20 +51,54 @@ which finalizes on exit::
             ...
     # ctx.finalize() runs automatically here
 
+For a default context, ``finalize()`` blocks until all work completes, matching the
+C++ ``ctx.finalize()`` contract. If you create a context bound to a caller-owned CUDA
+stream (``context(stream=my_stream)``), ``finalize()`` is **asynchronous**: it returns
+without synchronizing your stream, exactly like the C/C++ API, and you are responsible
+for synchronizing that stream before relying on results or reusing the resources.
+
+Host callbacks scheduled with ``host_launch()`` run on a CUDA host thread and cannot
+raise directly into your code. Any exception they raise is captured and re-raised by
+the next blocking ``wait()`` or blocking ``finalize()``. For caller-stream contexts
+(whose ``finalize()`` is asynchronous and therefore cannot observe a callback that has
+not run yet), call ``ctx.check_errors()`` after synchronizing your stream to surface a
+captured callback exception.
+
 **Logical data** represents a buffer that tasks access. Create it from existing
 buffers or allocate new ones:
 
 * ``logical_data(buf, ...)`` -- from a NumPy array or any object implementing the
   **CUDA Array Interface** (CuPy, PyTorch, Numba device arrays) or the Python buffer
-  protocol. For GPU arrays, pass a :ref:`data_place <stf-data-place>`
-  (e.g. ``data_place.device(0)``).
+  protocol. The **registration placement** defaults to ``data_place.host()``; pass a
+  :ref:`data_place <stf-data-place>` (e.g. ``data_place.device(0)``) for data that
+  already lives on a device. The source must be C-contiguous, and a read-only source
+  (a const CUDA Array Interface export or a non-writable buffer) may only be used with
+  ``read()`` -- requesting ``write()``/``rw()`` on it raises ``ValueError``. The Python
+  object backing the buffer is retained for the lifetime of the logical data, so do not
+  resize or free it while the logical data is in use.
 * ``logical_data_empty(shape, dtype, ...)`` -- uninitialized allocation.
 * ``logical_data_full(shape, fill_value, ...)`` -- allocated and filled with a constant
-  (like ``numpy.full()``).
+  (like ``numpy.full()``). Any 1/2/4/8-byte element type is supported with no optional
+  third-party dependency.
 * ``logical_data_zeros(...)`` / ``logical_data_ones(...)`` -- convenience wrappers.
 
 Pass each logical data into a task with an access mode: ``read()``, ``write()``,
-or ``rw()``. Example: ``ctx.task(lX.read(), lY.rw())``.
+or ``rw()``. Example: ``ctx.task(lX.read(), lY.rw())``. Unlike the registration
+placement, the **dependency placement** defaults to ``data_place.affine()`` (the
+runtime places the working instance near the task's execution place); override it
+per dependency, e.g. ``lZ.rw(data_place.device(1))``.
+
+CUDA Array Interface views obtained inside a task (``t.get_arg_cai()`` / ``t.args_cai()``)
+are valid **only while the task is active** (until ``stf_task_end()`` / the end of the
+``with ctx.task(...)`` block). The views advertise **no stream** (the CUDA Array
+Interface ``stream`` is ``None``). This is intentional: inside a task you must launch
+your own work on the task stream(s) -- ``stream_ptr()`` for a scalar task, or
+``get_stream_at_index()`` / ``get_stream_ptrs()`` for a grid -- and STF has already
+ordered those streams behind the data's producers, so no extra synchronization is
+required. Advertising a concrete stream would instead trigger a host-side synchronize
+in consumers such as Numba (illegal during graph capture) for no benefit. The same
+rule makes the grid case correct with a single view: STF enforces the per-place
+dependencies, and each place's work runs on its own place stream.
 
 Tasks and interop
 -----------------
@@ -188,14 +218,24 @@ Places
 
 * **Execution place** (``exec_place``) -- where the task runs. Pass as the first
   argument to ``ctx.task(...)``: ``exec_place.device(device_id)`` or ``exec_place.host()``.
-  Example: ``ctx.task(exec_place.device(0), lX.read(), lY.rw())``.
+  Example: ``ctx.task(exec_place.device(0), lX.read(), lY.rw())``. Multi-device work can
+  use ``exec_place_grid`` (via ``exec_place_grid.from_devices([...])`` or
+  ``exec_place_grid.create(places, grid_dims=..., mapper=...)``); a grid retains its
+  sub-places, and a ``composite`` data place retains its grid and partition-function
+  closure, so those Python objects need not be kept alive separately.
+  Places created from an external CUDA context (``exec_place.from_context(...)``, e.g.
+  the green contexts produced by ``green_places()``) expose the backing object through
+  the read-only ``place.backing_context`` property and keep it alive for the place's
+  lifetime.
 
 .. _stf-data-place:
 
-* **Data place** (``data_place``) -- where logical data lives: ``data_place.affine()``
-  (the default -- lets the runtime place data near the task's execution place),
-  ``data_place.host()``, ``data_place.device(device_id)``, ``data_place.managed()``.
-  Use when creating logical data or in a dependency, e.g. ``lZ.rw(data_place.device(1))``.
+* **Data place** (``data_place``) -- where logical data lives:
+  ``data_place.host()`` (the default for **registration**, i.e. ``logical_data(...)``),
+  ``data_place.affine()`` (the default for a **dependency**, letting the runtime place
+  data near the task's execution place), ``data_place.device(device_id)``, and
+  ``data_place.managed()``. Use when creating logical data or in a dependency, e.g.
+  ``lZ.rw(data_place.device(1))``.
 
 Localizing tensor allocations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

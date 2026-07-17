@@ -13,10 +13,18 @@ from cuda.bindings import runtime as cudart  # noqa: E402
 def _require_green_context_helper(sm_count=1, dev_id=0):
     if not hasattr(stf, "green_context_helper"):
         pytest.skip("green context STF bindings are not available")
+    # Gate on the real capability (CUDA >= 12.4). Only a driver-level
+    # "not supported" (surfaced as RuntimeError by the bindings) is skipped;
+    # a wrong-argument bug (TypeError, ...) still fails the test.
+    from cuda.bindings import runtime as cudart  # noqa: PLC0415
+
+    err, version = cudart.cudaRuntimeGetVersion()
+    if int(err) == 0 and version < 12040:
+        pytest.skip("green contexts require CUDA >= 12.4")
     try:
         return stf.green_context_helper(sm_count, dev_id)
-    except Exception as exc:
-        pytest.skip(f"green context support unavailable: {exc}")
+    except RuntimeError as exc:
+        pytest.skip(f"green context not supported on this platform: {exc}")
 
 
 def test_scope_context_manager():
@@ -226,6 +234,13 @@ def test_data_place_host_allocate():
     buf = (ctypes.c_uint8 * 4).from_address(ptr)
     assert buf[0] == 0x42
     dp.deallocate(ptr, 256)
+
+
+def test_data_place_allocate_rejects_negative_size():
+    """allocate() rejects negative sizes before reaching the C allocator."""
+    dp = stf.data_place.host()
+    with pytest.raises(ValueError, match="non-negative"):
+        dp.allocate(-1)
 
 
 def test_allocation_is_stream_ordered():

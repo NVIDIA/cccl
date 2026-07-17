@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import ctypes
+import functools
 import math
 
 import numpy as np
@@ -32,7 +33,10 @@ void axpy(int n, double alpha, const double* x, double* y) {
 """
 
 
+@functools.lru_cache(maxsize=None)
 def _compile_axpy():
+    # Compile the shared AXPY kernel once per module: every test reuses the
+    # same cubin instead of paying NVRTC compilation on each invocation.
     prog = Program(AXPY_SOURCE, "c++")
     mod = prog.compile("cubin")
     return mod.get_kernel("axpy")
@@ -186,6 +190,40 @@ def test_cuda_kernel_loop_accumulate():
 
     expected = float(K * (K - 1) // 2)
     np.testing.assert_allclose(Y, expected * np.ones(N), rtol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "grid, block",
+    [
+        pytest.param((0,), (256,), id="zero-grid"),
+        pytest.param((1,), (0,), id="zero-block"),
+        pytest.param((-1,), (256,), id="negative-grid"),
+        pytest.param((1,), (-8,), id="negative-block"),
+    ],
+)
+def test_cuda_kernel_rejects_nonpositive_dims(grid, block):
+    """launch() rejects zero/negative grid or block dims (dim3 fields are unsigned)."""
+    N = 128
+    X = np.ones(N, dtype=np.float64)
+    Y = np.zeros(N, dtype=np.float64)
+
+    kernel = _compile_axpy()
+
+    ctx = stf.context()
+    lX = ctx.logical_data(X)
+    lY = ctx.logical_data(Y)
+
+    with pytest.raises(ValueError, match="positive"):
+        with ctx.cuda_kernel(lX.read(), lY.rw()) as k:
+            dX = k.get_arg(0)
+            dY = k.get_arg(1)
+            k.launch(
+                kernel,
+                grid=grid,
+                block=block,
+                args=[ctypes.c_int(N), ctypes.c_double(1.0), dX, dY],
+            )
+    ctx.finalize()
 
 
 def test_cuda_kernel_multi_launch():

@@ -176,7 +176,16 @@ def main(cuda_dot=None, cuda_dot_verbose=False):
     graph.finalize()
 
     expected = sum(1.0 + bias + WHILE_ITERS for _, bias in BRANCHES)
-    print(f"out[0] = {out_host[0]} (expected {expected})")
+    # Assert the *entire* output rather than a single element: a bug in the
+    # branch/while wiring (e.g. a branch that never relaxes, or a join that
+    # drops a lane) can leave most of the array wrong while out[0] happens to
+    # look right.
+    np.testing.assert_allclose(
+        out_host,
+        expected,
+        err_msg=(f"branch/while join produced {out_host} (expected all {expected})"),
+    )
+    print(f"out = all {expected} over {N} elements (verified)")
 
 
 if __name__ == "__main__":

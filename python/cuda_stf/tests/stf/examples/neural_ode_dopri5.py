@@ -242,7 +242,7 @@ def _extract_model_params(f: nn.Module):
     )
 
 
-def _warmup_body(body_compiled, params, y0, dtype, device, t_end_val):
+def _warmup_body(body_compiled, params, y0, dtype, device, t_end_val, atol, rtol):
     """Pre-compile the body outside any STF / CUDA graph capture.
 
     Required to avoid Dynamo's first-call RNG snapshot firing during
@@ -256,7 +256,10 @@ def _warmup_body(body_compiled, params, y0, dtype, device, t_end_val):
     Parameters directly here would compile a cache entry Dynamo can't
     reuse on the captured path, and it would then try to recompile
     mid-capture. We explicitly detach everything so warmup and production
-    look identical to Dynamo.
+    look identical to Dynamo. For the same reason we warm up with the
+    *runtime* ``atol``/``rtol``: Dynamo specializes on those scalar args, so
+    warming up with hardcoded values would recompile mid-capture whenever the
+    caller passes different tolerances.
     """
     detached_params = [p.detach().clone() for p in params]
     y0_det = y0.detach().clone()
@@ -268,8 +271,8 @@ def _warmup_body(body_compiled, params, y0, dtype, device, t_end_val):
         t_scalar,
         h_scalar,
         t_end_scalar,
-        1e-6,
-        1e-6,
+        atol,
+        rtol,
         *detached_params,
     )
     torch.cuda.synchronize()
@@ -287,13 +290,19 @@ def _build_stf_odeint_persistent(
     *,
     atol: float = 1e-6,
     rtol: float = 1e-6,
+    max_iters: int = 1_000_000,
 ):
     """Persistent-context form of stf_odeint.
 
-    Returns ``(forward, ctx, y_host)`` where ``forward()`` runs one full
-    integration from ``t_span[0]`` to ``t_span[1]`` into the host-backed
-    logical_data ``y_host``. The context + compiled body are shared
-    across calls.
+    Returns ``(forward, ctx, y_host, iter_host)`` where ``forward()`` runs one
+    full integration from ``t_span[0]`` to ``t_span[1]`` into the host-backed
+    logical_data ``y_host``; ``iter_host`` holds the number of accepted+rejected
+    steps taken (readable after :meth:`finalize`). The context + compiled body
+    are shared across calls.
+
+    ``max_iters`` bounds the device-side while loop so a stalled adaptive step
+    (e.g. a non-finite state that keeps shrinking ``h`` without advancing ``t``)
+    terminates instead of hanging forever.
 
     Use this when you call the solver many times (e.g. inside a rollout
     loop); the one-shot ``stf_odeint`` simply wraps this.
@@ -306,8 +315,9 @@ def _build_stf_odeint_persistent(
     body_compiled, params = _extract_model_params(f)
     # Pre-compile the body once OUTSIDE any STF capture. Dynamo's first-
     # call RNG probe blows up inside CUDA graph capture; this forces that
-    # probe to happen now.
-    _warmup_body(body_compiled, params, y0, dtype, device, t1_f)
+    # probe to happen now. Warm up with the runtime tolerances so the guard
+    # signature matches the captured call.
+    _warmup_body(body_compiled, params, y0, dtype, device, t1_f, atol, rtol)
 
     ctx = stf.stackable_context()
 
@@ -320,6 +330,9 @@ def _build_stf_odeint_persistent(
     l_t = ctx.logical_data_empty((1,), np_dtype, name="t")
     l_h = ctx.logical_data_empty((1,), np_dtype, name="h")
     l_cond = ctx.logical_data_empty((1,), np_dtype, name="cond")
+    # Host-backed step counter so the caller can detect a cap-terminated run.
+    iter_host = np.zeros((1,), dtype=np_dtype)
+    l_iter = ctx.logical_data(iter_host, name="iter")
 
     # Parameters are read-only for the lifetime of the solver -- mark them
     # as such so the stackable_ctx auto-pushes READ at every nesting level
@@ -336,17 +349,23 @@ def _build_stf_odeint_persistent(
     t_end_cuda = torch.full((), t1_f, device=device, dtype=dtype)
     h_init = (t1_f - t0_f) / 100.0
 
+    max_iters_f = float(max_iters)
+
     def forward():
-        # Reset (y, t, h) at the top of every forward so repeated calls
+        # Reset (y, t, h, iter) at the top of every forward so repeated calls
         # start from the same IC.
-        with pytorch_task(ctx, l_y.write(), l_t.write(), l_h.write()) as (
+        with pytorch_task(
+            ctx, l_y.write(), l_t.write(), l_h.write(), l_iter.write()
+        ) as (
             tY,
             tT,
             tH,
+            tIter,
         ):
             tY.copy_(y0_cuda)
             tT.fill_(t0_f)
             tH.fill_(h_init)
+            tIter.fill_(0.0)
 
         with ctx.while_loop() as loop:
             with pytorch_task(
@@ -355,10 +374,11 @@ def _build_stf_odeint_persistent(
                 l_t.rw(),
                 l_h.rw(),
                 l_cond.write(),
+                l_iter.rw(),
                 *[lp.read() for lp in l_params],
             ) as tensors:
-                tY, tT, tH, tC = tensors[:4]
-                param_tensors = tensors[4:]
+                tY, tT, tH, tC, tIter = tensors[:5]
+                param_tensors = tensors[5:]
                 t0d = tT.squeeze()
                 h0d = tH.squeeze()
                 y_new, t_new, h_new, cond = body_compiled(
@@ -373,10 +393,14 @@ def _build_stf_odeint_persistent(
                 tY.copy_(y_new)
                 tT.copy_(t_new.unsqueeze(0))
                 tH.copy_(h_new.unsqueeze(0))
-                tC.copy_(cond.unsqueeze(0))
+                tIter += 1.0
+                # Continue only while not finished (cond) AND under the cap, so
+                # a stalled step cannot loop forever on the device.
+                under_cap = (tIter.squeeze() < max_iters_f).to(cond.dtype)
+                tC.copy_((cond * under_cap).unsqueeze(0))
             loop.continue_while(l_cond, ">", 0.5)
 
-    return forward, ctx, y_host
+    return forward, ctx, y_host, iter_host
 
 
 def stf_odeint(
@@ -386,6 +410,7 @@ def stf_odeint(
     *,
     atol: float = 1e-6,
     rtol: float = 1e-6,
+    max_iters: int = 1_000_000,
 ) -> torch.Tensor:
     """Minimal drop-in replacement for ``torchdiffeq.odeint(f, y0, [t0,t1])``.
 
@@ -393,21 +418,37 @@ def stf_odeint(
     * ``y0`` is a (B, D) CUDA tensor.
     * ``t_span`` is ``(t0, t1)``; the solver integrates to ``t1`` and
       returns ``y(t1)``. Dense output is not supported yet.
+    * ``max_iters`` bounds the adaptive loop; a non-finite or stalled
+      integration raises ``RuntimeError`` instead of hanging or returning a
+      partial result.
 
     This is the one-shot form: it builds a fresh stackable_context per
     call, so per-call overhead is higher than the persistent form. Use
     ``_build_stf_odeint_persistent`` when calling in a loop.
     """
-    forward, ctx, y_host = _build_stf_odeint_persistent(
+    forward, ctx, y_host, iter_host = _build_stf_odeint_persistent(
         f,
         y0,
         t_span,
         atol=atol,
         rtol=rtol,
+        max_iters=max_iters,
     )
     forward()
     ctx.finalize()
     torch.cuda.synchronize()
+
+    steps_taken = int(iter_host[0])
+    if not np.all(np.isfinite(y_host)):
+        raise RuntimeError(
+            f"stf_odeint produced non-finite state after {steps_taken} steps; "
+            "the integration diverged"
+        )
+    if steps_taken >= max_iters:
+        raise RuntimeError(
+            f"stf_odeint hit the {max_iters}-step cap without reaching t_end; "
+            "the adaptive step likely stalled"
+        )
     return torch.as_tensor(y_host, device=y0.device, dtype=y0.dtype).clone()
 
 
@@ -456,8 +497,8 @@ def _build_cudagraph_host_odeint_persistent(
 
     body_compiled, params = _extract_model_params(f)
     # Same warmup as the STF path: compile Inductor artifacts now so no
-    # compile fires inside the capture.
-    _warmup_body(body_compiled, params, y0, dtype, device, t1_f)
+    # compile fires inside the capture (with the runtime tolerances).
+    _warmup_body(body_compiled, params, y0, dtype, device, t1_f, atol, rtol)
 
     # Persistent device buffers that the captured graph reads/writes.
     y_buf = y0.detach().clone()
@@ -674,7 +715,7 @@ def _print_timings(cfg, *, iters: int, warmup: int):
     )
     t_cg = _time_callable(forward_cg, iters=iters, warmup=warmup)
 
-    forward, ctx, _ = _build_stf_odeint_persistent(
+    forward, ctx, _, _ = _build_stf_odeint_persistent(
         f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
     )
     try:

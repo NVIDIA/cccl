@@ -25,9 +25,17 @@ below (``DPOTRF``, ``DTRSM``, ``DSYRK``, ``DGEMM``) expose row-major semantics.
 
 import ctypes
 import sys
+import time
 
 import numpy as np
 import pytest
+
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+# This must come before the optional CuPy / nvmath imports so a build without
+# the STF bindings skips cleanly instead of raising a misleading dependency
+# ImportError first.
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
+import cuda.stf._experimental as stf  # noqa: E402
 
 try:
     import cupy as cp
@@ -43,10 +51,6 @@ except ImportError:
     raise ImportError(
         "This example requires nvmath-python. Install it with: pip install 'nvmath-python[cu13]'"
     ) from None
-
-# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
-pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Direct cuBLAS / cuSOLVER helpers
@@ -744,10 +748,12 @@ def main(N=1024, NB=128, check_result=False):
     # Synchronize before timing
     cp.cuda.runtime.deviceSynchronize()
 
-    # Record start time
-    start_event = cp.cuda.Event()
-    stop_event = cp.cuda.Event()
-    start_event.record()
+    # Time the factorization with a host clock. CUDA events would record on the
+    # default stream, but STF runs each task on its own managed stream, so an
+    # event pair on the default stream captures none of the factorization work.
+    # We instead bracket the submission with a device synchronize so the timer
+    # spans until the STF-scheduled work has actually completed.
+    start_time = time.perf_counter()
 
     # Perform Cholesky factorization
     print("\n" + "=" * 60)
@@ -755,8 +761,10 @@ def main(N=1024, NB=128, check_result=False):
     print("=" * 60)
     PDPOTRF(ctx, A)
 
-    # Record stop time
-    stop_event.record()
+    # Wait for the STF-scheduled factorization to complete before stopping the
+    # timer, otherwise we would only be measuring task submission overhead.
+    cp.cuda.runtime.deviceSynchronize()
+    elapsed_ms = (time.perf_counter() - start_time) * 1e3
 
     # Solve system if checking
     if check_result:
@@ -780,11 +788,7 @@ def main(N=1024, NB=128, check_result=False):
     print("=" * 60)
     ctx.finalize()
 
-    # Wait for completion
-    stop_event.synchronize()
-
     # Compute timing
-    elapsed_ms = cp.cuda.get_elapsed_time(start_event, stop_event)
     gflops = (1.0 / 3.0 * N * N * N) / 1e9
     gflops_per_sec = gflops / (elapsed_ms / 1000.0)
 

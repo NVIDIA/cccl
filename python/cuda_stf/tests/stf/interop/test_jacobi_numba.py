@@ -72,12 +72,15 @@ def test_jacobi_stackable_numba():
 
     A_host = np.zeros((m, n), dtype=np.float64)
     Anew_host = np.zeros((m, n), dtype=np.float64)
+    # Host-backed residual so we can read the final value back after finalize
+    # and assert the solve actually converged (rather than just running).
+    residual_host = np.zeros((1,), dtype=np.float64)
 
     ctx = stf.stackable_context()
 
     lA = ctx.logical_data(A_host, name="A")
     lAnew = ctx.logical_data(Anew_host, name="Anew")
-    lresidual = ctx.logical_data_empty((1,), np.float64, name="residual")
+    lresidual = ctx.logical_data(residual_host, name="residual")
 
     threads = (16, 16)
     blocks = ((m + 15) // 16, (n + 15) // 16)
@@ -116,7 +119,33 @@ def test_jacobi_stackable_numba():
 
     ctx.finalize()
 
-    print(f"Jacobi converged (Numba) with tolerance {tol}")
+    # The final residual must be finite and below tolerance: the loop can only
+    # exit when residual <= tol, so a non-finite or too-large value here means
+    # the solve silently diverged or never ran.
+    assert np.isfinite(residual_host[0]), (
+        f"Jacobi residual is non-finite ({residual_host[0]})"
+    )
+    assert residual_host[0] <= tol, (
+        f"Jacobi residual {residual_host[0]} exceeds tolerance {tol}"
+    )
+
+    # The interior-only kernels never write the boundary, so the halo must
+    # still hold its initial values (A[i,j] = 1 on the diagonal else -1).
+    init_full = np.where(np.eye(m, n, dtype=bool), 1.0, -1.0)
+    assert np.allclose(A_host[0, :], init_full[0, :])
+    assert np.allclose(A_host[-1, :], init_full[-1, :])
+    assert np.allclose(A_host[:, 0], init_full[:, 0])
+    assert np.allclose(A_host[:, -1], init_full[:, -1])
+
+    # The interior must actually have evolved away from its initial state and
+    # stayed finite -- otherwise convergence is vacuous.
+    interior = (slice(1, m - 1), slice(1, n - 1))
+    assert np.all(np.isfinite(A_host))
+    assert not np.allclose(A_host[interior], init_full[interior]), (
+        "Jacobi interior did not evolve from its initial state"
+    )
+
+    print(f"Jacobi converged (Numba) with residual {residual_host[0]} <= {tol}")
 
 
 @cuda.jit
