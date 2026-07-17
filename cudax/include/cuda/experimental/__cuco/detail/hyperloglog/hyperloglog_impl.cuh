@@ -39,6 +39,7 @@
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
+#include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
@@ -565,8 +566,7 @@ private:
   //! @param __value New value
   _CCCL_DEVICE_API constexpr void __update_max(int __i, __register_type __value) noexcept
   {
-    ::cuda::atomic_ref<__register_type, _Scope> __register_ref(__sketch[__i]);
-    __register_ref.fetch_max(__value, ::cuda::memory_order_relaxed);
+    (void) ::cuda::experimental::cuco::detail::__atomic_fetch_max<_Scope>(&__sketch[__i], __value);
   }
 
   //! @brief Try expanding the shmem partition for a given kernel beyond 48KB if necessary.
