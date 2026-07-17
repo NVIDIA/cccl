@@ -25,6 +25,7 @@
 #include <cccl/c/experimental/stf/stf.h>
 
 using namespace cuda::experimental::stf;
+using ::cuda::experimental::places::cute_partition_descriptor;
 
 struct stf_exec_place_resources_opaque_t
 {
@@ -125,6 +126,10 @@ template <class P>
   {
     return static_cast<stf_exec_place_scope_handle>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<P, cute_partition_descriptor>)
+  {
+    return static_cast<stf_cute_partition_handle>(opaque_bits);
+  }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<P, green_context_helper>)
   {
@@ -176,6 +181,10 @@ template <class Opaque>
   {
     return static_cast<const exec_place_scope*>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<Opaque*, stf_cute_partition_handle>)
+  {
+    return static_cast<const cute_partition_descriptor*>(opaque_bits);
+  }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<Opaque*, stf_green_context_helper_handle>)
   {
@@ -193,6 +202,43 @@ template <class Opaque>
 {
   auto* const c = from_opaque_const(h);
   return const_cast<::std::remove_const_t<::std::remove_pointer_t<decltype(c)>>*>(c);
+}
+} // namespace
+
+namespace
+{
+// Shared tail of the two stf_placement_evaluate* entry points
+int stf_fill_placement_outputs(
+  const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+{
+  out_stats->total_bytes      = stats.total_bytes;
+  out_stats->vm_bytes         = stats.vm_bytes;
+  out_stats->block_size       = stats.block_size;
+  out_stats->nblocks          = stats.nblocks;
+  out_stats->nallocs          = stats.nallocs;
+  out_stats->total_samples    = stats.total_samples;
+  out_stats->matching_samples = stats.matching_samples;
+
+  if (bytes_per_grid_index != nullptr)
+  {
+    const size_t grid_size = grid.get_dims().size();
+    for (size_t i = 0; i < grid_size; i++)
+    {
+      bytes_per_grid_index[i] = 0;
+    }
+    for (const auto& entry : stats.bytes_per_grid_index)
+    {
+      if (entry.first >= grid_size)
+      {
+        // A mapper returned coordinates outside the grid: refuse to write
+        // past the caller's buffer and report the failure.
+        fprintf(stderr, "placement evaluation: mapper returned a position outside the grid\n");
+        return 1;
+      }
+      bytes_per_grid_index[entry.first] = entry.second;
+    }
+  }
+  return 0;
 }
 } // namespace
 
@@ -221,6 +267,9 @@ stf_exec_place_handle stf_exec_place_current_device(void)
 
 stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
 {
+  _CCCL_ASSERT(ctx != nullptr, "CUcontext must not be null");
+  // A null context in release builds throws in exec_place::cuda_context and is
+  // mapped to a null handle (with a stderr trace) by stf_try_allocate.
   return to_opaque(stf_try_allocate([ctx, dev_id] {
     return new exec_place(exec_place::cuda_context(ctx, dev_id));
   }));
@@ -537,6 +586,287 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
+}
+
+void* stf_data_place_allocate_nd(
+  stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
+  _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
+  const auto* dp = from_opaque_const(h);
+  dim4 dims;
+  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  try
+  {
+    return dp->allocate_nd(dims, elemsize, stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_allocate_nd failed: %s\n", e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_allocate_nd failed: unknown exception\n");
+    return nullptr;
+  }
+}
+
+int stf_placement_evaluate(
+  stf_exec_place_handle grid,
+  stf_get_executor_fn mapper,
+  const stf_dim4* data_dims,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
+  _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
+  _CCCL_ASSERT(out_stats != nullptr, "out_stats must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  dim4 dims;
+  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  try
+  {
+    const auto stats = ::cuda::experimental::places::evaluate_localized_placement(
+      *grid_ptr,
+      reinterpret_cast<partition_fn_t>(mapper),
+      dims,
+      elemsize,
+      probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
+      block_size);
+    return stf_fill_placement_outputs(stats, *grid_ptr, out_stats, bytes_per_grid_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_placement_evaluate failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_placement_evaluate failed: unknown exception\n");
+    return 1;
+  }
+}
+
+int stf_placement_evaluate_partition(
+  stf_exec_place_handle grid,
+  stf_cute_partition_handle partition,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(partition != nullptr, "partition handle must not be null");
+  _CCCL_ASSERT(out_stats != nullptr, "out_stats must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  const auto* part     = from_opaque_const(partition);
+  try
+  {
+    const auto stats = ::cuda::experimental::places::evaluate_localized_placement(
+      *grid_ptr,
+      *part,
+      elemsize,
+      probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
+      block_size);
+    return stf_fill_placement_outputs(stats, *grid_ptr, out_stats, bytes_per_grid_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_placement_evaluate_partition failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_placement_evaluate_partition failed: unknown exception\n");
+    return 1;
+  }
+}
+
+stf_cute_partition_handle stf_cute_partition_create(
+  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
+{
+  _CCCL_ASSERT(true_dims != nullptr, "true_dims must not be null");
+  _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
+  _CCCL_ASSERT(spec != nullptr, "spec must not be null");
+  dim4 td, gd;
+  ::std::memcpy(&td, true_dims, sizeof(td));
+  ::std::memcpy(&gd, grid_dims, sizeof(gd));
+  return to_opaque(stf_try_allocate([&] {
+    ::std::vector<::cuda::experimental::places::dim_spec> cpp_spec(rank);
+    for (size_t d = 0; d < rank; d++)
+    {
+      cpp_spec[d].policy    = static_cast<::cuda::experimental::places::dim_policy>(spec[d].policy);
+      cpp_spec[d].mesh_axis = spec[d].mesh_axis;
+      cpp_spec[d].block     = spec[d].block;
+    }
+    return new cute_partition_descriptor(::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd));
+  }));
+}
+
+stf_cute_partition_handle stf_cute_partition_from_leaves(
+  const uint64_t* place_extents,
+  const int64_t* place_strides,
+  const int* place_axes,
+  size_t num_place_leaves,
+  const uint64_t* local_extents,
+  const int64_t* local_strides,
+  size_t num_local_leaves,
+  const stf_dim4* padded_dims,
+  const stf_dim4* true_dims,
+  const stf_dim4* grid_dims)
+{
+  _CCCL_ASSERT(padded_dims != nullptr && true_dims != nullptr && grid_dims != nullptr, "dims must not be null");
+  _CCCL_ASSERT(num_place_leaves == 0 || (place_extents != nullptr && place_strides != nullptr && place_axes != nullptr),
+               "place leaf arrays must not be null");
+  _CCCL_ASSERT(num_local_leaves == 0 || (local_extents != nullptr && local_strides != nullptr),
+               "local leaf arrays must not be null");
+  dim4 pd, td, gd;
+  ::std::memcpy(&pd, padded_dims, sizeof(pd));
+  ::std::memcpy(&td, true_dims, sizeof(td));
+  ::std::memcpy(&gd, grid_dims, sizeof(gd));
+  return to_opaque(stf_try_allocate([&] {
+    ::std::vector<layout_leaf> pl(num_place_leaves), ll(num_local_leaves);
+    ::std::vector<int> axes(num_place_leaves);
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      pl[k]   = {place_extents[k], static_cast<::std::ptrdiff_t>(place_strides[k])};
+      axes[k] = place_axes[k];
+    }
+    for (size_t k = 0; k < num_local_leaves; k++)
+    {
+      ll[k] = {local_extents[k], static_cast<::std::ptrdiff_t>(local_strides[k])};
+    }
+    return new cute_partition_descriptor(mv(pl), mv(axes), mv(ll), pd, td, gd);
+  }));
+}
+
+void stf_cute_partition_destroy(stf_cute_partition_handle h)
+{
+  delete from_opaque(h);
+}
+
+void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+{
+  _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
+  const dim4 d = from_opaque_const(h)->true_dims();
+  ::std::memcpy(out_dims, &d, sizeof(d));
+}
+
+void stf_cute_partition_padded_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+{
+  _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
+  const dim4 d = from_opaque_const(h)->padded_dims();
+  ::std::memcpy(out_dims, &d, sizeof(d));
+}
+
+void stf_cute_partition_grid_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+{
+  _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
+  const dim4 d = from_opaque_const(h)->grid_dims();
+  ::std::memcpy(out_dims, &d, sizeof(d));
+}
+
+size_t stf_cute_partition_num_place_leaves(stf_cute_partition_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  return from_opaque_const(h)->place_leaves().size();
+}
+
+size_t stf_cute_partition_num_local_leaves(stf_cute_partition_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  return from_opaque_const(h)->local_leaves().size();
+}
+
+void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  const auto* part = from_opaque_const(h);
+  for (size_t k = 0; k < part->place_leaves().size(); k++)
+  {
+    if (extents != nullptr)
+    {
+      extents[k] = part->place_leaves()[k].extent;
+    }
+    if (strides != nullptr)
+    {
+      strides[k] = static_cast<int64_t>(part->place_leaves()[k].stride);
+    }
+    if (axes != nullptr)
+    {
+      axes[k] = part->place_axes()[k];
+    }
+  }
+}
+
+void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  const auto* part = from_opaque_const(h);
+  for (size_t k = 0; k < part->local_leaves().size(); k++)
+  {
+    if (extents != nullptr)
+    {
+      extents[k] = part->local_leaves()[k].extent;
+    }
+    if (strides != nullptr)
+    {
+      strides[k] = static_cast<int64_t>(part->local_leaves()[k].stride);
+    }
+  }
+}
+
+uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  try
+  {
+    return from_opaque_const(h)->place_offset(place_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_cute_partition_place_offset failed: %s\n", e.what());
+    return UINT64_MAX;
+  }
+}
+
+stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(partition != nullptr, "partition handle must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  const auto* part     = from_opaque_const(partition);
+  return to_opaque(stf_try_allocate([&] {
+    return new data_place(make_composite_data_place(*grid_ptr, *part));
+  }));
+}
+
+stf_get_executor_fn stf_partition_fn_blocked(int dim)
+{
+  switch (dim)
+  {
+    case 0:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<0>::get_executor);
+    case 1:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<1>::get_executor);
+    case 2:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<2>::get_executor);
+    case 3:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<3>::get_executor);
+    default:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition::get_executor);
+  }
+}
+
+stf_get_executor_fn stf_partition_fn_cyclic(void)
+{
+  return reinterpret_cast<stf_get_executor_fn>(&cyclic_partition::get_executor);
 }
 
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)

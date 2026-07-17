@@ -100,7 +100,7 @@ void do_reduce_threaded(
   INFO("ident = " << ident);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::reduce(comms[i], envs[i], in[i], outputs[i], init, op, ident);
+    cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i], outputs[i], init, op, ident);
   });
 
   // Reduction call should not modify the inputs in any ways

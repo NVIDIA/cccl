@@ -251,6 +251,93 @@ Places
   ``data_place.managed()``. Use when creating logical data or in a dependency, e.g.
   ``lZ.rw(data_place.device(1))``.
 
+Localizing tensor allocations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A structured partition describes how tensor coordinates map onto a grid of execution
+places. The same partition can back a composite data place, whose geometry-aware
+allocation localizes each allocation block on the device owning most of its elements.
+
+The Python API is C/row-major throughout: shapes, per-dimension specifications,
+callback coordinates, and grid axes all use axis 0 as the outermost dimension,
+exactly like a NumPy shape -- no reversal is ever needed. (Internally, the C and
+C++ layers use a dimension-0-fastest convention; the conversion is private to the
+Python binding.)
+
+For example, on a system with two CUDA devices, distribute the rows of a
+NumPy-shaped tensor between them::
+
+    import math
+
+    import numpy as np
+
+    import cuda.stf._experimental as stf
+
+    stf.machine_init()
+
+    shape = (4096, 8192)  # (rows, columns), last dimension contiguous
+    dtype = np.dtype(np.float32)
+
+    grid = stf.exec_place_grid.from_devices([0, 1])
+
+    # Distribute row bands over grid axis 0; each row stays intact.
+    partition = stf.cute_partition.from_spec(
+        shape,
+        (("blocked", 0), None),
+        grid.dims,
+    )
+
+    place = stf.data_place.composite_cute(grid, partition)
+    ptr = place.allocate(shape, elemsize=dtype.itemsize)
+
+    try:
+        # Use ptr through CUDA Python, Numba, CuPy, or another CUDA
+        # interoperability layer.
+        ...
+    finally:
+        place.deallocate(ptr, math.prod(shape) * dtype.itemsize)
+
+``allocate()`` returns a raw CUDA pointer rather than a NumPy array; an
+interoperability layer must wrap that pointer before a Python array library can
+use it. Partitioning the outermost dimension gives each device contiguous row
+bands and avoids interleaving owners within the allocation granularity.
+
+Physical placement is page-granular: memory is localized in blocks of the
+device's allocation granularity (typically 2 MiB), and a block landing on the
+boundary between two owners is placed with the majority owner. Placement can
+therefore only approximate element ownership when ownership runs are smaller
+than a page. Use ``placement_evaluate(grid, partition, elemsize)`` to score a
+candidate mapping -- its ``accuracy`` is the fraction of bytes local to their
+owner -- before committing memory.
+
+**Tensor of tiles.** Multidimensional distributions match the page granularity
+best when storage is reorganized into tiles: a ``(tiles_y, tiles_x, tile_y,
+tile_x)`` tensor keeps each tile's payload contiguous, so every ownership run
+spans a whole tile regardless of the distribution policy. The data partition is
+the tile partition's specification with the payload dimensions left
+undistributed (``None``)::
+
+    tiles = (16, 16)          # tile grid, distributed
+    tile = (512, 1024)        # per-tile payload, 2 MiB of float32: page-exact
+    shape = tiles + tile
+
+    grid = stf.exec_place_grid.create(places, grid_dims=(2, 2))
+
+    partition = stf.cute_partition.from_spec(
+        shape,
+        (("blocked", 0), ("blocked", 1), None, None),
+        grid.dims,
+    )
+
+    place = stf.data_place.composite_cute(grid, partition)
+    ptr = place.allocate(shape, elemsize=4)
+
+Ownership of element ``(i, j, y, x)`` depends only on the tile coordinates
+``(i, j)``, so the same specification drives both tiled execution and data
+placement. Note that tile-major storage is a real storage format: viewing it as
+a conventional ``(rows, columns)`` spatial tensor requires a permutation, not a
+reshape.
+
 Tokens
 ------
 

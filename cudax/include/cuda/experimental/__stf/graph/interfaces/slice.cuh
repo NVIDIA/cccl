@@ -87,7 +87,6 @@ public:
       return;
     }
 
-    exec_place grid   = memory_node.affine_exec_place();
     size_t total_size = this->shape.size();
 
     // Get the extents stored as a dim4
@@ -110,8 +109,8 @@ public:
       }
     };
 
-    auto [array, cached_prereqs] = bctx.get_composite_cache().get(
-      memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
+    auto [array,
+          cached_prereqs] = bctx.get_composite_cache().get(memory_node, delinearize, total_size, sizeof(T), data_dims);
     assert(array);
     prereqs.merge(mv(cached_prereqs));
     T* base_ptr = static_cast<T*>(array->get_base_ptr());
@@ -155,7 +154,13 @@ public:
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
     auto* array = static_cast<localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<localized_array>(array), prereqs);
+    bctx.get_composite_cache().put(
+      memory_node,
+      ::std::unique_ptr<localized_array>(array),
+      prereqs,
+      this->shape.size(),
+      sizeof(T),
+      this->shape.get_data_dims());
   }
 
   /// @brief Implementation of interface primitive

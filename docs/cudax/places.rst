@@ -643,14 +643,16 @@ grid of places.
    // dimensions 0 and 2 not distributed
    auto part = make_partition(
        dim4(nx, ny, nz),
-       {dim_spec{}, dim_spec{dim_policy::blocked, /*mesh_axis*/ 0}, dim_spec{}},
+       partition_spec{whole, blocked<0>, whole},
        grid.get_dims());
 
-Each ``dim_spec`` entry selects a policy for the corresponding tensor
-dimension: ``whole`` (not distributed), ``blocked``, ``cyclic``, or
-``block_cyclic`` (with a block size), bound to one axis of the grid. This is
-strictly more expressive than the classic policies -- splitting dimension 1
-of a 3-D tensor, or mixing policies across dimensions, cannot be stated with
+Each entry in ``partition_spec`` selects a policy for the corresponding
+tensor dimension: ``whole`` (not distributed), ``blocked<axis>``,
+``cyclic<axis>``, or ``block_cyclic<axis>(block_size)``. Rank, policy,
+mesh-axis, and leaf counts are preserved in the C++ type; tensor extents,
+strides, and block sizes remain runtime values. This is strictly more
+expressive than the classic policies -- splitting dimension 1 of a 3-D
+tensor, or mixing policies across dimensions, cannot be stated with
 ``blocked_partition``.
 
 The reference shape, padding, and predication
@@ -708,17 +710,69 @@ Conventions and limits
 - Extents follow the **dimension-0-fastest** linearization of
   ``dim4::get_index()`` (the convention of STF slices). A row-major front-end
   must present its *whole* description in this order -- the extents, the
-  per-dimension ``dim_spec`` list, and any coordinates passed to ``owner()``
+  per-dimension ``partition_spec``, and any coordinates passed to ``owner()``
   reverse together, since reversing only the extents would silently re-target
-  each ``dim_spec`` at the wrong axis.
-- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain), and at most
-  ``cute_partition::max_leaves`` layout leaves per mode -- ``make_partition``
-  emits at most 2 per dimension, so the bound only concerns the expert
-  ``cute_partition`` constructor, which accepts raw (extent, stride) leaves
-  for layouts the per-dimension grammar cannot express.
-- The partition object is trivially copyable (fixed-capacity storage) and
-  its queries are host/device callable.
+  each policy at the wrong axis.
+- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain).
+- Typed partitions and their kernel-facing sub-shapes store exactly their
+  layout leaves. Runtime interfaces (including C/Python opaque handles) erase
+  them to a canonical descriptor only at the data-place boundary.
+- The partition object is trivially copyable and its queries are host/device
+  callable.
 
 The ``partitioned_axpy`` example shows the intended workflow end to end:
 express the partition once, evaluate it, run tasks over data placed by it,
 and perform a raw geometry-aware allocation.
+
+Computing over structured partitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same ``parallel_for`` entry point that accepts the classic policies
+accepts a structured partition instance, which then decides **both** the
+per-place kernel decomposition and (through the task's affine data place)
+the placement of the data those kernels touch -- one object, both sides:
+
+.. code:: c++
+
+   // Every place computes exactly the coordinates it owns
+   ctx.parallel_for(part, grid, lX.shape(), lX.write())
+       ->*[] __device__(size_t x, size_t y, size_t z, auto X) { ... };
+
+The shape argument may also be a ``box`` describing a *region within the
+tensor the partition was built for* (validated by containment) -- e.g. the
+interior of a stencil domain. Each place still enumerates its own
+coordinates; those outside the region (like the padding phantoms of uneven
+extents) are skipped by a per-coordinate predicate, so iteration stays
+aligned with data ownership rather than re-splitting the region:
+
+.. code:: c++
+
+   box interior({1ul, nx - 1}, {1ul, ny - 1}, {1ul, nz - 1});
+   ctx.parallel_for(part, grid, interior, lX.rw())->*...;
+
+Predication has a cost proportional to the *rejected* fraction of the
+enumerated coordinates, which makes it the right tool for regions that are
+dense in their bounds (interiors: the rejected boundary shell is a
+surface-to-volume fraction) and the wrong tool for thin regions. For
+boundary-style updates -- a face of the domain, say -- prefer one of:
+
+- **fuse** the boundary handling into the volumetric kernel's body when the
+  condition is cheap (application-dependent);
+- iterate the face with a **classic scale-free policy** (tight, no rejected
+  coordinates) while an explicit dependency keeps placement on the
+  partition's composite place:
+
+  .. code:: c++
+
+     auto dist = make_composite_data_place(grid, part);
+     box face({0ul, nx}, {0ul, ny}, {0ul, 1ul});
+     ctx.parallel_for(blocked_partition(), grid, face, lX.rw(dist))->*...;
+
+  The face's few remote writes (places computing parts of a face another
+  place owns) are typically negligible against the volumetric traffic.
+
+The ``fdtd_mgpu`` example demonstrates the full pattern: a single
+``make_partition`` call decides which dimension splits for every task --
+initialization over the full shape, updates over interior boxes, a point
+source -- and places the fields' data, so changing the distribution of the
+whole simulation is editing one ``partition_spec`` entry.
