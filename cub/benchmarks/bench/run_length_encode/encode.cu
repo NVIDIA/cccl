@@ -27,6 +27,7 @@ struct bench_encode_policy_selector
        TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
        cub::BLOCK_SCAN_WARP_SCANS,
        lookback_delay_policy},
+      {},
     };
   }
 };

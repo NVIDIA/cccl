@@ -1088,11 +1088,22 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
     OffT num_items,
     int num_tiles)
 {
+  static constexpr RleEncodePolicy active_policy = current_policy<PolicySelector>();
+  if constexpr (active_policy.algorithm == RleAlgorithm::lookahead)
+  {
 #if _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
-  NV_IF_TARGET(NV_PROVIDES_SM_100,
-               (device_rle_encode_lookahead_body<PolicySelector>(
-                  d_keys, d_unique, d_counts, d_num_runs, tile_partial_states, num_items, num_tiles);))
+    NV_IF_TARGET(NV_PROVIDES_SM_100,
+                 (device_rle_encode_lookahead_body<PolicySelector>(
+                    d_keys, d_unique, d_counts, d_num_runs, tile_partial_states, num_items, num_tiles);))
+#else // _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
+    static_assert(sizeof(KeyT) == 0,
+                  "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
+  }
+  else
+  {
+    static_assert(sizeof(KeyT) == 0, "Implementation bug: the lookahead RLE encode kernel requires a lookahead policy");
+  }
 }
 } // namespace detail::rle::encode
 
