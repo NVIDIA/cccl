@@ -123,7 +123,7 @@ __device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_
   return {a.load(cuda::memory_order_relaxed)};
 }
 
-// CRITICAL: from choose_signed_offset, it is guranteed that OffT covers the whole index space.
+// CRITICAL: from choose_signed_offset, it is guaranteed that OffT covers the whole index space.
 // Therefore, in the kernel, the type of the prefix (run_count, open_len) should always be OffT.
 // How do we pack them? if P is 32 bit, we compact them into 1 dword. Otherwise, 2 dwords!
 template <class OffT, bool = (sizeof(OffT) > 4)>
@@ -174,6 +174,7 @@ struct alignas(16) PrefixT<OffT, true>
 
 // position of the n-th set bit of flag_mask, requires popc(flag_mask) > rank. Implementation is binary search.
 // __fns(flag_mask, 0, rank+1) computes the same thing but has NO hardware op on sm_100a and is slower
+// TODO (Nan): as per discussion with Federico, this could be in libcudacxx
 __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
 {
   // each step: if the wanted bit is not among the low half's set bits, skip that half entirely
@@ -996,7 +997,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           }
         }
       }
-      // if you are the bookkeeper (i should rename this to boundarycloser...)
+      // if you are the bookkeeper
       else
       {
         for (int pipeline_gen = 0;; ++pipeline_gen)
