@@ -103,7 +103,17 @@ SAMPLES = _env_list("HIST_HR_SAMPLES", ["I32", "F64"])
 # direct_atomic_* spellings are no longer recognized -> forcing would silently
 # no-op and report no cached launch). These keys are also what histogram_algo_perf.py
 # reads for the hit-rate panels.
-ALGOS = os.environ.get("HIST_HR_ALGOS", "direct_cuckoo direct_single_probe").split()
+HITRATE_ALGORITHM_NAMES = {
+    "GPS": "gmem_privatized_single_probe",
+    "GSC": "gmem_privatized_single_probe_coalesced_spill",
+    "GSR": "gmem_privatized_single_probe_rle_spill",
+    "DAS": "direct_single_probe",
+    "DAC": "direct_cuckoo",
+}
+ALGOS = [
+    HITRATE_ALGORITHM_NAMES.get(name, name)
+    for name in os.environ.get("HIST_HR_ALGOS", "DAS DAC").split()
+]
 GENERATOR_CACHE_SLOTS = int(os.environ.get("HIST_HR_CACHE_SLOTS", "0"))
 
 HITRATE_RE = re.compile(
