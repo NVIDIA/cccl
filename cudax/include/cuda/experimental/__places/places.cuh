@@ -1813,6 +1813,11 @@ public:
     return true;
   }
 
+  bool is_composite() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::composite;
@@ -1895,8 +1900,7 @@ private:
 
 inline bool data_place::is_composite() const
 {
-  const auto& ref = *pimpl_;
-  return typeid(ref) == typeid(data_place_composite);
+  return pimpl_->is_composite();
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
