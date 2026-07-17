@@ -893,10 +893,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
             break;
           }
-          // store warps and compute warps are decoupled
-          // fewer store warps than compute warps has no winning regime since warp slots are not scarce at 1 block/SM
-          static_assert(store_warps >= compute_warps && store_warps % compute_warps == 0,
-                        "store warps: a whole multiple of compute warps");
           // per-warp-tile run bases (lane i owns warp-tile i's count/base) and done BEFORE the wait on prefixed so they
           // overlap
           // lane i: run-count sum over warp-tiles [0, i) = where warp-tile i's runs begin within the tile
