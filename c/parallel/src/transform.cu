@@ -113,6 +113,13 @@ namespace cdt = cub::detail::transform;
 
 struct cache
 {
+  // One build result (and therefore one cache) is shared by every thread using
+  // the same transform specialization, and the Python bindings invoke the
+  // native call with the GIL released (or on free-threaded CPython). Each
+  // config is therefore filled exactly once through its once_flag; after that,
+  // readers on any thread take only the call_once fast path.
+  std::once_flag async_config_once;
+  std::once_flag prefetch_config_once;
   cuda::std::optional<cub::detail::transform::cuda_expected<cub::detail::transform::async_config>> async_config{};
   cuda::std::optional<cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>> prefetch_config{};
 };
@@ -127,15 +134,14 @@ struct transform_kernel_source
   cub::detail::transform::cuda_expected<cub::detail::transform::async_config>
   CacheAsyncConfiguration(const ActionT& action)
   {
-    auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    auto* const cache = reinterpret_cast<transform::cache*>(build.cache);
     if (cache == nullptr)
     {
       return action();
     }
-    if (!cache->async_config.has_value())
-    {
+    std::call_once(cache->async_config_once, [&] {
       cache->async_config = action();
-    }
+    });
     return *cache->async_config;
   }
 
@@ -143,15 +149,14 @@ struct transform_kernel_source
   cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>
   CachePrefetchConfiguration(const ActionT& action)
   {
-    auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    auto* const cache = reinterpret_cast<transform::cache*>(build.cache);
     if (cache == nullptr)
     {
       return action();
     }
-    if (!cache->prefetch_config.has_value())
-    {
+    std::call_once(cache->prefetch_config_once, [&] {
       cache->prefetch_config = action();
-    }
+    });
     return *cache->prefetch_config;
   }
 
@@ -982,6 +987,11 @@ try
 
   std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
 
+  // The launch-config cache is runtime-only state and is not serialized; give
+  // the deserialized build a fresh one so it caches configs like a compiled
+  // build (the cache itself is thread-safe). cleanup deletes it.
+  auto cache_obj = std::make_unique<transform::cache>();
+
   cccl_device_transform_build_result_t result{};
   result.cc                            = static_cast<int>(h.cc);
   result.payload_kind                  = static_cast<cccl_payload_kind_t>(h.payload_kind);
@@ -991,9 +1001,8 @@ try
   result.runtime_policy                = policy.release();
   result.runtime_policy_size           = static_cast<size_t>(policy_size);
   result.transform_kernel_lowered_name = n_kernel.release();
-  // result.cache stays null (zeroed from result{}); kernel-source helpers
-  // null-check it and fall through to recomputing configs each call.
-  *build_ptr = result;
+  result.cache                         = cache_obj.release();
+  *build_ptr                           = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

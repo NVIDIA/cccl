@@ -15,6 +15,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
 #include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 #include <cuda/experimental/stream.cuh>
 
@@ -34,28 +35,9 @@ namespace nccl_test_util
   return {cuda::devices.begin(), cuda::devices.end()};
 }
 
-class nccl_communicator : public cudax::nccl_communicator_ref
+[[nodiscard]] inline const std::vector<cudax::nccl_communicator>& nccl_comms()
 {
-public:
-  using nccl_communicator_ref::nccl_communicator_ref;
-
-  // These are never allowed
-  nccl_communicator(const nccl_communicator&)            = delete;
-  nccl_communicator& operator=(const nccl_communicator&) = delete;
-  // These should be allowed once we make this a proper class, but need to be able to reach
-  // into nccl_communicator_ref to work properly
-  nccl_communicator(nccl_communicator&&)            = delete;
-  nccl_communicator& operator=(nccl_communicator&&) = delete;
-
-  ~nccl_communicator()
-  {
-    static_cast<void>(ncclCommDestroy(native_handle()));
-  }
-};
-
-[[nodiscard]] inline const std::vector<nccl_communicator>& nccl_comms()
-{
-  static const auto comms = []() -> std::vector<nccl_communicator> {
+  static const auto comms = []() -> std::vector<cudax::nccl_communicator> {
     if (cuda::devices.size() == 0)
     {
       SKIP("No CUDA devices visible");
@@ -76,7 +58,15 @@ public:
     INFO("NCCL: " << ncclGetErrorString(result));
     REQUIRE(result == ncclSuccess);
 
-    return {raw_comms.begin(), raw_comms.end()};
+    std::vector<cudax::nccl_communicator> comms;
+    comms.reserve(raw_comms.size());
+
+    for (const auto comm : raw_comms)
+    {
+      comms.emplace_back(cudax::nccl_communicator::from_native_handle(comm));
+    }
+
+    return comms;
   }();
 
   return comms;

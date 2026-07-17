@@ -41,7 +41,7 @@
 #endif
 
 #if _CCCL_CHECK_BUILTIN(builtin_rotateleft64)
-#  define _CCCL_BUILTIN_ROTATELEFT44(...) __builtin_rotateleft64(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ROTATELEFT64(...) __builtin_rotateleft64(__VA_ARGS__)
 #endif
 
 #if _CCCL_CHECK_BUILTIN(builtin_rotateright8)
@@ -57,7 +57,7 @@
 #endif
 
 #if _CCCL_CHECK_BUILTIN(builtin_rotateright64)
-#  define _CCCL_BUILTIN_ROTATERIGHT44(...) __builtin_rotateright64(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ROTATERIGHT64(...) __builtin_rotateright64(__VA_ARGS__)
 #endif
 
 // nvcc doesn't allow clang's rotater left/right builtins

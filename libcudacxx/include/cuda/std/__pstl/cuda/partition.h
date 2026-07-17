@@ -87,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      nullptr);
+      __policy);
 
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
@@ -114,7 +114,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
