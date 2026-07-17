@@ -27,6 +27,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__functional/operations_traits.h>
+#include <cuda/std/__host_stdlib/cstdio> // snprintf
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -34,9 +35,7 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__nccl/shared_library.h>
-
 #if _CCCL_HOSTED()
-#  include <cstdio> // snprintf
 #  include <exception> // uncaught_exceptions
 #endif // _CCCL_HOSTED()
 

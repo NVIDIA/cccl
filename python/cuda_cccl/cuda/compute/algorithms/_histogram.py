@@ -12,7 +12,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state, to_cccl_value_state
 from .._serialization import BUILD_RESULTS, ITER, U64, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
@@ -22,6 +22,7 @@ from ..typing import DeviceArrayLike, IteratorT
 
 class _Histogram(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "num_rows",
         "d_samples_cccl",
         "d_histogram_cccl",
@@ -65,19 +66,28 @@ class _Histogram(Serializable):
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceHistogramBuildResult,
-            num_channels,
-            num_active_channels,
-            self.d_samples_cccl,
-            num_levels,
-            self.d_histogram_cccl,
-            self.h_lower_level_cccl.type,
-            self.num_rows,
-            row_stride_samples,
+            d_samples,
+            d_histogram,
+            int(num_levels),
+            h_lower_level.dtype,
+            num_samples,
             is_evenly_segmented,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceHistogramBuildResult,
+                num_channels,
+                num_active_channels,
+                self.d_samples_cccl,
+                num_levels,
+                self.d_histogram_cccl,
+                self.h_lower_level_cccl.type,
+                self.num_rows,
+                row_stride_samples,
+                is_evenly_segmented,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -93,7 +103,9 @@ class _Histogram(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_samples_cccl, d_samples)
         set_cccl_iterator_state(self.d_histogram_cccl, d_histogram)

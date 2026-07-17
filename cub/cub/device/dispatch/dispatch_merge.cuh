@@ -93,11 +93,11 @@ template <typename PolicySelector,
           typename Offset,
           typename CompareOp>
 _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
-  _CCCL_GRID_CONSTANT const KeyIt1 keys1,
-  _CCCL_GRID_CONSTANT const Offset keys1_count,
-  _CCCL_GRID_CONSTANT const KeyIt2 keys2,
-  _CCCL_GRID_CONSTANT const Offset keys2_count,
-  _CCCL_GRID_CONSTANT const Offset num_diagonals,
+  const KeyIt1 keys1,
+  const Offset keys1_count,
+  const KeyIt2 keys2,
+  const Offset keys2_count,
+  const Offset num_diagonals,
   Offset* key1_beg_offsets,
   CompareOp compare_op)
 {
@@ -142,14 +142,14 @@ __launch_bounds__(
                      Offset,
                      CompareOp>::type::threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_merge_kernel(
-    _CCCL_GRID_CONSTANT const KeyIt1 keys1,
-    _CCCL_GRID_CONSTANT const ValueIt1 items1,
-    _CCCL_GRID_CONSTANT const Offset num_keys1,
-    _CCCL_GRID_CONSTANT const KeyIt2 keys2,
-    _CCCL_GRID_CONSTANT const ValueIt2 items2,
-    _CCCL_GRID_CONSTANT const Offset num_keys2,
-    _CCCL_GRID_CONSTANT const KeyIt3 keys_result,
-    _CCCL_GRID_CONSTANT const ValueIt3 items_result,
+    const KeyIt1 keys1,
+    const ValueIt1 items1,
+    const Offset num_keys1,
+    const KeyIt2 keys2,
+    const ValueIt2 items2,
+    const Offset num_keys2,
+    const KeyIt3 keys_result,
+    const ValueIt3 items_result,
     CompareOp compare_op,
     Offset* key1_beg_offsets,
     vsmem_t global_temp_storage)

@@ -63,22 +63,11 @@ namespace cuda::experimental
 {
 namespace __detail::__reduce
 {
-template <class _Buffer, class _Env>
-struct __partial_redop
-{
-  using __buffer_type = _Buffer;
-  using __env_type    = _Env;
-
-  _Buffer __buffer;
-  _Env __env;
-  ::cuda::stream_ref __stream;
-};
-
 template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, class _BinaryOp>
-[[nodiscard]] _CCCL_HOST_API __partial_redop<_Buffer, _Env> __local_reduction(
+[[nodiscard]] _CCCL_HOST_API _Buffer __local_reduction(
   const ::cuda::std::int32_t __ROOT_RANK,
   _Comm&& __comm,
-  _Env __env,
+  const _Env& __env,
   _InputRange&& __inputs,
   const _Tp& __init,
   _BinaryOp __op,
@@ -99,7 +88,6 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 
   static_assert(::cuda::std::ranges::sized_range<_InputRange>);
 
-  const auto __num_items = ::cuda::std::ranges::size(__inputs);
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
   // sendcount.
@@ -111,24 +99,23 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 
   __CUDAX_MULTI_GPU_DISPATCH(
     __logical_device,
-    __num_items,
     CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-    (::cuda::std::ranges::begin(__inputs),
-     // Similarly to above, prepare for the comm calls later. In order for those to be
-     // in-place, the sendbuff = recvbuff + rank, so we need to place our partial result
-     // there
-     __buff.begin() + __rank,
-     __num_items_fixed,
-     ::cuda::std::move(__op),
-     __rank == __ROOT_RANK ? __init : __ident,
-     __env));
+    ::cuda::std::ranges::begin(__inputs),
+    // Similarly to above, prepare for the comm calls later. In order for those to be
+    // in-place, the sendbuff = recvbuff + rank, so we need to place our partial result
+    // there
+    __buff.begin() + __rank,
+    ::cuda::std::ranges::size(__inputs),
+    ::cuda::std::move(__op),
+    __rank == __ROOT_RANK ? __init : __ident,
+    __env);
 
-  return {::cuda::std::move(__buff), ::cuda::std::move(__env), __stream};
+  return __buff;
 }
 
-template <class _CommRange, class _OutputItRange, class _BinaryOp, class _PartialType>
+template <class _CommRange, class _OutputItRange, class _BinaryOp, class _Buffer>
 _CCCL_HOST_API void __direct_reduction(
-  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::std::vector<_PartialType>* __partials)
+  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::std::vector<_Buffer>* __partials)
 {
   auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
@@ -136,39 +123,45 @@ _CCCL_HOST_API void __direct_reduction(
   {
     __comm.all_reduce(
       __guard,
-      __local.__buffer.data() + __comm.rank(),
+      __local.data() + __comm.rank(),
       ::cuda::std::to_address(__out_it),
       /*__count=*/1,
       __op,
-      __local.__stream);
+      __local.stream());
   }
 }
 
-template <class _CommRange, class _OutputItRange, class _BinaryOp, class _PartialType>
+template <class _CommRange, class _EnvRange, class _OutputItRange, class _BinaryOp, class _Buffer>
 _CCCL_HOST_API void __two_stage_gather_reduction(
-  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::std::vector<_PartialType>* __partials)
+  _CommRange&& __comms,
+  _EnvRange&& __envs,
+  _OutputItRange&& __outputs,
+  const _BinaryOp& __op,
+  ::std::vector<_Buffer>* __partials)
 {
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
     for (auto&& [__comm, __local] : ::cuda::std::ranges::views::zip(__comms, *__partials))
     {
-      auto* const __ptr = __local.__buffer.data();
+      auto* const __ptr = __local.data();
 
-      __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, /*__count=*/1, __local.__stream);
+      __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, /*__count=*/1, __local.stream());
     }
   }
 
-  for (auto&& [__comm, __part, __out] : ::cuda::std::ranges::views::zip(__comms, *__partials, __outputs))
+  for (auto&& [__comm, __env, __buffer, __out] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
   {
-    auto&& [__buffer, __env, _] = __part;
-    const auto __num_items      = __buffer.size();
-
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
-      __num_items,
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-      (__buffer.begin(), __out, __num_items_fixed, __op, CUB_NS_QUALIFIER::detail::reduce::no_init, __env));
+      __buffer.begin(),
+      __out,
+      __buffer.size(),
+      __op,
+      CUB_NS_QUALIFIER::detail::reduce::no_init,
+      __env);
   }
 }
 } // namespace __detail::__reduce
@@ -290,9 +283,6 @@ _CCCL_HOST_API void reduce(
   static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, typename __properties::__env_type>,
                 "Environment must contain a stream");
 
-  using __partial_type = ::cuda::experimental::__detail::__reduce::__partial_redop<typename __properties::__buffer_type,
-                                                                                   typename __properties::__env_type>;
-
   const auto __num_local = ::cuda::std::ranges::size(__comms);
 
   if (!__num_local)
@@ -302,7 +292,7 @@ _CCCL_HOST_API void reduce(
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::reduce");
 
-  auto __partials = ::std::vector<__partial_type>{};
+  auto __partials = ::std::vector<typename __properties::__buffer_type>{};
 
   __partials.reserve(__num_local);
   // TODO(jfaibussowit): can just be ranges::zip | ranges::transform | ranges::to() (and then
@@ -310,7 +300,7 @@ _CCCL_HOST_API void reduce(
   for (auto&& [__comm, __env, __inputs] : ::cuda::std::ranges::views::zip(__comms, __envs, __range_of_inputs))
   {
     __partials.emplace_back(
-      ::cuda::experimental::__detail::__reduce::__local_reduction<typename __partial_type::__buffer_type>(
+      ::cuda::experimental::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
         /*__ROOT_RANK=*/0, __comm, __env, __inputs, __init, __op, __ident));
   }
 
@@ -322,7 +312,8 @@ _CCCL_HOST_API void reduce(
   }
   else
   {
-    ::cuda::experimental::__detail::__reduce::__two_stage_gather_reduction(__comms, __outputs, __op, &__partials);
+    ::cuda::experimental::__detail::__reduce::__two_stage_gather_reduction(
+      __comms, __envs, __outputs, __op, &__partials);
   }
 }
 
@@ -365,13 +356,14 @@ _CCCL_HOST_API void reduce(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  reduce(::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
-         ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
-         ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
-         ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
-         ::cuda::std::move(__init),
-         ::cuda::std::move(__op),
-         ::cuda::std::move(__ident));
+  ::cuda::experimental::reduce(
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
+    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
+    ::cuda::std::move(__init),
+    ::cuda::std::move(__op),
+    ::cuda::std::move(__ident));
 }
 } // namespace cuda::experimental
 

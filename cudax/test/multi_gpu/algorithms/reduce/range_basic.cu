@@ -21,10 +21,9 @@
 #include <numeric>
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
-
-#include "common.h"
 
 namespace
 {
@@ -179,10 +178,10 @@ MULTI_GPU_TEST("reduce, multiple elements per rank", value_types, operators)
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  // Global rank `comms[i].rank()` contributes `{rank, rank, rank}`. `reduce` first does a local CUB
-  // reduction of each rank's range, then combines the partials across ranks. Each local rank also
-  // gets a one-element output buffer and an environment carrying its stream. `reference` mirrors
-  // every global rank's three contributions for the host-side fold.
+  // Global rank `comms[i].rank()` contributes ten copies of `rank`. `reduce` first does a local
+  // CUB reduction of each rank's range, then combines the partials across ranks. Each local rank
+  // also gets a one-element output buffer and an environment carrying its stream. `reference`
+  // mirrors every global rank's ten contributions for the host-side fold.
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<T>> out;
   std::vector<decltype(::cuda::std::execution::env{::cuda::stream_ref{streams[0]}})> envs;
@@ -190,10 +189,12 @@ MULTI_GPU_TEST("reduce, multiple elements per rank", value_types, operators)
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
-    const auto v      = make_value<T>(comms[i].rank());
-    const auto values = {v, v, v};
+    const auto v = make_value<T>(comms[i].rank());
+    const std::vector<T> values(values_per_rank, v);
 
     in.emplace_back(cuda::make_device_buffer<T>(streams[i], comms[i].logical_device().underlying_device(), values));
     out.emplace_back(
@@ -208,12 +209,12 @@ MULTI_GPU_TEST("reduce, multiple elements per rank", value_types, operators)
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size());
+    reference.reserve(comms.front().size() * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       const auto v = make_value<T>(r);
 
-      reference.insert(reference.end(), {v, v, v});
+      reference.insert(reference.end(), values_per_rank, v);
     }
 
     return std::accumulate(reference.begin(), reference.end(), init, Op{});
@@ -238,7 +239,7 @@ MULTI_GPU_TEST("reduce, some ranks empty", value_types, operators)
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  // Even global ranks contribute two copies of `rank`; odd global ranks contribute an empty input
+  // Even global ranks contribute ten copies of `rank`; odd global ranks contribute an empty input
   // range. Rank 0 (the reduction root) is always non-empty. `reduce` must treat an empty rank as
   // contributing nothing, exactly like `std::accumulate` over the surviving elements. `reference`
   // mirrors that for the host-side fold.
@@ -249,12 +250,14 @@ MULTI_GPU_TEST("reduce, some ranks empty", value_types, operators)
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
     const auto rank = comms[i].rank();
     if (rank % 2 == 0)
     {
-      const auto values = {make_value<T>(rank), make_value<T>(rank)};
+      const std::vector<T> values(values_per_rank, make_value<T>(rank));
       in.emplace_back(cuda::make_device_buffer<T>(streams[i], comms[i].logical_device().underlying_device(), values));
     }
     else
@@ -273,13 +276,12 @@ MULTI_GPU_TEST("reduce, some ranks empty", value_types, operators)
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size());
+    reference.reserve(comms.front().size() * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       if (r % 2 == 0)
       {
-        reference.push_back(make_value<T>(r));
-        reference.push_back(make_value<T>(r));
+        reference.insert(reference.end(), values_per_rank, make_value<T>(r));
       }
     }
 
