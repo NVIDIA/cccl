@@ -893,9 +893,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
             break;
           }
-          // per-warp-tile run bases (lane i owns warp-tile i's count/base) and done BEFORE the wait on prefixed so they
-          // overlap
           // lane i: run-count sum over warp-tiles [0, i) = where warp-tile i's runs begin within the tile
+          // we do this BEFORE the wait on prefixed so they overlap
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
           const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
@@ -905,7 +904,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int warp_tile_run_count   = __shfl_sync(full_mask, lane_warp_tile_run_count, warp_tile_id);
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
           // if our register budget allows it and it is worth it, we can buffer intermediate results in register
-          // and arrive empty early. this buys 2.5% BWUtil at the worst segments
           if (warp_tile_run_count >= 1 && warp_tile_run_count < flag_staging_threshold)
           {
             // wait for staged_warp_tile (2/3)
