@@ -66,21 +66,22 @@ def test_init_logical_data_uses_cuda_core_for_8_byte_zero_fill(monkeypatch):
             assert handle == 5678
             return "stream"
 
-    def fail_cupy_fallback(*args):
-        raise AssertionError("8-byte zero fill should not require CuPy")
+    def fail_driver_fill(*args):
+        raise AssertionError("8-byte zero fill should not require the driver memset")
 
     monkeypatch.setattr(fill_utils, "Buffer", FakeBuffer)
     monkeypatch.setattr(fill_utils, "Stream", FakeStream)
-    monkeypatch.setattr(fill_utils, "_fill_8byte_cupy", fail_cupy_fallback)
+    monkeypatch.setattr(fill_utils, "_fill_8byte_driver", fail_driver_fill)
 
     fill_utils.init_logical_data(_FakeContext(np.float64), _FakeLogicalData(), 0.0)
 
+    # A bytewise zero fill is valid for any dtype and goes through cuda.core.
     assert fill_calls == [(0, "stream")]
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.int64])
-def test_init_logical_data_still_uses_cupy_for_nonzero_8_byte_fill(monkeypatch, dtype):
-    fallback_calls = []
+def test_init_logical_data_uses_driver_memset_for_nonzero_8_byte_fill(monkeypatch, dtype):
+    driver_calls = []
 
     class FakeBuffer:
         @classmethod
@@ -95,14 +96,15 @@ def test_init_logical_data_still_uses_cupy_for_nonzero_8_byte_fill(monkeypatch, 
         def from_handle(cls, handle):
             return "stream"
 
-    def record_cupy_fallback(shape, dtype, value, ptr, size, stream_ptr):
-        fallback_calls.append((shape, dtype, value, ptr, size, stream_ptr))
+    def record_driver_fill(dtype, value, ptr, count, stream_ptr):
+        driver_calls.append((dtype, value, ptr, count, stream_ptr))
 
     monkeypatch.setattr(fill_utils, "Buffer", FakeBuffer)
     monkeypatch.setattr(fill_utils, "Stream", FakeStream)
-    monkeypatch.setattr(fill_utils, "_fill_8byte_cupy", record_cupy_fallback)
+    monkeypatch.setattr(fill_utils, "_fill_8byte_driver", record_driver_fill)
 
     fill_utils.init_logical_data(_FakeContext(dtype), _FakeLogicalData(), 1)
 
-    expected_size = 4 * np.dtype(dtype).itemsize
-    assert fallback_calls == [((4,), np.dtype(dtype), 1, 1234, expected_size, 5678)]
+    # Nonzero 8-byte fills use a pair of strided 32-bit driver memsets rather
+    # than cuda.core's fill (which only supports 1/2/4-byte patterns).
+    assert driver_calls == [(np.dtype(dtype), 1, 1234, 4, 5678)]

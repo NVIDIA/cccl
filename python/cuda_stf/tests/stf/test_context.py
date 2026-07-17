@@ -87,7 +87,11 @@ def test_task_arg_cai_v3():
         assert cai["version"] == 3
         assert cai["shape"] == X.shape
         assert cai["typestr"] == X.dtype.str
-        assert cai["stream"] == t.stream_ptr()
+        # The view advertises no stream: STF already orders the task stream
+        # behind the data's producers, and reporting an integer stream would
+        # make consumers such as Numba host-synchronize (illegal during graph
+        # capture). Callers launch their work on t.stream_ptr() directly.
+        assert cai["stream"] is None
 
     ctx.finalize()
 
@@ -100,7 +104,7 @@ def test_logical_data_rejects_non_contiguous():
     assert not strided_view.flags["C_CONTIGUOUS"]
 
     ctx = stf.context()
-    with pytest.raises(ValueError, match="not contiguous"):
+    with pytest.raises(ValueError, match="C-contiguous"):
         ctx.logical_data(strided_view)
     ctx.finalize()
 
