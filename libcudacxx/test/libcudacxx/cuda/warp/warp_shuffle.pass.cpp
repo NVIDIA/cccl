@@ -95,6 +95,20 @@ TEST_DEVICE_FUNC void test_non_trivial_types(const T& data)
   }
 }
 
+TEST_DEVICE_FUNC void test_64bit_types()
+{
+  constexpr uint32_t mask = 0xFFFFFFFFu;
+  uint64_t data           = threadIdx.x;
+
+  auto up = cuda::device::warp_shuffle_up(data, 1, mask);
+  assert(up.data == __shfl_up_sync(mask, data, 1));
+  assert(up.pred == (threadIdx.x >= 1));
+
+  auto down = cuda::device::warp_shuffle_down(data, 1, mask);
+  assert(down.data == __shfl_down_sync(mask, data, 1));
+  assert(down.pred == (threadIdx.x + 1 < 32));
+}
+
 TEST_DEVICE_FUNC void test_overloadings()
 {
   using cuda::device::warp_shuffle_down;
@@ -123,7 +137,9 @@ __global__ void test_kernel()
   test_semantic<8>();
   test_semantic<16>();
   test_semantic<32>();
+  test_64bit_types();
   test_overloadings();
+  test_non_trivial_types(cuda::std::array<uint32_t, 4>{1, 2, 3, 4});
   test_non_trivial_types(cuda::std::array<double, 4>{1.0, 2.0, 3.0, 4.0});
   double array[4] = {1.0, 2.0, 3.0, 4.0};
   test_non_trivial_types(array);
