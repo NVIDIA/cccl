@@ -189,6 +189,12 @@ runs:
           ${ENVARGS:-}
         )"
 
+        if ! grep -q 'PARALLEL_LEVEL=' <<< "${ENVARGS:-}"; then
+          extra_launch_args+=(
+            "PARALLEL_LEVEL=$(($(grep -cP 'processor\s+:' /proc/cpuinfo) - 1))"
+          )
+        fi
+
         # Clear the ARN when using the pre-minted aws creds on the main repo.
         if [[ "$GITHUB_REPOSITORY" == "NVIDIA/cccl" ]]; then
           extra_launch_args+=(--env "AWS_ROLE_ARN=")

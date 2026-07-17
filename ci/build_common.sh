@@ -154,7 +154,7 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-N_CPUS="$(nproc --all --ignore=1)"
+N_CPUS="$(($(grep -cP 'processor\s+:' /proc/cpuinfo) - 1))"
 readonly N_CPUS
 declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
