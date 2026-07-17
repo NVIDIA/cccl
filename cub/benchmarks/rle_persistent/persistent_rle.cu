@@ -507,16 +507,21 @@ __device__ __forceinline__ void poll_fold_windows(
     {
       if (i < lane_tile_count)
       {
+        // aggregate run_count per lane, this is fine since run_count is commutative
         lane_run_count += packed_words[i].run_count();
+        // norminate the highest tile id with runs
         lane_last_tile_with_runs_in_chunk =
           (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_tile_with_runs_in_chunk;
       }
     }
+    // vote for the highest tile id with runs
     const int last_tile_with_runs_in_chunk = __reduce_max_sync(kFullMask, lane_last_tile_with_runs_in_chunk);
     int lane_open_length                   = 0;
 #pragma unroll
+    // how long is the chunk's unfinished run?
     for (int i = 0; i < kPollMlp; ++i)
     {
+      // if this tile id >= the highest tile id with runs
       if (i < lane_tile_count && i * 32 + lane_id >= last_tile_with_runs_in_chunk)
       {
         lane_open_length += packed_words[i].open_len();
@@ -524,7 +529,8 @@ __device__ __forceinline__ void poll_fold_windows(
     }
     const int chunk_run_count   = __reduce_add_sync(kFullMask, lane_run_count);
     const int chunk_open_length = __reduce_add_sync(kFullMask, lane_open_length);
-    dense_mode                  = chunk_run_count > (chunk << 7);
+    // dense_mode is true if chunk_run_count > 128
+    dense_mode = chunk_run_count > (chunk << 7);
     // combine last_seen_prefix with the chunk aggregate
     const OffT new_run_count = last_seen_prefix_run_count + chunk_run_count;
     const OffT new_open_length =
@@ -612,7 +618,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   using PrefixT                          = rle_impl::PrefixT<OffT>;
   // [kStages][kTileSize] input keys
   // [kStages][kTileSize] int16 staged head positions
-  extern __shared__ char smem_raw[]; // 16B-aligned; KeyT alignment <= 16 for all supported types
+  extern __shared__ char smem_raw[];
   KeyT* const tile_buf = (KeyT*) smem_raw;
   short* const pos_buf = (short*) (tile_buf + (size_t) kStages * kSlotStride);
   __shared__ int tile_id_buf[kStages]; // which global tile each ring slot holds (LOAD gets it with try_cancel)
@@ -624,20 +630,17 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   // for POLL to pass STORE packed [open_len_prefix:32][run_count_prefix:32]
   __shared__ PrefixT prefix_packed[kStages];
 
-  // STORE --pos_buf_free--> COMPUTE staging (only when kPosBufStages < kStages; if = then it is mapped 1:1)
-  // all store warps arrive after they no longer need the data in the pos slot; compute waits before re-staging into it
+  // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where kPosBufStages < kStages);
+  // if it is mapped 1:1, then this would have been protected by empty / fall as well
   __shared__ cuda::std::uint64_t pos_buf_free[kPosBufStages];
   // LOAD --full--> COMPUTE & POLL
-  // COMPUTE(all warps) --computed--> COMPUTE warp0
-  // warp0 calculates & publishes this tile's aggregate to the global
+  // COMPUTE(all warps) --computed--> COMPUTE w0, then cw0 calculates & publishes this tile's aggregate to the global
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
   __shared__ cuda::std::uint64_t full[kStages];
   __shared__ cuda::std::uint64_t computed[kStages], prefixed[kStages], empty[kStages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
-  // instead of waiting for all 8 compute warps (warp 0 is always slower!!)
-  // The shared metadata store also needs (run counts, first/last heads, tile_id_buf) is covered by `computed`.
   __shared__ cuda::std::uint64_t staged_warp_tile[kStages][kNumCompWarps];
 
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
@@ -659,7 +662,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       ptx::mbarrier_init(&empty[slot_id], kNumStoreWarps + 1); // store warps + the bookkeeper
       for (int cw = 0; cw < kNumCompWarps; ++cw)
       {
-        ptx::mbarrier_init(&staged_warp_tile[slot_id][cw], 1); // that compute warp's lane0, after its scatter
+        ptx::mbarrier_init(&staged_warp_tile[slot_id][cw], 1); // that compute warp's lane0
       }
     }
     for (int p = 0; p < kPosBufStages; ++p)
@@ -731,8 +734,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             base_skip,
             &full[slot_id],
             lane_id);
-          // consume the prefetched cancel
-          // this is ok since it should be fast to get next cancelled id
+          // consume the prefetched cancel, this is ok since it should be fast to get next cancelled id
           tile_id = clc_next_tile_id(clc_resp, clc_bar, pipeline_gen, num_tiles, lane_id);
         }
       }
@@ -891,12 +893,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             scan_warp_tile_run_counts<kNumCompWarps>(warp_run_counts[slot_id], lane_id);
           const KeyT* tile_keys = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
           // staged positions
-          const short* run_positions = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
-          // wait for prefixed (2/3)
-          auto wait_prefixed_and_read = [&]() {
-            wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
-            return prefix_packed[slot_id].run_count();
-          };
+          const short* run_positions      = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
           const int warp_tile_id          = store_warp_idx;
           const int warp_tile_run_count   = __shfl_sync(kFullMask, lane_warp_tile_run_count, warp_tile_id);
           const int runs_before_warp_tile = __shfl_sync(kFullMask, lane_runs_before_warp_tile, warp_tile_id);
@@ -904,7 +901,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           // and arrive empty early. this buys 2.5% BWUtil at the worst segments
           if (warp_tile_run_count >= 1 && warp_tile_run_count < kHeadPosStagingThreshold)
           {
-            // wait for staged_warp_tile (3/3)
+            // wait for staged_warp_tile (2/3)
             wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
             constexpr int kBufPerLane = Config::kBufPerLane;
             KeyT buf_key[kBufPerLane];
@@ -934,7 +931,9 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                 ptx::mbarrier_arrive(&pos_buf_free[pipeline_gen % kPosBufStages]);
               }
             }
-            const OffT global_runs_before_warp_tile = wait_prefixed_and_read() + runs_before_warp_tile;
+            // wait for prefixed (3/3)
+            wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
+            const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
 #pragma unroll
             for (int it = 0; it < kBufPerLane; ++it)
             {
@@ -960,7 +959,9 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             continue;
           } // reg buf
           // if not reg buffed, we do the normal things, i.e. prefixed wait, then staged_warp_tile, then drain
-          const OffT curr_prefix_run_count = wait_prefixed_and_read();
+          // wait for prefixed (2/3)
+          wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1));
+          const OffT curr_prefix_run_count = prefix_packed[slot_id].run_count();
           // wait for staged_warp_tile (3/3)
           wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1));
           // drain writes warp tile (warp_tile_id)'s staged output into the global arrays.
