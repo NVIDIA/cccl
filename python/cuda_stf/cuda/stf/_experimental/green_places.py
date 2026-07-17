@@ -77,6 +77,14 @@ def green_places(
 
     from cuda.bindings import driver
 
+    # Lazy driver initialization: green_places() may be the first CUDA call
+    # in the process, and cuCtxGetCurrent reports CUDA_ERROR_NOT_INITIALIZED
+    # before cuInit. cuInit is idempotent, so no explicit setup is required
+    # of the caller.
+    (err,) = driver.cuInit(0)
+    if int(err) != 0:
+        raise RuntimeError(f"green_places(): cuInit failed with error code {int(err)}")
+
     # Save the caller's current context: Device.set_current() and
     # create_context() below both mutate the current context, and we must not
     # leak that side effect back to the caller. A NULL prev_ctx (no current
