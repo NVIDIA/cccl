@@ -31,7 +31,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/pair.h>
 
 #include <cuda/experimental/__places/cute_partition.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
@@ -40,6 +39,7 @@
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved
@@ -248,7 +248,7 @@ public:
   }
 
   template <typename F>
-  ::cuda::std::pair<::std::unique_ptr<localized_array>, event_list>
+  ::std::pair<::std::unique_ptr<localized_array>, event_list>
   get(const data_place& place, F&& delinearize, size_t total_size, size_t elem_size, dim4 data_dims)
   {
     EXPECT(place.is_composite());
