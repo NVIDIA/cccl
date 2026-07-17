@@ -494,6 +494,34 @@ def _validate_cai_c_contiguous(dict cai, dtype):
         expected_stride *= dim
 
 
+def _reject_unsupported_cai_stream(dict cai):
+    """Reject CUDA Array Interface inputs that carry a producer stream.
+
+    A non-``None`` ``stream`` means the producer may still have work in flight
+    on that stream, and the consumer must order against it before touching the
+    data. STF does not yet wire an imported producer stream into its dependency
+    graph, so honoring it would require establishing a producer-to-STF
+    prerequisite; silently ignoring it could let the first task read the buffer
+    on a different stream before the producer's work completes. Until that
+    plumbing exists we reject the input rather than race.
+
+    In practice this does not fire for the common producers: PyTorch exports CAI
+    v2 without a ``stream`` field, and NumPy/CuPy/Numba arrays created without an
+    explicit stream advertise ``stream=None``. If you do hit this, synchronize
+    the producer stream before calling ``logical_data(...)`` (or drop the stream
+    association), so the buffer is already coherent on registration.
+    """
+    stream = cai.get("stream")
+    if stream is not None:
+        raise NotImplementedError(
+            "logical_data() received a CUDA Array Interface object advertising a "
+            f"producer stream ({stream!r}); STF does not yet order imported data "
+            "behind an external producer stream. Synchronize that stream before "
+            "registering the buffer (so it is already coherent), or register data "
+            "that advertises no stream."
+        )
+
+
 def _cai_from_pointer(uintptr_t ptr, tuple shape, dtype, uintptr_t stream=0):
     """Build a CUDA Array Interface v3 dict for an STF task argument."""
     dtype = np.dtype(dtype)
@@ -709,6 +737,8 @@ cdef class logical_data:
         # Try CUDA Array Interface first
         if hasattr(buf, '__cuda_array_interface__'):
             cai = buf.__cuda_array_interface__
+
+            _reject_unsupported_cai_stream(cai)
 
             # Extract CAI information
             data_ptr, readonly = cai['data']
@@ -3492,6 +3522,7 @@ cdef class stackable_context:
 
         if hasattr(buf, '__cuda_array_interface__'):
             cai = buf.__cuda_array_interface__
+            _reject_unsupported_cai_stream(cai)
             data_ptr, readonly = cai['data']
             original_shape = cai['shape']
             out._dtype = _dtype_from_cai(cai)
