@@ -583,10 +583,10 @@ public:
       const auto __group_finds_match = __group.ballot(__state == detail::__equal_result::__equal);
       if (__group_finds_match != 0)
       {
-        const auto __src_lane = __ffs(__group_finds_match) - 1;
-        const auto __slot     = __group.shfl(
-          reinterpret_cast<::cuda::std::intptr_t>(__get_slot_ptr(*__probing_iter, __intra_bucket_index)), __src_lane);
-        return __iterator{reinterpret_cast<__value_type*>(__slot)};
+        const auto __src_lane      = __ffs(__group_finds_match) - 1;
+        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
+        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
+        return __iterator{__get_slot_ptr(__probing_index, __slot_index)};
       }
       if (__group.any(__state == detail::__equal_result::__empty))
       {
