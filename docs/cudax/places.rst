@@ -643,14 +643,16 @@ grid of places.
    // dimensions 0 and 2 not distributed
    auto part = make_partition(
        dim4(nx, ny, nz),
-       {dim_spec{}, dim_spec{dim_policy::blocked, /*mesh_axis*/ 0}, dim_spec{}},
+       partition_spec{whole, blocked<0>, whole},
        grid.get_dims());
 
-Each ``dim_spec`` entry selects a policy for the corresponding tensor
-dimension: ``whole`` (not distributed), ``blocked``, ``cyclic``, or
-``block_cyclic`` (with a block size), bound to one axis of the grid. This is
-strictly more expressive than the classic policies -- splitting dimension 1
-of a 3-D tensor, or mixing policies across dimensions, cannot be stated with
+Each entry in ``partition_spec`` selects a policy for the corresponding
+tensor dimension: ``whole`` (not distributed), ``blocked<axis>``,
+``cyclic<axis>``, or ``block_cyclic<axis>(block_size)``. Rank, policy,
+mesh-axis, and leaf counts are preserved in the C++ type; tensor extents,
+strides, and block sizes remain runtime values. This is strictly more
+expressive than the classic policies -- splitting dimension 1 of a 3-D
+tensor, or mixing policies across dimensions, cannot be stated with
 ``blocked_partition``.
 
 The reference shape, padding, and predication
@@ -708,16 +710,15 @@ Conventions and limits
 - Extents follow the **dimension-0-fastest** linearization of
   ``dim4::get_index()`` (the convention of STF slices). A row-major front-end
   must present its *whole* description in this order -- the extents, the
-  per-dimension ``dim_spec`` list, and any coordinates passed to ``owner()``
+  per-dimension ``partition_spec``, and any coordinates passed to ``owner()``
   reverse together, since reversing only the extents would silently re-target
-  each ``dim_spec`` at the wrong axis.
-- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain), and at most
-  ``cute_partition::max_leaves`` layout leaves per mode -- ``make_partition``
-  emits at most 2 per dimension, so the bound only concerns the expert
-  ``cute_partition`` constructor, which accepts raw (extent, stride) leaves
-  for layouts the per-dimension grammar cannot express.
-- The partition object is trivially copyable (fixed-capacity storage) and
-  its queries are host/device callable.
+  each policy at the wrong axis.
+- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain).
+- Typed partitions and their kernel-facing sub-shapes store exactly their
+  layout leaves. Runtime interfaces (including C/Python opaque handles) erase
+  them to a canonical descriptor only at the data-place boundary.
+- The partition object is trivially copyable and its queries are host/device
+  callable.
 
 The ``partitioned_axpy`` example shows the intended workflow end to end:
 express the partition once, evaluate it, run tasks over data placed by it,
@@ -774,4 +775,4 @@ The ``fdtd_mgpu`` example demonstrates the full pattern: a single
 ``make_partition`` call decides which dimension splits for every task --
 initialization over the full shape, updates over interior boxes, a point
 source -- and places the fields' data, so changing the distribution of the
-whole simulation is editing one ``dim_spec`` entry.
+whole simulation is editing one ``partition_spec`` entry.

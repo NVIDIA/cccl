@@ -33,10 +33,10 @@
  * evaluate_localized_placement): it deliberately does not compute placement
  * plans itself - the block-majority engine decides where blocks live.
  *
- * Leaves live in fixed-capacity cuda::std::array storage, so the partition is
- * trivially copyable and its queries (owner(), dims) are host/device callable:
- * it can cross the kernel boundary by value, which a future parallel_for
- * integration relies on.
+ * Typed partitions keep rank and leaf counts in their type and store only
+ * their exact leaves. This preserves compile-time loop bounds for
+ * parallel_for, while a canonical fixed-capacity descriptor provides runtime
+ * type erasure for data places and C/Python interoperability.
  */
 
 #pragma once
@@ -51,8 +51,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/span>
+#include <cuda/std/tuple>
 
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
@@ -73,7 +80,7 @@ namespace cuda::experimental::places
 struct layout_leaf
 {
   size_t extent;
-  ::std::ptrdiff_t stride;
+  ::cuda::std::ptrdiff_t stride;
 };
 
 /**
@@ -109,17 +116,16 @@ inline constexpr size_t cute_partition_max_leaves = 16;
  * @brief The set of element coordinates one place owns, as iterated by
  * parallel_for
  *
- * Produced by cute_partition::apply(): enumerates the place's local mode and
- * converts each local index to global tensor coordinates. Trivially copyable
- * (fixed-capacity leaf storage) so it crosses the kernel boundary by value,
- * and satisfies the shape interface the parallel_for kernels consume
- * (size() + index_to_coords()).
+ * Produced by cute_partition_descriptor::apply(): enumerates the place's
+ * local mode and converts each local index to global tensor coordinates. This
+ * runtime fallback uses fixed-capacity storage; typed C++ partitions produce
+ * static_cute_sub_shape instead.
  */
 template <size_t rank>
 class cute_sub_shape
 {
 public:
-  using coords_t = ::std::array<size_t, rank>;
+  using coords_t = ::cuda::std::array<size_t, rank>;
 
   /**
    * @param local_leaves Local mode of the place (leaf 0 fastest)
@@ -134,8 +140,8 @@ public:
     ::cuda::std::span<const layout_leaf> local_leaves,
     size_t offset,
     dim4 padded_dims,
-    const ::std::array<size_t, rank>& lo,
-    const ::std::array<size_t, rank>& hi)
+    const ::cuda::std::array<size_t, rank>& lo,
+    const ::cuda::std::array<size_t, rank>& hi)
       : num_leaves_(local_leaves.size())
       , offset_(offset)
       , padded_dims_(padded_dims)
@@ -198,18 +204,95 @@ private:
   size_t num_leaves_ = 0;
   size_t offset_     = 0;
   dim4 padded_dims_;
-  ::std::array<size_t, rank> lo_{};
-  ::std::array<size_t, rank> hi_{};
+  ::cuda::std::array<size_t, rank> lo_{};
+  ::cuda::std::array<size_t, rank> hi_{};
 };
 
 /**
- * @brief A structured description of a tensor partition over a grid of places
+ * @brief Compact sub-shape with a compile-time number of layout leaves
  *
- * See the file-level documentation for the representation. Construct either
- * directly from leaves (expert form) or through make_partition()
- * (per-dimension specification).
+ * This is the kernel-facing representation produced by a typed
+ * cute_partition. Unlike cute_sub_shape, it stores exactly the leaves used by
+ * the partition and has no runtime leaf count, so decoding can be unrolled.
  */
-class cute_partition
+template <size_t rank, size_t num_leaves>
+class static_cute_sub_shape
+{
+public:
+  using coords_t = ::cuda::std::array<size_t, rank>;
+
+  _CCCL_HOST_DEVICE static_cute_sub_shape(
+    const ::cuda::std::array<layout_leaf, num_leaves>& local_leaves,
+    size_t offset,
+    dim4 padded_dims,
+    const ::cuda::std::array<size_t, rank>& lo,
+    const ::cuda::std::array<size_t, rank>& hi)
+      : leaves_(local_leaves)
+      , offset_(offset)
+      , padded_dims_(padded_dims)
+      , lo_(lo)
+      , hi_(hi)
+  {}
+
+  _CCCL_HOST_DEVICE bool contains(const coords_t& coords) const
+  {
+    for (size_t d = 0; d < rank; d++)
+    {
+      if (coords[d] < lo_[d] || coords[d] >= hi_[d])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  _CCCL_HOST_DEVICE size_t size() const
+  {
+    size_t n = 1;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t k = 0; k < num_leaves; k++)
+    {
+      n *= leaves_[k].extent;
+    }
+    return n;
+  }
+
+  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  {
+    size_t linear = offset_;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t k = 0; k < num_leaves; k++)
+    {
+      linear += (index % leaves_[k].extent) * static_cast<size_t>(leaves_[k].stride);
+      index /= leaves_[k].extent;
+    }
+
+    coords_t coords{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t d = 0; d < rank; d++)
+    {
+      coords[d] = linear % padded_dims_.get(d);
+      linear /= padded_dims_.get(d);
+    }
+    return coords;
+  }
+
+private:
+  ::cuda::std::array<layout_leaf, num_leaves> leaves_{};
+  size_t offset_ = 0;
+  dim4 padded_dims_;
+  ::cuda::std::array<size_t, rank> lo_{};
+  ::cuda::std::array<size_t, rank> hi_{};
+};
+
+/**
+ * @brief Canonical runtime description of a structured tensor partition
+ *
+ * Used at polymorphic and ABI boundaries where one concrete C++ partition
+ * type cannot be retained. Normal C++ code should construct a typed
+ * cute_partition through make_partition().
+ */
+class cute_partition_descriptor
 {
 public:
   //! Maximum number of leaves per mode (see cute_partition_max_leaves)
@@ -230,12 +313,13 @@ public:
    * Throws std::invalid_argument unless the two modes together tile the
    * padded space exactly (bijectivity - validated in O(leaves)).
    */
-  cute_partition(const ::std::vector<layout_leaf>& place_leaves,
-                 const ::std::vector<int>& place_axes,
-                 const ::std::vector<layout_leaf>& local_leaves,
-                 dim4 padded_dims,
-                 dim4 true_dims,
-                 dim4 grid_dims)
+  cute_partition_descriptor(
+    const ::std::vector<layout_leaf>& place_leaves,
+    const ::std::vector<int>& place_axes,
+    const ::std::vector<layout_leaf>& local_leaves,
+    dim4 padded_dims,
+    dim4 true_dims,
+    dim4 grid_dims)
       : num_place_leaves_(place_leaves.size())
       , num_local_leaves_(local_leaves.size())
       , padded_dims_(padded_dims)
@@ -250,9 +334,9 @@ public:
     {
       throw ::std::invalid_argument("cute_partition: one grid axis is required per place leaf");
     }
-    ::std::copy(place_leaves.begin(), place_leaves.end(), place_leaves_.begin());
-    ::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
-    ::std::copy(local_leaves.begin(), local_leaves.end(), local_leaves_.begin());
+    ::cuda::std::copy(place_leaves.begin(), place_leaves.end(), place_leaves_.begin());
+    ::cuda::std::copy(place_axes.begin(), place_axes.end(), place_axes_.begin());
+    ::cuda::std::copy(local_leaves.begin(), local_leaves.end(), local_leaves_.begin());
 
     validate();
 
@@ -261,7 +345,8 @@ public:
     // recovers every leaf coordinate.
     for (size_t k = 0; k < num_place_leaves_; k++)
     {
-      decode_[num_decode_++] = {place_leaves_[k], /* place leaf index */ static_cast<::std::ptrdiff_t>(k)};
+      decode_[num_decode_++] = {place_leaves_[k], /* place leaf index */
+                                static_cast<::cuda::std::ptrdiff_t>(k)};
     }
     for (size_t k = 0; k < num_local_leaves_; k++)
     {
@@ -388,8 +473,8 @@ public:
       }
     }
 
-    ::std::array<size_t, rank> lo{};
-    ::std::array<size_t, rank> hi{};
+    ::cuda::std::array<size_t, rank> lo{};
+    ::cuda::std::array<size_t, rank> hi{};
     for (size_t d = 0; d < rank; d++)
     {
       lo[d] = 0;
@@ -417,8 +502,8 @@ public:
   {
     validate_iteration_rank<dims>();
 
-    ::std::array<size_t, dims> lo{};
-    ::std::array<size_t, dims> hi{};
+    ::cuda::std::array<size_t, dims> lo{};
+    ::cuda::std::array<size_t, dims> hi{};
     for (size_t d = 0; d < dims; d++)
     {
       if (b.get_begin(d) < 0 || static_cast<size_t>(b.get_end(d)) > true_dims_.get(d))
@@ -452,7 +537,7 @@ public:
   }
 
   //! Structural comparison (used for data place ordering)
-  int cmp(const cute_partition& o) const
+  int cmp(const cute_partition_descriptor& o) const
   {
     const auto cmp_sizes = [](size_t a, size_t b) {
       return (a < b) ? -1 : (a > b) ? 1 : 0;
@@ -518,12 +603,12 @@ public:
     return 0;
   }
 
-  bool operator==(const cute_partition& o) const
+  bool operator==(const cute_partition_descriptor& o) const
   {
     return cmp(o) == 0;
   }
 
-  bool operator!=(const cute_partition& o) const
+  bool operator!=(const cute_partition_descriptor& o) const
   {
     return !(*this == o);
   }
@@ -545,8 +630,8 @@ private:
 
   template <size_t rank>
   cute_sub_shape<rank> apply_region(
-    const ::std::array<size_t, rank>& lo,
-    const ::std::array<size_t, rank>& hi,
+    const ::cuda::std::array<size_t, rank>& lo,
+    const ::cuda::std::array<size_t, rank>& hi,
     pos4 place_position,
     dim4 grid_dims) const
   {
@@ -655,7 +740,7 @@ private:
   struct decode_leaf
   {
     layout_leaf leaf;
-    ::std::ptrdiff_t place_leaf; // index into place_leaves_, or -1 for local leaves
+    ::cuda::std::ptrdiff_t place_leaf; // index into place_leaves_, or -1 for local leaves
   };
 
   ::cuda::std::array<layout_leaf, max_leaves> place_leaves_{};
@@ -665,6 +750,368 @@ private:
   size_t num_place_leaves_ = 0;
   size_t num_local_leaves_ = 0;
   size_t num_decode_       = 0;
+  dim4 padded_dims_;
+  dim4 true_dims_;
+  dim4 grid_dims_;
+};
+
+//! A tensor dimension that is local to every grid place.
+struct whole_dim_spec
+{};
+
+//! A tensor dimension split into contiguous blocks over grid axis `axis`.
+template <int axis>
+struct blocked_dim_spec
+{
+  static_assert(axis >= 0 && axis < 4, "a partition mesh axis must be in [0, 4)");
+};
+
+//! A tensor dimension distributed cyclically over grid axis `axis`.
+template <int axis>
+struct cyclic_dim_spec
+{
+  static_assert(axis >= 0 && axis < 4, "a partition mesh axis must be in [0, 4)");
+};
+
+//! A tensor dimension distributed in cyclic blocks over grid axis `axis`.
+template <int axis>
+struct block_cyclic_dim_spec
+{
+  static_assert(axis >= 0 && axis < 4, "a partition mesh axis must be in [0, 4)");
+  size_t block;
+};
+
+//! Heterogeneous per-dimension specification preserving partition topology in
+//! the C++ type.
+template <typename... Specs>
+struct partition_spec
+{
+  explicit partition_spec(Specs... values_)
+      : values(mv(values_)...)
+  {}
+
+  ::cuda::std::tuple<Specs...> values;
+};
+
+template <typename... Specs>
+partition_spec(Specs...) -> partition_spec<::cuda::std::decay_t<Specs>...>;
+
+inline constexpr whole_dim_spec whole{};
+
+template <int axis>
+inline constexpr blocked_dim_spec<axis> blocked{};
+
+template <int axis>
+inline constexpr cyclic_dim_spec<axis> cyclic{};
+
+template <int axis>
+block_cyclic_dim_spec<axis> block_cyclic(size_t block)
+{
+  return {block};
+}
+
+template <typename Spec>
+struct __partition_spec_traits;
+
+template <>
+struct __partition_spec_traits<whole_dim_spec>
+{
+  static constexpr size_t num_place_leaves = 0;
+  static constexpr size_t num_local_leaves = 1;
+};
+
+template <int axis>
+struct __partition_spec_traits<blocked_dim_spec<axis>>
+{
+  static constexpr size_t num_place_leaves = 1;
+  static constexpr size_t num_local_leaves = 1;
+};
+
+template <int axis>
+struct __partition_spec_traits<cyclic_dim_spec<axis>>
+{
+  static constexpr size_t num_place_leaves = 1;
+  static constexpr size_t num_local_leaves = 1;
+};
+
+template <int axis>
+struct __partition_spec_traits<block_cyclic_dim_spec<axis>>
+{
+  static constexpr size_t num_place_leaves = 1;
+  static constexpr size_t num_local_leaves = 2;
+};
+
+/**
+ * @brief Structured tensor partition with compile-time rank and leaf counts
+ *
+ * Extents and strides remain runtime values, while exact array extents make
+ * the execution descriptor compact and give device code static loop bounds.
+ */
+template <size_t rank, size_t num_place_leaves, size_t num_local_leaves>
+class cute_partition
+{
+public:
+  static_assert(rank > 0 && rank <= 4, "cute_partition rank must be in [1, 4]");
+
+  static constexpr size_t rank_v             = rank;
+  static constexpr size_t place_leaf_count_v = num_place_leaves;
+  static constexpr size_t local_leaf_count_v = num_local_leaves;
+
+  explicit cute_partition(const cute_partition_descriptor& descriptor)
+      : padded_dims_(descriptor.padded_dims())
+      , true_dims_(descriptor.true_dims())
+      , grid_dims_(descriptor.grid_dims())
+  {
+    if (descriptor.place_leaves().size() != num_place_leaves || descriptor.place_axes().size() != num_place_leaves
+        || descriptor.local_leaves().size() != num_local_leaves)
+    {
+      throw ::std::invalid_argument("cute_partition: descriptor topology does not match the static partition type");
+    }
+
+    ::cuda::std::copy(descriptor.place_leaves().begin(), descriptor.place_leaves().end(), place_leaves_.begin());
+    ::cuda::std::copy(descriptor.place_axes().begin(), descriptor.place_axes().end(), place_axes_.begin());
+    ::cuda::std::copy(descriptor.local_leaves().begin(), descriptor.local_leaves().end(), local_leaves_.begin());
+
+    for (size_t d = rank; d < 4; d++)
+    {
+      if (padded_dims_.get(d) != 1)
+      {
+        throw ::std::invalid_argument("cute_partition: rank does not match the partition extents");
+      }
+    }
+  }
+
+  _CCCL_HOST_DEVICE const dim4& true_dims() const
+  {
+    return true_dims_;
+  }
+
+  _CCCL_HOST_DEVICE const dim4& padded_dims() const
+  {
+    return padded_dims_;
+  }
+
+  _CCCL_HOST_DEVICE const dim4& grid_dims() const
+  {
+    return grid_dims_;
+  }
+
+  _CCCL_HOST_DEVICE ::cuda::std::span<const layout_leaf> place_leaves() const
+  {
+    return {place_leaves_.data(), num_place_leaves};
+  }
+
+  _CCCL_HOST_DEVICE ::cuda::std::span<const int> place_axes() const
+  {
+    return {place_axes_.data(), num_place_leaves};
+  }
+
+  _CCCL_HOST_DEVICE ::cuda::std::span<const layout_leaf> local_leaves() const
+  {
+    return {local_leaves_.data(), num_local_leaves};
+  }
+
+  _CCCL_HOST_DEVICE size_t num_places() const
+  {
+    size_t result = 1;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      result *= place_leaves_[k].extent;
+    }
+    return result;
+  }
+
+  _CCCL_HOST_DEVICE size_t tiles_per_place() const
+  {
+    size_t result = 1;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t k = 0; k < num_local_leaves; k++)
+    {
+      result *= local_leaves_[k].extent;
+    }
+    return result;
+  }
+
+  _CCCL_HOST_DEVICE pos4 owner(pos4 data_coords) const
+  {
+    const size_t linear    = padded_dims_.get_index(data_coords);
+    ssize_t place_coord[4] = {0, 0, 0, 0};
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      const layout_leaf& leaf = place_leaves_[k];
+      if (leaf.extent > 1)
+      {
+        const size_t c                                   = (linear / static_cast<size_t>(leaf.stride)) % leaf.extent;
+        place_coord[static_cast<size_t>(place_axes_[k])] = static_cast<ssize_t>(c);
+      }
+    }
+
+    return pos4(place_coord[0], place_coord[1], place_coord[2], place_coord[3]);
+  }
+
+  template <typename S>
+  auto apply(const S& s, pos4 place_position, dim4 grid_dims) const
+  {
+    constexpr size_t shape_rank = S::rank();
+    static_assert(shape_rank == rank, "the task shape rank must match the cute_partition rank");
+
+    ::cuda::std::array<size_t, rank> lo{};
+    ::cuda::std::array<size_t, rank> hi{};
+    for (size_t d = 0; d < rank; d++)
+    {
+      if (static_cast<size_t>(s.extent(d)) != true_dims_.get(d))
+      {
+        throw ::std::invalid_argument("cute_partition::apply: the task shape does not match the partition's extents");
+      }
+      hi[d] = true_dims_.get(d);
+    }
+    return apply_region(lo, hi, place_position, grid_dims);
+  }
+
+  template <size_t dims>
+  auto apply(const box<dims>& b, pos4 place_position, dim4 grid_dims) const
+  {
+    static_assert(dims == rank, "the task box rank must match the cute_partition rank");
+
+    ::cuda::std::array<size_t, rank> lo{};
+    ::cuda::std::array<size_t, rank> hi{};
+    for (size_t d = 0; d < rank; d++)
+    {
+      if (b.get_begin(d) < 0 || static_cast<size_t>(b.get_end(d)) > true_dims_.get(d))
+      {
+        throw ::std::invalid_argument("cute_partition::apply: the box is not contained in the partition's extents");
+      }
+      lo[d] = static_cast<size_t>(b.get_begin(d));
+      hi[d] = static_cast<size_t>(b.get_end(d));
+    }
+    return apply_region(lo, hi, place_position, grid_dims);
+  }
+
+  size_t place_offset(size_t place_index) const
+  {
+    if (place_index >= num_places())
+    {
+      throw ::std::out_of_range("cute_partition::place_offset: place index out of range");
+    }
+
+    size_t offset = 0;
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      offset += (place_index % place_leaves_[k].extent) * static_cast<size_t>(place_leaves_[k].stride);
+      place_index /= place_leaves_[k].extent;
+    }
+    return offset;
+  }
+
+  cute_partition_descriptor descriptor() const
+  {
+    return cute_partition_descriptor(
+      ::std::vector<layout_leaf>(place_leaves_.begin(), place_leaves_.end()),
+      ::std::vector<int>(place_axes_.begin(), place_axes_.end()),
+      ::std::vector<layout_leaf>(local_leaves_.begin(), local_leaves_.end()),
+      padded_dims_,
+      true_dims_,
+      grid_dims_);
+  }
+
+  int cmp(const cute_partition& other) const
+  {
+    const auto cmp_sizes = [](size_t a, size_t b) {
+      return (a < b) ? -1 : (a > b) ? 1 : 0;
+    };
+    const auto cmp_dims = [&cmp_sizes](const dim4& a, const dim4& b) {
+      for (size_t axis = 0; axis < 4; axis++)
+      {
+        if (const int c = cmp_sizes(a.get(axis), b.get(axis)))
+        {
+          return c;
+        }
+      }
+      return 0;
+    };
+
+    if (const int c = cmp_dims(padded_dims_, other.padded_dims_))
+    {
+      return c;
+    }
+    if (const int c = cmp_dims(true_dims_, other.true_dims_))
+    {
+      return c;
+    }
+    if (const int c = cmp_dims(grid_dims_, other.grid_dims_))
+    {
+      return c;
+    }
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      if (const int c = cmp_sizes(place_leaves_[k].extent, other.place_leaves_[k].extent))
+      {
+        return c;
+      }
+      if (const int c =
+            cmp_sizes(static_cast<size_t>(place_leaves_[k].stride), static_cast<size_t>(other.place_leaves_[k].stride)))
+      {
+        return c;
+      }
+      if (const int c = cmp_sizes(static_cast<size_t>(place_axes_[k]), static_cast<size_t>(other.place_axes_[k])))
+      {
+        return c;
+      }
+    }
+    for (size_t k = 0; k < num_local_leaves; k++)
+    {
+      if (const int c = cmp_sizes(local_leaves_[k].extent, other.local_leaves_[k].extent))
+      {
+        return c;
+      }
+      if (const int c =
+            cmp_sizes(static_cast<size_t>(local_leaves_[k].stride), static_cast<size_t>(other.local_leaves_[k].stride)))
+      {
+        return c;
+      }
+    }
+    return 0;
+  }
+
+  bool operator==(const cute_partition& other) const
+  {
+    return cmp(other) == 0;
+  }
+
+  bool operator!=(const cute_partition& other) const
+  {
+    return !(*this == other);
+  }
+
+private:
+  static_cute_sub_shape<rank, num_local_leaves> apply_region(
+    const ::cuda::std::array<size_t, rank>& lo,
+    const ::cuda::std::array<size_t, rank>& hi,
+    pos4 place_position,
+    dim4 grid_dims) const
+  {
+    if (!(grid_dims == grid_dims_))
+    {
+      throw ::std::invalid_argument("cute_partition::apply: the grid does not match the partition's grid extents");
+    }
+
+    const pos4 grid_coords = grid_dims_.index_to_pos(static_cast<size_t>(place_position.x));
+    size_t offset          = 0;
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      offset += static_cast<size_t>(grid_coords.get(static_cast<size_t>(place_axes_[k])))
+              * static_cast<size_t>(place_leaves_[k].stride);
+    }
+
+    return static_cute_sub_shape<rank, num_local_leaves>(local_leaves_, offset, padded_dims_, lo, hi);
+  }
+
+  ::cuda::std::array<layout_leaf, num_place_leaves> place_leaves_{};
+  ::cuda::std::array<int, num_place_leaves> place_axes_{};
+  ::cuda::std::array<layout_leaf, num_local_leaves> local_leaves_{};
   dim4 padded_dims_;
   dim4 true_dims_;
   dim4 grid_dims_;
@@ -684,7 +1131,8 @@ private:
  * @param spec One entry per tensor dimension (at most 4)
  * @param grid_dims Extents of the grid of places
  */
-inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims)
+inline cute_partition_descriptor
+make_partition_descriptor(dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims)
 {
   if (spec.size() > 4)
   {
@@ -693,7 +1141,7 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
   const size_t rank = spec.size();
 
   // Pass 1: padded extent per dimension
-  ::std::array<size_t, 4> padded = {1, 1, 1, 1};
+  ::cuda::std::array<size_t, 4> padded = {1, 1, 1, 1};
   for (size_t d = 0; d < 4; d++)
   {
     const size_t extent = true_dims.get(d);
@@ -738,7 +1186,7 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
   }
 
   // Pass 2: dimension strides over the padded extents (dimension 0 fastest)
-  ::std::array<size_t, 4> stride = {1, 1, 1, 1};
+  ::cuda::std::array<size_t, 4> stride = {1, 1, 1, 1};
   for (size_t d = 1; d < 4; d++)
   {
     stride[d] = stride[d - 1] * padded[d - 1];
@@ -752,12 +1200,17 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
   for (size_t d = 0; d < 4; d++)
   {
     const size_t R = stride[d];
-    if (d >= rank || spec[d].policy == dim_policy::whole)
+    if (d >= rank)
     {
       if (padded[d] > 1)
       {
-        local_leaves.push_back({padded[d], static_cast<::std::ptrdiff_t>(R)});
+        local_leaves.push_back({padded[d], static_cast<::cuda::std::ptrdiff_t>(R)});
       }
+      continue;
+    }
+    if (spec[d].policy == dim_policy::whole)
+    {
+      local_leaves.push_back({padded[d], static_cast<::cuda::std::ptrdiff_t>(R)});
       continue;
     }
 
@@ -768,22 +1221,22 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
     {
       case dim_policy::blocked: {
         const size_t b = padded[d] / nplaces;
-        local_leaves.push_back({b, static_cast<::std::ptrdiff_t>(R)});
-        place_leaves.push_back({nplaces, static_cast<::std::ptrdiff_t>(b * R)});
+        local_leaves.push_back({b, static_cast<::cuda::std::ptrdiff_t>(R)});
+        place_leaves.push_back({nplaces, static_cast<::cuda::std::ptrdiff_t>(b * R)});
         place_axes.push_back(e.mesh_axis);
         break;
       }
       case dim_policy::cyclic: {
-        local_leaves.push_back({padded[d] / nplaces, static_cast<::std::ptrdiff_t>(nplaces * R)});
-        place_leaves.push_back({nplaces, static_cast<::std::ptrdiff_t>(R)});
+        local_leaves.push_back({padded[d] / nplaces, static_cast<::cuda::std::ptrdiff_t>(nplaces * R)});
+        place_leaves.push_back({nplaces, static_cast<::cuda::std::ptrdiff_t>(R)});
         place_axes.push_back(e.mesh_axis);
         break;
       }
       case dim_policy::block_cyclic: {
         const size_t nsuper = padded[d] / (e.block * nplaces);
-        local_leaves.push_back({e.block, static_cast<::std::ptrdiff_t>(R)});
-        local_leaves.push_back({nsuper, static_cast<::std::ptrdiff_t>(e.block * nplaces * R)});
-        place_leaves.push_back({nplaces, static_cast<::std::ptrdiff_t>(e.block * R)});
+        local_leaves.push_back({e.block, static_cast<::cuda::std::ptrdiff_t>(R)});
+        local_leaves.push_back({nsuper, static_cast<::cuda::std::ptrdiff_t>(e.block * nplaces * R)});
+        place_leaves.push_back({nplaces, static_cast<::cuda::std::ptrdiff_t>(e.block * R)});
         place_axes.push_back(e.mesh_axis);
         break;
       }
@@ -792,13 +1245,89 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
     }
   }
 
-  return cute_partition(
+  return cute_partition_descriptor(
     mv(place_leaves),
     mv(place_axes),
     mv(local_leaves),
     dim4(padded[0], padded[1], padded[2], padded[3]),
     true_dims,
     grid_dims);
+}
+
+inline dim_spec __make_runtime_dim_spec(whole_dim_spec)
+{
+  return {};
+}
+
+template <int axis>
+dim_spec __make_runtime_dim_spec(blocked_dim_spec<axis>)
+{
+  return {dim_policy::blocked, axis, 0};
+}
+
+template <int axis>
+dim_spec __make_runtime_dim_spec(cyclic_dim_spec<axis>)
+{
+  return {dim_policy::cyclic, axis, 0};
+}
+
+template <int axis>
+dim_spec __make_runtime_dim_spec(block_cyclic_dim_spec<axis> spec)
+{
+  return {dim_policy::block_cyclic, axis, spec.block};
+}
+
+/**
+ * @brief Build a statically shaped partition from typed dimension specs
+ */
+template <typename... Specs>
+auto make_partition(dim4 true_dims, partition_spec<Specs...> spec, dim4 grid_dims)
+{
+  constexpr size_t rank             = sizeof...(Specs);
+  constexpr size_t num_place_leaves = (__partition_spec_traits<Specs>::num_place_leaves + ... + 0);
+  constexpr size_t num_local_leaves = (__partition_spec_traits<Specs>::num_local_leaves + ... + 0);
+  static_assert(rank > 0 && rank <= 4, "make_partition requires between one and four dimension specs");
+
+  for (size_t d = rank; d < 4; d++)
+  {
+    if (true_dims.get(d) != 1)
+    {
+      throw ::std::invalid_argument("make_partition: the number of specs does not match the tensor rank");
+    }
+  }
+
+  ::std::vector<dim_spec> runtime_specs;
+  runtime_specs.reserve(rank);
+  ::cuda::std::apply(
+    [&](const auto&... values) {
+      (runtime_specs.push_back(::cuda::experimental::places::__make_runtime_dim_spec(values)), ...);
+    },
+    spec.values);
+
+  const auto descriptor = ::cuda::experimental::places::make_partition_descriptor(true_dims, runtime_specs, grid_dims);
+  return cute_partition<rank, num_place_leaves, num_local_leaves>(descriptor);
+}
+
+/**
+ * @brief Build an expert statically shaped partition from exact leaf arrays
+ */
+template <size_t rank, size_t num_place_leaves, size_t num_local_leaves>
+cute_partition<rank, num_place_leaves, num_local_leaves> make_partition(
+  const ::cuda::std::array<layout_leaf, num_place_leaves>& place_leaves,
+  const ::cuda::std::array<int, num_place_leaves>& place_axes,
+  const ::cuda::std::array<layout_leaf, num_local_leaves>& local_leaves,
+  dim4 padded_dims,
+  dim4 true_dims,
+  dim4 grid_dims)
+{
+  const cute_partition_descriptor descriptor(
+    ::std::vector<layout_leaf>(place_leaves.begin(), place_leaves.end()),
+    ::std::vector<int>(place_axes.begin(), place_axes.end()),
+    ::std::vector<layout_leaf>(local_leaves.begin(), local_leaves.end()),
+    padded_dims,
+    true_dims,
+    grid_dims);
+  return cute_partition<rank, num_place_leaves, num_local_leaves>(descriptor);
 }
 
 /**
@@ -808,9 +1337,10 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
  * See evaluate_localized_placement(); the tensor extents are the partition's
  * true extents.
  */
-[[nodiscard]] inline localized_stats evaluate_localized_placement(
+template <typename Partition>
+[[nodiscard]] localized_stats evaluate_localized_placement(
   const exec_place& grid,
-  const cute_partition& partition,
+  const Partition& partition,
   size_t elemsize,
   size_t probes     = localized_placement_default_probes,
   size_t block_size = 0)
@@ -859,18 +1389,17 @@ inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spe
 /**
  * @brief Composite data place whose partitioner is a cute_partition object
  *
- * Like data_place_composite but the owner function is stateful (a bare
- * partition_fn_t cannot carry the partition's leaves), so the partition
- * object is stored on the place. Because a padded partition is intrinsically
- * specific to one tensor, such a place is per-tensor by nature; the reusable
- * shape-free policy object remains the partition_fn_t composite. This place
- * supports both shaped raw allocations (allocate_nd(data_dims, elemsize)) and
- * STF logical data.
+ * Like data_place_composite but ownership is defined by the partition object
+ * value (a bare partition_fn_t cannot carry its leaves), so a canonical
+ * descriptor is stored on the place. Because a padded partition is
+ * intrinsically specific to one tensor, such a place is per-tensor by nature.
+ * This place supports both shaped raw allocations
+ * (allocate_nd(data_dims, elemsize)) and STF logical data.
  */
 class data_place_cute_composite final : public data_place_interface
 {
 public:
-  data_place_cute_composite(exec_place grid, cute_partition partition)
+  data_place_cute_composite(exec_place grid, cute_partition_descriptor partition)
       : grid_(mv(grid))
       , partition_(mv(partition))
   {
@@ -923,7 +1452,7 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  void* allocate(::cuda::std::ptrdiff_t, cudaStream_t) const override
   {
     throw ::std::runtime_error(
       "cute-partition composite data_place cannot allocate from a byte count alone: use allocate_nd with the "
@@ -949,7 +1478,7 @@ public:
       elemsize,
       data_dims);
     void* ptr                           = arr->get_base_ptr();
-    get_composite_alloc_registry()[ptr] = ::std::move(arr);
+    get_composite_alloc_registry()[ptr] = ::cuda::std::move(arr);
     return ptr;
   }
 
@@ -968,7 +1497,7 @@ public:
     return grid_.get_impl();
   }
 
-  const cute_partition& get_partition() const
+  const cute_partition_descriptor& get_partition() const
   {
     return partition_;
   }
@@ -980,15 +1509,25 @@ public:
 
 private:
   exec_place grid_;
-  cute_partition partition_;
+  cute_partition_descriptor partition_;
 };
 
 /**
- * @brief Create a composite data place backed by a cute_partition
+ * @brief Create a composite data place backed by an erased partition
  */
-inline data_place make_composite_data_place(const exec_place& grid, cute_partition partition)
+inline data_place make_composite_data_place(const exec_place& grid, cute_partition_descriptor partition)
 {
   return data_place(::std::make_shared<data_place_cute_composite>(grid, mv(partition)));
+}
+
+/**
+ * @brief Create a composite data place from a typed partition
+ */
+template <size_t rank, size_t num_place_leaves, size_t num_local_leaves>
+data_place make_composite_data_place(const exec_place& grid,
+                                     const cute_partition<rank, num_place_leaves, num_local_leaves>& partition)
+{
+  return ::cuda::experimental::places::make_composite_data_place(grid, partition.descriptor());
 }
 
 #ifdef UNITTESTED_FILE
@@ -997,7 +1536,17 @@ UNITTEST("make_partition blocked leaves and owners")
   // 2-D tensor (6, 4), dimension 1 blocked over 2 places (axis 0)
   const dim4 true_dims(6, 4);
   const dim4 grid_dims(2);
-  auto part = make_partition(true_dims, {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+  auto part = make_partition(true_dims, partition_spec{whole, blocked<0>}, grid_dims);
+
+  static_assert(decltype(part)::rank_v == 2);
+  static_assert(decltype(part)::place_leaf_count_v == 1);
+  static_assert(decltype(part)::local_leaf_count_v == 2);
+  static_assert(::cuda::std::is_trivially_copyable_v<decltype(part)>);
+  static_assert(sizeof(static_cute_sub_shape<2, 2>) < sizeof(cute_sub_shape<2>));
+
+  const auto runtime_part =
+    make_partition_descriptor(true_dims, {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+  EXPECT(part.descriptor() == runtime_part);
 
   EXPECT(part.padded_dims() == dim4(6, 4));
   EXPECT(part.num_places() == 2);
@@ -1020,7 +1569,7 @@ UNITTEST("make_partition pads uneven blocked dimensions")
   // unclamped layout would leak coordinates of one place into another.
   const dim4 true_dims(4, 5);
   const dim4 grid_dims(2);
-  auto part = make_partition(true_dims, {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+  auto part = make_partition(true_dims, partition_spec{whole, blocked<0>}, grid_dims);
 
   EXPECT(part.padded_dims() == dim4(4, 6));
 
@@ -1043,13 +1592,14 @@ UNITTEST("make_partition cyclic and block_cyclic owners")
 {
   const dim4 grid_dims(2);
 
-  auto cyc = make_partition(dim4(7), {dim_spec{dim_policy::cyclic, 0, 0}}, grid_dims);
+  auto cyc = make_partition(dim4(7), partition_spec{cyclic<0>}, grid_dims);
   for (size_t x = 0; x < 7; x++)
   {
     EXPECT(cyc.owner(pos4(x)) == pos4(x % 2));
   }
 
-  auto bc = make_partition(dim4(8), {dim_spec{dim_policy::block_cyclic, 0, 2}}, grid_dims);
+  auto bc = make_partition(dim4(8), partition_spec{block_cyclic<0>(2)}, grid_dims);
+  static_assert(decltype(bc)::local_leaf_count_v == 2);
   for (size_t x = 0; x < 8; x++)
   {
     EXPECT(bc.owner(pos4(x)) == pos4((x / 2) % 2));
@@ -1061,7 +1611,7 @@ UNITTEST("cute_partition owner matches blocked_partition get_executor")
   // Same policy expressed via make_partition and via the classic partitioner
   const dim4 true_dims(10);
   const dim4 grid_dims(3);
-  auto part = make_partition(true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+  auto part = make_partition(true_dims, partition_spec{blocked<0>}, grid_dims);
 
   for (size_t x = 0; x < 10; x++)
   {
@@ -1078,8 +1628,8 @@ UNITTEST("cute_partition comparison includes complete dimensions")
 
   // These layouts have the same total padded size and identical leaves, but
   // their multidimensional strides map coordinates to different owners.
-  const cute_partition a({{2, 1}}, {0}, {{6, 2}}, dim4(2, 6), true_dims, grid_dims);
-  const cute_partition b({{2, 1}}, {0}, {{6, 2}}, dim4(3, 4), true_dims, grid_dims);
+  const cute_partition_descriptor a({{2, 1}}, {0}, {{6, 2}}, dim4(2, 6), true_dims, grid_dims);
+  const cute_partition_descriptor b({{2, 1}}, {0}, {{6, 2}}, dim4(3, 4), true_dims, grid_dims);
 
   EXPECT(a != b);
   EXPECT(!(a.owner(pos4(0, 1)) == b.owner(pos4(0, 1))));
@@ -1091,8 +1641,8 @@ UNITTEST("cute_partition rejects lower-rank iteration")
   // omitting it would still discard ownership coordinates and duplicate work.
   const dim4 true_dims(8, 1);
   const dim4 grid_dims(2, 2);
-  const auto part =
-    make_partition(true_dims, {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}}, grid_dims);
+  const auto part = make_partition_descriptor(
+    true_dims, {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}}, grid_dims);
   const box<1> line({0ul, 8ul});
 
   bool thrown = false;
@@ -1112,11 +1662,17 @@ UNITTEST("cute_partition validation rejects inexact layouts")
   const dim4 dims(8);
   const dim4 grid(2);
 
+  const ::cuda::std::array<layout_leaf, 1> place_leaves{{{2, 4}}};
+  const ::cuda::std::array<int, 1> place_axes{{0}};
+  const ::cuda::std::array<layout_leaf, 1> local_leaves{{{4, 1}}};
+  const auto exact = make_partition<1>(place_leaves, place_axes, local_leaves, dims, dims, grid);
+  EXPECT(exact.owner(pos4(7)) == pos4(1));
+
   // Overlapping: both leaves have stride 1
   bool thrown = false;
   try
   {
-    cute_partition({{2, 1}}, {0}, {{4, 1}}, dims, dims, grid);
+    cute_partition_descriptor({{2, 1}}, {0}, {{4, 1}}, dims, dims, grid);
   }
   catch (const ::std::invalid_argument&)
   {
@@ -1128,7 +1684,7 @@ UNITTEST("cute_partition validation rejects inexact layouts")
   thrown = false;
   try
   {
-    cute_partition({{2, 4}}, {0}, {{2, 1}}, dims, dims, grid);
+    cute_partition_descriptor({{2, 4}}, {0}, {{2, 1}}, dims, dims, grid);
   }
   catch (const ::std::invalid_argument&)
   {
@@ -1146,7 +1702,7 @@ UNITTEST("make_partition rejects partitions that leave grid places unused")
   bool thrown = false;
   try
   {
-    make_partition(true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+    make_partition(true_dims, partition_spec{blocked<0>}, grid_dims);
   }
   catch (const ::std::invalid_argument&)
   {
@@ -1155,8 +1711,7 @@ UNITTEST("make_partition rejects partitions that leave grid places unused")
   EXPECT(thrown);
 
   // Binding every grid axis uses all places.
-  auto part =
-    make_partition(dim4(12, 8), {dim_spec{dim_policy::blocked, 0, 0}, dim_spec{dim_policy::blocked, 1, 0}}, grid_dims);
+  auto part = make_partition(dim4(12, 8), partition_spec{blocked<0>, blocked<1>}, grid_dims);
   EXPECT(part.num_places() == grid_dims.size());
 };
 #endif // UNITTESTED_FILE

@@ -124,19 +124,20 @@ struct cached_localized_array
 };
 
 /**
- * @brief Cached localized array whose placement is described by a
+ * @brief Cached localized array whose placement is described by an erased
  *        cute_partition value.
  *
  * A cute_partition's ownership mapping is defined by the object value, not
- * just its type. Keep that value with the cached allocation so independently
- * constructed equivalent composite places can reuse the same VMM mapping.
+ * just its static topology. Keep the canonical descriptor with the cached
+ * allocation so independently constructed equivalent composite places can
+ * reuse the same VMM mapping.
  */
 struct cached_cute_localized_array
 {
   template <typename F>
   explicit cached_cute_localized_array(
     exec_place grid_,
-    ::cuda::experimental::places::cute_partition partition_,
+    ::cuda::experimental::places::cute_partition_descriptor partition_,
     F&& delinearize,
     size_t total_size,
     size_t elem_size,
@@ -156,7 +157,7 @@ struct cached_cute_localized_array
 
   explicit cached_cute_localized_array(
     exec_place grid_,
-    ::cuda::experimental::places::cute_partition partition_,
+    ::cuda::experimental::places::cute_partition_descriptor partition_,
     size_t total_size,
     size_t elem_size,
     dim4 data_dims_,
@@ -181,7 +182,7 @@ struct cached_cute_localized_array
   }
 
   exec_place grid;
-  ::cuda::experimental::places::cute_partition partition;
+  ::cuda::experimental::places::cute_partition_descriptor partition;
   size_t total_size_bytes;
   dim4 data_dims;
   size_t elemsize;

@@ -13,9 +13,10 @@
  *
  * @brief parallel_for over a grid driven by a cute_partition instance
  *
- * The same user-facing parallel_for entry point accepts stateful partitioners:
- * the partition decides both the kernel decomposition (per-place sub-shapes)
- * and the data placement (composite data place backed by the partition).
+ * The same user-facing parallel_for entry point accepts value-defined
+ * partitioners: the partition decides both the kernel decomposition
+ * (per-place sub-shapes) and the data placement (composite data place backed
+ * by the partition).
  */
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
@@ -30,7 +31,7 @@ void test_cute_composite_cache(const exec_place& grid)
 {
   const size_t n = 4096;
   const dim4 data_dims(n);
-  const auto part        = make_partition(data_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+  const auto part        = make_partition(data_dims, partition_spec{blocked<0>}, grid.get_dims());
   const auto place       = cuda::experimental::places::make_composite_data_place(grid, part);
   const auto delinearize = [data_dims](size_t ind) {
     return data_dims.index_to_pos(ind);
@@ -70,12 +71,38 @@ void test_cute_composite_cache(const exec_place& grid)
   EXPECT(cache.deinit().empty());
 }
 
+void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
+{
+  const size_t nx   = 64;
+  const size_t ny   = 32;
+  auto typed_data   = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+  auto classic_data = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+  const auto part   = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
+  auto write        = [] _CCCL_DEVICE(size_t x, size_t y, auto values) {
+    values(x, y) = x + 100 * y;
+  };
+
+  ctx.parallel_for(part, grid, typed_data.shape(), typed_data.write())->*decltype(write)(write);
+  ctx.parallel_for(blocked_partition(), grid, classic_data.shape(), classic_data.write())->*decltype(write)(write);
+
+  ctx.host_launch(typed_data.read(), classic_data.read())->*[=](auto typed, auto classic) {
+    for (size_t y = 0; y < ny; y++)
+    {
+      for (size_t x = 0; x < nx; x++)
+      {
+        EXPECT(typed(x, y) == x + 100 * y);
+        EXPECT(classic(x, y) == typed(x, y));
+      }
+    }
+  };
+}
+
 void test_cute_graph_backend(const exec_place& grid)
 {
   const size_t n = 1023;
   graph_ctx ctx;
   auto data       = ctx.logical_data(shape_of<slice<size_t>>(n));
-  const auto part = make_partition(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+  const auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
   ctx.parallel_for(part, grid, data.shape(), data.write())->*[] _CCCL_DEVICE(size_t i, auto values) {
     values(i) = 5 * i + 3;
@@ -104,13 +131,14 @@ int main()
   auto grid = make_grid(mv(places));
 
   test_cute_composite_cache(grid);
+  test_static_codegen_parity(ctx, grid);
 
   // 1-D: dimension 0 blocked over the grid
   {
     const size_t n = 1024 * 1024;
     auto lA        = ctx.logical_data(shape_of<slice<size_t>>(n));
 
-    auto part = make_partition(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+    auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lA.shape(), lA.write())->*[] _CCCL_DEVICE(size_t i, auto a) {
       a(i) = 3 * i + 7;
@@ -130,8 +158,7 @@ int main()
     const size_t nx = 32, ny = 64, nz = 16;
     auto lB = ctx.logical_data(shape_of<slice<size_t, 3>>(nx, ny, nz));
 
-    auto part =
-      make_partition(dim4(nx, ny, nz), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}, dim_spec{}}, grid.get_dims());
+    auto part = make_partition(dim4(nx, ny, nz), partition_spec{whole, blocked<0>, whole}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lB.shape(), lB.write())->*[] _CCCL_DEVICE(size_t x, size_t y, size_t z, auto b) {
       b(x, y, z) = x + 100 * y + 10000 * z;
@@ -174,7 +201,7 @@ int main()
     const size_t n = 1023; // not divisible by 2 places
     auto lD        = ctx.logical_data(shape_of<slice<size_t>>(n));
 
-    auto part = make_partition(dim4(n), {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+    auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lD.shape(), lD.write())->*[] _CCCL_DEVICE(size_t i, auto d) {
       d(i) = 2 * i + 1;
@@ -195,7 +222,7 @@ int main()
     const size_t nx = 64, ny = 32;
     auto lE = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
-    auto part = make_partition(dim4(nx, ny), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+    auto part = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lE.shape(), lE.write())->*[] _CCCL_DEVICE(size_t x, size_t y, auto e) {
       e(x, y) = 7;
@@ -227,7 +254,7 @@ int main()
     const size_t nx = 64, ny = 32;
     auto lF = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
-    auto part = make_partition(dim4(nx, ny), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+    auto part = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
     auto dist = cuda::experimental::places::make_composite_data_place(grid, part);
 
     EXPECT(dist == cuda::experimental::places::make_composite_data_place(grid, part),
