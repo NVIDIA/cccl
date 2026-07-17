@@ -67,8 +67,7 @@ int main()
   const size_t N = 4 * 1024 * 1024;
 
   // "Dimension 0, blocked over grid axis 0" - the per-dimension specification
-  auto part = ::cuda::experimental::places::make_partition(
-    dim4(N), {::cuda::experimental::places::dim_spec{dim_policy::blocked, 0, 0}}, all_devs.get_dims());
+  auto part = make_partition(dim4(N), partition_spec{blocked<0>}, all_devs.get_dims());
 
   // 1. Score the mapping before allocating anything
   auto stats = evaluate_localized_placement(all_devs, part, sizeof(double));

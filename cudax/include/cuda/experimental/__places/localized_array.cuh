@@ -26,6 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
 #include <cuda/experimental/__places/places.cuh>
 
 #include <array>
@@ -318,17 +321,17 @@ public:
    * This equality operator is used to find entries in an allocation cache which match a specific request
    */
   template <typename... P>
-  bool operator==(::std::tuple<P&...> t) const
+  bool operator==(::cuda::std::tuple<P&...> t) const
   {
     // tuple arguments :
     // 0 : grid, 1 : mapper, 2 : delinearize function, 3 : total size, 4 elem_size, 5 : data_dims
-    bool result = grid == ::std::get<0>(t) && mapper == ::std::get<1>(t)
-               && this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t) && elemsize == ::std::get<4>(t)
-               && data_dims == ::std::get<5>(t);
+    bool result = grid == ::cuda::std::get<0>(t) && mapper == ::cuda::std::get<1>(t)
+               && this->total_size_bytes == ::cuda::std::get<3>(t) * ::cuda::std::get<4>(t)
+               && elemsize == ::cuda::std::get<4>(t) && data_dims == ::cuda::std::get<5>(t);
     if (result)
     {
-      assert(this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t));
-      assert(data_dims == ::std::get<5>(t));
+      assert(this->total_size_bytes == ::cuda::std::get<3>(t) * ::cuda::std::get<4>(t));
+      assert(data_dims == ::cuda::std::get<5>(t));
     }
     return result;
   }

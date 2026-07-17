@@ -47,6 +47,7 @@
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
 #include <cuda/experimental/__multi_gpu/concepts.h>
+#include <cuda/experimental/__utility/result_policy.cuh>
 
 #include <vector>
 
@@ -65,6 +66,7 @@ enum class __kind : ::cuda::std::uint8_t
 };
 
 template <__kind _Kind,
+          class _Policy,
           class _CommRange,
           class _EnvRange,
           class _InputRangeRange,
@@ -72,6 +74,7 @@ template <__kind _Kind,
           class _Tp,
           class _BinaryOp>
 _CCCL_HOST_API void __scan(
+  const __result_policy_base<_Policy>&,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRangeRange&& __range_of_inputs,
@@ -81,6 +84,9 @@ _CCCL_HOST_API void __scan(
   _Tp __ident)
 {
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
+  static_assert(::cuda::std::same_as<_Policy, distributed_t>,
+                "Only distributed results are currently supported. Please open an issue at "
+                "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
     ::cuda::experimental::__detail::__in_range_out_it_properties<_InputRangeRange, _OutputItRange, _EnvRange>;
@@ -250,6 +256,7 @@ _CCCL_HOST_API void __scan(
 //! Each environment supplies the stream and optional memory resource for its local rank. The
 //! results are ready after the work enqueued on the corresponding streams completes.
 //!
+//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
 //! @tparam _CommRange The range of communicators. Each element must model the communicator
 //!         concept.
 //! @tparam _EnvRange The range of execution environments.
@@ -259,6 +266,7 @@ _CCCL_HOST_API void __scan(
 //! @tparam _Tp The scan value type. Deduced by default from the input element type.
 //! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
 //!
+//! @param[in] __policy The result policy object.
 //! @param[in] __comms The range of communicators.
 //! @param[in] __envs The range of execution environments. Each environment must contain a
 //!                   stream.
@@ -267,7 +275,8 @@ _CCCL_HOST_API void __scan(
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _CommRange,
+_CCCL_TEMPLATE(class _Policy,
+               class _CommRange,
                class _EnvRange,
                class _InputRangeRange,
                class _OutputItRange,
@@ -277,6 +286,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                  __detail::__range_of_sized_random_access_ranges<_InputRangeRange> _CCCL_AND
                    __detail::__range_of_output_iters<_OutputItRange, _Tp>)
 _CCCL_HOST_API void exclusive_scan(
+  const __result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRangeRange&& __range_of_inputs,
@@ -286,6 +296,7 @@ _CCCL_HOST_API void exclusive_scan(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   ::cuda::experimental::__detail::__scan::__scan<::cuda::experimental::__detail::__scan::__kind::__exclusive>(
+    __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
     ::cuda::std::forward<_InputRangeRange>(__range_of_inputs),
@@ -317,6 +328,7 @@ _CCCL_HOST_API void exclusive_scan(
 //! The environment supplies the stream and optional memory resource for the local rank. The
 //! results are ready after the work enqueued on that stream completes.
 //!
+//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
 //! @tparam _Comm The communicator type. Must model the communicator concept.
 //! @tparam _Env The execution environment type. Supplies the stream and optional memory
 //!              resource.
@@ -325,6 +337,7 @@ _CCCL_HOST_API void exclusive_scan(
 //! @tparam _Tp The scan value type. Deduced by default from the input element type.
 //! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
 //!
+//! @param[in] __policy The result policy object.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
 //! @param[in] __input The input range to scan.
@@ -332,7 +345,8 @@ _CCCL_HOST_API void exclusive_scan(
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _Comm,
+_CCCL_TEMPLATE(class _Policy,
+               class _Comm,
                class _Env,
                class _InputRange,
                class _OutputIt,
@@ -341,6 +355,7 @@ _CCCL_TEMPLATE(class _Comm,
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::ranges::random_access_range<_InputRange>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void exclusive_scan(
+  const __result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputRange&& __input,
@@ -350,6 +365,7 @@ _CCCL_HOST_API void exclusive_scan(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   ::cuda::experimental::exclusive_scan(
+    __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
@@ -387,6 +403,7 @@ _CCCL_HOST_API void exclusive_scan(
 //! Each environment supplies the stream and optional memory resource for its local rank. The
 //! results are ready after the work enqueued on the corresponding streams completes.
 //!
+//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
 //! @tparam _CommRange The range of communicators. Each element must model the communicator
 //!         concept.
 //! @tparam _EnvRange The range of execution environments.
@@ -396,6 +413,7 @@ _CCCL_HOST_API void exclusive_scan(
 //! @tparam _Tp The scan value type. Deduced by default from the input element type.
 //! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
 //!
+//! @param[in] __policy The result policy object.
 //! @param[in] __comms The range of communicators.
 //! @param[in] __envs The range of execution environments. Each environment must contain a
 //!                   stream.
@@ -404,7 +422,8 @@ _CCCL_HOST_API void exclusive_scan(
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _CommRange,
+_CCCL_TEMPLATE(class _Policy,
+               class _CommRange,
                class _EnvRange,
                class _InputRangeRange,
                class _OutputItRange,
@@ -414,6 +433,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                  __detail::__range_of_sized_random_access_ranges<_InputRangeRange> _CCCL_AND
                    __detail::__range_of_output_iters<_OutputItRange, _Tp>)
 _CCCL_HOST_API void inclusive_scan(
+  const __result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRangeRange&& __range_of_inputs,
@@ -423,6 +443,7 @@ _CCCL_HOST_API void inclusive_scan(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   ::cuda::experimental::__detail::__scan::__scan<::cuda::experimental::__detail::__scan::__kind::__inclusive>(
+    __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
     ::cuda::std::forward<_InputRangeRange>(__range_of_inputs),
@@ -454,6 +475,7 @@ _CCCL_HOST_API void inclusive_scan(
 //! The environment supplies the stream and optional memory resource for the local rank. The
 //! results are ready after the work enqueued on that stream completes.
 //!
+//! @tparam _Policy The return value policy. Currently only `distributed_t` is supported.
 //! @tparam _Comm The communicator type. Must model the communicator concept.
 //! @tparam _Env The execution environment type. Supplies the stream and optional memory
 //!              resource.
@@ -462,6 +484,7 @@ _CCCL_HOST_API void inclusive_scan(
 //! @tparam _Tp The scan value type. Deduced by default from the input element type.
 //! @tparam _BinaryOp The binary scan operator type. Defaults to `::cuda::std::plus<>`.
 //!
+//! @param[in] __policy The result policy object.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
 //! @param[in] __input The input range to scan.
@@ -469,7 +492,8 @@ _CCCL_HOST_API void inclusive_scan(
 //! @param[in] __init The initial value for the scan.
 //! @param[in] __op The associative binary scan operator.
 //! @param[in] __ident The identity element for `__op`.
-_CCCL_TEMPLATE(class _Comm,
+_CCCL_TEMPLATE(class _Policy,
+               class _Comm,
                class _Env,
                class _InputRange,
                class _OutputIt,
@@ -478,6 +502,7 @@ _CCCL_TEMPLATE(class _Comm,
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::ranges::random_access_range<_InputRange>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void inclusive_scan(
+  const __result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputRange&& __input,
@@ -487,6 +512,7 @@ _CCCL_HOST_API void inclusive_scan(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   ::cuda::experimental::inclusive_scan(
+    __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},

@@ -93,7 +93,7 @@ void do_reduce(cuda::std::span<cudax::nccl_communicator_ref> comms,
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::reduce(comms, envs, in, outputs, init, op, ident);
+  cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op, ident);
 
   // cuda::std::execution::env has no operator==, so we can only compare the sizes.
   REQUIRE(envs.size() == envs_size);
