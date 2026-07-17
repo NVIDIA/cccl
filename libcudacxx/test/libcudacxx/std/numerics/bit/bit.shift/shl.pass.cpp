@@ -24,7 +24,7 @@
 template <class T, class S>
 TEST_FUNC constexpr T invoke_shl(T v, S shift)
 {
-  if (cuda::std::is_constant_evaluated())
+  if (cuda::std::__cccl_default_is_constant_evaluated())
   {
     return cuda::std::shl(v, shift);
   }
@@ -74,7 +74,6 @@ TEST_FUNC constexpr void test()
 {
   constexpr auto tmin = cuda::std::numeric_limits<T>::min();
   constexpr auto tmax = cuda::std::numeric_limits<T>::max();
-  constexpr auto smin = cuda::std::numeric_limits<S>::min();
   constexpr auto smax = cuda::std::numeric_limits<S>::max();
 
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::shl(T{}, S{}))>);
@@ -96,6 +95,8 @@ TEST_FUNC constexpr void test()
 
   if constexpr (cuda::std::is_signed_v<S>)
   {
+    constexpr auto smin = cuda::std::numeric_limits<S>::min();
+
     const S neg_shifts[] = {smin, S{-65}, S{-33}, S{-32}, S{-15}, S{-7}, S{-1}};
 
     _CCCL_PRAGMA_NOUNROLL()
