@@ -34,6 +34,7 @@
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <stdexcept>
 #include <typeinfo>
 
 // Used only for unit tests, not in the actual implementation
@@ -75,7 +76,7 @@ class exec_place;
 class data_place_composite;
 
 // Forward declarations of composite allocator functions — defined in localized_array.cuh
-void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size);
+void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize);
 void deallocate_composite_data_place(void* ptr);
 
 /**
@@ -365,6 +366,20 @@ public:
   }
 
   /**
+   * @brief Allocate memory at this data place for a tensor with the given
+   * extents (geometry-aware allocation)
+   *
+   * For most places this is equivalent to allocate(prod(data_dims) * elemsize);
+   * composite places use the geometry to back each block of the allocation on
+   * the place that owns it according to the partitioner. Extents follow the
+   * dimension-0-fastest convention of dim4::get_index().
+   */
+  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream = nullptr) const
+  {
+    return pimpl_->allocate_nd(data_dims, elemsize, stream);
+  }
+
+  /**
    * @brief Deallocate memory at this data place (raw deallocation)
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
@@ -518,7 +533,7 @@ public:
      * impls).
      *
      * Self-contained implementations (`exec_place_cuda_stream_impl`,
-     * `exec_place_green_ctx_impl`) override this method and ignore the
+     * `exec_place_cuda_ctx_impl`) override this method and ignore the
      * registry, returning their embedded pool instead.
      *
      * The grid implementation forwards `res` to its first sub-place.
@@ -639,6 +654,31 @@ public:
   {
     return get_place(get_dims().get_index(p));
   }
+
+  /**
+   * @brief Return a grid with new dimensions and the same linear place order
+   *
+   * The product of @p dims must equal size(), and every extent must be
+   * positive. This changes only the coordinate system: for every linear index
+   * `i`, `result.get_place(i) == get_place(i)`.
+   *
+   * @param[in] dims New grid dimensions
+   * @return A grid over the same places with dimensions @p dims
+   */
+  [[nodiscard]] _CCCL_HOST_API exec_place reshape(const dim4& dims) const;
+
+  /**
+   * @brief Collapse a contiguous inclusive range of grid axes
+   *
+   * Axes in [`first_axis`, `last_axis`] are replaced by one axis whose extent
+   * is their product. Later axes shift left and trailing extents become one.
+   * Linear place order is preserved.
+   *
+   * @param[in] first_axis First axis to collapse (inclusive)
+   * @param[in] last_axis Last axis to collapse (inclusive)
+   * @return A grid over the same places with the selected axes collapsed
+   */
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
 
   // ===== Activation =====
 
@@ -782,6 +822,20 @@ public:
 
   static exec_place cuda_stream(cudaStream_t stream);
   static exec_place cuda_stream(const augmented_stream& dstream);
+
+  /**
+   * @brief Create an execution place from an externally-owned CUDA driver context
+   *
+   * The place is non-owning: the caller must keep the context alive while the
+   * place is in use. This is the natural entry point for contexts created by
+   * other libraries (e.g. green contexts converted with cuCtxFromGreenCtx, such
+   * as the ones produced by cuda.core in Python).
+   *
+   * @param ctx The CUDA driver context
+   * @param devid The device ordinal of the context, or -1 to derive it from the context
+   * @param pool_size Number of streams in the place's stream pool
+   */
+  static exec_place cuda_context(CUcontext ctx, int devid = -1, size_t pool_size = impl::pool_size);
 
   /**
    * @brief Returns the currently active device.
@@ -1368,7 +1422,18 @@ public:
       : dims_(_dims)
       , places_(mv(_places))
   {
-    _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
+    if (places_.empty())
+    {
+      throw ::std::invalid_argument("make_grid: places must not be empty");
+    }
+    if (dims_.x == 0 || dims_.y == 0 || dims_.z == 0 || dims_.t == 0)
+    {
+      throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+    }
+    if (dims_.size() != places_.size())
+    {
+      throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+    }
   }
 
   // ===== Grid interface =====
@@ -1462,7 +1527,18 @@ private:
 //! Returns the single element if size == 1 (no grid wrapper needed)
 inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
-  _CCCL_ASSERT(!places.empty(), "invalid places");
+  if (places.empty())
+  {
+    throw ::std::invalid_argument("make_grid: places must not be empty");
+  }
+  if (dims.x == 0 || dims.y == 0 || dims.z == 0 || dims.t == 0)
+  {
+    throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+  }
+  if (dims.size() != places.size())
+  {
+    throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+  }
   if (places.size() == 1)
   {
     return mv(places[0]);
@@ -1477,6 +1553,49 @@ inline exec_place make_grid(::std::vector<exec_place> places)
   _CCCL_ASSERT(!places.empty(), "invalid places");
   const size_t n = places.size();
   return make_grid(mv(places), dim4(n, 1, 1, 1));
+}
+
+_CCCL_HOST_API inline exec_place exec_place::reshape(const dim4& dims) const
+{
+  ::std::vector<exec_place> places;
+  places.reserve(size());
+  for (size_t i = 0; i < size(); i++)
+  {
+    places.push_back(get_place(i));
+  }
+  return ::cuda::experimental::places::make_grid(::cuda::experimental::stf::mv(places), dims);
+}
+
+_CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_axis, const size_t last_axis) const
+{
+  if (first_axis > last_axis || last_axis > 3)
+  {
+    throw ::std::invalid_argument("exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
+  }
+
+  const dim4 old_dims         = get_dims();
+  const size_t old_extents[4] = {old_dims.x, old_dims.y, old_dims.z, old_dims.t};
+  size_t new_extents[4]       = {1, 1, 1, 1};
+
+  size_t output_axis = 0;
+  for (size_t axis = 0; axis < first_axis; axis++)
+  {
+    new_extents[output_axis++] = old_extents[axis];
+  }
+
+  size_t collapsed_extent = 1;
+  for (size_t axis = first_axis; axis <= last_axis; axis++)
+  {
+    collapsed_extent *= old_extents[axis];
+  }
+  new_extents[output_axis++] = collapsed_extent;
+
+  for (size_t axis = last_axis + 1; axis < 4; axis++)
+  {
+    new_extents[output_axis++] = old_extents[axis];
+  }
+
+  return reshape(dim4(new_extents[0], new_extents[1], new_extents[2], new_extents[3]));
 }
 
 // === data_place::affine_exec_place implementation ===
@@ -1694,6 +1813,11 @@ public:
     return true;
   }
 
+  bool is_composite() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::composite;
@@ -1729,9 +1853,19 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    return allocate_composite_data_place(*this, size);
+    // A byte count alone does not carry the tensor geometry the partitioner
+    // needs (it maps element coordinates to places), so there is no meaningful
+    // way to service this request.
+    throw ::std::runtime_error(
+      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+      "allocate through a logical data");
+  }
+
+  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
+  {
+    return allocate_composite_data_place(*this, data_dims, elemsize);
   }
 
   void deallocate(void* ptr, size_t, cudaStream_t) const override
@@ -1766,8 +1900,7 @@ private:
 
 inline bool data_place::is_composite() const
 {
-  const auto& ref = *pimpl_;
-  return typeid(ref) == typeid(data_place_composite);
+  return pimpl_->is_composite();
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
@@ -1845,6 +1978,100 @@ UNITTEST("grid exec place equality")
   EXPECT(exec_place::all_devices() == exec_place::all_devices());
 
   EXPECT(all != repeated_dev0);
+};
+
+UNITTEST("exec place grid reshape preserves linear place order")
+{
+  ::std::vector<exec_place> places;
+  for (size_t i = 0; i < 24; i++)
+  {
+    places.push_back(exec_place::repeat(exec_place::host(), i + 2));
+  }
+
+  const auto grid      = make_grid(places, dim4(2, 3, 4));
+  const auto reshaped  = grid.reshape(dim4(6, 4));
+  const auto flattened = grid.reshape(dim4(24));
+
+  EXPECT(reshaped.get_dims() == dim4(6, 4));
+  EXPECT(flattened.get_dims() == dim4(24));
+  for (size_t i = 0; i < grid.size(); i++)
+  {
+    EXPECT(reshaped.get_place(i) == grid.get_place(i));
+    EXPECT(flattened.get_place(i) == grid.get_place(i));
+  }
+};
+
+UNITTEST("exec place grid collapse axes preserves linear place order")
+{
+  ::std::vector<exec_place> places;
+  for (size_t i = 0; i < 24; i++)
+  {
+    places.push_back(exec_place::repeat(exec_place::host(), i + 2));
+  }
+
+  const auto grid         = make_grid(places, dim4(2, 3, 4));
+  const auto collapse_xy  = grid.collapse_axes(0, 1);
+  const auto collapse_yz  = grid.collapse_axes(1, 2);
+  const auto collapse_all = grid.collapse_axes(0, 3);
+
+  EXPECT(collapse_xy.get_dims() == dim4(6, 4));
+  EXPECT(collapse_yz.get_dims() == dim4(2, 12));
+  EXPECT(collapse_all.get_dims() == dim4(24));
+  for (size_t i = 0; i < grid.size(); i++)
+  {
+    EXPECT(collapse_xy.get_place(i) == grid.get_place(i));
+    EXPECT(collapse_yz.get_place(i) == grid.get_place(i));
+    EXPECT(collapse_all.get_place(i) == grid.get_place(i));
+  }
+};
+
+UNITTEST("exec place grid reshape rejects invalid dimensions")
+{
+  const auto grid = exec_place::repeat(exec_place::host(), 6);
+
+  bool thrown = false;
+  try
+  {
+    (void) grid.reshape(dim4(2, 2));
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  thrown = false;
+  try
+  {
+    (void) grid.reshape(dim4(6, 0));
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  thrown = false;
+  try
+  {
+    (void) grid.collapse_axes(2, 1);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  thrown = false;
+  try
+  {
+    (void) grid.collapse_axes(0, 4);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
 };
 
 UNITTEST("pos4 dim4 handle large values beyond 32bit")
