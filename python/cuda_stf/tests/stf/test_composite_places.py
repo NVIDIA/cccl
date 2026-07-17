@@ -70,8 +70,10 @@ class TestExecPlaceGrid:
         reshaped = grid.reshape((6, 4))
         flattened = grid.reshape((24,))
 
-        assert reshaped.dims == (6, 4, 1, 1)
-        assert flattened.dims == (24, 1, 1, 1)
+        assert reshaped.dims == (6, 4)
+        assert reshaped.grid_rank == 2
+        assert flattened.dims == (24,)
+        assert flattened.grid_rank == 1
         assert [reshaped[i].kind for i in range(24)] == [
             grid[i].kind for i in range(24)
         ]
@@ -83,9 +85,9 @@ class TestExecPlaceGrid:
         places = [stf.exec_place.device(0) for _ in range(24)]
         grid = stf.exec_place_grid.create(places, grid_dims=(2, 3, 4))
 
-        assert grid.collapse_axes(0, 1).dims == (6, 4, 1, 1)
-        assert grid.collapse_axes(1, 2).dims == (2, 12, 1, 1)
-        assert grid.collapse_axes(0, 3).dims == (24, 1, 1, 1)
+        assert grid.collapse_axes(0, 1).dims == (6, 4)
+        assert grid.collapse_axes(1, 2).dims == (2, 12)
+        assert grid.collapse_axes(0, 2).dims == (24,)
 
     def test_grid_transformations_reject_invalid_inputs(self):
         places = [stf.exec_place.device(0) for _ in range(6)]
@@ -93,12 +95,12 @@ class TestExecPlaceGrid:
 
         with pytest.raises(ValueError, match="cannot reshape"):
             grid.reshape((2, 2))
-        with pytest.raises(ValueError, match="between 1 and 4"):
+        with pytest.raises(ValueError, match="1 to 4 dimensions"):
             grid.reshape(())
         with pytest.raises(ValueError, match="invalid axis range"):
-            grid.collapse_axes(2, 1)
+            grid.collapse_axes(1, 0)
         with pytest.raises(ValueError, match="invalid axis range"):
-            grid.collapse_axes(0, 4)
+            grid.collapse_axes(0, 2)  # rank-2 grid: axis 2 is out of range
 
         with pytest.raises(ValueError, match="must equal the number of places"):
             stf.exec_place_grid.create(places, grid_dims=(2, 2))
@@ -112,7 +114,7 @@ class TestExecPlaceGrid:
         del grid
         gc.collect()
 
-        assert reshaped.dims == (6, 1, 1, 1)
+        assert reshaped.dims == (6,)
         assert reshaped[5].kind == "device"
 
 

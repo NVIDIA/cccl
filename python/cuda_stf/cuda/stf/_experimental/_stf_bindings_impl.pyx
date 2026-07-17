@@ -1491,19 +1491,17 @@ cdef class exec_place:
         return self.get_place(idx)
 
     def reshape(self, grid_dims):
-        """Return a grid with new dimensions and the same linear place order.
+        """Return a grid with new C-order dimensions and the same linear
+        place order.
 
         ``math.prod(grid_dims)`` must equal :attr:`size`, and every extent
         must be positive. Reshaping changes only the coordinate system; it
-        does not reorder, replicate, or remove places.
+        does not reorder, replicate, or remove places (the public C-order
+        linear enumeration and the native enumeration coincide).
         """
-        if len(grid_dims) < 1 or len(grid_dims) > 4:
-            raise ValueError("grid_dims must contain between 1 and 4 extents")
+        public_grid = _validate_extents(grid_dims, "grid_dims")
         cdef stf_dim4 dims
-        dims.x = int(grid_dims[0])
-        dims.y = int(grid_dims[1]) if len(grid_dims) > 1 else 1
-        dims.z = int(grid_dims[2]) if len(grid_dims) > 2 else 1
-        dims.t = int(grid_dims[3]) if len(grid_dims) > 3 else 1
+        _fill_dim4_c_order(public_grid, &dims, u"grid_dims")
         cdef stf_exec_place_handle h = stf_exec_place_grid_reshape(self._h, &dims)
         if h == NULL:
             raise ValueError(
@@ -1511,30 +1509,36 @@ cdef class exec_place:
             )
         cdef exec_place_grid result = exec_place_grid.__new__(exec_place_grid)
         result._h = h
+        result._grid_rank = len(public_grid)
         return result
 
     def collapse_axes(self, int first_axis, int last_axis):
-        """Collapse a contiguous inclusive range of grid axes.
+        """Collapse a contiguous inclusive range of public (C-order) grid
+        axes.
 
-        The selected extents are replaced by their product. Later axes shift
-        left, trailing extents become one, and linear place order is
-        preserved.
+        The selected extents are replaced by their product, the resulting
+        grid's rank shrinks accordingly, and linear place order is preserved.
         """
-        if first_axis < 0 or last_axis < 0:
+        cdef int rank = _exec_place_grid_rank(self)
+        if not (0 <= first_axis <= last_axis < rank):
             raise ValueError(
                 f"invalid axis range [{first_axis}, {last_axis}]; expected "
-                "0 <= first_axis <= last_axis < 4"
+                f"0 <= first_axis <= last_axis < {rank}"
             )
+        # Public axes are reversed relative to the native representation: the
+        # public inclusive range [first, last] is the native inclusive range
+        # [rank-1-last, rank-1-first].
         cdef stf_exec_place_handle h = stf_exec_place_grid_collapse_axes(
-            self._h, first_axis, last_axis
+            self._h, rank - 1 - last_axis, rank - 1 - first_axis
         )
         if h == NULL:
             raise ValueError(
                 f"invalid axis range [{first_axis}, {last_axis}]; expected "
-                "0 <= first_axis <= last_axis < 4"
+                f"0 <= first_axis <= last_axis < {rank}"
             )
         cdef exec_place_grid result = exec_place_grid.__new__(exec_place_grid)
         result._h = h
+        result._grid_rank = rank - (last_axis - first_axis)
         return result
 
 
