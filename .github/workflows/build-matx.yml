@@ -61,9 +61,9 @@ jobs:
         env:
           CCCL_TAG: ${{ inputs.override_cccl_tag }}
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
-          # Only retry once if a build server shuts down while compiling,
+          # Retry 4 times if a build server shuts down while compiling,
           # otherwise fallback to compiling locally
-          SCCACHE_DIST_MAX_RETRIES: "1"
+          SCCACHE_DIST_MAX_RETRIES: "4"
         run: |
           set -eo pipefail
 

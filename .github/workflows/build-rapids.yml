@@ -93,6 +93,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PYTHON_VERSION: ${{ matrix.python_version }}
           RAPIDS_LIBS: ${{ matrix.libs }}
+          # Retry 4 times if a build server shuts down while compiling,
+          # otherwise fallback to compiling locally
+          SCCACHE_DIST_MAX_RETRIES: "4"
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
@@ -106,11 +109,6 @@ jobs:
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
-          # Retry intermittent failures
-          SCCACHE_DIST_MAX_RETRIES: "inf"
-          # Never fallback to building locally, fail instead
-          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
-          SCCACHE_IDLE_TIMEOUT: 0
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
