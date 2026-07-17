@@ -59,29 +59,68 @@ C2H_TEST("nccl_communicator(s) not constructible from NCCL_COMM_NULL", "[multi_g
   {
     STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, decltype(NCCL_COMM_NULL)>);
     STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, cuda::std::nullptr_t>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, ncclComm_t>);
   }
 }
 
-C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
+C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
 {
   SECTION("is move-only")
   {
     STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cudax::nccl_communicator>);
     STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_move_constructible_v<cudax::nccl_communicator>);
     STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_move_assignable_v<cudax::nccl_communicator>);
     STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cudax::nccl_communicator>);
   }
 
-  SECTION("ownership")
+  SECTION("factory construction")
   {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(cuda::std::declval<ncclComm_t>())),
+                           cudax::nccl_communicator>);
+
     //! [nccl_communicator_construction]
     const ncclComm_t handle = make_nccl_communicator_handle();
 
-    auto comm = cuda::experimental::nccl_communicator{handle};
+    auto comm = cuda::experimental::nccl_communicator::from_native_handle(handle);
 
     // comm owns the handle now
     REQUIRE(comm.native_handle() == handle);
     //! [nccl_communicator_construction]
+  }
+
+  SECTION("factory construction with logical device")
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(
+                             cuda::std::declval<ncclComm_t>(), cuda::std::declval<cudax::logical_device>())),
+                           cudax::nccl_communicator>);
+
+    //! [nccl_communicator_construction_with_logical_device]
+    const ncclComm_t handle = make_nccl_communicator_handle();
+    const auto device       = cudax::logical_device{cuda::devices[0]};
+
+    auto comm = cudax::nccl_communicator::from_native_handle(handle, device);
+
+    REQUIRE(comm.native_handle() == handle);
+    REQUIRE(comm.logical_device() == device);
+    //! [nccl_communicator_construction_with_logical_device]
+  }
+
+  SECTION("no_init construction")
+  {
+    STATIC_REQUIRE(cuda::std::is_nothrow_constructible_v<cudax::nccl_communicator, cuda::no_init_t>);
+
+    //! [nccl_communicator_no_init_construction]
+    const auto comm = cudax::nccl_communicator{cuda::no_init};
+
+    REQUIRE(comm.native_handle() == ncclComm_t{NCCL_COMM_NULL});
+    //! [nccl_communicator_no_init_construction]
+
+    REQUIRE(comm.rank() == 0);
+    REQUIRE(comm.size() == 0);
   }
 
   SECTION("release")
@@ -89,7 +128,7 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
     //! [nccl_communicator_release]
     const ncclComm_t handle = make_nccl_communicator_handle();
 
-    auto comm = cuda::experimental::nccl_communicator{handle};
+    auto comm = cuda::experimental::nccl_communicator::from_native_handle(handle);
 
     const auto released_handle = comm.release();
 
@@ -99,7 +138,7 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
     //! [nccl_communicator_release]
 
     // so that we clean up properly
-    [[maybe_unused]] const auto _ = cudax::nccl_communicator{handle};
+    [[maybe_unused]] const auto _ = cudax::nccl_communicator::from_native_handle(handle);
   }
 
   SECTION("move construction")
@@ -107,7 +146,7 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
     //! [nccl_communicator_move_construction]
     const ncclComm_t handle = make_nccl_communicator_handle();
 
-    auto source      = cudax::nccl_communicator{handle};
+    auto source      = cudax::nccl_communicator::from_native_handle(handle);
     auto destination = cudax::nccl_communicator{cuda::std::move(source)};
 
     // moved-from communicator is now invalid
@@ -119,8 +158,8 @@ C2H_TEST("nccl_communicator", "[multi_gpu][nccl]")
   SECTION("move assignment")
   {
     //! [nccl_communicator_move_assignment]
-    auto source      = cuda::experimental::nccl_communicator{make_nccl_communicator_handle()};
-    auto destination = cuda::experimental::nccl_communicator{make_nccl_communicator_handle()};
+    auto source      = cuda::experimental::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
+    auto destination = cuda::experimental::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
 
     // Save the native handle to verify that ownership is transferred.
     const auto handle = source.native_handle();

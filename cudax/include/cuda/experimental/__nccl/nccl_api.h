@@ -31,6 +31,7 @@
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/source_location>
 
@@ -137,20 +138,20 @@ enum __ncclResult_t // NOLINT(performance-enum-size)
 };
 
 #if _CCCL_HAS_NCCL()
-static_assert(__ncclSuccess == ::ncclSuccess);
-static_assert(__ncclUnhandledCudaError == ::ncclUnhandledCudaError);
-static_assert(__ncclSystemError == ::ncclSystemError);
-static_assert(__ncclInternalError == ::ncclInternalError);
-static_assert(__ncclInvalidArgument == ::ncclInvalidArgument);
-static_assert(__ncclInvalidUsage == ::ncclInvalidUsage);
+static_assert(::cuda::std::to_underlying(__ncclSuccess) == ::ncclSuccess);
+static_assert(::cuda::std::to_underlying(__ncclUnhandledCudaError) == ::ncclUnhandledCudaError);
+static_assert(::cuda::std::to_underlying(__ncclSystemError) == ::ncclSystemError);
+static_assert(::cuda::std::to_underlying(__ncclInternalError) == ::ncclInternalError);
+static_assert(::cuda::std::to_underlying(__ncclInvalidArgument) == ::ncclInvalidArgument);
+static_assert(::cuda::std::to_underlying(__ncclInvalidUsage) == ::ncclInvalidUsage);
 #  if _CCCL_NCCL_VERSION(>=, 2, 13)
-static_assert(__ncclRemoteError == ::ncclRemoteError);
+static_assert(::cuda::std::to_underlying(__ncclRemoteError) == ::ncclRemoteError);
 #  endif // NCCL 2.13+
 #  if _CCCL_NCCL_VERSION(>=, 2, 14)
-static_assert(__ncclInProgress == ::ncclInProgress);
+static_assert(::cuda::std::to_underlying(__ncclInProgress) == ::ncclInProgress);
 #  endif // NCCL 2.14+
 #  if _CCCL_NCCL_VERSION(>=, 2, 30)
-static_assert(__ncclTimeout == ::ncclTimeout);
+static_assert(::cuda::std::to_underlying(__ncclTimeout) == ::ncclTimeout);
 #  endif // NCCL 2.30+
 #endif // _CCCL_HAS_NCCL
 
@@ -179,26 +180,26 @@ enum __ncclDataType_t // NOLINT(performance-enum-size)
 #if _CCCL_HAS_NCCL()
 // Do not check NumTypes. If NCCL adds new types after these values, we don't care (until we
 // support them)
-static_assert(__ncclInt8 == ::ncclInt8);
-static_assert(__ncclChar == ::ncclChar);
-static_assert(__ncclUint8 == ::ncclUint8);
-static_assert(__ncclInt32 == ::ncclInt32);
-static_assert(__ncclInt == ::ncclInt);
-static_assert(__ncclUint32 == ::ncclUint32);
-static_assert(__ncclInt64 == ::ncclInt64);
-static_assert(__ncclUint64 == ::ncclUint64);
-static_assert(__ncclFloat16 == ::ncclFloat16);
-static_assert(__ncclHalf == ::ncclHalf);
-static_assert(__ncclFloat32 == ::ncclFloat32);
-static_assert(__ncclFloat == ::ncclFloat);
-static_assert(__ncclFloat64 == ::ncclFloat64);
-static_assert(__ncclDouble == ::ncclDouble);
+static_assert(::cuda::std::to_underlying(__ncclInt8) == ::ncclInt8);
+static_assert(::cuda::std::to_underlying(__ncclChar) == ::ncclChar);
+static_assert(::cuda::std::to_underlying(__ncclUint8) == ::ncclUint8);
+static_assert(::cuda::std::to_underlying(__ncclInt32) == ::ncclInt32);
+static_assert(::cuda::std::to_underlying(__ncclInt) == ::ncclInt);
+static_assert(::cuda::std::to_underlying(__ncclUint32) == ::ncclUint32);
+static_assert(::cuda::std::to_underlying(__ncclInt64) == ::ncclInt64);
+static_assert(::cuda::std::to_underlying(__ncclUint64) == ::ncclUint64);
+static_assert(::cuda::std::to_underlying(__ncclFloat16) == ::ncclFloat16);
+static_assert(::cuda::std::to_underlying(__ncclHalf) == ::ncclHalf);
+static_assert(::cuda::std::to_underlying(__ncclFloat32) == ::ncclFloat32);
+static_assert(::cuda::std::to_underlying(__ncclFloat) == ::ncclFloat);
+static_assert(::cuda::std::to_underlying(__ncclFloat64) == ::ncclFloat64);
+static_assert(::cuda::std::to_underlying(__ncclDouble) == ::ncclDouble);
 #  if (_CCCL_NCCL_VERSION(>=, 2, 10) && defined(__CUDA_BF16_TYPES_EXIST__)) || _CCCL_NCCL_VERSION(>=, 2, 24)
-static_assert(__ncclBfloat16 == ::ncclBfloat16);
+static_assert(::cuda::std::to_underlying(__ncclBfloat16) == ::ncclBfloat16);
 #  endif // NCCL [2.10 - 2.24) and cuda_bf16. included, or NCCL 2.24+
 #  if _CCCL_NCCL_VERSION(>=, 2, 24)
-static_assert(__ncclFloat8e4m3 == ::ncclFloat8e4m3);
-static_assert(__ncclFloat8e5m2 == ::ncclFloat8e5m2);
+static_assert(::cuda::std::to_underlying(__ncclFloat8e4m3) == ::ncclFloat8e4m3);
+static_assert(::cuda::std::to_underlying(__ncclFloat8e5m2) == ::ncclFloat8e5m2);
 #  endif // NCCL 2.24+
 #endif // _CCCL_HAS_NCCL
 
@@ -228,14 +229,20 @@ enum __ncclRedOp_t // NOLINT(performance-enum-size)
 
 #if _CCCL_HAS_NCCL()
 // Do not check NumOps or MaxRedOp. These aren't guaranteed to be in older versions
-static_assert(__ncclSum == ::ncclSum);
-static_assert(__ncclProd == ::ncclProd);
-static_assert(__ncclMax == ::ncclMax);
-static_assert(__ncclMin == ::ncclMin);
-static_assert(__ncclAvg == ::ncclAvg);
+static_assert(::cuda::std::to_underlying(__ncclSum) == ::ncclSum);
+static_assert(::cuda::std::to_underlying(__ncclProd) == ::ncclProd);
+static_assert(::cuda::std::to_underlying(__ncclMax) == ::ncclMax);
+static_assert(::cuda::std::to_underlying(__ncclMin) == ::ncclMin);
+static_assert(::cuda::std::to_underlying(__ncclAvg) == ::ncclAvg);
 #endif // _CCCL_HAS_NCCL
 
 using __ncclComm_t = ::ncclComm*;
+
+inline constexpr __ncclComm_t __NCCL_COMM_NULL = static_cast<__ncclComm_t>(nullptr);
+
+#if _CCCL_HAS_NCCL()
+static_assert(__NCCL_COMM_NULL == NCCL_COMM_NULL);
+#endif
 
 // Helpers and concepts
 // ==========================================================================================
