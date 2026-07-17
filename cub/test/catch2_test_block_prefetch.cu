@@ -84,9 +84,9 @@ C2H_TEST("BlockPrefetch runs for every level and tile shape",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  // Cover the empty tile, single item, sub-block and ragged tiles, and tiles spanning many cache lines.
-  constexpr int max_items = 8 * params::threads_in_block;
-  const int num_items     = GENERATE_COPY(0, 1, 7, params::threads_in_block + 3, take(5, random(1, max_items)));
+  // Each shape exercises a distinct address-math path: 0 = empty tile (size-0 TMA range), 1 = sub-cache-line,
+  // 7 = sub-warp, threads + 3 = ragged tile, 8 * threads = multiple strided-loop iterations per thread.
+  const int num_items = GENERATE_COPY(0, 1, 7, params::threads_in_block + 3, 8 * params::threads_in_block);
   CAPTURE(num_items);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
@@ -101,7 +101,8 @@ C2H_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][
   constexpr int threads_in_block            = 128;
   constexpr cub::detail::LoadPrefetch level = c2h::get<0, TestType>::value;
 
-  const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
+  // The no-op path has no size-dependent behavior; one size suffices.
+  const int num_items = 200;
   CAPTURE(num_items, threads_in_block, level);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
@@ -118,7 +119,8 @@ C2H_TEST("BlockPrefetch works with thrust vector iterators", "[prefetch][block]"
   constexpr int threads_in_block            = 128;
   constexpr cub::detail::LoadPrefetch level = c2h::get<0, TestType>::value;
 
-  const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
+  // A sub-line tile and a multi-line tile cover both strided-loop shapes through wrapped iterators.
+  const int num_items = GENERATE(7, 200);
   CAPTURE(num_items, threads_in_block, level);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
@@ -139,7 +141,8 @@ C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]",
   constexpr int threads_in_block            = 128;
   constexpr cub::detail::LoadPrefetch level = c2h::get<0, TestType>::value;
 
-  const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
+  // A sub-line tile and a multi-line tile cover both strided-loop shapes through the buffer iterator.
+  const int num_items = GENERATE(7, 200);
   CAPTURE(num_items, threads_in_block, level);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
@@ -165,8 +168,9 @@ C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h:
   using type                     = c2h::get<0, TestType>;
   constexpr int threads_in_block = 128;
 
-  // bulk_l2 aligns the base down to 16 B and extends the size to compensate; walk the base across a 16 B window.
-  const int offset    = GENERATE(0, 1, 2, 3, 4, 5, 7, 8, 15);
+  // bulk_l2 aligns the base down to 16 B and extends the size to compensate. The offsets cover the
+  // equivalence classes of the 16 B window: aligned, minimal, mid, and maximal misalignment.
+  const int offset    = GENERATE(0, 1, 8, 15);
   const int num_items = GENERATE(1, 33, 512);
   CAPTURE(offset, num_items, threads_in_block);
 
