@@ -189,7 +189,7 @@ runs:
 
         if ! grep -q 'PARALLEL_LEVEL=' <<< "${ENVARGS:-}"; then
           extra_launch_args+=(
-            "PARALLEL_LEVEL=$(($(grep -cP 'processor\s+:' /proc/cpuinfo) - 1))"
+            --env "PARALLEL_LEVEL=$(($(grep -cP 'processor\s+:' /proc/cpuinfo) - 1))"
           )
         fi
 
