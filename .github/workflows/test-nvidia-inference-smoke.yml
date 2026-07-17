@@ -1,4 +1,4 @@
-name: Test NVIDIA Inference Hub Log Summary
+name: Test NVIDIA Inference Hub Agent
 
 defaults:
   run:
@@ -15,126 +15,70 @@ permissions:
   contents: read
 
 jobs:
-  intentional-failure:
-    name: Intentional failure
+  intentional-failure-one:
+    name: Intentional failure one
     runs-on: ubuntu-latest
     steps:
-      - name: Fail on purpose
-        run: |
-          echo "This job fails on purpose to test NVIDIA Inference Hub log summarization."
-          echo "CCCL_INFERENCE_SMOKE_FAILURE: pretend a CUDA compile failed while building cub.test.example."
-          echo "::error file=ci/smoke/inference_hub,line=1::Intentional smoke-test failure for log summarization."
-          exit 42
+      - run: |
+          echo "Building cub.test.example for compute_999"
+          echo "nvcc fatal: Unsupported gpu architecture 'compute_999'"
+          exit 1
 
-  summarize-log:
-    name: Summarize failed log with NVIDIA Inference Hub
+  intentional-failure-two:
+    name: Intentional failure two
     runs-on: ubuntu-latest
-    needs: intentional-failure
-    if: ${{ always() && needs.intentional-failure.result == 'failure' }}
+    steps:
+      - run: |
+          echo "Building thrust.test.example for compute_999"
+          echo "nvcc fatal: Unsupported gpu architecture 'compute_999'"
+          exit 1
+
+  summarize:
+    name: Ask an agent to investigate the failures
+    if: ${{ always() }}
+    needs:
+      - intentional-failure-one
+      - intentional-failure-two
+    runs-on: ubuntu-latest
     env:
-      INFERENCE_BASE_URL: https://inference-api.nvidia.com/v1
-      INFERENCE_MODEL: ${{ vars.INFERENCE_MODEL || 'nvidia/meta/llama-3.3-70b-instruct' }}
+      GH_TOKEN: ${{ github.token }}
+      NVINFERENCE_API_KEY: ${{ secrets.NVINFERENCE_API_KEY }}
     steps:
-      - name: Fetch failed job log
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Investigate the workflow run
         run: |
-          # Give GitHub a moment to make the failed job log available.
-          sleep 10
-          for attempt in 1 2 3 4 5; do
-            if gh run view "${GITHUB_RUN_ID}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --log-failed \
-              > failed-job.log; then
-              break
-            fi
+          npx -y @openai/codex@0.134.0 exec \
+            --ignore-user-config \
+            --ignore-rules \
+            --skip-git-repo-check \
+            --ephemeral \
+            --sandbox danger-full-access \
+            --color never \
+            --output-last-message "${RUNNER_TEMP}/agent-summary.md" \
+            --config 'approval_policy="never"' \
+            --config 'model="nvidia/deepseek-ai/deepseek-v4-flash"' \
+            --config 'model_provider="nvidia_hub"' \
+            --config 'model_providers.nvidia_hub.name="NVIDIA Inference Hub"' \
+            --config 'model_providers.nvidia_hub.base_url="https://inference-api.nvidia.com/v1"' \
+            --config 'model_providers.nvidia_hub.env_key="NVINFERENCE_API_KEY"' \
+            --config 'model_providers.nvidia_hub.wire_api="responses"' \
+            --config 'shell_environment_policy.inherit="all"' \
+            --config 'shell_environment_policy.ignore_default_excludes=true' \
+            --config 'shell_environment_policy.include_only=["HOME","PATH","GH_TOKEN","GITHUB_REPOSITORY","GITHUB_RUN_ID"]' \
+            - <<'PROMPT'
+          Investigate the failures in the current GitHub Actions workflow run.
 
-            echo "Failed to fetch failed-job log on attempt ${attempt}; retrying."
-            sleep 10
-          done
+          Use the GitHub CLI and the GITHUB_REPOSITORY, GITHUB_RUN_ID, and GH_TOKEN
+          environment variables to inspect the completed jobs and fetch any logs you
+          need. The workflow run is still in progress because you are its final job,
+          so use job-level GitHub Actions APIs instead of waiting for the run to finish.
 
-          test -s failed-job.log
-          cat failed-job.log
+          Identify the root cause, call out any common failure across jobs, and give
+          the most useful concise next action. Do not modify the repository or any
+          GitHub state. Return only the Markdown summary.
+          PROMPT
 
-      - name: Summarize failed job log
-        env:
-          NVINFERENCE_API_KEY: ${{ secrets.NVINFERENCE_API_KEY }}
-        run: |
-          node <<'NODE'
-          const fs = require("node:fs");
-
-          const {
-            INFERENCE_BASE_URL,
-            INFERENCE_MODEL,
-            NVINFERENCE_API_KEY,
-          } = process.env;
-
-          if (!NVINFERENCE_API_KEY) {
-            throw new Error("NVINFERENCE_API_KEY secret is not set.");
-          }
-
-          const baseUrl = (INFERENCE_BASE_URL || "https://inference-api.nvidia.com/v1").replace(/\/+$/, "");
-          const model = INFERENCE_MODEL || "nvidia/meta/llama-3.3-70b-instruct";
-          const log = fs.readFileSync("failed-job.log", "utf8").slice(-60000);
-
-          async function main() {
-            const response = await fetch(`${baseUrl}/chat/completions`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${NVINFERENCE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model,
-                messages: [
-                  {
-                    role: "system",
-                    content: "You summarize GitHub Actions failures tersely and accurately.",
-                  },
-                  {
-                    role: "user",
-                    content: [
-                      "Summarize this failed GitHub Actions log.",
-                      "Include the root cause, failing step, and next action.",
-                      "",
-                      "```text",
-                      log,
-                      "```",
-                    ].join("\n"),
-                  },
-                ],
-                temperature: 0.2,
-                max_tokens: 600,
-                stream: false,
-              }),
-            });
-
-            const raw = await response.text();
-            if (!response.ok) {
-              console.error(raw);
-              throw new Error(`Inference Hub failed with HTTP ${response.status}.`);
-            }
-
-            const data = JSON.parse(raw);
-            const summary = (data.choices || [])
-              .map((choice) => choice.message?.content || choice.text || "")
-              .filter(Boolean)
-              .join("\n")
-              .trim();
-
-            if (!summary) {
-              throw new Error("Inference Hub returned an empty summary.");
-            }
-
-            console.log("");
-            console.log("===== NVIDIA Inference Hub Summary =====");
-            console.log(`Model: ${model}`);
-            console.log("");
-            console.log(summary);
-          }
-
-          main().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
-          NODE
+          {
+            echo "## NVIDIA Inference Hub failure analysis"
+            echo
+            cat "${RUNNER_TEMP}/agent-summary.md"
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
