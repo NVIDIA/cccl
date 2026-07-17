@@ -206,6 +206,28 @@ class TestCompositeTask:
 
         ctx.finalize()
 
+    def test_task_on_grid_get_arg_cai_has_no_stream(self):
+        """get_arg_cai() works on a multi-place grid and advertises no stream.
+
+        The CUDA Array Interface deliberately carries no stream (``stream`` is
+        ``None``): STF enforces the per-place dependencies, and the caller drives
+        each place on its own place stream. A ``None`` stream is therefore valid
+        for a grid just as it is for a scalar task.
+        """
+        grid = stf.exec_place_grid.from_devices([0, 0])
+        dplace = stf.data_place.composite(grid, blocked_mapper_1d)
+        grid.set_affine_data_place(dplace)
+
+        ctx = stf.context()
+        X = np.zeros(4, dtype=np.float32)
+        lX = ctx.logical_data(X)
+
+        with ctx.task(grid, lX.rw()) as t:
+            cai = t.get_arg_cai(0)
+            assert cai.__cuda_array_interface__["stream"] is None
+
+        ctx.finalize()
+
     def test_task_get_grid_dims_none_for_scalar(self):
         """get_grid_dims() returns None when exec place is not a grid."""
         ctx = stf.context()

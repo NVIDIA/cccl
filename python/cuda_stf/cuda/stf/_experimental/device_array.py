@@ -24,20 +24,36 @@ if TYPE_CHECKING:
     from cuda.stf._experimental._stf_bindings_impl import data_place
 
 
-def _memcpy(dst: int, src: int, nbytes: int, kind: int):
-    """cudaMemcpy wrapper.  *kind*: 1=H2D, 2=D2H, 3=D2D."""
-    (err,) = cudart.cudaMemcpy(
+def _memcpy_sync_on_stream(dst: int, src: int, nbytes: int, kind: int, stream_int: int):
+    """Stream-ordered ``cudaMemcpy`` that returns only once the copy is done.
+
+    The copy is enqueued on *stream_int* (the allocation stream) so it is
+    correctly ordered after a stream-ordered allocation, then the stream is
+    synchronized to preserve the documented synchronous ``copy_to_*`` contract.
+    A ``stream_int`` of 0 uses the default/null stream.
+
+    *kind*: 1=H2D, 2=D2H, 3=D2D.
+    """
+    (err,) = cudart.cudaMemcpyAsync(
         dst,
         src,
         nbytes,
         cudart.cudaMemcpyKind(kind),
+        stream_int,
     )
     if err != cudart.cudaError_t.cudaSuccess:
-        raise RuntimeError(f"cudaMemcpy failed with error code {int(err)}")
+        raise RuntimeError(f"cudaMemcpyAsync failed with error code {int(err)}")
+    (err,) = cudart.cudaStreamSynchronize(stream_int)
+    if err != cudart.cudaError_t.cudaSuccess:
+        raise RuntimeError(f"cudaStreamSynchronize failed with error code {int(err)}")
 
 
-def _finalizer(dplace, ptr: int, nbytes: int, stream_int: int):
-    """Release memory back to the data place."""
+def _finalizer(dplace, ptr: int, nbytes: int, stream_int: int, stream=None):
+    """Release memory back to the data place.
+
+    *stream* is retained (unused directly) so a stream-ordered allocation's
+    owning stream object stays alive until the matching deallocation runs.
+    """
     try:
         dplace.deallocate(ptr, nbytes, stream_int if stream_int else None)
     except Exception as e:
@@ -65,6 +81,7 @@ class DeviceArray:
         "_dtype",
         "_nbytes",
         "_dplace",
+        "_stream",
         "_stream_int",
         "_base",
         "_finalizer_ref",
@@ -79,6 +96,10 @@ class DeviceArray:
         self._size = size
         self._nbytes = size * self._dtype.itemsize
         self._dplace = dplace
+        # Retain the stream object (not just its raw handle): a stream-ordered
+        # allocation stays valid only while the owning stream is alive, and the
+        # handle is exposed through CAI so consumers can order after us.
+        self._stream = stream
         self._stream_int = get_stream_pointer(stream)
         self._base = None
 
@@ -94,6 +115,7 @@ class DeviceArray:
             self._ptr,
             self._nbytes,
             self._stream_int,
+            self._stream,
         )
 
     @staticmethod
@@ -122,6 +144,7 @@ class DeviceArray:
         dtype: np.dtype,
         dplace: "data_place",
         stream_int: int,
+        stream=None,
     ) -> "DeviceArray":
         """Create a non-owning view into an existing DeviceArray."""
         view = object.__new__(DeviceArray)
@@ -130,6 +153,7 @@ class DeviceArray:
         view._dtype = dtype
         view._nbytes = size * dtype.itemsize
         view._dplace = dplace
+        view._stream = stream
         view._stream_int = stream_int
         root = base_or_owner._base if base_or_owner._base is not None else base_or_owner
         view._base = root
@@ -150,6 +174,7 @@ class DeviceArray:
                 self._dtype,
                 self._dplace,
                 self._stream_int,
+                self._stream,
             )
         raise TypeError(f"DeviceArray indices must be slices, not {type(key).__name__}")
 
@@ -163,6 +188,10 @@ class DeviceArray:
             "typestr": self._dtype.str,
             "data": (self._ptr, False),
             "strides": None,
+            # Advertise the allocation stream so consumers order their work
+            # after our (possibly stream-ordered) allocation. CAI v3 forbids a
+            # stream value of 0, so a null/default allocation stream is None.
+            "stream": self._stream_int if self._stream_int else None,
         }
         if self._dtype.fields is not None:
             cai["descr"] = self._dtype.descr
@@ -198,7 +227,9 @@ class DeviceArray:
         host = np.empty(self._size, dtype=self._dtype)
         if self._nbytes == 0:
             return host
-        _memcpy(host.ctypes.data, self._ptr, self._nbytes, kind=2)
+        _memcpy_sync_on_stream(
+            host.ctypes.data, self._ptr, self._nbytes, 2, self._stream_int
+        )
         return host
 
     def copy_to_device(self, host_array: np.ndarray) -> None:
@@ -215,7 +246,9 @@ class DeviceArray:
             raise ValueError(
                 f"source ({nbytes} bytes) exceeds buffer ({self._nbytes} bytes)"
             )
-        _memcpy(self._ptr, host_array.ctypes.data, nbytes, kind=1)
+        _memcpy_sync_on_stream(
+            self._ptr, host_array.ctypes.data, nbytes, 1, self._stream_int
+        )
 
     def __repr__(self):
         return (

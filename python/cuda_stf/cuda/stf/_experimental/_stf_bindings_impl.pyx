@@ -465,18 +465,24 @@ def _dtype_from_cai(dict cai):
 
 
 def _validate_cai_c_contiguous(dict cai, dtype):
-    """Reject CUDA Array Interface inputs that are not C-contiguous."""
+    """Reject CUDA Array Interface inputs that are not C-contiguous.
+
+    Shape validation runs unconditionally: a ``strides`` value of ``None``
+    means the producer advertises C-contiguous layout, but the shape itself
+    still has to be well formed before we register a flat byte range with STF.
+    """
+    shape = tuple(int(dim) for dim in cai["shape"])
+    if any(dim < 0 for dim in shape):
+        raise ValueError("CUDA Array Interface shape dimensions must be non-negative")
+
     strides = cai.get("strides")
     if strides is None:
         return
 
-    shape = tuple(int(dim) for dim in cai["shape"])
     if len(strides) != len(shape):
         raise ValueError(
             "CUDA Array Interface strides must match the number of dimensions"
         )
-    if any(dim < 0 for dim in shape):
-        raise ValueError("CUDA Array Interface shape dimensions must be non-negative")
     if any(dim == 0 for dim in shape):
         return
 
@@ -497,7 +503,16 @@ def _cai_from_pointer(uintptr_t ptr, tuple shape, dtype, uintptr_t stream=0):
         'typestr': dtype.str,
         'data': (ptr, False),
         'strides': None,
-        'stream': stream if stream != 0 else None,  # CAI v3: 0 disallowed
+        # We advertise stream=None rather than the task stream. Inside a task the
+        # caller launches on the task stream(s) themselves (stream_ptr(), or
+        # get_stream_at_index()/get_stream_ptrs() for a grid), and STF has already
+        # ordered those streams behind the data's producers, so the CAI stream
+        # handoff is redundant. It would also be counter-productive: Numba
+        # host-synchronizes on an integer CAI stream by default, which is illegal
+        # during graph capture. Reporting no stream is likewise what makes a single
+        # view valid for a multi-place grid. 0 is disallowed by CAI v3, so map it
+        # to None too.
+        'stream': stream if stream != 0 else None,
     }
     if dtype.fields is not None:
         # Structured dtypes need ``descr``; ``typestr`` is only "|V..." and
@@ -640,11 +655,24 @@ cdef class logical_data:
     # the C API.  STF may access that pointer asynchronously, so the
     # source object must outlive the logical_data.
     cdef object _source_buf
+    # Read-only inputs (const CAI export or non-writable Py buffers) may not be
+    # requested with write()/rw(); STF would otherwise mutate memory the
+    # producer promised was immutable.
+    cdef readonly bint _readonly
+    # When the source is exposed through the Python buffer protocol we keep the
+    # Py_buffer export active for the whole lifetime of the logical_data: STF
+    # registers view.buf/view.len and may touch that range asynchronously, so
+    # the export must not be released until teardown.
+    cdef Py_buffer _view
+    cdef bint _has_view
+    # Retain the data_place used at registration: it may own external CUDA
+    # resources (green contexts, composite mappers) that the C++ handle
+    # references but does not own.
+    cdef object _dplace
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
 
     def __cinit__(self, context ctx=None, object buf=None, data_place dplace=None, shape=None, dtype=None, str name=None):
-        cdef Py_buffer view
         cdef int flags
 
         if ctx is None or buf is None:
@@ -658,6 +686,9 @@ cdef class logical_data:
             self._symbol = None
             self._is_token = False
             self._source_buf = None
+            self._readonly = False
+            self._has_view = False
+            self._dplace = None
             self._alive = None
             return
 
@@ -666,10 +697,14 @@ cdef class logical_data:
         self._symbol = None  # Initialize symbol
         self._is_token = False  # Initialize token flag
         self._source_buf = buf  # prevent garbage collection in the case of numpy objects
+        self._readonly = False
+        self._has_view = False
 
         # Default to host data place if not specified (matches C++ API)
         if dplace is None:
             dplace = data_place.host()
+
+        self._dplace = dplace  # retain data_place owner chain
 
         # Try CUDA Array Interface first
         if hasattr(buf, '__cuda_array_interface__'):
@@ -677,12 +712,13 @@ cdef class logical_data:
 
             # Extract CAI information
             data_ptr, readonly = cai['data']
+            self._readonly = bool(readonly)
             original_shape = cai['shape']
             self._dtype = _dtype_from_cai(cai)
             _validate_cai_c_contiguous(cai, self._dtype)
 
             # Shape is always the same regardless of type
-            self._shape = original_shape
+            self._shape = tuple(int(dim) for dim in original_shape)
 
             self._ndim = len(self._shape)
 
@@ -698,27 +734,35 @@ cdef class logical_data:
                 raise RuntimeError("failed to create logical_data from CUDA array interface")
 
         else:
-            # Fallback to Python buffer protocol; require contiguous memory
+            # Fallback to Python buffer protocol; require C-contiguous memory
             # since STF registers view.buf/view.len as a flat byte range.
-            flags = PyBUF_FORMAT | PyBUF_ND | PyBUF_ANY_CONTIGUOUS
+            # Fortran-ordered or otherwise strided buffers would register the
+            # wrong byte range, so reject anything that is not C-contiguous.
+            flags = PyBUF_FORMAT | PyBUF_ND | PyBUF_C_CONTIGUOUS
 
-            if PyObject_GetBuffer(buf, &view, flags) != 0:
+            if PyObject_GetBuffer(buf, &self._view, flags) != 0:
                 raise ValueError(
-                    "object doesn't support the buffer protocol, is not contiguous, "
+                    "object doesn't support the buffer protocol, is not C-contiguous, "
                     "or doesn't expose __cuda_array_interface__"
                 )
 
+            # The export stays active until __dealloc__: STF may access
+            # view.buf asynchronously, so releasing it here would let the
+            # producer resize or free the backing store out from under STF.
+            self._has_view = True
             try:
-                self._ndim  = view.ndim
-                self._len = view.len
-                self._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
-                self._dtype = np.dtype(view.format)
-                self._ld = stf_logical_data_with_place(ctx._ctx, view.buf, view.len, dplace._h)
+                self._ndim  = self._view.ndim
+                self._len = self._view.len
+                self._shape = tuple(<Py_ssize_t>self._view.shape[i] for i in range(self._view.ndim))
+                self._dtype = np.dtype(self._view.format)
+                self._readonly = bool(self._view.readonly)
+                self._ld = stf_logical_data_with_place(ctx._ctx, self._view.buf, self._view.len, dplace._h)
                 if self._ld == NULL:
                     raise RuntimeError("failed to create logical_data from buffer")
-
-            finally:
-                PyBuffer_Release(&view)
+            except:
+                PyBuffer_Release(&self._view)
+                self._has_view = False
+                raise
 
         # Apply symbol name if provided
         if name is not None:
@@ -744,6 +788,11 @@ cdef class logical_data:
             except Exception as e:
                 print(f"stf.logical_data: cleanup failed: {e}")
         self._ld = NULL
+        # Release the buffer-protocol export (if any) only after the logical
+        # data has been destroyed, so STF no longer references view.buf.
+        if self._has_view:
+            PyBuffer_Release(&self._view)
+            self._has_view = False
 
     def __repr__(self):
         """Return a detailed string representation of the logical_data object."""
@@ -761,13 +810,28 @@ cdef class logical_data:
         """Return the shape of the logical data."""
         return self._shape
 
+    @property
+    def readonly(self):
+        """True when the backing source forbids write()/rw() dependencies."""
+        return self._readonly
+
     def read(self, dplace=None):
         return dep(self, AccessMode.READ.value, dplace)
 
     def write(self, dplace=None):
+        if self._readonly:
+            raise ValueError(
+                "cannot request write() access on logical_data backed by a "
+                "read-only source; register it with a writable buffer/array"
+            )
         return dep(self, AccessMode.WRITE.value, dplace)
 
     def rw(self, dplace=None):
+        if self._readonly:
+            raise ValueError(
+                "cannot request rw() access on logical_data backed by a "
+                "read-only source; register it with a writable buffer/array"
+            )
         return dep(self, AccessMode.RW.value, dplace)
 
     def empty_like(self):
@@ -1036,11 +1100,21 @@ cdef class exec_place:
     # Keeps externally-owned objects (e.g. a cuda.core Context backing a
     # from_context place) alive for the lifetime of this place.
     cdef object _keep_alive
+    # Transitive Python owners of C++ resources this handle references but does
+    # not own (green-context helpers/views, grid sub-places, ...). Retaining
+    # them here prevents the referenced handles from being destroyed while this
+    # place is still alive.
+    cdef list _owners
 
     def __cinit__(self):
         self._h = NULL
         self._scope = NULL
         self._keep_alive = None
+        self._owners = []
+
+    cdef void _add_owner(self, object owner):
+        if owner is not None:
+            self._owners.append(owner)
 
     def __dealloc__(self):
         if self._scope != NULL:
@@ -1088,6 +1162,9 @@ cdef class exec_place:
         )
         if p._h == NULL:
             raise RuntimeError(f"failed to create green_ctx exec_place for index {view._idx}")
+        # The C++ place references the green-context helper but does not own it;
+        # retain the view (which retains the helper) for this place's lifetime.
+        p._add_owner(view)
         return p
 
     @staticmethod
@@ -1146,6 +1223,17 @@ cdef class exec_place:
         return "device"
 
     @property
+    def backing_context(self):
+        """The external object backing this place, or ``None``.
+
+        Set for places created via :meth:`from_context` (e.g. the cuda.core
+        ``Context`` returned by ``green_places()``); ``None`` otherwise. The
+        backing object is retained for the lifetime of this place so it cannot
+        be torn down while the place is still in use. Read-only.
+        """
+        return self._keep_alive
+
+    @property
     def dims(self):
         """Grid dimensions as (x, y, z, t). Scalar places return (1, 1, 1, 1)."""
         cdef stf_dim4 d
@@ -1169,6 +1257,8 @@ cdef class exec_place:
         when this exec place is used as the task's execution place.
         """
         stf_exec_place_set_affine_data_place(self._h, dplace._h)
+        # The place now references the affine data place; keep it alive.
+        self._add_owner(dplace)
 
     def __enter__(self):
         if self._h == NULL:
@@ -1192,6 +1282,8 @@ cdef class exec_place:
             raise RuntimeError("failed to get affine data_place")
         cdef data_place dp = data_place.__new__(data_place)
         dp._h = dh
+        # The affine data place may reference this exec place's owned state.
+        dp._add_owner(self)
         return dp
 
     def pick_stream(self, exec_place_resources resources, bint for_computation=True):
@@ -1236,6 +1328,8 @@ cdef class exec_place:
             raise IndexError(f"sub-place index {idx} is out of range")
         cdef exec_place ep = exec_place.__new__(exec_place)
         ep._h = sub
+        # Keep the parent alive: the sub-place may reference parent-owned state.
+        ep._add_owner(self)
         return ep
 
     def __getitem__(self, size_t idx):
@@ -1315,16 +1409,33 @@ cdef class exec_place_grid(exec_place):
 
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
         if grid_dims is not None:
-            dims.x = int(grid_dims[0])
-            dims.y = int(grid_dims[1]) if len(grid_dims) > 1 else 1
-            dims.z = int(grid_dims[2]) if len(grid_dims) > 2 else 1
-            dims.t = int(grid_dims[3]) if len(grid_dims) > 3 else 1
+            dim_list = [int(d) for d in grid_dims]
+            if not 1 <= len(dim_list) <= 4:
+                raise ValueError("grid_dims must have between 1 and 4 entries (x, y, z, t)")
+            if any(d <= 0 for d in dim_list):
+                raise ValueError("grid_dims entries must be positive integers")
+            product = 1
+            for d in dim_list:
+                product *= d
+            if product != n:
+                raise ValueError(
+                    f"grid_dims product ({product}) must equal the number of places ({n})"
+                )
+            dims.x = dim_list[0]
+            dims.y = dim_list[1] if len(dim_list) > 1 else 1
+            dims.z = dim_list[2] if len(dim_list) > 2 else 1
+            dims.t = dim_list[3] if len(dim_list) > 3 else 1
             g._h = stf_exec_place_grid_create(c_places, n, &dims)
         else:
             g._h = stf_exec_place_grid_create(c_places, n, NULL)
 
         if g._h == NULL:
             raise RuntimeError("failed to create exec_place grid")
+
+        # The grid references each sub-place handle but does not own it; retain
+        # the Python sub-place objects so their handles outlive the grid.
+        for ep in converted:
+            g._add_owner(ep)
 
         if mapper is not None:
             dplace = data_place.composite(g, mapper)
@@ -1337,10 +1448,18 @@ cdef class exec_place_grid(exec_place):
 cdef class data_place:
     cdef stf_data_place_handle _h
     cdef object _mapper_callback  # prevent GC of ctypes callback for composite places
+    # Transitive Python owners of C++ resources this handle references but does
+    # not own (composite grids, green-context views, ...).
+    cdef list _owners
 
     def __cinit__(self):
         self._h = NULL
         self._mapper_callback = None
+        self._owners = []
+
+    cdef void _add_owner(self, object owner):
+        if owner is not None:
+            self._owners.append(owner)
 
     def __dealloc__(self):
         if self._h != NULL:
@@ -1397,6 +1516,8 @@ cdef class data_place:
         p._h = stf_data_place_green_ctx(helper._h, view._idx)
         if p._h == NULL:
             raise RuntimeError(f"failed to create green_ctx data_place for index {view._idx}")
+        # Retain the view (hence the green-context helper) referenced by the place.
+        p._add_owner(view)
         return p
 
     @staticmethod
@@ -1451,6 +1572,9 @@ cdef class data_place:
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
             raise RuntimeError("failed to create composite data_place")
+        # The composite place references the grid's sub-place handles and the
+        # ctypes mapper closure; retain both for this place's lifetime.
+        p._add_owner(grid)
         return p
 
     @property
@@ -1521,6 +1645,10 @@ cdef class task:
     # list of logical data in deps: we need this because we can't exchange
     # dtype/shape easily through the C API of STF
     cdef list _lds_args
+    # Retain exec places and per-dep data-place overrides referenced by the
+    # task so their C++ handles (and any external CUDA resources they own)
+    # outlive the task.
+    cdef list _owners
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
 
@@ -1530,6 +1658,7 @@ cdef class task:
             raise RuntimeError("failed to create STF task")
         self._ctx = ctx._ctx
         self._lds_args = []
+        self._owners = []
         self._alive = ctx._alive
 
     def __dealloc__(self):
@@ -1578,6 +1707,8 @@ cdef class task:
                 raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
             stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h)
+            # Retain the override data place for the task's lifetime.
+            self._owners.append(dp)
 
         self._lds_args.append(ldata)
 
@@ -1590,6 +1721,8 @@ cdef class task:
 
         cdef exec_place ep = <exec_place> exec_p
         stf_task_set_exec_place(self._t, ep._h)
+        # Retain the exec place (and its owner chain) for the task's lifetime.
+        self._owners.append(ep)
 
     def stream_ptr(self):
         """Return a :class:`CudaStream` for this task's CUDA stream.
@@ -1644,9 +1777,18 @@ cdef class task:
     def get_arg_cai(self, index):
         """Return the argument as a CUDA Array Interface v3 object.
         The returned view is only valid while the task is active, i.e. until stf_task_end()
-        or the end of the surrounding ``with ctx.task(...)`` block."""
+        or the end of the surrounding ``with ctx.task(...)`` block.
+
+        The view advertises no stream (CAI ``stream`` is ``None``). Inside a task
+        you must launch your own work on the task stream(s) -- ``stream_ptr()`` for a
+        scalar task, or ``get_stream_at_index()`` / ``get_stream_ptrs()`` for a grid --
+        and STF has already ordered those streams behind the data's producers, so no
+        extra synchronization is required. This also avoids the host-side synchronize
+        that consumers such as Numba perform on an advertised integer stream (which is
+        illegal during graph capture)."""
         ptr = self.get_arg(index)
-        return stf_cai(ptr, self._lds_args[index].shape, self._lds_args[index].dtype, stream=self.stream_ptr())
+        # stream is intentionally left as None here; see _cai_from_pointer().
+        return stf_cai(ptr, self._lds_args[index].shape, self._lds_args[index].dtype)
 
     def args_cai(self):
         """
@@ -1709,6 +1851,7 @@ cdef class cuda_kernel:
     cdef stf_ctx_handle _ctx
     cdef list _lds_args
     cdef list _arg_holders  # keep ParamHolder(s) alive until end()
+    cdef list _owners       # retain exec places referenced by the kernel
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
 
@@ -1719,6 +1862,7 @@ cdef class cuda_kernel:
         self._ctx = ctx._ctx
         self._lds_args = []
         self._arg_holders = []
+        self._owners = []
         self._alive = ctx._alive
 
     def __dealloc__(self):
@@ -1763,6 +1907,8 @@ cdef class cuda_kernel:
             raise TypeError("set_exec_place expects an exec_place argument")
         cdef exec_place ep = <exec_place>exec_p
         stf_cuda_kernel_set_exec_place(self._k, ep._h)
+        # Retain the exec place (and its owner chain) for the kernel's lifetime.
+        self._owners.append(ep)
 
     def get_arg(self, int index) -> int:
         if self._lds_args[index]._is_token:
@@ -1846,26 +1992,44 @@ cdef void _python_payload_destructor(void* data) noexcept with gil:
     Py_XDECREF(obj)
 
 cdef void _host_launch_trampoline(stf_host_launch_deps_handle deps_h) noexcept with gil:
-    """C callback that unpacks deps as numpy arrays and calls the Python fn."""
+    """C callback that unpacks deps as numpy arrays and calls the Python fn.
+
+    Runs on a CUDA host thread and must not let a Python exception escape (the
+    C signature is ``noexcept``). Any exception raised by ``fn`` is captured in
+    the context-owned error sink so blocking wait()/finalize() or an explicit
+    check_errors() can re-raise it on the caller's thread.
+
+    Token dependencies are ordering-only: they carry no buffer, so they are
+    added to STF for scheduling but skipped when materializing ndarray
+    positional arguments for ``fn``.
+    """
     cdef PyObject** payload_ptr_ptr = <PyObject**>stf_host_launch_deps_get_user_data(deps_h)
     cdef object payload = <object>(payload_ptr_ptr[0])
-    fn, user_args, dep_meta = payload
+    fn, user_args, dep_meta, error_sink = payload
 
     cdef size_t ndeps = stf_host_launch_deps_size(deps_h)
     dep_arrays = []
     cdef size_t i
     cdef void* ptr
     cdef size_t nbytes
-    for i in range(ndeps):
-        ptr = stf_host_launch_deps_get(deps_h, i)
-        nbytes = stf_host_launch_deps_get_size(deps_h, i)
-        shape, dtype = dep_meta[i]
-        dt = np.dtype(dtype)
-        cbuf = (ctypes.c_char * nbytes).from_address(<uintptr_t>ptr)
-        arr = np.frombuffer(cbuf, dtype=dt).reshape(shape)
-        dep_arrays.append(arr)
+    try:
+        for i in range(ndeps):
+            shape, dtype, is_token = dep_meta[i]
+            if is_token:
+                # Ordering-only dependency: do not materialize or pass to fn.
+                continue
+            ptr = stf_host_launch_deps_get(deps_h, i)
+            nbytes = stf_host_launch_deps_get_size(deps_h, i)
+            dt = np.dtype(dtype)
+            cbuf = (ctypes.c_char * nbytes).from_address(<uintptr_t>ptr)
+            arr = np.frombuffer(cbuf, dtype=dt).reshape(shape)
+            dep_arrays.append(arr)
 
-    fn(*dep_arrays, *user_args)
+        fn(*dep_arrays, *user_args)
+    except BaseException as exc:
+        # Never propagate out of the noexcept trampoline; record for later.
+        if error_sink is not None:
+            error_sink.append(exc)
 
 cdef class async_resources:
     """Shareable ``async_resources_handle`` for STF contexts.
@@ -1920,6 +2084,19 @@ cdef class context:
     # Keep-alive reference to a caller-provided async_resources, if any,
     # so Python-side GC cannot destroy it while this context still uses it.
     cdef async_resources _handle_ref
+    # Exceptions raised by host_launch Python callbacks are captured here
+    # (callbacks run on a CUDA host thread through a ``noexcept`` trampoline
+    # that must not let exceptions escape). Blocking wait()/finalize() re-raise
+    # them; caller-stream contexts surface them through check_errors().
+    cdef object _callback_errors
+    # True when this context was created bound to a caller-owned stream, in
+    # which case finalize() is asynchronous and cannot itself report callbacks
+    # that have not run yet.
+    cdef bint _has_stream
+    # Retain the caller-provided stream object (if any) for the whole lifetime
+    # of the context: STF emits work on it and, for caller-stream contexts,
+    # finalize() is asynchronous, so the stream must not be torn down early.
+    cdef object _stream_ref
 
     def __cinit__(self, bint use_graph=False, bint borrowed=False,
                   stream=None, async_resources handle=None):
@@ -1950,6 +2127,9 @@ cdef class context:
         self._pin = None
         self._alive = _AliveFlag()
         self._handle_ref = None
+        self._callback_errors = []
+        self._has_stream = (stream is not None)
+        self._stream_ref = stream
         if borrowed:
             return
 
@@ -2017,6 +2197,21 @@ cdef class context:
                 pass
             self._ctx = <stf_ctx_handle>NULL
 
+    def check_errors(self):
+        """Re-raise the first pending host_launch callback exception, if any.
+
+        host_launch callbacks run asynchronously on a CUDA host thread through
+        a ``noexcept`` trampoline, so their exceptions cannot propagate at the
+        point of failure. Blocking :meth:`wait` and blocking :meth:`finalize`
+        call this automatically. For caller-stream contexts (where finalize is
+        asynchronous), call this yourself once you have established that the
+        work completed (e.g. after synchronizing the caller stream). Each call
+        surfaces and clears one pending error; returns ``None`` when there are
+        none.
+        """
+        if self._callback_errors:
+            raise self._callback_errors.pop(0)
+
     def finalize(self):
         cdef _PrimaryContextPin pin = self._pin
 
@@ -2030,6 +2225,7 @@ cdef class context:
             self._alive.alive = False
 
         cdef stf_ctx_handle h = self._ctx
+        cdef bint was_blocking = not self._has_stream
         self._pin = None
         if h != NULL:
             self._ctx = NULL
@@ -2045,6 +2241,13 @@ cdef class context:
 
         if pin is not None:
             pin.release()
+
+        # For non-caller-stream contexts stf_ctx_finalize blocks, so any
+        # host_launch callback has run: surface its exception. Caller-stream
+        # contexts finalize asynchronously and must use check_errors() after
+        # synchronizing their stream, since the callback may not have run yet.
+        if was_blocking:
+            self.check_errors()
 
     def __enter__(self):
         return self
@@ -2146,6 +2349,9 @@ cdef class context:
             PyBuffer_Release(&pybuf)
         if rc != 0:
             raise RuntimeError("stf_ctx_wait failed")
+        # wait() blocks until the data is ready, so any host_launch callback
+        # ordered before it has run; surface a captured exception if present.
+        self.check_errors()
         return buf
 
     def logical_data(self, object buf, data_place dplace=None, str name=None):
@@ -2450,9 +2656,9 @@ cdef class context:
             ldata = <logical_data>d.ld
             if ldata._ctx != self._ctx:
                 raise ValueError("dep logical_data belongs to a different context")
-            dep_meta.append((ldata._shape, ldata._dtype))
+            dep_meta.append((ldata._shape, ldata._dtype, bool(ldata._is_token)))
 
-        payload = (fn, user_args, dep_meta)
+        payload = (fn, user_args, dep_meta, self._callback_errors)
         Py_INCREF(payload)
         cdef PyObject* payload_ptr = <PyObject*>payload
 
@@ -2608,6 +2814,8 @@ cdef class stackable_task:
     cdef stf_task_handle _t
     cdef stf_ctx_handle _ctx
     cdef list _lds_args
+    # Retain exec places and per-dep data-place overrides referenced by the task.
+    cdef list _owners
     # Shared "alive" sentinel from the parent stackable_context. See
     # context._alive for the rationale.
     cdef _AliveFlag _alive
@@ -2618,6 +2826,7 @@ cdef class stackable_task:
             raise RuntimeError("failed to create STF stackable task")
         self._ctx = ctx._ctx
         self._lds_args = []
+        self._owners = []
         self._alive = ctx._alive
 
     def __dealloc__(self):
@@ -2662,6 +2871,8 @@ cdef class stackable_task:
             dp = <data_place> d.dplace
             stf_stackable_task_add_dep_with_dplace(
                 self._ctx, self._t, ldata._ld, mode_ce, dp._h)
+            # Retain the override data place for the task's lifetime.
+            self._owners.append(dp)
 
         self._lds_args.append(ldata)
 
@@ -2673,6 +2884,8 @@ cdef class stackable_task:
             raise TypeError("set_exec_place expects an exec_place argument")
         cdef exec_place ep = <exec_place> exec_p
         stf_task_set_exec_place(self._t, ep._h)
+        # Retain the exec place (and its owner chain) for the task's lifetime.
+        self._owners.append(ep)
 
     def stream_ptr(self):
         cdef CUstream s = stf_task_get_custream(self._t)
@@ -2685,10 +2898,15 @@ cdef class stackable_task:
         return <uintptr_t>ptr
 
     def get_arg_cai(self, index):
+        """Return the argument as a CUDA Array Interface v3 object.
+
+        The view advertises no stream (CAI ``stream`` is ``None``). Launch your own
+        work on the task stream(s); STF has already ordered those streams behind the
+        data's producers, so no extra synchronization is required."""
         ptr = self.get_arg(index)
+        # stream is intentionally left as None here; see _cai_from_pointer().
         return stf_cai(
-            ptr, self._lds_args[index].shape, self._lds_args[index].dtype,
-            stream=self.stream_ptr())
+            ptr, self._lds_args[index].shape, self._lds_args[index].dtype)
 
     def args_cai(self):
         non_token_cais = [self.get_arg_cai(i) for i in range(len(self._lds_args))
@@ -2843,9 +3061,12 @@ cdef class LaunchableGraph:
     Explicit ``reset()`` semantics::
 
         g = ctx.pop_prologue_shared()
-        h = g                        # shares the same Python object
-        g.reset()                    # no-op here (same object)
-        assert h.valid
+        h = g                        # h and g are the SAME Python object
+        g.reset()                    # releases the shared reference
+        assert not h.valid           # h aliases g, so it is reset too
+
+    (There is no Python-level handle-duplication API: assigning ``h = g``
+    aliases the same object, so resetting one resets both.)
 
     Context-manager shorthand (distinct from
     :py:meth:`stackable_context.launchable_graph_scope`: the latter also
@@ -2856,9 +3077,19 @@ cdef class LaunchableGraph:
                 g.launch()
     """
     cdef uintptr_t _h
+    # When produced by pop_prologue_shared(), the owning stackable_context has
+    # an open (split) scope whose epilogue runs when this handle is freed.
+    # Retained so we can close that scope exactly once on reset/destruction.
+    cdef stackable_context _owner_ctx
 
     def __cinit__(self):
         self._h = 0
+        self._owner_ctx = None
+
+    cdef void _release_scope(self):
+        if self._owner_ctx is not None:
+            self._owner_ctx._scope_closed()
+            self._owner_ctx = None
 
     def __dealloc__(self):
         cdef uintptr_t h = self._h
@@ -2866,6 +3097,7 @@ cdef class LaunchableGraph:
         if h != 0:
             with nogil:
                 stf_launchable_graph_shared_free(<stf_launchable_graph_shared>h)
+        self._release_scope()
 
     def reset(self):
         """Drop this shared reference eagerly.
@@ -2880,6 +3112,7 @@ cdef class LaunchableGraph:
         if h != 0:
             with nogil:
                 stf_launchable_graph_shared_free(<stf_launchable_graph_shared>h)
+        self._release_scope()
 
     def _check_valid(self):
         if self._h == 0:
@@ -2940,10 +3173,14 @@ class _GraphScope:
 
     def __enter__(self):
         stf_stackable_push_graph((<stackable_context>self._ctx)._ctx)
+        (<stackable_context>self._ctx)._scope_opened()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        stf_stackable_pop((<stackable_context>self._ctx)._ctx)
+        try:
+            stf_stackable_pop((<stackable_context>self._ctx)._ctx)
+        finally:
+            (<stackable_context>self._ctx)._scope_closed()
         return False
 
 
@@ -2973,6 +3210,7 @@ class _LaunchableGraphScope:
 
     def __enter__(self):
         stf_stackable_push_graph((<stackable_context>self._ctx)._ctx)
+        (<stackable_context>self._ctx)._scope_opened()
         return self
 
     def _ensure_prepared(self):
@@ -3020,6 +3258,7 @@ class _LaunchableGraphScope:
         finally:
             _launchable_destroy_impl(self._h)
             self._h = 0
+            (<stackable_context>self._ctx)._scope_closed()
         return False
 
 
@@ -3033,10 +3272,14 @@ class _WhileLoop:
     def __enter__(self):
         self._scope = _push_while_impl((<stackable_context>self._ctx)._ctx)
         self._cond_handle = _get_cond_handle_impl(self._scope)
+        (<stackable_context>self._ctx)._scope_opened()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        _pop_while_impl(self._scope)
+        try:
+            _pop_while_impl(self._scope)
+        finally:
+            (<stackable_context>self._ctx)._scope_closed()
         return False
 
     @property
@@ -3104,10 +3347,14 @@ class _RepeatScope:
     def __enter__(self):
         self._scope = _push_repeat_impl(
             (<stackable_context>self._ctx)._ctx, self._count)
+        (<stackable_context>self._ctx)._scope_opened()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        _pop_repeat_impl(self._scope)
+        try:
+            _pop_repeat_impl(self._scope)
+        finally:
+            (<stackable_context>self._ctx)._scope_closed()
         return False
 
 
@@ -3116,6 +3363,13 @@ cdef class stackable_context:
     cdef _PrimaryContextPin _pin
     # Shared "alive" sentinel. See context._alive for the rationale.
     cdef _AliveFlag _alive
+    # Captured host_launch callback exceptions (see context._callback_errors).
+    cdef object _callback_errors
+    # Number of stackable scopes (graph_scope / while_loop / repeat /
+    # LaunchableGraph) currently open. finalize() is only legal at root
+    # (i.e. when this count is zero), matching the C++ contract that every
+    # push has a matching pop before the context is torn down.
+    cdef int _open_scopes
 
     def __cinit__(self):
         cdef stf_ctx_handle h
@@ -3128,6 +3382,26 @@ cdef class stackable_context:
             self._pin = None
             raise RuntimeError("failed to create STF stackable context")
         self._alive = _AliveFlag()
+        self._callback_errors = []
+        self._open_scopes = 0
+
+    cdef void _scope_opened(self):
+        self._open_scopes += 1
+
+    cdef void _scope_closed(self):
+        if self._open_scopes > 0:
+            self._open_scopes -= 1
+
+    def check_errors(self):
+        """Re-raise the first pending host_launch callback exception, if any.
+
+        Callbacks run asynchronously on a CUDA host thread, so call this after
+        establishing that the relevant work has completed (e.g. after
+        synchronizing the caller stream). Each call surfaces and clears one
+        pending error; returns ``None`` when there are none.
+        """
+        if self._callback_errors:
+            raise self._callback_errors.pop(0)
 
     def __dealloc__(self):
         if self._ctx != NULL:
@@ -3150,6 +3424,16 @@ cdef class stackable_context:
     def finalize(self):
         cdef _PrimaryContextPin pin = self._pin
 
+        # finalize() is only valid at root: every graph_scope / while_loop /
+        # repeat / LaunchableGraph scope must have been closed first. Reject
+        # early (before flipping the alive sentinel) so the context stays
+        # usable and the caller can close the open scopes.
+        if self._ctx != NULL and self._open_scopes != 0:
+            raise RuntimeError(
+                f"cannot finalize stackable_context with {self._open_scopes} open "
+                "scope(s); close every graph_scope/while_loop/repeat/LaunchableGraph first"
+            )
+
         # Flip the shared sentinel first so every surviving child wrapper
         # turns its __dealloc__ into a no-op. Idempotent.
         if self._alive is not None:
@@ -3164,6 +3448,10 @@ cdef class stackable_context:
 
         if pin is not None:
             pin.release()
+
+        # stf_stackable_ctx_finalize blocks, so any host_launch callback has
+        # run by now; surface the first captured exception to the caller.
+        self.check_errors()
 
     def __enter__(self):
         return self
@@ -3348,10 +3636,12 @@ cdef class stackable_context:
         decouple the push from the final release.
         """
         stf_stackable_push_graph(self._ctx)
+        self._scope_opened()
 
     def pop(self):
         """Pop the innermost graph scope (matches an unmatched :meth:`push`)."""
         stf_stackable_pop(self._ctx)
+        self._scope_closed()
 
     def launchable_graph_scope(self):
         """Return a context manager exposing the re-launchable graph API.
@@ -3389,6 +3679,10 @@ cdef class stackable_context:
         """
         cdef LaunchableGraph g = LaunchableGraph.__new__(LaunchableGraph)
         g._h = _pop_prologue_shared_impl(self._ctx)
+        # The preceding push() opened a scope whose epilogue is deferred until
+        # this handle is released; transfer ownership of that open scope to the
+        # LaunchableGraph so finalize() stays blocked until it runs pop_epilogue.
+        g._owner_ctx = self
         return g
 
     def while_loop(self):
@@ -3425,9 +3719,9 @@ cdef class stackable_context:
             sldata = <stackable_logical_data>d.ld
             if sldata._ctx != self._ctx:
                 raise ValueError("dep stackable_logical_data belongs to a different context")
-            dep_meta.append((sldata._shape, sldata._dtype))
+            dep_meta.append((sldata._shape, sldata._dtype, bool(sldata._is_token)))
 
-        payload = (fn, user_args, dep_meta)
+        payload = (fn, user_args, dep_meta, self._callback_errors)
         Py_INCREF(payload)
         cdef PyObject* payload_ptr = <PyObject*>payload
 

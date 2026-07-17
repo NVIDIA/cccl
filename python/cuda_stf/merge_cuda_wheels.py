@@ -56,10 +56,49 @@ def strip_cuda_suffix(wheel_name: str) -> str:
     return _CUDA_WHEEL_SUFFIX_RE.sub("", wheel_name)
 
 
+# Every input wheel must ship exactly this per-CUDA-major subtree (relative to
+# the wheel root, under its ``cu<major>`` directory).
+_VERSION_SUBDIRS = [
+    Path("cuda") / "stf" / "_experimental",
+]
+
+
+def _cuda_subtree_dirs(wheel_dir: Path, cuda_version: str) -> List[Path]:
+    """Absolute paths of the ``cu<version>`` subtrees expected in *wheel_dir*."""
+    return [wheel_dir / parent / f"cu{cuda_version}" for parent in _VERSION_SUBDIRS]
+
+
+def _require_cuda_subtrees(wheel_dir: Path, cuda_version: str, wheel_name: str) -> None:
+    """Fail unless *wheel_dir* contains every expected non-empty CUDA subtree."""
+    for subtree in _cuda_subtree_dirs(wheel_dir, cuda_version):
+        if not subtree.is_dir():
+            raise RuntimeError(
+                f"wheel {wheel_name!r} is missing its expected CUDA subtree "
+                f"{subtree.relative_to(wheel_dir)}"
+            )
+        if not any(subtree.iterdir()):
+            raise RuntimeError(
+                f"wheel {wheel_name!r} has an empty CUDA subtree "
+                f"{subtree.relative_to(wheel_dir)}"
+            )
+
+
 def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
     """Merge multiple wheels into a single wheel with version-specific binaries."""
     print("\n=== Merging wheels ===")
     print(f"Input wheels: {[w.name for w in wheels]}")
+
+    # Reject duplicate CUDA majors up front: merging two cu12 wheels (say) would
+    # otherwise silently clobber or collide on the same cu12 subtree.
+    versions = [cuda_version_from_wheel_name(w.name) for w in wheels]
+    seen = set()
+    for version, wheel in zip(versions, wheels):
+        if version in seen:
+            raise RuntimeError(
+                f"duplicate CUDA major cu{version} among input wheels "
+                f"(offending wheel: {wheel.name})"
+            )
+        seen.add(version)
 
     if len(wheels) == 1:
         # Single wheel, just copy it and remove CUDA version suffix
@@ -108,25 +147,30 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
 
             extracted_wheels.append(extract_dir)
 
-        # Use the first wheel as the base and merge binaries from others
+        # Use the first wheel as the base and merge binaries from others.
         base_wheel = extracted_wheels[0]
 
-        # now copy the version-specific directories from other wheels
-        # into the appropriate place in the base wheel
-        version_subdirs = [
-            Path("cuda") / "stf" / "_experimental",
-        ]
+        # Every input wheel (including the base) must actually contain its own
+        # CUDA subtree; otherwise the merged wheel would be missing a backend.
         for i, wheel_dir in enumerate(extracted_wheels):
-            cuda_version = cuda_version_from_wheel_name(wheels[i].name)
+            _require_cuda_subtrees(wheel_dir, versions[i], wheels[i].name)
+
+        # Copy the version-specific directories from the other wheels into the
+        # base wheel, refusing to overwrite anything already present.
+        for i, wheel_dir in enumerate(extracted_wheels):
+            cuda_version = versions[i]
             if i == 0:
-                # For base wheel, do nothing
+                # For base wheel, do nothing (its own subtree stays in place).
                 continue
-            for parent in version_subdirs:
+            for parent in _VERSION_SUBDIRS:
                 version_dir = parent / f"cu{cuda_version}"
                 src = wheel_dir / version_dir
-                if not src.is_dir():
-                    continue
                 dst = base_wheel / version_dir
+                if dst.exists():
+                    raise RuntimeError(
+                        f"refusing to merge: {version_dir} already exists in the base "
+                        f"wheel (conflicting content from {wheels[i].name})"
+                    )
                 print(f"  Copying {version_dir} to {base_wheel}")
                 shutil.copytree(src, dst)
 
@@ -135,6 +179,11 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
 
         # Create a clean wheel name without CUDA version suffixes
         base_wheel_name = strip_cuda_suffix(wheels[0].name)
+
+        # Snapshot existing wheels so we can unambiguously identify the one
+        # produced by ``wheel pack`` (its exact name is derived from metadata
+        # and may not match base_wheel_name byte-for-byte).
+        wheels_before = set(output_dir.glob("*.whl"))
 
         print(f"Repacking merged wheel as: {base_wheel_name}")
         run_command(
@@ -149,12 +198,14 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             ]
         )
 
-        # Find the output wheel
-        output_wheels = list(output_dir.glob("*.whl"))
-        if not output_wheels:
-            raise RuntimeError("Failed to create merged wheel")
-
-        merged_wheel = output_wheels[0]
+        # Identify exactly the wheel that ``wheel pack`` just produced.
+        new_wheels = sorted(set(output_dir.glob("*.whl")) - wheels_before)
+        if len(new_wheels) != 1:
+            raise RuntimeError(
+                "expected exactly one new wheel from 'wheel pack', found "
+                f"{[w.name for w in new_wheels]}"
+            )
+        merged_wheel = new_wheels[0]
         print(f"Successfully merged wheel: {merged_wheel}")
         return merged_wheel
 

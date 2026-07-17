@@ -60,49 +60,65 @@ def green_places(
     Returns:
         A list of :class:`exec_place`, each backed by a cuda.core green
         ``Context``. The contexts are kept alive by the places (see
-        :meth:`exec_place.from_context`); places also expose them via
-        ``place._keep_alive`` for interop (e.g. ``warp.map_cuda_device``).
+        :meth:`exec_place.from_context`); places also expose them via the
+        read-only ``place.backing_context`` property for interop (e.g.
+        ``warp.map_cuda_device``).
 
     Note:
         The split is performed by carving groups off the device's SM resource
         through ``cuda.core``; if fewer than ``n_places`` groups fit, a
-        ``RuntimeError`` is raised.
+        ``RuntimeError`` is raised. The caller's current CUDA context is saved
+        on entry and restored on return, so partitioning a device does not
+        leave a different context current for the caller.
     """
     Device, ContextOptions, SMResourceOptions = _cuda_core_green_api()
 
-    dev = Device(device_id)
-    dev.set_current()
+    from cuda.bindings import driver
 
-    sm = dev.resources.sm
-    if sms_per_place <= 0:
-        raise ValueError(f"sms_per_place must be positive, got {sms_per_place}")
-    if n_places is None:
-        n_places = sm.sm_count // max(sms_per_place, sm.min_partition_size)
-    if n_places <= 0:
-        raise ValueError(f"n_places must be positive, got {n_places}")
+    # Save the caller's current context: Device.set_current() and
+    # create_context() below both mutate the current context, and we must not
+    # leak that side effect back to the caller.
+    err, prev_ctx = driver.cuCtxGetCurrent()
+    if int(err) != 0:
+        prev_ctx = None
 
-    # ``count`` drives the number of groups: a Sequence[int] requests one
-    # group per entry, each with the given SM count, in a single split call.
-    counts = [sms_per_place] * n_places
-    # coscheduled_sm_count requires the CUDA 13.1 structured SM split API;
-    # only forward it when the caller actually asked for co-scheduling.
-    if coscheduled_sm_count:
-        options = SMResourceOptions(
-            count=counts, coscheduled_sm_count=[coscheduled_sm_count] * n_places
-        )
-    else:
-        options = SMResourceOptions(count=counts)
+    try:
+        dev = Device(device_id)
+        dev.set_current()
 
-    groups, _remainder = sm.split(options)
-    if len(groups) < n_places:
-        raise RuntimeError(
-            f"could not partition device {device_id} into {n_places} places of "
-            f"{sms_per_place} SMs (driver returned {len(groups)} groups)"
-        )
+        sm = dev.resources.sm
+        if sms_per_place <= 0:
+            raise ValueError(f"sms_per_place must be positive, got {sms_per_place}")
+        if n_places is None:
+            n_places = sm.sm_count // max(sms_per_place, sm.min_partition_size)
+        if n_places <= 0:
+            raise ValueError(f"n_places must be positive, got {n_places}")
 
-    places = []
-    for group in groups[:n_places]:
-        ctx = dev.create_context(ContextOptions(resources=[group]))
-        places.append(exec_place.from_context(ctx, dev_id=device_id))
+        # ``count`` drives the number of groups: a Sequence[int] requests one
+        # group per entry, each with the given SM count, in a single split call.
+        counts = [sms_per_place] * n_places
+        # coscheduled_sm_count requires the CUDA 13.1 structured SM split API;
+        # only forward it when the caller actually asked for co-scheduling.
+        if coscheduled_sm_count:
+            options = SMResourceOptions(
+                count=counts, coscheduled_sm_count=[coscheduled_sm_count] * n_places
+            )
+        else:
+            options = SMResourceOptions(count=counts)
 
-    return places
+        groups, _remainder = sm.split(options)
+        if len(groups) < n_places:
+            raise RuntimeError(
+                f"could not partition device {device_id} into {n_places} places of "
+                f"{sms_per_place} SMs (driver returned {len(groups)} groups)"
+            )
+
+        places = []
+        for group in groups[:n_places]:
+            ctx = dev.create_context(ContextOptions(resources=[group]))
+            places.append(exec_place.from_context(ctx, dev_id=device_id))
+
+        return places
+    finally:
+        if prev_ctx is not None:
+            driver.cuCtxSetCurrent(prev_ctx)
