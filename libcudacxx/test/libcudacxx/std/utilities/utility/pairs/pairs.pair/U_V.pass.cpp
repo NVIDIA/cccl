@@ -6,18 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: gcc-4
-
 // <utility>
 
 // template <class T1, class T2> struct pair
 
 // template<class U, class V> pair(U&& x, V&& y);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "archetypes.h"
 #include "test_convertible.h"
@@ -54,15 +51,12 @@ struct ImplicitT
 
 int main(int, char**)
 {
-  // cuda/std/memory not supported
-  /*
   {
-      using P = cuda::std::pair<cuda::std::unique_ptr<int>, short*>;
-      P p(cuda::std::unique_ptr<int>(new int(3)), nullptr);
-      assert(*p.first == 3);
-      assert(p.second == nullptr);
+    using P = cuda::std::pair<cuda::std::unique_ptr<int>, short*>;
+    P p(cuda::std::unique_ptr<int>(new int(3)), nullptr);
+    assert(*p.first == 3);
+    assert(p.second == nullptr);
   }
-  */
   {
     // Test non-const lvalue and rvalue types
     test_sfinae<AllCtors, AllCtors&>();

@@ -16,11 +16,13 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-using namespace cuda::std;
-
-static_assert(is_same_v<format_args, decltype(basic_format_args{make_format_args(declval<int&>())})>);
+static_assert(
+  cuda::std::is_same_v<cuda::std::format_args,
+                       decltype(cuda::std::basic_format_args{cuda::std::make_format_args(cuda::std::declval<int&>())})>);
 #if _CCCL_HAS_WCHAR_T()
-static_assert(is_same_v<wformat_args, decltype(basic_format_args{make_wformat_args(declval<int&>())})>);
+static_assert(cuda::std::is_same_v<
+              cuda::std::wformat_args,
+              decltype(cuda::std::basic_format_args{cuda::std::make_wformat_args(cuda::std::declval<int&>())})>);
 #endif // _CCCL_HAS_WCHAR_T()
 
 int main(int, char**)

@@ -52,6 +52,25 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceSegmentedScan}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedScan that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedScanPolicy`, as shown in
+//! the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-policy-selector
+//!      :end-before: example-end segmented-scan-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-tuning
+//!      :end-before: example-end segmented-scan-tuning
+//!
 //! @endrst
 struct DeviceSegmentedScan
 {

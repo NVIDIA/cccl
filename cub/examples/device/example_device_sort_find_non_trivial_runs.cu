@@ -204,7 +204,7 @@ int main(int argc, char** argv)
   printf("Computing reference solution on CPU for %d items (max key %d)\n", num_items, max_key);
   fflush(stdout);
 
-  Initialize(h_keys, h_values, num_items, max_key);
+  Initialize(h_keys, h_values, num_items, static_cast<int>(max_key));
   int num_runs = Solve(h_keys, h_values, num_items, h_offsets_reference, h_lengths_reference);
 
   printf("%d non-trivial runs\n", num_runs);
@@ -376,8 +376,8 @@ int main(int argc, char** argv)
     printf("%d timing iterations, average time to sort and isolate non-trivial duplicates: %.3f ms (%.3f ms spent in "
            "RLE isolation)\n",
            timing_iterations,
-           elapsed_millis / timing_iterations,
-           elapsed_rle_millis / timing_iterations);
+           elapsed_millis / static_cast<float>(timing_iterations),
+           elapsed_rle_millis / static_cast<float>(timing_iterations));
   }
 
   return 0;

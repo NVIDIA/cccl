@@ -68,7 +68,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     return error;
   }
 
-  const reduce_by_key_policy policy = policy_selector(cc);
+  const ReduceByKeyPolicy policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -92,7 +92,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const int threads_per_block = policy.threads_per_block;
   const int items_per_thread  = policy.items_per_thread;
-  const auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
+  const auto tile_size =
+    static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)

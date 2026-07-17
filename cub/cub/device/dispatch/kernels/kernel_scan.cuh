@@ -20,19 +20,28 @@
 #include <cub/util_macro.cuh>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-#  include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
+#  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
+
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+template <typename AccumT>
+struct lookahead_tile_state_arg_t
+{
+  warpspeed::tile_state_t<AccumT>* tile_states;
+  ::cuda::std::uint32_t* atomic_counter;
+};
+
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  warpspeed::tile_state_t<AccumT>* warpspeed;
+  lookahead_tile_state_arg_t<AccumT> lookahead;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
@@ -60,16 +69,16 @@ template <typename PolicySelectorT,
           typename ScanTileState,
           typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
-  tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
+  tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, const int num_tiles)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
-  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
+    device_scan_init_lookahead_body(tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -99,8 +108,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
-  ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
+_CCCL_KERNEL_ATTRIBUTES void
+DeviceCompactInitKernel(ScanTileStateT tile_state, const int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -118,9 +127,9 @@ template <typename PolicySelector>
 {
   constexpr ScanPolicy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    return num_total_threads(policy.warpspeed);
+    return num_total_threads(policy.lookahead);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.lookback.threads_per_block;
@@ -188,32 +197,29 @@ template <typename PolicySelector,
           bool StableReductionOrder = false,
           typename RealInitValueT   = typename InitValueT::value_type>
 __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
-  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+  const InputIteratorT d_in,
+  const OutputIteratorT d_out,
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
-  _CCCL_GRID_CONSTANT const int start_tile,
-  _CCCL_GRID_CONSTANT const ScanOpT scan_op,
-// nvcc 12.0 gets stuck compiling some TUs like `cub.bench.scan.exclusive.sum.base`, so only enable for newer versions
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-  _CCCL_GRID_CONSTANT
-#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+  const int start_tile,
+  const ScanOpT scan_op,
   const InitValueT init_value,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
-  _CCCL_GRID_CONSTANT const int num_stages)
+  const OffsetT num_items,
+  const int num_stages)
 {
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
-  if constexpr (active_policy.algorithm == ScanAlgorithm::warpspeed)
+  if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
-      NV_PROVIDES_SM_100, ({
+      NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-          d_in, d_out, tile_state.warpspeed, num_items, num_stages};
-        device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+          d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+          scan_params, scan_op, init_value);
       }));
 #else
     static_assert(sizeof(d_in) == 0,
-                  "Implementation bug: Tuning policy selected warpspeed, but CUDA compiler does not support it");
+                  "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   }
   else
@@ -221,7 +227,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     static constexpr ScanLookbackPolicy policy = active_policy.lookback;
     static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture accesses");
-    using ScanPolicyT = AgentScanPolicy<
+    using ScanPolicyT = agent_scan_policy<
       0,
       0,
       void,

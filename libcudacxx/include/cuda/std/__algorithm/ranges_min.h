@@ -40,8 +40,8 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
   _CCCL_REQUIRES(indirect_strict_weak_order<_Comp, projected<const _Tp*, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr const _Tp&
-  operator()(const _Tp& __a, const _Tp& __b, _Comp __comp = {}, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr const _Tp& operator()(
+    const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND, _Comp __comp = {}, _Proj __proj = {}) const
   {
     return ::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, __b), ::cuda::std::invoke(__proj, __a)) ? __b : __a;
   }
@@ -88,6 +88,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto min = __min::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __min_cpo = __min::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
