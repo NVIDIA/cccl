@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/countr.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 
@@ -99,12 +100,8 @@ template <class _Tp>
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-// Returns one plus the index of the least significant set bit of __value, or 0 if __value is zero.
-// This matches the semantics of __builtin_ffs and CUDA's __ffs. Unlike cuda::std::countr_zero, the
-// result is 1-based and the zero input is well defined (it returns 0).
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr int bit_ffs(const _Tp __value) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr int __bit_ffs(const _Tp __value) noexcept
 {
   if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint64_t))
   {
@@ -115,12 +112,20 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
         NV_IS_HOST, (return ::cuda::__bit_ffs_impl_host(__value);), (return ::cuda::__bit_ffs_impl_device(__value);))
     }
 #endif // !_CCCL_TILE_COMPILATION()
-    return ::cuda::__bit_ffs_impl_generic(__value);
   }
-  else
-  {
-    return ::cuda::__bit_ffs_impl_generic(__value);
-  }
+  return ::cuda::__bit_ffs_impl_generic(__value);
+}
+
+// Returns one plus the index of the least significant set bit of __value, or 0 if __value is zero.
+// This matches the semantics of __builtin_ffs and CUDA's __ffs. Unlike cuda::std::countr_zero, the
+// result is 1-based and the zero input is well defined (it returns 0).
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr int bit_ffs(const _Tp __value) noexcept
+{
+  const auto __ret = ::cuda::__bit_ffs(__value);
+  _CCCL_ASSUME(__ret >= 0 && __ret <= ::cuda::std::numeric_limits<_Tp>::digits);
+  return __ret;
 }
 
 _CCCL_END_NAMESPACE_CUDA
