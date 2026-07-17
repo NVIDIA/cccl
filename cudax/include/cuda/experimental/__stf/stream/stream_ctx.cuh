@@ -522,21 +522,26 @@ public:
     _CCCL_ASSERT(!state.submitted_stream, "");
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
 
-    cudaEvent_t startEvent   = nullptr;
-    cudaEvent_t stopEvent    = nullptr;
-    bool timing_events_owned = false;
-    SCOPE(fail)
+    cudaEvent_t startEvent = nullptr;
+    cudaEvent_t stopEvent  = nullptr;
+
+    // Submission timing forces the current device to 0; remember the caller's
+    // device so we can restore it on exit (0 means we never switched).
+    int prev_device = 0;
+
+    SCOPE(exit)
     {
-      if (timing_events_owned)
+      if (startEvent)
       {
-        if (startEvent)
-        {
-          cuda_safe_call(cudaEventDestroy(startEvent));
-        }
-        if (stopEvent)
-        {
-          cuda_safe_call(cudaEventDestroy(stopEvent));
-        }
+        cuda_safe_call(cudaEventDestroy(startEvent));
+      }
+      if (stopEvent)
+      {
+        cuda_safe_call(cudaEventDestroy(stopEvent));
+      }
+      if (prev_device != 0)
+      {
+        cuda_safe_call(cudaSetDevice(prev_device));
       }
     };
 
@@ -559,12 +564,12 @@ public:
         }
       }
 
+      prev_device = cuda_try<cudaGetDevice>();
       cuda_try<cudaSetDevice>(0);
       cuda_try<cudaStreamSynchronize>(fence());
       // cudaEventCreate is an overload set; use cudaEventCreateWithFlags instead.
-      startEvent          = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
-      stopEvent           = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
-      timing_events_owned = true;
+      startEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      stopEvent  = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
       cuda_try<cudaEventRecord>(startEvent, fence());
     }
 
@@ -580,7 +585,6 @@ public:
       cuda_try<cudaEventRecord>(stopEvent, fence());
       cuda_try<cudaEventSynchronize>(stopEvent);
       state.submission_time = cuda_try<cudaEventElapsedTime>(startEvent, stopEvent);
-      timing_events_owned   = false;
     }
 
     // Write-back data and erase automatically created data instances
