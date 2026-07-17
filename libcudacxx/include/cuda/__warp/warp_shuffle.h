@@ -43,6 +43,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
+inline constexpr auto __warp_threads = 32u;
+
 template <typename _Tp>
 struct warp_shuffle_result
 {
@@ -56,6 +58,11 @@ struct warp_shuffle_result
   }
 };
 
+//----------------------------------------------------------------------------------------------------------------------
+// Internal helper
+
+// PTX shuffles 32-bit words. These paths avoid generic array packing, which adds instructions and increases register
+// pressure for 8-/16-bit values and fragments 64-bit values into independent 32-bit registers.
 template <typename _Up>
 inline constexpr bool __is_8bit_16bit_shuffle_path_v =
   (sizeof(_Up) == sizeof(::cuda::std::uint8_t) || sizeof(_Up) == sizeof(::cuda::std::uint16_t))
@@ -69,7 +76,10 @@ template <typename _Up>
 inline constexpr bool __is_64bit_array_shuffle_path_v =
   sizeof(_Up) == sizeof(::cuda::std::uint64_t) && ::cuda::std::is_array_v<_Up>;
 
-#    if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 830
+#    define _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED() (_CCCL_HAS_INT128() && __cccl_ptx_isa >= 830)
+
+#    if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED()
+
 template <typename _Up>
 inline constexpr bool __is_128bit_shuffle_path_v = sizeof(_Up) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Up>;
 
@@ -116,7 +126,22 @@ __warp_shuffle_down_128(__uint128_t __data, int __delta, ::cuda::std::uint32_t _
                (__shuffled = (static_cast<__uint128_t>(__hi) << 64) | static_cast<__uint128_t>(__lo);))
   return warp_shuffle_result<__uint128_t>{__shuffled, __pred};
 }
-#    endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 830
+#    endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED()
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PUBLIC API
+
+template <int _Width, typename _Tp, typename _Up>
+_CCCL_DEVICE_API constexpr void __warp_shuffle_preconditions()
+{
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
+  constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
+  static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
+                "non-void pointers are not allowed to prevent bug-prone code");
+  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_threads,
+                "_Width must be a power of 2 and less or equal to the warp size");
+  static_assert(::cuda::is_trivially_copyable_v<_Up>, "_Up must be trivially copyable");
+}
 
 template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t<_Tp>>
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_idx(
@@ -125,14 +150,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
-  constexpr auto __warp_size   = 32u;
-  constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
-  static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
-                "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
-                "_Width must be a power of 2 and less or equal to the warp size");
-  static_assert(::cuda::is_trivially_copyable_v<_Up>, "_Up must be trivially copyable");
+  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
 
   if constexpr (_Width == 1)
   {
@@ -161,9 +179,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else
   {
-    constexpr int __ratio          = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
-    constexpr auto __clamp_segmask = (_Width - 1u) | ((__warp_size - _Width) << 8);
-    bool __pred;
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg pressure)
     ::cuda::std::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
@@ -171,10 +187,10 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      __array[i] = ::cuda::ptx::shfl_sync_idx(__array[i], __pred, __src_lane, __clamp_segmask, __lane_mask);
+      __array[i] = ::__shfl_sync(__lane_mask, __array[i], __src_lane, _Width);
     }
     warp_shuffle_result<_Up> __result;
-    __result.pred = true;
+    __result.pred = true; // __src_lane is always in range [minLane, maxLane]
     ::cuda::std::memcpy(
       static_cast<void*>(::cuda::std::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
     return __result;
@@ -195,14 +211,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
-  constexpr auto __warp_size   = 32u;
-  constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
-  static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
-                "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
-                "_Width must be a power of 2 and less or equal to the warp size");
-  static_assert(::cuda::is_trivially_copyable_v<_Up>, "_Up must be trivially copyable");
+  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
   _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "delta must be in the range [0, _Width)");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
@@ -214,8 +223,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else
   {
-    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
-    auto __clamp_segmask  = (__warp_size - _Width) << 8;
+    constexpr auto __clamp_segmask = (__warp_threads - _Width) << 8;
     bool __pred;
 
     if constexpr (__is_8bit_16bit_shuffle_path_v<_Up>)
@@ -228,7 +236,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     }
     else if constexpr (__is_64bit_shuffle_path_v<_Up>)
     {
-      auto __word = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
+      const auto __word = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
       ::cuda::std::uint32_t __lo;
       ::cuda::std::uint32_t __hi;
       asm("mov.b64 {%0, %1}, %2;" : "=r"(__lo), "=r"(__hi) : "l"(__word));
@@ -237,16 +245,17 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
       asm("mov.b64 %0, {%1, %2};" : "=l"(__word) : "r"(__lo), "r"(__hi));
       return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__word), __pred};
     }
-#    if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 830
+#    if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED()
     else if constexpr (__is_128bit_shuffle_path_v<_Up>)
     {
       const auto __word     = ::cuda::std::bit_cast<__uint128_t>(__data);
       const auto __shuffled = ::cuda::device::__warp_shuffle_up_128<_Width>(__word, __delta, __lane_mask);
       return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__shuffled.data), __shuffled.pred};
     }
-#    endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 830
+#    endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED()
     else
     {
+      constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(::cuda::std::uint32_t));
       ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg
                                                 // pressure)
       ::cuda::std::memcpy(
@@ -280,14 +289,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
-  constexpr auto __warp_size   = 32u;
-  constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
-  static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
-                "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
-                "_Width must be a power of 2 and less or equal to the warp size");
-  static_assert(::cuda::is_trivially_copyable_v<_Up>, "_Up must be trivially copyable");
+  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
   _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "__delta must be in the range [0, _Width)");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
@@ -299,8 +301,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else
   {
-    constexpr int __ratio          = ::cuda::ceil_div(sizeof(_Up), sizeof(::cuda::std::uint32_t));
-    constexpr auto __clamp_segmask = (_Width - 1u) | ((__warp_size - _Width) << 8);
+    constexpr auto __clamp_segmask = (_Width - 1u) | ((__warp_threads - _Width) << 8);
     bool __pred;
 
     if constexpr (__is_8bit_16bit_shuffle_path_v<_Up>)
@@ -313,7 +314,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     }
     else if constexpr (__is_64bit_shuffle_path_v<_Up>)
     {
-      auto __word = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
+      const auto __word = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
       ::cuda::std::uint32_t __lo;
       ::cuda::std::uint32_t __hi;
       asm("mov.b64 {%0, %1}, %2;" : "=r"(__lo), "=r"(__hi) : "l"(__word));
@@ -332,6 +333,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 #    endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 830
     else
     {
+      constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(::cuda::std::uint32_t));
       ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg
                                                 // pressure)
       ::cuda::std::memcpy(
@@ -365,14 +367,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   const ::cuda::std::uint32_t __lane_mask     = 0xFFFFFFFFu,
   ::cuda::std::integral_constant<int, _Width> = {})
 {
-  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
-  constexpr auto __warp_size   = 32u;
-  constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
-  static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
-                "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
-                "_Width must be a power of 2 and less or equal to the warp size");
-  static_assert(::cuda::is_trivially_copyable_v<_Up>, "_Up must be trivially copyable");
+  ::cuda::device::__warp_shuffle_preconditions<_Width, _Tp, _Up>();
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __xor_mask, &__pred1),
                                                            "all active lanes must have the same xor_mask");))
@@ -409,9 +404,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "delta must be in the range [1, _Width)");
-    constexpr int __ratio          = ::cuda::ceil_div(sizeof(_Up), sizeof(::cuda::std::uint32_t));
-    constexpr auto __clamp_segmask = (_Width - 1u) | ((__warp_size - _Width) << 8);
-    bool __pred;
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(::cuda::std::uint32_t));
     ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg pressure)
     ::cuda::std::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
@@ -419,7 +412,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      __array[i] = ::cuda::ptx::shfl_sync_bfly(__array[i], __pred, __xor_mask, __clamp_segmask, __lane_mask);
+      __array[i] = ::__shfl_xor_sync(__lane_mask, __array[i], __xor_mask, _Width);
     }
     warp_shuffle_result<_Up> __result;
     __result.pred = true; // 0 < __xor_mask < _Width => lane ^ xor_mask is always in the segment range

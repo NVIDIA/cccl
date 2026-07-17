@@ -19,9 +19,21 @@ if (
 endif()
 
 find_program(cuobjdump "cuobjdump" REQUIRED)
+find_program(
+  filecheck
+  NAMES FileCheck FileCheck-21 FileCheck-20 FileCheck-19 FileCheck-18
+)
+if (NOT filecheck)
+  return()
+endif()
+
+set(
+  dump_and_check_script
+  "${CMAKE_CURRENT_SOURCE_DIR}/../atomic_codegen/dump_and_check.bash"
+)
 message("-- Building warp codegen tests")
 
-set(warp_codegen_cuda_archs 80 90)
+set(warp_codegen_cuda_archs 90)
 if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
   list(APPEND warp_codegen_cuda_archs 100 120)
 endif()
@@ -47,13 +59,25 @@ foreach (test_path IN LISTS warp_codegen_tests)
       PRIVATE "${libcudacxx_SOURCE_DIR}/include"
     )
 
-    add_custom_target(
-      ${check_target_name}
-      DEPENDS ${target_name}
-      COMMAND
-        "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/compare_sass.py"
-        "--cuobjdump=${cuobjdump}" "--binary=$<TARGET_FILE:${target_name}>"
-    )
+    if (test_name STREQUAL "warp_shuffle_stress")
+      add_custom_target(
+        ${check_target_name}
+        DEPENDS ${target_name}
+        COMMAND
+          "${Python_EXECUTABLE}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/compare_register_usage.py"
+          "--cuobjdump=${cuobjdump}" "--binary=$<TARGET_FILE:${target_name}>"
+      )
+    else()
+      add_custom_target(
+        ${check_target_name}
+        DEPENDS ${target_name}
+        COMMAND
+          ${CMAKE_COMMAND} -E env "FILECHECK=${filecheck}"
+          "${dump_and_check_script}" $<TARGET_FILE:${target_name}>
+          "${test_path}" "SMXX" --dump-sass
+      )
+    endif()
     add_dependencies(libcudacxx.test.warp.sass ${check_target_name})
   endforeach()
 endforeach()

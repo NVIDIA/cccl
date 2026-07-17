@@ -8,8 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+// implement a simple warp bitonic sort to check that the register usage of warp shuffle operations matches native
+// shuffle instructions
+
 #include <cuda/std/cstdint>
-#include <cuda/warp>
+#include <cuda/warp> // IWYU pragma: keep
 
 template <bool UseWrapper, typename T>
 __device__ __forceinline__ T shuffle_xor(T value, int lane_mask)
