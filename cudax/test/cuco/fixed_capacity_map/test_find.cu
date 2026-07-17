@@ -11,7 +11,7 @@
 // Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
 #if defined(__CUDACC__)
 #  pragma nv_diag_suppress 20011
-#endif
+#endif // defined(__CUDACC__)
 
 #include <thrust/execution_policy.h>
 #include <thrust/logical.h>
@@ -39,17 +39,20 @@ using cg_sizes      = c2h::type_list<_int_c<1>, _int_c<2>>;
 using bucket_sizes  = c2h::type_list<_int_c<1>, _int_c<2>>;
 using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probing, 1 = double hashing
 
+// Payloads are offset from their key so a bug that returns the key instead of the mapped value is caught.
+constexpr int payload_offset = 7;
+
 template <class _Pair>
 struct iota_pair
 {
   __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
   {
-    return _Pair{__i, __i};
+    return _Pair{__i, static_cast<typename _Pair::second_type>(__i + payload_offset)};
   }
 };
 
-// Since the map is built with key == payload, present keys [0, num_keys) find their own value and
-// absent keys [num_keys, ...) find the empty value sentinel.
+// Present keys [0, num_keys) find their payload (key + payload_offset) and absent keys
+// [num_keys, ...) find the empty value sentinel.
 template <class _Key>
 struct match_found
 {
@@ -59,7 +62,7 @@ struct match_found
 
   __device__ bool operator()(int __i) const noexcept
   {
-    return (__i < num_keys) ? (found[__i] == static_cast<_Key>(__i)) : (found[__i] == sentinel);
+    return (__i < num_keys) ? (found[__i] == static_cast<_Key>(__i + payload_offset)) : (found[__i] == sentinel);
   }
 };
 
@@ -91,7 +94,7 @@ struct match_find_if
 
   __device__ bool operator()(int __i) const noexcept
   {
-    return ((__i % 2) == 0) ? (found[__i] == static_cast<_Key>(__i)) : (found[__i] == sentinel);
+    return ((__i % 2) == 0) ? (found[__i] == static_cast<_Key>(__i + payload_offset)) : (found[__i] == sentinel);
   }
 };
 
