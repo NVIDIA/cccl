@@ -339,10 +339,51 @@ _CCCL_HOST_API inline ::CUcontext __ctxPop()
 
 // Memory management
 
+[[nodiscard]] _CCCL_HOST_API inline ::CUcontext __streamGetCtx(::CUstream __stream);
+
+// The driver memcpy entry points validate their device pointer arguments against the *current*
+// context, NOT against the context the supplied stream belongs to. In a multi-device program
+// the current context is frequently some other device's context (e.g. nothing was pushed, or a
+// previous operation left a different device current), in which case a perfectly valid device
+// pointer is rejected with `CUDA_ERROR_INVALID_VALUE` ("invalid argument"). Pushing the
+// stream's own context around the call guarantees the device pointer is validated against the
+// context that actually owns it.
+//
+// The null/default stream has no retrievable context; for it we leave the current context
+// untouched, matching the default-stream's documented "current context" semantics.
+struct [[maybe_unused]] __stream_ctx_guard
+{
+  bool __pushed_ = false;
+
+  _CCCL_HOST_API explicit __stream_ctx_guard(::CUstream __stream)
+  {
+    if (__stream != nullptr)
+    {
+      ::cuda::__driver::__ctxPush(::cuda::__driver::__streamGetCtx(__stream));
+      __pushed_ = true;
+    }
+  }
+
+  __stream_ctx_guard(__stream_ctx_guard&&)                 = delete;
+  __stream_ctx_guard(const __stream_ctx_guard&)            = delete;
+  __stream_ctx_guard& operator=(__stream_ctx_guard&&)      = delete;
+  __stream_ctx_guard& operator=(const __stream_ctx_guard&) = delete;
+
+  _CCCL_HOST_API ~__stream_ctx_guard() // NOLINT(bugprone-exception-escape)
+  {
+    if (__pushed_)
+    {
+      static_cast<void>(::cuda::__driver::__ctxPop());
+    }
+  }
+};
+
 _CCCL_HOST_API inline void
 __memcpyAsync(void* __dst, const void* __src, ::cuda::std::size_t __count, ::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemcpyAsync);
+  const auto __guard      = ::cuda::__driver::__stream_ctx_guard{__stream};
+
   ::cuda::__driver::__call_driver_fn(
     __driver_fn,
     "Failed to perform a memcpy",
