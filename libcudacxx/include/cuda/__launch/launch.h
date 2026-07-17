@@ -27,6 +27,8 @@
 #  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/__launch/configuration.h>
+#  include <cuda/__launch/finalize.h>
+#  include <cuda/__launch/get_cufunction.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/launch_transform.h>
@@ -383,13 +385,6 @@ template <class _Kernel, class _Config, class... _Args>
 
 #  endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUfunction __get_cufunction_of(const void* __kernel)
-{
-  ::cudaFunction_t __kernel_cufunction{};
-  _CCCL_TRY_CUDA_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
-  return (::CUfunction) __kernel_cufunction;
-}
-
 _CCCL_HOST_API void inline __do_launch(
   ::cuda::stream_ref __stream, ::CUlaunchConfig& __config, ::CUfunction __kernel, void** __args_ptrs)
 {
@@ -511,15 +506,17 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            _Args&&... __args)
 {
   __ensure_current_context __dev_setter{__submitter};
-  auto __combined = __conf.combine_with_default(__kernel);
-  auto __launcher = ::cuda::__get_kernel_launcher<_Kernel,
-                                                  decltype(__combined),
-                                                  ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
+  auto __combined        = __conf.combine_with_default(__kernel);
+  using _FinalizedConfig = finalized_t<decltype(__combined)>;
+  auto __launcher        = ::cuda::
+    __get_kernel_launcher<_Kernel, _FinalizedConfig, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
+  auto __launcher_cufunction = ::cuda::__get_cufunction_of(__launcher);
+  auto __finalized           = ::cuda::__detail::__finalize_no_device_set(__combined, __launcher_cufunction);
   return ::cuda::__launch_impl(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter),
-    __combined,
-    ::cuda::__get_cufunction_of(__launcher),
-    __combined,
+    __finalized,
+    __launcher_cufunction,
+    __finalized,
     __kernel,
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
 }
@@ -570,16 +567,17 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
 _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const kernel_config<_Dimensions, _Config...>& __conf,
-                           void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
+                           void (*__kernel)(finalized_t<kernel_config<_Dimensions, _Config...>>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
   __ensure_current_context __dev_setter{__submitter};
-  return ::cuda::__launch_impl<kernel_config<_Dimensions, _Config...>,
-                               _ExpArgs...>(
+  auto __kernel_cufunction = ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel));
+  auto __finalized         = ::cuda::__detail::__finalize_no_device_set(__conf, __kernel_cufunction);
+  return ::cuda::__launch_impl<finalized_t<kernel_config<_Dimensions, _Config...>>, _ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
-    __conf,
-    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
-    __conf,
+    __finalized,
+    __kernel_cufunction,
+    __finalized,
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
@@ -630,10 +628,12 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            _ActArgs&&... __args)
 {
   __ensure_current_context __dev_setter{__submitter};
+  auto __kernel_cufunction = ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel));
+  auto __finalized         = ::cuda::__detail::__finalize_no_device_set(__conf, __kernel_cufunction);
   return ::cuda::__launch_impl<_ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
-    __conf,
-    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
+    __finalized,
+    __kernel_cufunction,
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 

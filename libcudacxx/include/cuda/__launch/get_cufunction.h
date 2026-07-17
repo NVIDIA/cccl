@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_HIERARCHY
-#define _CUDA_HIERARCHY
+#ifndef _CUDA___LAUNCH_GET_CUFUNCTION_H
+#define _CUDA___LAUNCH_GET_CUFUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,15 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__hierarchy/get_launch_dimensions.h>
-#include <cuda/__hierarchy/hierarchy_dimensions.h>
-#include <cuda/__hierarchy/hierarchy_level_base.h>
-#include <cuda/__hierarchy/hierarchy_levels.h>
-#include <cuda/__hierarchy/hierarchy_query_result.h>
-#include <cuda/__hierarchy/level_dimensions.h>
-#include <cuda/__hierarchy/meta_level_dimensions.h>
-#include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#include <cuda/__hierarchy/queries/extents.h>
-#include <cuda/__hierarchy/traits.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA_HIERARCHY
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__runtime/api_wrapper.h>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUfunction __get_cufunction_of(const void* __kernel)
+{
+  ::cudaFunction_t __kernel_cufunction{};
+  _CCCL_TRY_CUDA_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
+  return (::CUfunction) __kernel_cufunction;
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___LAUNCH_GET_CUFUNCTION_H
