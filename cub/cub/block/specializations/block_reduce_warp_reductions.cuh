@@ -63,6 +63,7 @@ namespace detail
 //!   -1 (default): only use parallel path when HW redux is available.
 //!   0: always use sequential path.
 //!   >0: use parallel path when warps >= threshold.
+//!   Values below -1 are rejected via static_assert.
 template <typename T,
           int BlockDimX,
           int BlockDimY,
@@ -82,6 +83,8 @@ struct BlockReduceWarpReductions
 
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (threads_per_block % logical_warp_size == 0);
+
+  static_assert(WarpAggregateThreshold >= -1, "WarpAggregateThreshold must be -1, 0, or positive");
 
   using WarpReduceInternal = typename WarpReduce<T, logical_warp_size>::InternalWarpReduce;
 
@@ -191,14 +194,14 @@ struct BlockReduceWarpReductions
     // Without HW redux the shuffle-based path is not faster than the sequential unrolled loop
     // over at most 31 warp aggregates, so we disable it by default.
     // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
+    constexpr bool use_warp_redux_path = (WarpAggregateThreshold == -1) && is_warp_redux_op_supported<ReductionOp, T>
+                                      && ::cuda::has_identity_element_v<ReductionOp, T>;
     constexpr int effective_threshold =
-      (WarpAggregateThreshold == -1) ? (is_warp_redux_op_supported<ReductionOp, T> ? 2 : warps + 1)
+      use_warp_redux_path ? 2
       : (WarpAggregateThreshold == 0)
         ? (warps + 1)
         : WarpAggregateThreshold;
-    constexpr bool use_parallel_reduction =
-      (warps >= effective_threshold) && (threads_per_block >= warp_threads)
-      && ::cuda::has_identity_element_v<ReductionOp, T>;
+    constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
