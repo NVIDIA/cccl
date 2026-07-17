@@ -214,7 +214,7 @@ public:
 private:
   result_type __x_{};
 
-  static constexpr const result_type _Mp = result_type(~0);
+  static constexpr result_type _Mp = result_type{~0};
 
   static_assert(__M == 0 || __A < __M, "linear_congruential_engine invalid parameters");
   static_assert(__M == 0 || __C < __M, "linear_congruential_engine invalid parameters");
