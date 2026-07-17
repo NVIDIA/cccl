@@ -23,15 +23,51 @@
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
+#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
+
+//! The algorithm used by the RLE-encode policy.
+enum class RleAlgorithm
+{
+  lookback,
+  lookahead
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(RleAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case RleAlgorithm::lookback:
+      return "RleAlgorithm::lookback";
+    case RleAlgorithm::lookahead:
+      return "RleAlgorithm::lookahead";
+    default:
+      return "<unknown RleAlgorithm>";
+  }
+}
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
+{
+  return os << detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
 
 //! The lookback tuning policy for DeviceRunLengthEncode::Encode
 struct RleLookbackPolicy
@@ -43,7 +79,7 @@ struct RleLookbackPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const RleLookbackPolicy& lhs, const RleLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -51,7 +87,7 @@ struct RleLookbackPolicy
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const RleLookbackPolicy& lhs, const RleLookbackPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -64,58 +100,6 @@ struct RleLookbackPolicy
         << "RleLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
-  }
-#endif // _CCCL_HOSTED()
-};
-
-//! The algorithm used by the run-length-encode policy.
-enum class RleAlgorithm
-{
-  lookback
-};
-
-#if _CCCL_HOSTED()
-namespace detail
-{
-[[nodiscard]] _CCCL_API constexpr const char* to_string(RleAlgorithm algo) noexcept
-{
-  switch (algo)
-  {
-    case RleAlgorithm::lookback:
-      return "RleAlgorithm::lookback";
-  }
-  return "<unknown RleAlgorithm>";
-}
-} // namespace detail
-
-inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
-{
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
-}
-#endif // _CCCL_HOSTED()
-
-//! The tuning policy for DeviceRunLengthEncode::Encode
-struct RleEncodePolicy
-{
-  RleAlgorithm algorithm = RleAlgorithm::lookback; //!< The RLE-encode algorithm to use
-  RleLookbackPolicy lookback; //!< The lookback policy
-
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
-  {
-    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
-  }
-
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
-
-#if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
-  {
-    return os << "RleEncodePolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -195,6 +179,34 @@ struct RleLookaheadPolicy
         << ", .store_warps = " << p.store_warps << ", .key_ring_stages = " << p.key_ring_stages
         << ", .pos_ring_stages = " << p.pos_ring_stages << ", .poll_loads_per_lane = " << p.poll_loads_per_lane
         << ", .flag_staging_threshold = " << p.flag_staging_threshold << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The tuning policy for all algorithms in @ref DeviceRunLengthEncode
+struct RleEncodePolicy
+{
+  RleAlgorithm algorithm; //!< The RLE-encode algorithm to use
+  RleLookbackPolicy lookback; //!< The lookback policy (used when algorithm is @p lookback, otherwise ignored)
+  RleLookaheadPolicy lookahead; //!< The lookahead policy (used when algorithm is @p lookahead, otherwise ignored)
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
+  {
+    return lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead && lhs.algorithm == rhs.algorithm;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
+  {
+    return os << "RleEncodePolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
+              << ", .lookahead = " << p.lookahead << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -424,7 +436,7 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , detail::chained_policy<500, Policy500, Policy500>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -439,7 +451,7 @@ struct policy_hub
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
-  struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
   {
     using ReduceByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
@@ -449,15 +461,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , detail::chained_policy<860, Policy860, Policy800>
+      , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using ReduceByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<LengthT, KeyT>>(0));
   };
 
-  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
@@ -497,6 +509,14 @@ struct policy_selector
   bool length_is_primitive;
   bool length_is_trivially_copyable;
   bool key_is_primitive;
+  int key_align;
+  bool key_is_trivially_copyable;
+  bool input_contiguous;
+  bool unique_out_contiguous;
+  bool lengths_out_contiguous;
+  bool num_runs_out_contiguous;
+  bool input_matches_unique_type;
+  bool offset_is_i32_or_i64;
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> RleLookbackPolicy
   {
@@ -675,9 +695,63 @@ struct policy_selector
     return __make_default_policy(LOAD_LDG);
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookahead_policy(::cuda::compute_capability cc) const
+    -> ::cuda::std::optional<RleLookaheadPolicy>
+  {
+    // every knob below is a B200 measurement; consumer Blackwell (sm_120) has neither the smem opt-in headroom nor
+    // measurements, so only the sm_10x family selects lookahead
+    if (cc < ::cuda::compute_capability{10, 0} || cc >= ::cuda::compute_capability{11, 0})
+    {
+      return ::cuda::std::nullopt;
+    }
+    if (16 % key_size != 0)
+    {
+      return ::cuda::std::nullopt;
+    }
+    const int items_per_thread = (key_size >= 16) ? 8 : (key_size == 8 ? 16 : 32);
+    return RleLookaheadPolicy{items_per_thread, 8, 8, 5, 3, 5, 32};
+  }
+
+  _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
+    [[maybe_unused]] ::cuda::compute_capability cc, [[maybe_unused]] const RleLookaheadPolicy& lookahead_policy) const
+  {
+    // We need PTX ISA 8.6 and nvcc >= 12.8 for the clusterlaunchcontrol and bulk-copy instructions.
+    // The macro `CCCL_DISABLE_WARPSPEED_RLE` will be left in as a kill-switch for users in case they find any bugs
+    // after we shipped the implementation. TODO(nanan): remove CCCL_DISABLE_WARPSPEED_RLE in CCCL 4.0
+#if __cccl_ptx_isa < 860 || _CCCL_CUDACC_BELOW(12, 8) || defined(CCCL_DISABLE_WARPSPEED_RLE)
+    return false;
+#else
+    if (!input_contiguous || !unique_out_contiguous || !lengths_out_contiguous || !num_runs_out_contiguous
+        || !key_is_trivially_copyable || !input_matches_unique_type || !offset_is_i32_or_i64)
+    {
+      return false;
+    }
+    if (16 % key_size != 0 || key_align > 16)
+    {
+      return false;
+    }
+    if (lookahead_policy.dyn_smem_bytes(key_size, key_align)
+        > ::cuda::arch_traits_for(cc).max_shared_memory_per_block_optin)
+    {
+      return false;
+    }
+    return true;
+#endif // __cccl_ptx_isa < 860 || _CCCL_CUDACC_BELOW(12, 8) || defined(CCCL_DISABLE_WARPSPEED_RLE)
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
   {
-    return RleEncodePolicy{RleAlgorithm::lookback, get_lookback_policy(cc)};
+    // we first try to get the valid lookahead implementation. if we can't run it, fall back to the lookback impl.
+    // The lookback policy stays populated either way: the dispatch layer re-checks runtime-only facts (device smem
+    // opt-in, tile count, temporary-storage alignment) and may still fall back at launch time.
+    if (const auto lookahead_policy = get_lookahead_policy(cc))
+    {
+      if (can_use_lookahead(cc, *lookahead_policy))
+      {
+        return RleEncodePolicy{RleAlgorithm::lookahead, get_lookback_policy(cc), *lookahead_policy};
+      }
+    }
+    return RleEncodePolicy{RleAlgorithm::lookback, get_lookback_policy(cc), RleLookaheadPolicy{}};
   }
 };
 
@@ -685,7 +759,13 @@ struct policy_selector
 static_assert(rle_encode_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <class LengthT, class KeyT>
+template <class LengthT,
+          class KeyT,
+          class InputIteratorT,
+          class UniqueOutputIteratorT,
+          class LengthsOutputIteratorT,
+          class NumRunsOutputIteratorT,
+          class OffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
@@ -696,7 +776,15 @@ struct policy_selector_from_types
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
       ::cuda::is_trivially_copyable_v<LengthT>,
-      is_primitive_v<KeyT>};
+      is_primitive_v<KeyT>,
+      int{alignof(KeyT)},
+      ::cuda::is_trivially_copyable_v<KeyT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<UniqueOutputIteratorT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<LengthsOutputIteratorT>,
+      THRUST_NS_QUALIFIER::is_contiguous_iterator_v<NumRunsOutputIteratorT>,
+      ::cuda::std::is_same_v<it_value_t<InputIteratorT>, KeyT>,
+      ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8)};
     return selector(cc);
   }
 };

@@ -234,7 +234,14 @@ struct DeviceRunLengthEncode
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t   = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using policy_selector_t = detail::rle::encode::policy_selector_from_types<
+      accum_t,
+      key_t,
+      InputIteratorT,
+      UniqueOutputIteratorT,
+      LengthsOutputIteratorT,
+      NumRunsOutputIteratorT,
+      offset_t>;
 
     return detail::reduce_by_key::dispatch_streaming(
       d_temp_storage,
@@ -345,7 +352,14 @@ struct DeviceRunLengthEncode
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
     using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using default_policy_selector = detail::rle::encode::policy_selector_from_types<
+      accum_t,
+      key_t,
+      InputIteratorT,
+      UniqueOutputIteratorT,
+      LengthsOutputIteratorT,
+      NumRunsOutputIteratorT,
+      offset_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
