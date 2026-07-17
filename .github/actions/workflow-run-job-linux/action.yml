@@ -107,9 +107,9 @@ runs:
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
-        # Retry 4 times if a build server shuts down while compiling,
+        # Retry 2 times if a build server shuts down while compiling,
         # otherwise fallback to compiling locally
-        SCCACHE_DIST_MAX_RETRIES: "4"
+        SCCACHE_DIST_MAX_RETRIES: "2"
       run: |
         set -eo pipefail
 
