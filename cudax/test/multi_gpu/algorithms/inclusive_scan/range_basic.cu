@@ -227,7 +227,7 @@ MULTI_GPU_TEST("inclusive_scan, one element per rank", value_types, operators)
   envs.reserve(comms.size());
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {make_value<T>(r)};
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(1, make_value<T>(r));
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
@@ -264,10 +264,10 @@ MULTI_GPU_TEST("inclusive_scan, multiple elements per rank", value_types, operat
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  // Global rank `comms[i].rank()` contributes `{rank, rank, rank}`. `inclusive_scan` first
+  // Global rank `comms[i].rank()` contributes ten copies of `rank`. `inclusive_scan` first
   // computes a local prefix for each rank seeded by the prefix of all previous ranks. Each local
   // rank also gets an output buffer and an environment carrying its stream. `reference` mirrors
-  // every global rank's three contributions for the host-side scan.
+  // every global rank's ten contributions for the host-side scan.
   std::vector<cuda::device_buffer<T>> in;
   std::vector<cuda::device_buffer<T>> out;
   std::vector<decltype(::cuda::std::execution::env{::cuda::stream_ref{streams[0]}})> envs;
@@ -276,10 +276,12 @@ MULTI_GPU_TEST("inclusive_scan, multiple elements per rank", value_types, operat
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (int r = 0; r < comms.front().size(); ++r)
   {
     const auto v                                      = make_value<T>(r);
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {v, v, v};
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, v);
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
@@ -314,7 +316,7 @@ MULTI_GPU_TEST("inclusive_scan, some ranks empty", value_types, operators)
   auto comms   = this->communicators();
   auto streams = nccl_test_util::make_streams();
 
-  // Even global ranks contribute two copies of `rank`; odd global ranks contribute an empty input
+  // Even global ranks contribute ten copies of `rank`; odd global ranks contribute an empty input
   // range. Rank 0 is always non-empty. `inclusive_scan` must treat an empty rank as contributing
   // nothing, exactly like `std::inclusive_scan` over the surviving elements. `reference` mirrors
   // that for the host-side scan.
@@ -326,11 +328,13 @@ MULTI_GPU_TEST("inclusive_scan, some ranks empty", value_types, operators)
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (int r = 0; r < comms.front().size(); ++r)
   {
     if (r % 2 == 0)
     {
-      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {make_value<T>(r), make_value<T>(r)};
+      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
     }
   }
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)

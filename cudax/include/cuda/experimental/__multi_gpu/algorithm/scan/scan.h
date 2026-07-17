@@ -166,7 +166,6 @@ _CCCL_HOST_API void __scan(
       __part.stream(), __part.memory_resource(), /*__size=*/1, __env);
 
     {
-      const auto __num_items = __comm.rank();
       // Root rank has no preceding partials and therefore starts directly with init. Other ranks
       // include root rank partial, which already contains init, so their prefix reduction starts
       // with ident.
@@ -180,12 +179,14 @@ _CCCL_HOST_API void __scan(
       // multiple times, we need to cache the result.
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        __num_items,
         CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-        (__part.begin(), __prefix.begin(), __num_items_fixed, __op, __prefix_init, __env));
+        __part.begin(),
+        __prefix.begin(),
+        __comm.rank(),
+        __op,
+        __prefix_init,
+        __env);
     }
-
-    const auto __num_items = ::cuda::std::ranges::size(__inputs);
 
     if constexpr (_Kind == __kind::__exclusive)
     {
@@ -196,27 +197,25 @@ _CCCL_HOST_API void __scan(
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        __num_items,
         CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
-        (::cuda::std::ranges::begin(__inputs),
-         __out,
-         __op,
-         /*__init=*/__future_type{__prefix.begin()},
-         __num_items_fixed,
-         __env));
+        ::cuda::std::ranges::begin(__inputs),
+        __out,
+        __op,
+        /*__init=*/__future_type{__prefix.begin()},
+        ::cuda::std::ranges::size(__inputs),
+        __env);
     }
     else
     {
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        __num_items,
         CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-        (::cuda::std::ranges::begin(__inputs),
-         __out,
-         __op,
-         /*__init=*/::cuda::args::deferred{__prefix.begin()},
-         __num_items_fixed,
-         __env));
+        ::cuda::std::ranges::begin(__inputs),
+        __out,
+        __op,
+        /*__init=*/::cuda::args::deferred{__prefix.begin()},
+        ::cuda::std::ranges::size(__inputs),
+        __env);
     }
   }
 }
