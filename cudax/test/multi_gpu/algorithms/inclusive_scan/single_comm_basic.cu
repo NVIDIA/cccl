@@ -257,11 +257,12 @@ MULTI_GPU_TEST("inclusive_scan single-comm, multiple elements per rank", value_t
   const auto ident = get_identity<T, Op>();
   auto comms       = this->communicators();
 
+  constexpr auto values_per_rank = 10;
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
     const auto value                                  = make_value<T>(r);
-    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {value, value, value};
+    inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, value);
   }
 
   run_case(comms, inputs_by_rank, init, ident, Op{});
@@ -276,12 +277,13 @@ MULTI_GPU_TEST("inclusive_scan single-comm, some ranks empty", value_types, oper
   const auto ident = get_identity<T, Op>();
   auto comms       = this->communicators();
 
+  constexpr auto values_per_rank = 10;
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
     if (r % 2 == 0)
     {
-      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = {make_value<T>(r), make_value<T>(r)};
+      inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(values_per_rank, make_value<T>(r));
     }
   }
 
