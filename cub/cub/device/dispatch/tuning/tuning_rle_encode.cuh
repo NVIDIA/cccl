@@ -120,6 +120,85 @@ struct RleEncodePolicy
 #endif // _CCCL_HOSTED()
 };
 
+//! The tuning policy for the lookahead implementation of DeviceRunLengthEncode::Encode
+struct RleLookaheadPolicy
+{
+  // IPT should br 32 (32 chunks x 32 lanes)
+  int items_per_thread;
+  int compute_warps;
+  int store_warps; // store warps; must divide or be a multiple of compute_warps
+  int key_ring_stages; // pipeline depth
+  // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
+  // so it can be SHALLOWER than the keys ring and this buys room for more key_ring_stages
+  int pos_ring_stages;
+  int poll_loads_per_lane; // how many loads each poll lane keeps in flight
+  // when should compute warps stage?
+  int flag_staging_threshold;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int warp_tile_size() const noexcept
+  {
+    return 32 * items_per_thread;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
+  {
+    return compute_warps * warp_tile_size();
+  }
+
+  // store buffers one key + one length per reg-buf round in registers
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int buf_per_lane() const noexcept
+  {
+    return ((flag_staging_threshold - 1 + 31) / 32 > 0) ? (flag_staging_threshold - 1 + 31) / 32 : 1;
+  }
+
+  // for each input tile, we need to store the keys and in-tile positions
+  // for in tile position we can just do unsigned int16 since tile size is never bigger than 2^16
+  // each key slot carries slot_pad extra leading elements
+  // we overcopy one 16B chunk to the left, so that we get the last tiles boundary element
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int slot_pad(int key_size) const noexcept
+  {
+    return 16 / key_size; // elements; 16 bytes = cp_async_bulk quantum
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int slot_stride(int key_size, int key_align) const noexcept
+  {
+    return tile_size() + slot_pad(key_size) + (key_align < 16 ? 16 / key_size : 0);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+  dyn_smem_bytes(int key_size, int key_align) const noexcept
+  {
+    return static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size
+         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(short);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
+  {
+    return lhs.items_per_thread == rhs.items_per_thread && lhs.compute_warps == rhs.compute_warps
+        && lhs.store_warps == rhs.store_warps && lhs.key_ring_stages == rhs.key_ring_stages
+        && lhs.pos_ring_stages == rhs.pos_ring_stages && lhs.poll_loads_per_lane == rhs.poll_loads_per_lane
+        && lhs.flag_staging_threshold == rhs.flag_staging_threshold;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RleLookaheadPolicy& p)
+  {
+    return os
+        << "RleLookaheadPolicy { .items_per_thread = " << p.items_per_thread << ", .compute_warps = " << p.compute_warps
+        << ", .store_warps = " << p.store_warps << ", .key_ring_stages = " << p.key_ring_stages
+        << ", .pos_ring_stages = " << p.pos_ring_stages << ", .poll_loads_per_lane = " << p.poll_loads_per_lane
+        << ", .flag_staging_threshold = " << p.flag_staging_threshold << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::rle::encode
 {
 // TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
