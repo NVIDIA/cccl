@@ -58,6 +58,11 @@ readonly cuda13_image
 
 mkdir -p wheelhouse
 
+# Clear stale STF wheels from a previous run so the per-CTK wheel selection
+# below is unambiguous. Leave any co-located wheels (e.g. a cuda_cccl wheel
+# staged by a combined producer job) untouched.
+rm -f wheelhouse/cuda_stf-*.whl
+
 # Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
 # identical LLVM/clang tree (LLVM has no CUDA dep), so a shared ccache cuts
 # the second build's LLVM phase substantially; a shared CPM source cache skips
@@ -104,21 +109,29 @@ setup_python_env "${py_version}"
 # Needed for unpacking and repacking wheels.
 python -m pip install wheel
 
-# Find the built wheels
-cu12_wheel=$(find wheelhouse -name "cuda_stf-*cu12*.whl" | head -1)
-cu13_wheel=$(find wheelhouse -name "cuda_stf-*cu13*.whl" | head -1)
+# Find the built wheels, requiring exactly one match per CUDA version so a
+# stale or duplicate wheel cannot be silently merged.
+require_single_wheel() {
+  local pattern="$1" desc="$2"
+  local matches=()
+  while IFS= read -r match; do
+    matches+=("$match")
+  done < <(find wheelhouse -maxdepth 1 -name "$pattern" | sort)
+  if [[ ${#matches[@]} -eq 0 ]]; then
+    echo "Error: no $desc cuda-stf wheel found in wheelhouse/ (pattern: $pattern)" >&2
+    ls -la wheelhouse/ >&2
+    exit 1
+  fi
+  if [[ ${#matches[@]} -gt 1 ]]; then
+    echo "Error: expected exactly one $desc cuda-stf wheel, found ${#matches[@]}:" >&2
+    printf '  %s\n' "${matches[@]}" >&2
+    exit 1
+  fi
+  printf '%s\n' "${matches[0]}"
+}
 
-if [[ -z "$cu12_wheel" ]]; then
-  echo "Error: CUDA 12 cuda-stf wheel not found in wheelhouse/"
-  ls -la wheelhouse/
-  exit 1
-fi
-
-if [[ -z "$cu13_wheel" ]]; then
-  echo "Error: CUDA 13 cuda-stf wheel not found in wheelhouse/"
-  ls -la wheelhouse/
-  exit 1
-fi
+cu12_wheel="$(require_single_wheel 'cuda_stf-*cu12*.whl' 'CUDA 12')"
+cu13_wheel="$(require_single_wheel 'cuda_stf-*cu13*.whl' 'CUDA 13')"
 
 echo "Found CUDA 12 wheel: $cu12_wheel"
 echo "Found CUDA 13 wheel: $cu13_wheel"
@@ -142,8 +155,9 @@ for wheel in wheelhouse_merged/cuda_stf-*.whl; do
         --wheel-dir wheelhouse_final
 done
 
-# Clean up intermediate files and move only the final merged wheel to wheelhouse
-rm -rf wheelhouse/*  # Clean existing wheelhouse
+# Drop only the per-CTK STF inputs we just merged; keep any unrelated wheels
+# (e.g. a co-located cuda_cccl wheel) intact.
+rm -f "$cu12_wheel" "$cu13_wheel"
 mkdir -p wheelhouse
 
 # Move only the final repaired merged wheel
@@ -165,5 +179,6 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   # Upload under a distinct artifact name so it does not clobber the cuda-cccl
   # wheel (both build jobs run in project 'python').
   wheel_artifact_name="$(CCCL_WHEEL_KIND=stf ci/util/workflow/get_wheel_artifact_name.sh)"
-  ci/util/artifacts/upload.sh "$wheel_artifact_name" 'wheelhouse/.*'
+  # Upload only the final STF wheel, not any co-located wheels in wheelhouse/.
+  ci/util/artifacts/upload.sh "$wheel_artifact_name" 'wheelhouse/cuda_stf-.*\.whl'
 fi

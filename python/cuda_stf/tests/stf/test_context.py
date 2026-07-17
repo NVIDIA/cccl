@@ -96,6 +96,24 @@ def test_task_arg_cai_v3():
     ctx.finalize()
 
 
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+@pytest.mark.parametrize(
+    "bad_shape, match",
+    [
+        pytest.param((), "at least one dimension", id="empty"),
+        pytest.param((0,), "positive", id="zero"),
+        pytest.param((4, 0), "positive", id="zero-second-axis"),
+        pytest.param((-1,), "positive", id="negative"),
+        pytest.param((2.5,), "integers", id="non-integral"),
+    ],
+)
+def test_logical_data_empty_rejects_invalid_shape(context_type, bad_shape, match):
+    ctx = context_type()
+    with pytest.raises((ValueError, TypeError), match=match):
+        ctx.logical_data_empty(bad_shape, dtype=np.float32)
+    ctx.finalize()
+
+
 def test_logical_data_rejects_non_contiguous():
     arr = np.ones((10, 10), dtype=np.float32)
     strided_view = arr[

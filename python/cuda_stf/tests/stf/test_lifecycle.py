@@ -221,13 +221,37 @@ def test_two_stackable_contexts_in_sequence():
     gc.collect()
 
 
-def test_stackable_repeat_after_device_reset():
-    """A device reset must not leave pooled STF streams pointing at a dead context."""
-    cuda = pytest.importorskip("numba.cuda")
+def _device_reset_repeat_worker():
+    """Child-process body: exercise repeat scopes across a device reset.
+
+    Runs in a spawned subprocess so the mid-test ``device.reset()`` cannot
+    invalidate the CUDA/STF state shared by the many other tests in this
+    module (a reset in-process would tear down contexts and streams that
+    later tests rely on).
+    """
+    import numba.cuda as nbcuda  # noqa: PLC0415
 
     _exercise_stackable_repeat_scope()
-    cuda.get_current_device().reset()
+    nbcuda.get_current_device().reset()
     _exercise_stackable_repeat_scope()
+
+
+def test_stackable_repeat_after_device_reset():
+    """A device reset must not leave pooled STF streams pointing at a dead context."""
+    pytest.importorskip("numba.cuda")
+    import multiprocessing as mp  # noqa: PLC0415
+
+    mp_ctx = mp.get_context("spawn")
+    proc = mp_ctx.Process(target=_device_reset_repeat_worker)
+    proc.start()
+    proc.join(timeout=180)
+    if proc.is_alive():
+        proc.terminate()
+        proc.join()
+        pytest.fail("device-reset repeat worker timed out")
+    assert proc.exitcode == 0, (
+        f"device-reset repeat worker failed with exit code {proc.exitcode}"
+    )
 
 
 def test_stackable_token_outlives_context():

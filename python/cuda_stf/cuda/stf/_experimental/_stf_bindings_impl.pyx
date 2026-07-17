@@ -357,26 +357,74 @@ _mapper_cfunc_type = ctypes.CFUNCTYPE(
     None, ctypes.POINTER(_mapper_pos4), _mapper_pos4, _mapper_dim4, _mapper_dim4)
 
 
+class _MapperCallbackState:
+    """Owned state for a composite-place partition mapper.
+
+    A ctypes host callback cannot propagate a Python exception back through the
+    C call boundary: if the mapper raises or returns a malformed result, STF
+    would otherwise consume whatever happens to be in the out-pointer. We always
+    write a safe in-range fallback and stash the first failure here so the
+    Python side can re-check it right after the synchronous submission that
+    drove the mapping and re-raise instead of silently misplacing data.
+    """
+
+    __slots__ = ("mapper", "error", "callback", "c_ptr")
+
+    def __init__(self, mapper):
+        self.mapper = mapper
+        self.error = None      # first BaseException raised inside the callback
+        self.callback = None   # ctypes callback object (kept alive here)
+        self.c_ptr = 0
+
+    def raise_if_error(self):
+        """Re-raise (once) the first failure captured inside the callback."""
+        exc = self.error
+        if exc is not None:
+            self.error = None
+            raise exc
+
+
 def _make_mapper_callback(mapper):
     """Wrap a Python partitioner as a C function pointer for stf_data_place_composite.
 
-    Returns (callback_object, c_function_pointer_as_int).
-    The caller must prevent GC of callback_object for the lifetime of the
-    composite data place.
+    Returns an owned :class:`_MapperCallbackState`. The caller must keep it alive
+    for the lifetime of the composite data place (it retains the ctypes callback)
+    and should call :meth:`_MapperCallbackState.raise_if_error` after the
+    synchronous submission that triggered mapping.
     """
+    state = _MapperCallbackState(mapper)
+
     def _trampoline(result_ptr, c_coords, c_data_dims, c_grid_dims):
-        coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
-        data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
-        grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
-        rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
-        result_ptr[0].x = int(rx)
-        result_ptr[0].y = int(ry)
-        result_ptr[0].z = int(rz)
-        result_ptr[0].t = int(rt)
+        # Leave a valid in-range fallback (place 0) so STF never reads
+        # uninitialized coordinates, even if the mapper misbehaves below.
+        result_ptr[0].x = 0
+        result_ptr[0].y = 0
+        result_ptr[0].z = 0
+        result_ptr[0].t = 0
+        try:
+            coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
+            data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
+            grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
+            rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
+            out = (int(rx), int(ry), int(rz), int(rt))
+            for value, extent in zip(out, grid_dims):
+                if value < 0 or (extent > 0 and value >= extent):
+                    raise ValueError(
+                        f"partition mapper returned out-of-range coordinate {out} "
+                        f"for grid dims {grid_dims}"
+                    )
+            result_ptr[0].x = out[0]
+            result_ptr[0].y = out[1]
+            result_ptr[0].z = out[2]
+            result_ptr[0].t = out[3]
+        except BaseException as exc:  # noqa: BLE001 - must not escape into C
+            if state.error is None:
+                state.error = exc
 
     callback = _mapper_cfunc_type(_trampoline)
-    c_ptr = ctypes.cast(callback, ctypes.c_void_p).value
-    return (callback, c_ptr)
+    state.callback = callback
+    state.c_ptr = ctypes.cast(callback, ctypes.c_void_p).value
+    return state
 
 class AccessMode(IntFlag):
     NONE  = STF_NONE
@@ -415,6 +463,32 @@ def _logical_data_full(ctx, shape, fill_value, dtype=None, where=None, exec_plac
 
 def _logical_data_default_dtype(dtype):
     return np.float64 if dtype is None else dtype
+
+
+def _normalize_alloc_shape(shape):
+    """Validate and normalize an allocation shape to a tuple of positive ints.
+
+    Shared by the regular and stackable ``logical_data`` allocation paths so
+    both reject empty, zero, negative, and non-integral dimensions with the
+    same clear diagnostics instead of silently computing a bogus byte size.
+    Uses ``__index__`` semantics (like NumPy) rather than ``int()`` truncation.
+    """
+    try:
+        dims = tuple(shape)
+    except TypeError:
+        raise TypeError("shape must be an iterable of integers")
+    normalized = []
+    for dim in dims:
+        try:
+            idim = dim.__index__()
+        except AttributeError:
+            raise TypeError("shape dimensions must be integers")
+        if idim <= 0:
+            raise ValueError("all shape dimensions must be positive integers")
+        normalized.append(idim)
+    if not normalized:
+        raise ValueError("shape must contain at least one dimension")
+    return tuple(normalized)
 
 
 cdef uintptr_t _get_stream_pointer(object stream) except? 0:
@@ -911,15 +985,7 @@ cdef class logical_data:
         """
         Create a new logical_data from a shape and a dtype.
         """
-        try:
-            shape_tuple = tuple(int(dim) for dim in shape)
-        except TypeError:
-            raise TypeError("shape must be an iterable of integers")
-        if not shape_tuple:
-            raise ValueError("shape must contain at least one dimension")
-        for dim in shape_tuple:
-            if dim <= 0:
-                raise ValueError("all shape dimensions must be positive integers")
+        shape_tuple = _normalize_alloc_shape(shape)
         cdef logical_data out = logical_data.__new__(logical_data)
         out._ctx   = ctx._ctx
         out._dtype = np.dtype(dtype)
@@ -1595,10 +1661,10 @@ cdef class data_place:
         if not callable(mapper):
             raise TypeError(
                 "mapper must be callable: (data_coords, data_dims, grid_dims) -> (x, y, z, t)")
-        callback_obj, c_ptr = _make_mapper_callback(mapper)
+        cdef object state = _make_mapper_callback(mapper)
         cdef data_place p = data_place.__new__(data_place)
-        p._mapper_callback = callback_obj
-        cdef uintptr_t ptr_val = c_ptr
+        p._mapper_callback = state
+        cdef uintptr_t ptr_val = state.c_ptr
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
             raise RuntimeError("failed to create composite data_place")
@@ -1638,7 +1704,11 @@ cdef class data_place:
         MemoryError
             If the underlying place cannot allocate (out of memory, or
             the place type does not support allocation).
+        ValueError
+            If ``nbytes`` is negative.
         """
+        if nbytes < 0:
+            raise ValueError(f"nbytes must be non-negative, got {nbytes}")
         cdef uintptr_t s_val = _get_stream_pointer(stream)
         cdef cudaStream_t s = <cudaStream_t>s_val
         cdef void* ptr = stf_data_place_allocate(self._h, <ptrdiff_t>nbytes, s)
@@ -1668,6 +1738,50 @@ cdef class data_place:
         return bool(stf_data_place_allocation_is_stream_ordered(self._h))
 
 
+def _collect_mapper_states_from(object obj, list out, set seen):
+    """Gather composite-place mapper states reachable from *obj*.
+
+    Composite data places (``data_place.composite``) own a
+    ``_MapperCallbackState``; a task that maps data through such a place must
+    re-check it after a synchronous submit so a mapper failure surfaces as a
+    Python exception rather than silently misplacing data. Owner chains can be
+    cyclic (a grid retains its affine composite place, which retains the grid),
+    so *seen* guards the recursion by object identity.
+    """
+    cdef data_place dp
+    cdef exec_place ep
+    cdef exec_place_grid g
+    if obj is None:
+        return
+    oid = id(obj)
+    if oid in seen:
+        return
+    seen.add(oid)
+    if isinstance(obj, data_place):
+        dp = <data_place>obj
+        if dp._mapper_callback is not None and dp._mapper_callback not in out:
+            out.append(dp._mapper_callback)
+        for owner in dp._owners:
+            _collect_mapper_states_from(owner, out, seen)
+    elif isinstance(obj, exec_place_grid):
+        g = <exec_place_grid>obj
+        if g._mapper_keep_alive is not None:
+            _collect_mapper_states_from(g._mapper_keep_alive, out, seen)
+        for owner in (<exec_place>g)._owners:
+            _collect_mapper_states_from(owner, out, seen)
+    elif isinstance(obj, exec_place):
+        ep = <exec_place>obj
+        for owner in ep._owners:
+            _collect_mapper_states_from(owner, out, seen)
+
+
+cdef _raise_first_mapper_error(list states):
+    """Re-raise the first captured mapper failure among *states*, if any."""
+    for st in states:
+        if st.error is not None:
+            st.raise_if_error()
+
+
 cdef class task:
     cdef stf_task_handle _t
     cdef stf_ctx_handle _ctx
@@ -1679,6 +1793,9 @@ cdef class task:
     # task so their C++ handles (and any external CUDA resources they own)
     # outlive the task.
     cdef list _owners
+    # Composite-place mapper states referenced by this task's exec place or
+    # deps; checked after start() so a mapper failure surfaces as a Python error.
+    cdef list _mapper_states
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
 
@@ -1689,6 +1806,7 @@ cdef class task:
         self._ctx = ctx._ctx
         self._lds_args = []
         self._owners = []
+        self._mapper_states = []
         self._alive = ctx._alive
 
     def __dealloc__(self):
@@ -1706,6 +1824,18 @@ cdef class task:
         stf_task_enable_capture(self._t)
 
         stf_task_start(self._t)
+        # If a composite partition mapper failed during placement, the ctypes
+        # callback could not raise; surface it now and end the started task so
+        # we do not execute with mis-placed data.
+        if self._mapper_states:
+            try:
+                _raise_first_mapper_error(self._mapper_states)
+            except BaseException:
+                try:
+                    stf_task_end(self._t)
+                except Exception:
+                    pass
+                raise
 
     def end(self):
         stf_task_end(self._t)
@@ -1739,6 +1869,7 @@ cdef class task:
             stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h)
             # Retain the override data place for the task's lifetime.
             self._owners.append(dp)
+            _collect_mapper_states_from(dp, self._mapper_states, set())
 
         self._lds_args.append(ldata)
 
@@ -1753,6 +1884,7 @@ cdef class task:
         stf_task_set_exec_place(self._t, ep._h)
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
+        _collect_mapper_states_from(ep, self._mapper_states, set())
 
     def stream_ptr(self):
         """Return a :class:`CudaStream` for this task's CUDA stream.
@@ -1848,22 +1980,34 @@ cdef class task:
         self.end()
         return False
 
+cdef long long _positive_dim(object value):
+    """Coerce *value* to a positive C dimension, rejecting 0/negatives.
+
+    ``dim3`` fields are unsigned, so a 0 or negative dimension would otherwise
+    wrap to a bogus launch config instead of failing with a clear Python error.
+    """
+    cdef long long dim = int(value)
+    if dim <= 0:
+        raise ValueError(f"grid/block dimensions must be positive, got {value!r}")
+    return dim
+
+
 cdef dim3 _to_dim3(object val):
     """Convert an int or 1-3 element tuple to a dim3 struct."""
     cdef dim3 d
     cdef tuple t
     cdef int n
     if isinstance(val, int):
-        d.x = val; d.y = 1; d.z = 1
+        d.x = _positive_dim(val); d.y = 1; d.z = 1
         return d
     t = tuple(val)
     n = len(t)
     if n == 1:
-        d.x = t[0]; d.y = 1; d.z = 1
+        d.x = _positive_dim(t[0]); d.y = 1; d.z = 1
     elif n == 2:
-        d.x = t[0]; d.y = t[1]; d.z = 1
+        d.x = _positive_dim(t[0]); d.y = _positive_dim(t[1]); d.z = 1
     elif n == 3:
-        d.x = t[0]; d.y = t[1]; d.z = t[2]
+        d.x = _positive_dim(t[0]); d.y = _positive_dim(t[1]); d.z = _positive_dim(t[2])
     else:
         raise ValueError("grid/block must have 1-3 dimensions")
     return d
@@ -1882,6 +2026,8 @@ cdef class cuda_kernel:
     cdef list _lds_args
     cdef list _arg_holders  # keep ParamHolder(s) alive until end()
     cdef list _owners       # retain exec places referenced by the kernel
+    # Composite-place mapper states referenced by this kernel's exec place.
+    cdef list _mapper_states
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
 
@@ -1893,6 +2039,7 @@ cdef class cuda_kernel:
         self._lds_args = []
         self._arg_holders = []
         self._owners = []
+        self._mapper_states = []
         self._alive = ctx._alive
 
     def __dealloc__(self):
@@ -1907,6 +2054,15 @@ cdef class cuda_kernel:
 
     def start(self):
         stf_cuda_kernel_start(self._k)
+        if self._mapper_states:
+            try:
+                _raise_first_mapper_error(self._mapper_states)
+            except BaseException:
+                try:
+                    stf_cuda_kernel_end(self._k)
+                except Exception:
+                    pass
+                raise
 
     def end(self):
         stf_cuda_kernel_end(self._k)
@@ -1939,6 +2095,7 @@ cdef class cuda_kernel:
         stf_cuda_kernel_set_exec_place(self._k, ep._h)
         # Retain the exec place (and its owner chain) for the kernel's lifetime.
         self._owners.append(ep)
+        _collect_mapper_states_from(ep, self._mapper_states, set())
 
     def get_arg(self, int index) -> int:
         if self._lds_args[index]._is_token:
@@ -2855,6 +3012,8 @@ cdef class stackable_task:
     cdef list _lds_args
     # Retain exec places and per-dep data-place overrides referenced by the task.
     cdef list _owners
+    # Composite-place mapper states referenced by this task's exec place or deps.
+    cdef list _mapper_states
     # Shared "alive" sentinel from the parent stackable_context. See
     # context._alive for the rationale.
     cdef _AliveFlag _alive
@@ -2866,6 +3025,7 @@ cdef class stackable_task:
         self._ctx = ctx._ctx
         self._lds_args = []
         self._owners = []
+        self._mapper_states = []
         self._alive = ctx._alive
 
     def __dealloc__(self):
@@ -2881,6 +3041,15 @@ cdef class stackable_task:
     def start(self):
         stf_task_enable_capture(self._t)
         stf_task_start(self._t)
+        if self._mapper_states:
+            try:
+                _raise_first_mapper_error(self._mapper_states)
+            except BaseException:
+                try:
+                    stf_task_end(self._t)
+                except Exception:
+                    pass
+                raise
 
     def end(self):
         stf_task_end(self._t)
@@ -2912,6 +3081,7 @@ cdef class stackable_task:
                 self._ctx, self._t, ldata._ld, mode_ce, dp._h)
             # Retain the override data place for the task's lifetime.
             self._owners.append(dp)
+            _collect_mapper_states_from(dp, self._mapper_states, set())
 
         self._lds_args.append(ldata)
 
@@ -2925,6 +3095,7 @@ cdef class stackable_task:
         stf_task_set_exec_place(self._t, ep._h)
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
+        _collect_mapper_states_from(ep, self._mapper_states, set())
 
     def stream_ptr(self):
         cdef CUstream s = stf_task_get_custream(self._t)
@@ -3340,6 +3511,7 @@ class _WhileLoop:
     def _set_scalar_condition(self, ld_obj, str op_str, double threshold):
         cdef int op
         cdef int dtype_code
+        cdef stackable_logical_data sld
         if op_str == ">":
             op = <int>STF_CMP_GT
         elif op_str == "<":
@@ -3351,7 +3523,18 @@ class _WhileLoop:
         else:
             raise ValueError(f"Unsupported comparison operator: {op_str}")
 
-        dt = ld_obj.dtype
+        # Validate the type and owning context before the C-level cast: any
+        # object exposing a ``dtype`` would otherwise pass the checks below and
+        # then be reinterpreted as an STF handle through the unchecked cast.
+        if not isinstance(ld_obj, stackable_logical_data):
+            raise TypeError(
+                "continue_while expects a stackable logical_data from this context")
+        sld = <stackable_logical_data>ld_obj
+        if sld._ctx != (<stackable_context>self._ctx)._ctx:
+            raise ValueError(
+                "continue_while logical_data belongs to a different stackable context")
+
+        dt = sld._dtype
         if dt == np.float32:
             dtype_code = <int>STF_DTYPE_FLOAT32
         elif dt == np.float64:
@@ -3366,7 +3549,7 @@ class _WhileLoop:
         _while_cond_scalar_impl(
             (<stackable_context>self._ctx)._ctx,
             self._scope,
-            (<stackable_logical_data>ld_obj)._ld,
+            sld._ld,
             op,
             threshold,
             dtype_code)
@@ -3575,7 +3758,7 @@ cdef class stackable_context:
         out._ctx = self._ctx
         out._alive = self._alive
         out._dtype = np.dtype(dtype)
-        out._shape = tuple(shape) if not isinstance(shape, tuple) else shape
+        out._shape = _normalize_alloc_shape(shape)
         out._ndim = len(out._shape)
         cdef size_t total_items = 1
         for dim in out._shape:

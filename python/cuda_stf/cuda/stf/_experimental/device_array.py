@@ -235,17 +235,20 @@ class DeviceArray:
     def copy_to_device(self, host_array: np.ndarray) -> None:
         """Copy *host_array* into this device buffer (synchronous H2D).
 
-        If *host_array* is smaller than this buffer, only the leading bytes are
-        overwritten. This supports copying into sliced ``DeviceArray`` views.
+        The source must match this buffer's byte size exactly -- including for
+        empty buffers and sliced views. A size mismatch is a programming error
+        (it would otherwise silently leave part of the buffer untouched) and
+        raises instead of performing a partial copy.
         """
         host_array = np.ascontiguousarray(host_array, dtype=self._dtype)
         nbytes = host_array.nbytes
+        if nbytes != self._nbytes:
+            raise ValueError(
+                f"source ({nbytes} bytes) does not match destination buffer "
+                f"({self._nbytes} bytes); sizes must match exactly"
+            )
         if nbytes == 0:
             return
-        if nbytes > self._nbytes:
-            raise ValueError(
-                f"source ({nbytes} bytes) exceeds buffer ({self._nbytes} bytes)"
-            )
         _memcpy_sync_on_stream(
             self._ptr, host_array.ctypes.data, nbytes, 1, self._stream_int
         )

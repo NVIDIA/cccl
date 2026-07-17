@@ -195,10 +195,12 @@ _f_compiled = torch.compile(_f_theta, mode="default", fullgraph=True)
 _rk4_body_compiled = torch.compile(_rk4_body, mode="default", fullgraph=True)
 
 
-# Per-shape warmup cache. torch.compile keys on input shapes; we only have
-# one shape in this test, but the cache keeps the warmup idempotent across
-# repeated pytest invocations.
-_warmed_shapes: set[tuple[int, int, int, str]] = set()
+# Per-shape warmup cache. torch.compile keys on input shapes *and* on the
+# ``h_step`` scalar (Dynamo specializes on it), so the cache key must include
+# the step size: two configs with the same shapes but a different h_step
+# (e.g. a different n_steps) need their own warmup, otherwise the body would
+# recompile at runtime inside the graph capture and hit Dynamo's RNG probe.
+_warmed_shapes: set[tuple[int, int, int, str, float]] = set()
 
 
 def _warmup_compiled_bodies(cfg: NodeConfig):
@@ -211,7 +213,7 @@ def _warmup_compiled_bodies(cfg: NodeConfig):
     right shapes populates the compile cache so all STF replays see a
     ready-made artifact.
     """
-    key = (cfg.batch, cfg.state_dim, cfg.hidden_dim, cfg.dtype)
+    key = (cfg.batch, cfg.state_dim, cfg.hidden_dim, cfg.dtype, cfg.h_step)
     if key in _warmed_shapes:
         return
 
@@ -281,6 +283,16 @@ def _build_stf_persistent_forward(cfg: NodeConfig, weights: MLPWeights):
     y_host = build_y0(cfg, seed=0)
     l_y = ctx.logical_data(y_host, name="y")
 
+    # Device-side copy of the initial condition. ``forward()`` is a
+    # persistent closure that may be called many times (the benchmark replays
+    # it warmup+iters times); without resetting, each call would keep
+    # integrating from the previous end state instead of restarting from y0,
+    # drifting the trajectory (and eventually diverging). We reset l_y from
+    # this constant at the top of every forward.
+    y0_cuda = torch.as_tensor(
+        build_y0(cfg, seed=0), device="cuda", dtype=cfg.torch_dtype
+    ).clone()
+
     # Weights: host-backed logical_data is fine at this size
     # (a few hundred KB total). Staged once, stays on device.
     l_W1 = ctx.logical_data(weights.W1, name="W1")
@@ -310,6 +322,10 @@ def _build_stf_persistent_forward(cfg: NodeConfig, weights: MLPWeights):
         drops from ~200 us (Python dispatch + eager kernel launch) to a
         few us of graph-replay submission cost.
         """
+        # Restart from the initial condition so repeated forwards are
+        # independent integrations rather than a continuation of the last run.
+        with pytorch_task(ctx, l_y.write()) as (tY,):
+            tY.copy_(y0_cuda)
         with ctx.graph_scope():
             with ctx.repeat(n):
                 with pytorch_task(

@@ -17,6 +17,8 @@ Requires cuda-core >= 1.0 (green-context support) and CUDA >= 12.4.
 
 from __future__ import annotations
 
+import sys
+
 from ._stf_bindings import exec_place
 
 
@@ -77,10 +79,13 @@ def green_places(
 
     # Save the caller's current context: Device.set_current() and
     # create_context() below both mutate the current context, and we must not
-    # leak that side effect back to the caller.
+    # leak that side effect back to the caller. A NULL prev_ctx (no current
+    # context) is a valid state that we faithfully restore.
     err, prev_ctx = driver.cuCtxGetCurrent()
     if int(err) != 0:
-        prev_ctx = None
+        raise RuntimeError(
+            f"green_places(): cuCtxGetCurrent failed with error code {int(err)}"
+        )
 
     try:
         dev = Device(device_id)
@@ -120,5 +125,12 @@ def green_places(
 
         return places
     finally:
-        if prev_ctx is not None:
-            driver.cuCtxSetCurrent(prev_ctx)
+        # Restore the caller's context unconditionally. If restoration fails,
+        # surface it -- unless a body exception is already propagating, in
+        # which case we must not mask the more informative original error.
+        (restore_err,) = driver.cuCtxSetCurrent(prev_ctx)
+        if int(restore_err) != 0 and sys.exc_info()[0] is None:
+            raise RuntimeError(
+                "green_places(): failed to restore the caller's CUDA context "
+                f"(cuCtxSetCurrent error code {int(restore_err)})"
+            )

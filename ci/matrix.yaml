@@ -568,7 +568,7 @@ jobs:
 
   # Python:
   build_py_wheel:   { name: "Build cuda.cccl",             gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
-  build_py_stf_wheel: { name: "Build cuda.stf",            gpu: false, invoke: { prefix: 'build_cuda_stf'} }
+  build_py_stf_wheel: { name: "Build cuda.stf",            gpu: false, invoke: { prefix: 'build_cuda_stf_combined'} }
   test_py_headers:  { name: "Test cuda.cccl.headers",      gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_headers'} }
   test_py_coop:     { name: "Test cuda.coop._experimental",  gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_coop'} }
   test_py_par:      { name: "Test cuda.compute",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute'} }

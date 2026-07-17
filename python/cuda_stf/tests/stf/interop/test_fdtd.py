@@ -85,6 +85,10 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
+# Each Yee curl term is a directional derivative and must be divided by the
+# spacing of *its own* axis: mixing a single spacing per component only happens
+# to be correct on a cubic grid (dx == dy == dz) and silently biases anisotropic
+# (dx != dy != dz) grids. Axis 0/1/2 correspond to x/y/z (spacing dx/dy/dz).
 @torch.compile(fullgraph=True)
 def _update_ex(
     ex: torch.Tensor,
@@ -92,11 +96,13 @@ def _update_ex(
     hz: torch.Tensor,
     eps: torch.Tensor,
     dt: float,
-    dx: float,
+    dy: float,
+    dz: float,
 ) -> None:
-    ex[1:-1, 1:-1, 1:-1] += (dt / (eps[1:-1, 1:-1, 1:-1] * dx)) * (
-        (hz[1:-1, 1:-1, 1:-1] - hz[1:-1, 0:-2, 1:-1])
-        - (hy[1:-1, 1:-1, 1:-1] - hy[1:-1, 1:-1, 0:-2])
+    # dEx/dt = (1/eps)(dHz/dy - dHy/dz)
+    ex[1:-1, 1:-1, 1:-1] += (dt / eps[1:-1, 1:-1, 1:-1]) * (
+        (hz[1:-1, 1:-1, 1:-1] - hz[1:-1, 0:-2, 1:-1]) / dy
+        - (hy[1:-1, 1:-1, 1:-1] - hy[1:-1, 1:-1, 0:-2]) / dz
     )
 
 
@@ -107,11 +113,13 @@ def _update_ey(
     hz: torch.Tensor,
     eps: torch.Tensor,
     dt: float,
-    dy: float,
+    dz: float,
+    dx: float,
 ) -> None:
-    ey[1:-1, 1:-1, 1:-1] += (dt / (eps[1:-1, 1:-1, 1:-1] * dy)) * (
-        (hx[1:-1, 1:-1, 1:-1] - hx[1:-1, 1:-1, 0:-2])
-        - (hz[1:-1, 1:-1, 1:-1] - hz[0:-2, 1:-1, 1:-1])
+    # dEy/dt = (1/eps)(dHx/dz - dHz/dx)
+    ey[1:-1, 1:-1, 1:-1] += (dt / eps[1:-1, 1:-1, 1:-1]) * (
+        (hx[1:-1, 1:-1, 1:-1] - hx[1:-1, 1:-1, 0:-2]) / dz
+        - (hz[1:-1, 1:-1, 1:-1] - hz[0:-2, 1:-1, 1:-1]) / dx
     )
 
 
@@ -122,11 +130,13 @@ def _update_ez(
     hy: torch.Tensor,
     eps: torch.Tensor,
     dt: float,
-    dz: float,
+    dx: float,
+    dy: float,
 ) -> None:
-    ez[1:-1, 1:-1, 1:-1] += (dt / (eps[1:-1, 1:-1, 1:-1] * dz)) * (
-        (hy[1:-1, 1:-1, 1:-1] - hy[0:-2, 1:-1, 1:-1])
-        - (hx[1:-1, 1:-1, 1:-1] - hx[1:-1, 0:-2, 1:-1])
+    # dEz/dt = (1/eps)(dHy/dx - dHx/dy)
+    ez[1:-1, 1:-1, 1:-1] += (dt / eps[1:-1, 1:-1, 1:-1]) * (
+        (hy[1:-1, 1:-1, 1:-1] - hy[0:-2, 1:-1, 1:-1]) / dx
+        - (hx[1:-1, 1:-1, 1:-1] - hx[1:-1, 0:-2, 1:-1]) / dy
     )
 
 
@@ -138,10 +148,12 @@ def _update_hx(
     mu: torch.Tensor,
     dt: float,
     dy: float,
+    dz: float,
 ) -> None:
-    hx[0:-1, 0:-1, 0:-1] -= (dt / (mu[0:-1, 0:-1, 0:-1] * dy)) * (
-        (ez[0:-1, 1:, 0:-1] - ez[0:-1, 0:-1, 0:-1])
-        - (ey[0:-1, 0:-1, 1:] - ey[0:-1, 0:-1, 0:-1])
+    # dHx/dt = -(1/mu)(dEz/dy - dEy/dz)
+    hx[0:-1, 0:-1, 0:-1] -= (dt / mu[0:-1, 0:-1, 0:-1]) * (
+        (ez[0:-1, 1:, 0:-1] - ez[0:-1, 0:-1, 0:-1]) / dy
+        - (ey[0:-1, 0:-1, 1:] - ey[0:-1, 0:-1, 0:-1]) / dz
     )
 
 
@@ -153,10 +165,12 @@ def _update_hy(
     mu: torch.Tensor,
     dt: float,
     dz: float,
+    dx: float,
 ) -> None:
-    hy[0:-1, 0:-1, 0:-1] -= (dt / (mu[0:-1, 0:-1, 0:-1] * dz)) * (
-        (ex[0:-1, 0:-1, 1:] - ex[0:-1, 0:-1, 0:-1])
-        - (ez[1:, 0:-1, 0:-1] - ez[0:-1, 0:-1, 0:-1])
+    # dHy/dt = -(1/mu)(dEx/dz - dEz/dx)
+    hy[0:-1, 0:-1, 0:-1] -= (dt / mu[0:-1, 0:-1, 0:-1]) * (
+        (ex[0:-1, 0:-1, 1:] - ex[0:-1, 0:-1, 0:-1]) / dz
+        - (ez[1:, 0:-1, 0:-1] - ez[0:-1, 0:-1, 0:-1]) / dx
     )
 
 
@@ -168,10 +182,12 @@ def _update_hz(
     mu: torch.Tensor,
     dt: float,
     dx: float,
+    dy: float,
 ) -> None:
-    hz[0:-1, 0:-1, 0:-1] -= (dt / (mu[0:-1, 0:-1, 0:-1] * dx)) * (
-        (ey[1:, 0:-1, 0:-1] - ey[0:-1, 0:-1, 0:-1])
-        - (ex[0:-1, 1:, 0:-1] - ex[0:-1, 0:-1, 0:-1])
+    # dHz/dt = -(1/mu)(dEy/dx - dEx/dy)
+    hz[0:-1, 0:-1, 0:-1] -= (dt / mu[0:-1, 0:-1, 0:-1]) * (
+        (ey[1:, 0:-1, 0:-1] - ey[0:-1, 0:-1, 0:-1]) / dx
+        - (ex[0:-1, 1:, 0:-1] - ex[0:-1, 0:-1, 0:-1]) / dy
     )
 
 
@@ -277,7 +293,7 @@ def test_fdtd_3d_pytorch_simplified_compiled(
             hz,
             epsilon,
         ):
-            _update_ex(ex, hy, hz, epsilon, dt, dx)
+            _update_ex(ex, hy, hz, epsilon, dt, dy, dz)
 
         with pytorch_task(ctx, ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as (
             ey,
@@ -285,7 +301,7 @@ def test_fdtd_3d_pytorch_simplified_compiled(
             hz,
             epsilon,
         ):
-            _update_ey(ey, hx, hz, epsilon, dt, dy)
+            _update_ey(ey, hx, hz, epsilon, dt, dz, dx)
 
         with pytorch_task(ctx, lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as (
             ez,
@@ -293,7 +309,7 @@ def test_fdtd_3d_pytorch_simplified_compiled(
             hy,
             epsilon,
         ):
-            _update_ez(ez, hx, hy, epsilon, dt, dz)
+            _update_ez(ez, hx, hy, epsilon, dt, dx, dy)
 
         # Time-dependent point source: use the device counter so the
         # sinusoidal amplitude is correct across captured-graph replays.
@@ -310,7 +326,7 @@ def test_fdtd_3d_pytorch_simplified_compiled(
             ez,
             mu,
         ):
-            _update_hx(hx, ey, ez, mu, dt, dy)
+            _update_hx(hx, ey, ez, mu, dt, dy, dz)
 
         with pytorch_task(ctx, lhy.rw(), lex.read(), lez.read(), lmu.read()) as (
             hy,
@@ -318,7 +334,7 @@ def test_fdtd_3d_pytorch_simplified_compiled(
             ez,
             mu,
         ):
-            _update_hy(hy, ex, ez, mu, dt, dz)
+            _update_hy(hy, ex, ez, mu, dt, dz, dx)
 
         with pytorch_task(ctx, lhz.rw(), lex.read(), ley.read(), lmu.read()) as (
             hz,
@@ -326,7 +342,7 @@ def test_fdtd_3d_pytorch_simplified_compiled(
             ey,
             mu,
         ):
-            _update_hz(hz, ex, ey, mu, dt, dx)
+            _update_hz(hz, ex, ey, mu, dt, dx, dy)
 
     total = int(timesteps)
 
@@ -388,3 +404,34 @@ def test_fdtd_3d_pytorch_simplified_compiled(
     )
 
     ctx.finalize()
+
+
+def test_fdtd_update_ex_anisotropic_spacing():
+    """Regression: E/H updates divide each curl term by its own axis spacing.
+
+    On a cubic grid a single spacing per component happens to be correct, so
+    this uses a nonuniform grid (dy != dz) and a field whose y- and z-gradients
+    differ, then checks ``_update_ex`` against the analytic finite difference.
+    A single-spacing implementation would give ``(dt/eps)*(5 - 7)/dy`` instead.
+    """
+    shape = (3, 3, 3)
+    ex = torch.zeros(shape, dtype=torch.float64)
+    eps = torch.full(shape, 2.0, dtype=torch.float64)
+
+    # hz varies only along y (axis 1); hy only along z (axis 2), with distinct
+    # constant discrete gradients so the two axes are distinguishable.
+    yy = (
+        torch.arange(3, dtype=torch.float64).reshape(1, 3, 1).expand(shape).contiguous()
+    )
+    zz = (
+        torch.arange(3, dtype=torch.float64).reshape(1, 1, 3).expand(shape).contiguous()
+    )
+    hz = 5.0 * yy
+    hy = 7.0 * zz
+    dt, dy, dz = 0.1, 0.02, 0.05
+
+    _update_ex(ex, hy, hz, eps, dt, dy, dz)
+
+    # Interior [1,1,1]: dHz/dy discrete = 5, dHy/dz discrete = 7.
+    expected = (dt / 2.0) * (5.0 / dy - 7.0 / dz)
+    assert abs(ex[1, 1, 1].item() - expected) < 1e-12

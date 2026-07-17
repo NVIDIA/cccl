@@ -89,13 +89,10 @@ def run_example_module(module_name, display_name):
             raise
 
         # Check if module has a main function - if so, run it
-        if hasattr(module, "__main__") or hasattr(module, "main"):
-            # Call main if it exists
-            if hasattr(module, "main"):
-                module.main()
-            else:
-                # Try to run the module as if it were called directly
-                exec(f"import {module_name}; {module_name}.__main__()")
+        if hasattr(module, "main") or hasattr(module, "__main__"):
+            # Call main if it exists, otherwise the module's __main__ entry.
+            entry = getattr(module, "main", None) or getattr(module, "__main__")
+            entry()
         else:
             # Find and run all example functions (those ending with _example)
             example_functions = []

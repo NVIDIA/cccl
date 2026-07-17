@@ -56,7 +56,9 @@ def init_logical_data(ctx, ld, value, data_place=None, exec_place=None):
         ptr = cai["data"][0]
         shape = tuple(cai["shape"])
         dtype = np.dtype(cai["typestr"])
-        count = int(np.prod(shape)) if shape else 0
+        # An empty shape () is a 0-d scalar, i.e. exactly one element (np.prod
+        # of an empty product is 1); it must not be treated as zero elements.
+        count = int(np.prod(shape))
         size = count * dtype.itemsize
 
         if count == 0 or size == 0:

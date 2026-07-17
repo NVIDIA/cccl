@@ -319,11 +319,8 @@ def newton_solver(
         lrhs = ctx.logical_data_empty((N,), np.float64, name="rhs")
         lnewton_cond = ctx.logical_data_empty((1,), np.float64, name="newton_cond")
 
-        # Compute residual F(U)
+        # Compute residual F(U) for the linear solve's right-hand side.
         compute_residual(ctx, lU, lU_prev, lresidual, N, h, dt, nu)
-
-        # newton_norm2 = residual' * residual
-        stf_dot(ctx, lresidual, lresidual, lnewton_norm2)
 
         # Assemble Jacobian J = dF/dU
         assemble_jacobian(ctx, lU, lA_val, N, h, dt, nu)
@@ -338,6 +335,13 @@ def newton_solver(
         # U += delta
         with pytorch_task(ctx, lU.rw(), ldelta.read()) as (tU, tDelta):
             tU += tDelta
+
+        # Evaluate convergence on the *updated* state: recompute F(U) after the
+        # step and use its norm for the stopping test. Testing the pre-update
+        # residual would lag by one Newton step and burn an extra (expensive)
+        # BiCGSTAB solve after the solution is already converged.
+        compute_residual(ctx, lU, lU_prev, lresidual, N, h, dt, nu)
+        stf_dot(ctx, lresidual, lresidual, lnewton_norm2)
 
         # Compound Newton condition
         with pytorch_task(

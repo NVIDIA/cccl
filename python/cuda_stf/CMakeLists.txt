@@ -4,10 +4,20 @@
 
 cmake_minimum_required(VERSION 3.30)
 
-# CUDASTF ships Linux-only. Fail early on other platforms rather than producing
-# an empty wheel.
-if (WIN32)
-  message(FATAL_ERROR "cuda-stf is only supported on Linux.")
+# CUDASTF ships Linux-only. Reject every non-Linux target *before* project()
+# enables the CUDA language (which would otherwise fail later with a confusing
+# toolchain error) rather than producing an empty or broken wheel. A toolchain
+# file may set CMAKE_SYSTEM_NAME (cross-compile); otherwise use the host.
+if (DEFINED CMAKE_SYSTEM_NAME)
+  set(_cuda_stf_target_os "${CMAKE_SYSTEM_NAME}")
+else()
+  set(_cuda_stf_target_os "${CMAKE_HOST_SYSTEM_NAME}")
+endif()
+if (NOT _cuda_stf_target_os STREQUAL "Linux")
+  message(
+    FATAL_ERROR
+    "cuda-stf is only supported on Linux (target system: ${_cuda_stf_target_os})."
+  )
 endif()
 
 # Must be set before project() initializes the CUDA language; otherwise CMake

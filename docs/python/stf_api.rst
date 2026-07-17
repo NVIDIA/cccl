@@ -20,7 +20,7 @@ Contexts
 
 .. py:class:: context(use_graph=False, *, stream=None, handle=None)
 
-   Owns a Stream Task Flow graph. All logical data and tasks belong to one context.
+   Owns a Sequential Task Flow graph. All logical data and tasks belong to one context.
    Pass ``use_graph=True`` for the CUDA-graph backend, ``stream=`` a caller-owned CUDA
    stream (any ``__cuda_stream__`` object or raw pointer) to emit work on top of it, and
    ``handle=`` an :py:class:`async_resources` to share stream pools / cached graphs

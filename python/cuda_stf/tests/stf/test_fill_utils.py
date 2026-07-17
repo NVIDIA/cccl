@@ -41,9 +41,54 @@ class _FakeContext:
         return _FakeTask(self.dtype)
 
 
+class _FakeScalarTask(_FakeTask):
+    """A task whose argument is a 0-d scalar (empty shape)."""
+
+    def get_arg_cai(self, index):
+        assert index == 0
+        return {
+            "data": (1234, False),
+            "shape": (),
+            "typestr": self.dtype.str,
+        }
+
+
+class _FakeScalarContext(_FakeContext):
+    def task(self, *args):
+        assert args == ("write-dep",)
+        return _FakeScalarTask(self.dtype)
+
+
 class _FakeLogicalData:
     def write(self):
         return "write-dep"
+
+
+def test_init_logical_data_fills_scalar_shape(monkeypatch):
+    """A 0-d scalar (shape ()) is one element and must still be filled."""
+    fill_calls = []
+
+    class FakeBuffer:
+        @classmethod
+        def from_handle(cls, ptr, size, owner=None):
+            # Empty shape => exactly one element, so size == itemsize (not 0).
+            assert size == np.dtype(np.float32).itemsize
+            return cls()
+
+        def fill(self, value, *, stream):
+            fill_calls.append((value, stream))
+
+    class FakeStream:
+        @classmethod
+        def from_handle(cls, handle):
+            return "stream"
+
+    monkeypatch.setattr(fill_utils, "Buffer", FakeBuffer)
+    monkeypatch.setattr(fill_utils, "Stream", FakeStream)
+
+    fill_utils.init_logical_data(_FakeScalarContext(np.float32), _FakeLogicalData(), 7)
+
+    assert len(fill_calls) == 1
 
 
 def test_init_logical_data_uses_cuda_core_for_8_byte_zero_fill(monkeypatch):
@@ -80,7 +125,9 @@ def test_init_logical_data_uses_cuda_core_for_8_byte_zero_fill(monkeypatch):
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.int64])
-def test_init_logical_data_uses_driver_memset_for_nonzero_8_byte_fill(monkeypatch, dtype):
+def test_init_logical_data_uses_driver_memset_for_nonzero_8_byte_fill(
+    monkeypatch, dtype
+):
     driver_calls = []
 
     class FakeBuffer:

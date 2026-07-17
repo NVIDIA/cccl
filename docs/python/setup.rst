@@ -63,7 +63,7 @@ Linux-only package. Install it explicitly when you need it:
 
 .. code-block:: bash
 
-   pip install cuda-stf[cu13]  # or cuda-stf[cu12]
+   pip install 'cuda-stf[cu13]'  # or 'cuda-stf[cu12]'
 
 The ``cu12`` / ``cu13`` extras pull in a pip-installed CUDA toolkit plus Numba CUDA.
 As with ``cuda-cccl``, ``cuda-stf`` also offers:
@@ -78,8 +78,8 @@ As with ``cuda-cccl``, ``cuda-stf`` also offers:
 
 .. code-block:: bash
 
-   pip install cuda-stf[sysctk13]        # system CUDA toolkit, with Numba
-   pip install cuda-stf[minimal-cu13]    # pip CUDA toolkit, no Numba
+   pip install 'cuda-stf[sysctk13]'        # system CUDA toolkit, with Numba
+   pip install 'cuda-stf[minimal-cu13]'    # pip CUDA toolkit, no Numba
 
 Install ``cuda-cccl`` as well when using ``cuda.compute`` with STF or compiling
 external C++ code that needs the libcudacxx, CUB, or Thrust headers.
@@ -98,7 +98,7 @@ Install ``cuda-stf`` from source (Linux only)::
 
    git clone https://github.com/NVIDIA/cccl.git
    cd cccl/python/cuda_stf
-   pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
+   pip install -e '.[test-cu13]'  # or '.[test-cu12]', '.[test-sysctk13]', '.[test-sysctk12]'
 
 The ``test-*`` extras add ``cuda-cccl``, ``pytest``, ``pytest-xdist``, and CuPy so the
 STF test suite (``pytest tests/``) can run. Building from source compiles the native
