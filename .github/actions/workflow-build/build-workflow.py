@@ -736,8 +736,9 @@ def generate_dispatch_group_jobs(matrix_job):
                 annotate_job_for_build_cluster(
                     matrix_job,
                     job_type,
-                    # Only use the build cluster for 10% of standalone jobs
-                    random.randint(0, 9) == 0,
+                    # Use the build cluster for 10% of standalone jobs,
+                    # or all arm64 jobs
+                    random.randint(0, 9) == 0 or matrix_job["cpu"] == "arm64",
                 ),
                 job_type,
             )
