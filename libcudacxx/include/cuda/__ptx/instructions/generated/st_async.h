@@ -14,12 +14,10 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type& __value, ::cuda::std::uint64_t* __remote_bar)
 {
-  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   if constexpr (sizeof(_Type) == 4)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 [%0], %1, [%2];    // 1. "
@@ -38,10 +36,6 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type& __value, ::
           "r"(__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -56,12 +50,10 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type (&__value)[2], ::cuda::std::uint64_t* __remote_bar)
 {
-  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   if constexpr (sizeof(_Type) == 4)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b32 [%0], {%1, %2}, [%3]; // 2. "
@@ -82,10 +74,6 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type (&__value)[2
           "r"(__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -98,12 +86,10 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_async(_B32* __addr, const _B32 (&__value)[4], ::cuda::std::uint64_t* __remote_bar)
 {
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "
       :
       : "r"(__as_ptr_remote_dsmem(__addr)),
@@ -113,10 +99,6 @@ _CCCL_DEVICE static inline void st_async(_B32* __addr, const _B32 (&__value)[4],
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[3])),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 

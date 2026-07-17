@@ -4,7 +4,7 @@
 #define _CUDA_PTX_GENERATED_TCGEN05_SHIFT_H_
 
 /*
-// tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_103a, SM_110a
+// tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_103a, SM_107a, SM_110a
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
 __device__ static inline void tcgen05_shift_down(
@@ -12,15 +12,11 @@ __device__ static inline void tcgen05_shift_down(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_shift_down_is_only_supported_on_SM_100a_103a_110a_depending_on_the_variant__();
 template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void
 tcgen05_shift_down(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile("tcgen05.shift.cta_group::1.down [%0];" : : "r"(__taddr) : "memory");
@@ -29,11 +25,6 @@ tcgen05_shift_down(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std
   {
     asm volatile("tcgen05.shift.cta_group::2.down [%0];" : : "r"(__taddr) : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_shift_down_is_only_supported_on_SM_100a_103a_110a_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 

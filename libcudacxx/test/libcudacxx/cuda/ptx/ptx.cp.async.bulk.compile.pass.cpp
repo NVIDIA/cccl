@@ -19,6 +19,7 @@
 #include <cuda/std/utility>
 
 #include "generated/cp_async_bulk.h"
+#include "generated/cp_async_bulk_multicast.h"
 
 int main(int, char**)
 {

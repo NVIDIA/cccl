@@ -10,16 +10,10 @@ template <typename = void>
 __device__ static inline void barrier_cluster_arrive();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void barrier_cluster_arrive()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm volatile("barrier.cluster.arrive;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 780
 
@@ -30,16 +24,10 @@ template <typename = void>
 __device__ static inline void barrier_cluster_wait();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void barrier_cluster_wait()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm volatile("barrier.cluster.wait;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 780
 
@@ -52,17 +40,11 @@ __device__ static inline void barrier_cluster_arrive(
   cuda::ptx::sem_release_t);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void barrier_cluster_arrive(::cuda::ptx::sem_release_t)
 {
-// __sem == sem_release (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_release (due to parameter type constraint)
   asm volatile("barrier.cluster.arrive.release;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -75,17 +57,11 @@ __device__ static inline void barrier_cluster_arrive(
   cuda::ptx::sem_relaxed_t);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void barrier_cluster_arrive(::cuda::ptx::sem_relaxed_t)
 {
-// __sem == sem_relaxed (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_relaxed (due to parameter type constraint)
   asm volatile("barrier.cluster.arrive.relaxed;" : : :);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_barrier_cluster_arrive_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -98,17 +74,11 @@ __device__ static inline void barrier_cluster_wait(
   cuda::ptx::sem_acquire_t);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void barrier_cluster_wait(::cuda::ptx::sem_acquire_t)
 {
-// __sem == sem_acquire (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_acquire (due to parameter type constraint)
   asm volatile("barrier.cluster.wait.acquire;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 

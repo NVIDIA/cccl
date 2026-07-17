@@ -18,7 +18,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -28,117 +27,14 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[1],
   ::cuda::std::uint64_t* __smem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2}], [%3];"
       :
       : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
-
-/*
-// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
-PTX ISA 86, SM_90
-// .dst       = { .shared::cta }
-// .src       = { .global }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_shared_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[1],
-  uint64_t* smem_bar);
-*/
-#if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_shared_t,
-  ::cuda::ptx::space_global_t,
-  void* __dstMem,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[1],
-  ::cuda::std::uint64_t* __smem_bar)
-{
-// __space == space_shared (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2}], [%3];"
-      :
-      : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 860
-
-/*
-// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
-// .dst       = { .shared::cta }
-// .src       = { .global }
-// .cta_group = { .cta_group::1, .cta_group::2 }
-template <cuda::ptx::dot_cta_group Cta_Group>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_shared_t,
-  cuda::ptx::space_global_t,
-  cuda::ptx::cta_group_t<Cta_Group> cta_group,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[1],
-  uint64_t* smem_bar);
-*/
-#if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_shared_t,
-  ::cuda::ptx::space_global_t,
-  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
-  void* __dstMem,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[1],
-  ::cuda::std::uint64_t* __smem_bar)
-{
-  // __space == space_shared (due to parameter type constraint)
-  // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
-  if constexpr (__cta_group == cta_group_1)
-  {
-    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2}], "
-        "[%3];"
-        :
-        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
-        : "memory");
-  }
-  else if constexpr (__cta_group == cta_group_2)
-  {
-    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2}], "
-        "[%3];"
-        :
-        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
-        : "memory");
-  }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 860
 
 /*
 // cp.async.bulk.tensor.1d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
@@ -153,7 +49,6 @@ __device__ static inline void cp_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
@@ -162,17 +57,12 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[1],
   const void* __srcMem)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
   asm("cp.async.bulk.tensor.1d.global.shared::cta.tile.bulk_group [%0, {%1}], [%2];"
       :
       : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -191,7 +81,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -201,9 +90,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[2],
   ::cuda::std::uint64_t* __smem_bar)
 {
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3}], [%4];"
       :
       : "r"(__as_ptr_smem(__dstMem)),
@@ -212,12 +100,344 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
         "r"(__tensorCoords[1]),
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.2d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[2],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.2d.global.shared::cta.tile.bulk_group [%0, {%1, %2}], [%3];"
+      :
+      : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
+PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4}], [%5];"
+      :
+      : "r"(__as_ptr_smem(__dstMem)),
+        "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__as_ptr_smem(__smem_bar))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.3d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.3d.global.shared::cta.tile.bulk_group [%0, {%1, %2, %3}], [%4];"
+      :
+      : "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
+PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5}], "
+      "[%6];"
+      :
+      : "r"(__as_ptr_smem(__dstMem)),
+        "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__as_ptr_smem(__smem_bar))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.4d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5];"
+      :
+      : "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
+PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_cluster (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5, "
+      "%6}], [%7];"
+      :
+      : "r"(__as_ptr_smem(__dstMem)),
+        "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__tensorCoords[4]),
+        "r"(__as_ptr_smem(__smem_bar))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.5d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 800
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.5d.global.shared::cta.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6];"
+      :
+      : "l"(__tensorMap),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__tensorCoords[4]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
+PTX ISA 86, SM_90
+// .dst       = { .shared::cta }
+// .src       = { .global }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 860
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2}], [%3];"
+      :
+      : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 860
+
+/*
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
+[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+template <cuda::ptx::dot_cta_group Cta_Group>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 860
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  if constexpr (__cta_group == cta_group_1)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2}], "
+        "[%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2 [%0], [%1, {%2}], "
+        "[%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 860
 
 /*
 // cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
@@ -234,7 +454,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -244,9 +463,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[2],
   ::cuda::std::uint64_t* __smem_bar)
 {
-// __space == space_shared (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3}], [%4];"
       :
       : "r"(__as_ptr_smem(__dstMem)),
@@ -255,16 +473,12 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
         "r"(__tensorCoords[1]),
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -279,8 +493,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -293,10 +505,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, "
@@ -321,93 +530,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "r"(__as_ptr_smem(__smem_bar))
         : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
-
-/*
-// cp.async.bulk.tensor.2d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[2],
-  const void* srcMem);
-*/
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_global_t,
-  ::cuda::ptx::space_shared_t,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[2],
-  const void* __srcMem)
-{
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.2d.global.shared::cta.tile.bulk_group [%0, {%1, %2}], [%3];"
-      :
-      : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 800
-
-/*
-// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
-PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[3],
-  uint64_t* smem_bar);
-*/
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_cluster_t,
-  ::cuda::ptx::space_global_t,
-  void* __dstMem,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[3],
-  ::cuda::std::uint64_t* __smem_bar)
-{
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4}], [%5];"
-      :
-      : "r"(__as_ptr_smem(__dstMem)),
-        "l"(__tensorMap),
-        "r"(__tensorCoords[0]),
-        "r"(__tensorCoords[1]),
-        "r"(__tensorCoords[2]),
-        "r"(__as_ptr_smem(__smem_bar))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
@@ -424,7 +548,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -434,9 +557,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[3],
   ::cuda::std::uint64_t* __smem_bar)
 {
-// __space == space_shared (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4}], [%5];"
       :
       : "r"(__as_ptr_smem(__dstMem)),
@@ -446,16 +568,12 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
         "r"(__tensorCoords[2]),
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -470,8 +588,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -484,10 +600,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
@@ -514,99 +627,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "r"(__as_ptr_smem(__smem_bar))
         : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
-
-/*
-// cp.async.bulk.tensor.3d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[3],
-  const void* srcMem);
-*/
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_global_t,
-  ::cuda::ptx::space_shared_t,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[3],
-  const void* __srcMem)
-{
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.3d.global.shared::cta.tile.bulk_group [%0, {%1, %2, %3}], [%4];"
-      :
-      : "l"(__tensorMap),
-        "r"(__tensorCoords[0]),
-        "r"(__tensorCoords[1]),
-        "r"(__tensorCoords[2]),
-        "r"(__as_ptr_smem(__srcMem))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 800
-
-/*
-// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
-PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[4],
-  uint64_t* smem_bar);
-*/
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_cluster_t,
-  ::cuda::ptx::space_global_t,
-  void* __dstMem,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[4],
-  ::cuda::std::uint64_t* __smem_bar)
-{
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5}], "
-      "[%6];"
-      :
-      : "r"(__as_ptr_smem(__dstMem)),
-        "l"(__tensorMap),
-        "r"(__tensorCoords[0]),
-        "r"(__tensorCoords[1]),
-        "r"(__tensorCoords[2]),
-        "r"(__tensorCoords[3]),
-        "r"(__as_ptr_smem(__smem_bar))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
@@ -623,7 +645,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -633,9 +654,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[4],
   ::cuda::std::uint64_t* __smem_bar)
 {
-// __space == space_shared (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5}], [%6];"
       :
       : "r"(__as_ptr_smem(__dstMem)),
@@ -646,16 +666,12 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
         "r"(__tensorCoords[3]),
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -670,8 +686,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -684,10 +698,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
@@ -716,101 +727,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "r"(__as_ptr_smem(__smem_bar))
         : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
-
-/*
-// cp.async.bulk.tensor.4d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[4],
-  const void* srcMem);
-*/
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_global_t,
-  ::cuda::ptx::space_shared_t,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[4],
-  const void* __srcMem)
-{
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5];"
-      :
-      : "l"(__tensorMap),
-        "r"(__tensorCoords[0]),
-        "r"(__tensorCoords[1]),
-        "r"(__tensorCoords[2]),
-        "r"(__tensorCoords[3]),
-        "r"(__as_ptr_smem(__srcMem))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 800
-
-/*
-// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
-PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[5],
-  uint64_t* smem_bar);
-*/
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  ::cuda::ptx::space_cluster_t,
-  ::cuda::ptx::space_global_t,
-  void* __dstMem,
-  const void* __tensorMap,
-  const ::cuda::std::int32_t (&__tensorCoords)[5],
-  ::cuda::std::uint64_t* __smem_bar)
-{
-// __space == space_cluster (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5, "
-      "%6}], [%7];"
-      :
-      : "r"(__as_ptr_smem(__dstMem)),
-        "l"(__tensorMap),
-        "r"(__tensorCoords[0]),
-        "r"(__tensorCoords[1]),
-        "r"(__tensorCoords[2]),
-        "r"(__tensorCoords[3]),
-        "r"(__tensorCoords[4]),
-        "r"(__as_ptr_smem(__smem_bar))
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
-}
-#endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; //
@@ -827,7 +745,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -837,9 +754,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   const ::cuda::std::int32_t (&__tensorCoords)[5],
   ::cuda::std::uint64_t* __smem_bar)
 {
-// __space == space_shared (due to parameter type constraint)
-// __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes [%0], [%1, {%2, %3, %4, %5, %6}], "
       "[%7];"
       :
@@ -852,16 +768,12 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
         "r"(__tensorCoords[4]),
         "r"(__as_ptr_smem(__smem_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+[smem_bar]; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -876,8 +788,6 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
 template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
@@ -890,10 +800,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 {
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
@@ -924,42 +831,3612 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
           "r"(__as_ptr_smem(__smem_bar))
         : "memory");
   }
-
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// cp.async.bulk.tensor.5d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 80, SM_90
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism [dstMem], [tensorMap,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2}], [%3];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)), "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address
+[dstMem], [tensorMap, gAddrToOverride, tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.1d.dst.src.tile.bulk_group.override::global_address [tensorMap, gAddrToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
 // .dst       = { .global }
 // .src       = { .shared::cta }
 template <typename = void>
-__device__ static inline void cp_async_bulk_tensor(
+__device__ static inline void cp_async_bulk_tensor_override(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
   const void* tensorMap,
-  const int32_t (&tensorCoords)[5],
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[1],
   const void* srcMem);
 */
-#if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+#if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.1d.global.shared::cta.tile.bulk_group.override::global_address [%0, %1, {%2}], [%3];"
+      :
+      : "l"(__tensorMap), "l"(__gAddrToOverride), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+//
+cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address.override::global_dim
+[dstMem], [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template <typename B16,
+enable_if_t<sizeof(B16) == 2, bool> = true, cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism
+Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[1],
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          ::cuda::ptx::dot_cta_group _Cta_Group,
+          ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[1],
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  static_assert(sizeof(_B16) == 2, "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], "
+        "[%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], "
+        "[%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim [%0], [%1, %2, {%3}, {%4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.1d.dst.src.tile.bulk_group.override::global_address.override::global_dim [tensorMap,
+gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[1],
+  const int32_t (&tensorCoords)[1],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[1],
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  static_assert(sizeof(_B16) == 2, "");
+  asm("cp.async.bulk.tensor.1d.global.shared::cta.tile.bulk_group.override::global_address.override::global_dim [%0, "
+      "%1, {%2}, {%3}], [%4];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+        "r"(__tensorCoords[0]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism [dstMem], [tensorMap,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[2],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3}], [%4];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address
+[dstMem], [tensorMap, gAddrToOverride, tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[2],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.2d.dst.src.tile.bulk_group.override::global_address [tensorMap, gAddrToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[2],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.2d.global.shared::cta.tile.bulk_group.override::global_address [%0, %1, {%2, %3}], [%4];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+//
+cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address.override::global_dim_stride
+[dstMem], [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template <typename B16,
+enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true,
+cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[2],
+  const B32 (&tensorLowerStrideToOverride)[1],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[2],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_cta_group _Cta_Group,
+          ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[2],
+  const _B32 (&__tensorLowerStrideToOverride)[1],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, %6, {%7, %8}], "
+        "[%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, "
+        "{%5}, %6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, "
+        "{%5}, %6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, "
+        "%6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, "
+        "%6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, "
+        "%6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, %6, {%7, %8}], "
+        "[%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, "
+        "{%5}, %6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, "
+        "{%5}, %6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, "
+        "%6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, "
+        "%6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4}, {%5}, "
+        "%6, {%7, %8}], [%9];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.2d.dst.src.tile.bulk_group.override::global_address.override::global_dim_stride [tensorMap,
+gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> =
+true>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[2],
+  const B32 (&tensorLowerStrideToOverride)[1],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[2],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[2],
+  const _B32 (&__tensorLowerStrideToOverride)[1],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  asm("cp.async.bulk.tensor.2d.global.shared::cta.tile.bulk_group.override::global_address.override::global_dim_stride "
+      "[%0, %1, {%2, %3}, {%4}, %5, {%6, %7}], [%8];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism [dstMem], [tensorMap,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3, %4}], [%5];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address
+[dstMem], [tensorMap, gAddrToOverride, tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[3],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.3d.dst.src.tile.bulk_group.override::global_address [tensorMap, gAddrToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[3],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.3d.global.shared::cta.tile.bulk_group.override::global_address [%0, %1, {%2, %3, %4}], "
+      "[%5];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+//
+cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address.override::global_dim_stride
+[dstMem], [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template <typename B16,
+enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true,
+cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[3],
+  const B32 (&tensorLowerStrideToOverride)[2],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[3],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_cta_group _Cta_Group,
+          ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[3],
+  const _B32 (&__tensorLowerStrideToOverride)[2],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, {%6, %7}, %8, {%9, "
+        "%10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, "
+        "%5}, {%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, {%6, %7}, %8, {%9, "
+        "%10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, "
+        "%5}, {%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5}, "
+        "{%6, %7}, %8, {%9, %10, %11}], [%12];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.3d.dst.src.tile.bulk_group.override::global_address.override::global_dim_stride [tensorMap,
+gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> =
+true>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[3],
+  const B32 (&tensorLowerStrideToOverride)[2],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[3],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[3],
+  const _B32 (&__tensorLowerStrideToOverride)[2],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  asm("cp.async.bulk.tensor.3d.global.shared::cta.tile.bulk_group.override::global_address.override::global_dim_stride "
+      "[%0, %1, {%2, %3, %4}, {%5, %6}, %7, {%8, %9, %10}], [%11];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism [dstMem], [tensorMap,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3, %4, %5}], [%6];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address
+[dstMem], [tensorMap, gAddrToOverride, tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[4],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.4d.dst.src.tile.bulk_group.override::global_address [tensorMap, gAddrToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[4],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.override::global_address [%0, %1, {%2, %3, %4, %5}], "
+      "[%6];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+//
+cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address.override::global_dim_stride
+[dstMem], [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template <typename B16,
+enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true,
+cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[4],
+  const B32 (&tensorLowerStrideToOverride)[3],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[4],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_cta_group _Cta_Group,
+          ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[4],
+  const _B32 (&__tensorLowerStrideToOverride)[3],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, %6}, {%7, %8, %9}, "
+        "%10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, "
+        "%5, %6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, %6}, {%7, %8, %9}, "
+        "%10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, "
+        "%5, %6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6}, {%7, %8, %9}, %10, {%11, %12, %13, %14}], [%15];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.4d.dst.src.tile.bulk_group.override::global_address.override::global_dim_stride [tensorMap,
+gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> =
+true>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[4],
+  const B32 (&tensorLowerStrideToOverride)[3],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[4],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[4],
+  const _B32 (&__tensorLowerStrideToOverride)[3],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  asm("cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.override::global_address.override::global_dim_stride "
+      "[%0, %1, {%2, %3, %4, %5}, {%6, %7, %8}, %9, {%10, %11, %12, %13}], [%14];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism [dstMem], [tensorMap,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8 [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff [%0], [%1, {%2, %3, %4, %5, %6}], [%7];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address
+[dstMem], [tensorMap, gAddrToOverride, tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template
+<cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[5],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address [%0], [%1, %2, {%3, %4, %5, %6, %7}], [%8];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.5d.dst.src.tile.bulk_group.override::global_address [tensorMap, gAddrToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename = void>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const int32_t (&tensorCoords)[5],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
   const ::cuda::std::int32_t (&__tensorCoords)[5],
   const void* __srcMem)
 {
-// __space == space_global (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("cp.async.bulk.tensor.5d.global.shared::cta.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6];"
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  asm("cp.async.bulk.tensor.5d.global.shared::cta.tile.bulk_group.override::global_address [%0, %1, {%2, %3, %4, %5, "
+      "%6}], [%7];"
       :
       : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
         "r"(__tensorCoords[0]),
         "r"(__tensorCoords[1]),
         "r"(__tensorCoords[2]),
@@ -967,11 +4444,460 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
         "r"(__tensorCoords[4]),
         "r"(__as_ptr_smem(__srcMem))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-#  endif
 }
-#endif // __cccl_ptx_isa >= 800
+#endif // __cccl_ptx_isa >= 940
+
+/*
+//
+cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group.report_mechanism.override::global_address.override::global_dim_stride
+[dstMem], [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+tensorCoords], [smem_bar]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .shared::cta }
+// .src       = { .global }
+// .cta_group = { .cta_group::1, .cta_group::2 }
+// .report_mechanism = { .mbarrier::report::disabled, .mbarrier::report::validity::per_16bytes::80000000,
+.mbarrier::report::validity::per_16bytes::8000, .mbarrier::report::validity::per_16bytes::80,
+.mbarrier::report::validity::per_16bytes::8, .mbarrier::report::validity::per_element::ff } template <typename B16,
+enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true,
+cuda::ptx::dot_cta_group Cta_Group, cuda::ptx::dot_report_mechanism Report_Mechanism>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  cuda::ptx::cta_group_t<Cta_Group> cta_group,
+  cuda::ptx::report_mechanism_t<Report_Mechanism> report_mechanism,
+  void* dstMem,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[5],
+  const B32 (&tensorLowerStrideToOverride)[4],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[5],
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_cta_group _Cta_Group,
+          ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,
+  void* __dstMem,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[5],
+  const _B32 (&__tensorLowerStrideToOverride)[4],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
+  ::cuda::std::uint64_t* __smem_bar)
+{
+  // __space == space_shared (due to parameter type constraint)
+  // __space == space_global (due to parameter type constraint)
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(
+    __report_mechanism == mbarrier_report_disabled || __report_mechanism == mbarrier_report_valid_per_16bytes_80000000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8000
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_80
+      || __report_mechanism == mbarrier_report_valid_per_16bytes_8
+      || __report_mechanism == mbarrier_report_valid_per_element_ff,
+    "");
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, %6, %7}, {%8, %9, "
+        "%10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, "
+        "%5, %6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, %6, "
+        "%7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_1 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_disabled)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "disabled.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, %6, %7}, {%8, %9, "
+        "%10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80000000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80000000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, "
+        "%5, %6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8000)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8000.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_80)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::80.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_16bytes_8)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_16bytes::8.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, %6, "
+        "%7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+  else if constexpr (__cta_group == cta_group_2 && __report_mechanism == mbarrier_report_valid_per_element_ff)
+  {
+    asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::2.mbarrier::report::"
+        "validity::per_element::ff.override::global_address.override::global_dim_stride [%0], [%1, %2, {%3, %4, %5, "
+        "%6, %7}, {%8, %9, %10, %11}, %12, {%13, %14, %15, %16, %17}], [%18];"
+        :
+        : "r"(__as_ptr_smem(__dstMem)),
+          "l"(__tensorMap),
+          "l"(__gAddrToOverride),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+          "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__smem_bar))
+        : "memory");
+  }
+}
+#endif // __cccl_ptx_isa >= 940
+
+/*
+// cp.async.bulk.tensor.5d.dst.src.tile.bulk_group.override::global_address.override::global_dim_stride [tensorMap,
+gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride, tensorCoords],
+[srcMem]; // PTX ISA 94, SM_107a, SM_107f
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true, typename B32, enable_if_t<sizeof(B32) == 4, bool> =
+true>
+__device__ static inline void cp_async_bulk_tensor_override(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const void* gAddrToOverride,
+  const B16 (&tensorSizeToOverride)[5],
+  const B32 (&tensorLowerStrideToOverride)[4],
+  const B16& tensorUpperStrideToOverride,
+  const int32_t (&tensorCoords)[5],
+  const void* srcMem);
+*/
+#if __cccl_ptx_isa >= 940
+template <typename _B16,
+          ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
+          typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  const void* __tensorMap,
+  const void* __gAddrToOverride,
+  const _B16 (&__tensorSizeToOverride)[5],
+  const _B32 (&__tensorLowerStrideToOverride)[4],
+  const _B16& __tensorUpperStrideToOverride,
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
+  const void* __srcMem)
+{
+  // __space == space_global (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B16) == 2, "");
+  asm("cp.async.bulk.tensor.5d.global.shared::cta.tile.bulk_group.override::global_address.override::global_dim_stride "
+      "[%0, %1, {%2, %3, %4, %5, %6}, {%7, %8, %9, %10}, %11, {%12, %13, %14, %15, %16}], [%17];"
+      :
+      : "l"(__tensorMap),
+        "l"(__gAddrToOverride),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[0])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[1])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[2])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[3])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorSizeToOverride[4])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[0])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[1])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[2])),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__tensorLowerStrideToOverride[3])),
+        "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__tensorUpperStrideToOverride)),
+        "r"(__tensorCoords[0]),
+        "r"(__tensorCoords[1]),
+        "r"(__tensorCoords[2]),
+        "r"(__tensorCoords[3]),
+        "r"(__tensorCoords[4]),
+        "r"(__as_ptr_smem(__srcMem))
+      : "memory");
+}
+#endif // __cccl_ptx_isa >= 940
 
 #endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_H_

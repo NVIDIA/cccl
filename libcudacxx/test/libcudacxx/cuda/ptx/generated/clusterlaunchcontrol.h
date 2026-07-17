@@ -34,12 +34,88 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
   NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
         // [addr], [smem_bar];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_120a,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_121a,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_120f,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_121f,
+    (
+        // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
+        // [addr], [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860

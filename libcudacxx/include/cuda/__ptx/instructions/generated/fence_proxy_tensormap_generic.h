@@ -13,14 +13,12 @@ __device__ static inline void fence_proxy_tensormap_generic(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void
 fence_proxy_tensormap_generic(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.proxy.tensormap::generic.release.cta; // 7." : : : "memory");
@@ -37,10 +35,6 @@ fence_proxy_tensormap_generic(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_
   {
     asm volatile("fence.proxy.tensormap::generic.release.sys; // 7." : : : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -56,14 +50,12 @@ __device__ static inline void fence_proxy_tensormap_generic(
   cuda::ptx::n32_t<N32> size);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
 template <int _N32, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   ::cuda::ptx::sem_acquire_t, ::cuda::ptx::scope_t<_Scope> __scope, const void* __addr, ::cuda::ptx::n32_t<_N32> __size)
 {
   // __sem == sem_acquire (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.proxy.tensormap::generic.acquire.cta [%0], %1; // 8."
@@ -92,10 +84,6 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
                  : "l"(__addr), "n"(__size.value)
                  : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
