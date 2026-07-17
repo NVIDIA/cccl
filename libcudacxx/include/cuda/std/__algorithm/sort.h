@@ -712,7 +712,7 @@ __partition_with_equals_on_right(_RandomAccessIterator __first, _RandomAccessIte
     while (__first < __last)
     {
       --__last;
-      if (__comp(*--__last, __pivot))
+      if (__comp(*__last, __pivot))
       {
         break;
       }
@@ -787,9 +787,6 @@ __partition_with_equals_on_left(_RandomAccessIterator __first, _RandomAccessIter
   }
   else
   {
-    while (++__first < __last && !__comp(__pivot, *__first))
-    {
-    }
     while (++__first < __last)
     {
       if (__comp(__pivot, *__first))
