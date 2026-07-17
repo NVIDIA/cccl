@@ -25,6 +25,7 @@
 #include <cccl/c/experimental/stf/stf.h>
 
 using namespace cuda::experimental::stf;
+using ::cuda::experimental::places::cute_partition_descriptor;
 
 struct stf_exec_place_resources_opaque_t
 {
@@ -125,7 +126,7 @@ template <class P>
   {
     return static_cast<stf_exec_place_scope_handle>(opaque_bits);
   }
-  else if constexpr (::std::is_same_v<P, cute_partition>)
+  else if constexpr (::std::is_same_v<P, cute_partition_descriptor>)
   {
     return static_cast<stf_cute_partition_handle>(opaque_bits);
   }
@@ -182,7 +183,7 @@ template <class Opaque>
   }
   else if constexpr (::std::is_same_v<Opaque*, stf_cute_partition_handle>)
   {
-    return static_cast<const cute_partition*>(opaque_bits);
+    return static_cast<const cute_partition_descriptor*>(opaque_bits);
   }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<Opaque*, stf_green_context_helper_handle>)
@@ -687,7 +688,7 @@ stf_cute_partition_handle stf_cute_partition_create(
       cpp_spec[d].mesh_axis = spec[d].mesh_axis;
       cpp_spec[d].block     = spec[d].block;
     }
-    return new cute_partition(make_partition(td, cpp_spec, gd));
+    return new cute_partition_descriptor(::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd));
   }));
 }
 
@@ -724,7 +725,7 @@ stf_cute_partition_handle stf_cute_partition_from_leaves(
     {
       ll[k] = {local_extents[k], static_cast<::std::ptrdiff_t>(local_strides[k])};
     }
-    return new cute_partition(mv(pl), mv(axes), mv(ll), pd, td, gd);
+    return new cute_partition_descriptor(mv(pl), mv(axes), mv(ll), pd, td, gd);
   }));
 }
 
