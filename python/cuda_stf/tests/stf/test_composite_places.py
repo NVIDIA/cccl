@@ -99,7 +99,7 @@ class TestExecPlaceGrid:
         with pytest.raises(ValueError, match="invalid axis range"):
             grid.collapse_axes(0, 4)
 
-        with pytest.raises(RuntimeError, match="failed to create"):
+        with pytest.raises(ValueError, match="must equal the number of places"):
             stf.exec_place_grid.create(places, grid_dims=(2, 2))
 
     def test_reshaped_grid_lifetime_is_independent(self):
