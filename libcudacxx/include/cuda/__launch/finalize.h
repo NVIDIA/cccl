@@ -93,7 +93,7 @@ struct __finalize_context
   unsigned int __dynamic_smem_size_{};
 };
 
-[[nodiscard]] _CCCL_HOST_API __detail::__meta_dims_finalized
+[[nodiscard]] _CCCL_HOST_API inline __detail::__meta_dims_finalized
 __make_finalized_meta_extents(::cuda::std::size_t __x_extent)
 {
   return __detail::__meta_dims_finalized{static_cast<dimensions_index_type>(__x_extent)};
@@ -281,8 +281,8 @@ __dynamic_smem_size_from_options(const ::cuda::std::tuple<_Options...>& __option
 }
 
 template <class _BottomUnit, class... _LevelDescs>
-[[nodiscard]] _CCCL_HOST_API auto
-__finalize_no_device_set(const hierarchy<_BottomUnit, _LevelDescs...>& __hierarchy, ::CUfunction __kernel)
+[[nodiscard]] _CCCL_HOST_API auto __finalize_no_device_set(
+  const hierarchy<_BottomUnit, _LevelDescs...>& __hierarchy, [[maybe_unused]] ::CUfunction __kernel)
 {
   using _Hierarchy = hierarchy<_BottomUnit, _LevelDescs...>;
   if constexpr (::cuda::std::is_same_v<finalized_t<_Hierarchy>, _Hierarchy>)
@@ -296,8 +296,8 @@ __finalize_no_device_set(const hierarchy<_BottomUnit, _LevelDescs...>& __hierarc
 }
 
 template <class _BottomUnit, class... _LevelDescs>
-[[nodiscard]] _CCCL_HOST_API auto
-__finalize_no_device_set(const hierarchy<_BottomUnit, _LevelDescs...>& __hierarchy, const void* __kernel)
+[[nodiscard]] _CCCL_HOST_API auto __finalize_no_device_set(
+  const hierarchy<_BottomUnit, _LevelDescs...>& __hierarchy, [[maybe_unused]] const void* __kernel)
 {
   using _Hierarchy = hierarchy<_BottomUnit, _LevelDescs...>;
   if constexpr (::cuda::std::is_same_v<finalized_t<_Hierarchy>, _Hierarchy>)
@@ -311,8 +311,8 @@ __finalize_no_device_set(const hierarchy<_BottomUnit, _LevelDescs...>& __hierarc
 }
 
 template <typename _Dimensions, typename... _Options>
-[[nodiscard]] _CCCL_HOST_API auto
-__finalize_no_device_set(const kernel_config<_Dimensions, _Options...>& __config, ::CUfunction __kernel)
+[[nodiscard]] _CCCL_HOST_API auto __finalize_no_device_set(
+  const kernel_config<_Dimensions, _Options...>& __config, [[maybe_unused]] ::CUfunction __kernel)
 {
   using _Config = kernel_config<_Dimensions, _Options...>;
   if constexpr (::cuda::std::is_same_v<finalized_t<_Config>, _Config>)
@@ -330,7 +330,7 @@ __finalize_no_device_set(const kernel_config<_Dimensions, _Options...>& __config
 
 template <typename _Dimensions, typename... _Options>
 [[nodiscard]] _CCCL_HOST_API auto
-__finalize_no_device_set(const kernel_config<_Dimensions, _Options...>& __config, const void* __kernel)
+__finalize_no_device_set(const kernel_config<_Dimensions, _Options...>& __config, [[maybe_unused]] const void* __kernel)
 {
   using _Config = kernel_config<_Dimensions, _Options...>;
   if constexpr (::cuda::std::is_same_v<finalized_t<_Config>, _Config>)
