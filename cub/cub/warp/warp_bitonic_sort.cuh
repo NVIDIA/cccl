@@ -120,7 +120,7 @@ public:
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
   //!
@@ -134,7 +134,7 @@ public:
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, nullptr, compare_op);
   }
@@ -156,7 +156,7 @@ public:
   //! @param[in] valid_items Total number of valid items across the warp
   //! @param[in] oob_default Default value for out-of-bound items
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -185,7 +185,7 @@ public:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items) const
   {
     // Padding keys beyond valid_items ensures no uninitialized data is read.
     // Faster than guarding reads with valid_items check.
@@ -213,7 +213,7 @@ public:
   //! @param[in,out] values Values to sort (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, values, compare_op);
@@ -238,7 +238,7 @@ public:
   //! @param[in] valid_items Total number of valid items across the warp
   //! @param[in] oob_default Default value for out-of-bound keys
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread],
        ValueT (&values)[ItemsPerThread],
        CompareOp compare_op,
@@ -273,7 +273,7 @@ public:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int valid_items) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -472,16 +472,16 @@ public:
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, nullptr, compare_op);
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items, KeyT oob_default) const
   {
     if (lane >= valid_items)
@@ -492,7 +492,7 @@ public:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items) const
   {
     if (lane >= valid_items)
     {
@@ -502,13 +502,13 @@ public:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, values, compare_op);
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items, KeyT oob_default) const
   {
     if (lane >= valid_items)
@@ -520,7 +520,7 @@ public:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items) const
   {
     if (lane >= valid_items)
