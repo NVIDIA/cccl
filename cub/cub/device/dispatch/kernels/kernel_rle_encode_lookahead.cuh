@@ -417,8 +417,8 @@ struct HeadFlagDecodeT
         flag_word_idx = candidate_word_idx;
       }
     }
-    // the lane now knows the index of the word containing its head, and we need to convert it to the element
-    // position
+    // the lane now knows the index of the word containing its head
+    // we need to convert it to the element position
     // where is my head in the word?
     const int run_rank_in_word = run_idx - __shfl_sync(full_mask, lane_runs_before_word, flag_word_idx);
     // get the actual word
@@ -439,7 +439,7 @@ struct HeadFlagDecodeT
   }
 };
 
-template <int chunk_cap, class PolicySelector, class OffT>
+template <int window_size_cap, class PolicySelector, class OffT>
 __device__ __forceinline__ void poll_fold_windows(
   TilePartialStateT* tile_partial_states,
   int tile_id,
@@ -450,15 +450,15 @@ __device__ __forceinline__ void poll_fold_windows(
   int& dense_mode)
 {
   constexpr int poll_loads_per_lane = current_policy<PolicySelector>().lookahead.poll_loads_per_lane;
-  static_assert(chunk_cap >= 1 && chunk_cap <= 32 * poll_loads_per_lane,
+  static_assert(window_size_cap >= 1 && window_size_cap <= 32 * poll_loads_per_lane,
                 "the fold window must be covered by the MLP loops; a nonpositive window never advances");
   while (last_seen_tile_id < tile_id)
   {
     const int remain = tile_id - last_seen_tile_id;
     // # of tiles to fold this iteration
-    const int chunk                                     = remain < chunk_cap ? remain : chunk_cap;
+    const int window_size                               = remain < window_size_cap ? remain : window_size_cap;
     const int lane_first_tile_id                        = last_seen_tile_id + lane_id;
-    const int lane_tile_count                           = (chunk - lane_id + 31) >> 5;
+    const int lane_tile_count                           = (window_size - lane_id + 31) >> 5;
     TilePartialStateT packed_words[poll_loads_per_lane] = {}; // must zero initialize
     bool ready;
     // first, all tile state in window must be ready
@@ -479,7 +479,7 @@ __device__ __forceinline__ void poll_fold_windows(
         }
       }
     } while (__ballot_sync(full_mask, !ready) != 0u);
-    int lane_run_count = 0, lane_last_tile_with_runs_in_chunk = -1;
+    int lane_run_count = 0, lane_last_tile_with_runs_in_window = -1;
     // now, we fold the window
 #pragma unroll
     for (int i = 0; i < poll_loads_per_lane; ++i)
@@ -489,34 +489,34 @@ __device__ __forceinline__ void poll_fold_windows(
         // aggregate run_count per lane, this is fine since run_count is commutative
         lane_run_count += packed_words[i].run_count();
         // norminate the highest tile id with runs
-        lane_last_tile_with_runs_in_chunk =
-          (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_tile_with_runs_in_chunk;
+        lane_last_tile_with_runs_in_window =
+          (packed_words[i].run_count() > 0) ? (i * 32 + lane_id) : lane_last_tile_with_runs_in_window;
       }
     }
     // vote for the highest tile id with runs
-    const int last_tile_with_runs_in_chunk = __reduce_max_sync(full_mask, lane_last_tile_with_runs_in_chunk);
-    int lane_open_length                   = 0;
+    const int last_tile_with_runs_in_window = __reduce_max_sync(full_mask, lane_last_tile_with_runs_in_window);
+    int lane_open_length                    = 0;
 #pragma unroll
-    // how long is the chunk's unfinished run?
+    // how long is the window_size's unfinished run?
     for (int i = 0; i < poll_loads_per_lane; ++i)
     {
       // if this tile id >= the highest tile id with runs
-      if (i < lane_tile_count && i * 32 + lane_id >= last_tile_with_runs_in_chunk)
+      if (i < lane_tile_count && i * 32 + lane_id >= last_tile_with_runs_in_window)
       {
         lane_open_length += packed_words[i].open_len();
       }
     }
-    const int chunk_run_count   = __reduce_add_sync(full_mask, lane_run_count);
-    const int chunk_open_length = __reduce_add_sync(full_mask, lane_open_length);
-    // dense_mode is true if chunk_run_count > 128
-    dense_mode = chunk_run_count > (chunk << 7);
-    // combine last_seen_prefix with the chunk aggregate
-    const OffT new_run_count = last_seen_prefix_run_count + chunk_run_count;
+    const int window_run_count   = __reduce_add_sync(full_mask, lane_run_count);
+    const int window_open_length = __reduce_add_sync(full_mask, lane_open_length);
+    // dense_mode is true if window_run_count > 128
+    dense_mode = window_run_count > (window_size << 7);
+    // combine last_seen_prefix with the window_size aggregate
+    const OffT new_run_count = last_seen_prefix_run_count + window_run_count;
     const OffT new_open_length =
-      (chunk_run_count > 0) ? (OffT) chunk_open_length : (last_seen_prefix_open_length + chunk_open_length);
+      (window_run_count > 0) ? (OffT) window_open_length : (last_seen_prefix_open_length + window_open_length);
     last_seen_prefix_run_count   = new_run_count;
     last_seen_prefix_open_length = new_open_length;
-    last_seen_tile_id += chunk;
+    last_seen_tile_id += window_size;
   }
 }
 
