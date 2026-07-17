@@ -72,6 +72,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
 
 // Prefetch hints require a raw address, so only contiguous iterators qualify. thrust::is_contiguous_iterator
 // covers raw pointers, std/libcu++ contiguous iterators, thrust vector iterators, and proclaimed types.
+// TODO(#9893): replace with the unified CCCL iterator-to-pointer mechanism once it exists.
 // Note: ``cub::CacheModifiedInputIterator`` does not qualify: it routes loads through an explicit cache path
 // (e.g. ``LOAD_NC``) that a prefetch hint would defeat.
 template <typename It>
