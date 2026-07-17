@@ -75,7 +75,7 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   constexpr int32_t __nan_exp  = 0x0007ff00;
 
   __fpbits64_unpacked __r;
-  __uint128_t __mantissa_ab;
+  __fpemu_uint128 __mantissa_ab;
   __uint64x2 __ab_res;
 
   // MUL START:
@@ -84,7 +84,7 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__b.mantissa);
   __ab_res            = __fpemu_bit_cast<__uint64x2>(__mul_128<__acc_used>(__a_32x2, __b_32x2));
 
-  __mantissa_ab              = __fpemu_bit_cast<__uint128_t>(__ab_res);
+  __mantissa_ab              = __fpemu_bit_cast<__fpemu_uint128>(__ab_res);
   __uint32x4 __mantissa_ab32 = __fpemu_bit_cast<__uint32x4>(__mantissa_ab);
 
   // Exponents/signs (read with explicit signedness: the public field is
@@ -100,9 +100,9 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   // Shift mantissa_ab
   __mantissa_ab = __mantissa_ab << (11 - EXTRA_BITS + __mul_nzeros);
   // Compute mantissa_c - the mantissa of c
-  __uint128_t __mantissa_c = __c.mantissa;
+  __fpemu_uint128 __mantissa_c = __c.mantissa;
   // Compute mantissa_r - the result of the product of a and b and c
-  __uint128_t __mantissa_r;
+  __fpemu_uint128 __mantissa_r;
 
   {
     // Check if a or b is inf and c is inf and sign_ab != sign_c then return NaN

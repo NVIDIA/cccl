@@ -442,6 +442,135 @@ struct __uint32x4
   __uint32x2 hi;
 };
 
+//! @brief Portable 128-bit unsigned integer used by the FMA core and the
+//! 128-bit shift helpers.
+//!
+//! On toolchains with a native 128-bit integer (`_CCCL_HAS_INT128()`) this is a
+//! plain alias for `__uint128_t`, so the hot device path is byte-for-byte the
+//! same as before. On toolchains without one (notably nvcc + MSVC, whose EDG
+//! front end follows `cl.exe` and has no 128-bit type) it falls back to a small
+//! emulation that implements only the operations fpemu needs. The layout is
+//! little-endian (`__lo_` then `__hi_`) so the type stays bit-compatible with
+//! `__uint64x2` / `__uint32x4` (for `__fpemu_bit_cast`) and with
+//! `reinterpret_cast<uint64_t*>` (low word first).
+//!
+//! The define `_CCCL_FPEMU_FORCE_EMULATED_INT128` forces the emulated path even
+//! when a native type is available; it exists purely to exercise the fallback in
+//! tests on platforms that do have `__uint128_t`.
+#if _CCCL_HAS_INT128() && !defined(_CCCL_FPEMU_FORCE_EMULATED_INT128)
+using __fpemu_uint128 = __uint128_t;
+#else // ^^^ native 128-bit / vvv emulated 128-bit
+struct __fpemu_uint128
+{
+  uint64_t __lo_;
+  uint64_t __hi_;
+
+  __fpemu_uint128() = default;
+
+  _CCCL_API constexpr __fpemu_uint128(uint64_t __value) noexcept
+      : __lo_(__value)
+      , __hi_(0)
+  {}
+
+  _CCCL_API constexpr __fpemu_uint128(uint64_t __high, uint64_t __low) noexcept
+      : __lo_(__low)
+      , __hi_(__high)
+  {}
+
+  [[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator~() const noexcept
+  {
+    return __fpemu_uint128{~__hi_, ~__lo_};
+  }
+
+  _CCCL_API constexpr __fpemu_uint128& operator>>=(int __shift) noexcept;
+
+  _CCCL_API constexpr __fpemu_uint128& operator|=(uint64_t __value) noexcept
+  {
+    __lo_ |= __value;
+    return *this;
+  }
+};
+
+[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator+(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  const uint64_t __lo    = __a.__lo_ + __b.__lo_;
+  const uint64_t __carry = (__lo < __a.__lo_) ? 1u : 0u;
+  return __fpemu_uint128{__a.__hi_ + __b.__hi_ + __carry, __lo};
+}
+
+[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator-(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  const uint64_t __lo     = __a.__lo_ - __b.__lo_;
+  const uint64_t __borrow = (__a.__lo_ < __b.__lo_) ? 1u : 0u;
+  return __fpemu_uint128{__a.__hi_ - __b.__hi_ - __borrow, __lo};
+}
+
+[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator&(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  return __fpemu_uint128{__a.__hi_ & __b.__hi_, __a.__lo_ & __b.__lo_};
+}
+
+[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator<<(__fpemu_uint128 __value, int __shift) noexcept
+{
+  if (__shift <= 0)
+  {
+    return __value;
+  }
+  if (__shift >= 128)
+  {
+    return __fpemu_uint128{0, 0};
+  }
+  if (__shift >= 64)
+  {
+    return __fpemu_uint128{__value.__lo_ << (__shift - 64), 0};
+  }
+  return __fpemu_uint128{(__value.__hi_ << __shift) | (__value.__lo_ >> (64 - __shift)), __value.__lo_ << __shift};
+}
+
+[[nodiscard]] _CCCL_API constexpr __fpemu_uint128 operator>>(__fpemu_uint128 __value, int __shift) noexcept
+{
+  if (__shift <= 0)
+  {
+    return __value;
+  }
+  if (__shift >= 128)
+  {
+    return __fpemu_uint128{0, 0};
+  }
+  if (__shift >= 64)
+  {
+    return __fpemu_uint128{0, __value.__hi_ >> (__shift - 64)};
+  }
+  return __fpemu_uint128{__value.__hi_ >> __shift, (__value.__lo_ >> __shift) | (__value.__hi_ << (64 - __shift))};
+}
+
+_CCCL_API constexpr __fpemu_uint128& __fpemu_uint128::operator>>=(int __shift) noexcept
+{
+  *this = *this >> __shift;
+  return *this;
+}
+
+[[nodiscard]] _CCCL_API constexpr bool operator==(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  return __a.__hi_ == __b.__hi_ && __a.__lo_ == __b.__lo_;
+}
+
+[[nodiscard]] _CCCL_API constexpr bool operator!=(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  return !(__a == __b);
+}
+
+[[nodiscard]] _CCCL_API constexpr bool operator<(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  return (__a.__hi_ < __b.__hi_) || (__a.__hi_ == __b.__hi_ && __a.__lo_ < __b.__lo_);
+}
+
+[[nodiscard]] _CCCL_API constexpr bool operator>(__fpemu_uint128 __a, __fpemu_uint128 __b) noexcept
+{
+  return __b < __a;
+}
+#endif // native vs emulated 128-bit
+
 #undef _CCCL_FPEMU_MAX
 #if defined(__CUDA_ARCH__) && !defined(__CUDA_LIBDEVICE__)
 // Global-scope qualifier: inside namespace cuda::experimental an
@@ -795,7 +924,7 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __
 
 //! @brief Logical right shift of 128-bit mantissa with directed rounding
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API __uint128_t __shr_128_rnd(__uint128_t __man, int __shift, bool __sign = false) noexcept
+_CCCL_TRIVIAL_API __fpemu_uint128 __shr_128_rnd(__fpemu_uint128 __man, int __shift, bool __sign = false) noexcept
 {
 #ifndef __CUDA_ARCH__
   __shift = (__shift > 0) ? ((__shift > 127) ? 127 : __shift) : 0;
@@ -805,8 +934,9 @@ _CCCL_TRIVIAL_API __uint128_t __shr_128_rnd(__uint128_t __man, int __shift, bool
     return __man;
   }
 
-  const __uint128_t __discard_mask = (__shift >= 128) ? ~(__uint128_t) 0 : ((((__uint128_t) 1) << __shift) - 1);
-  const bool __inexact             = (__man & __discard_mask) != 0;
+  const __fpemu_uint128 __discard_mask =
+    (__shift >= 128) ? ~(__fpemu_uint128) 0 : ((((__fpemu_uint128) 1) << __shift) - 1);
+  const bool __inexact = (__man & __discard_mask) != 0;
   __man >>= __shift;
 
   if constexpr (_Rm == __fpemu_rounding::rn || _Rm == __fpemu_rounding::rz)
@@ -835,7 +965,7 @@ _CCCL_TRIVIAL_API __uint128_t __shr_128_rnd(__uint128_t __man, int __shift, bool
 
 //! @brief Logical right shift of 128-bit mantissa with jam (sticky) only.
 //! Used during FMA alignment; directed rounding is deferred to the pack epilogue.
-_CCCL_TRIVIAL_API __uint128_t __shr_128_jam(__uint128_t __man, int __shift) noexcept
+_CCCL_TRIVIAL_API __fpemu_uint128 __shr_128_jam(__fpemu_uint128 __man, int __shift) noexcept
 {
   return __shr_128_rnd<__fpemu_rounding::rn>(__man, __shift);
 } //__shr_128_jam
@@ -999,7 +1129,7 @@ _CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __input, boo
 //! @param exp   Output unbiased exponent field
 //! @param man   Output mantissa as two 32-bit integers
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
-_CCCL_TRIVIAL_API void __fp64_ovfl_sat(bool __sign, int32_t& __exp, __uint32x2& __man) noexcept
+_CCCL_TRIVIAL_API void __fp64_ovfl_sat([[maybe_unused]] bool __sign, int32_t& __exp, __uint32x2& __man) noexcept
 {
   if constexpr (_Rm == __fpemu_rounding::rz)
   {

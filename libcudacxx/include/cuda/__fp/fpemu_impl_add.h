@@ -1088,7 +1088,7 @@ _CCCL_API fpemu<double, _Acc> __dadd_rd(const fpemu<double, _Acc>& __x, const fp
 
 // Operator+ for unpacked addition
 template <fpemu_accuracy _Acc>
-_CCCL_DEVICE_API fpemu_unpacked<double, _Acc>
+_CCCL_API fpemu_unpacked<double, _Acc>
 operator+(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)

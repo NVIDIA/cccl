@@ -495,7 +495,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ll_to_fpbits64(int64_t __x) noex
   }
 
   uint64_t __sign  = (__x < 0) ? (1ULL << 63) : 0ULL;
-  uint64_t __abs_a = (__x < 0) ? -(uint64_t) __x : (uint64_t) __x;
+  uint64_t __abs_a = (__x < 0) ? (0ULL - (uint64_t) __x) : (uint64_t) __x;
 
   int32_t __nz  = ::cuda::std::countl_zero((uint64_t) __abs_a);
   int32_t __exp = _CCCL_FP64_BIAS + 63 - __nz;

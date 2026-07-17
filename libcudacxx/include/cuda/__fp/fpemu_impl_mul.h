@@ -762,7 +762,7 @@ namespace cuda::experimental
 
 // Default API implementation
 template <fpemu_accuracy _Acc>
-_CCCL_DEVICE_API fpemu<double, _Acc> operator*(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_API fpemu<double, _Acc> operator*(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -876,7 +876,7 @@ _CCCL_API fpemu<double, _Acc> __dmul_rd(const fpemu<double, _Acc>& __x, const fp
 
 // Operator* for unpacked multiplication
 template <fpemu_accuracy _Acc>
-_CCCL_DEVICE_API fpemu_unpacked<double, _Acc>
+_CCCL_API fpemu_unpacked<double, _Acc>
 operator*(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
