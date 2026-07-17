@@ -151,6 +151,22 @@ FORCED_ALGOS = (
 )  # "" == default (selector)
 ALGO_KEY = {"": "default"}  # env value -> JSON key; others map to themselves.
 
+# Stable short names used by experiment drivers and plot legends. Result JSON keeps
+# the long internal keys so existing analysis/rendering remains backward-compatible.
+ALGORITHM_NAMES = {
+    "BAS": "main",
+    "DEF": "default",
+    "GPA": "gmem_privatized_agent",
+    "GPS": "gmem_privatized_single_probe",
+    "GNR": "gmem_privatized_nocache_rle_spill",
+    "GND": "gmem_privatized_nocache_direct_spill",
+    "GSC": "gmem_privatized_single_probe_coalesced_spill",
+    "GPN": "gmem_privatized_nocache",
+    "HYB": "hybrid",
+    "DAS": "direct_single_probe",
+    "DAC": "direct_cuckoo",
+}
+
 
 def _base_algo(akey: str) -> str:
     """Strip the `__nocoal` marker to get the CUB_HISTO_FORCE_ALGO value / launch-tag base."""
@@ -544,19 +560,44 @@ def main():
         "algo; 'none' = selected-vs-baseline only; or an explicit list.",
     )
     ap.add_argument(
+        "--algorithms",
+        nargs="+",
+        choices=list(ALGORITHM_NAMES),
+        metavar="NAME",
+        help="complete series list using stable short names: "
+        + " ".join(ALGORITHM_NAMES),
+    )
+    ap.add_argument(
         "--omit-default",
         action="store_true",
         help="do not benchmark the shipping selector; useful for forced-candidate-only studies",
     )
     args = ap.parse_args()
 
+    if args.algorithms is not None and (
+        args.forced_algos is not None or args.omit_default
+    ):
+        raise SystemExit(
+            "--algorithms cannot be combined with --forced-algos or --omit-default"
+        )
+
     global FORCED_ALGO_FILTER, INCLUDE_DEFAULT
-    INCLUDE_DEFAULT = not args.omit_default
-    if args.forced_algos is None or args.forced_algos == ["all"]:
+    if args.algorithms is not None:
+        requested = {ALGORITHM_NAMES[name] for name in args.algorithms}
+        INCLUDE_DEFAULT = "default" in requested
+        if "main" in requested and not args.main_bin_dir:
+            raise SystemExit("BAS requires --main-bin-dir")
+        if "main" not in requested:
+            args.main_bin_dir = ""
+        FORCED_ALGO_FILTER = requested - {"main", "default"}
+    elif args.forced_algos is None or args.forced_algos == ["all"]:
+        INCLUDE_DEFAULT = not args.omit_default
         FORCED_ALGO_FILTER = None
     elif args.forced_algos == ["none"]:
+        INCLUDE_DEFAULT = not args.omit_default
         FORCED_ALGO_FILTER = set()
     else:
+        INCLUDE_DEFAULT = not args.omit_default
         valid = set(FORCED_HIGH_BIN_ALGOS + FORCED_LOW_BIN_ALGOS)
         bad = [a for a in args.forced_algos if a not in valid]
         if bad:
