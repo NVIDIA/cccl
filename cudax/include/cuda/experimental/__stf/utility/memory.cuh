@@ -86,7 +86,7 @@ inline void* allocateHostMemory(size_t sz)
       const auto it     = pool.begin();
       void* const entry = it->second;
       pool.erase(it);
-      cuda_try(cudaFreeHost(entry));
+      cuda_try<cudaFreeHost>(entry);
     }
   }
   // Note: cannot use the templated ``cuda_try<cudaMallocHost>(sz)`` form
@@ -143,7 +143,7 @@ inline void* allocateManagedMemory(size_t sz)
  * @param loc location of the call, defaulted
  */
 inline void deallocateHostMemory(
-  void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
   assert([&] {
@@ -158,7 +158,20 @@ inline void deallocateHostMemory(
     }
     return true;
   }());
+#if _CCCL_HAS_EXCEPTIONS()
+  // Never throw: pool the pointer if we can, otherwise free it outright.
+  // Either way the buffer is reclaimed and the pool stays consistent.
+  try
+  {
+    reserved::host_pool().insert(::std::make_pair(sz, p));
+  }
+  catch (...)
+  {
+    cuda_safe_call(cudaFreeHost(p));
+  }
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::host_pool().insert(::std::make_pair(sz, p));
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 /**
@@ -169,7 +182,7 @@ inline void deallocateHostMemory(
  * @param loc location of the call, defaulted
  */
 inline void deallocateManagedMemory(
-  void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
   assert([&] {
@@ -184,7 +197,20 @@ inline void deallocateManagedMemory(
     }
     return true;
   }());
+#if _CCCL_HAS_EXCEPTIONS()
+  // Never throw: pool the pointer if we can, otherwise free it outright.
+  // Either way the buffer is reclaimed and the pool stays consistent.
+  try
+  {
+    reserved::managed_pool().insert(::std::make_pair(sz, p));
+  }
+  catch (...)
+  {
+    cuda_safe_call(cudaFree(p));
+  }
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::managed_pool().insert(::std::make_pair(sz, p));
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 /**
@@ -197,6 +223,11 @@ inline void deallocateManagedMemory(
  */
 inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
+  SCOPE(fail)
+  {
+    // In case of failure make sure we don't leak.
+    cuda_safe_call(cudaFreeHost(p));
+  };
   // Own the heap pair until the launch succeeds; release ownership to the
   // callback only after cuda_try returns without throwing, so a failed
   // launch does not leak.
@@ -222,7 +253,11 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
  */
 inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
-  // Same pattern as deallocateHostMemory(stream-ordered overload).
+  SCOPE(fail)
+  {
+    // In case of failure make sure we don't leak.
+    cuda_safe_call(cudaFree(p));
+  };
   auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   cuda_try(cudaLaunchHostFunc(
     stream,
@@ -294,17 +329,16 @@ template <typename T>
 cudaError_t pin_memory(T* p, size_t n)
 {
   assert(p);
-  cudaError_t result = cudaSuccess;
-  if (!address_is_pinned(p))
+  if (address_is_pinned(p))
   {
-    // We cast to (void *) because T may be a const type : we are not going
-    // to modify the content, so this is legit ...
-    using NonConstT = typename std::remove_const<T>::type;
-    cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
-    // Fetch the result and clear the last error
-    result = cudaGetLastError();
+    return cudaSuccess;
   }
-  return result;
+  // We cast to (void *) because T may be a const type : we are not going
+  // to modify the content, so this is legit ...
+  using NonConstT = typename std::remove_const<T>::type;
+  cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
+  // Fetch the result and clear the last error
+  return cudaGetLastError();
 }
 
 /**
