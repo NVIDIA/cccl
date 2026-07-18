@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: nvrtc
+
 #include <cuda/hierarchy>
 
 static constexpr auto meta_grid_hierarchy =
