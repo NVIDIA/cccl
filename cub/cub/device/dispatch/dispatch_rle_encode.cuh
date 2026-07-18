@@ -210,6 +210,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
               return error;
             }
           }
+          return cudaSuccess;
         }
       }))
   }
