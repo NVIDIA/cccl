@@ -554,7 +554,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
     {(1 << 20) + 12345, 2}, // partial tail, mid density
     {64 * tile + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
     {64 * tile + 7, 100}, // a couple of runs per warp of input
-    {64 * tile, -40}, // fixed-length runs: several run heads per 32-element window
+    {64 * tile, -40}, // fixed-length runs: run count per warp-tile below one full warp; head phase drifts 8 mod 32
     {64 * tile, -31}, // fixed-length runs: run count per warp-tile just above one full warp
     {64 * tile, -4}, // fixed-length runs: run count per warp-tile exactly at a power of two
     {64 * tile, -3}, // fixed-length runs: run count per warp-tile just above a power of two
