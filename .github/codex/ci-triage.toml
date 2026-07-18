@@ -3,6 +3,8 @@ network_proxy = true
 
 [permissions.ci_triage.filesystem]
 ":minimal" = "read"
+":slash_tmp" = "write"
+":tmpdir" = "write"
 # codex-action installs the CLI under the hosted Node toolcache.
 "/opt/hostedtoolcache/node" = "read"
 
@@ -11,12 +13,8 @@ network_proxy = true
 
 [permissions.ci_triage.network]
 enabled = true
-# GitHub-hosted runners can prevent the proxy's DNS safety probe from resolving
-# public hosts. Keep access domain-scoped, but do not treat that DNS failure as
-# evidence that an allowlisted GitHub endpoint is private.
+mode = "limited"
 allow_local_binding = true
-# Do not inherit a runner-level proxy when opening the allowlisted GitHub
-# connections; the nested proxy tunnel closes these requests with EOF.
 allow_upstream_proxy = false
 
 [permissions.ci_triage.network.domains]
