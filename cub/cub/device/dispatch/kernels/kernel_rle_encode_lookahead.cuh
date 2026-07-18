@@ -1021,8 +1021,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
             break;
           }
-          const int tile_len = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
-          const bool is_last = (tile_id == num_tiles - 1);
+          const int tile_len      = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
+          const bool is_last_tile = (tile_id == num_tiles - 1);
           // same scan as the store warps (lane i = warp-tile i)
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
@@ -1038,8 +1038,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // lane L handles warp-tile L.
           if (lane_id < compute_warps && lane_warp_tile_run_count > 0)
           {
-            const unsigned later_nonempty_warp_tiles = nonempty_warp_tiles_mask >> (lane_id + 1); // nonempty warp-tiles
-                                                                                                  // after L
+            // nonempty warp-tiles after L (this is a mask)
+            const unsigned later_nonempty_warp_tiles = nonempty_warp_tiles_mask >> (lane_id + 1);
             const OffT last_run_global_idx =
               curr_prefix_run_count + lane_runs_before_warp_tile + lane_warp_tile_run_count - 1;
             if (later_nonempty_warp_tiles)
@@ -1048,7 +1048,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               d_counts[last_run_global_idx] =
                 warp_first_heads[slot_id][next_nonempty_warp_tile] - warp_last_heads[slot_id][lane_id];
             }
-            else if (is_last)
+            else if (is_last_tile)
             {
               // if we are the last warptile of the whole input, we end here
               d_counts[last_run_global_idx] = tile_len - warp_last_heads[slot_id][lane_id];
@@ -1067,12 +1067,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               d_counts[curr_prefix_run_count - 1] = curr_prefix_open_length + first_head;
             }
             // if we are last tile with no head: we have to close it here
-            if (is_last && !any_head && curr_prefix_run_count > 0)
+            if (is_last_tile && !any_head && curr_prefix_run_count > 0)
             {
               d_counts[curr_prefix_run_count - 1] = curr_prefix_open_length + tile_len;
             }
             // otherwise, next tile's problem
-            if (is_last)
+            if (is_last_tile)
             {
               *d_num_runs = (NumRunsT) (curr_prefix_run_count + tile_total_runs);
             }
