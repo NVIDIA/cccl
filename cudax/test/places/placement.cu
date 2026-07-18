@@ -167,7 +167,7 @@ void test_evaluate_cute_matches_mapper()
   const dim4 data_dims(n);
 
   auto grid = make_device_grid(1, 2);
-  auto part = make_partition(data_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+  auto part = make_partition(data_dims, partition_spec{blocked<0>}, grid.get_dims());
 
   auto stats_mapper =
     evaluate_localized_placement(grid, &blocked_partition_custom<0>::get_executor, data_dims, 1, 10, block_size);
@@ -221,7 +221,7 @@ void test_shaped_alloc_cute_composite(int ndevs)
   const dim4 data_dims(n);
 
   auto grid = make_device_grid(ndevs, 2);
-  auto part = make_partition(data_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid.get_dims());
+  auto part = make_partition(data_dims, partition_spec{blocked<0>}, grid.get_dims());
 
   data_place dp = make_composite_data_place(grid, part);
 

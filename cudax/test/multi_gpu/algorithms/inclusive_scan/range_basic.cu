@@ -138,7 +138,7 @@ void do_inclusive_scan(
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::inclusive_scan(comms, envs, in, outputs, init, op, ident);
+  cudax::inclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op, ident);
 
   // cuda::std::execution::env has no operator==, so we can only compare the sizes.
   REQUIRE(envs.size() == envs_size);
@@ -182,6 +182,7 @@ MULTI_GPU_TEST("inclusive_scan documentation example", c2h::type_list<int>)
   std::vector<typename cuda::device_buffer<int>::iterator> output_iterators = make_output_iterators(outputs);
 
   cudax::inclusive_scan(
+    cudax::distributed,
     comms,
     // Passing streams as the environment directly
     streams,
