@@ -8,7 +8,7 @@ Exercises the exact configuration the C++ test ``legacy_to_stf_in_capture.cu``
 validates, but through the Python/Warp surface:
 
     1. Create a CUDA stream, wrap it as a ``wp.Stream``.
-    2. Open a ``wp.ScopedCapture(capture_mode=wp.CaptureMode.Relaxed)`` on
+    2. Open a ``wp.ScopedCapture(capture_mode=wp.CaptureMode.RELAXED)`` on
        that stream. ``Relaxed`` is needed because STF's first-context init
        (``cudaFree(0)`` in ``backend_ctx::impl`` and the ``machine::instance()``
        Meyers singleton) performs capture-unsafe CUDA runtime calls that the
@@ -136,7 +136,7 @@ def run_fork_join_in_capture_relaxed() -> np.ndarray:
     c = wp.zeros(N, dtype=wp.int32, device=device)
 
     with wp.ScopedCapture(
-        device=device, stream=caller_wp, capture_mode=wp.CaptureMode.Relaxed
+        device=device, stream=caller_wp, capture_mode=wp.CaptureMode.RELAXED
     ) as capture:
         ctx = stf.context(stream=int(s_raw))
 
