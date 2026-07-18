@@ -102,6 +102,18 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     void* th_dev_tmp_ptr = nullptr;
 
+    // Free the temporary device memory on the way out, even if set_device_tmp
+    // or the launch throws. Installed before the malloc so a throw from
+    // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
+    // because SCOPE(exit) is noexcept.
+    SCOPE(exit)
+    {
+      if (th_dev_tmp_ptr)
+      {
+        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+      }
+    };
+
     /* Allocate temporary device memory */
     auto th_mem_config = interpreted_policy.get_mem_config();
     if (th_mem_config[0] > 0)
@@ -117,18 +129,6 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
       _CCCL_ASSERT(sys_mem, "System memory allocation failed");
       th.set_system_tmp(sys_mem);
     }
-
-    // Free the temporary device memory on the way out, even if set_device_tmp
-    // or the launch throws. Installed before the malloc so a throw from
-    // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
-    // because SCOPE(exit) is noexcept.
-    SCOPE(exit)
-    {
-      if (th_dev_tmp_ptr)
-      {
-        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
-      }
-    };
 
     if (th_mem_config[1] > 0)
     {
@@ -239,17 +239,12 @@ public:
         // Own the buffer until cg_system adopts it; if the assignment below
         // throws, free immediately so we do not leak. cuda_safe_call because
         // SCOPE(fail) is noexcept (pool insert can throw).
-        bool arrived_list_adopted = false;
         SCOPE(fail)
         {
-          if (!arrived_list_adopted)
-          {
-            cuda_safe_call(cudaFree(hostMemoryArrivedList));
-          }
+          cuda_safe_call(cudaFree(hostMemoryArrivedList));
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
         interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
-        arrived_list_adopted         = true;
       }
     }
 
@@ -488,17 +483,12 @@ public:
         // Own the buffer until cg_system adopts it; if the assignment below
         // throws, free immediately so we do not leak. cuda_safe_call because
         // SCOPE(fail) is noexcept (pool insert can throw).
-        bool arrived_list_adopted = false;
         SCOPE(fail)
         {
-          if (!arrived_list_adopted)
-          {
-            cuda_safe_call(cudaFree(hostMemoryArrivedList));
-          }
+          cuda_safe_call(cudaFree(hostMemoryArrivedList));
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
         interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
-        arrived_list_adopted         = true;
       }
     }
 
