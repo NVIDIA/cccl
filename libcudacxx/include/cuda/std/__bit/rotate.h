@@ -81,9 +81,37 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    // For _Tp < uint32_t we can repeat the _Tp bits in upper parts of uint32_t and use 32-bit __funnelshift_r to do the
+    // rotation.
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x0000);
+                     return static_cast<_Tp>(::__funnelshift_r(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x1010);
+                     return static_cast<_Tp>(::__funnelshift_r(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __hi    = static_cast<uint32_t>(__v >> 32);
+                     const auto __lo    = static_cast<uint32_t>(__v);
+                     const auto __res_a = ::__funnelshift_r(__lo, __hi, __cnt);
+                     const auto __res_b = ::__funnelshift_r(__hi, __lo, __cnt);
+                     return (static_cast<uint32_t>(__cnt) % 64 < 32)
+                            ? (uint64_t{__res_b} << 32) | __res_a
+                            : (uint64_t{__res_a} << 32) | __res_b;
+                   }))
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
@@ -123,9 +151,37 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    // For _Tp < uint32_t we can repeat the _Tp bits in upper parts of uint32_t and use 32-bit __funnelshift_l to do the
+    // rotation.
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x0000);
+                     return static_cast<_Tp>(::__funnelshift_l(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __vrep = ::__byte_perm(uint32_t{__v}, uint32_t{__v}, 0x1010);
+                     return static_cast<_Tp>(::__funnelshift_l(__vrep, __vrep, __cnt));
+                   }))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     const auto __hi    = static_cast<uint32_t>(__v >> 32);
+                     const auto __lo    = static_cast<uint32_t>(__v);
+                     const auto __res_a = ::__funnelshift_l(__lo, __hi, __cnt);
+                     const auto __res_b = ::__funnelshift_l(__hi, __lo, __cnt);
+                     return (static_cast<uint32_t>(__cnt) % 64 < 32)
+                            ? (uint64_t{__res_a} << 32) | __res_b
+                            : (uint64_t{__res_b} << 32) | __res_a;
+                   }))
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
