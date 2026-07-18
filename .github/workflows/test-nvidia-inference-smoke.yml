@@ -40,7 +40,7 @@ jobs:
       - intentional-failure-one
       - intentional-failure-two
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -62,7 +62,7 @@ jobs:
           codex-version: 0.144.5
           codex-home: ${{ runner.temp }}/codex-home
           permission-profile: ci_triage
-          model: nvidia/deepseek-ai/deepseek-v4-flash
+          model: openai/openai/gpt-5.5
           codex-args: --ignore-rules
           output-file: ${{ runner.temp }}/agent-summary.md
           prompt: |
