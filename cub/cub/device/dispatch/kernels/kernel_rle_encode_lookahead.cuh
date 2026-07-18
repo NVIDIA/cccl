@@ -435,6 +435,7 @@ struct HeadFlagDecodeT
     const int next_head_in_word = flag_word_idx * 32 + __ffs(flag_word & (~1u << head_bit_in_word)) - 1;
     // does my word contain a head after mine? if not, next_head_in_word is garbage, and we use first_head_after_word
     const int next_head_pos = (run_rank_in_word + 1 < flag_word_run_count) ? next_head_in_word : first_head_after_word;
+    // NOTE: for the last run head in warp tile, next_head_pos is garbage
     return {head_pos_in_warp_tile, next_head_pos};
   }
 };
@@ -927,6 +928,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               buf_key[it]        = (run_idx < warp_tile_run_count)
                                    ? tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems]
                                    : KeyT{};
+              // note: this is garbage for the last run head
               buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
             __syncwarp();
@@ -954,6 +956,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 d_unique[global_run_idx]  = buf_key[it];
                 if (run_idx + 1 < warp_tile_run_count)
                 {
+                  // last run's run count is bookkeeper's job
                   d_counts[global_run_idx] = buf_run_length[it];
                 }
               }
@@ -970,7 +973,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const OffT curr_prefix_run_count = prefix_packed[slot_id].run_count();
           // wait for staged_warp_tile (3/3)
           wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
-          // drain writes warp tile (warp_tile_id)'s staged output into the global arrays.
+          // writes warp tile (warp_tile_id)'s staged output into the global arrays.
           // Per run: gather its key from the run's head position -> d_unique,
           // and write its length -> d_counts (= next run's head pos - this run's head pos).
           // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
@@ -1026,21 +1029,24 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int tile_total_runs =
             __shfl_sync(full_mask, lane_runs_before_warp_tile + lane_warp_tile_run_count, compute_warps - 1);
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(full_mask, lane_warp_tile_run_count > 0);
+          // wait for prefixed
           wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
           const PrefixT packed_prefix        = prefix_packed[slot_id];
           const OffT curr_prefix_run_count   = packed_prefix.run_count();
           const OffT curr_prefix_open_length = packed_prefix.open_len();
-          // per-warp-tile boundary: a warp-tile's last run is closed by the next nonempty warp-tile's
-          // first head. lane L handles warp-tile L.
+          // per-warp-tile boundary: a warp-tile's last run is closed by the next nonempty warp-tile's irst head.
+          // lane L handles warp-tile L.
           if (lane_id < compute_warps && lane_warp_tile_run_count > 0)
           {
-            const unsigned later_wts = nonempty_warp_tiles_mask >> (lane_id + 1); // nonempty warp-tiles after L
+            const unsigned later_nonempty_warp_tiles = nonempty_warp_tiles_mask >> (lane_id + 1); // nonempty warp-tiles
+                                                                                                  // after L
             const OffT last_run_global_idx =
               curr_prefix_run_count + lane_runs_before_warp_tile + lane_warp_tile_run_count - 1;
-            if (later_wts)
+            if (later_nonempty_warp_tiles)
             {
-              const int next_wt             = lane_id + 1 + __ffs(later_wts) - 1;
-              d_counts[last_run_global_idx] = warp_first_heads[slot_id][next_wt] - warp_last_heads[slot_id][lane_id];
+              const int next_nonempty_warp_tile = lane_id + 1 + __ffs(later_nonempty_warp_tiles) - 1;
+              d_counts[last_run_global_idx] =
+                warp_first_heads[slot_id][next_nonempty_warp_tile] - warp_last_heads[slot_id][lane_id];
             }
             else if (is_last)
             {
@@ -1077,15 +1083,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
     });
 }
 
-// CUB temp storage is caller scratch with no contents contract between calls, so the states are
-// cleared on EVERY launch (same as stock CUB's init kernels)
 template <class StateT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, long long n_states)
 {
   const long long i = (long long) blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n_states)
   {
-    states[i] = StateT{}; // tag 0 never matches the published tag (1)
+    states[i] = StateT{};
   }
 }
 
