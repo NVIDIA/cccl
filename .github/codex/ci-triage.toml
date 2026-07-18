@@ -15,6 +15,9 @@ enabled = true
 # public hosts. Keep access domain-scoped, but do not treat that DNS failure as
 # evidence that an allowlisted GitHub endpoint is private.
 allow_local_binding = true
+# Do not inherit a runner-level proxy when opening the allowlisted GitHub
+# connections; the nested proxy tunnel closes these requests with EOF.
+allow_upstream_proxy = false
 
 [permissions.ci_triage.network.domains]
 "api.github.com" = "allow"
