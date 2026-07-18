@@ -97,6 +97,15 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   REQUIRE(l_str[0] == 1);
   REQUIRE(stf_cute_partition_place_offset(part, 1) == 4);
 
+  // Closed-form element ownership (native dimension-0-fastest order)
+  stf_pos4 owner_pos{};
+  const stf_pos4 coords_in_place_1{5, 0, 0, 0};
+  REQUIRE(stf_cute_partition_owner(part, &coords_in_place_1, &owner_pos) == 0);
+  REQUIRE(owner_pos.x == 1);
+  const stf_pos4 coords_in_place_2{11, 0, 0, 0}; // padded coordinate, still owned
+  REQUIRE(stf_cute_partition_owner(part, &coords_in_place_2, &owner_pos) == 0);
+  REQUIRE(owner_pos.x == 2);
+
   // Rebuilding from the exported leaves must give an equivalent partition
   const stf_dim4 padded_dims{12, 1, 1, 1};
   stf_cute_partition_handle part2 = stf_cute_partition_from_leaves(

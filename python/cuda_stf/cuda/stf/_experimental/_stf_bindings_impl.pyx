@@ -211,6 +211,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes)
     void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides)
     uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
+    int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos)
     stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition)
     stf_get_executor_fn stf_partition_fn_blocked(int dim)
     stf_get_executor_fn stf_partition_fn_cyclic()
@@ -1891,6 +1892,29 @@ cdef class cute_partition:
         a different order; see :meth:`grid_place_offset`.
         """
         return stf_cute_partition_place_offset(self._h, <uint64_t>place_index)
+
+    def owner(self, coords):
+        """Grid coordinates of the place owning the element at ``coords``.
+
+        ``coords`` is a C-order tuple of :attr:`rank` entries (within the
+        padded extents); the result is a C-order tuple of :attr:`grid_rank`
+        entries. Ownership is closed-form (no sampling); note that physical
+        placement of an allocation is page-granular and may only approximate
+        this element-level ownership (see :func:`placement_evaluate`).
+        """
+        coords = tuple(coords) if not isinstance(coords, int) else (coords,)
+        if len(coords) != self._rank:
+            raise ValueError(f"expected {self._rank} coordinates, got {len(coords)}")
+        cdef stf_pos4 c_coords
+        rev = tuple(int(c) for c in coords)[::-1] + (0,) * (4 - len(coords))
+        c_coords.x = rev[0]
+        c_coords.y = rev[1]
+        c_coords.z = rev[2]
+        c_coords.t = rev[3]
+        cdef stf_pos4 out
+        if stf_cute_partition_owner(self._h, &c_coords, &out) != 0:
+            raise ValueError(f"owner query failed for coordinates {coords} (out of the padded extents?)")
+        return _native_to_public((out.x, out.y, out.z, out.t), self._grid_rank)
 
     def grid_place_offset(self, place_index):
         """Linear element offset (in the padded space) of the first element

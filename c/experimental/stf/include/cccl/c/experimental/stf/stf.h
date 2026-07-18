@@ -507,6 +507,11 @@ void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* 
 //! range.
 uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index);
 
+//! \brief Grid position owning the element at the given data coordinates
+//! (closed-form; coordinates must be within the padded extents).
+//! Returns nonzero on failure (with a diagnostic on stderr).
+int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos);
+
 //! \brief Create a composite data place backed by a structured partition.
 //!
 //! Such a place is specific to one tensor (the partition's true extents):

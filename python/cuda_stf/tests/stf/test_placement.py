@@ -111,6 +111,48 @@ def test_cute_partition_swapped_grid_axes():
     assert part.place_offset(1) != part.grid_place_offset(1)
 
 
+def test_cute_partition_owner():
+    """Closed-form element ownership follows the C-order contract."""
+    part = stf.cute_partition.from_spec((10,), (("blocked", 0),), (3,))
+    assert [part.owner((i,)) for i in (0, 3, 4, 7, 8, 9)] == [
+        (0,),
+        (0,),
+        (1,),
+        (1,),
+        (2,),
+        (2,),
+    ]
+
+    # Swapped tensor/grid axes: axis 0 (extent 4, chunk 2) owns grid axis 1,
+    # axis 1 (extent 6, chunk 3) owns grid axis 0.
+    part2 = stf.cute_partition.from_spec(
+        (4, 6), (("blocked", 1), ("blocked", 0)), (2, 3)
+    )
+    for i in range(4):
+        for j in range(6):
+            assert part2.owner((i, j)) == (j // 3, i // 2)
+
+    with pytest.raises(ValueError):
+        part2.owner((0,))  # rank mismatch
+
+
+def test_tensor_of_tiles_owner_ignores_payload():
+    """Ownership of a tensor-of-tiles element depends only on the tile
+    coordinates: the payload dims are undistributed."""
+    tiles, payload = (2, 3), (4, 8)
+    tile_part = stf.cute_partition.from_spec(
+        tiles, (("blocked", 0), ("blocked", 1)), (2, 3)
+    )
+    data_part = stf.cute_partition.from_spec(
+        tiles + payload, (("blocked", 0), ("blocked", 1), None, None), (2, 3)
+    )
+    for i in range(tiles[0]):
+        for j in range(tiles[1]):
+            expected = tile_part.owner((i, j))
+            for y, x in ((0, 0), (payload[0] - 1, payload[1] - 1), (1, 5)):
+                assert data_part.owner((i, j, y, x)) == expected
+
+
 def test_cute_partition_rank_preserved_with_extent_one():
     """An active extent-1 dimension is legitimate and must not be trimmed."""
     part = stf.cute_partition.from_spec((5, 1), (("blocked", 0), None), (5,))

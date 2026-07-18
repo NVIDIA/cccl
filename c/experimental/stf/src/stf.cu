@@ -805,6 +805,28 @@ void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* 
   }
 }
 
+int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  _CCCL_ASSERT(data_coords != nullptr, "data_coords must not be null");
+  _CCCL_ASSERT(out_grid_pos != nullptr, "out_grid_pos must not be null");
+  try
+  {
+    const pos4 coords(data_coords->x, data_coords->y, data_coords->z, data_coords->t);
+    const pos4 owner = from_opaque_const(h)->owner(coords);
+    out_grid_pos->x  = owner.x;
+    out_grid_pos->y  = owner.y;
+    out_grid_pos->z  = owner.z;
+    out_grid_pos->t  = owner.t;
+    return 0;
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_cute_partition_owner failed: %s\n", e.what());
+    return 1;
+  }
+}
+
 uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
 {
   _CCCL_ASSERT(h != nullptr, "partition handle must not be null");

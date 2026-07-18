@@ -320,7 +320,17 @@ undistributed (``None``)::
 
 Ownership of element ``(i, j, y, x)`` depends only on the tile coordinates
 ``(i, j)``, so the same specification drives both tiled execution and data
-placement. Note that tile-major storage is a real storage format: viewing it as
+placement. ``owner()`` answers the ownership question in closed form (C-order
+coordinates in, C-order grid coordinates out), which makes the property easy
+to check -- and is the primitive an adapter can use to reason about element
+placement without re-implementing any policy::
+
+    tile_partition = stf.cute_partition.from_spec(tiles, spec, grid.dims)
+    assert partition.owner((i, j, y, x)) == tile_partition.owner((i, j))
+
+Note that ``owner()`` is exact element-level ownership; the *physical*
+placement of an allocation is page-granular and may only approximate it
+(``placement_evaluate`` quantifies the difference). Note that tile-major storage is a real storage format: viewing it as
 a conventional ``(rows, columns)`` spatial tensor requires a permutation, not a
 reshape.
 
