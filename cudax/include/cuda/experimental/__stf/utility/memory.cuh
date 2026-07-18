@@ -454,20 +454,18 @@ public:
     if (rhs.size() <= small_cap)
     {
       auto b = rhs.begin(), e = b + rhs.size();
-      loop([&](auto i) {
+      construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
           return false;
         }
-        new (small_begin() + i) T(*b++);
-        ++small_length;
+        new (dest) T(*b++);
         return true;
       });
     }
     else
     {
-      new (&big())::std::vector<T>(rhs.big());
-      small_length = small_size_t(-1);
+      adopt_big_vector(::std::vector<T>(rhs.big()));
     }
   }
 
@@ -497,20 +495,19 @@ public:
   {
     if (init.size() <= small_cap)
     {
-      loop([&](auto i) {
-        if (i >= init.size())
+      auto b = init.begin(), e = init.end();
+      construct_small_elements([&](T* dest, small_size_t) {
+        if (b >= e)
         {
           return false;
         }
-        new (small_begin() + i) T(init.begin()[i]);
-        ++small_length;
+        new (dest) T(*b++);
         return true;
       });
     }
     else
     {
-      new (&big())::std::vector<T>(init);
-      small_length = small_size_t(-1);
+      adopt_big_vector(::std::vector<T>(init));
     }
   }
 
@@ -527,13 +524,12 @@ public:
 
     if (is_small())
     {
-      loop([&](auto i) {
+      construct_small_elements([&](T* dest, small_size_t i) {
         if (i >= rhs.size())
         {
           return false;
         }
-        new (small_begin() + i) T(rhs[i]);
-        ++small_length;
+        new (dest) T(rhs[i]);
         return true;
       });
     }
@@ -711,16 +707,15 @@ public:
       }
       if (small_length > 0)
       {
-        // Non-empty small_begin vector is a bit tricky
+        // Copy out first so a thrown allocation leaves *this intact.
         ::std::vector<T> copy;
         copy.reserve(new_cap);
-        for (auto& e : *this)
+        for (small_size_t i = 0; i < small_length; ++i)
         {
-          copy.push_back(mv(e));
+          copy.push_back(small_begin()[i]);
         }
         clear();
-        new (&big())::std::vector<T>(mv(copy));
-        small_length = small_size_t(-1);
+        adopt_big_vector(mv(copy));
         return;
       }
       new (&big())::std::vector<T>();
@@ -770,24 +765,33 @@ public:
       const std::size_t new_size = small_length + (last - first);
       if (new_size <= small_cap)
       {
-        auto b = small_begin(), e = b + small_length;
-        assert(b <= pos && pos <= e);
-        assert(first <= last);
-        auto result = ::std::move_backward(pos, e, e + (last - first));
-        for (; first != last; ++first, ++pos, ++small_length)
-        {
-          new (pos) T(*first);
-        }
+        // Build the result in a side buffer first; only mutate *this after
+        // all new elements are successfully copied.
+        ::std::vector<T> rebuilt;
+        rebuilt.reserve(new_size);
+        rebuilt.insert(rebuilt.end(), small_begin(), pos);
+        rebuilt.insert(rebuilt.end(), first, last);
+        rebuilt.insert(rebuilt.end(), pos, small_begin() + small_length);
+        const auto offset = static_cast<size_t>(pos - small_begin());
+        clear();
+        construct_small_elements([&](T* dest, small_size_t i) {
+          if (i >= rebuilt.size())
+          {
+            return false;
+          }
+          new (dest) T(mv(rebuilt[i]));
+          return true;
+        });
         assert(size() == new_size);
-        return result;
+        return begin() + offset;
       }
       ::std::vector<T> copy;
       copy.reserve(new_size);
       copy.insert(copy.end(), ::std::move_iterator(small_begin()), ::std::move_iterator(pos));
       auto result = copy.insert(copy.end(), first, last);
       copy.insert(copy.end(), ::std::move_iterator(pos), ::std::move_iterator(small_begin() + small_length));
-      new (&big())::std::vector<T>(mv(copy));
-      small_length = small_size_t(-1);
+      clear();
+      adopt_big_vector(mv(copy));
       assert(size() == new_size);
       return big().data() + (result - big().begin());
     }
@@ -893,7 +897,19 @@ public:
       {
         if (new_size <= small_cap)
         {
-          ::std::uninitialized_fill(small_begin() + small_length, small_begin() + new_size, value);
+          const small_size_t old_length = small_length;
+          small_size_t i                = old_length;
+          SCOPE(fail)
+          {
+            while (i > old_length)
+            {
+              small_begin()[--i].~T();
+            }
+          };
+          for (; i < new_size; ++i)
+          {
+            new (small_begin() + i) T(value);
+          }
           small_length = small_size_t(new_size);
         }
         else
@@ -905,8 +921,7 @@ public:
             copy.end(), ::std::move_iterator(small_begin()), ::std::move_iterator(small_begin() + small_length));
           copy.resize(new_size, value);
           clear(); // call destructors for the moved-from elements
-          new (&big())::std::vector<T>(mv(copy));
-          small_length = small_size_t(-1);
+          adopt_big_vector(mv(copy));
         }
       }
     }
@@ -1011,6 +1026,38 @@ private:
       return true;
     });
     small_length -= delta;
+  }
+
+  void destroy_small_prefix(small_size_t n) noexcept
+  {
+    while (n > 0)
+    {
+      small_begin()[--n].~T();
+    }
+  }
+
+  // Construct elements at small_begin()[0..) via @p construct_one(dest, index).
+  // Return false from @p construct_one to stop. On success sets small_length; on
+  // throw destroys any elements constructed so far and rethrows.
+  template <typename F>
+  void construct_small_elements(F&& construct_one)
+  {
+    small_size_t n = 0;
+    SCOPE(fail)
+    {
+      destroy_small_prefix(n);
+    };
+    while (construct_one(small_begin() + n, n))
+    {
+      ++n;
+    }
+    small_length = n;
+  }
+
+  void adopt_big_vector(::std::vector<T>&& vec)
+  {
+    new (&big())::std::vector<T>(mv(vec));
+    small_length = small_size_t(-1);
   }
 
   template <typename F>
