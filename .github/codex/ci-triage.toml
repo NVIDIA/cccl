@@ -19,6 +19,7 @@ allow_upstream_proxy = false
 
 [permissions.ci_triage.network.domains]
 "api.github.com" = "allow"
+"*.actions.githubusercontent.com" = "allow"
 "results-receiver.actions.githubusercontent.com" = "allow"
 "*.blob.core.windows.net" = "allow"
 
