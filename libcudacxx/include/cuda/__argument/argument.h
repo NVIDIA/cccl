@@ -200,22 +200,22 @@ _CCCL_API constexpr _ElementType __wrapper_static_highest() noexcept
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_lowest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
-  return __static_lowest > __runtime_bounds.lower() ? __static_lowest : __runtime_bounds.lower();
+  const auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
+  return __static_lowest < __runtime_bounds.lower() ? __runtime_bounds.lower() : __static_lowest;
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_highest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
+  const auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
   return __static_highest < __runtime_bounds.upper() ? __static_highest : __runtime_bounds.upper();
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr bool __has_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  return __effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds)
-      <= __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds);
+  return __bounds_less_equal(__effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds),
+                             __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds));
 }
 
 template <class _ElementType, class _StaticBounds>
@@ -233,9 +233,9 @@ _CCCL_API constexpr void __validate_static_element_bounds([[maybe_unused]] const
 {
   if constexpr (!::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    _CCCL_ASSERT((__val >= __wrapper_static_lowest<_ElementType, _StaticBounds>()),
+    _CCCL_ASSERT((__bounds_greater_equal(__val, __wrapper_static_lowest<_ElementType, _StaticBounds>())),
                  "immediate argument value is below static lowest bound");
-    _CCCL_ASSERT((__val <= __wrapper_static_highest<_ElementType, _StaticBounds>()),
+    _CCCL_ASSERT((__bounds_less_equal(__val, __wrapper_static_highest<_ElementType, _StaticBounds>())),
                  "immediate argument value is above static highest bound");
   }
 }
@@ -244,8 +244,10 @@ template <class _ElementType>
 _CCCL_API constexpr void __validate_runtime_element_bounds(
   [[maybe_unused]] const _ElementType& __val, [[maybe_unused]] runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  _CCCL_ASSERT((__val >= __runtime_bounds.lower()), "immediate argument value is below runtime lower bound");
-  _CCCL_ASSERT((__val <= __runtime_bounds.upper()), "immediate argument value is above runtime upper bound");
+  _CCCL_ASSERT((__bounds_greater_equal(__val, __runtime_bounds.lower())),
+               "immediate argument value is below runtime lower bound");
+  _CCCL_ASSERT((__bounds_less_equal(__val, __runtime_bounds.upper())),
+               "immediate argument value is above runtime upper bound");
 }
 
 // =====================================================================
