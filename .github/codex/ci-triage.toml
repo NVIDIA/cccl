@@ -13,15 +13,31 @@ network_proxy = true
 
 [permissions.ci_triage.network]
 enabled = true
-mode = "limited"
+mode = "full"
 allow_local_binding = true
 allow_upstream_proxy = false
 
 [permissions.ci_triage.network.domains]
 "api.github.com" = "allow"
-"*.actions.githubusercontent.com" = "allow"
-"results-receiver.actions.githubusercontent.com" = "allow"
 "*.blob.core.windows.net" = "allow"
+
+[permissions.ci_triage.network.mitm.actions.github_read]
+[[permissions.ci_triage.network.mitm.actions.github_read.inject_request_headers]]
+name = "authorization"
+secret_env_var = "GH_TOKEN"
+prefix = "Bearer "
+
+[permissions.ci_triage.network.mitm.hooks.workflow_jobs]
+host = "api.github.com"
+methods = ["GET"]
+path_prefixes = ["/repos/NVIDIA/cccl/actions/runs/"]
+action = ["github_read"]
+
+[permissions.ci_triage.network.mitm.hooks.job_logs]
+host = "api.github.com"
+methods = ["GET"]
+path_prefixes = ["/repos/NVIDIA/cccl/actions/jobs/"]
+action = ["github_read"]
 
 [shell_environment_policy]
 inherit = "all"
@@ -29,7 +45,6 @@ ignore_default_excludes = true
 include_only = [
   "HOME",
   "PATH",
-  "GH_TOKEN",
   "GITHUB_REPOSITORY",
   "GITHUB_RUN_ID",
   "GITHUB_WORKSPACE",
