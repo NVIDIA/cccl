@@ -1,7 +1,7 @@
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
+    [ValidatePattern("^\d+\.\d+t?$")]
     [string]$PyVersion
 )
 
@@ -18,7 +18,8 @@ $repoRoot = Get-RepoRoot
 
 ${wheelPath} = Get-CudaCcclWheel
 & $python -m pip install -U pip pytest pytest-xdist
-& $python -m pip install "${wheelPath}[test-cu$cudaMajor]"
+# CuPy is required by the cuda.compute examples and is not part of the test extras
+& $python -m pip install "${wheelPath}[test-cu$cudaMajor]" "cupy-cuda${cudaMajor}x"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {

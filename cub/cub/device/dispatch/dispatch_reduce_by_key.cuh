@@ -190,17 +190,17 @@ template <typename PolicySelector,
 #endif
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
-    _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const UniqueOutputIteratorT d_unique_out,
-    _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const AggregatesOutputIteratorT d_aggregates_out,
-    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
+    const KeysInputIteratorT d_keys_in,
+    const UniqueOutputIteratorT d_unique_out,
+    const ValuesInputIteratorT d_values_in,
+    const AggregatesOutputIteratorT d_aggregates_out,
+    const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_state,
-    _CCCL_GRID_CONSTANT const int start_tile,
+    const int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
+    const OffsetT num_items,
+    const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   static constexpr ReduceByKeyPolicy policy = current_policy<PolicySelector>();
@@ -261,6 +261,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        DeviceReduceByKey
+ *
+ * Deprecated [Since 3.5]
  *
  * @tparam KeysInputIteratorT
  *   Random-access input iterator type for keys

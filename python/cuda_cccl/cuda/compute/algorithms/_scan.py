@@ -11,16 +11,15 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
-    call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
 from .._serialization import (
     BOOL,
-    BUILD_RESULT,
+    BUILD_RESULTS,
     CONDITIONAL,
     ENUM,
     ITER,
@@ -52,7 +51,9 @@ def get_init_kind(
 
 class _Scan(Serializable):
     __slots__ = [
-        "build_result",
+        "_bound_build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
@@ -79,7 +80,7 @@ class _Scan(Serializable):
                 },
             ),
         ),
-        ("build_result", BUILD_RESULT(_bindings.DeviceScanBuildResult)),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceScanBuildResult)),
     )
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
@@ -90,6 +91,7 @@ class _Scan(Serializable):
         op: OpAdapter,
         init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         force_inclusive: bool,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -122,36 +124,48 @@ class _Scan(Serializable):
         # Compile the op with value types
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        # loaded_build_result / device_scan_fn are bound lazily on the first
+        # __call__ (see _bind_device_scan_fn).
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
-            init_value_type_info,
+            d_in,
+            d_out,
+            op,
+            init_value,
             force_inclusive,
             self.init_kind,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceScanBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+                init_value_type_info,
+                force_inclusive,
+                self.init_kind,
+                compute_capability=compute_capability,
+            ),
         )
-        self._bind_device_scan_fn()
-
-    def _after_deserialize(self) -> None:
-        self._bind_device_scan_fn()
 
     def _bind_device_scan_fn(self) -> None:
-        # device_scan_fn is derived from force_inclusive + init_kind (not
-        # serialized directly as a function). Bind it as a plain slot on both
-        # construction paths (__init__ and deserialize) so each call reads a slot
-        # directly, with no per-call recompute.
+        # Derived from force_inclusive + init_kind, from the loaded build result (not
+        # serialized as a function); bound at __call__ once resolve_build_result picks
+        # + loads the current device's build result.
         match (self.force_inclusive, self.init_kind):
             case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
-                self.device_scan_fn = self.build_result.compute_inclusive_future_value
+                self.device_scan_fn = (
+                    self.loaded_build_result.compute_inclusive_future_value
+                )
             case (True, _bindings.InitKind.VALUE_INIT):
-                self.device_scan_fn = self.build_result.compute_inclusive
+                self.device_scan_fn = self.loaded_build_result.compute_inclusive
             case (True, _bindings.InitKind.NO_INIT):
-                self.device_scan_fn = self.build_result.compute_inclusive_no_init
+                self.device_scan_fn = self.loaded_build_result.compute_inclusive_no_init
             case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
-                self.device_scan_fn = self.build_result.compute_exclusive_future_value
+                self.device_scan_fn = (
+                    self.loaded_build_result.compute_exclusive_future_value
+                )
             case (False, _bindings.InitKind.VALUE_INIT):
-                self.device_scan_fn = self.build_result.compute_exclusive
+                self.device_scan_fn = self.loaded_build_result.compute_exclusive
             case (False, _bindings.InitKind.NO_INIT):
                 raise ValueError("Exclusive scan with No init value is not supported")
 
@@ -166,6 +180,13 @@ class _Scan(Serializable):
         num_items: int,
         stream=None,
     ):
+        # Select (and lazily load) the current device's build result, then bind the
+        # derived compute fn from it.
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+        self._bind_device_scan_fn()
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
@@ -220,6 +241,7 @@ def make_exclusive_scan(
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+    compute_capability=None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
@@ -238,12 +260,24 @@ def make_exclusive_scan(
             The signature is ``(T, T) -> T``, where ``T`` is the data type of
             the initial value ``init_value``.
         init_value: Numpy array, device array, or GPU struct storing initial value of the scan
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the scan
     """
     op_adapter = make_op_adapter(op)
-    return _Scan(d_in, d_out, op_adapter, init_value, False)
+    return _Scan(
+        d_in,
+        d_out,
+        op_adapter,
+        init_value,
+        False,
+        compute_capability=compute_capability,
+    )
 
 
 def exclusive_scan(
@@ -309,6 +343,7 @@ def make_inclusive_scan(
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
+    compute_capability=None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
@@ -327,12 +362,24 @@ def make_inclusive_scan(
             The signature is ``(T, T) -> T``, where ``T`` is the data type of
             the initial value ``init_value``.
         init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the scan
     """
     op_adapter = make_op_adapter(op)
-    return _Scan(d_in, d_out, op_adapter, init_value, True)
+    return _Scan(
+        d_in,
+        d_out,
+        op_adapter,
+        init_value,
+        True,
+        compute_capability=compute_capability,
+    )
 
 
 def inclusive_scan(

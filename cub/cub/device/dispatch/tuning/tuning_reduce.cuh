@@ -35,7 +35,7 @@ struct ReducePassPolicy
   BlockReduceAlgorithm reduce_algorithm; //!< The @ref BlockReduceAlgorithm to use
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ReducePassPolicy& lhs, const ReducePassPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -43,7 +43,7 @@ struct ReducePassPolicy
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ReducePassPolicy& lhs, const ReducePassPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -66,13 +66,13 @@ struct ReducePolicy
   ReducePassPolicy single_tile; //!< Policy used for the single-tile pass. Used as second pass after the multi-tile pass
                                 //!< in some cases, or when the problem size fits into a single tile.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ReducePolicy& lhs, const ReducePolicy& rhs) noexcept
   {
     return lhs.multi_tile == rhs.multi_tile && lhs.single_tile == rhs.single_tile;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ReducePolicy& lhs, const ReducePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -251,7 +251,7 @@ get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 20;
@@ -279,7 +279,7 @@ struct policy_hub
                           NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;
@@ -307,7 +307,7 @@ struct policy_hub
                           NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy600>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy600>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy600
     template <typename Tuning>

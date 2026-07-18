@@ -226,7 +226,8 @@ template <class _Tp>
   {
     return static_cast<_Tp>(0x1p-14f);
   }
-  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
+  else if constexpr (__fp_is_native_type_v<_Tp>
+                     && (__fmt == __fp_format::__binary32 || __fmt == __fp_format::__bfloat16))
   {
     return static_cast<_Tp>(0x1p-126f);
   }
@@ -240,10 +241,6 @@ template <class _Tp>
     return static_cast<_Tp>(0x1p-16382q);
   }
 #endif // _CCCL_HAS_FLOAT128()
-  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__bfloat16)
-  {
-    return static_cast<_Tp>(0x1p-126f);
-  }
   else
   {
     return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_min<__fp_format_of_v<_Tp>>());

@@ -52,7 +52,7 @@ namespace cuda::experimental
 template <typename _ByteT>
 inline constexpr bool __can_fill_bytes_value_v =
   ::cuda::std::is_trivially_copyable_v<_ByteT> && ::cuda::std::has_unique_object_representations_v<_ByteT>
-  && (sizeof(_ByteT) == 1 || sizeof(_ByteT) == 2 || sizeof(_ByteT) == 4);
+  && ::cuda::__driver::__cu_driver_memsetable<_ByteT>;
 
 // __half, __nv_bfloat16 don't have a unique object representation
 #  if _CCCL_HAS_NVFP16()
