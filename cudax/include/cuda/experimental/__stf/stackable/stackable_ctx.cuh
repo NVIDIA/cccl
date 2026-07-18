@@ -148,24 +148,22 @@ public:
     return data().data_root_offset;
   }
 
-  const auto& get_ld(int offset) const
+  // Returns a *copy* of the logical_data handle (not a reference into
+  // data_nodes). The data_nodes vector can be reallocated by a concurrent
+  // push_at()/grow_data_nodes() running on another host thread that shares
+  // this logical data, so a reference into the vector would dangle as soon as
+  // the shared lock below is released. The handle itself is a cheap shared_ptr
+  // wrapper and stays valid regardless of vector growth.
+  logical_data<T> get_ld(int offset) const
   {
+    auto lock = data().acquire_shared_lock();
     _CCCL_ASSERT(offset >= 0 && data().was_imported(offset), "Failed to find imported data");
     return data().get_data_node(offset).ld;
   }
 
-  auto& get_ld(int offset)
-  {
-    _CCCL_ASSERT(offset >= 0 && mut_data().was_imported(offset), "Failed to find imported data");
-    return mut_data().get_data_node(offset).ld;
-  }
-
   int get_unique_id() const
   {
-    const int root = get_data_root_offset();
-    _CCCL_ASSERT(root >= 0, "");
-    _CCCL_ASSERT(data().data_nodes[static_cast<size_t>(root)].has_value(), "");
-    return data().get_data_node(root).ld.get_unique_id();
+    return get_ld(get_data_root_offset()).get_unique_id();
   }
 
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
@@ -756,7 +754,7 @@ public:
   // Callers must ensure validate_access has already been called for this offset.
   task_dep<T, reduce_op, initialize> resolve(int context_offset) const
   {
-    auto& context_ld = d.get_ld(context_offset);
+    auto context_ld = d.get_ld(context_offset);
     return task_dep<T, reduce_op, initialize>(context_ld, mode, dplace);
   }
 

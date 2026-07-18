@@ -11,6 +11,7 @@ set(
   cpp/test_pick_stream.cu
   cpp/test_pick_stream_green_context.cu
   cpp/user_streams.cu
+  cpp/wait_token.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
@@ -78,6 +79,7 @@ set(
   local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
+  places/cute_parallel_for.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu

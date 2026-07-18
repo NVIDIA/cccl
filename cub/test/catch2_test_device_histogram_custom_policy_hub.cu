@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the histogram dispatcher
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_histogram.cuh>
@@ -14,16 +17,14 @@
 
 using namespace cub;
 
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the histogram dispatcher after publishing the tuning API
-
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub
 {
   // simplified from Policy500 of the CUB histogram tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 };
 

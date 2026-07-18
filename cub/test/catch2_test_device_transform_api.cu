@@ -49,7 +49,7 @@ void test_transform_api()
   auto input2 = thrust::device_vector<float>{5.2f, 3.1f, -1.1f, 3.0f};
   auto input3 = cuda::counting_iterator<int>{100};
   auto op     = [] __device__(int a, float b, int c) {
-    return (a + b) * c;
+    return (static_cast<float>(a) + b) * static_cast<float>(c);
   };
 
   auto result = thrust::device_vector<int>(input1.size(), thrust::no_init);

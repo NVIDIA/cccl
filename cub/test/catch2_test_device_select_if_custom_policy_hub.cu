@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the select if dispatcher
+
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_select_if.cuh>
@@ -13,12 +17,10 @@
 
 using namespace cub;
 
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the select if dispatcher after publishing the tuning API
-
 template <class InputT>
 struct my_policy_hub
 {
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int nominal_4b_items_per_thread = 10;
     static constexpr int items_per_thread =

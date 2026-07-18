@@ -11,6 +11,7 @@ set(
   axpy-annotated.cu
   void_data_interface.cu
   explicit_data_places.cu
+  partitioned_axpy.cu
   thrust_zip_iterator.cu
   1f1b.cu
 )

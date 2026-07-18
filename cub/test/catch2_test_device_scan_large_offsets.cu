@@ -113,6 +113,7 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }
 
 C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
@@ -156,4 +157,5 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }
