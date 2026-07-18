@@ -33,9 +33,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rle::encode
 {
-// compile-time half of the lookahead viability: the kernel may only be instantiated for these types.
-// The runtime half (device smem opt-in, tile count, temporary-storage alignment) lives in
-// try_dispatch_lookahead and falls back to the streaming path.
+// compile-time half of the lookahead viability
 template <class InputIteratorT,
           class UniqueOutputIteratorT,
           class LengthsOutputIteratorT,
@@ -94,43 +92,63 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
     [[maybe_unused]] auto init_kernel = DeviceRleEncodeLookaheadInitKernel<TilePartialStateT>;
 
     NV_IF_TARGET(
-      NV_IS_HOST,
-      (
-        ::cuda::compute_capability cc{}; if (const auto error = CubDebug(ptx_compute_cap(cc))) {
+      NV_IS_HOST, ({
+        ::cuda::compute_capability cc{};
+        if (const auto error = CubDebug(ptx_compute_cap(cc)))
+        {
           return error;
-        } const RleEncodePolicy policy = policy_selector(cc);
-        if (policy.algorithm != RleAlgorithm::lookahead) { return cudaSuccess; }
+        }
+        const RleEncodePolicy policy = policy_selector(cc);
+        if (policy.algorithm != RleAlgorithm::lookahead)
+        {
+          return cudaSuccess;
+        }
 
         const auto num_tiles = ::cuda::ceil_div(static_cast<::cuda::std::int64_t>(num_items),
                                                 static_cast<::cuda::std::int64_t>(policy.lookahead.tile_size()));
 
         // the size query must cover both implementations: the same allocation may serve either across calls
         size_t streaming_bytes = 0;
-        if (const auto error = CubDebug(streaming_size_fn(streaming_bytes))) { return error; } const size_t required =
+        if (const auto error = CubDebug(streaming_size_fn(streaming_bytes)))
+        {
+          return error;
+        }
+        const size_t required =
           (::cuda::std::max) (streaming_bytes, static_cast<size_t>(num_tiles) * sizeof(TilePartialStateT));
-        if (d_temp_storage == nullptr) {
+        if (d_temp_storage == nullptr)
+        {
           temp_storage_bytes = required;
           handled            = true;
           return cudaSuccess;
-        } if (temp_storage_bytes < required) {
+        }
+        if (temp_storage_bytes < required)
+        {
           handled = true;
           return CubDebug(cudaErrorInvalidValue);
         }
 
         // runtime gates: any failure falls back to the streaming implementation (the allocation covers it)
         if (num_items <= 0 || cc < ::cuda::compute_capability{10, 0} || num_tiles > 0x7fffffff
-            || !::cuda::is_aligned(d_temp_storage, alignof(TilePartialStateT))) {
+            || !::cuda::is_aligned(d_temp_storage, alignof(TilePartialStateT)))
+        {
           return cudaSuccess;
-        } int max_dynamic_smem_size = 0;
-        if (const auto error = CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel))) {
+        }
+        int max_dynamic_smem_size = 0;
+        if (const auto error = CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel)))
+        {
           return error;
-        } const size_t dyn_smem_bytes = policy.lookahead.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
-        if (static_cast<size_t>(max_dynamic_smem_size) < dyn_smem_bytes) {
+        }
+        const size_t dyn_smem_bytes = policy.lookahead.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
+        if (static_cast<size_t>(max_dynamic_smem_size) < dyn_smem_bytes)
+        {
           return cudaSuccess;
-        } if (const auto error =
-                CubDebug(launcher_factory.set_max_dynamic_smem_size_for(kernel, static_cast<int>(dyn_smem_bytes)))) {
+        }
+        if (const auto error =
+              CubDebug(launcher_factory.set_max_dynamic_smem_size_for(kernel, static_cast<int>(dyn_smem_bytes))))
+        {
           return error;
-        } handled = true;
+        }
+        handled = true;
 
         auto* tile_partial_states = static_cast<TilePartialStateT*>(d_temp_storage);
         {
@@ -156,7 +174,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
           {
             return error;
           }
-        } {
+        }
+        {
           const int block_dim = num_total_threads(policy.lookahead);
 #ifdef CUB_DEBUG_LOG
           _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
@@ -190,7 +209,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
           {
             return error;
           }
-        }))
+        }
+      }))
   }
   return cudaSuccess;
 }
