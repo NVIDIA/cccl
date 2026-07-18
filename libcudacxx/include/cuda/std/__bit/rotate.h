@@ -113,6 +113,35 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
                             : (uint64_t{__res_a} << 32) | __res_b;
                    }))
     }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      NV_IF_TARGET(
+        NV_IS_DEVICE, ({
+          const auto __w0 = static_cast<uint32_t>(__v);
+          const auto __w1 = static_cast<uint32_t>(__v >> 32);
+          const auto __w2 = static_cast<uint32_t>(__v >> 64);
+          const auto __w3 = static_cast<uint32_t>(__v >> 96);
+
+          const auto __res_0 = ::__funnelshift_r(__w0, __w1, __cnt);
+          const auto __res_1 = ::__funnelshift_r(__w1, __w2, __cnt);
+          const auto __res_2 = ::__funnelshift_r(__w2, __w3, __cnt);
+          const auto __res_3 = ::__funnelshift_r(__w3, __w0, __cnt);
+
+          const auto __word_rot = (static_cast<uint32_t>(__cnt) / 32) % 4;
+          const auto __is_rot_0 = __word_rot == 0;
+          const auto __is_rot_1 = __word_rot == 1;
+          const auto __is_rot_2 = __word_rot == 2;
+
+          const auto __out_0 = __is_rot_0 ? __res_0 : (__is_rot_1 ? __res_1 : (__is_rot_2 ? __res_2 : __res_3));
+          const auto __out_1 = __is_rot_0 ? __res_1 : (__is_rot_1 ? __res_2 : (__is_rot_2 ? __res_3 : __res_0));
+          const auto __out_2 = __is_rot_0 ? __res_2 : (__is_rot_1 ? __res_3 : (__is_rot_2 ? __res_0 : __res_1));
+          const auto __out_3 = __is_rot_0 ? __res_3 : (__is_rot_1 ? __res_0 : (__is_rot_2 ? __res_1 : __res_2));
+
+          return (__uint128_t{__out_3} << 96) | (__uint128_t{__out_2} << 64) | (__uint128_t{__out_1} << 32) | __out_0;
+        }))
+    }
+#  endif // _CCCL_HAS_INT128()
   }
 #endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATERIGHT8)
@@ -183,6 +212,35 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
                             : (uint64_t{__res_b} << 32) | __res_a;
                    }))
     }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      NV_IF_TARGET(
+        NV_IS_DEVICE, ({
+          const auto __w0 = static_cast<uint32_t>(__v);
+          const auto __w1 = static_cast<uint32_t>(__v >> 32);
+          const auto __w2 = static_cast<uint32_t>(__v >> 64);
+          const auto __w3 = static_cast<uint32_t>(__v >> 96);
+
+          const auto __res_0 = ::__funnelshift_l(__w3, __w0, __cnt);
+          const auto __res_1 = ::__funnelshift_l(__w0, __w1, __cnt);
+          const auto __res_2 = ::__funnelshift_l(__w1, __w2, __cnt);
+          const auto __res_3 = ::__funnelshift_l(__w2, __w3, __cnt);
+
+          const auto __word_rot = (static_cast<uint32_t>(__cnt) / 32) % 4;
+          const auto __is_rot_0 = __word_rot == 0;
+          const auto __is_rot_1 = __word_rot == 1;
+          const auto __is_rot_2 = __word_rot == 2;
+
+          const auto __out_0 = __is_rot_0 ? __res_0 : (__is_rot_1 ? __res_3 : (__is_rot_2 ? __res_2 : __res_1));
+          const auto __out_1 = __is_rot_0 ? __res_1 : (__is_rot_1 ? __res_0 : (__is_rot_2 ? __res_3 : __res_2));
+          const auto __out_2 = __is_rot_0 ? __res_2 : (__is_rot_1 ? __res_1 : (__is_rot_2 ? __res_0 : __res_3));
+          const auto __out_3 = __is_rot_0 ? __res_3 : (__is_rot_1 ? __res_2 : (__is_rot_2 ? __res_1 : __res_0));
+
+          return (__uint128_t{__out_3} << 96) | (__uint128_t{__out_2} << 64) | (__uint128_t{__out_1} << 32) | __out_0;
+        }))
+    }
+#  endif // _CCCL_HAS_INT128()
   }
 #endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATELEFT8)
