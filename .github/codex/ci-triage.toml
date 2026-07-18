@@ -3,6 +3,8 @@ network_proxy = true
 
 [permissions.ci_triage.filesystem]
 ":minimal" = "read"
+# codex-action installs the CLI under the hosted Node toolcache.
+"/opt/hostedtoolcache/node" = "read"
 
 [permissions.ci_triage.filesystem.":workspace_roots"]
 "." = "read"
