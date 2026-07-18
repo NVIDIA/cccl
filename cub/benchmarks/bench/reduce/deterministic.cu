@@ -5,6 +5,7 @@
 
 #include <cuda/execution.determinism.h>
 #include <cuda/execution.require.h>
+#include <cuda/std/utility>
 
 #include <nvbench_helper.cuh>
 
@@ -26,12 +27,18 @@ struct policy_selector_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
+template <class T, class OffsetT>
+void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
   using init_value_t = T;
 
-  const auto elements = static_cast<int>(state.get_int64("Elements{io}"));
+  if (!cuda::std::in_range<OffsetT>(state.get_int64("Elements{io}")))
+  {
+    state.skip("Skipping: Elements{io} is not representable by OffsetT.");
+    return;
+  }
+  const auto elements = static_cast<OffsetT>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
@@ -43,7 +50,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(out.size());
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
       alloc,
       launch,
@@ -57,9 +64,14 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
       cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, elements, cuda::std::plus<>{}, init_value_t{}, env);
   });
 }
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
+}
 
 using types = nvbench::type_list<float, double>;
-NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types))
+NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  // 2^32 exceeds INT32_MAX to cover the code paths for problem sizes that exceed a single 32-bit chunk
+  .add_int64_power_of_two_axis("Elements{io}", {16, 20, 24, 28, 32});

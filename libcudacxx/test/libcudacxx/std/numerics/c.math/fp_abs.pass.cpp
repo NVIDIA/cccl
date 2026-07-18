@@ -3,9 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
 
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
@@ -185,6 +188,9 @@ TEST_FUNC constexpr bool test(float val)
 #if _CCCL_HAS_NVFP4_E2M1()
   test_type<__nv_fp4_e2m1>(val);
 #endif // _CCCL_HAS_NVFP4_E2M1
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>(val);
+#endif // _CCCL_HAS_FLOAT128()
 
   test_type<signed char>(val);
   test_type<unsigned char>(val);

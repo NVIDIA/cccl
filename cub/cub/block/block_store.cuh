@@ -548,7 +548,7 @@ enum BlockStoreAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -564,9 +564,8 @@ namespace detail
       return "BLOCK_STORE_WARP_TRANSPOSE";
     case BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED:
       return "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
-    default:
-      return "<unknown BlockStoreAlgorithm>";
   }
+  return "<unknown BlockStoreAlgorithm>";
 }
 } // namespace detail
 

@@ -76,7 +76,7 @@ enum RadixRankAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(RadixRankAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(RadixRankAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -90,9 +90,8 @@ namespace detail
       return "RADIX_RANK_MATCH_EARLY_COUNTS_ANY";
     case RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR:
       return "RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR";
-    default:
-      return "<unknown RadixRankAlgorithm>";
   }
+  return "<unknown RadixRankAlgorithm>";
 }
 } // namespace detail
 

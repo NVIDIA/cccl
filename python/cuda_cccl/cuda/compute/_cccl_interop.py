@@ -45,6 +45,7 @@ from ._bindings import (
     Value,
     make_pointer_object,
 )
+from ._caching import _PerCCBuildResults
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._base import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
@@ -331,17 +332,19 @@ def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kw
     if ccs is None:
         # Fused build+load for the current device. Query its cc once (clear error
         # if no device) and pass it through, so call_build doesn't re-query.
-        cc_key = current_device_cc_key()
+        device_id, cc_key = current_device_info()
         build_result = call_build(build_impl_cls, *args, cc=key_to_cc(cc_key), **kwargs)
         # The fused build already loaded the kernels; mark it so the lazy
         # load() in resolve_build_result() is a no-op (a second C load would leak /
         # re-register the library).
         build_result._loaded = True
-        return {cc_key: build_result}
-    return {
-        cc_to_key(cc): call_compile(build_impl_cls, *args, cc=cc, **kwargs)
-        for cc in ccs
-    }
+        return _PerCCBuildResults({cc_key: build_result}, loaded_device_id=device_id)
+    return _PerCCBuildResults(
+        {
+            cc_to_key(cc): call_compile(build_impl_cls, *args, cc=cc, **kwargs)
+            for cc in ccs
+        }
+    )
 
 
 def cc_to_key(cc) -> int:
@@ -390,40 +393,79 @@ def normalize_compute_capabilities(compute_capability):
     return [key_to_cc(k) for k in keys]
 
 
-def current_device_cc_key() -> int:
-    """The current device's compute capability as a ``major * 10 + minor`` key.
+def current_device_info() -> tuple[int, int]:
+    """Return the current device ordinal and packed compute-capability key.
 
     Raises a clear, actionable error if no CUDA device is available: building
     without a GPU has no device to infer the target arch from, so the caller
     must pass an explicit ``compute_capability=``.
     """
     try:
-        cc = CudaDevice().compute_capability
+        device = CudaDevice()
+        cc = device.compute_capability
     except Exception as e:
         raise RuntimeError(
             "No compute_capability was given and no CUDA device is available to target."
         ) from e
-    return cc_to_key(tuple(cc))
+    return device.device_id, cc_to_key(tuple(cc))
 
 
-def resolve_build_result(build_results: dict):
-    """Load the build result for the current device."""
+def current_device_cc_key() -> int:
+    """The current device's compute capability as a ``major * 10 + minor`` key."""
+    return current_device_info()[1]
+
+
+def current_device_id() -> int:
+    """The current CUDA device ordinal, without a compute-capability query.
+
+    The compute-capability query roughly doubles the cost of
+    ``current_device_info()``, and callers that only key per-device state
+    (see ``resolve_build_result``) run on every algorithm invocation.
+    """
+    try:
+        return CudaDevice().device_id
+    except Exception as e:
+        raise RuntimeError("No CUDA device is available to execute on.") from e
+
+
+def resolve_build_result(build_results: dict, bound_result=None):
+    """Load the build result for the current device.
+
+    ``bound_result`` is a default-build wrapper's construction-time binding
+    (see cache_build_results): already the loaded result for the wrapper's
+    device, returned without any device query. Deserialized wrappers have no
+    binding and resolve per call.
+    """
+    if bound_result is not None:
+        return bound_result
+
+    # Wrappers always hold a _PerCCBuildResults (build_for_ccs and
+    # deserialization both produce one); the per-device ownership/clone
+    # protocol in resolve() relies on it, so fail loudly on anything else
+    # rather than fall back to an unprotected load.
+    assert isinstance(build_results, _PerCCBuildResults)
+
     if len(build_results) == 1:
-        (build_result,) = build_results.values()
+        # A singular _PerCCBuildResults is used as-is whatever the current device's
+        # compute capability is (single-target blobs were already cc-checked at
+        # deserialization), so only the device ordinal is needed to key the
+        # per-device loaded state. This path runs on every call of AOT and
+        # deserialized wrappers; skip the costlier compute-capability query.
+        (build_result_cc,) = build_results
+        device_id = current_device_id()
     else:
-        key = current_device_cc_key()
-        try:
-            build_result = build_results[key]
-        except KeyError:
+        device_id, device_cc_key = current_device_info()
+        build_result_cc = device_cc_key
+        if build_result_cc not in build_results:
             available = ", ".join(
                 f"{maj}.{minor}"
                 for maj, minor in (key_to_cc(k) for k in sorted(build_results))
             )
-            major, minor = key_to_cc(key)
+            major, minor = key_to_cc(build_result_cc)
             raise RuntimeError(
                 f"This algorithm was compiled for compute capabilities [{available}], "
                 f"but the current device has compute capability {major}.{minor}. "
                 f"Rebuild with compute_capability including {major}{minor}."
             )
-    build_result.load()
-    return build_result
+
+    return build_results.resolve(build_result_cc, device_id)
