@@ -78,6 +78,10 @@ jobs:
             Fetch each failed job's complete log with:
               gh api "/repos/${GITHUB_REPOSITORY}/actions/jobs/JOB_ID/logs"
 
+            Do not retry failed GitHub API requests. If the jobs request or any
+            failed-job log request fails, return only LOG_RETRIEVAL_FAILED. Do not
+            infer the failures from the checked-out workflow or source files.
+
             The workflow run is still in progress because you are its final job, so do
             not use run-level log endpoints or wait for the run to finish.
 
@@ -87,12 +91,15 @@ jobs:
 
             Identify the root cause, call out any common failure across jobs, and give
             the most useful concise next action. Include a line beginning with
+            "Log retrieval: succeeded" that states how many failed job logs you read,
+            and a line beginning with
             "Repository inspection:" that names at least one file you read. Do not
             modify the repository or any GitHub state. Return only the Markdown summary.
 
       - name: Publish the failure analysis
         run: |
           grep -q 'compute_999' "${RUNNER_TEMP}/agent-summary.md"
+          grep -q '^Log retrieval: succeeded' "${RUNNER_TEMP}/agent-summary.md"
           grep -q 'Repository inspection:' "${RUNNER_TEMP}/agent-summary.md"
 
           {

@@ -11,6 +11,10 @@ network_proxy = true
 
 [permissions.ci_triage.network]
 enabled = true
+# GitHub-hosted runners can prevent the proxy's DNS safety probe from resolving
+# public hosts. Keep access domain-scoped, but do not treat that DNS failure as
+# evidence that an allowlisted GitHub endpoint is private.
+allow_local_binding = true
 
 [permissions.ci_triage.network.domains]
 "api.github.com" = "allow"
