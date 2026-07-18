@@ -285,17 +285,7 @@ public:
   template <typename Fun>
   void operator->*(Fun&& fun)
   {
-    // Apply function to the stream (in the first position) and the data tuple
-    nvtx_range nr(get_symbol().c_str());
-    start();
-
-    auto& dot = ctx.get_dot();
-
-    const bool record_time = reserved::dot::instance().is_timing();
-
-    cudaEvent_t start_event = nullptr;
-    cudaEvent_t end_event   = nullptr;
-    bool timing_active      = false;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
     {
@@ -309,11 +299,19 @@ public:
       }
     };
 
-    SCOPE(exit)
+    // Apply function to the stream (in the first position) and the data tuple
+    nvtx_range nr(get_symbol().c_str());
+    auto& dot              = ctx.get_dot();
+    const bool record_time = reserved::dot::instance().is_timing();
+
+    start();
+
+    // If things go well, end the task with time measuremments,
+    SCOPE(success)
     {
       end_uncleared();
 
-      if (timing_active)
+      if (start_event && end_event)
       {
         cuda_safe_call(cudaEventRecord(end_event, get_stream()));
         cuda_safe_call(cudaEventSynchronize(end_event));
@@ -330,6 +328,12 @@ public:
       clear();
     };
 
+    // And if they don't, just end the task.
+    SCOPE(fail)
+    {
+      end();
+    };
+
     if (record_time)
     {
       // Events must be created here to avoid issues with multi-gpu.
@@ -338,7 +342,6 @@ public:
       start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
       end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
       cuda_try<cudaEventRecord>(start_event, get_stream());
-      timing_active = true;
     }
 
     // Default for the first argument is a `cudaStream_t`.
@@ -532,23 +535,7 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun)
   {
-    // Apply function to the stream (in the first position) and the data tuple
-    auto& dot        = ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    cudaEvent_t start_event = nullptr;
-    cudaEvent_t end_event   = nullptr;
-    bool timing_active      = false;
-
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
-
-    nvtx_range nr(get_symbol().c_str());
-    start();
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
     {
@@ -562,11 +549,21 @@ public:
       }
     };
 
-    SCOPE(exit)
+    // Apply function to the stream (in the first position) and the data tuple
+    auto& dot        = ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
+
+    nvtx_range nr(get_symbol().c_str());
+    start();
+
+    // If things go well, end the task with time measurements,
+    SCOPE(success)
     {
       end_uncleared();
 
-      if (timing_active)
+      if (start_event && end_event)
       {
         cuda_safe_call(cudaEventRecord(end_event, get_stream()));
         cuda_safe_call(cudaEventSynchronize(end_event));
@@ -588,6 +585,12 @@ public:
       clear();
     };
 
+    // And if they don't, just end the task.
+    SCOPE(fail)
+    {
+      end();
+    };
+
     if (record_time)
     {
       // Events must be created here to avoid issues with multi-gpu.
@@ -596,7 +599,6 @@ public:
       start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
       end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
       cuda_try<cudaEventRecord>(start_event, get_stream());
-      timing_active = true;
     }
 
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)

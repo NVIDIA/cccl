@@ -351,24 +351,29 @@ public:
       t.set_symbol(symbol);
     }
 
-    bool record_time = t.schedule_task();
+    const bool scheduled = t.schedule_task();
     // Execution place may have changed during scheduling task
-    e_place = t.get_exec_place();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    e_place                = t.get_exec_place();
+    const bool record_time = scheduled || statistics.is_calibrating_to_file();
 
     nvtx_range nr(t.get_symbol().c_str());
-    t.start();
 
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
-    // Set only once both timing events exist and the start event has been recorded.
-    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
-    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
-    bool timing_active = false;
+
+    SCOPE(exit)
+    {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    t.start();
 
     const size_t grid_size = e_place.size();
 
@@ -380,13 +385,10 @@ public:
 
     auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, args_type>);
 
-    SCOPE(exit)
-    {
-      t.end_uncleared();
-
+    // Free launch-scoped managed temps between end_uncleared and clear on both paths.
+    auto free_launch_temps = [&] {
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
-        /* If there was managed memory allocated we need to deallocate it */
         void* sys_mem = interpreted_policy.get_system_mem();
         if (sys_mem)
         {
@@ -399,12 +401,21 @@ public:
         {
           deallocateManagedMemory(hostMemoryArrivedList, grid_size, t.get_stream());
         }
+      }
+    };
 
-        if (timing_active)
+    // If things go well, end the task with time measurements.
+    SCOPE(success)
+    {
+      t.end_uncleared();
+      free_launch_temps();
+
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (start_event && end_event)
         {
-          // These run inside the enclosing SCOPE(exit) body, which is noexcept;
-          // keep cuda_safe_call so a CUDA error aborts rather than throwing
-          // through the guard (which would call std::terminate).
+          // Inside the SCOPE body; keep cuda_safe_call so a CUDA error aborts
+          // rather than throwing through a fail/exit guard (std::terminate).
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 
@@ -426,6 +437,14 @@ public:
       t.clear();
     };
 
+    // And if they don't, free temps and just end the task.
+    SCOPE(fail)
+    {
+      t.end_uncleared();
+      free_launch_temps();
+      t.clear();
+    };
+
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
@@ -438,7 +457,6 @@ public:
         start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         cuda_try<cudaEventRecord>(start_event, t.get_stream());
-        timing_active = true;
       }
     }
 
