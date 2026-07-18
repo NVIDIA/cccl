@@ -1,0 +1,28 @@
+[features]
+network_proxy = true
+
+[permissions.ci_triage.filesystem]
+":minimal" = "read"
+
+[permissions.ci_triage.filesystem.":workspace_roots"]
+"." = "read"
+
+[permissions.ci_triage.network]
+enabled = true
+
+[permissions.ci_triage.network.domains]
+"api.github.com" = "allow"
+"results-receiver.actions.githubusercontent.com" = "allow"
+"*.blob.core.windows.net" = "allow"
+
+[shell_environment_policy]
+inherit = "all"
+ignore_default_excludes = true
+include_only = [
+  "HOME",
+  "PATH",
+  "GH_TOKEN",
+  "GITHUB_REPOSITORY",
+  "GITHUB_RUN_ID",
+  "GITHUB_WORKSPACE",
+]
