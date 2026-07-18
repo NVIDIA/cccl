@@ -141,7 +141,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             return cudaSuccess;
           }
           auto* tile_partial_states =
-            ::cuda::align_up(static_cast<TilePartialStateT*>(d_temp_storage), alignof(TilePartialStateT));
+            static_cast<TilePartialStateT*>(::cuda::align_up(d_temp_storage, alignof(TilePartialStateT)));
 
           const size_t dyn_smem_bytes = policy.lookahead.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
           if (const auto error =
