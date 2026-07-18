@@ -446,6 +446,52 @@ enum class backend_mode
   force_cluster,
 };
 
+// Backend decision, shared by the runtime field-based `policy_selector` and the compile-time
+// `policy_selector_from_types`. The facts are taken as independent scalar arguments rather than read back from selector
+// members on purpose: GCC 7 ICEs (PR86953, `cxx_eval_bit_field_ref`) when constant-evaluating a read of adjacent narrow
+// members (`determinism`/`tie_break`/`baseline_can_cover`/`mode`) because -O2 fuses them into one `BIT_FIELD_REF`.
+// Independent parameters are never fused, and the compile-time caller passes constants that fold the branches away.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr topk_backend select_backend(
+  ::cuda::std::int64_t static_max_segment_size,
+  ::cuda::execution::determinism::__determinism_t determinism,
+  ::cuda::execution::tie_break::__tie_break_t tie_break,
+  bool baseline_can_cover,
+  backend_mode mode,
+  ::cuda::compute_capability cc)
+{
+  // A deterministic result set (or a concrete tie-break preference) can only be honored by the cluster backend.
+  const bool deterministic = (determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
+                          || (tie_break != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
+
+  if (mode == backend_mode::force_cluster)
+  {
+    return cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
+  }
+  if (mode == backend_mode::force_baseline)
+  {
+    // The baseline backend cannot honor a deterministic result set / concrete tie-break preference, nor cover an
+    // oversize segment; reject (map to `unsupported`) in those cases rather than pinning a backend that cannot serve
+    // the request -- matching the hard constraints `selector_override_adaptor` enforces.
+    return (baseline_can_cover && !deterministic) ? topk_backend::baseline : topk_backend::unsupported;
+  }
+  if (deterministic)
+  {
+    // Deterministic -> cluster (arch permitting), independent of the max segment size.
+    return cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
+  }
+  if (!baseline_can_cover)
+  {
+    // Oversize for the baseline backend: it must never be selected (its `find_smallest_covering_policy` would fail).
+    return cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
+  }
+  // Baseline can cover: prefer the cluster backend only where it is beneficial, otherwise use the baseline. The size
+  // crossover is a fixed selector constant (not read from the tunable cluster policy), so tuning the cluster policy
+  // never shifts the backend choice.
+  const bool beneficial = cc >= ::cuda::compute_capability{cluster_beneficial_min_cc_major, 0}
+                       && static_max_segment_size >= cluster_beneficial_min_segment_size;
+  return (cluster_capable(cc) && beneficial) ? topk_backend::cluster : topk_backend::baseline;
+}
+
 // Field-based backend selector (like DeviceScan's / DeviceTransform's `policy_selector`): one selector that builds both
 // sub-policies inline and makes the backend decision from plain value fields (keeping it a regular value type).
 // `baseline_can_cover` is supplied by the dispatch, which alone knows the concrete agent types needed for the
@@ -460,50 +506,14 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    const auto baseline = make_baseline_policy();
-    const auto cluster  = make_cluster_policy();
-
-    // A deterministic result set (or a concrete tie-break preference) can only be honored by the cluster backend.
-    const bool deterministic = (determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
-                            || (tie_break != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
-
-    topk_backend backend = topk_backend::unsupported;
-    if (mode == backend_mode::force_cluster)
-    {
-      backend = cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
-    }
-    else if (mode == backend_mode::force_baseline)
-    {
-      // The baseline backend cannot honor a deterministic result set / concrete tie-break preference, nor cover an
-      // oversize segment; reject (map to `unsupported`) in those cases rather than pinning a backend that cannot serve
-      // the request -- matching the hard constraints `selector_override_adaptor` enforces.
-      backend = (baseline_can_cover && !deterministic) ? topk_backend::baseline : topk_backend::unsupported;
-    }
-    else if (deterministic)
-    {
-      // Deterministic -> cluster (arch permitting), independent of the max segment size.
-      backend = cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
-    }
-    else if (!baseline_can_cover)
-    {
-      // Oversize for the baseline backend: it must never be selected (its `find_smallest_covering_policy` would fail).
-      backend = cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
-    }
-    else
-    {
-      // Baseline can cover: prefer the cluster backend only where it is beneficial, otherwise use the baseline. The
-      // size crossover is a fixed selector constant (not read from the tunable cluster policy), so tuning the cluster
-      // policy never shifts the backend choice.
-      const bool beneficial = cc >= ::cuda::compute_capability{cluster_beneficial_min_cc_major, 0}
-                           && static_max_segment_size >= cluster_beneficial_min_segment_size;
-      backend = (cluster_capable(cc) && beneficial) ? topk_backend::cluster : topk_backend::baseline;
-    }
-    return topk_policy{backend, baseline, cluster};
+    return topk_policy{select_backend(static_max_segment_size, determinism, tie_break, baseline_can_cover, mode, cc),
+                       make_baseline_policy(),
+                       make_cluster_policy()};
   }
 };
 
-// Stateless selector built purely from the compile-time request facts; default-constructs the field-based
-// `policy_selector` and delegates. This is the type threaded into the dispatch and kernel: `current_policy` /
+// Stateless selector built purely from the compile-time request facts; makes the backend decision via `select_backend`
+// on its template constants. This is the type threaded into the dispatch and kernel: `current_policy` /
 // `dispatch_compute_cap` default-construct it, so the behavior must live in the type. The facts are re-exposed as
 // static members so the tuning-override adaptor can borrow them.
 template <class KeyT,
@@ -524,7 +534,11 @@ struct policy_selector_from_types
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    return policy_selector{StaticMaxSegSize, Determinism, TieBreak, BaselineCanCover, Mode}(cc);
+    // Call `select_backend` directly with the fact constants rather than through a `policy_selector` value: the
+    // latter's member reads trip the GCC 7 constexpr ICE described on `select_backend`.
+    return topk_policy{select_backend(StaticMaxSegSize, Determinism, TieBreak, BaselineCanCover, Mode, cc),
+                       make_baseline_policy(),
+                       make_cluster_policy()};
   }
 };
 
