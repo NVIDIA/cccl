@@ -40,7 +40,7 @@ using __cuda_error_t = int;
 #if _CCCL_HOSTED()
 namespace __detail
 {
-static char* __format_cuda_error(
+[[nodiscard]] _CCCL_HOST_API inline char* __format_cuda_error(
   ::cuda::__msg_storage& __msg_buffer,
   const int __status,
   const char* __msg,
@@ -69,19 +69,20 @@ static char* __format_cuda_error(
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-class cuda_error : public ::std::runtime_error
+class _CCCL_VISIBILITY_DEFAULT cuda_error : public ::std::runtime_error
 {
 public:
-  cuda_error(const __cuda_error_t __status,
-             const char* __msg,
-             const char* __api                  = nullptr,
-             ::cuda::std::source_location __loc = ::cuda::std::source_location::current(),
-             __msg_storage __msg_buffer         = {}) noexcept
+  _CCCL_HOST_API cuda_error(
+    const __cuda_error_t __status,
+    const char* __msg,
+    const char* __api                  = nullptr,
+    ::cuda::std::source_location __loc = ::cuda::std::source_location::current(),
+    __msg_storage __msg_buffer         = {}) noexcept
       : ::std::runtime_error(::cuda::__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
       , __status_(__status)
   {}
 
-  [[nodiscard]] auto status() const noexcept -> __cuda_error_t
+  [[nodiscard]] _CCCL_HOST_API constexpr auto status() const noexcept -> __cuda_error_t
   {
     return __status_;
   }
