@@ -229,8 +229,8 @@ struct agent_batched_topk_cluster
     size_state size;
     pass_result result;
   };
-  using size_state_t  = state_t::size_state;
-  using pass_result_t = state_t::pass_result;
+  using size_state_t  = typename state_t::size_state;
+  using pass_result_t = typename state_t::pass_result;
 
   // See the class comment: deterministic guarantees select the index-ordered scan; `is_tie_reversed` flips its order.
   static constexpr bool need_determinism =
