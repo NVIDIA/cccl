@@ -107,17 +107,18 @@ struct RleLookbackPolicy
 //! The tuning policy for the lookahead implementation of DeviceRunLengthEncode::Encode
 struct RleLookaheadPolicy
 {
-  // IPT should br 32 (32 chunks x 32 lanes)
-  int items_per_thread;
-  int compute_warps;
-  int store_warps; // store warps; must divide or be a multiple of compute_warps
-  int key_ring_stages; // pipeline depth
+  int items_per_thread; //!< Number of items each lane of a compute warp processes; a warp tile is
+                        //!< 32 * items_per_thread items
+  int compute_warps; //!< Number of compute warps; each processes one warp tile per pipeline generation
+  int store_warps; //!< Number of store warps; must equal compute_warps
+  int key_ring_stages; //!< Depth of the key staging ring: how many pipeline generations can be in flight
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
   // so it can be SHALLOWER than the keys ring and this buys room for more key_ring_stages
-  int pos_ring_stages;
-  int poll_loads_per_lane; // how many loads each poll lane keeps in flight
+  int pos_ring_stages; //!< Depth of the run-positions ring; 2 * pos_ring_stages >= key_ring_stages must hold
+  int poll_loads_per_lane; //!< Number of tile-state loads each poll-warp lane keeps in flight
   // when should compute warps stage?
-  int flag_staging_threshold;
+  int flag_staging_threshold; //!< Runs per warp tile below which the compute warp stages raw head flags and the
+                              //!< store warp decodes positions itself, instead of staging precomputed positions
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int warp_tile_size() const noexcept
   {
