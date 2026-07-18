@@ -23,7 +23,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
-#include <cub/device/dispatch/dispatch_rle_encode_lookahead.cuh>
+#include <cub/device/dispatch/dispatch_rle_encode.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
@@ -82,30 +82,6 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceRunLengthEncode
 {
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  // DeviceRunLengthEncode::Encode dispatches to ReduceByKey, but we want to have a dedicated tuning policy, so we need
-  // to adapt the policy selector to convert the tuning policy
-  template <typename PolicySelector>
-#  if _CCCL_HAS_CONCEPTS()
-    requires detail::rle::encode::rle_encode_policy_selector<PolicySelector>
-#  endif // _CCCL_HAS_CONCEPTS()
-  struct __policy_selector_adapter
-  {
-    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-      -> ReduceByKeyPolicy
-    {
-      const RleEncodePolicy policy = PolicySelector{}(cc);
-      return ReduceByKeyPolicy{
-        policy.lookback.threads_per_block,
-        policy.lookback.items_per_thread,
-        policy.lookback.load_algorithm,
-        policy.lookback.load_modifier,
-        policy.lookback.scan_algorithm,
-        policy.lookback.lookback_delay};
-    }
-  };
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
   //!
@@ -244,10 +220,7 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       offset_t>;
 
-    // the lookahead implementation is host-dispatch-only (its shared-memory opt-in is a host-side runtime call);
-    // the CDP path below always dispatches the streaming implementation
-    bool lookahead_handled            = false;
-    const cudaError_t lookahead_error = detail::rle::encode::try_dispatch_lookahead(
+    return detail::rle::encode::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -256,26 +229,7 @@ struct DeviceRunLengthEncode
       d_num_runs_out,
       static_cast<offset_t>(num_items),
       stream,
-      policy_selector_t{},
-      lookahead_handled);
-    if (lookahead_handled)
-    {
-      return lookahead_error;
-    }
-
-    return detail::reduce_by_key::dispatch_streaming(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_unique_out,
-      lengths_input_iterator_t(length_t{1}),
-      d_counts_out,
-      d_num_runs_out,
-      equality_op{},
-      reduction_op{},
-      static_cast<offset_t>(num_items),
-      stream,
-      __policy_selector_adapter<policy_selector_t>{});
+      policy_selector_t{});
   }
 
   //! @rst
@@ -383,10 +337,7 @@ struct DeviceRunLengthEncode
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        // the lookahead implementation is host-dispatch-only (its shared-memory opt-in is a host-side runtime
-        // call); the CDP path below always dispatches the streaming implementation
-        bool lookahead_handled            = false;
-        const cudaError_t lookahead_error = detail::rle::encode::try_dispatch_lookahead(
+        return detail::rle::encode::dispatch(
           storage,
           bytes,
           d_in,
@@ -395,26 +346,7 @@ struct DeviceRunLengthEncode
           d_num_runs_out,
           static_cast<offset_t>(num_items),
           stream,
-          policy_selector,
-          lookahead_handled);
-        if (lookahead_handled)
-        {
-          return lookahead_error;
-        }
-
-        return detail::reduce_by_key::dispatch_streaming(
-          storage,
-          bytes,
-          d_in,
-          d_unique_out,
-          lengths_input_iterator_t(length_t{1}),
-          d_counts_out,
-          d_num_runs_out,
-          equality_op{},
-          reduction_op{},
-          static_cast<offset_t>(num_items),
-          stream,
-          __policy_selector_adapter<decltype(policy_selector)>{});
+          policy_selector);
       });
   }
 
