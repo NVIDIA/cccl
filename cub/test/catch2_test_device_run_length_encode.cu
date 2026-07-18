@@ -111,7 +111,7 @@ ulonglong2 make_segment_key<ulonglong2>(int value)
 }
 
 // max_seg > 0: run lengths uniform in [1, max_seg]; max_seg == 0: one constant key for the whole
-// input; max_seg < 0: every run exactly -max_seg long (deterministic run head positions)
+// input; max_seg < 0: every run exactly -max_seg long (fixed run head positions)
 template <class KeyT>
 c2h::host_vector<KeyT> generate_segmented_keys(long long num_items, int max_seg, unsigned seed)
 {
@@ -554,10 +554,10 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
     {(1 << 20) + 12345, 2}, // partial tail, mid density
     {64 * tile + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
     {64 * tile + 7, 100}, // a couple of runs per warp of input
-    {64 * tile, -40}, // deterministic runs: several run heads per 32-element window
-    {64 * tile, -31}, // deterministic runs: run count per warp-tile just above one full warp
-    {64 * tile, -4}, // deterministic runs: run count per warp-tile exactly at a power of two
-    {64 * tile, -3}, // deterministic runs: run count per warp-tile just above a power of two
+    {64 * tile, -40}, // fixed-length runs: several run heads per 32-element window
+    {64 * tile, -31}, // fixed-length runs: run count per warp-tile just above one full warp
+    {64 * tile, -4}, // fixed-length runs: run count per warp-tile exactly at a power of two
+    {64 * tile, -3}, // fixed-length runs: run count per warp-tile just above a power of two
     {64 * tile, -static_cast<int>(warp_tile + 1)}, // run head drifts through every in-warp-tile offset
     {64 * tile, 0}, // one constant run over the whole input
     {64 * tile, -static_cast<int>(tile)}, // run length == tile: a run head at element 0 of every tile
@@ -565,7 +565,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
 
   for (const segment_grid_case& grid_case : cases)
   {
-    // deterministic run lengths (max_seg <= 0) only vary in key values; one seed suffices
+    // fixed run lengths (max_seg <= 0) only vary in key values; one seed suffices
     const int num_seeds = (grid_case.max_seg > 0) ? 2 : 1;
     for (int seed = 0; seed < num_seeds; ++seed)
     {
