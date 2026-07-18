@@ -1039,14 +1039,6 @@ private:
     small_length -= delta;
   }
 
-  void destroy_small_prefix(small_size_t n) noexcept
-  {
-    while (n > 0)
-    {
-      small_begin()[--n].~T();
-    }
-  }
-
   // Construct elements at small_begin()[0..) via @p construct_one(dest, index).
   // Return false from @p construct_one to stop. On success sets small_length; on
   // throw destroys any elements constructed so far and rethrows.
@@ -1056,7 +1048,10 @@ private:
     small_size_t n = 0;
     SCOPE(fail)
     {
-      destroy_small_prefix(n);
+      while (n > 0)
+      {
+        small_begin()[--n].~T();
+      }
     };
     while (construct_one(small_begin() + n, n))
     {
