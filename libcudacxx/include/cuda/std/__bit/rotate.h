@@ -82,7 +82,11 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     // For _Tp < uint32_t we can repeat the _Tp bits in upper parts of uint32_t and use 32-bit __funnelshift_r to do the
-    // rotation.
+    // rotation. For _Tp > uint32_t we can split the type to 32-bit words, use __funneshift_r to produce the result
+    // words and reorder them based on the __cnt value.
+
+    // clang-tidy doesn't see the content of NV_IF_TARGET, thus thinks the branches are all empty.
+    // NOLINTBEGIN(bugprone-branch-clone)
     if constexpr (sizeof(_Tp) == sizeof(uint8_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, ({
@@ -146,6 +150,7 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
                    }))
     }
 #  endif // _CCCL_HAS_INT128()
+    // NOLINTEND(bugprone-branch-clone)
   }
 #endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATERIGHT8)
@@ -185,7 +190,11 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     // For _Tp < uint32_t we can repeat the _Tp bits in upper parts of uint32_t and use 32-bit __funnelshift_l to do the
-    // rotation.
+    // rotation. For _Tp > uint32_t we can split the type to 32-bit words, use __funneshift_l to produce the result
+    // words and reorder them based on the __cnt value.
+
+    // clang-tidy doesn't see the content of NV_IF_TARGET, thus thinks the branches are all empty.
+    // NOLINTBEGIN(bugprone-branch-clone)
     if constexpr (sizeof(_Tp) == sizeof(uint8_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, ({
@@ -249,6 +258,7 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
                    }))
     }
 #  endif // _CCCL_HAS_INT128()
+    // NOLINTEND(bugprone-branch-clone)
   }
 #endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATELEFT8)
