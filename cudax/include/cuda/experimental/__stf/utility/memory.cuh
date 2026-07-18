@@ -707,12 +707,15 @@ public:
       }
       if (small_length > 0)
       {
-        // Copy out first so a thrown allocation leaves *this intact.
+        // Move elements into the heap buffer (allocation happens up front via
+        // reserve, so the loop itself won't reallocate). move_if_noexcept keeps
+        // the strong guarantee for throwing-move copyable types while still
+        // supporting move-only types.
         ::std::vector<T> copy;
         copy.reserve(new_cap);
         for (small_size_t i = 0; i < small_length; ++i)
         {
-          copy.push_back(small_begin()[i]);
+          copy.push_back(::std::move_if_noexcept(small_begin()[i]));
         }
         clear();
         adopt_big_vector(mv(copy));
@@ -762,28 +765,36 @@ public:
     if (is_small())
     {
       // Todo: support non-random iterators
-      const std::size_t new_size = small_length + (last - first);
+      const std::size_t n        = last - first;
+      const std::size_t new_size = small_length + n;
       if (new_size <= small_cap)
       {
-        // Build the result in a side buffer first; only mutate *this after
-        // all new elements are successfully copied.
-        ::std::vector<T> rebuilt;
-        rebuilt.reserve(new_size);
-        rebuilt.insert(rebuilt.end(), small_begin(), pos);
-        rebuilt.insert(rebuilt.end(), first, last);
-        rebuilt.insert(rebuilt.end(), pos, small_begin() + small_length);
-        const auto offset = static_cast<size_t>(pos - small_begin());
-        clear();
-        construct_small_elements([&](T* dest, small_size_t i) {
-          if (i >= rebuilt.size())
-          {
-            return false;
-          }
-          new (dest) T(mv(rebuilt[i]));
-          return true;
-        });
+        // In-place insert with spare capacity, no heap allocation. Split the
+        // work between the uninitialized tail (placement-construct) and the
+        // already-initialized head (assignment), mirroring std::vector.
+        T* const e          = small_begin() + small_length;
+        const std::size_t k = e - pos; // number of existing elements at/after pos
+        if (k > n)
+        {
+          // The last n existing elements move into raw storage past the end.
+          ::std::uninitialized_move(e - n, e, e);
+          // The remaining existing elements shift up within initialized storage.
+          ::std::move_backward(pos, e - n, e);
+          // New elements assign into the now-vacated initialized slots.
+          ::std::copy(first, last, pos);
+        }
+        else
+        {
+          // The new elements split: the first k assign into initialized slots,
+          // the rest construct into raw storage past the end.
+          InputIt mid = first + k;
+          ::std::uninitialized_copy(mid, last, e); // tail new elements -> raw
+          ::std::uninitialized_move(pos, e, pos + n); // existing elements -> raw
+          ::std::copy(first, mid, pos); // head new elements -> initialized
+        }
+        small_length = small_size_t(small_length + n);
         assert(size() == new_size);
-        return begin() + offset;
+        return pos;
       }
       ::std::vector<T> copy;
       copy.reserve(new_size);
