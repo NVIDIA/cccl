@@ -182,7 +182,7 @@ public:
   {}
 
   launch(exec_place e_place, ::std::vector<cudaStream_t> streams, Arg arg)
-      : launch(spec_t(), mv(e_place), mv(arg), mv(streams))
+      : launch(spec_t(), mv(e_place), mv(streams), mv(arg))
   {}
 
   template <typename Fun>
