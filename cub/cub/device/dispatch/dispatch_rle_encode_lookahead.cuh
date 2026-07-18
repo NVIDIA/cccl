@@ -24,9 +24,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/align_up.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -49,17 +48,15 @@ inline constexpr bool lookahead_instantiable =
   && (16 % sizeof(it_value_t<InputIteratorT>) == 0) && (alignof(it_value_t<InputIteratorT>) <= 16)
   && ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8);
 
-// Dispatches the lookahead implementation when the tuning policy selects it and the runtime gates pass.
-// `handled` reports whether this call satisfied the request (size query or launch); when false, the caller
-// must dispatch the streaming implementation with the same arguments. The size query accounts for BOTH
-// implementations: the runtime gates may route the same allocation to either path across calls.
+// Dispatches the lookahead implementation when the tuning policy selects it. `handled` reports whether
+// the lookahead implementation owns this call; when false (non-viable types, a lookback policy, or a
+// device-side caller), the caller dispatches the streaming implementation instead.
 template <class PolicySelector,
           class InputIteratorT,
           class UniqueOutputIteratorT,
           class LengthsOutputIteratorT,
           class NumRunsOutputIteratorT,
           class OffsetT,
-          class StreamingSizeFnT,
           class LauncherFactory = detail::TripleChevronFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
   [[maybe_unused]] void* d_temp_storage,
@@ -71,7 +68,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
   [[maybe_unused]] OffsetT num_items,
   [[maybe_unused]] cudaStream_t stream,
   [[maybe_unused]] PolicySelector policy_selector,
-  [[maybe_unused]] StreamingSizeFnT streaming_size_fn,
   bool& handled,
   [[maybe_unused]] LauncherFactory launcher_factory = {})
 {
@@ -103,57 +99,41 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
         {
           return cudaSuccess;
         }
+        handled = true;
 
-        const auto num_tiles = ::cuda::ceil_div(static_cast<::cuda::std::int64_t>(num_items),
-                                                static_cast<::cuda::std::int64_t>(policy.lookahead.tile_size()));
-
-        // the size query must cover both implementations: the same allocation may serve either across calls
-        size_t streaming_bytes = 0;
-        if (const auto error = CubDebug(streaming_size_fn(streaming_bytes)))
+        if (num_items <= 0)
         {
-          return error;
+          if (d_temp_storage == nullptr)
+          {
+            temp_storage_bytes = 1; // just fulfill the contract that CUB always requires some temporary storage
+            return cudaSuccess;
+          }
+          return CubDebug(cudaMemsetAsync(
+            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_num_runs_out), 0, sizeof(num_runs_t), stream));
         }
-        const size_t required =
-          (::cuda::std::max) (streaming_bytes, static_cast<size_t>(num_tiles) * sizeof(TilePartialStateT));
+
+        const int num_tiles =
+          static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(policy.lookahead.tile_size())));
+
         if (d_temp_storage == nullptr)
         {
-          temp_storage_bytes = required;
-          handled            = true;
+          // + alignof: the tile states are aligned up inside the allocation, so any base pointer works
+          temp_storage_bytes = static_cast<size_t>(num_tiles) * sizeof(TilePartialStateT) + alignof(TilePartialStateT);
           return cudaSuccess;
         }
-        if (temp_storage_bytes < required)
-        {
-          handled = true;
-          return CubDebug(cudaErrorInvalidValue);
-        }
+        auto* tile_partial_states =
+          ::cuda::align_up(static_cast<TilePartialStateT*>(d_temp_storage), alignof(TilePartialStateT));
 
-        // runtime gates: any failure falls back to the streaming implementation (the allocation covers it)
-        if (num_items <= 0 || cc < ::cuda::compute_capability{10, 0} || num_tiles > 0x7fffffff
-            || !::cuda::is_aligned(d_temp_storage, alignof(TilePartialStateT)))
-        {
-          return cudaSuccess;
-        }
-        int max_dynamic_smem_size = 0;
-        if (const auto error = CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel)))
-        {
-          return error;
-        }
         const size_t dyn_smem_bytes = policy.lookahead.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
-        if (static_cast<size_t>(max_dynamic_smem_size) < dyn_smem_bytes)
-        {
-          return cudaSuccess;
-        }
         if (const auto error =
               CubDebug(launcher_factory.set_max_dynamic_smem_size_for(kernel, static_cast<int>(dyn_smem_bytes))))
         {
           return error;
         }
-        handled = true;
 
-        auto* tile_partial_states = static_cast<TilePartialStateT*>(d_temp_storage);
         {
           constexpr int init_kernel_threads = 128;
-          const auto init_grid_size         = static_cast<int>(::cuda::ceil_div(num_tiles, init_kernel_threads));
+          const auto init_grid_size         = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 #ifdef CUB_DEBUG_LOG
           _CubLog("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
                   init_grid_size,
@@ -179,13 +159,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
           const int block_dim = num_total_threads(policy.lookahead);
 #ifdef CUB_DEBUG_LOG
           _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-                  static_cast<int>(num_tiles),
+                  num_tiles,
                   block_dim,
                   dyn_smem_bytes,
                   (long long) stream);
 #endif // CUB_DEBUG_LOG
           if (const auto error = CubDebug(
-                launcher_factory(static_cast<int>(num_tiles),
+                launcher_factory(num_tiles,
                                  block_dim,
                                  static_cast<int>(dyn_smem_bytes),
                                  stream,
@@ -197,7 +177,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t try_dispatch_lookahead(
                         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_num_runs_out),
                         tile_partial_states,
                         num_items,
-                        static_cast<int>(num_tiles))))
+                        num_tiles)))
           {
             return error;
           }

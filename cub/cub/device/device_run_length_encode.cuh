@@ -257,21 +257,6 @@ struct DeviceRunLengthEncode
       static_cast<offset_t>(num_items),
       stream,
       policy_selector_t{},
-      [&](size_t& streaming_bytes) {
-        return detail::reduce_by_key::dispatch_streaming(
-          nullptr,
-          streaming_bytes,
-          d_in,
-          d_unique_out,
-          lengths_input_iterator_t(length_t{1}),
-          d_counts_out,
-          d_num_runs_out,
-          equality_op{},
-          reduction_op{},
-          static_cast<offset_t>(num_items),
-          stream,
-          __policy_selector_adapter<policy_selector_t>{});
-      },
       lookahead_handled);
     if (lookahead_handled)
     {
@@ -411,21 +396,6 @@ struct DeviceRunLengthEncode
           static_cast<offset_t>(num_items),
           stream,
           policy_selector,
-          [&](size_t& streaming_bytes) {
-            return detail::reduce_by_key::dispatch_streaming(
-              nullptr,
-              streaming_bytes,
-              d_in,
-              d_unique_out,
-              lengths_input_iterator_t(length_t{1}),
-              d_counts_out,
-              d_num_runs_out,
-              equality_op{},
-              reduction_op{},
-              static_cast<offset_t>(num_items),
-              stream,
-              __policy_selector_adapter<decltype(policy_selector)>{});
-          },
           lookahead_handled);
         if (lookahead_handled)
         {
