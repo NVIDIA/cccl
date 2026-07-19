@@ -153,7 +153,9 @@ task arguments to tensors if you manage the task block yourself.
 
 **Numba** (``cuda.stf._experimental.interop.numba``) -- ``numba_task`` opens a task and
 yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to
-``cuda.compute`` algorithms::
+``cuda.compute`` algorithms. The following excerpt sums two logical data with
+``cuda.compute`` (see ``tests/stf/interop/test_cuda_compute.py`` for the complete
+program)::
 
     from cuda.stf._experimental.interop.numba import numba_task
 
