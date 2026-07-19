@@ -241,8 +241,6 @@ iteration cap so a non-converging solve cannot replay forever::
 forms lower onto a single condition task and one tiny kernel regardless of
 the number of terms (at most 8, one ``&``-chain or one ``|``-chain per
 condition). Use ``and`` / ``or`` and these expressions raise ``TypeError``.
-For a fully custom predicate, launch your own kernel that calls
-``cudaGraphSetConditional()`` on ``loop.cond_handle``.
 
 See ``examples/cg.py`` and ``examples/bicgstab.py`` for complete solvers built
 on device-side while loops.

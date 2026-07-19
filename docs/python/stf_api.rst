@@ -125,8 +125,13 @@ Contexts
       .. py:attribute:: cond_handle
          :no-index:
 
-         Raw ``cudaGraphConditionalHandle`` as ``uint64_t``, for custom
-         condition kernels that call ``cudaGraphSetConditional()`` directly.
+         Raw ``cudaGraphConditionalHandle`` as ``uint64_t``, for a custom
+         condition kernel that calls ``cudaGraphSetConditional()`` directly.
+         Advanced: such a kernel cannot be written with Numba or PyTorch --
+         ``cudaGraphSetConditional()`` is a device-runtime function, so the
+         kernel must be compiled with relocatable device code and linked
+         against ``cudadevrt`` (e.g. via NVRTC + nvJitLink). Prefer
+         ``continue_while(...)``.
 
 .. py:class:: cond(ld, op, threshold)
 
