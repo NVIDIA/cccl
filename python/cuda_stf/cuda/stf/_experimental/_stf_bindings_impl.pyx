@@ -2918,6 +2918,16 @@ cdef class stackable_logical_data:
     cdef str    _symbol
     cdef readonly bint _is_token
     cdef object _source_buf
+    # Read-only inputs (const CAI export or non-writable Py buffers) may not be
+    # requested with write()/rw(); STF would otherwise mutate memory the
+    # producer promised was immutable.
+    cdef readonly bint _readonly
+    # When the source is exposed through the Python buffer protocol we keep the
+    # Py_buffer export active for the whole lifetime of the logical_data: STF
+    # registers view.buf/view.len and may touch that range asynchronously, so
+    # the export must not be released until teardown.
+    cdef Py_buffer _view
+    cdef bint _has_view
     # Shared "alive" sentinel from the parent stackable_context. See
     # context._alive for the rationale.
     cdef _AliveFlag _alive
@@ -2932,6 +2942,8 @@ cdef class stackable_logical_data:
         self._symbol = None
         self._is_token = False
         self._source_buf = None
+        self._readonly = False
+        self._has_view = False
         self._alive = None
 
     def __dealloc__(self):
@@ -2951,6 +2963,11 @@ cdef class stackable_logical_data:
             except Exception as e:
                 print(f"stf.stackable_logical_data: cleanup failed: {e}")
         self._ld = NULL
+        # Release the buffer-protocol export (if any) only after the logical
+        # data has been destroyed, so STF no longer references view.buf.
+        if self._has_view:
+            PyBuffer_Release(&self._view)
+            self._has_view = False
 
     def set_symbol(self, str name):
         stf_stackable_logical_data_set_symbol(self._ld, name.encode())
@@ -3006,6 +3023,11 @@ cdef class stackable_logical_data:
     def set_read_only(self):
         """Mark this logical data as read-only (enables concurrent reads across scopes)."""
         stf_stackable_logical_data_set_read_only(self._ld)
+        # STF-level read-only data may never be written again; reflect that
+        # in the Python-side flag so write()/rw()/push(WRITE|RW) fail with a
+        # clear error instead of tripping a (release-mode compiled-out)
+        # C++ assertion later.
+        self._readonly = True
 
     def push(self, mode, data_place dplace=None):
         """Explicitly import this logical data into the current stackable scope.
@@ -3028,18 +3050,38 @@ cdef class stackable_logical_data:
             default placement.
         """
         cdef int m = int(mode)
+        if self._readonly and (m & <int>STF_WRITE):
+            raise ValueError(
+                "cannot push() a write-capable access mode on read-only "
+                "logical data; use AccessMode.READ"
+            )
         cdef stf_data_place_handle dh = NULL
         if dplace is not None:
             dh = dplace._h
         stf_stackable_logical_data_push(self._ld, <stf_access_mode>m, dh)
 
+    @property
+    def readonly(self):
+        """True when the backing source forbids write()/rw() dependencies."""
+        return self._readonly
+
     def read(self, dplace=None):
         return dep(self, AccessMode.READ.value, dplace)
 
     def write(self, dplace=None):
+        if self._readonly:
+            raise ValueError(
+                "cannot request write() access on logical_data backed by a "
+                "read-only source; register it with a writable buffer/array"
+            )
         return dep(self, AccessMode.WRITE.value, dplace)
 
     def rw(self, dplace=None):
+        if self._readonly:
+            raise ValueError(
+                "cannot request rw() access on logical_data backed by a "
+                "read-only source; register it with a writable buffer/array"
+            )
         return dep(self, AccessMode.RW.value, dplace)
 
     def empty_like(self):
@@ -3913,7 +3955,6 @@ cdef class stackable_context:
         out._ctx = self._ctx
         out._alive = self._alive
         out._source_buf = buf
-        cdef Py_buffer view
         cdef int flags
 
         if dplace is None:
@@ -3923,10 +3964,11 @@ cdef class stackable_context:
             cai = buf.__cuda_array_interface__
             _reject_unsupported_cai_stream(cai)
             data_ptr, readonly = cai['data']
+            out._readonly = bool(readonly)
             original_shape = cai['shape']
             out._dtype = _dtype_from_cai(cai)
             _validate_cai_c_contiguous(cai, out._dtype)
-            out._shape = original_shape
+            out._shape = tuple(int(dim) for dim in original_shape)
             out._ndim = len(out._shape)
             itemsize = out._dtype.itemsize
             total_items = 1
@@ -3936,23 +3978,42 @@ cdef class stackable_context:
             out._ld = stf_stackable_logical_data_with_place(
                 self._ctx, <void*><uintptr_t>data_ptr, out._len, dplace._h)
         else:
-            flags = PyBUF_FORMAT | PyBUF_ND | PyBUF_ANY_CONTIGUOUS
-            if PyObject_GetBuffer(buf, &view, flags) != 0:
+            # Require C-contiguous memory: STF registers view.buf/view.len as
+            # a flat byte range interpreted with the stored (C-order) shape,
+            # so a Fortran-ordered exporter would be read in the wrong
+            # element order.
+            flags = PyBUF_FORMAT | PyBUF_ND | PyBUF_C_CONTIGUOUS
+            if PyObject_GetBuffer(buf, &out._view, flags) != 0:
                 raise ValueError(
-                    "object doesn't support the buffer protocol, is not contiguous, "
+                    "object doesn't support the buffer protocol, is not C-contiguous, "
                     "or doesn't expose __cuda_array_interface__")
+            # The export stays active until __dealloc__: STF may access
+            # view.buf asynchronously, so releasing it here would let the
+            # producer resize or free the backing store out from under STF.
+            out._has_view = True
             try:
-                out._ndim = view.ndim
-                out._len = view.len
-                out._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
-                out._dtype = np.dtype(view.format)
+                out._ndim = out._view.ndim
+                out._len = out._view.len
+                out._shape = tuple(<Py_ssize_t>out._view.shape[i] for i in range(out._view.ndim))
+                out._dtype = np.dtype(out._view.format)
+                out._readonly = bool(out._view.readonly)
                 out._ld = stf_stackable_logical_data_with_place(
-                    self._ctx, view.buf, view.len, dplace._h)
-            finally:
-                PyBuffer_Release(&view)
+                    self._ctx, out._view.buf, out._view.len, dplace._h)
+            except:
+                PyBuffer_Release(&out._view)
+                out._has_view = False
+                raise
 
         if out._ld == NULL:
             raise RuntimeError("failed to create stackable_logical_data")
+
+        # A read-only source can never be written, so mark it read-only at
+        # the STF level too: nested scopes then auto-import it with READ
+        # instead of an RW freeze, which both allows concurrent readers and
+        # prevents a pop/finalize write-back into memory the exporter
+        # declared immutable.
+        if out._readonly:
+            stf_stackable_logical_data_set_read_only(out._ld)
 
         if name is not None:
             out.set_symbol(name)
