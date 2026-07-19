@@ -211,6 +211,42 @@ The lower-level ``stackable_context.pop_prologue_shared()`` API remains
 available for advanced code that manages stackable scopes manually, but most
 Python examples should prefer ``task_graph()``.
 
+Device-side loops
+-----------------
+
+A ``stackable_context`` (created directly or owned by a ``task_graph()``) can
+nest scopes that become CUDA conditional graph nodes (CUDA 12.4+), so iteration
+runs entirely on the device with no host round-trip per step:
+
+* ``with ctx.repeat(count):`` -- run the body a fixed number of times.
+* ``with ctx.while_loop() as loop:`` -- run the body while a condition holds.
+
+A while body executes **at least once**. Call ``loop.continue_while(...)``
+exactly once per body, after the body tasks; it schedules an internal task
+that reads 1-element logical data and sets the continuation predicate for the
+**next** iteration (tasks submitted after it still run in the current one).
+Conditions compare device scalars against host constants and combine with
+``&`` (continue while all hold) or ``|`` (continue while any holds), with
+``~`` for negation -- the usual way to pair a convergence test with an
+iteration cap so a non-converging solve cannot replay forever::
+
+    liter = ctx.logical_data_zeros((1,), np.float64, name="iter")
+
+    with ctx.while_loop() as loop:
+        # ... solver step updating lresidual, and a task incrementing liter ...
+        loop.continue_while((lresidual > tol) & (liter < max_iter))
+
+``(lresidual > tol)`` is sugar for the canonical leaf constructor
+``stf.cond(lresidual, ">", tol)``, which also suits generated code; both
+forms lower onto a single condition task and one tiny kernel regardless of
+the number of terms (at most 8, one ``&``-chain or one ``|``-chain per
+condition). Use ``and`` / ``or`` and these expressions raise ``TypeError``.
+For a fully custom predicate, launch your own kernel that calls
+``cudaGraphSetConditional()`` on ``loop.cond_handle``.
+
+See ``examples/cg.py`` and ``examples/bicgstab.py`` for complete solvers built
+on device-side while loops.
+
 Places
 ------
 
