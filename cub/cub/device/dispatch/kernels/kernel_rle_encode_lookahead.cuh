@@ -290,10 +290,10 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
   for (int iter = 0; iter < items_per_thread; ++iter)
   {
     const int loc             = warp_tile_offset + iter * 32 + lane_id;
-    const KeyT key            = (loc < tile_len) ? key_buf[loc + skip_elems] : KeyT{};
+    const KeyT key            = key_buf[loc + skip_elems];
     const KeyT pred           = key_buf[loc + skip_elems - 1]; // loc==0 reads the over fetched slot[slot_pad-1]
     const int is_global_first = (tile_id == 0 && loc == 0);
-    const int head            = (loc < tile_len) ? (is_global_first ? 1 : (key != pred)) : 0;
+    const int head            = (loc < tile_len) ? (is_global_first ? 1 : !(key == pred)) : 0;
     const unsigned flags      = __ballot_sync(full_mask, head);
     if (lane_id == iter)
     {
@@ -925,9 +925,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               }
               const int run_idx  = it * 32 + lane_id;
               const RunSpanT run = dec.decode_run(run_idx);
-              buf_key[it]        = (run_idx < warp_tile_run_count)
-                                   ? tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems]
-                                   : KeyT{};
+              buf_key[it]        = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
               // note: this is garbage for the last run head
               buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
