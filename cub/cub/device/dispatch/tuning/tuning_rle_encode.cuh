@@ -717,10 +717,11 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
     [[maybe_unused]] ::cuda::compute_capability cc, [[maybe_unused]] const RleLookaheadPolicy& lookahead_policy) const
   {
-    // We need PTX ISA 8.6 and nvcc >= 12.8 for the clusterlaunchcontrol and bulk-copy instructions.
+    // We need PTX ISA 9.2 (CUDA 13.2) for the cp.async.bulk .ignore_oob qualifier used by the load warp
+    // (clusterlaunchcontrol only needs 8.6). The kernel and the dispatch arm are compiled out below this ISA.
     // The macro `CCCL_DISABLE_WARPSPEED_RLE` will be left in as a kill-switch for users in case they find any bugs
     // after we shipped the implementation. TODO(nanan): remove CCCL_DISABLE_WARPSPEED_RLE in CCCL 4.0
-#if __cccl_ptx_isa < 860 || _CCCL_CUDACC_BELOW(12, 8) || defined(CCCL_DISABLE_WARPSPEED_RLE)
+#if __cccl_ptx_isa < 920 || defined(CCCL_DISABLE_WARPSPEED_RLE)
     return false;
 #else
     if (!input_contiguous || !unique_out_contiguous || !lengths_out_contiguous || !num_runs_out_contiguous
@@ -738,7 +739,7 @@ struct policy_selector
       return false;
     }
     return true;
-#endif // __cccl_ptx_isa < 860 || _CCCL_CUDACC_BELOW(12, 8) || defined(CCCL_DISABLE_WARPSPEED_RLE)
+#endif // __cccl_ptx_isa < 920 || defined(CCCL_DISABLE_WARPSPEED_RLE)
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
