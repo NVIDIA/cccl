@@ -28,6 +28,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rle::encode
 {
+// the kernel (and everything it needs) only exists from PTX ISA 9.2 (CUDA 13.2): the load warp requires the
+// cp.async.bulk .ignore_oob qualifier. Below that, the dispatch layer compiles the lookahead path out entirely.
+#if __cccl_ptx_isa >= 920
 namespace ptx = ::cuda::ptx;
 
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const RleLookaheadPolicy& policy)
@@ -198,7 +201,7 @@ template <int width>
 __device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
 {
   static_assert(1 <= width && width <= 32, "the scan operates within a single warp");
-#pragma unroll
+#  pragma unroll
   for (int offset = 1; offset < width; offset <<= 1)
   {
     const int predecessor_partial = __shfl_up_sync(full_mask, lane_value, offset);
@@ -286,7 +289,7 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
 {
   static_assert(items_per_thread <= 32, "one lane per iter requires items_per_thread<=32");
   unsigned my_flags = 0;
-#pragma unroll
+#  pragma unroll
   for (int iter = 0; iter < items_per_thread; ++iter)
   {
     const int loc             = warp_tile_offset + iter * 32 + lane_id;
@@ -388,7 +391,7 @@ struct HeadFlagDecodeT
     // empty should be +infinity, since we use min
     lane_first_head_from_word = lane_word_run_count ? (lane_id * 32 + __ffs(lane_head_flag_word) - 1) : 0x7fffffff;
     // if not, we loop to find the next head in flag word [i, 32). this is just a fold with min
-#pragma unroll
+#  pragma unroll
     for (int offset = 1; offset < 32; offset <<= 1)
     {
       const int shuffled_first_head = __shfl_down_sync(full_mask, lane_first_head_from_word, offset);
@@ -405,7 +408,7 @@ struct HeadFlagDecodeT
     // the word containing run_dex is then the largest i with runs_before(i) that is <= j
     // we do binary search over the distributed lane_runs_before_word table held across the warp
     int flag_word_idx = 0;
-#pragma unroll
+#  pragma unroll
     for (int step = 16; step; step >>= 1)
     {
       // propose candidate
@@ -466,7 +469,7 @@ __device__ __forceinline__ void poll_fold_windows(
     do
     {
       ready = true;
-#pragma unroll
+#  pragma unroll
       for (int i = 0; i < poll_loads_per_lane; ++i)
       {
         // we only try if that state is not published
@@ -482,7 +485,7 @@ __device__ __forceinline__ void poll_fold_windows(
     } while (__ballot_sync(full_mask, !ready) != 0u);
     int lane_run_count = 0, lane_last_tile_with_runs_in_window = -1;
     // now, we fold the window
-#pragma unroll
+#  pragma unroll
     for (int i = 0; i < poll_loads_per_lane; ++i)
     {
       if (i < lane_tile_count)
@@ -497,7 +500,7 @@ __device__ __forceinline__ void poll_fold_windows(
     // vote for the highest tile id with runs
     const int last_tile_with_runs_in_window = __reduce_max_sync(full_mask, lane_last_tile_with_runs_in_window);
     int lane_open_length                    = 0;
-#pragma unroll
+#  pragma unroll
     // how long is the window_size's unfinished run?
     for (int i = 0; i < poll_loads_per_lane; ++i)
     {
@@ -916,7 +919,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
             const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
-#pragma unroll
+#  pragma unroll
             for (int it = 0; it < buf_per_lane; ++it)
             {
               if (it >= num_rounds)
@@ -940,7 +943,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             // wait for prefixed (3/3)
             wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
             const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
-#pragma unroll
+#  pragma unroll
             for (int it = 0; it < buf_per_lane; ++it)
             {
               if (it >= num_rounds)
@@ -977,7 +980,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
           const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
           const int warp_tile_offset              = warp_tile_id * warp_tile_size;
-#pragma unroll 2
+#  pragma unroll 2
           for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
           {
             const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
@@ -1117,19 +1120,15 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
   static constexpr RleEncodePolicy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == RleAlgorithm::lookahead)
   {
-#if _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
     NV_IF_TARGET(NV_PROVIDES_SM_100,
                  (device_rle_encode_lookahead_body<PolicySelector>(
                     d_keys, d_unique, d_counts, d_num_runs, tile_partial_states, num_items, num_tiles);))
-#else // _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
-    static_assert(sizeof(KeyT) == 0,
-                  "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
-#endif // _CCCL_CUDACC_AT_LEAST(12, 8) && __cccl_ptx_isa >= 860
   }
   // for a lookback policy this kernel compiles to an empty stub: the fatbin carries this symbol for every
   // target architecture, and targets whose policy resolves to lookback must still compile (the host dispatch
   // never launches the kernel on such devices)
 }
+#endif // __cccl_ptx_isa >= 920
 } // namespace detail::rle::encode
 
 CUB_NAMESPACE_END
