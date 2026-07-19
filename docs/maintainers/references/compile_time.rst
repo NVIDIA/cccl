@@ -96,6 +96,10 @@ display ``title``, ``filter``, ``timing`` (``inclusive`` or ``exclusive``),
 slice under ``event_reports/<slice-id>/`` and writes a normalized
 ``event_reports/summary.json`` manifest for PR comment rendering.
 
+Slices may also set ``group_by`` to ``primary-template`` when using one of the
+built-in template-instantiation filters. The default grouping is ``event``,
+which keeps each distinct trace detail as its own row.
+
 Empty slices are represented in the manifest and CSVs. Slices that match no
 events, have no matching trace files, or have no comparable event keys record
 warnings so they are visible in PR comments instead of looking like ordinary
@@ -108,6 +112,7 @@ Single-slice examples:
 
   ci/build_compile_time_bench.sh -skip-build -- -f scanning-function-body -i -n 20
   ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -e -n 15 --tag templates
+  ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -i -n 25 --group-by primary-template
   ci/build_compile_time_bench.sh -skip-build -- -f 'Scanning|Instantiating' -i -n 25
   ci/build_compile_time_bench.sh -skip-build -- -f code-generation -i --scope-filter ""
 
@@ -204,6 +209,32 @@ Built-in filter names include:
 
 Unknown filters are interpreted as case-insensitive regular expressions over
 event names and event details.
+
+Template grouping
+~~~~~~~~~~~~~~~~~
+
+Pass ``--group-by primary-template`` with ``template-instantiation``,
+``template-class-instantiation``, or ``template-function-instantiation`` to
+aggregate specializations of the same template:
+
+.. code-block:: bash
+
+  ci/compile_time/summarize_events.py <trace-dir> \
+    -f template-instantiation -i --sort total -n 25 \
+    --group-by primary-template
+
+NVCC normally reports template details as ``primary [specialization]``. The
+grouping key is the reported ``primary`` portion; for example,
+``cuda::std::vector<int>`` and ``cuda::std::vector<long>`` contribute to one
+``cuda::std::vector`` row. Function and class instantiation event kinds remain
+distinct. ``event_count`` counts all grouped instantiation events, while timing
+columns aggregate their costs. Because NVCC's primary label is a symbol name,
+overloaded function templates with the same reported name may share a row.
+
+The option applies identically to baseline/current reports and comparisons. In
+comparison mode, a primary template is comparable when its grouped key appears
+in both sides of a matched trace, even when the concrete specializations differ.
+Use ``"group_by": "primary-template"`` for the equivalent multi-slice setting.
 
 Symbol-like events, such as function parsing, template instantiation, function
 IR generation, and optimizer-function events, are scope-filtered by default to
