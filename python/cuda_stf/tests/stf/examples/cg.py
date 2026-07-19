@@ -9,7 +9,6 @@ Demonstrates:
   - **stackable_context** for nested asynchronous scopes
   - **while_loop** for data-dependent iteration (conditional CUDA graph nodes)
   - **pytorch_task** for expressing GPU linear algebra with PyTorch tensors
-  - **host_launch** for asynchronous host-side observation of GPU results
 
 Solves A * x = b where A is a random diagonally-dominant tridiagonal SPD
 matrix, using the standard CG algorithm:

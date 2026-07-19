@@ -319,7 +319,10 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         double threshold,
         stf_dtype dtype)
 
-    cdef int STF_WHILE_COND_MAX_TERMS
+    # Declared as an anonymous enum member so Cython treats it as a
+    # compile-time constant (usable as a C array size below).
+    cdef enum:
+        STF_WHILE_COND_MAX_TERMS
 
     cdef enum stf_cond_combiner:
         STF_COND_ALL
@@ -3276,12 +3279,14 @@ cdef _while_cond_multi_impl(stf_ctx_handle ctx, uintptr_t scope_ptr,
     ``leaves`` is a list of ``cond`` objects whose logical data the caller has
     already validated (type and context ownership).
     """
-    cdef stf_while_cond_term terms[8]  # STF_WHILE_COND_MAX_TERMS
+    cdef stf_while_cond_term terms[STF_WHILE_COND_MAX_TERMS]
     cdef int n = len(leaves)
     cdef int i
     cdef stackable_logical_data sld
-    if n < 1 or n > 8:
-        raise ValueError("while conditions support 1 to 8 comparison terms")
+    if n < 1 or n > STF_WHILE_COND_MAX_TERMS:
+        raise ValueError(
+            f"while conditions support 1 to {STF_WHILE_COND_MAX_TERMS} "
+            "comparison terms")
     for i in range(n):
         leaf = leaves[i]
         sld = <stackable_logical_data>leaf._ld
@@ -3736,9 +3741,10 @@ def _combine_cond(a, b, combiner):
                 "mixed &/| nesting is not supported in while conditions; "
                 "use a single chain of & or a single chain of |")
         terms.extend(expr._terms)
-    if len(terms) > 8:  # STF_WHILE_COND_MAX_TERMS
+    if len(terms) > STF_WHILE_COND_MAX_TERMS:
         raise ValueError(
-            "while conditions support at most 8 comparison terms")
+            f"while conditions support at most {STF_WHILE_COND_MAX_TERMS} "
+            "comparison terms")
     return _CondCompound(combiner, terms)
 
 

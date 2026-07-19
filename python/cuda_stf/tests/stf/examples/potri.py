@@ -1030,12 +1030,16 @@ def main(N=512, NB=128, check_result=True):
     if check_result:
         Aref.fill(hilbert)
 
-    # Measure performance
-    start_time = time.time()
-
     print("\n" + "=" * 60)
     print("Performing POTRI (inversion via Cholesky)...")
     print("=" * 60)
+
+    # Time the inversion with a host clock, as in cholesky.py: STF runs each
+    # task on its own managed stream, so we bracket the submission with device
+    # synchronizes to measure only the POTRI work, excluding verification and
+    # finalization.
+    cp.cuda.runtime.deviceSynchronize()
+    start_time = time.perf_counter()
 
     # Step 1: Cholesky factorization A = L*L^T
     PDPOTRF(ctx, A, uplo="L")
@@ -1045,6 +1049,10 @@ def main(N=512, NB=128, check_result=True):
 
     # Step 3: Compute A^(-1) = L^(-T) * L^(-1)
     PDLAUUM(ctx, A, uplo="L")
+
+    # Wait for the STF-scheduled work to complete before stopping the timer.
+    cp.cuda.runtime.deviceSynchronize()
+    elapsed_ms = (time.perf_counter() - start_time) * 1e3
 
     if check_result:
         print("\n" + "=" * 60)
@@ -1089,9 +1097,6 @@ def main(N=512, NB=128, check_result=True):
     print("Finalizing STF context...")
     print("=" * 60)
     ctx.finalize()
-
-    end_time = time.time()
-    elapsed_ms = (end_time - start_time) * 1000.0
 
     # Compute FLOPS for POTRI
     # POTRF: (1/3) * N^3
