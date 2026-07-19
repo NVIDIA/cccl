@@ -54,6 +54,8 @@ cdef extern from "<cuda_runtime.h>":
     cdef struct dim3:
         unsigned int x, y, z
     ctypedef OpaqueCUstream_st *cudaStream_t
+    ctypedef int cudaError_t
+    cudaError_t cudaStreamSynchronize(cudaStream_t stream) nogil
     cdef struct CUgraphExec_st
     ctypedef CUgraphExec_st *cudaGraphExec_t
     cdef struct CUgraph_st
@@ -589,31 +591,40 @@ def _validate_cai_c_contiguous(dict cai, dtype):
         expected_stride *= dim
 
 
-def _reject_unsupported_cai_stream(dict cai):
-    """Reject CUDA Array Interface inputs that carry a producer stream.
+def _sync_cai_producer_stream(dict cai):
+    """Order registration behind the producer stream advertised via CAI.
 
     A non-``None`` ``stream`` means the producer may still have work in flight
-    on that stream, and the consumer must order against it before touching the
-    data. STF does not yet wire an imported producer stream into its dependency
-    graph, so honoring it would require establishing a producer-to-STF
-    prerequisite; silently ignoring it could let the first task read the buffer
-    on a different stream before the producer's work completes. Until that
-    plumbing exists we reject the input rather than race.
+    on that stream, and CAI v3 requires the consumer to synchronize with it
+    before touching the data. STF does not (yet) wire an external producer
+    stream into its dependency graph as an asynchronous prerequisite, so
+    synchronize the stream once here: after registration the buffer is
+    coherent and every STF task ordering is handled internally.
 
-    In practice this does not fire for the common producers: PyTorch exports CAI
-    v2 without a ``stream`` field, and NumPy/CuPy/Numba arrays created without an
-    explicit stream advertise ``stream=None``. If you do hit this, synchronize
-    the producer stream before calling ``logical_data(...)`` (or drop the stream
-    association), so the buffer is already coherent on registration.
+    Stream encoding per the CAI v3 spec: ``None`` means no synchronization is
+    needed, ``1`` is the legacy default stream, ``2`` the per-thread default
+    stream, any other integer a raw ``cudaStream_t`` handle. ``0`` is
+    disallowed by the spec. The numeric values 1/2 coincide with the CUDA
+    runtime's ``cudaStreamLegacy``/``cudaStreamPerThread`` handles, so all
+    non-zero values can be cast directly.
     """
     stream = cai.get("stream")
-    if stream is not None:
-        raise NotImplementedError(
-            "logical_data() received a CUDA Array Interface object advertising a "
-            f"producer stream ({stream!r}); STF does not yet order imported data "
-            "behind an external producer stream. Synchronize that stream before "
-            "registering the buffer (so it is already coherent), or register data "
-            "that advertises no stream."
+    if stream is None:
+        return
+    cdef long long s = int(stream)
+    if s == 0:
+        raise ValueError(
+            "CUDA Array Interface 'stream' value 0 is disallowed by the CAI "
+            "v3 specification"
+        )
+    cdef cudaStream_t handle = <cudaStream_t><uintptr_t>s
+    cdef cudaError_t err
+    with nogil:
+        err = cudaStreamSynchronize(handle)
+    if err != 0:
+        raise RuntimeError(
+            f"cudaStreamSynchronize on the CUDA Array Interface producer "
+            f"stream ({stream!r}) failed with error {err}"
         )
 
 
@@ -833,7 +844,7 @@ cdef class logical_data:
         if hasattr(buf, '__cuda_array_interface__'):
             cai = buf.__cuda_array_interface__
 
-            _reject_unsupported_cai_stream(cai)
+            _sync_cai_producer_stream(cai)
 
             # Extract CAI information
             data_ptr, readonly = cai['data']
@@ -3962,7 +3973,7 @@ cdef class stackable_context:
 
         if hasattr(buf, '__cuda_array_interface__'):
             cai = buf.__cuda_array_interface__
-            _reject_unsupported_cai_stream(cai)
+            _sync_cai_producer_stream(cai)
             data_ptr, readonly = cai['data']
             out._readonly = bool(readonly)
             original_shape = cai['shape']
