@@ -188,7 +188,8 @@ struct RleLookaheadPolicy
 struct RleEncodePolicy
 {
   RleAlgorithm algorithm; //!< The RLE-encode algorithm to use
-  RleLookbackPolicy lookback; //!< The lookback policy (used when algorithm is @p lookback, otherwise ignored)
+  RleLookbackPolicy lookback; //!< The lookback policy; must be valid even when algorithm is @p lookahead, because it
+                              //!< also drives the streaming fallback (device-side callers and non-viable types)
   RleLookaheadPolicy lookahead; //!< The lookahead policy (used when algorithm is @p lookahead, otherwise ignored)
 
   [[nodiscard]] _CCCL_API constexpr friend bool
