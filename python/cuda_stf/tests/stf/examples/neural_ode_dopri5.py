@@ -394,11 +394,10 @@ def _build_stf_odeint_persistent(
                 tT.copy_(t_new.unsqueeze(0))
                 tH.copy_(h_new.unsqueeze(0))
                 tIter += 1.0
-                # Continue only while not finished (cond) AND under the cap, so
-                # a stalled step cannot loop forever on the device.
-                under_cap = (tIter.squeeze() < max_iters_f).to(cond.dtype)
-                tC.copy_((cond * under_cap).unsqueeze(0))
-            loop.continue_while(l_cond, ">", 0.5)
+                tC.copy_(cond.unsqueeze(0))
+            # Continue only while not finished (cond) AND under the cap, so a
+            # stalled step cannot loop forever on the device.
+            loop.continue_while((l_cond > 0.5) & (l_iter < max_iters_f))
 
     return forward, ctx, y_host, iter_host
 
