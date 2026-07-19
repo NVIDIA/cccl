@@ -2355,18 +2355,24 @@ cdef class context:
         if borrowed:
             return
 
-        self._pin = _PrimaryContextPin()
-
         cdef bint has_overrides = (stream is not None) or (handle is not None)
         cdef stf_ctx_options opts
         cdef uintptr_t stream_val = 0
+
+        # Resolve the stream pointer before retaining the primary-context pin:
+        # _get_stream_pointer raises on malformed stream arguments, and a pin
+        # acquired here would leak because _PrimaryContextPin.__dealloc__ is a
+        # deliberate no-op and __dealloc__ only sees _ctx == NULL.
+        if stream is not None:
+            stream_val = _get_stream_pointer(stream)
+
+        self._pin = _PrimaryContextPin()
 
         if has_overrides:
             opts.backend = STF_BACKEND_GRAPH if use_graph else STF_BACKEND_STREAM
             # has_stream distinguishes "user explicitly passed a stream" from
             # "user omitted stream" (unlike nullptr, which is a valid NULL stream).
             if stream is not None:
-                stream_val = _get_stream_pointer(stream)
                 opts.has_stream = 1
             else:
                 opts.has_stream = 0
