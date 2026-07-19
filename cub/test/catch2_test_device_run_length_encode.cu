@@ -544,13 +544,13 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
     long long num_items;
     int max_seg;
   };
-  const segment_grid_case cases[] = {
+  constexpr segment_grid_case cases[] = {
     {200000, 2}, // mid-size, dense
     {150000, 3}, // mid-size, different tile alignment
     {tile, 1}, // single tile, all runs of length 1
-    {tile, 1000000}, // single tile, one run
+    {tile, -static_cast<int>(tile)}, // single tile, one run
     {3 * tile + 7, 1}, // partial tail tile, dense
-    {3 * tile + 1, 1000000}, // run crossing into a one-element tail tile
+    {3 * tile + 1, -static_cast<int>(tile + 1)}, // run crossing into a one-element tail tile
     {(1 << 20) + 12345, 2}, // partial tail, mid density
     {64 * tile + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
     {64 * tile + 7, 100}, // a couple of runs per warp of input
