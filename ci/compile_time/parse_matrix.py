@@ -19,6 +19,7 @@ else:
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_.-]*$")
 TIMINGS = {"inclusive", "exclusive"}
 SORTS = {"total", "avg", "avg-root-tu", "max"}
+GROUPINGS = {"event", "primary-template"}
 
 
 def die(message: str) -> None:
@@ -117,11 +118,13 @@ def validate_slice(
         "top": top,
         "threshold": threshold,
     }
-    for optional in ("scope_filter", "exclusive_scope"):
+    for optional in ("scope_filter", "exclusive_scope", "group_by"):
         if optional in data:
             result[optional] = require_string(
                 data[optional], f"{where}.{optional}", nonempty=False
             )
+    if result.get("group_by", "event") not in GROUPINGS:
+        die(f"{where}.group_by must be one of {sorted(GROUPINGS)}")
 
     children = data.get("children", [])
     if not isinstance(children, list):

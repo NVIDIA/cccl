@@ -34,9 +34,12 @@ Required config fields are `id`, `name`, `gpu`, `launch_args`,
 `artifact_retention_days` are optional.
 
 Required slice fields are `id`, `title`, `filter`, `timing`, `sort`, `top`, and
-`threshold`. Slice `children` may be used to group nested report sections in the
-PR comment. Empty slice sections are omitted recursively by the renderer unless
-the summary manifest carries warnings for that slice.
+`threshold`. Optional `group_by: primary-template` aggregates template
+instantiation specializations under NVCC's reported primary-template name; it
+is valid with the built-in template-instantiation filters. Slice `children` may
+be used to group nested report sections in the PR comment. Empty slice sections
+are omitted recursively by the renderer unless the summary manifest carries
+warnings for that slice.
 
 `ci/compile_time/parse_matrix.py ci/matrix.yaml --workflow pull_request` emits
 the GitHub Actions matrix JSON. Missing or empty `compile_time.pull_request`
@@ -56,6 +59,19 @@ manifest. The manifest is the renderer contract; CSVs are human artifacts.
 Configured slices that match no events, have no matching trace files, or have no
 comparable event keys record warnings in the manifest so reporting failures are
 not presented as ordinary no-regression results.
+
+For a single grouped template report, use:
+
+```bash
+ci/compile_time/summarize_events.py <trace-dir> \
+  -f template-instantiation -i --sort total -n 25 \
+  --group-by primary-template
+```
+
+The equivalent slice setting is `"group_by": "primary-template"`. Grouped
+reports sum the selected timings and event counts of all specializations with
+the same NVCC-reported primary-template label. Baseline comparisons apply the
+same grouping on both sides.
 
 In comparison mode, the wrapper preserves:
 

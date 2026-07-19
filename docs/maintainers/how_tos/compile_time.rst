@@ -70,6 +70,18 @@ Other useful built-in filters include:
 - ``code-generation``
 - ``all``
 
+To aggregate all specializations under the primary-template name reported by
+NVCC, add ``--group-by primary-template``:
+
+.. code-block:: bash
+
+  ci/build_compile_time_bench.sh -skip-build -- \
+    -f template-instantiation -i --sort total -n 25 \
+    --group-by primary-template
+
+In a multi-slice JSON file, use ``"group_by": "primary-template"`` on a
+template-instantiation slice.
+
 Interpret the PR comment
 ------------------------
 

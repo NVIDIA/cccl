@@ -389,6 +389,37 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             completed.stderr,
         )
 
+    def test_primary_template_grouping_requires_template_filter(self) -> None:
+        traces = self.work / "traces"
+        same = self.traces.project_detail("libcudacxx/include/cuda/std/same.h")
+        self.traces.write_trace(
+            traces / "target" / "same.json",
+            [self.traces.event("Processing Header File", same, 0, 10)],
+            "same",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-f",
+                "file-processing",
+                "--group-by",
+                "primary-template",
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn(
+            "primary-template grouping requires a built-in template instantiation filter",
+            completed.stderr,
+        )
+
     def test_file_processing_same_filter_keeps_unmatched_child_in_parent_cost(
         self,
     ) -> None:
@@ -912,6 +943,124 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertIn("cub::detail::load", rows[0]["event_key"])
 
+    def test_primary_template_grouping_aggregates_specializations(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            traces / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<int>]",
+                    0,
+                    100,
+                ),
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<long>]",
+                    200,
+                    300,
+                ),
+                self.traces.event(
+                    "Instantiating Template Function",
+                    "cub::detail::load [cub::detail::load<int>()]",
+                    600,
+                    50,
+                ),
+            ],
+            "templates",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "template-instantiation",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+                "--group-by",
+                "primary-template",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(
+            output
+            / "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total.csv"
+        )
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["event_key"], "cuda::std::__4::vector")
+        self.assertEqual(rows[0]["event_count"], "2")
+        self.assertEqual(rows[0]["selected_total_s"], "0.000400")
+        self.assertEqual(rows[1]["event_key"], "cub::detail::load")
+
+    def test_primary_template_grouping_compares_different_specializations(self) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            baseline / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<int>]",
+                    0,
+                    100,
+                )
+            ],
+            "templates",
+        )
+        self.traces.write_trace(
+            current / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<long>]",
+                    0,
+                    160,
+                )
+            ],
+            "templates",
+        )
+
+        self.run_summary(
+            current,
+            baseline,
+            output,
+            "-f",
+            "template-instantiation",
+            "-i",
+            "--sort",
+            "total",
+            "-n",
+            "5",
+            "--group-by",
+            "primary-template",
+        )
+
+        worse = csv_rows(
+            self.comparison_csv(
+                output,
+                "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total-worse.csv",
+            )
+        )
+        self.assertEqual(len(worse), 1)
+        self.assertEqual(worse[0]["event_key"], "cuda::std::__4::vector")
+        self.assertEqual(worse[0]["impact_delta_s"], "0.000060")
+
     def test_scope_filter_matches_mangled_cccl_namespaces(self) -> None:
         traces = self.work / "traces"
         output = self.work / "reports"
@@ -1087,7 +1236,15 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         same = self.traces.project_detail("libcudacxx/include/cuda/std/same.h")
         self.traces.write_trace(
             traces / "target" / "same.json",
-            [self.traces.event("Same", same, 0, 10)],
+            [
+                self.traces.event("Same", same, 0, 10),
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<int>]",
+                    20,
+                    30,
+                ),
+            ],
             "same",
         )
         slices.write_text(
@@ -1111,6 +1268,16 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                             "sort": "total",
                             "top": 5,
                             "threshold": 0,
+                        },
+                        {
+                            "id": "primary-templates",
+                            "title": "Primary templates",
+                            "filter": "template-instantiation",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                            "group_by": "primary-template",
                         },
                     ]
                 }
@@ -1139,10 +1306,13 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             manifest = json.load(f)
 
         self.assertEqual(
-            [item["id"] for item in manifest["slices"]], ["all-events", "empty-events"]
+            [item["id"] for item in manifest["slices"]],
+            ["all-events", "empty-events", "primary-templates"],
         )
-        self.assertEqual(manifest["slices"][0]["reports"]["current"]["row_count"], 1)
+        self.assertEqual(manifest["slices"][0]["reports"]["current"]["row_count"], 2)
         self.assertEqual(manifest["slices"][1]["reports"]["current"]["row_count"], 0)
+        self.assertEqual(manifest["slices"][2]["group_by"], "primary-template")
+        self.assertEqual(manifest["slices"][2]["reports"]["current"]["row_count"], 1)
         self.assertTrue(
             (
                 output
@@ -1150,6 +1320,12 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                 / "top-5-regex-does-not-match-inclusive-by-total.csv"
             ).exists()
         )
+        grouped_rows = csv_rows(
+            output
+            / "primary-templates"
+            / "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total.csv"
+        )
+        self.assertEqual(grouped_rows[0]["event_key"], "cuda::std::__4::vector")
 
 
 class CompileTimeMatrixAndCommentTest(unittest.TestCase):
@@ -1201,6 +1377,14 @@ compile_time:
           sort: total
           top: 15
           threshold: 0.001
+        - id: primary-templates
+          title: Primary templates
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 25
+          threshold: 0.001
+          group_by: primary-template
 """,
             encoding="utf-8",
         )
@@ -1227,6 +1411,10 @@ compile_time:
         self.assertEqual(
             json.loads(include[0]["slices_json"])["slices"][0]["id"],
             "total-compilation",
+        )
+        self.assertEqual(
+            json.loads(include[0]["slices_json"])["slices"][1]["group_by"],
+            "primary-template",
         )
 
     def test_parse_matrix_rejects_duplicate_slice_ids(self) -> None:
