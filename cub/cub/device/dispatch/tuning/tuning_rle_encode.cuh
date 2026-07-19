@@ -727,7 +727,7 @@ struct policy_selector
     {
       return false;
     }
-    if (16 % key_size != 0 || key_align > 16)
+    if (16 % key_size != 0 || key_align != key_size)
     {
       return false;
     }

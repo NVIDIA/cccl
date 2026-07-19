@@ -70,7 +70,8 @@ inline constexpr bool lookahead_instantiable =
   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<NumRunsOutputIteratorT>
   && ::cuda::is_trivially_copyable_v<it_value_t<InputIteratorT>>
   && ::cuda::std::is_same_v<it_value_t<InputIteratorT>, it_value_t<UniqueOutputIteratorT>>
-  && (16 % sizeof(it_value_t<InputIteratorT>) == 0) && (alignof(it_value_t<InputIteratorT>) <= 16)
+  && (16 % sizeof(it_value_t<InputIteratorT>) == 0)
+  && (alignof(it_value_t<InputIteratorT>) == sizeof(it_value_t<InputIteratorT>))
   && ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8);
 
 // Dispatches DeviceRunLengthEncode::Encode: the lookahead implementation when the tuning policy selects
