@@ -121,7 +121,9 @@ Use ``with ctx.task(...) as t:`` to get a task handle. Inside the block:
 For kernels that should become native CUDA graph nodes (instead of being captured from
 a stream), use ``ctx.cuda_kernel(...)``. It accepts the same dependency and
 ``exec_place`` arguments as ``ctx.task(...)``, and the resulting object exposes a
-``launch()`` method that describes the kernel to STF directly::
+``launch()`` method that describes the kernel to STF directly. The following excerpt
+launches a precompiled AXPY ``kernel`` (see ``tests/stf/test_cuda_kernel.py`` for the
+complete program)::
 
     with ctx.cuda_kernel(lX.read(), lY.rw(), symbol="axpy") as k:
         dX, dY = k.get_arg(0), k.get_arg(1)
