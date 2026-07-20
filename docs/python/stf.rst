@@ -141,7 +141,9 @@ runtime is imported lazily inside each adapter, and a missing dependency raises 
 
 **PyTorch** (``cuda.stf._experimental.interop.pytorch``) -- ``pytorch_task`` opens a
 task, makes the task's CUDA stream the current PyTorch stream for the duration of the
-block, and yields the task arguments as ``torch.Tensor`` views::
+block, and yields the task arguments as ``torch.Tensor`` views. The following excerpt
+stores ``2 * lX`` into ``lY`` (see ``tests/stf/interop/test_pytorch.py`` for the
+complete program)::
 
     from cuda.stf._experimental.interop.pytorch import pytorch_task
 
@@ -164,7 +166,9 @@ program)::
 
 The ``jit`` decorator wraps ``numba.cuda.jit`` so a kernel can be launched
 directly with STF ``dep`` arguments; the conversion into device arrays (and the
-task that scopes them) happens automatically::
+task that scopes them) happens automatically. The following excerpt declares an
+AXPY kernel and launches it on two logical data (see
+``tests/stf/interop/test_decorator.py`` for the complete program)::
 
     from numba import cuda
 
