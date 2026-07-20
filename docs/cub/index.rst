@@ -480,4 +480,4 @@ Open Source License
 
 CUB is mostly licensed under the BSD 3-Clause "New" or "Revised" License.
 New files are created under the Apache-2.0 WITH LLVM-exception License.
-See also <https://github.com/NVIDIA/cccl/blob/main/LICENSE>`_
+See also our `LICENSE <https://github.com/NVIDIA/cccl/blob/main/LICENSE>`_ file.
