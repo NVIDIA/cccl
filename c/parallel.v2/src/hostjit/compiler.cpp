@@ -1695,20 +1695,32 @@ CUDACompiler::~CUDACompiler()
   delete impl_;
 }
 
+// clang and LLVM are embedded in-process and are not thread-safe for concurrent
+// compilation (shared global registries, cl::opt state, allocator use).
+// cuda.compute releases the GIL around native builds, so distinct ops built from
+// multiple threads -- on a GIL or free-threaded interpreter -- otherwise run
+// clang concurrently and corrupt that shared state. Serialize every native
+// compile/link through one process-wide mutex. This guards only the (cached,
+// one-time) build path; kernel launches are unaffected.
+static std::mutex g_native_compile_mutex;
+
 BitcodeResult CUDACompiler::compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   return impl_->compileToDeviceBitcode(source_code, config);
 }
 
 CompilationResult CUDACompiler::compileToObject(
   const std::string& source_code, const std::string& output_path, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   return impl_->compileToObject(source_code, output_path, config);
 }
 
 LinkResult CUDACompiler::linkToSharedLibrary(
   const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   return impl_->linkToSharedLibrary(object_files, output_path, config);
 }
 } // namespace hostjit

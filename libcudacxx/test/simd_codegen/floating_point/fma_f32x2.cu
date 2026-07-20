@@ -14,18 +14,17 @@ namespace simd = cuda::std::simd;
 
 using Vec_f32_x4 = simd::basic_vec<float, simd::fixed_size<4>>;
 
-__device__ Vec_f32_x4 test_operator_decrement_f32_x4(Vec_f32_x4 vec)
+__device__ Vec_f32_x4 test_fma_f32_x4(Vec_f32_x4 lhs, Vec_f32_x4 rhs, Vec_f32_x4 add)
 {
-  --vec;
-  return vec;
+  return simd::fma(lhs, rhs, add);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_decrement_f32_x4.*}}
-; SM100: {{.*FADD2.*}}
-; SM100: {{.*FADD2.*}}
-; SM103: {{.*FADD2.*}}
-; SM103: {{.*FADD2.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_fma_f32_x4.*}}
+; SM100: {{.*FFMA2.*}}
+; SM100: {{.*FFMA2.*}}
+; SM103: {{.*FFMA2.*}}
+; SM103: {{.*FFMA2.*}}
 
 */
