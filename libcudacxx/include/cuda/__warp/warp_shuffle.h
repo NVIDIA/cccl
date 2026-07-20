@@ -76,6 +76,27 @@ template <typename _Up>
 inline constexpr bool __is_64bit_array_shuffle_path_v =
   sizeof(_Up) == sizeof(::cuda::std::uint64_t) && ::cuda::std::is_array_v<_Up>;
 
+template <typename _Tp>
+[[nodiscard]] _CCCL_DEVICE_API auto __shuffle_cast(const _Tp& __data) noexcept
+{
+  if constexpr (!::cuda::std::is_array_v<_Tp>
+                && (sizeof(_Tp) == 1 || sizeof(_Tp) == 2 || sizeof(_Tp) == 4 || sizeof(_Tp) == 8
+                    || sizeof(_Tp) <= sizeof(::cuda::std::__cccl_uintmax_t)))
+  {
+    using __unsigned_t = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
+    return ::cuda::std::bit_cast<__unsigned_t>(__data);
+  }
+  else
+  {
+    constexpr auto __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
+    using __array_t        = ::cuda::std::array<::cuda::std::uint32_t, __ratio>;
+    __array_t __array{}; // zero-initialize -> avoid undetermined values progatation (reg pressure)
+    ::cuda::std::memcpy(
+      static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Tp));
+    return __array;
+  }
+}
+
 #    define _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED() (_CCCL_HAS_INT128() && __cccl_ptx_isa >= 830)
 
 #    if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZATED()
@@ -180,7 +201,8 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else
   {
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
-    ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg pressure)
+    ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg
+                                              // pressure)
     ::cuda::std::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
 
@@ -405,7 +427,8 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "delta must be in the range [1, _Width)");
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(::cuda::std::uint32_t));
-    ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg pressure)
+    ::cuda::std::uint32_t __array[__ratio]{}; // zero-initialize -> avoid undetermined values progatation (reg
+                                              // pressure)
     ::cuda::std::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
 
