@@ -14,7 +14,7 @@
 #endif // no system header
 #include <thrust/detail/raw_reference_cast.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 
