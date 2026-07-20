@@ -49,6 +49,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -1040,8 +1041,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // The selection direction is a compile-time constant carried as `::cuda::args::constant<Dir>`. Wrap it into the
   // internal discrete param the kernel/agent expect (both host arms take the wrapped form).
-  const auto select_directions    = wrap_select_direction(select_direction);
-  using SelectDirectionParameterT = decltype(select_directions);
+  // Type derived from the parameter type rather than `decltype(select_directions)`: GCC 7 rejects the latter ("use of
+  // 'select_directions' before deduction of 'auto'") when it feeds the `constexpr baseline_can_cover` initializer
+  // below. Declaring `select_directions` with the alias keeps its (const-qualified) type single-sourced.
+  using SelectDirectionParameterT = const decltype(wrap_select_direction(::cuda::std::declval<SelectDirectionT>()));
+  SelectDirectionParameterT select_directions = wrap_select_direction(select_direction);
 
   using key_t                   = it_value_t<it_value_t<KeyInputItItT>>;
   using value_t                 = it_value_t<it_value_t<ValueInputItItT>>;
