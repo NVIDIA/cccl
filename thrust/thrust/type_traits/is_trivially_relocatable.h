@@ -172,7 +172,7 @@ struct proclaim_trivially_relocatable : false_type
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
  *  aka it can be bitwise copied with a facility like
  *  <a href="https://en.cppreference.com/w/cpp/string/byte/memcpy"><tt>std::memcpy</tt></a>,
- *  by specializing \c proclaim_trivially_relocatable.
+ *  by specializing \c proclaim_trivially_relocatable and \c cuda::is_trivially_copyable[_v].
  *
  * \see is_indirectly_trivially_relocatable_to
  * \see is_trivially_relocatable
@@ -185,6 +185,10 @@ struct proclaim_trivially_relocatable : false_type
   struct proclaim_trivially_relocatable<T> : THRUST_NS_QUALIFIER::true_type \
   {};                                                                       \
   THRUST_NAMESPACE_END                                                      \
+  _CCCL_BEGIN_NAMESPACE_CUDA                                                \
+  template <>                                                               \
+  inline constexpr bool is_trivially_copyable_v<T> = true;                  \
+  _CCCL_END_NAMESPACE_CUDA                                                  \
   /**/
 
 ///////////////////////////////////////////////////////////////////////////////
