@@ -16,10 +16,10 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__fwd/format.h>
@@ -130,7 +130,7 @@ template <typename It>
   return iterator_info{
     static_cast<int>(size_of<vt>),
     static_cast<int>(align_of<vt>),
-    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<vt>,
+    ::cuda::is_trivially_copyable_v<vt>,
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
 }
 
