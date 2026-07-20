@@ -128,7 +128,8 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_if_n(
   const auto __block_num_successes = __block_reduce(__temp_storage).Sum(__thread_num_successes);
   if (threadIdx.x == 0)
   {
-    ::cuda::experimental::cuco::detail::__atomic_fetch_add<_Ref::thread_scope>(__num_successes, __block_num_successes);
+    (void) ::cuda::experimental::cuco::detail::__atomic_fetch_add<_Ref::thread_scope>(
+      __num_successes, __block_num_successes);
   }
 }
 
