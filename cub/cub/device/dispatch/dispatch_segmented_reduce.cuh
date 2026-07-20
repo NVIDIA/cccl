@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -26,10 +26,16 @@
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::it_value_t
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__functional/operator_properties.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -474,6 +480,138 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
 
 namespace detail::segmented_reduce
 {
+// DeviceAdaptiveSegmentedReduceKernel currently requires:
+//  - sizeof(T) == 4 or 8 (16-byte coalesced load via cuda::vector_type)
+//  - T is arithmetic (vector loads, atomics)
+//  - OutputIteratorT == T* (cuda::atomic_ref needs an lvalue T)
+//  - ReductionOpT is plus<>, minimum<>, or maximum<> (atomic fallback handles only these)
+//  - AccumT == T (the kernel accumulates in T throughout)
+//  - sizeof(OffsetT) == 4 (the kernel uses int for offsets internally)
+template <typename T,
+          typename OutputIteratorT,
+          typename ReductionOpT,
+          typename AccumT,
+          typename OffsetT>
+inline constexpr bool is_adaptive_segmented_reduce_compatible_v =
+  (sizeof(T) == 4 || sizeof(T) == 8) //
+  && ::cuda::std::is_arithmetic_v<T> //
+  && ::cuda::std::is_same_v<OutputIteratorT, T*> //
+  && (::cuda::__is_cuda_std_plus_v<ReductionOpT> //
+      || ::cuda::__is_cuda_minimum_v<ReductionOpT> //
+      || ::cuda::__is_cuda_maximum_v<ReductionOpT>) //
+  &&::cuda::std::is_same_v<AccumT, T> //
+  && (sizeof(OffsetT) == 4);
+
+template <class PolicySelector,
+          class InputIteratorT,
+          class OutputIteratorT,
+          class BeginOffsetIteratorT,
+          class EndOffsetIteratorT,
+          class ReductionOpT,
+          class InitValueT>
+struct DeviceAdaptiveSegmentedReduceKernelSource
+{
+  using T = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
+
+  _CCCL_HOST_DEVICE_API static constexpr adaptive_segmented_reduce_policy GetPolicy(::cuda::compute_capability cc)
+  {
+    return select_policy<PolicySelector>(cc);
+  }
+
+  CUB_DEFINE_KERNEL_GETTER(
+    ReduceKernel,
+    DeviceAdaptiveSegmentedReduceKernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      ReductionOpT,
+      InitValueT>)
+
+  static constexpr int FillItemsPerThread =
+    adaptive_segmented_reduce_default_policy_selector{}(::cuda::compute_capability{}).items_per_thread;
+
+  CUB_DEFINE_KERNEL_GETTER(FillKernel, AdaptiveSegmentedReduceFillKernel<T, FillItemsPerThread>)
+};
+
+template <class AdaptiveKernelSource,
+          class InputIteratorT,
+          class OutputIteratorT,
+          class BeginOffsetIteratorT,
+          class EndOffsetIteratorT,
+          class ReductionOpT,
+          class InitValueT,
+          class KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_adaptive_segmented_reduce(
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  int num_segments,
+  ReductionOpT reduction_op,
+  InitValueT init,
+  ::cuda::compute_capability cc,
+  cudaStream_t stream,
+  KernelLauncherFactory& launcher_factory,
+  AdaptiveKernelSource /*kernel_source*/ = {})
+{
+  using KernelSource = AdaptiveKernelSource;
+  using T            = typename KernelSource::T;
+  const auto policy  = KernelSource::GetPolicy(cc);
+  const int THREADS  = policy.threads_per_block;
+
+  int num_sms = 0;
+  if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(num_sms)))
+  {
+    return error;
+  }
+
+  int blocks_per_sm = 0;
+  if (const auto error =
+        CubDebug(launcher_factory.MaxSmOccupancy(blocks_per_sm, KernelSource::ReduceKernel(), THREADS)))
+  {
+    return error;
+  }
+
+  const int grid = ::cuda::std::max(1, blocks_per_sm * num_sms);
+
+  // Initialize the output to cover two cases:
+  // 1) Empty segments not visited by the kernel; and
+  // 2) Segments shared across threads, which will use an atomic.
+  constexpr int V              = 16 / sizeof(T);
+  constexpr int ItemsPerThread = KernelSource::FillItemsPerThread;
+  const int fill_grid =
+    ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_segments, THREADS * ItemsPerThread * V)));
+  if (const auto error = CubDebug(
+        launcher_factory(static_cast<::cuda::std::uint32_t>(fill_grid), THREADS, 0, stream)
+          .doit(KernelSource::FillKernel(), static_cast<T*>(d_out), num_segments, static_cast<T>(init))))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Launch the reduction as a PDL-dependent kernel to overlap with the fill.
+  if (const auto error = CubDebug(
+        launcher_factory(static_cast<::cuda::std::uint32_t>(grid), THREADS, 0, stream, /*dependent_launch=*/true)
+          .doit(
+            KernelSource::ReduceKernel(), d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  return CubDebug(detail::DebugSyncStream(stream));
+}
+
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
 template <typename InputIteratorT,
@@ -518,6 +656,14 @@ template <
     ReductionOpT,
     InitValueT,
     AccumT>,
+  typename AdaptiveKernelSource = DeviceAdaptiveSegmentedReduceKernelSource<
+    adaptive_segmented_reduce_default_policy_selector,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT,
+    ReductionOpT,
+    InitValueT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
@@ -534,9 +680,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   InitValueT init,
   size_t max_segment_size,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
-  KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
+  PolicySelector policy_selector              = {},
+  KernelSource kernel_source                  = {},
+  AdaptiveKernelSource adaptive_kernel_source = {},
+  KernelLauncherFactory launcher_factory      = {})
 {
   if (num_segments <= 0)
   {
@@ -548,6 +695,48 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
+  }
+
+  // Use the adaptive kernel for compatible types/operators and assumptions.
+  //
+  // The implementation requires that d_end_offsets is monotonically increasing,
+  // and there is currently no way for a user to assert this is true. For now,
+  // dispatch only when d_begin_offsets + 1 == d_end_offsets.
+  using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
+  if constexpr (is_adaptive_segmented_reduce_compatible_v<InputT, OutputIteratorT, ReductionOpT, AccumT, OffsetT>)
+  {
+    // Force NVCC to register adaptive kernel symbols at dispatch() instantiation time.
+    [[maybe_unused]] auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
+    [[maybe_unused]] auto _adaptive_fill_kern   = AdaptiveKernelSource::FillKernel();
+
+    NV_IF_TARGET(
+      NV_IS_HOST,
+      (if (cc.get() >= 90
+           && num_segments <= static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<int>::max())) {
+        if constexpr (::cuda::std::is_pointer_v<BeginOffsetIteratorT> && ::cuda::std::is_pointer_v<EndOffsetIteratorT>)
+        {
+          if (d_begin_offsets + 1 == d_end_offsets)
+          {
+            if (d_temp_storage == nullptr)
+            {
+              temp_storage_bytes = 1;
+              return cudaSuccess;
+            }
+            return invoke_adaptive_segmented_reduce<AdaptiveKernelSource>(
+              d_in,
+              d_out,
+              d_begin_offsets,
+              d_end_offsets,
+              static_cast<int>(num_segments),
+              reduction_op,
+              init,
+              cc,
+              stream,
+              launcher_factory,
+              adaptive_kernel_source);
+          }
+        }
+      }))
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
