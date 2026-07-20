@@ -56,7 +56,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceSegmentedScan that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref SegmentedScanPolicy, as shown in
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedScanPolicy`, as shown in
 //! the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu

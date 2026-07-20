@@ -6,7 +6,7 @@
 # cmake>=3.30 is needed for FindCUDAToolkit's CUDA::nvfatbin /
 # CUDA::nvfatbin_static imported targets, which the v2 (HostJIT) backend links
 # against. Listed here so isolated builds (pip's default) pick it up.
-requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython>=3.1.0", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -81,17 +81,27 @@ sysctk13 = [
   "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
+# The test extras do not include CuPy. The cuda.compute examples (run via
+# tests/test_examples.py) require it; install it separately (e.g.
+# `pip install cupy-cuda13x`).
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296
   "cuda-cccl[cu12]",
   "pytest",
   "pytest-xdist",
-  "cupy-cuda12x",
 ]
-test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-test-sysctk12 = ["cuda-cccl[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
-test-sysctk13 = ["cuda-cccl[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
+test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist"]
+test-sysctk12 = [
+  "cuda-cccl[sysctk12]",
+  "pytest",
+  "pytest-xdist",
+]
+test-sysctk13 = [
+  "cuda-cccl[sysctk13]",
+  "pytest",
+  "pytest-xdist",
+]
 bench-cu12 = [
   "cuda-cccl[cu12]",
   "cuda-bench[cu12]",
@@ -181,9 +191,12 @@ known-first-party = [
 ]
 
 [tool.pytest.ini_options]
+# Make shared helpers in tests/_utils importable when pytest runs outside tests/.
+pythonpath = ["tests"]
 markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
   "no_numba: tests that should not import numba or numba.cuda",
+  "free_threading: tests requiring free-threaded CPython with the GIL disabled",
   "serialization: serialize/deserialize tests (skipped on the v2 HostJIT backend)",
 ]

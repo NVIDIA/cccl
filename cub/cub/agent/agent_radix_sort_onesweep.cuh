@@ -56,7 +56,7 @@ enum RadixSortStoreAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(RadixSortStoreAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(RadixSortStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -64,9 +64,8 @@ namespace detail
       return "RADIX_SORT_STORE_DIRECT";
     case RADIX_SORT_STORE_ALIGNED:
       return "RADIX_SORT_STORE_ALIGNED";
-    default:
-      return "<unknown RadixSortStoreAlgorithm>";
   }
+  return "<unknown RadixSortStoreAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
@@ -119,6 +118,7 @@ struct agent_radix_sort_onesweep_policy : ScalingType
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,

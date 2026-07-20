@@ -121,17 +121,17 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const FirstOutputIteratorT d_first_part_out,
-    _CCCL_GRID_CONSTANT const SecondOutputIteratorT d_second_part_out,
-    _CCCL_GRID_CONSTANT const UnselectedOutputIteratorT d_unselected_out,
-    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
+    const InputIteratorT d_in,
+    const FirstOutputIteratorT d_first_part_out,
+    const SecondOutputIteratorT d_second_part_out,
+    const UnselectedOutputIteratorT d_unselected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
   static constexpr auto active_policy = current_policy<PolicySelector>();
   using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
@@ -197,9 +197,7 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
-  ScanTileStateT tile_state,
-  _CCCL_GRID_CONSTANT const int num_tiles,
-  _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
+  ScanTileStateT tile_state, const int num_tiles, const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

@@ -33,21 +33,20 @@ namespace cudax = cuda::experimental;
 constexpr int empty_key   = -1;
 constexpr int empty_value = -1;
 
-// A static-capacity map. `_Capacity` must be a valid slot count, so it is computed from the probing
-// scheme and bucket size (the map's defaults: linear probing, cg_size 1, bucket_size 1) rather than
-// hand-written.
-using default_probing               = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
-inline constexpr int default_bucket = 1;
+// A static-capacity map with cg_size 1 so the test can use scalar device inserts.
+using probing               = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
+inline constexpr int bucket = 1;
 inline constexpr ::cuda::std::size_t static_capacity =
-  cudax::cuco::make_valid_capacity<default_probing, default_bucket>(::cuda::std::size_t{512});
-using fixed_capacity_map_512_type = cudax::cuco::fixed_capacity_map<int, int, static_capacity>;
+  cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{512});
+using fixed_capacity_map_512_type = cudax::cuco::
+  fixed_capacity_map<int, int, static_capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing>;
 
-template <class _Pair>
+template <class Pair>
 struct iota_pair
 {
-  __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
+  __host__ __device__ Pair operator()(typename Pair::first_type key) const noexcept
   {
-    return _Pair{__i, __i};
+    return Pair{key, key};
   }
 };
 
@@ -60,8 +59,8 @@ struct is_nonzero
 };
 
 // Demonstrates compile-time __shared__ sizing via ref_type::capacity_v.
-template <class _PairIt>
-__global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global_ref, _PairIt pairs, int n)
+template <class PairIt>
+__global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global_ref, PairIt pairs, int num_keys)
 {
   using ref_t = fixed_capacity_map_512_type::ref_type;
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
@@ -70,9 +69,9 @@ __global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global
   __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v> smem;
 
   const auto idx    = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
-  smem[threadIdx.x] = (idx < n) ? pairs[idx] : ref_t::value_type{};
+  smem[threadIdx.x] = (idx < num_keys) ? pairs[idx] : ref_t::value_type{};
   __syncthreads();
-  if (idx < n)
+  if (idx < num_keys)
   {
     global_ref.insert(smem[threadIdx.x]);
   }

@@ -161,6 +161,16 @@ stf_exec_place_handle stf_exec_place_device(int dev_id);
 //! \brief Create execution place for the current CUDA device.
 stf_exec_place_handle stf_exec_place_current_device(void);
 
+//! \brief Create an execution place from an externally-owned CUDA driver context \p ctx.
+//!
+//! The place is non-owning: the caller must keep \p ctx alive while the place is in
+//! use. This is the natural entry point for contexts created by other libraries, e.g.
+//! green contexts converted with cuCtxFromGreenCtx (such as the ones produced by
+//! cuda.core in Python). \p dev_id is the device ordinal of the context, or -1 to
+//! derive it from the context. \p ctx must not be NULL. Returns NULL on failure
+//! (invalid context, allocation failure), with a diagnostic printed to stderr.
+stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id);
+
 //! \brief Create a green-context helper for \p dev_id with \p sm_count SMs per green context.
 //! Requires CUDA 12.4+. Returns NULL on failure.
 stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id);

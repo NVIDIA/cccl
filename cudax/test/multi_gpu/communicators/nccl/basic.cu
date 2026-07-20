@@ -12,11 +12,32 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
 #include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 
 #include <nccl.h>
+#include <nccl_test_common.h>
 
-#include "nccl_test_helpers.cuh"
+namespace
+{
+[[nodiscard]] ncclComm_t make_nccl_communicator_handle()
+{
+  if (cuda::devices.size() == 0)
+  {
+    SKIP("No CUDA devices visible");
+  }
+
+  const int device = cuda::devices[0].get();
+  ncclComm_t handle{};
+
+  const ncclResult_t result = ncclCommInitAll(&handle, 1, &device);
+
+  INFO("NCCL: " << ncclGetErrorString(result));
+  REQUIRE(result == ncclSuccess);
+
+  return handle;
+}
+} // namespace
 
 C2H_TEST("nccl_communicator_ref typedefs", "[multi_gpu]")
 {
@@ -26,13 +47,132 @@ C2H_TEST("nccl_communicator_ref typedefs", "[multi_gpu]")
                            decltype(::cuda::std::declval<const cudax::nccl_communicator_ref&>().group_guard())>);
 }
 
-C2H_TEST("nccl_communicator_ref not constructible from NCCL_COMM_NULL", "[multi_gpu]")
+C2H_TEST("nccl_communicator(s) not constructible from NCCL_COMM_NULL", "[multi_gpu]")
 {
-  STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, decltype(NCCL_COMM_NULL)>);
-  STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, cuda::std::nullptr_t>);
+  SECTION("ref")
+  {
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, decltype(NCCL_COMM_NULL)>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, cuda::std::nullptr_t>);
+  }
+
+  SECTION("owning")
+  {
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, decltype(NCCL_COMM_NULL)>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, cuda::std::nullptr_t>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, ncclComm_t>);
+  }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref basic")
+C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
+{
+  SECTION("is move-only")
+  {
+    STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_move_constructible_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_move_assignable_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cudax::nccl_communicator>);
+  }
+
+  SECTION("factory construction")
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(cuda::std::declval<ncclComm_t>())),
+                           cudax::nccl_communicator>);
+
+    //! [nccl_communicator_construction]
+    const ncclComm_t handle = make_nccl_communicator_handle();
+
+    auto comm = cuda::experimental::nccl_communicator::from_native_handle(handle);
+
+    // comm owns the handle now
+    REQUIRE(comm.native_handle() == handle);
+    //! [nccl_communicator_construction]
+  }
+
+  SECTION("factory construction with logical device")
+  {
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(
+                             cuda::std::declval<ncclComm_t>(), cuda::std::declval<cudax::logical_device>())),
+                           cudax::nccl_communicator>);
+
+    //! [nccl_communicator_construction_with_logical_device]
+    const ncclComm_t handle = make_nccl_communicator_handle();
+    const auto device       = cudax::logical_device{cuda::devices[0]};
+
+    auto comm = cudax::nccl_communicator::from_native_handle(handle, device);
+
+    REQUIRE(comm.native_handle() == handle);
+    REQUIRE(comm.logical_device() == device);
+    //! [nccl_communicator_construction_with_logical_device]
+  }
+
+  SECTION("no_init construction")
+  {
+    STATIC_REQUIRE(cuda::std::is_nothrow_constructible_v<cudax::nccl_communicator, cuda::no_init_t>);
+
+    //! [nccl_communicator_no_init_construction]
+    const auto comm = cudax::nccl_communicator{cuda::no_init};
+
+    REQUIRE(comm.native_handle() == ncclComm_t{NCCL_COMM_NULL});
+    //! [nccl_communicator_no_init_construction]
+
+    REQUIRE(comm.rank() == 0);
+    REQUIRE(comm.size() == 0);
+  }
+
+  SECTION("release")
+  {
+    //! [nccl_communicator_release]
+    const ncclComm_t handle = make_nccl_communicator_handle();
+
+    auto comm = cuda::experimental::nccl_communicator::from_native_handle(handle);
+
+    const auto released_handle = comm.release();
+
+    // comm contains the null handle after release
+    REQUIRE(comm.native_handle() == ncclComm_t{NCCL_COMM_NULL});
+    REQUIRE(released_handle == handle);
+    //! [nccl_communicator_release]
+
+    // so that we clean up properly
+    [[maybe_unused]] const auto _ = cudax::nccl_communicator::from_native_handle(handle);
+  }
+
+  SECTION("move construction")
+  {
+    //! [nccl_communicator_move_construction]
+    const ncclComm_t handle = make_nccl_communicator_handle();
+
+    auto source      = cudax::nccl_communicator::from_native_handle(handle);
+    auto destination = cudax::nccl_communicator{cuda::std::move(source)};
+
+    // moved-from communicator is now invalid
+    REQUIRE(source.native_handle() == ncclComm_t{NCCL_COMM_NULL});
+    REQUIRE(destination.native_handle() == handle);
+    //! [nccl_communicator_move_construction]
+  }
+
+  SECTION("move assignment")
+  {
+    //! [nccl_communicator_move_assignment]
+    auto source      = cuda::experimental::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
+    auto destination = cuda::experimental::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
+
+    // Save the native handle to verify that ownership is transferred.
+    const auto handle = source.native_handle();
+
+    destination = cuda::std::move(source);
+
+    REQUIRE(source.native_handle() == ncclComm_t{NCCL_COMM_NULL});
+    REQUIRE(destination.native_handle() == handle);
+    //! [nccl_communicator_move_assignment]
+  }
+}
+
+MULTI_GPU_TEST("nccl_communicator_ref basic", )
 {
   SECTION("rank and size")
   {
@@ -48,12 +188,9 @@ NCCL_COMM_TEST("nccl_communicator_ref basic")
 
   SECTION("native handle")
   {
-    int i = 0;
-
     for (auto& comm : this->communicators())
     {
-      REQUIRE(comm.native_handle() == this->handles()[i]);
-      ++i;
+      REQUIRE(comm.native_handle() != NCCL_COMM_NULL);
     }
   }
 
@@ -79,7 +216,7 @@ NCCL_COMM_TEST("nccl_communicator_ref basic")
     if (cuda::devices.size() > 1)
     {
       REQUIRE_THROWS_WITH(
-        cudax::nccl_communicator_ref(this->handles().front(), cudax::logical_device{cuda::devices[1]}),
+        cudax::nccl_communicator_ref(this->communicators()[0].native_handle(), cudax::logical_device{cuda::devices[1]}),
         "Inconsistent devices, NCCL communicator device and provided logical device do not match");
     }
   }

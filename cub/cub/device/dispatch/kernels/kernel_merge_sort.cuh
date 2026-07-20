@@ -144,14 +144,14 @@ __launch_bounds__(
     KeyT,
     ValueT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
-    _CCCL_GRID_CONSTANT const bool ping,
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT keys_in,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT items_in,
-    _CCCL_GRID_CONSTANT const KeyIteratorT keys_out,
-    _CCCL_GRID_CONSTANT const ValueIteratorT items_out,
-    _CCCL_GRID_CONSTANT const OffsetT keys_count,
-    _CCCL_GRID_CONSTANT KeyT* const tmp_keys_out,
-    _CCCL_GRID_CONSTANT ValueT* const tmp_items_out,
+    const bool ping,
+    const KeyInputIteratorT keys_in,
+    const ValueInputIteratorT items_in,
+    const KeyIteratorT keys_out,
+    const ValueIteratorT items_out,
+    const OffsetT keys_count,
+    KeyT* const tmp_keys_out,
+    ValueT* const tmp_items_out,
     CompareOpT compare_op,
     vsmem_t vsmem)
 {
@@ -196,15 +196,15 @@ __launch_bounds__(
 
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
-  _CCCL_GRID_CONSTANT const bool ping,
-  _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
-  _CCCL_GRID_CONSTANT KeyT* const keys_pong,
-  _CCCL_GRID_CONSTANT const OffsetT keys_count,
-  _CCCL_GRID_CONSTANT const OffsetT num_partitions,
-  _CCCL_GRID_CONSTANT OffsetT* const merge_partitions,
+  const bool ping,
+  const KeyIteratorT keys_ping,
+  KeyT* const keys_pong,
+  const OffsetT keys_count,
+  const OffsetT num_partitions,
+  OffsetT* const merge_partitions,
   CompareOpT compare_op,
-  _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
-  _CCCL_GRID_CONSTANT const int items_per_tile)
+  const OffsetT target_merged_tiles_number,
+  const int items_per_tile)
 {
   const OffsetT partition_idx =
     static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
@@ -246,15 +246,15 @@ __launch_bounds__(
     KeyT,
     ValueT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
-    _CCCL_GRID_CONSTANT const bool ping,
-    _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
-    _CCCL_GRID_CONSTANT const ValueIteratorT items_ping,
-    _CCCL_GRID_CONSTANT const OffsetT keys_count,
-    _CCCL_GRID_CONSTANT KeyT* const keys_pong,
-    _CCCL_GRID_CONSTANT ValueT* const items_pong,
+    const bool ping,
+    const KeyIteratorT keys_ping,
+    const ValueIteratorT items_ping,
+    const OffsetT keys_count,
+    KeyT* const keys_pong,
+    ValueT* const items_pong,
     CompareOpT compare_op,
-    _CCCL_GRID_CONSTANT OffsetT* const merge_partitions,
-    _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
+    OffsetT* const merge_partitions,
+    const OffsetT target_merged_tiles_number,
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_merge_sort_vsmem_helper_t<

@@ -44,6 +44,7 @@ struct agent_merge_sort_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
@@ -69,7 +70,7 @@ struct MergeSortPolicy
   bool unroll = true;
 #endif // CCCL_AVOID_SORT_UNROLL
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -77,7 +78,7 @@ struct MergeSortPolicy
         && lhs.store_algorithm == rhs.store_algorithm && lhs.unroll == rhs.unroll;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return !(lhs == rhs);

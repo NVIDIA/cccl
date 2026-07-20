@@ -90,8 +90,8 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceAdjacentDifference that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref AdjacentDifferencePolicy, as shown in the
-//! example below:
+//! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::AdjacentDifferencePolicy`, as shown
+//! in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
 //!      :language: c++
