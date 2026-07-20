@@ -33,7 +33,6 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -939,19 +938,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const SegmentedRadixSortPolicy active_policy = policy_selector_t{}(cc);
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   std::stringstream ss;
-                   ss << active_policy;
-                   log_always("Dispatching DeviceSegmentedRadixSort to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
 
   return invoke_passes(
     d_temp_storage,

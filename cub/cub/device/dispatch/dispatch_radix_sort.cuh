@@ -38,8 +38,6 @@
 // TODO(bgruber): included for backward compatibility, remove in CCCL 4.0
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
-#include <cuda/std/__host_stdlib/sstream>
-
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
 // might be disabled or specified as part of an unsupported transformation ordering [-Wpass-failed=transform-warning]"
@@ -2003,19 +2001,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format radix_sort_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   std::stringstream ss;
-                   ss << policy_selector(cc);
-                   log_always("Dispatching DeviceRadixSort to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,

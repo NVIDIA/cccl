@@ -31,7 +31,6 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -146,19 +145,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   log_always("Dispatching DeviceSegmentedScan to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {
