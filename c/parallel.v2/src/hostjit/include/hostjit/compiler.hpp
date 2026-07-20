@@ -48,7 +48,7 @@ inline std::string get_libnvcc_program_log(libnvccProgram program)
   }
 
   std::string log(log_size, '\0');
-  auto res = libnvccGetProgramLog(program, log.data());
+  [[maybe_unused]] auto res = libnvccGetProgramLog(program, log.data());
   assert(res == LIBNVCC_SUCCESS && "Copying the log failed even though size calculation succeeded?");
   assert(log.back() == '\0' && "libnvccGetProgramLog() should append a NUL character");
   log.pop_back(); // Drop the extra NUL.
