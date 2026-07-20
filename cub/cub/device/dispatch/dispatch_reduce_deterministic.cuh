@@ -35,7 +35,6 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
@@ -408,19 +407,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   std::stringstream ss;
-                   ss << active_policy;
-                   log_always("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;

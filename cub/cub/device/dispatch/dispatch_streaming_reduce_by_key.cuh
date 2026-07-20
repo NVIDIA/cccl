@@ -25,7 +25,6 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -73,19 +72,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const ReduceByKeyPolicy policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format reduce_by_key_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   ::std::stringstream ss;
-                   ss << policy;
-                   log_always("Dispatching streaming reduce by key to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;

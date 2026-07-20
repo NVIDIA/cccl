@@ -25,7 +25,6 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
@@ -225,19 +224,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   if (logging_enabled())
-                   {
-                     std::stringstream ss;
-                     ss << policy_getter();
-                     log_always("Dispatching DeviceMerge to compute capability %d.%d with tuning: %s\n",
-                                cc.major_cap(),
-                                cc.minor_cap(),
-                                ss.str().c_str());
-                   }
-                 }))
-#endif // _CCCL_HOSTED()
+    log_dispatch("DeviceMerge", cc, policy_getter());
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
     using AgentT = typename choose_merge_agent<

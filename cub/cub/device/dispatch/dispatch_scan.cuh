@@ -42,7 +42,6 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -1368,19 +1367,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format scan_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   std::stringstream ss;
-                   ss << policy_selector(cc);
-                   log_always("Dispatching DeviceScan to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceScan", cc, policy_selector(cc));
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return invoke(

@@ -38,7 +38,6 @@
 #include <cuda/argument>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -958,19 +957,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
     }
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format reduce_policy
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   if (logging_enabled())
-                   {
-                     std::stringstream ss;
-                     ss << active_policy;
-                     log_always("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
-                                cc.major_cap(),
-                                cc.minor_cap(),
-                                ss.str().c_str());
-                   }
-                 }))
-#endif // _CCCL_HOSTED()
+    log_dispatch("DeviceReduce", cc, active_policy);
 
     if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {

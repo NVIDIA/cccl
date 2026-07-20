@@ -32,7 +32,6 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_empty.h>
 
 CUB_NAMESPACE_BEGIN
@@ -351,19 +350,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const AdjacentDifferencePolicy active_policy = policy_selector(cc);
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   log_always("Dispatching DeviceAdjacentDifference to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceAdjacentDifference", cc, active_policy);
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(static_cast<offset_t>(num_items), tile_size));

@@ -35,7 +35,6 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -606,19 +605,7 @@ struct dispatch_scan_by_key
       return error;
     }
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format scan_by_key_policy
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   if (detail::logging_enabled())
-                   {
-                     ::std::stringstream ss;
-                     ss << policy_selector(cc);
-                     detail::log_always("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                                        cc.major_cap(),
-                                        cc.minor_cap(),
-                                        ss.str().c_str());
-                   }
-                 }))
-#endif // _CCCL_HOSTED()
+    detail::log_dispatch("DeviceScanByKey", cc, policy_selector(cc));
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
@@ -715,19 +702,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format scan_by_key_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   ::std::stringstream ss;
-                   ss << policy_selector(cc);
-                   log_always("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceScanByKey", cc, policy_selector(cc));
 
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 

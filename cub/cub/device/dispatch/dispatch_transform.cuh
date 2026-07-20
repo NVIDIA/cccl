@@ -34,7 +34,6 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -479,19 +478,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format TransformPolicy
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   if (logging_enabled())
-                   {
-                     ::std::stringstream ss;
-                     ss << active_policy;
-                     log_always("Dispatching DeviceTransform to compute capability %d.%d with tuning: %s\n",
-                                cc.major_cap(),
-                                cc.minor_cap(),
-                                ss.str().c_str());
-                   }
-                 }))
-#endif // _CCCL_HOSTED()
+    log_dispatch("DeviceTransform", cc, active_policy);
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {

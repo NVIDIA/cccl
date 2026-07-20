@@ -36,7 +36,6 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
@@ -1100,19 +1099,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
-                 {
-                   ::std::stringstream ss;
-                   ss << PolicySelector{}(cc);
-                   log_always("Dispatching DeviceSelectIf to compute capability %d.%d with tuning: %s\n",
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  log_dispatch("DeviceSelectIf", cc, PolicySelector{}(cc));
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(

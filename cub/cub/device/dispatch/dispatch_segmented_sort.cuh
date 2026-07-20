@@ -30,7 +30,6 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -1308,19 +1307,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                                             // a function
     CUB_DETAIL_CONSTEXPR_ISH const SegmentedSortPolicy active_policy = policy_getter();
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   if (logging_enabled())
-                   {
-                     ::std::stringstream ss;
-                     ss << active_policy;
-                     log_always("Dispatching DeviceSegmentedSort to compute capability %d.%d with tuning: %s\n",
-                                cc.major_cap(),
-                                cc.minor_cap(),
-                                ss.str().c_str());
-                   }
-                 }))
-#endif // _CCCL_HOSTED()
+    log_dispatch("DeviceSegmentedSort", cc, active_policy);
 
     const int radix_bits = active_policy.large_segment.radix_bits;
 
