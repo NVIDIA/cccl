@@ -4,10 +4,22 @@ set -euo pipefail
 # Target script for `docker run` command in build_cuda_cccl_python.sh
 # The /workspace pathnames are hard-wired here.
 
-# Install GCC 13 toolset (needed for the build) and ccache (shared between
+# Toolchain version, pinned in one place. Every gcc-toolset package name and the
+# /opt/rh enable path below derive from it — the -fsanitize=thread libtsan must
+# come from the same toolset as the compiler, so these cannot drift apart.
+readonly gcc_toolset_version=13
+
+# Install the GCC toolset (needed for the build) and ccache (shared between
 # cu12 and cu13 builds via /root/.ccache bind-mount from the host).
 /workspace/ci/util/retry.sh 5 30 dnf -y install \
-  gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ ccache
+  "gcc-toolset-${gcc_toolset_version}-gcc" "gcc-toolset-${gcc_toolset_version}-gcc-c++" ccache
+
+# ThreadSanitizer builds link libcccl.c.parallel.so with -fsanitize=thread, which
+# the linker resolves via the toolset's libtsan.so. That runtime lives in a
+# separate package not pulled in by -gcc-c++, so install it for the TSan lane.
+if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  /workspace/ci/util/retry.sh 5 30 dnf -y install "gcc-toolset-${gcc_toolset_version}-libtsan-devel"
+fi
 
 # When the caller bind-mounts a ccache dir, wire it through to CMake. This
 # transparently caches every compile, so the second wheel build (cu13 after
@@ -20,7 +32,7 @@ if [[ -n "${CCACHE_DIR:-}" ]]; then
   ccache --version 2>&1 | head -1 || true
   ccache --show-stats 2>&1 | head -5 || true
 fi
-echo -e "#!/usr/bin/env bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
+echo -e "#!/usr/bin/env bash\nsource /opt/rh/gcc-toolset-${gcc_toolset_version}/enable" >/etc/profile.d/enable_devtools.sh
 # shellcheck disable=SC1091
 source /etc/profile.d/enable_devtools.sh
 
