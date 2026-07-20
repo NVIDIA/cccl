@@ -66,7 +66,8 @@ struct is_trivially_relocatable_impl;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-using is_trivially_relocatable = detail::is_trivially_relocatable_impl<T>;
+using is_trivially_relocatable
+  CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable instead") = detail::is_trivially_relocatable_impl<T>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -81,7 +82,8 @@ using is_trivially_relocatable = detail::is_trivially_relocatable_impl<T>;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
+CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v instead") constexpr bool is_trivially_relocatable_v =
+  detail::is_trivially_relocatable_impl<T>::value;
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/BinaryTypeTrait"><i>BinaryTypeTrait</i></a>
  *  that returns \c true_type if \c From is
@@ -97,8 +99,9 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename From, typename To>
-using is_trivially_relocatable_to =
-  integral_constant<bool, ::cuda::std::is_same_v<From, To> && is_trivially_relocatable<To>::value>;
+using is_trivially_relocatable_to
+  CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable and cuda::std::is_same instead") =
+    integral_constant<bool, ::cuda::std::is_same_v<From, To> && detail::is_trivially_relocatable_impl<To>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -113,7 +116,8 @@ using is_trivially_relocatable_to =
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename From, typename To>
-constexpr bool is_trivially_relocatable_to_v = is_trivially_relocatable_to<From, To>::value;
+CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v and cuda::std::is_same_v instead") constexpr bool
+  is_trivially_relocatable_to_v = ::cuda::std::is_same_v<From, To> && detail::is_trivially_relocatable_impl<To>::value;
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/BinaryTypeTrait"><i>BinaryTypeTrait</i></a>
  *  that returns \c true_type if the element type of \c FromIterator is
@@ -130,10 +134,15 @@ constexpr bool is_trivially_relocatable_to_v = is_trivially_relocatable_to<From,
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename FromIterator, typename ToIterator>
-using is_indirectly_trivially_relocatable_to = integral_constant<
-  bool,
-  is_contiguous_iterator_v<FromIterator> && is_contiguous_iterator_v<ToIterator>
-    && is_trivially_relocatable_to<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>::value>;
+using is_indirectly_trivially_relocatable_to
+  CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable, "
+                          "cuda::std::is_same, and "
+                          "thrust::is_contiguous_iterator instead") =
+    integral_constant<bool,
+                      is_contiguous_iterator_v<FromIterator>
+                        && is_contiguous_iterator_v<ToIterator>&& ::cuda::std::
+                          is_same_v<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>
+                        && detail::is_trivially_relocatable_impl<detail::it_value_t<ToIterator>>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if the element type of
  *  \c FromIterator is
@@ -150,8 +159,20 @@ using is_indirectly_trivially_relocatable_to = integral_constant<
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename FromIterator, typename ToIterator>
-constexpr bool is_indirectly_trivially_relocate_to_v =
-  is_indirectly_trivially_relocatable_to<FromIterator, ToIterator>::value;
+CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v, cuda::std::is_same_v, and thrust::is_contiguous_iterator_v "
+                        "instead") constexpr bool is_indirectly_trivially_relocate_to_v =
+  is_contiguous_iterator_v<FromIterator> && is_contiguous_iterator_v<ToIterator>
+  && ::cuda::std::is_same_v<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>
+  && detail::is_trivially_relocatable_impl<detail::it_value_t<ToIterator>>::value;
+
+namespace detail
+{
+template <typename FromIterator, typename ToIterator>
+constexpr bool is_indirectly_trivially_copyable_to_v =
+  is_contiguous_iterator_v<FromIterator> && is_contiguous_iterator_v<ToIterator>
+  && ::cuda::std::is_same_v<it_value_t<FromIterator>, it_value_t<ToIterator>>
+  && ::cuda::is_trivially_copyable_v<it_value_t<ToIterator>>;
+}
 
 /*! \brief <a href="http://eel.is/c++draft/namespace.std#def:customization_point"><i>customization point</i></a>
  *  that can be specialized customized to indicate that a type \c T is
@@ -165,7 +186,8 @@ constexpr bool is_indirectly_trivially_relocate_to_v =
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-struct proclaim_trivially_relocatable : false_type
+struct CCCL_DEPRECATED_BECAUSE("Please specialize cuda::is_trivially_copyable_v instead")
+proclaim_trivially_relocatable : false_type
 {};
 
 /*! \brief Declares that the type \c T is
@@ -178,6 +200,7 @@ struct proclaim_trivially_relocatable : false_type
  * \see is_trivially_relocatable
  * \see is_trivially_relocatable_to
  * \see proclaim_trivially_relocatable
+ * \see cuda::is_trivially_copyable_v
  */
 #define THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(T)                            \
   THRUST_NAMESPACE_BEGIN                                                    \
@@ -212,6 +235,8 @@ struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
 THRUST_NAMESPACE_END
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(char1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(char2)
@@ -240,10 +265,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(uint4)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long3)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long4)
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long4_16a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long4_32a)
@@ -251,10 +273,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long4_32a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong3)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong4)
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong4_16a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong4_32a)
@@ -262,10 +281,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong4_32a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong3)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong4)
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong4_16a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong4_32a)
@@ -273,10 +289,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong4_32a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong3)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong4)
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong4_16a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong4_32a)
@@ -295,26 +308,28 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(float4)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double3)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double4)
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double4_16a)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double4_32a)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 #endif
 
 THRUST_NAMESPACE_BEGIN
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <typename T, typename U>
 struct proclaim_trivially_relocatable<::cuda::std::pair<T, U>>
-    : ::cuda::std::conjunction<is_trivially_relocatable<T>, is_trivially_relocatable<U>>
+    : ::cuda::std::conjunction<detail::is_trivially_relocatable_impl<T>, detail::is_trivially_relocatable_impl<U>>
 {};
 
 template <typename... Ts>
 struct proclaim_trivially_relocatable<::cuda::std::tuple<Ts...>>
-    : ::cuda::std::conjunction<is_trivially_relocatable<Ts>...>
+    : ::cuda::std::conjunction<detail::is_trivially_relocatable_impl<Ts>...>
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 THRUST_NAMESPACE_END
 
 /*! \endcond

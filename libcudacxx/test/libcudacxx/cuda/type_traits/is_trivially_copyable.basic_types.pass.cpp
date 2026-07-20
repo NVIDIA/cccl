@@ -29,8 +29,85 @@ TEST_FUNC void test_single_types()
   test_is_trivially_copyable<double>();
 
 #if _CCCL_HAS_CTK()
+  // CUDA vector types
+  test_is_trivially_copyable<char1>();
+  test_is_trivially_copyable<char2>();
+  test_is_trivially_copyable<char3>();
+  test_is_trivially_copyable<char4>();
+  test_is_trivially_copyable<uchar1>();
+  test_is_trivially_copyable<uchar2>();
+  test_is_trivially_copyable<uchar3>();
+  test_is_trivially_copyable<uchar4>();
+  test_is_trivially_copyable<short1>();
+  test_is_trivially_copyable<short2>();
+  test_is_trivially_copyable<short3>();
+  test_is_trivially_copyable<short4>();
+  test_is_trivially_copyable<ushort1>();
+  test_is_trivially_copyable<ushort2>();
+  test_is_trivially_copyable<ushort3>();
+  test_is_trivially_copyable<ushort4>();
+  test_is_trivially_copyable<int1>();
+  test_is_trivially_copyable<int2>();
+  test_is_trivially_copyable<int3>();
   test_is_trivially_copyable<int4>();
+  test_is_trivially_copyable<uint1>();
+  test_is_trivially_copyable<uint2>();
+  test_is_trivially_copyable<uint3>();
+  test_is_trivially_copyable<uint4>();
+  test_is_trivially_copyable<long1>();
+  test_is_trivially_copyable<long2>();
+  test_is_trivially_copyable<long3>();
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  test_is_trivially_copyable<long4>();
+  _CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<long4_16a>();
+  test_is_trivially_copyable<long4_32a>();
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<ulong1>();
+  test_is_trivially_copyable<ulong2>();
+  test_is_trivially_copyable<ulong3>();
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  test_is_trivially_copyable<ulong4>();
+  _CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<ulong4_16a>();
+  test_is_trivially_copyable<ulong4_32a>();
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<longlong1>();
+  test_is_trivially_copyable<longlong2>();
+  test_is_trivially_copyable<longlong3>();
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  test_is_trivially_copyable<longlong4>();
+  _CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<longlong4_16a>();
+  test_is_trivially_copyable<longlong4_32a>();
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<ulonglong1>();
+  test_is_trivially_copyable<ulonglong2>();
+  test_is_trivially_copyable<ulonglong3>();
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  test_is_trivially_copyable<ulonglong4>();
+  _CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<ulonglong4_16a>();
+  test_is_trivially_copyable<ulonglong4_32a>();
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<float1>();
+  test_is_trivially_copyable<float2>();
+  test_is_trivially_copyable<float3>();
+  test_is_trivially_copyable<float4>();
+  test_is_trivially_copyable<double1>();
   test_is_trivially_copyable<double2>();
+  test_is_trivially_copyable<double3>();
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+  test_is_trivially_copyable<double4>();
+  _CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  test_is_trivially_copyable<double4_16a>();
+  test_is_trivially_copyable<double4_32a>();
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // _CCCL_HAS_CTK()
 
   // extended floating point scalar types
