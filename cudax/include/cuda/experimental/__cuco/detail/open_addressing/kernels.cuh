@@ -24,7 +24,6 @@
 #include <cub/block/block_reduce.cuh>
 
 #include <cuda/__atomic/atomic.h>
-#include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -201,6 +200,22 @@ struct __find_buffer<_Container, ::cuda::std::void_t<typename _Container::mapped
   using type = typename _Container::mapped_type;
 };
 
+//! @brief Converts a find result to the output value or the appropriate empty sentinel.
+template <class _Ref, class _Iterator>
+[[nodiscard]] _CCCL_DEVICE_API typename __find_buffer<_Ref>::type __find_output(_Ref const& __ref, _Iterator __found)
+{
+  constexpr bool __has_payload = !::cuda::std::is_same_v<typename _Ref::key_type, typename _Ref::value_type>;
+
+  if constexpr (__has_payload)
+  {
+    return __found == __ref.end() ? __ref.empty_value_sentinel() : __found->second;
+  }
+  else
+  {
+    return __found == __ref.end() ? __ref.empty_key_sentinel() : *__found;
+  }
+}
+
 //! @brief Find with predicate.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
@@ -219,30 +234,6 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
   using __output_type = typename __find_buffer<_Ref>::type;
   __shared__ __output_type __output_buffer[_BlockSize / _CgSize];
 
-  constexpr bool __has_payload = !::cuda::std::is_same_v<typename _Ref::key_type, typename _Ref::value_type>;
-
-  const auto __sentinel = [&]() {
-    if constexpr (__has_payload)
-    {
-      return __ref.empty_value_sentinel();
-    }
-    else
-    {
-      return __ref.empty_key_sentinel();
-    }
-  }();
-
-  const auto __output = ::cuda::proclaim_return_type<__output_type>([&] _CCCL_DEVICE(auto __found) {
-    if constexpr (__has_payload)
-    {
-      return __found == __ref.end() ? __sentinel : __found->second;
-    }
-    else
-    {
-      return __found == __ref.end() ? __sentinel : *__found;
-    }
-  });
-
   while ((__idx - __thread_idx / _CgSize) < __n)
   {
     if constexpr (_CgSize == 1)
@@ -259,7 +250,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
          * synchronizing before writing back to global, we no longer rely on L1, preventing the
          * increase in sector stores from L2 to global and improving performance.
          */
-        __output_buffer[__thread_idx] = __output(__found);
+        __output_buffer[__thread_idx] = __find_output(__ref, __found);
       }
       __block.sync();
       if (__idx < __n)
@@ -285,7 +276,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
 
         if (__tile.thread_rank() == 0)
         {
-          *(__output_begin + __idx) = __output(__found);
+          *(__output_begin + __idx) = __find_output(__ref, __found);
         }
       }
     }

@@ -62,7 +62,7 @@ struct match_found
 
   __device__ bool operator()(int __i) const noexcept
   {
-    return (__i < num_keys) ? (found[__i] == static_cast<_Key>(__i + payload_offset)) : (found[__i] == sentinel);
+    return (__i < num_keys) ? (found[__i] == static_cast<_Key>(__i) + payload_offset) : (found[__i] == sentinel);
   }
 };
 
@@ -94,7 +94,7 @@ struct match_find_if
 
   __device__ bool operator()(int __i) const noexcept
   {
-    return ((__i % 2) == 0) ? (found[__i] == static_cast<_Key>(__i + payload_offset)) : (found[__i] == sentinel);
+    return ((__i % 2) == 0) ? (found[__i] == static_cast<_Key>(__i) + payload_offset) : (found[__i] == sentinel);
   }
 };
 
