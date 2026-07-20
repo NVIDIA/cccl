@@ -27,10 +27,11 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 
@@ -700,7 +701,7 @@ public:
   packed_cas(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     using packed_type =
-      ::cuda::std::conditional_t<sizeof(__value_type) == 4, ::cuda::std::uint32_t, ::cuda::std::uint64_t>;
+      ::cuda::std::__make_nbit_uint_t<sizeof(__value_type) * ::cuda::std::numeric_limits<unsigned char>::digits>;
 
     auto* __slot_ptr     = reinterpret_cast<packed_type*>(__address);
     auto* __expected_ptr = reinterpret_cast<packed_type*>(&__expected);
