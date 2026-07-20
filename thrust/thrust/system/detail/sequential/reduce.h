@@ -34,7 +34,7 @@ _CCCL_HOST_DEVICE OutputType reduce(
   BinaryFunction binary_op)
 {
   // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction> wrapped_binary_op{binary_op};
   return ::cuda::std::accumulate(begin, end, init, wrapped_binary_op);
 }
 } // namespace system::detail::sequential

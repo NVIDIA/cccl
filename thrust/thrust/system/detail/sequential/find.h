@@ -30,7 +30,7 @@ _CCCL_HOST_DEVICE InputIterator
 find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
   return ::cuda::std::find_if(first, last, wrapped_pred);
 }
 } // namespace system::detail::sequential

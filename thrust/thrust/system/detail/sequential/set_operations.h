@@ -43,7 +43,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
   return ::cuda::std::set_difference(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_difference()
 
@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
   return ::cuda::std::set_intersection(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_intersection()
 
@@ -83,7 +83,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
   return ::cuda::std::set_symmetric_difference(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_symmetric_difference()
 
@@ -103,7 +103,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
   return ::cuda::std::set_union(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_union()
 } // namespace system::detail::sequential

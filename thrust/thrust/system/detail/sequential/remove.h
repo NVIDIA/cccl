@@ -31,7 +31,7 @@ _CCCL_HOST_DEVICE ForwardIterator
 remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
   return ::cuda::std::remove_if(first, last, wrapped_pred);
 }
 
@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   Predicate pred)
 {
   // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   // advance iterators until wrapped_pred(*stencil) is true or we reach the end of input
   while (first != last && !wrapped_pred(*stencil))
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   Predicate pred)
 {
   // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
   return ::cuda::std::remove_copy_if(first, last, result, wrapped_pred);
 }
 
@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   Predicate pred)
 {
   // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (first != last)
   {

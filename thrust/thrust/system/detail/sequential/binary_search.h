@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <thrust/detail/function.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__algorithm/lower_bound.h>
@@ -37,7 +36,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
   return ::cuda::std::lower_bound(first, last, val, wrapped_comp);
 }
 
@@ -51,7 +50,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
   return ::cuda::std::upper_bound(first, last, val, wrapped_comp);
 }
 
@@ -67,7 +66,7 @@ _CCCL_HOST_DEVICE bool binary_search(
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);
 
   // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   return iter != last && !wrapped_comp(val, *iter);
 }

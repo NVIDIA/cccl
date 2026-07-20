@@ -17,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/function.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__numeric/adjacent_difference.h>
@@ -34,11 +33,9 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   OutputIterator result,
   BinaryFunction binary_op)
 {
-  using InputType    = thrust::detail::it_value_t<InputIterator>;
-  using OpResultType = ::cuda::std::invoke_result_t<BinaryFunction&, InputType, InputType>;
   // wrap binary_op to handle proxy references
-  const thrust::detail::wrapped_function<BinaryFunction, OpResultType> wrapped_op{binary_op};
-  return ::cuda::std::adjacent_difference(first, last, result, wrapped_op);
+  return ::cuda::std::adjacent_difference(
+    first, last, result, thrust::detail::wrapped_function<BinaryFunction>{binary_op});
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
