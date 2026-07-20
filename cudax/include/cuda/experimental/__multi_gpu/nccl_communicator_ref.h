@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
@@ -140,7 +141,7 @@ public:
   //! @throws std::runtime_error If the device reported by NCCL does not match `__device`.
   _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm, logical_device __device)
       : __comm_{[&] {
-        if (__comm == nullptr)
+        if (__comm == ::cuda::experimental::__nccl::__NCCL_COMM_NULL)
         {
           _CCCL_THROW(::std::invalid_argument, "Invalid NCCL communicator: NCCL_COMM_NULL");
         }
@@ -439,6 +440,9 @@ private:
           // Unclear whether CUDA driver also makes this optimization
           if (__sendbuf_bytes != __recv_ptr_bytes)
           {
+            // Work around for nvbug 6299919
+            const auto _ = ::cuda::__ensure_current_context{__stream};
+
             ::cuda::__driver::__memcpyAsync(__recv_ptr_bytes, __sendbuf_bytes, __send_count_bytes, __stream.get());
           }
         }
@@ -651,6 +655,9 @@ private:
 
         if (__send_ptr_bytes != __recv_ptr_bytes)
         {
+          // Work around for nvbug 6299919
+          const auto _ = ::cuda::__ensure_current_context{__stream};
+
           ::cuda::__driver::__memcpyAsync(__recv_ptr_bytes, __send_ptr_bytes, __send_count_bytes, __stream.get());
         }
         continue;
@@ -715,6 +722,19 @@ public:
   }
 
 private:
+  friend class nccl_communicator;
+
+  _CCCL_HOST_API nccl_communicator_ref(
+    native_handle_type __comm,
+    ::cuda::experimental::logical_device __device,
+    ::cuda::std::int32_t __rank,
+    ::cuda::std::int32_t __size) noexcept
+      : __comm_{__comm}
+      , __device_{::cuda::std::move(__device)}
+      , __rank_{__rank}
+      , __size_{__size}
+  {}
+
   native_handle_type __comm_{};
   ::cuda::experimental::logical_device __device_;
   // Cache these so we can make the accessors noexcept

@@ -184,7 +184,7 @@ C2H_TEST("Device for each n works with bad operators", "[for][device]", offset_t
       max_items,
     })));
 
-  const std::size_t magic_value = num_items + 1;
+  const std::size_t magic_value = static_cast<std::size_t>(num_items) + 1;
   c2h::device_vector<std::size_t> input(num_items, magic_value);
   const std::size_t* d_input = thrust::raw_pointer_cast(input.data());
 

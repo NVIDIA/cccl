@@ -45,9 +45,11 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceHistogram}
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceHistogram that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref HistogramPolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::HistogramPolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
@@ -776,7 +778,7 @@ public:
       [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
-          if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+          if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
             return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
               storage,
@@ -1502,7 +1504,7 @@ public:
       [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
-          if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+          if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
             return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
               storage,

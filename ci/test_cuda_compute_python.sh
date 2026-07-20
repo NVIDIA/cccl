@@ -35,5 +35,12 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large"
-python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large"
+if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  # The test isolates itself in a fresh subprocess (LLVM initialization is
+  # process-wide and only cold once), but it carries the free_threading marker,
+  # so it must be selected by node-id here or the sweeps below never run it.
+  python -m pytest "${pytest_extra[@]}" -n 0 -v \
+    compute/test_free_threading_stress.py::test_v2_concurrent_cold_llvm_initialization
+fi
+python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large and not free_threading"
+python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large and not free_threading"

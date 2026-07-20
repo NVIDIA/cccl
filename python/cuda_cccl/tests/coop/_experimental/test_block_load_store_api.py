@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from _utils.device_array import DeviceArray
+
+# isort: split
 # example-begin imports
 import numba
 import numpy as np
@@ -36,8 +39,8 @@ def test_block_load_store():
     h_input = np.random.randint(
         0, 42, threads_per_block * items_per_thread, dtype=np.int32
     )
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array_like(d_input)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
     kernel[1, threads_per_block](d_input, d_output)
     h_output = d_output.copy_to_host()
 
