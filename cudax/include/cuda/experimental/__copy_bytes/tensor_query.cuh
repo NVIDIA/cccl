@@ -26,13 +26,12 @@
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/array>
 
 #  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
 #  include <cuda/experimental/__copy_bytes/mdspan_to_raw_tensor.cuh>
 #  include <cuda/experimental/__copy_bytes/types.cuh>
-
-#  include <iostream>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -148,7 +147,7 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
     namespace cudax       = ::cuda::experimental;
     const auto __tensor   = cudax::__to_raw_tensor(__mdspan);
     const auto __sorted   = cudax::__sort_by_stride(__tensor);
-    using __stride_t      = ::cuda::std::remove_cvref_t<decltype(__sorted.__strides[0])>;
+    using __index_t       = typename _Extents::index_type;
     using __rank_t        = typename _Extents::rank_type;
     const auto& __extents = __sorted.__extents;
     const auto& __strides = __sorted.__strides;
@@ -161,25 +160,24 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
         return false;
       }
     }
-    // max_dist is maximal distance between two elements in sub-layout
-    // restricted to i - 1 dims with smallest strides
+    // max_dist is maximal distance between two elements in sub-layout restricted to i - 1 dims with smallest strides:
     // max_offset = sum((e_j - 1) * s_j for j in range(i) if s_j > 0)
     // min_offset = sum((e_j - 1) * s_j for j in range(i) if s_j < 0)
     // max_dist = max_offset - min_offset = sum((e_j - 1) * |s_j| for j in range(i))
-    __stride_t __max_dist = 0;
+    __index_t __max_dist = 0;
     for (__rank_t __i = 0; __i < __rank; ++__i)
     {
-      const __stride_t extent = __extents[__i];
-      if (extent != 1)
+      const auto __extent = static_cast<__index_t>(__extents[__i]);
+      if (__extent != 1)
       {
         const auto __abs_stride = cudax::__abs_integer(__strides[__i]);
         if (__abs_stride <= __max_dist)
         {
           return true;
         }
-        // note that slicing a layout, while it may increase _abs_stride,
-        // cannot increase dimension's contribution to max_dist
-        __max_dist += (extent - 1) * __abs_stride;
+        // note that slicing a layout, while it may increase _abs_stride, cannot increase dimension's contribution
+        // to max_dist
+        __max_dist += (__extent - 1) * __abs_stride;
       }
     }
     // Assume for contradiction that there exists two different n-dimensional
