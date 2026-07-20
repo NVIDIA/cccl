@@ -254,7 +254,6 @@ struct owned_selector_op
   {}
   ~owned_selector_op()
   {
-    std::free(op.state);
     std::free(const_cast<char*>(op.code));
   }
   owned_selector_op(const owned_selector_op&)            = delete;
@@ -995,9 +994,7 @@ try
 
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
 
-  // Clean up the selector op states and code buffers (malloc-allocated, so use std::free)
-  std::free(build_ptr->large_segments_selector_op.state);
-  std::free(build_ptr->small_segments_selector_op.state);
+  // Clean up the selector op code buffers (malloc-allocated, so use std::free)
   std::free(const_cast<char*>(build_ptr->large_segments_selector_op.code));
   std::free(const_cast<char*>(build_ptr->small_segments_selector_op.code));
 
@@ -1204,9 +1201,8 @@ try
     throw std::runtime_error(std::format("serialization blob: invalid sort order ({})", static_cast<uint32_t>(order)));
   }
 
-  // selector ops are partial-cleanup-friendly: code+state are malloc'd. If a
-  // later step throws, segmented_sort_cleanup will std::free both; the unique
-  // ownership cleanup happens via memset+full_cleanup in the catch handler.
+  // selector ops own a malloc'd code buffer (state is per-call now, so nullptr
+  // here). If a later step throws, the catch handlers below std::free the code.
   cccl_op_t large_op =
     segmented_sort_serialization::deserialize_selector_op(r, segmented_sort_serialization::kLargeSegmentsName);
   cccl_op_t small_op{};
@@ -1217,7 +1213,6 @@ try
   }
   catch (...)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
     throw;
   }
@@ -1232,17 +1227,13 @@ try
   }
   catch (...)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
-    std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
     throw;
   }
   if (payload_size == 0)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
-    std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
     throw std::runtime_error("serialization blob: empty payload");
   }
@@ -1279,9 +1270,7 @@ try
   }
   catch (...)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
-    std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
     throw;
   }
