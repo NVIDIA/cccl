@@ -8,14 +8,14 @@ CUB
    :maxdepth: 3
 
    Overview <self>
-   determinism
-   benchmarking
-   tuning
-   tuning_infra
    thread_level
    warp_wide
    block_wide
    device_wide
+   determinism
+   benchmarking
+   tuning
+   tuning_infra
    API reference <api/index>
    developer_overview
 
