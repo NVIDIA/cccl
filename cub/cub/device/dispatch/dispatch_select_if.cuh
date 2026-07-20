@@ -1134,7 +1134,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                                orig_policy_selector_t>;
 
 #if _CCCL_HAS_CONCEPTS()
-  static_assert(select_if_policy_selector<PolicySelector>, "Invalid PolicySelector for device_select::dispatch");
+  static_assert(select_if_policy_selector<policy_selector_t>, "Invalid PolicySelector for device_select::dispatch");
 #endif // _CCCL_HAS_CONCEPTS()
 
   ::cuda::compute_capability cc{};
@@ -1146,7 +1146,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
-                 ss << PolicySelector{}(cc);
+                 ss << policy_selector_t{}(cc);
                  _CubLog("Dispatching DeviceSelectIf to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
                          cc.minor_cap(),
