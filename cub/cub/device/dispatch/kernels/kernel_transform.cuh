@@ -36,6 +36,7 @@
 #include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -270,8 +271,8 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   constexpr int load_store_count = items_per_thread / vec_size;
   static_assert(items_per_thread % vec_size == 0, "The items per thread must be a multiple of the vector size");
 
-  constexpr bool can_vectorize_store = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-                                    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
+  constexpr bool can_vectorize_store =
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut> && ::cuda::is_trivially_copyable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
@@ -909,7 +910,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr bool vectorize_eligible =
     store_vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
     && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && ::cuda::is_power_of_two(out_size)
+    && ::cuda::is_trivially_copyable_v<output_t> && ::cuda::is_power_of_two(out_size)
     && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
 
   [[maybe_unused]] bool can_vectorize = false;
