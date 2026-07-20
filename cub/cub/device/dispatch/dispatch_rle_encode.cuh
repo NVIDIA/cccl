@@ -77,6 +77,14 @@ inline constexpr bool lookahead_instantiable =
   && ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8);
 #endif // __cccl_ptx_isa >= 920
 
+// a preprocessor directive inside the NV_IF_TARGET argument list is undefined behavior (MSVC C5101),
+// so the CUB_DEBUG_LOG guard has to live in this macro instead of around the _CubLog calls
+#ifdef CUB_DEBUG_LOG
+#  define CUB_DETAIL_RLE_ENCODE_LOG(...) _CubLog(__VA_ARGS__)
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+#  define CUB_DETAIL_RLE_ENCODE_LOG(...)
+#endif // !CUB_DEBUG_LOG
+
 // Dispatches DeviceRunLengthEncode::Encode: the lookahead implementation when the tuning policy selects
 // it (host-side callers on viable types), the streaming reduce-by-key implementation otherwise (lookback
 // policies, non-viable types, and device-side callers).
@@ -158,12 +166,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           {
             constexpr int init_kernel_threads = 128;
             const auto init_grid_size         = ::cuda::ceil_div(num_tiles, init_kernel_threads);
-#  ifdef CUB_DEBUG_LOG
-            _CubLog("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-                    init_grid_size,
-                    init_kernel_threads,
-                    (long long) stream);
-#  endif // CUB_DEBUG_LOG
+            CUB_DETAIL_RLE_ENCODE_LOG(
+              "Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
+              init_grid_size,
+              init_kernel_threads,
+              (long long) stream);
             if (const auto error = CubDebug(
                   launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
                     .doit(init_kernel, tile_partial_states, static_cast<long long>(num_tiles))))
@@ -181,13 +188,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           }
           {
             const int block_dim = num_total_threads(policy.lookahead);
-#  ifdef CUB_DEBUG_LOG
-            _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-                    num_tiles,
-                    block_dim,
-                    dyn_smem_bytes,
-                    (long long) stream);
-#  endif // CUB_DEBUG_LOG
+            CUB_DETAIL_RLE_ENCODE_LOG(
+              "Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
+              num_tiles,
+              block_dim,
+              dyn_smem_bytes,
+              (long long) stream);
             if (const auto error = CubDebug(
                   launcher_factory(num_tiles,
                                    block_dim,
