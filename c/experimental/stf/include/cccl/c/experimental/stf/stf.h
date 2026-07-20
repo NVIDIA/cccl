@@ -2253,6 +2253,51 @@ void stf_stackable_while_cond_scalar(
   double threshold,
   stf_dtype dtype);
 
+//! \brief Maximum number of terms accepted by \c stf_stackable_while_cond_multi().
+#  define STF_WHILE_COND_MAX_TERMS 8
+
+//! \brief Combiner for multi-term while conditions.
+typedef enum stf_cond_combiner
+{
+  STF_COND_ALL = 0, //!< Continue while every term holds (logical AND)
+  STF_COND_ANY = 1, //!< Continue while at least one term holds (logical OR)
+} stf_cond_combiner;
+
+//! \brief One comparison term of a multi-term while condition.
+//!
+//! Evaluates as ``(*ld <op> threshold)``, then negated if \c negate is nonzero.
+typedef struct stf_while_cond_term
+{
+  stf_logical_data_handle ld; //!< Scalar logical data (1 element of \c dtype)
+  stf_compare_op op; //!< Comparison operator
+  double threshold; //!< Right-hand side compared against the scalar
+  stf_dtype dtype; //!< Element type of \c ld
+  int negate; //!< Nonzero to negate the term result
+} stf_while_cond_term;
+
+//! \brief Set a compound while-loop condition combining several scalar comparisons.
+//!
+//! Schedules a single internal task that reads every referenced scalar
+//! logical data, evaluates each ``(*ld <op> threshold)`` term (with optional
+//! negation) and folds the results with the requested combiner: continue
+//! while *all* terms hold (\c STF_COND_ALL) or while *any* term holds
+//! (\c STF_COND_ANY). Call exactly once per iteration after the loop body
+//! tasks of the current scope.
+//!
+//! With \p n_terms == 1 this is equivalent to \c stf_stackable_while_cond_scalar().
+//!
+//! \param ctx      Stackable context handle
+//! \param scope    While scope handle
+//! \param terms    Array of \p n_terms comparison terms
+//! \param n_terms  Number of terms (1 to \c STF_WHILE_COND_MAX_TERMS)
+//! \param combiner How the term results are combined
+void stf_stackable_while_cond_multi(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  const stf_while_cond_term* terms,
+  int n_terms,
+  stf_cond_combiner combiner);
+
 #endif // CUDART_VERSION >= 12040
 
 //! \brief Create stackable logical data from existing memory and a data place.
