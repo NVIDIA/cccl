@@ -8,7 +8,7 @@ Device-Wide Primitives
    :hidden:
    :maxdepth: 2
 
-   ../api/device
+   api/device
 
 Almost all of CUB's device-wide APIs come in two flavors:
 
@@ -44,7 +44,7 @@ This means in detail:
 
 Example pattern:
 
-.. literalinclude:: ../../../cub/examples/device/example_device_reduce.cu
+.. literalinclude:: ../../cub/examples/device/example_device_reduce.cu
    :language: c++
    :dedent:
    :start-after: example-begin temp-storage-query
@@ -69,13 +69,13 @@ Key properties of the environment argument:
 
 Example pattern:
 
-.. literalinclude:: ../../../cub/examples/device/example_device_reduce_env.cu
+.. literalinclude:: ../../cub/examples/device/example_device_reduce_env.cu
    :language: c++
    :dedent:
    :start-after: example-begin env-overload-setup
    :end-before: example-end env-overload-setup
 
-.. literalinclude:: ../../../cub/examples/device/example_device_reduce_env.cu
+.. literalinclude:: ../../cub/examples/device/example_device_reduce_env.cu
    :language: c++
    :dedent:
    :start-after: example-begin env-overload-run

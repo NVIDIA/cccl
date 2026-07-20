@@ -12,9 +12,12 @@ CUB
    benchmarking
    tuning
    tuning_infra
-   developer_overview
-   API documentation <api>
+   thread_level
+   warp_wide
+   block_wide
+   device_wide
    API reference <api/index>
+   developer_overview
 
 What is CUB?
 ==================================================
