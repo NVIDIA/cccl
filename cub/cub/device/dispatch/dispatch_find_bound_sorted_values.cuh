@@ -31,10 +31,6 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
-#if _CCCL_HOSTED()
-#  include <sstream>
-#endif // _CCCL_HOSTED()
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::find_bound_sorted_values
@@ -128,18 +124,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() // guard needed for stringstream used to format policy
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 if (detail::logging_enabled())
-                 {
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   detail::log_always("Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n",
-                                      cc.get(),
-                                      ss.str().c_str());
-                 }
-               }))
-#endif // _CCCL_HOSTED()
+  detail::log_dispatch("DeviceFind (bound sorted values)", cc, active_policy);
 
   const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block) * active_policy.items_per_thread;
   if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
