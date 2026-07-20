@@ -724,8 +724,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
   // pass also compiles -- this one (under RDC it is `__host__ __device__` and instantiated for the CDP arm; otherwise
   // the host-pass reference from this whole-program TU still drives device-side emission). Referencing it solely from
   // the `_CCCL_HOST` launcher left the symbol unregistered and host launches failed with
-  // `cudaErrorInvalidResourceHandle`. The host launcher receives the resulting pointer.
-  constexpr auto dynamic_kernel = &device_batched_topk_kernel<
+  // `cudaErrorInvalidResourceHandle`. The host launcher receives the resulting pointer; `[[maybe_unused]]` because the
+  // device (CDP) pass reaches only `launch_cluster_arm_device`, which does not take it, yet the address-of below still
+  // ODR-uses (and so emits) the symbol there.
+  [[maybe_unused]] constexpr auto dynamic_kernel = &device_batched_topk_kernel<
     PolicySelector,
     KeyInputItItT,
     KeyOutputItItT,
