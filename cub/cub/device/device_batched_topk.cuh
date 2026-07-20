@@ -18,7 +18,7 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
-#include <cub/detail/segmented_params.cuh> // detail::params::__is_valid_deferred_handle_v
+#include <cub/detail/segmented_params.cuh> // detail::params::__validate_uniform{,_or_per_segment}_integral_param
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 #include <cub/util_type.cuh>
@@ -32,8 +32,6 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
@@ -108,8 +106,14 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   //   3. only `output_ordering::unsorted` is implemented. Given rules 1/2, this admits the five implemented
   //      (determinism, tie_break) combinations -- (not_guaranteed, unspecified), (run_to_run, unspecified),
   //      (gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index}) -- while `sorted` / `stable_sorted`
-  //      (and therefore the empty-env default, which resolves to `stable_sorted`) remain rejected. Deterministic
-  //      requests route to the cluster backend on SM 9.0+; the opt-out configuration uses the arch+size crossover.
+  //      (and therefore the empty-env default, which resolves to `stable_sorted`) remain rejected.
+  //
+  // Backend routing implied by the request (exact rules in `select_backend`, tuning_batched_topk.cuh): any request
+  // beyond fully non-deterministic -- determinism stronger than not_guaranteed (run_to_run/gpu_to_gpu), or a concrete
+  // tie-break -- is served only by the cluster backend (SM 9.0+). A fully non-deterministic request (not_guaranteed +
+  // unspecified tie-break) leaves the backend open, chosen from the target architecture and the statically-known
+  // maximum segment size: a segment too large for the single-block baseline forces the cluster backend, otherwise the
+  // baseline runs unless the cluster is measured to win.
   // ---------------------------------------------------------------------------
   static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                 "Determinism should be used inside cuda::execution::require to have an effect.");
@@ -178,96 +182,56 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   // ---------------------------------------------------------------------------
   // Argument-annotation constraints surfaced at the call site.
   // ---------------------------------------------------------------------------
-  static_assert(
-    ::cuda::args::__traits<NumSegmentsParameterT>::is_single_value
-      && !::cuda::args::__traits<NumSegmentsParameterT>::is_deferred,
-    "cub::DeviceBatchedTopK requires a single (uniform) number of segments resolved on the host: pass "
-    "num_segments as a host-known single value (e.g. cuda::args::constant or cuda::args::immediate). A "
-    "per-segment sequence is not a meaningful segment count; a single deferred (device-resident) value is "
-    "meaningful but not yet supported.");
-  // The segment_sizes checks below are layered so that a single misuse reports a single, targeted diagnostic: each
-  // check is guarded by the validity of the ones before it (a later check "passes" once an earlier one has failed),
-  // so e.g. a raw pointer trips only the form check, not also the range check, and a scalar handed to `deferred`
-  // trips only the handle check, not also the negative-range check.
-  using seg_traits = ::cuda::args::__traits<SegmentSizeParameterT>;
-  constexpr bool segment_sizes_is_form =
-    ::cuda::args::__is_wrapper_v<SegmentSizeParameterT> || ::cuda::std::is_integral_v<SegmentSizeParameterT>;
-  // The per-segment size is a count of items, so the type actually read as a size must be integral and not `bool`. A
-  // deferred handle or a sequence is read element-wise (dereferenced / indexed), so its `element_type` is the size; a
-  // plain value, `constant`, or `immediate` is used directly, so its `value_type` is -- using `value_type` there also
-  // rejects a handle wrongly wrapped as a single value (e.g. a pointer in `immediate`, whose `element_type` would hide
-  // the pointer behind its pointee).
-  using segment_size_value_t =
-    ::cuda::std::conditional_t<seg_traits::is_deferred || !seg_traits::is_single_value,
-                               typename seg_traits::element_type,
-                               typename seg_traits::value_type>;
-  constexpr bool segment_size_is_integral =
-    ::cuda::std::is_integral_v<segment_size_value_t> && !::cuda::std::is_same_v<segment_size_value_t, bool>;
-  // A deferred / deferred_sequence argument wraps a handle read on the device (see cub::detail::params). The handle
-  // must match how it is read: a single `deferred` is dereferenced (`*handle`), so it must be a pointer or input
-  // iterator; a `deferred_sequence` is indexed per segment (`handle[index]`), so it must be a random-access iterator.
-  constexpr bool segment_sizes_is_deferred_single = seg_traits::is_deferred && seg_traits::is_single_value;
-  constexpr bool segment_sizes_is_deferred_seq    = seg_traits::is_deferred && !seg_traits::is_single_value;
-  // Whether the deferred handle(s) are valid. Consulted only to gate the integral range block below; the per-check
-  // `static_assert`s below emit the actual per-misuse diagnostics.
-  constexpr bool segment_sizes_handle_ok =
-    (!segment_sizes_is_deferred_single || detail::params::__is_valid_deferred_handle_v<typename seg_traits::value_type>)
-    && (!segment_sizes_is_deferred_seq
-        || detail::params::__is_valid_deferred_sequence_handle_v<typename seg_traits::value_type>);
+  // segment_sizes and k may be uniform or per-segment; num_segments must be a single value. Instantiating each
+  // validation struct (via the `all_ok` reads below) runs its layered per-argument static_asserts -- one targeted
+  // diagnostic per misuse. Three argument-specific constraints are then applied inline below (segment_sizes' maximum
+  // size, k's element-type width, num_segments host-known).
+  using segment_sizes_validation =
+    detail::params::__validate_uniform_or_per_segment_integral_param<SegmentSizeParameterT>;
+  using k_validation            = detail::params::__validate_uniform_or_per_segment_integral_param<KParameterT>;
+  using num_segments_validation = detail::params::__validate_uniform_integral_param<NumSegmentsParameterT>;
 
-  static_assert(segment_sizes_is_form,
-                "cub::DeviceBatchedTopK: segment_sizes must be a cuda::args annotation or a plain integral value "
-                "(taken as a uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap "
-                "per-segment sizes in cuda::args::deferred_sequence, or a single device-side value in "
-                "cuda::args::deferred.");
-  static_assert(!segment_sizes_is_form || segment_size_is_integral,
-                "cub::DeviceBatchedTopK: segment_sizes must have an integral (non-bool) element type (the per-segment "
-                "size is a count of items).");
-  static_assert(
-    !segment_sizes_is_form || !segment_size_is_integral || !segment_sizes_is_deferred_single
-      || detail::params::__is_valid_deferred_handle_v<typename seg_traits::value_type>,
-    "cub::DeviceBatchedTopK: a cuda::args::deferred segment_sizes argument must wrap a pointer or other "
-    "dereferenceable handle to a single device-side integral segment size (it is read via *handle); a range "
-    "or container such as span / array is not accepted -- use cuda::args::deferred_sequence for per-segment "
-    "sizes.");
-  static_assert(!segment_sizes_is_form || !segment_size_is_integral || !segment_sizes_is_deferred_seq
-                  || detail::params::__is_valid_deferred_sequence_handle_v<typename seg_traits::value_type>,
-                "cub::DeviceBatchedTopK: a cuda::args::deferred_sequence segment_sizes argument must wrap a "
-                "random-access iterator (a pointer qualifies) over the per-segment integral segment sizes (it is "
-                "indexed per segment).");
-  // Only the statically-known *maximum* segment size is constrained: it must not exceed 2^21 (about 2 million).
-  // Beyond that the streaming cluster backend is not competitive; larger segments are future work (a WIP multi-CTA
-  // baseline backend). So a segment-size type or bound whose maximum exceeds 2^21 (e.g. an un-annotated int32/uint32,
-  // or an explicit bound above 2^21) must carry a tighter compile-time `cuda::args::bounds`. The minimum is left
-  // unconstrained: a negative statically-known lower bound (a signed type with no non-negative bound, e.g. int16, or
-  // an explicit negative bound) is accepted, and the kernel clamps any negative runtime size up to 0 (see
-  // detail::params::get_segment_size). Gated on the checks above so an invalid form/element/handle reports just its
-  // own diagnostic.
-  if constexpr (segment_sizes_is_form && segment_size_is_integral && segment_sizes_handle_ok)
+  // Only the statically-known *maximum* segment size is constrained: it must not exceed 2^21 (about 2 million). Beyond
+  // that the streaming cluster backend is not competitive; larger segments are future work (a WIP multi-CTA baseline
+  // backend). So a segment-size type or bound whose maximum exceeds 2^21 (e.g. an un-annotated int32/uint32, or an
+  // explicit bound above 2^21) must carry a tighter compile-time `cuda::args::bounds`. The minimum is left
+  // unconstrained: a negative statically-known lower bound is accepted, and the kernel clamps any negative runtime size
+  // up to 0 (see detail::params::__get_and_clamp_param_to_nonnegative). k carries no such maximum-value bound (on the
+  // device an over-large k is clamped to the segment size and a negative k to 0), only the 64-bit element-type width
+  // limit checked below.
+  if constexpr (segment_sizes_validation::all_ok)
   {
     static_assert(
-      ::cuda::std::cmp_less_equal(seg_traits::highest, ::cuda::std::int64_t{1} << 21),
+      ::cuda::std::cmp_less_equal(segment_sizes_validation::args_traits::highest, ::cuda::std::int64_t{1} << 21),
       "cub::DeviceBatchedTopK: the statically-known maximum segment size exceeds the maximum currently supported "
-      "segment size (2^21, about 2 million). Give a segment-size type whose maximum is larger a compile-time upper "
+      "segment size (2^21, about 2 million). Give a segment-size type whose maximum fits, or a compile-time upper "
       "bound (cuda::args::bounds) not exceeding 2^21.");
   }
-  constexpr bool k_is_form = ::cuda::args::__is_wrapper_v<KParameterT> || ::cuda::std::is_integral_v<KParameterT>;
-  static_assert(k_is_form,
-                "cub::DeviceBatchedTopK: k must be a cuda::args annotation or a plain integral value (taken as a "
-                "uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap a per-segment k "
-                "in cuda::args::deferred_sequence, or a single device-side value in cuda::args::deferred.");
-  constexpr bool num_segments_is_form =
-    ::cuda::args::__is_wrapper_v<NumSegmentsParameterT> || ::cuda::std::is_integral_v<NumSegmentsParameterT>;
-  static_assert(num_segments_is_form,
-                "cub::DeviceBatchedTopK: num_segments must be a cuda::args annotation or a plain integral value. A "
-                "raw pointer or iterator is not accepted.");
 
-  // Only instantiate the dispatch once every argument passes its form/element checks above. An invalid argument has
-  // already failed a static_assert, so the else branch is unreachable in a well-formed program; guarding here keeps
-  // the diagnostic limited to that one targeted static_assert instead of a cascade of follow-on template errors from
-  // instantiating the device-side reads with an invalid argument (e.g. dereferencing a scalar `deferred` handle).
-  if constexpr (segment_sizes_is_form && segment_size_is_integral && segment_sizes_handle_ok && k_is_form
-                && num_segments_is_form)
+  // k's value is clamped to the segment size on the device through a 64-bit intermediate, so a wider element type
+  // (e.g. __int128) could silently wrap. `sizeof` rather than a value comparison keeps character element types
+  // compiling (the `cmp_*` comparators reject them).
+  if constexpr (k_validation::all_ok)
+  {
+    static_assert(sizeof(typename k_validation::args_traits::element_type) <= sizeof(::cuda::std::uint64_t),
+                  "cub::DeviceBatchedTopK: k's element type must be at most 64 bits wide.");
+  }
+
+  // num_segments must be known on the host: the launch configuration is computed from it before any kernel runs, so a
+  // device-resident `deferred` value cannot be used (a per-segment sequence is already rejected by the validation
+  // above).
+  if constexpr (num_segments_validation::all_ok)
+  {
+    static_assert(!num_segments_validation::args_traits::is_deferred,
+                  "cub::DeviceBatchedTopK: num_segments must be a host-known value (e.g. cuda::args::constant, "
+                  "cuda::args::immediate, or a plain integral); a device-resident cuda::args::deferred value is not "
+                  "supported because the launch configuration is computed on the host.");
+  }
+
+  // Only instantiate the dispatch once every argument passes its type/element checks above (and num_segments is
+  // host-known).
+  if constexpr (segment_sizes_validation::all_ok && k_validation::all_ok && num_segments_validation::all_ok
+                && !num_segments_validation::args_traits::is_deferred)
   {
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
@@ -359,7 +323,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! ``cuda::args::bounds<lo, hi>()``). A negative statically-known lower bound is allowed: negative runtime sizes are
 //! clamped to an empty segment (size 0). A non-negative lower bound is trusted -- passing an actual value outside its
 //! declared bound (for instance a negative value under a non-negative bound) is a caller precondition violation
-//! (undefined behavior). Tight bounds on every parameter are encouraged.
+//! (undefined behavior). ``k`` has no algorithm-imposed maximum: a ``k`` larger than a segment's size selects that
+//! whole segment. Its lower bound follows the same rule as ``segment_sizes`` above -- under a negative statically-known
+//! lower bound a negative runtime ``k`` is clamped to 0 (selecting nothing), while under a non-negative lower bound a
+//! negative value is a caller precondition violation (undefined behavior). Tight bounds on every parameter are
+//! encouraged.
 //!
 //! .. code-block:: c++
 //!
@@ -401,6 +369,9 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   ``int32_t``, ``uint32_t``, or ``int64_t``) must carry a compile-time ``cuda::args::bounds`` whose upper end does
 //!   not exceed ``2^21`` (see *Which form each parameter accepts* above for how the lower bound and out-of-bound values
 //!   are handled).
+//! - **k is at most 64 bits wide.** The element type of ``k`` may be no wider than 64 bits. The device clamps ``k`` to
+//!   the segment size through a 64-bit intermediate, so a wider integer type (e.g. ``__int128``) is rejected to avoid a
+//!   silent wrap. ``k`` itself has no algorithm-imposed maximum (see *Which form each parameter accepts* above).
 //! - **Uniform number of segments.** ``num_segments`` must be a single value (``constant``, ``immediate``, or a plain
 //!   integral) resolved on the host. A ``deferred`` (device-resident) count is not supported at this time.
 //! - **Unsorted output required.** Only ``cuda::execution::output_ordering::unsorted`` is implemented; the sorted
@@ -514,16 +485,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -614,16 +587,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -720,16 +695,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -818,16 +795,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -941,16 +920,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -1051,16 +1032,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -1166,16 +1149,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
@@ -1276,16 +1261,18 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must not exceed the
-  //!   supported `2^21` (about 2 million; see the *Current constraints* section): a type whose maximum already
-  //!   fits (a narrow type such as `int16_t` or `uint16_t`) needs no explicit bound, while a type whose maximum exceeds
-  //!   2^21 (e.g. `int32_t`, `uint32_t`, `int64_t`) must carry a compile-time upper bound. A negative lower bound is
-  //!   allowed; negative runtime sizes are clamped to an empty segment.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
   //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be

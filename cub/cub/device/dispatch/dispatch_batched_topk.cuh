@@ -108,23 +108,14 @@ struct segment_size_to_tile_count_op
   template <typename SegmentIndexT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
-    return static_cast<TotalNumItemsValueType>(
-      ::cuda::ceil_div(params::get_segment_size(segment_sizes, segment_id), large_segment_agent_tile_size));
+    return static_cast<TotalNumItemsValueType>(::cuda::ceil_div(
+      params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id), large_segment_agent_tile_size));
   }
 };
 
 // -----------------------------------------------------------------------------
 // Dispatch (both backends behind one kernel symbol)
 // -----------------------------------------------------------------------------
-// Tightest upper bound carried by the segment-size argument. Mirrors `args::__traits<>::highest` semantics:
-// the compile-time bound for `constant`/bounded sequence arguments and the runtime value for a uniform
-// `immediate`. For a per-segment sequence with only a static bound this can be the loose `numeric_limits<T>::max()`.
-template <typename SegmentSizeParameterT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto runtime_max_segment_size(SegmentSizeParameterT segment_sizes) noexcept
-{
-  return ::cuda::args::__highest_(segment_sizes);
-}
-
 // Host launches go through the single kernel symbol (`device_batched_topk_kernel`); the CDP path uses a dedicated
 // static-cluster kernel symbol (`device_segmented_topk_cluster_kernel_static`) because device-side launches cannot opt
 // in to dynamic cluster dimensions. Both kernels live in kernel_batched_topk.cuh.
@@ -227,7 +218,9 @@ _CCCL_HOST cudaError_t launch_cluster_arm_host(
   static_assert(is_valid_cluster_policy(policy));
   static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
 
-  const auto max_seg_size  = runtime_max_segment_size(segment_sizes);
+  // Tightest upper bound the segment-size argument carries -- for a static-bounded per-segment sequence a loose type
+  // max, not the actual runtime maximum across segments.
+  const auto max_seg_size  = ::cuda::args::__highest_(segment_sizes);
   using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   // `num_segments > 0` and `max_seg_size > 0` here: the generic `dispatch` returns for the empty-batch cases (no
   // segments, or a non-positive max segment size) before invoking this launch arm.
@@ -1110,11 +1103,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
        // && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
 
   // The supported maximum segment size (2^21) is enforced at compile time at the public entry; a statically negative
-  // lower bound is allowed and negative runtime sizes are clamped to 0 (see detail::params::get_segment_size). A
-  // per-segment value outside its declared bound is a caller error (UB): the statically declared bounds are validated
-  // at compile time, while the argument values are bounds-checked only by assertions active in assertion-enabled (e.g.
-  // debug) builds -- host-side for a host-known immediate value and device-side for values read from a deferred /
-  // deferred_sequence handle.
+  // lower bound is allowed and negative runtime sizes are clamped to 0 (see
+  // detail::params::__get_and_clamp_param_to_nonnegative). A per-segment value outside its declared bound is a caller
+  // error (UB): the statically declared bounds are validated at compile time, while the argument values are
+  // bounds-checked only by assertions active in assertion-enabled (e.g. debug) builds -- host-side for a host-known
+  // immediate value and device-side for values read from a deferred / deferred_sequence handle.
 
   detail::TripleChevronFactory launcher_factory{};
   ::cuda::compute_capability cc{};
@@ -1130,7 +1123,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // fails with cudaErrorNotSupported rather than being masked into success.
   const auto empty_batch_no_launch = [&] {
     return d_temp_storage != nullptr
-        && (detail::params::get_param(num_segments, 0) == 0 || runtime_max_segment_size(segment_sizes) <= 0);
+        && (detail::params::get_param(num_segments, 0) == 0 || ::cuda::args::__highest_(segment_sizes) <= 0);
   };
 
   return detail::dispatch_compute_cap(selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {

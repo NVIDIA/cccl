@@ -1873,6 +1873,112 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
   REQUIRE(keys_out == thrust::device_vector<int>{sentinel, sentinel, sentinel, 9, 8, 7});
 }
 
+// A negative statically-known lower bound on `k` (a `bounds<-8, ...>`, as a bare `int16_t` would have) is accepted: the
+// kernel clamps a negative runtime `k` up to 0 before widening it, so that segment selects nothing rather than
+// reinterpreting the negative count as a huge unsigned "select all". Small segments and no determinism route to the
+// baseline backend (the cluster-backend counterpart is below).
+C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (no determinism requirement)",
+         "[keys][segmented][topk][device]")
+{
+  using k_t                  = cuda::std::int16_t; // negative-capable lower bound -> clamp path
+  constexpr int num_segments = 2;
+  constexpr int stride       = 8; // segment size (also the input stride between segments)
+  constexpr int k            = 3; // segment 1's requested top-k
+  constexpr int sentinel     = -12345;
+  // Give each segment a full-segment-sized output region, wider than any k requested here: a regressed clamp that
+  // "selected all" would then write in-bounds and fail the assertion cleanly instead of storing out of bounds.
+  constexpr int out_stride = stride;
+
+  // Segment 0: requests k = -1 -> clamped to 0 -> selects nothing. Segment 1: top-3 max of 8 keys = {9, 8, 7}.
+  auto d_k      = thrust::device_vector<k_t>{k_t{-1}, k_t{3}};
+  auto keys_in  = thrust::device_vector<int>{0, 0, 0, 0, 0, 0, 0, 0, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out = thrust::device_vector<int>(num_segments * out_stride, sentinel);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), out_stride);
+
+  auto segment_sizes = cuda::args::immediate{cuda::std::int64_t{stride}, cuda::args::bounds<0, 100>()};
+  auto k_arg    = cuda::args::deferred_sequence{thrust::raw_pointer_cast(d_k.data()), cuda::args::bounds<-8, 100>()};
+  auto num_segs = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env      = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+
+  // Segment 0 selects nothing, so its whole output region stays at the sentinel; segment 1 holds its top-3 in the first
+  // k slots of its region, the rest untouched.
+  thrust::sort(keys_out.begin() + out_stride, keys_out.begin() + out_stride + k, cuda::std::greater<int>{});
+  auto expected            = thrust::device_vector<int>(num_segments * out_stride, sentinel);
+  expected[out_stride + 0] = 9;
+  expected[out_stride + 1] = 8;
+  expected[out_stride + 2] = 7;
+  REQUIRE(keys_out == expected);
+}
+
+// Deterministic-requirement counterpart of the negative-`k` clamp test above: a gpu_to_gpu requirement routes to the
+// SM90+ cluster backend even for small segments, exercising that backend's negative-`k` clamp (a signed `k` widened to
+// the cluster's 64-bit intermediate must not become a huge "select all").
+C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (deterministic requirement)",
+         "[keys][segmented][topk][device][cluster][determinism]")
+{
+  using k_t                  = cuda::std::int16_t;
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int num_segments = 2;
+  constexpr int stride       = 8; // segment size (also the input stride between segments)
+  constexpr int k            = 3; // segment 1's requested top-k
+  constexpr int sentinel     = -12345;
+  constexpr int out_stride   = stride; // full-segment-sized region (see baseline test above)
+  constexpr cuda::std::int64_t static_max_segment_size = 100;
+
+  // Segment 0: requests k = -1 -> clamped to 0 -> selects nothing. Segment 1: top-3 max of 8 keys = {9, 8, 7}.
+  auto d_k      = thrust::device_vector<k_t>{k_t{-1}, k_t{3}};
+  auto keys_in  = thrust::device_vector<int>{0, 0, 0, 0, 0, 0, 0, 0, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out = thrust::device_vector<int>(num_segments * out_stride, sentinel);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), out_stride);
+
+  auto segment_sizes = cuda::args::immediate{cuda::std::int64_t{stride}, cuda::args::bounds<0, 100>()};
+  auto k_arg    = cuda::args::deferred_sequence{thrust::raw_pointer_cast(d_k.data()), cuda::args::bounds<-8, 100>()};
+  auto num_segs = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+
+  skip_unless_batched_topk_keys_supported<cub::detail::topk::select::max, determinism, tie_break>(
+    static_max_segment_size, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs);
+  batched_topk_keys<cub::detail::topk::select::max, determinism, tie_break>(
+    d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs);
+
+  // Segment 0 selects nothing, so its whole output region stays at the sentinel; segment 1 holds its top-3 in the first
+  // k slots of its region, the rest untouched.
+  thrust::sort(keys_out.begin() + out_stride, keys_out.begin() + out_stride + k, cuda::std::greater<int>{});
+  auto expected            = thrust::device_vector<int>(num_segments * out_stride, sentinel);
+  expected[out_stride + 0] = 9;
+  expected[out_stride + 1] = 8;
+  expected[out_stride + 2] = 7;
+  REQUIRE(keys_out == expected);
+}
+
 // A uniform (host-known) negative segment size means every segment is empty. With a deterministic requirement (which
 // routes to the cluster backend), this must be recognized on the host from the non-positive runtime maximum segment
 // size and skipped without launching, leaving the output untouched -- rather than casting the negative maximum to

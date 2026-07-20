@@ -12,9 +12,9 @@
 //!   1. Every block lays out `hist[num_buckets]` at the same offset in its own
 //!      shared memory. Each block accumulates a block-private histogram with a
 //!      shared `atomicAdd` (cheap, SMEM-local), which stays mutually atomic with
-//!      the DSMEM folds below (see `load_and_histogram_first_pass`).
+//!      the DSMEM reductions below (see `load_and_histogram_first_pass`).
 //!   2. After a cluster-wide barrier, every non-leader block walks its
-//!      histogram and folds its bucket counts into the leader block's `hist`
+//!      histogram and reduces its bucket counts into the leader block's `hist`
 //!      via cluster-scope DSMEM atomics. The leader's `hist` therefore plays
 //!      a dual role: its own block-private histogram in step 1, then the
 //!      cluster-merged histogram after the second cluster sync.
@@ -233,7 +233,7 @@ struct agent_batched_topk_cluster
   using pass_result_t = typename state_t::pass_result;
 
   // See the class comment: deterministic guarantees select the index-ordered scan; `is_tie_reversed` flips its order.
-  static constexpr bool need_determinism =
+  static constexpr bool needs_set_determinism =
     Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed;
   static constexpr bool is_tie_reversed =
     TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
@@ -243,14 +243,14 @@ struct agent_batched_topk_cluster
   // leader at the last effective rank and scans ascending; every other config (deterministic-prefer-larger and the
   // whole non-deterministic path) keeps the leader at rank 0 and scans descending, which makes rank 0 last. Matches the
   // `leader_rank` computed in `run`.
-  static constexpr bool is_scan_descending = !(need_determinism && !is_tie_reversed);
+  static constexpr bool is_scan_descending = !(needs_set_determinism && !is_tie_reversed);
 
   // The deterministic final scan visits chunks in global-index order and bails early (`final_filter_should_stop`), so
   // keeping the *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low
   // indices first (the default low-resident split); descending (prefer-larger) visits high indices first, so we flip
   // the split to keep the high-index chunks resident (see `run`), restoring symmetry. Never set on the
   // non-deterministic path.
-  static constexpr bool is_residency_reversed = need_determinism && is_tie_reversed;
+  static constexpr bool is_residency_reversed = needs_set_determinism && is_tie_reversed;
 
   // Segments at or below this size that also fit resident in one CTA take the single-CTA fast path (see
   // `process_impl`).
@@ -281,8 +281,9 @@ struct agent_batched_topk_cluster
   // the initial direction so the leftover after `num_passes` matches the deterministic filter (see `run`). The first
   // wave is always primed in that initial direction, so `first_wave_is_forward` -- the only direction the first-wave
   // stage->chunk mapping needs -- is a compile-time constant (non-deterministic keeps the forward default).
-  static constexpr int num_passes             = detail::topk::calc_num_passes<key_t>(bits_per_pass);
-  static constexpr bool first_wave_is_forward = !need_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
+  static constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
+  static constexpr bool first_wave_is_forward =
+    !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
 
   // Static upper bound on segment size: exact for constant/immediate sizes, the type maximum for runtime sizes.
   static constexpr ::cuda::std::int64_t static_max_segment_size =
@@ -387,7 +388,7 @@ struct agent_batched_topk_cluster
   // The same layout is allocated by every block of the cluster so that any
   // block can reach the leader's fields at a known offset via DSMEM. Each
   // block populates its own `hist` block-locally; after the first cluster
-  // sync the non-leader blocks fold their bucket counts into the leader's
+  // sync the non-leader blocks reduce their bucket counts into the leader's
   // `hist` through DSMEM atomics. `state` is meaningful only in the leader
   // block; the other blocks reach it exclusively through the DSMEM mapping.
   // `front_local_cnt`/`back_local_cnt` are the final-filter output-slot counters, but they first serve as the cross-CTA
@@ -410,7 +411,7 @@ struct agent_batched_topk_cluster
     ::cuda::std::uint64_t load_mbar[PipelineStages];
     // Persistent unaligned boundary edges (block-load path only): the head prefix (`[0, head_edge_cap_items)`, on rank
     // 0) and the peeled tail suffix (`[head_edge_cap_items, 2 * head_edge_cap_items)`, on the tail owner whenever it is
-    // unaligned), each strictly `< load_align_items` keys. Loaded once in the first pass and folded into every pass +
+    // unaligned), each strictly `< load_align_items` keys. Loaded once in the first pass and consumed into every pass +
     // the final filter. Block-local (never reached through DSMEM).
     key_t edge_keys[2 * load_align_items];
   };
@@ -467,7 +468,7 @@ struct agent_batched_topk_cluster
   //     non-empty rank gets the short remainder).
   //
   // The blocked layout is required by the deterministic tie-break (its cross-CTA scan assumes CTA-rank order matches
-  // ascending contiguous global-index ranges), so it is selected exactly when `need_determinism` is set.
+  // ascending contiguous global-index ranges), so it is selected exactly when `needs_set_determinism` is set.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_partition
   make_chunk_partition(offset_t chunks, unsigned cluster_rank, unsigned cluster_blocks) const
   {
@@ -480,7 +481,7 @@ struct agent_batched_topk_cluster
     // (`enable_runtime_single_cta == false`), so this divisor is host-known: precompute a `cuda::fast_mod_div` on the
     // host and pass it in to turn the divide into a multiply-shift. Highest-priority runtime divide here and likely
     // worth doing (out-of-scope for now); N/A when the effective cluster is device-collapsed (deferred/sequence sizes).
-    if constexpr (need_determinism)
+    if constexpr (needs_set_determinism)
     {
       const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, static_cast<offset_t>(cluster_blocks));
       const offset_t first          = static_cast<offset_t>(cluster_rank) * chunks_per_cta;
@@ -500,19 +501,20 @@ struct agent_batched_topk_cluster
   }
 
   // Stage a small (`< load_align_items` items) unaligned run -- a boundary edge (head prefix / tail suffix) -- from
-  // gmem `src` into SMEM `dst` and fold it into the first pass in one strided sweep:
-  // each thread copies *and* folds the same indices it owns (`local % threads_per_block == threadIdx.x`), folding from
-  // the just-loaded register rather than from SMEM. These runs cannot go through the aligned (16-byte-aligned dst,
-  // guard-free) BlockLoadToShared path. Fusing the copy and the fold means no thread ever reads a key another thread
-  // wrote, so the first-pass fold needs no barrier after the staging *by construction* -- not by a coincidental match
-  // between two separate traversals. Later passes and the final filter re-read `dst` (from `edge_keys` / the resident
-  // span) only after a pass-boundary barrier, so their reads are independently safe.
+  // gmem `src` into SMEM `dst` and consume it into the first pass in one strided sweep:
+  // each thread copies *and* consumes the same indices it owns (`local % threads_per_block == threadIdx.x`), consuming
+  // from the just-loaded register rather than from SMEM. These runs cannot go through the aligned (16-byte-aligned dst,
+  // guard-free) BlockLoadToShared path. Fusing the copy and consume steps means no thread ever reads a key another
+  // thread wrote, so the first-pass consume step needs no barrier after the staging *by construction* -- not by a
+  // coincidental match between two separate traversals. Later passes and the final filter re-read `dst` (from
+  // `edge_keys` / the resident span) only after a pass-boundary barrier, so their reads are independently safe.
   //
   // TODO(cccl): an asymmetric-alignment BlockLoadToShared API (independent begin/end alignment, e.g. an aligned begin
   // with an arbitrary end) would let a boundary chunk be loaded with a single aligned-bulk + in-place edge call and
   // remove these hand-rolled copies entirely.
   template <typename Apply>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void stage_and_fold_edge(key_t* dst, const key_t* src, int count, Apply&& apply) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  stage_and_consume_edge(key_t* dst, const key_t* src, int count, Apply&& apply) const
   {
     _CCCL_ASSERT(count >= 0 && count <= head_edge_cap_items, "a boundary edge must fit in its edge_keys slot");
     _CCCL_PRAGMA_NOUNROLL()
@@ -670,8 +672,8 @@ struct agent_batched_topk_cluster
     unsigned leader_rank;
     // `shared::cluster` addresses of the leader's `state` and `hist[0]`, remapped via `mapa` in
     // `compute_segment_layout`. Every block reads the leader's per-pass results from `leader_state32`; a cluster block
-    // also folds histograms into `leader_hist32 + i * sizeof(offset_t)` (unused on the single-CTA path, which never
-    // folds).
+    // also reduces histograms into `leader_hist32 + i * sizeof(offset_t)` (unused on the single-CTA path, which never
+    // reduces).
     ::cuda::std::uint32_t leader_state32;
     ::cuda::std::uint32_t leader_hist32;
     offset_t my_chunks;
@@ -820,7 +822,7 @@ private:
   }
 
   // Adds `push_front`/`push_cand` into the front/back placement counters of the CTA at cluster rank `target_rank`
-  // through DSMEM (mirrors the Step 2 histogram fold: `mapa` to `target_rank`, then a cluster-scope `red.add` per
+  // through DSMEM (mirrors the Step 2 histogram reduction: `mapa` to `target_rank`, then a cluster-scope `red.add` per
   // counter).
   // Two independent 32-bit reductions rather than one 64-bit one: `red.add.u64` on shared memory is emulated with a
   // CAS spin loop, whereas `red.add.u32` is a native shared-memory atomic. Drives the cross-CTA selected/candidate
@@ -972,7 +974,7 @@ private:
   }
 
   // Consume the `i`-th visit on the block-load path (its ping-pong-ordered position is `overflow_idx`): wait for its
-  // slot, fold its keys via `block_apply`, then prefetch the chunk `stream_stages` visits ahead into the just-freed
+  // slot, consume its keys via `block_apply`, then prefetch the chunk `stream_stages` visits ahead into the just-freed
   // slot (a barrier orders the block's read ahead of the overwriting copy). Returns false once `should_continue()`
   // reports the top-k fully placed -- polled before the prefetch so we never launch a copy we would only drain again;
   // the prefetches already in flight are drained after `run_overflow_pass`'s consume loops.
@@ -1025,8 +1027,8 @@ private:
     return true;
   }
 
-  // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
-  // in streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
+  // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` consumes the chunk `overflow_idx` resident
+  // in streaming slot `stage` (block-load path); `generic_apply(chunk)` consumes an overflow chunk read straight from
   // gmem (fallback). `overlap_work()` runs at most once per pass, positioned to overlap the caller's resident-chunk
   // work with in-flight copies: after the first reload wave (`stream_stages` visits) is issued but before it is waited
   // on (block-load path), or before the gmem loop (fallback). A phase-1 early stop on the block-load path skips it,
@@ -1084,7 +1086,7 @@ private:
       {
         // The reload wave is now in flight; run the caller's overlap work to hide its latency before waiting. Skipped
         // on an early stop: the stream only breaks once this CTA's whole contribution is placed, so no resident key can
-        // still be required (the non-deterministic filter folds its resident keys as `overlap_work`).
+        // still be required (the non-deterministic filter consumes its resident keys as `overlap_work`).
         overlap_work();
 
         // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `overlap_work`).
@@ -1113,7 +1115,7 @@ private:
     }
     else
     {
-      // Generic fallback: no async SMEM pipeline, so resident work cannot hide load latency here. Fold the resident
+      // Generic fallback: no async SMEM pipeline, so resident work cannot hide load latency here. Consume the resident
       // chunks first (preserving the prior ordering), then read the overflow keys straight from gmem each pass (no
       // SMEM reuse), with the walk still snaking for L2 locality.
       overlap_work();
@@ -1133,16 +1135,16 @@ private:
     }
   }
 
-  // Apply `fold_key_op(key)` to every overflow key once in the current ping-pong direction. `UnrollFactor` partially
-  // unrolls the generic (gmem fallback) fold loop; callers pass their clamped items-per-thread. See `run_overflow_pass`
-  // for the overlap semantics of `overlap_work`.
-  template <int UnrollFactor, typename FoldKeyOp, typename OverlapWork>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void fold_overflow_keys(FoldKeyOp&& fold_key_op, OverlapWork&& overlap_work)
+  // Apply `consume_key(key)` to every overflow key once in the current ping-pong direction. `UnrollFactor` partially
+  // unrolls the generic (gmem fallback) consume loop; callers pass their clamped items-per-thread. See
+  // `run_overflow_pass` for the overlap semantics of `overlap_work`.
+  template <int UnrollFactor, typename KeyConsumer, typename OverlapWork>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_overflow_keys(KeyConsumer&& consume_key, OverlapWork&& overlap_work)
   {
     run_overflow_pass(
       [&](int stage, offset_t overflow_idx) {
         const auto keys = stage_span(stage, overflow_idx);
-        for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), fold_key_op);
+        for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), consume_key);
       },
       [&](const auto& chunk) {
         const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
@@ -1152,7 +1154,7 @@ private:
           const int local = j * threads_per_block + tid;
           if (local < chunk.count)
           {
-            fold_key_op(
+            consume_key(
               layout.block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
           }
         }
@@ -1227,8 +1229,8 @@ private:
 
   // Exclusive cross-CTA prefix scan fused with priming the final-filter placement counters. Each working CTA pushes its
   // `push_front`/`push_cand` counts into every successor's front/back counter in `is_scan_descending` order (the leader
-  // is last and pushes to nobody, so it holds the full predecessor sum) and folds its own back-region base
-  // `num_selected` into its own back counter. All are commutative `red.add`s into the counters zeroed in `process_impl`
+  // is last and pushes to nobody, so it holds the full predecessor sum) and adds its own back-region base
+  // `num_selected` to its own back counter. All are commutative `red.add`s into the counters zeroed in `process_impl`
   // (so a single post-push barrier suffices), leaving `front_local_cnt = sel_prefix` and
   // `back_local_cnt = num_selected + cand_prefix` -- the absolute output-slot bases `place_one` expects.
   //
@@ -1714,7 +1716,7 @@ private:
     }
   }
 
-  // Overflow chunks. On the block-load path each landed slot folds through `process_tiles` (reusing the TMA
+  // Overflow chunks. On the block-load path each landed slot is consumed through `process_tiles` (reusing the TMA
   // pipeline); the generic fallback reads gmem chunk by chunk. `run_overflow_pass`'s `should_continue` breaks the
   // stream once the top-k is fully placed. The streaming direction is already correct on entry (preselected in `run`),
   // and the slots are already primed -- the histogram's first streaming pass primed the same persistent stream, so
@@ -1735,7 +1737,7 @@ private:
                  "the wrong streaming direction");
 
     run_overflow_pass(
-      // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
+      // Block-load: consume the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
       // `stage_span` returns the slot's aligned-bulk view (a peeled tail suffix is handled by `process_tail_edge`).
       [&](int stage, offset_t overflow_idx) {
         const auto keys = stage_span(stage, overflow_idx);
@@ -1761,20 +1763,20 @@ private:
                       /*Deterministic=*/true,
                       Blocked>(state, nullptr, chunk.offset, chunk.count, false);
       },
-      // No interleaved resident work: the deterministic filter folds its resident span separately.
+      // No interleaved resident work: the deterministic filter consumes its resident span separately.
       [] {},
       // Break the stream once the whole top-k is placed. The barrier makes the counter reads block-wide and resyncs
-      // lanes that drifted through the just-folded chunk's barrier-free tiles (polled before each refill copy).
+      // lanes that drifted through the just-consumed chunk's barrier-free tiles (polled before each refill copy).
       [&] {
         __syncthreads();
         return !final_filter_should_stop(state);
       });
   }
 
-  // Fold one persistent boundary edge (head prefix or peeled tail suffix), both staged in `edge_keys`. A no-op on the
-  // generic fallback (which reads boundary items straight from gmem) and for a zero-length edge. An edge spans fewer
-  // than `load_align_items` items (it fits in its `edge_keys` slot), so it runs `process_tiles` at unroll factor 1
-  // (non-unrolled) instead of the wider tie-break unroll the potentially large resident/overflow regions use.
+  // Consume one persistent boundary edge (head prefix or peeled tail suffix), both staged in `edge_keys`. A no-op on
+  // the generic fallback (which reads boundary items straight from gmem) and for a zero-length edge. An edge spans
+  // fewer than `load_align_items` items (it fits in its `edge_keys` slot), so it runs `process_tiles` at unroll factor
+  // 1 (non-unrolled) instead of the wider tie-break unroll the potentially large resident/overflow regions use.
   template <bool Blocked, detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_edge(
     det_filter_state<SelectDirection>& state, const key_t* keys, offset_t seg_base, int count, bool is_terminal)
@@ -1859,12 +1861,12 @@ private:
     });
   }
 
-  // Fold the persistent boundary edges into `apply` (head prefix on rank 0; peeled tail suffix on the tail owner),
-  // reading the keys already staged in `edge_keys`. Used by the histogram passes; both final filters fold the edges
-  // through `process_tiles` instead (as separate regions for the deterministic filter, via `nondet_fold_resident`).
+  // Consume the persistent boundary edges into `apply` (head prefix on rank 0; peeled tail suffix on the tail owner),
+  // reading the keys already staged in `edge_keys`. Used by the histogram passes; both final filters consume the edges
+  // through `process_tiles` instead (as separate regions for the deterministic filter, via `nondet_consume_resident`).
   template <class Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  fold_boundary_edges(int head_edge_len_items, int tail_edge_len_items, Apply&& apply)
+  consume_boundary_edges(int head_edge_len_items, int tail_edge_len_items, Apply&& apply)
   {
     if constexpr (use_block_load_to_shared)
     {
@@ -1886,7 +1888,7 @@ private:
   // ---------------------------------------------------------------------------
   // Order-independent counterpart of the deterministic filter: every region is swept by
   // `process_tiles<..., Deterministic=false>` (arrival-order placement, no scan/tie-state/barrier). Since order is
-  // irrelevant, `write_nondeterministic_topk` folds the resident keys as the overflow stream's `overlap_work`
+  // irrelevant, `write_nondeterministic_topk` consumes the resident keys as the overflow stream's `overlap_work`
   // (overlapping the first reloads) and bails out of the overflow stream once its contribution is fully placed.
   template <class IdentifyOp, class KeyOutIt>
   struct nondet_filter_state
@@ -1899,17 +1901,17 @@ private:
     smem_keys_t resident_keys;
   };
 
-  // Fold this rank's resident keys (and boundary edges) through `process_tiles`, run as the overflow pass's
+  // Consume this rank's resident keys (and boundary edges) through `process_tiles`, run as the overflow pass's
   // `overlap_work` so they overlap the first overflow reloads. Placement uses order-independent atomics into slots
   // disjoint from the streaming slots, so this never races the overflow apply. Each chunk's `chunk.offset` is passed as
   // the region's segment base (used for the pair value fetch; elided in keys-only).
   template <class IdentifyOp, class KeyOutIt>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void nondet_fold_resident(nondet_filter_state<IdentifyOp, KeyOutIt>& state)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void nondet_consume_resident(nondet_filter_state<IdentifyOp, KeyOutIt>& state)
   {
     if constexpr (use_block_load_to_shared)
     {
       // Resident keys are densely packed in slot order (aligned bulks only), so a running cursor recovers per-chunk
-      // spans. Only the global-last chunk can be partial (its unaligned suffix is peeled into `edge_keys` and folded
+      // spans. Only the global-last chunk can be partial (its unaligned suffix is peeled into `edge_keys` and consumed
       // below), so iterate the aligned bulk (`round_down(count, load_align_items)`), not `chunk.count`.
       key_t* const resident_ptr = state.resident_keys.data();
       int cursor_items          = 0;
@@ -1969,7 +1971,7 @@ private:
 
   // Non-deterministic final filter driver. `prime_placement_counters` primes this block's front/back placement counters
   // to their absolute bases (only `sel_prefix` is read back here; the back base is used in place via `back_local_cnt`);
-  // overflow keys then stream through `run_overflow_pass` (resident keys folded as its `overlap_work`) and place into
+  // overflow keys then stream through `run_overflow_pass` (resident keys consumed as its `overlap_work`) and place into
   // block-local SMEM atomics. `run_overflow_pass` breaks the stream once this CTA's contribution is fully placed (all
   // its selected keys in the front, and its back counter reached the region end `k`).
   template <class IdentifyOp, class KeyOutIt>
@@ -2008,7 +2010,7 @@ private:
       identify_op, block_keys_out, num_tie_winners, sel_prefix, my_front, resident_keys};
 
     run_overflow_pass(
-      // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
+      // Block-load: consume the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
       [&](int stage, offset_t overflow_idx) {
         const auto keys = stage_span(stage, overflow_idx);
         const offset_t base_off =
@@ -2029,9 +2031,9 @@ private:
                       /*Deterministic=*/false,
                       /*Blocked=*/false>(state, nullptr, chunk.offset, chunk.count, false);
       },
-      // Fold the resident keys + boundary edges, overlapping the first overflow reloads.
+      // Consume the resident keys + boundary edges, overlapping the first overflow reloads.
       [&] {
-        nondet_fold_resident(state);
+        nondet_consume_resident(state);
       },
       // Break the stream once this CTA's whole contribution is placed: its front is full (`front_local_cnt` reached
       // `sel_prefix + my_front`) and its back is full (`back_local_cnt >= k`, so further candidates fail `place_one`'s
@@ -2076,7 +2078,7 @@ private:
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
     // Front count pushed by this block: its strictly-selected count. Candidates always route through the back, so
-    // nothing folds into the front here. The leader and idle ranks push 0 -- the leader because its merged histogram
+    // nothing adds to the front here. The leader and idle ranks push 0 -- the leader because its merged histogram
     // cannot self-count (it derives its own front from the total below), idle ranks because they own nothing.
     const offset_t push_front = my_sel;
     // The scan doubles as counter priming: it leaves this CTA's placement counters holding its absolute region bases
@@ -2112,7 +2114,7 @@ private:
                  "this CTA's front slots must fit within the selected region");
 
     // Resident-front extent (bulk path): the whole contiguous resident span. The unaligned tail suffix (the
-    // globally-last chunk's) is always peeled into `edge_keys` and folded by `process_tail_edge`, so it is never
+    // globally-last chunk's) is always peeled into `edge_keys` and consumed by `process_tail_edge`, so it is never
     // part of this span.
     const int front_count = static_cast<int>(resident_keys.size());
 
@@ -2181,7 +2183,7 @@ private:
   }
 
   // Fused first pass: load this rank's resident chunks into the block_tile, stage the persistent boundary edges into
-  // `edge_keys`, and fold every key (resident + edges + overflow) into pass 0's histogram in the same sweep (pass 0
+  // `edge_keys`, and consume every key (resident + edges + overflow) into pass 0's histogram in the same sweep (pass 0
   // needs no candidate filtering). Publishes the resident span as `resident_keys` for the later passes and the final
   // filter. The caller's `__syncthreads()` makes `edge_keys` and the block-local histogram block-visible; cross-CTA
   // visibility of the zeroed histogram comes later, from the deferred initial cluster wait in `run_radix_passes` (this
@@ -2197,8 +2199,8 @@ private:
     // 64-bit generic base every key. Pinning a hoisted 32-bit shared base for `hist[0]` (`optimizeSmemPtr`, nvbug
     // 4907996 -- as the dynamic-smem allocator does) keeps the per-key `atomicAdd` at pure 32-bit addressing
     // (`ATOMS.POPC.INC.32`). `atomicAdd` defaults to `.gpu` scope (not `.cta` -- that is `atomicAdd_block`), which
-    // includes the cluster peers, so it is morally strong with (atomic against) the `.cluster`-scoped DSMEM folds
-    // racing into the leader's `hist` (the Step 2 DSMEM fold) during the Step 1/2 overlap.
+    // includes the cluster peers, so it is morally strong with (atomic against) the `.cluster`-scoped DSMEM reductions
+    // racing into the leader's `hist` (the Step 2 DSMEM reduction) during the Step 1/2 overlap.
     offset_t* const hist = detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
     auto add_first_pass  = [&](const key_t& key) {
       const int bucket = extract_op(key);
@@ -2210,9 +2212,10 @@ private:
     {
       // Resident load geometry (meaningful only when this rank owns resident chunks). Chunks are written densely in
       // slot order from offset 0 at the fixed stride `chunk_index * ChunkBytes` and read back in the same order, so the
-      // fold needs no stored per-chunk state. `prologue_stages` shared mbarrier stages carry the resident pipeline. The
-      // stream ring (`stream_stages` stages) and the resident window share the same mbarrier array; the first wave is
-      // primed in consume order so the earliest-consumed copies issue first (see the direction-aware layout below).
+      // consume loop needs no stored per-chunk state. `prologue_stages` shared mbarrier stages carry the resident
+      // pipeline. The stream ring (`stream_stages` stages) and the resident window share the same mbarrier array; the
+      // first wave is primed in consume order so the earliest-consumed copies issue first (see the direction-aware
+      // layout below).
       const bool interleave_overflow_prime = layout.overflow_chunks > offset_t{0};
       const int prologue_stages =
         layout.my_resident_chunks > 0
@@ -2233,7 +2236,7 @@ private:
       // Reverse consumes the first wave as stages descending from `reverse_first_stage`; forward ascending from 0. We
       // prime in that same order. The `stream_stages - prologue_stages` early-consumed stages are the "complement",
       // primed up-front onto fresh mbarriers for maximal overlap; the `prologue_stages` late-consumed stages are the
-      // "resident window", primed as the resident fold frees their shared mbarriers.
+      // "resident window", primed as the resident consume loop frees their shared mbarriers.
       const int reverse_first_stage =
         interleave_overflow_prime ? static_cast<int>((layout.overflow_chunks - offset_t{1}) % fw_stages) : 0;
 
@@ -2260,10 +2263,10 @@ private:
       }
 
       // Resident chunk -> mbarrier-stage rotation, chosen so the last `prologue_stages` resident chunks free the
-      // resident window in consume order as they fold. Forward walks the window `+1` (ascending); `stage_rot` corrects
-      // a misaligned reload tail so the last chunks still land `[stage_base, stage_base + prologue_stages)` in order.
-      // Reverse walks the window `-1` (descending) from its top; `reverse_cycle_seed` seeds the cycle position so chunk
-      // `my_resident-1` frees `stage_base`.
+      // resident window in consume order as they are consumed. Forward walks the window `+1` (ascending); `stage_rot`
+      // corrects a misaligned reload tail so the last chunks still land `[stage_base, stage_base + prologue_stages)` in
+      // order. Reverse walks the window `-1` (descending) from its top; `reverse_cycle_seed` seeds the cycle position
+      // so chunk `my_resident-1` frees `stage_base`.
       const offset_t tail_align =
         prologue_stages > 0 ? layout.my_resident_chunks % static_cast<offset_t>(prologue_stages) : offset_t{0};
       const offset_t stage_rot =
@@ -2277,13 +2280,14 @@ private:
           : 0;
 
       // Shared first-wave ring counter, seeded once in prime (== consume) order and stepped unit-stride across both the
-      // up-front prime and the merged fold loop's resident re-arms: forward `+1` from chunk 0, reverse `-1` from
+      // up-front prime and the merged consume loop's resident re-arms: forward `+1` from chunk 0, reverse `-1` from
       // `overflow_chunks - 1` (== `fw(reverse_first_stage)`). `prime_complement` marks sub-case A, where the up-front
       // loop primes the early-consumed complement stages first and then hands the counter to the re-arms.
       const bool prime_complement = interleave_overflow_prime && stream_stages > prologue_stages;
       // Sub-case A implies `prologue_stages < PipelineStages`, which forces `prologue_stages == my_resident_chunks`:
-      // the resident fold then never reloads a resident successor (`chunk + prologue_stages >= my_resident_chunks`
-      // always), so every last-`prologue_stages` fold re-arms a shared stream stage.
+      // the resident consume loop then never reloads a resident successor (`chunk + prologue_stages >=
+      // my_resident_chunks` always), so every one of the last `prologue_stages` iterations re-arms a shared stream
+      // stage.
       _CCCL_ASSERT(!prime_complement || layout.my_resident_chunks == static_cast<offset_t>(prologue_stages),
                    "sub-case A (stream wider than the resident window) admits no resident reload");
       offset_t first_wave_chunk = first_wave_is_forward ? offset_t{0} : (layout.overflow_chunks - offset_t{1});
@@ -2302,8 +2306,8 @@ private:
         // Issue every up-front bulk copy from one TMA site, in first-wave consume order. The first `prologue_stages`
         // iterations load resident chunks into their dense slots over the resident-window mbarriers; the rest (sub-case
         // A) prime the early-consumed complement onto fresh stream mbarriers that overlap the resident bulks (the
-        // resident-window stages are re-armed later, by the fold loop). No resident chunks -> this loop arms the whole
-        // wave.
+        // resident-window stages are re-armed later, by the consume loop). No resident chunks -> this loop arms the
+        // whole wave.
         //
         // Force nounroll: auto-unroll replicates the full TMA issue per iteration and bloats the load path.
         _CCCL_ASSERT(!interleave_overflow_prime || stream_is_forward == first_wave_is_forward,
@@ -2392,14 +2396,14 @@ private:
         }
       }
 
-      // Fold this rank's chunks into the first-pass histogram through one loop and one bulk-copy site: the resident
-      // chunks first (`chunk < my_resident_chunks`), then the overflow chunks. Each iteration folds exactly one chunk
-      // and optionally refills one stage's pipeline; the `fold_is_resident` x `refill_kind` classification below names
-      // the five states it can be in. The stream is fully primed before the overflow phase (the up-front loop above,
-      // plus this loop's resident re-arms) and the histogram never early-stops, so overflow visits only wait/fold/
-      // prefetch and the pass ends drained. Edges are folded after. The resident cursor cycles the resident window and
-      // `streaming_stage` the stream ring `[0, stream_stages)`, both stepping unit-stride with a select-wrap (no
-      // runtime modulo); forward ascends, reverse descends.
+      // Consume this rank's chunks into the first-pass histogram through one loop and one bulk-copy site: the resident
+      // chunks first (`chunk < my_resident_chunks`), then the overflow chunks. Each iteration consumes exactly one
+      // chunk and optionally refills one stage's pipeline; the `consume_is_resident` x `refill_kind` classification
+      // below names the five states it can be in. The stream is fully primed before the overflow phase (the up-front
+      // loop above, plus this loop's resident re-arms) and the histogram never early-stops, so overflow visits only
+      // wait/consume/prefetch and the pass ends drained. Edges are consumed after. The resident cursor cycles the
+      // resident window and `streaming_stage` the stream ring `[0, stream_stages)`, both stepping unit-stride with a
+      // select-wrap (no runtime modulo); forward ascends, reverse descends.
       enum class refill_kind
       {
         none,
@@ -2413,19 +2417,19 @@ private:
                                                                                                // stage
       // `first_wave_chunk` carries over from the up-front prime in consume order: sub-case A walked it through the
       // early-consumed complement, leaving it at the first late-consumed chunk; otherwise it still sits at its seed.
-      // The last `prologue_stages` resident chunks free the resident window in consume order as they fold, so their
-      // re-arms consume the counter unit-stride from here (forward `+1`, reverse `-1`).
+      // The last `prologue_stages` resident chunks free the resident window in consume order as they are consumed, so
+      // their re-arms consume the counter unit-stride from here (forward `+1`, reverse `-1`).
       _CCCL_PRAGMA_NOUNROLL()
       for (offset_t chunk = offset_t{0}; chunk < total_chunks; ++chunk)
       {
-        // Fold axis: pick the chunk this iteration folds, the stage it occupies, and step that pipeline's cursor.
-        bool fold_is_resident   = true;
-        int stage               = 0;
-        offset_t fold_chunk     = 0; // resident: local chunk index; stream: ping-pong overflow chunk index
-        offset_t overflow_visit = 0; // stream only: 0-based position in the overflow sequence
+        // Consume axis: pick the chunk this iteration consumes, the stage it occupies, and step that pipeline's cursor.
+        bool consume_is_resident = true;
+        int stage                = 0;
+        offset_t consume_chunk   = 0; // resident: local chunk index; stream: ping-pong overflow chunk index
+        offset_t overflow_visit  = 0; // stream only: 0-based position in the overflow sequence
         if (chunk < layout.my_resident_chunks)
         {
-          fold_chunk = chunk;
+          consume_chunk = chunk;
           if constexpr (first_wave_is_forward)
           {
             stage = resident_stage;
@@ -2448,11 +2452,12 @@ private:
         }
         else
         {
-          fold_is_resident = false;
-          overflow_visit   = chunk - layout.my_resident_chunks;
-          stage            = streaming_stage;
-          fold_chunk = first_wave_is_forward ? overflow_visit : (layout.overflow_chunks - offset_t{1} - overflow_visit);
-          _CCCL_ASSERT(stage == static_cast<int>(fold_chunk % static_cast<offset_t>(stream_stages)),
+          consume_is_resident = false;
+          overflow_visit      = chunk - layout.my_resident_chunks;
+          stage               = streaming_stage;
+          consume_chunk =
+            first_wave_is_forward ? overflow_visit : (layout.overflow_chunks - offset_t{1} - overflow_visit);
+          _CCCL_ASSERT(stage == static_cast<int>(consume_chunk % static_cast<offset_t>(stream_stages)),
                        "overflow stage desynced from its rolling ring pointer");
           // First-pass direction is the compile-time `first_wave_is_forward` (`stream_is_forward` flips only after).
           if constexpr (first_wave_is_forward)
@@ -2471,12 +2476,12 @@ private:
         // chunk index for `resident`, an overflow chunk index for `stream`.
         refill_kind refill    = refill_kind::none;
         offset_t refill_chunk = 0;
-        if (fold_is_resident && chunk + static_cast<offset_t>(prologue_stages) < layout.my_resident_chunks)
+        if (consume_is_resident && chunk + static_cast<offset_t>(prologue_stages) < layout.my_resident_chunks)
         {
           refill       = refill_kind::resident;
           refill_chunk = chunk + static_cast<offset_t>(prologue_stages);
         }
-        else if (fold_is_resident && interleave_overflow_prime && stage < stream_stages)
+        else if (consume_is_resident && interleave_overflow_prime && stage < stream_stages)
         {
           _CCCL_ASSERT(first_wave_chunk % fw_stages == static_cast<offset_t>(stage),
                        "first-wave chunk must map back to its stage");
@@ -2493,7 +2498,7 @@ private:
               (first_wave_chunk == fw_base) ? fw_base + fw_stages - offset_t{1} : first_wave_chunk - offset_t{1};
           }
         }
-        else if (!fold_is_resident && overflow_visit + static_cast<offset_t>(stream_stages) < layout.overflow_chunks)
+        else if (!consume_is_resident && overflow_visit + static_cast<offset_t>(stream_stages) < layout.overflow_chunks)
         {
           const offset_t next_step = overflow_visit + static_cast<offset_t>(stream_stages);
           refill                   = refill_kind::stream;
@@ -2502,18 +2507,19 @@ private:
         _CCCL_ASSERT(refill != refill_kind::stream || refill_chunk < layout.overflow_chunks,
                      "overflow chunk index out of range");
 
-        // Fold: wait the classified slot, then histogram it. Resident chunks sit at their dense slot, stream chunks at
-        // this stage's stream slot.
-        const int fold_slot      = fold_is_resident ? static_cast<int>(fold_chunk) : stream_slot_base + stage;
-        const offset_t fold_base = fold_is_resident ? layout.resident_base : layout.overflow_base;
+        // Consume: wait the classified slot, then histogram it. Resident chunks sit at their dense slot, stream chunks
+        // at this stage's stream slot.
+        const int consume_slot      = consume_is_resident ? static_cast<int>(consume_chunk) : stream_slot_base + stage;
+        const offset_t consume_base = consume_is_resident ? layout.resident_base : layout.overflow_base;
         wait_stage(stage);
-        const key_t* fold_src = ::cuda::ptr_rebind<key_t>(key_slots + fold_slot * ChunkBytes);
-        const int fold_len    = static_cast<int>(::cuda::std::size(chunk_bulk_src(fold_base, fold_chunk)));
-        // Only the segment's global-last chunk can be short; folded ascending it is the last resident chunk (overflow
-        // chunks fold after and may also be short), so every earlier resident chunk fills its slot.
-        _CCCL_ASSERT(!fold_is_resident || chunk + offset_t{1} == layout.my_resident_chunks || fold_len == chunk_items,
-                     "only the last resident chunk may carry a short aligned bulk");
-        for_each_chunk_key<histogram_items_per_thread_clamped>(fold_src, fold_len, add_first_pass);
+        const key_t* consume_src = ::cuda::ptr_rebind<key_t>(key_slots + consume_slot * ChunkBytes);
+        const int consume_len    = static_cast<int>(::cuda::std::size(chunk_bulk_src(consume_base, consume_chunk)));
+        // Only the segment's global-last chunk can be short; consumed ascending it is the last resident chunk (overflow
+        // chunks are consumed after and may also be short), so every earlier resident chunk fills its slot.
+        _CCCL_ASSERT(
+          !consume_is_resident || chunk + offset_t{1} == layout.my_resident_chunks || consume_len == chunk_items,
+          "only the last resident chunk may carry a short aligned bulk");
+        for_each_chunk_key<histogram_items_per_thread_clamped>(consume_src, consume_len, add_first_pass);
 
         // Refill: issue this stage's next copy. A resident successor lands at its dense slot; either stream case (a
         // first-wave re-arm or a reload) lands at this stage's stream slot.
@@ -2551,13 +2557,14 @@ private:
         resident_keys = smem_keys_t(::cuda::ptr_rebind<key_t>(key_slots), resident_items);
       }
 
-      // Stage the persistent boundary edges into `edge_keys` and fold them into the first pass, after the whole
-      // resident+overflow loop (the histogram is order-independent). `stage_and_fold_edge` folds keys each thread just
-      // wrote, so no barrier is needed here. The head prefix (rank 0) precedes chunk 0; the peeled tail suffix (tail
-      // owner, always when unaligned) trails the last chunk.
+      // Stage the persistent boundary edges into `edge_keys` and consume them into the first pass, after the whole
+      // resident+overflow loop (the histogram is order-independent). `stage_and_consume_edge` consumes keys each thread
+      // just wrote, so no barrier is needed here. The head prefix (rank 0) precedes chunk 0; the peeled tail suffix
+      // (tail owner, always when unaligned) trails the last chunk.
       if (layout.head_edge_len_items > 0)
       {
-        stage_and_fold_edge(temp_storage.edge_keys, layout.block_keys_base, layout.head_edge_len_items, add_first_pass);
+        stage_and_consume_edge(
+          temp_storage.edge_keys, layout.block_keys_base, layout.head_edge_len_items, add_first_pass);
       }
       if (layout.tail_edge_len_items > 0)
       {
@@ -2565,7 +2572,7 @@ private:
         const auto tail_chunk = get_chunk(layout.chunks - offset_t{1}, layout.segment_size_off, layout.head_items);
         _CCCL_ASSERT(layout.tail_edge_len_items <= tail_chunk.count,
                      "peeled tail length cannot exceed its source chunk");
-        stage_and_fold_edge(
+        stage_and_consume_edge(
           temp_storage.edge_keys + head_edge_cap_items,
           layout.block_keys_base + tail_chunk.offset + (tail_chunk.count - layout.tail_edge_len_items),
           layout.tail_edge_len_items,
@@ -2595,9 +2602,10 @@ private:
         }
       }
 
-      // Fold the overflow chunks straight from gmem (the block-load path folds them in the merged loop above, reusing
-      // the resident load's stage mbarriers). No overlap work: this pass already folded its resident keys above.
-      fold_overflow_keys<histogram_items_per_thread_clamped>(add_first_pass, [] {});
+      // Consume the overflow chunks straight from gmem (the block-load path consumes them in the merged loop above,
+      // reusing the resident load's stage mbarriers). No overlap work: this pass already consumed its resident keys
+      // above.
+      consume_overflow_keys<histogram_items_per_thread_clamped>(add_first_pass, [] {});
     }
 
     const int resident_count = static_cast<int>(resident_keys.size());
@@ -2611,9 +2619,9 @@ private:
     layout.block_keys_in    = d_key_segments_it[segment_id];
     layout.segment_size_off = static_cast<offset_t>(segment_size);
     // A lone CTA (`is_single_cta`) routes barriers to `__syncthreads()` and keeps `state`/atomics block-local (no
-    // cross-rank DSMEM folds); its histogram increments still use the same unconditional shared `atomicAdd`, identical
-    // SASS at cluster size 1. For wider clusters, `eff_cluster_blocks` (below) further excludes ranks that receive no
-    // chunks; they stay resident but idle.
+    // cross-rank DSMEM reductions); its histogram increments still use the same unconditional shared `atomicAdd`,
+    // identical SASS at cluster size 1. For wider clusters, `eff_cluster_blocks` (below) further excludes ranks that
+    // receive no chunks; they stay resident but idle.
 
     layout.block_keys_base = nullptr;
     layout.head_items      = 0;
@@ -2642,8 +2650,8 @@ private:
       static_cast<offset_t>(::cuda::ceil_div(layout.segment_size_off - layout.head_items, offset_t{chunk_items}));
 
     // Effective cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_block` each), <= the
-    // launched `cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, fold nothing, and never lead --
-    // but stay resident and still arrive at every cluster barrier (a returned CTA would hang the barrier; see the
+    // launched `cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing, and never lead
+    // -- but stay resident and still arrive at every cluster barrier (a returned CTA would hang the barrier; see the
     // TODOs at the barrier sites). Derived from this CTA's head-aligned `chunks` so it matches the partition exactly.
     // Stays at `cluster_blocks` for host-exact sizes (the dispatch already matched it) and on the single-CTA path.
     layout.eff_cluster_blocks = cluster_blocks;
@@ -2668,14 +2676,15 @@ private:
     // (`< eff_cluster_blocks`). The deterministic tie-break makes the leader the *last* CTA in scan order so it never
     // needs its own (merged-away) local candidate count: prefer-smallest scans ascending by rank (leader = last
     // effective rank), prefer-largest scans descending (leader = rank 0). The nondeterministic path keeps rank 0.
-    layout.leader_rank = (need_determinism && !is_tie_reversed) ? (layout.eff_cluster_blocks - 1u) : 0u;
+    layout.leader_rank = (needs_set_determinism && !is_tie_reversed) ? (layout.eff_cluster_blocks - 1u) : 0u;
     _CCCL_ASSERT(layout.leader_rank < layout.eff_cluster_blocks, "leader must be a working rank");
 
     // `state`, `hist[0]`, and `leader_rank` are all loop-invariant across the radix passes, so the DSMEM remaps the
-    // blocks use to reach the leader (its per-pass `state` and the Step 2 histogram fold target) are hoisted here, once
-    // per segment, rather than repeated every pass. `leader_state32` is always mapped -- the single-CTA path runs in a
-    // size-1 cluster, so rank 0 maps to itself and the state reads take the same `ld.shared::cluster` path as a wide
-    // cluster. `leader_hist32` is skipped there because the single CTA never folds (`cluster_rank == leader_rank`).
+    // blocks use to reach the leader (its per-pass `state` and the Step 2 histogram reduction target) are hoisted here,
+    // once per segment, rather than repeated every pass. `leader_state32` is always mapped -- the single-CTA path runs
+    // in a size-1 cluster, so rank 0 maps to itself and the state reads take the same `ld.shared::cluster` path as a
+    // wide cluster. `leader_hist32` is skipped there because the single CTA never reduces (`cluster_rank ==
+    // leader_rank`).
     const ::cuda::std::uint32_t state_smem32 =
       static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state));
     asm("mapa.shared::cluster.u32 %0, %1, %2;"
@@ -2802,9 +2811,9 @@ private:
         };
 
         // Resident-chunk histogram, deferred into the overflow stream so it overlaps the stream's in-flight first
-        // reload wave (see `fold_overflow_keys`). The histogram is order-independent, so folding resident keys between
-        // the stream's load issue and its wait does not change the result.
-        const auto fold_resident_hist = [&] {
+        // reload wave (see `consume_overflow_keys`). The histogram is order-independent, so consuming resident keys
+        // between the stream's load issue and its wait does not change the result.
+        const auto consume_resident_hist = [&] {
           if constexpr (use_block_load_to_shared)
           {
             for_each_chunk_key<histogram_items_per_thread_clamped>(
@@ -2828,43 +2837,43 @@ private:
         // Re-stream the overflow chunks into this pass's histogram, overlapping the resident-chunk histogram with the
         // first wave of reload bulk copies. Ping-pongs direction and reuses the turn-around chunks left resident by the
         // previous pass.
-        fold_overflow_keys<histogram_items_per_thread_clamped>(add_hist, fold_resident_hist);
+        consume_overflow_keys<histogram_items_per_thread_clamped>(add_hist, consume_resident_hist);
 
-        // Fold the persistent boundary edges (loaded once in the first pass) into this pass's histogram, alongside the
-        // resident and overflow keys. Keeps every owner's per-bucket counts (the source of its `num_strictly_selected`
-        // and `my_candidates`, the cross-CTA scan inputs) inclusive of its edge candidates.
-        fold_boundary_edges(layout.head_edge_len_items, layout.tail_edge_len_items, add_hist);
+        // Consume the persistent boundary edges (loaded once in the first pass) into this pass's histogram, alongside
+        // the resident and overflow keys. Keeps every owner's per-bucket counts (the source of its
+        // `num_strictly_selected` and `my_candidates`, the cross-CTA scan inputs) inclusive of its edge candidates.
+        consume_boundary_edges(layout.head_edge_len_items, layout.tail_edge_len_items, add_hist);
       }
 
       // Local barrier is enough here: all Step 1 / Step 2 writes to `hist[]` are atomic at compatible scopes (see Step
       // 1 dispatch). The cluster-wide ordering before Step 3's leader read of the merged `hist[]` is supplied by the
-      // split post-fold cluster wait further below.
+      // split post-reduction cluster wait further below.
       __syncthreads();
 
       // First pass only: complete the deferred initial cluster barrier here. `process_impl` issued its matching
       // `cluster_arrive` right after zeroing `state`/`hist`, so the cluster-arrival latency overlapped the fused
-      // first-pass load + histogram. The wait must precede the first cross-CTA access -- the Step-2 folds just below,
-      // which need the leader's `hist` visibly zeroed.
+      // first-pass load + histogram. The wait must precede the first cross-CTA access -- the Step-2 reductions just
+      // below, which need the leader's `hist` visibly zeroed.
       if (is_first_pass)
       {
         cluster_or_block_wait(is_single_cta);
       }
 
-      // Step 2: non-leader blocks fold their per-bucket raw counts into the leader's `hist` via cluster-scope DSMEM
+      // Step 2: non-leader blocks reduce their per-bucket raw counts into the leader's `hist` via cluster-scope DSMEM
       // atomics. The leader skips this to avoid double-counting its own contribution; idle ranks
-      // (`>= eff_cluster_blocks`) have an all-zero histogram, so they skip the fold entirely (the loop would only read
-      // zeros).
+      // (`>= eff_cluster_blocks`) have an all-zero histogram, so they skip the reduction entirely (the loop would only
+      // read zeros).
       if (cluster_rank != layout.leader_rank && !layout.is_idle_rank)
       {
-        // Fold each non-zero bucket into the leader's `hist` through DSMEM: `layout.leader_hist32` is this block's
+        // Reduce each non-zero bucket into the leader's `hist` through DSMEM: `layout.leader_hist32` is this block's
         // `hist[0]` remapped to the leader's `shared::cluster` window (identical per-CTA layouts, `mapa` hoisted into
         // `compute_segment_layout`), so bucket `i` is reached by the constant offset `i * sizeof(offset_t)` and a
         // cluster-scope `red.add` accumulates it -- no 64-bit pointer, no memory descriptor. Cluster scope makes it
         // mutually atomic with the leader's own `hist` `atomicAdd`s (see `load_and_histogram_first_pass`).
         //
         // Same split as `reset_hist`: unroll the full strided rounds, then (only when there's a remainder) at most one
-        // more guarded fold.
-        const auto fold_bucket = [&](int i) {
+        // more guarded reduction.
+        const auto reduce_bucket = [&](int i) {
           const offset_t bucket_count = temp_storage.hist[i];
           if (bucket_count != 0)
           {
@@ -2880,20 +2889,20 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int r = 0; r < full_rounds; ++r)
         {
-          fold_bucket(r * threads_per_block + tid);
+          reduce_bucket(r * threads_per_block + tid);
         }
         if constexpr (num_buckets % threads_per_block != 0)
         {
           if (const int i = full_rounds * threads_per_block + tid; i < num_buckets)
           {
-            fold_bucket(i);
+            reduce_bucket(i);
           }
         }
       }
 
-      // Split the post-fold cluster barrier: arrive once the folds are released, then overlap the non-leaders'
-      // own-histogram scan (block-local) with the cluster-arrival latency, and only wait before the leader reads the
-      // merged `hist`.
+      // Split the post-reduction cluster barrier: arrive once the reductions are released, then overlap the
+      // non-leaders' own-histogram scan (block-local) with the cluster-arrival latency, and only wait before the leader
+      // reads the merged `hist`.
       // TODO(cccl): idle ranks arrive here only because the cluster barrier spans the whole launched cluster. An
       // mbarrier over just the active ranks would let them exit and free their SM slots instead of spinning here.
       cluster_or_block_arrive(is_single_cta);
@@ -2918,9 +2927,9 @@ private:
 
       cluster_or_block_wait(is_single_cta);
 
-      // Step 3 (leader half): the leader prefix-scans the merged `hist` (raw counts, all folds now visible) and updates
-      // the cluster-shared `state`. Subsequent reads (end-of-pass fold, last filter) observe these writes after the
-      // next cluster sync.
+      // Step 3 (leader half): the leader prefix-scans the merged `hist` (raw counts, all reductions now visible) and
+      // updates the cluster-shared `state`. Subsequent reads (end-of-pass fold, last filter) observe these writes after
+      // the next cluster sync.
       if (cluster_rank == layout.leader_rank)
       {
         leader_identify_kth_bucket();
@@ -3007,7 +3016,7 @@ private:
     // `process_overflow`; early exit runs fewer passes but then has no straddler, so direction is
     // moot). Non-deterministic filtering is order-independent, so leave its historical `stream_is_forward` start
     // untouched.
-    if constexpr (need_determinism)
+    if constexpr (needs_set_determinism)
     {
       stream_is_forward = (!is_tie_reversed) ^ ((num_passes & 1) != 0);
     }
@@ -3049,7 +3058,7 @@ private:
     // remaining `k` itself (the deterministic one also its `len`, in a single 64-bit load), still within this barrier
     // epoch.
     __syncthreads();
-    if constexpr (need_determinism)
+    if constexpr (needs_set_determinism)
     {
       write_deterministic_topk<SelectDirection>(identify_op, block_keys_out, resident_keys);
     }
@@ -3213,15 +3222,17 @@ private:
       return;
     }
 
-    segment_size = static_cast<segment_size_val_t>(detail::params::get_segment_size(segment_sizes, segment_id));
+    segment_size =
+      static_cast<segment_size_val_t>(detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id));
     // Precondition: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
     _CCCL_ASSERT(static_cast<::cuda::std::uint64_t>(segment_size) <= ::cuda::std::uint64_t{0xffffffffu},
                  "segment size must be non-negative and fit the 32-bit cluster offset type");
-    // Clamp the requested `k` to the segment size in a 64-bit width holding both operands, *before* narrowing to
-    // `out_offset_t`. Clamping in a narrower type first would let a large "select all" `k` wrap to a small value and
-    // silently truncate the output (or wrap to 0 and skip the segment).
+    // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands, *before*
+    // narrowing to `out_offset_t`. Clamping in a narrower type first would let a large "select all" `k` wrap to a small
+    // value and silently truncate the output (or wrap to 0 and skip the segment).
     const auto k_clamped =
-      (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(detail::params::get_param(k_param, segment_id)),
+      (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
+                            detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
                           static_cast<::cuda::std::uint64_t>(segment_size));
 
     if (k_clamped == 0)
@@ -3272,10 +3283,10 @@ private:
       temp_storage.my_candidates         = 0;
     }
     reset_hist();
-    // Only arrive here; the matching wait is deferred to just before the first cross-CTA fold in `run_radix_passes`'
-    // first pass, so the cluster-arrival latency overlaps the fused first-pass load + histogram. Safe because nothing
-    // between here and that wait touches another rank's DSMEM (the first-pass histogram writes only block-local
-    // `hist`; the leader's `state` and the scan counters are untouched until later).
+    // Only arrive here; the matching wait is deferred to just before the first cross-CTA reduction in
+    // `run_radix_passes`' first pass, so the cluster-arrival latency overlaps the fused first-pass load + histogram.
+    // Safe because nothing between here and that wait touches another rank's DSMEM (the first-pass histogram writes
+    // only block-local `hist`; the leader's `state` and the scan counters are untouched until later).
     cluster_or_block_arrive(is_single_cta);
 
     [[maybe_unused]] const bool is_ok =
