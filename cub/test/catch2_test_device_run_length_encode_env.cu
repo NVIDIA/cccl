@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 #include <cuda/iterator>
 #include <cuda/stream>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode_env);
@@ -304,7 +306,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("RleEncodePolicy", "[run_length_encode][device]")
+C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RleEncodePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleEncodePolicy>);
@@ -318,7 +320,7 @@ C2H_TEST("RleEncodePolicy", "[run_length_encode][device]")
      cub::LOAD_DEFAULT,
      cub::BLOCK_SCAN_WARP_SCANS,
      {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
-    {32, 8, 8, 5, 3, 5, 32}};
+    {32, 8, 5, 3, 5, 32}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -337,7 +339,6 @@ C2H_TEST("RleEncodePolicy", "[run_length_encode][device]")
     .lookahead = cub::RleLookaheadPolicy{
       .items_per_thread       = 32,
       .compute_warps          = 8,
-      .store_warps            = 8,
       .key_ring_stages        = 5,
       .pos_ring_stages        = 3,
       .poll_loads_per_lane    = 5,
@@ -349,11 +350,28 @@ C2H_TEST("RleEncodePolicy", "[run_length_encode][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(
+    to_string(p1)
+    == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
+       ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 832, .l2_write_latency = 1165 } }"
+       ", .lookahead = RleLookaheadPolicy { .items_per_thread = 32, .compute_warps = 8"
+       ", .key_ring_stages = 5, .pos_ring_stages = 3"
+       ", .poll_loads_per_lane = 5, .flag_staging_threshold = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("RleNonTrivialRunsPolicy", "[run_length_encode][device]")
+C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RleNonTrivialRunsPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleNonTrivialRunsPolicy>);
@@ -377,7 +395,8 @@ C2H_TEST("RleNonTrivialRunsPolicy", "[run_length_encode][device]")
     .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
     .store_with_time_slicing = false,
     .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay = {.kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+    .lookback_delay          = cub::LookbackDelayPolicy{
+               .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -385,5 +404,17 @@ C2H_TEST("RleNonTrivialRunsPolicy", "[run_length_encode][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "RleNonTrivialRunsPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_LDG"
+             ", .store_with_time_slicing = 0, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

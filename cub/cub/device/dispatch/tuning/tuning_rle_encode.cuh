@@ -110,7 +110,6 @@ struct RleLookaheadPolicy
   int items_per_thread; //!< Number of items each lane of a compute warp processes; a warp tile is
                         //!< 32 * items_per_thread items
   int compute_warps; //!< Number of compute warps; each processes one warp tile per pipeline generation
-  int store_warps; //!< Number of store warps; must equal compute_warps
   int key_ring_stages; //!< Depth of the key staging ring: how many pipeline generations can be in flight
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
   // so it can be SHALLOWER than the keys ring and this buys room for more key_ring_stages
@@ -161,8 +160,8 @@ struct RleLookaheadPolicy
   operator==(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
   {
     return lhs.items_per_thread == rhs.items_per_thread && lhs.compute_warps == rhs.compute_warps
-        && lhs.store_warps == rhs.store_warps && lhs.key_ring_stages == rhs.key_ring_stages
-        && lhs.pos_ring_stages == rhs.pos_ring_stages && lhs.poll_loads_per_lane == rhs.poll_loads_per_lane
+        && lhs.key_ring_stages == rhs.key_ring_stages && lhs.pos_ring_stages == rhs.pos_ring_stages
+        && lhs.poll_loads_per_lane == rhs.poll_loads_per_lane
         && lhs.flag_staging_threshold == rhs.flag_staging_threshold;
   }
 
@@ -177,8 +176,8 @@ struct RleLookaheadPolicy
   {
     return os
         << "RleLookaheadPolicy { .items_per_thread = " << p.items_per_thread << ", .compute_warps = " << p.compute_warps
-        << ", .store_warps = " << p.store_warps << ", .key_ring_stages = " << p.key_ring_stages
-        << ", .pos_ring_stages = " << p.pos_ring_stages << ", .poll_loads_per_lane = " << p.poll_loads_per_lane
+        << ", .key_ring_stages = " << p.key_ring_stages << ", .pos_ring_stages = " << p.pos_ring_stages
+        << ", .poll_loads_per_lane = " << p.poll_loads_per_lane
         << ", .flag_staging_threshold = " << p.flag_staging_threshold << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -711,7 +710,7 @@ struct policy_selector
       return ::cuda::std::nullopt;
     }
     const int items_per_thread = (key_size >= 16) ? 8 : (key_size == 8 ? 16 : 32);
-    return RleLookaheadPolicy{items_per_thread, 8, 8, 5, 3, 5, 32};
+    return RleLookaheadPolicy{items_per_thread, 8, 5, 3, 5, 32};
   }
 
   _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
