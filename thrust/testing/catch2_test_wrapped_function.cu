@@ -25,6 +25,7 @@
 #include <thrust/scan.h>
 #include <thrust/set_operations.h>
 #include <thrust/unique.h>
+#include <thrust/universal_vector.h>
 
 #include "catch2_test_helper.h"
 
@@ -384,16 +385,12 @@ TEST_CASE("SequentialNoneOfProxyReference", "[sequential][proxy_reference]")
   CHECK(thrust::none_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
 }
 
-// Real proxy-reference test using device_vector
-// This validates that wrapped_function correctly unwraps device_reference<T> → T
-// before the implicit conversion to const double& occurs
+// thrust::seq runs on the host, so we need host-accessible storage.
+// universal_vector (managed memory) works; device_vector would not.
 TEST_CASE("SequentialFindIfRealProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
-  // Use thrust::seq to force sequential backend
-  // device_vector iterators return device_reference<float>, which is a proxy reference
-  // This test validates that wrapped_function unwraps the proxy before conversion
   const auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(result - vec.begin() == 2);
 }
