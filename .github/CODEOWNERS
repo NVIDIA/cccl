@@ -23,7 +23,7 @@ nvbench_helper/ @nvidia/cccl-infra-codeowners
 **/cmake/ @nvidia/cccl-cmake-codeowners
 # make an exception for the cudax test cmake file
 cudax/test/CMakeLists.txt @nvidia/cccl-cudax-codeowners
-# make an exception for STF test cmake files, following the PR #5406 cudax test precedent
+# make an exception for STF test cmake files
 cudax/test/stf/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 cudax/test/stf/static_error_checks/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 
