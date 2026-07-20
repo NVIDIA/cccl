@@ -7,6 +7,8 @@
 
 #include <cub/block/block_reduce.cuh>
 
+#include <cuda/std/array>
+
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
@@ -15,26 +17,29 @@ template <int BlockThreads, int ItemsPerThread>
 struct benchmark_op_t
 {
   template <typename T>
-  __device__ __forceinline__ T operator()(T thread_data) const
+  __device__ __forceinline__ cuda::std::array<T, ItemsPerThread>
+  operator()(cuda::std::array<T, ItemsPerThread> thread_data) const
   {
     using BlockReduce = cub::BlockReduce<T, BlockThreads, cub::BLOCK_REDUCE_WARP_REDUCTIONS>;
     using TempStorage = typename BlockReduce::TempStorage;
     __shared__ TempStorage temp_storage;
+
+    T items[ItemsPerThread];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      items[i] = thread_data[i];
+    }
+
     if constexpr (ItemsPerThread == 1)
     {
-      return BlockReduce{temp_storage}.Reduce(thread_data, op_t{});
+      thread_data[0] = BlockReduce{temp_storage}.Reduce(items[0], op_t{});
     }
     else
     {
-      T items[ItemsPerThread];
-      items[0] = thread_data;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 1; i < ItemsPerThread; ++i)
-      {
-        items[i] = thread_data;
-      }
-      return BlockReduce{temp_storage}.Reduce(items, op_t{});
+      thread_data[0] = BlockReduce{temp_storage}.Reduce(items, op_t{});
     }
+    return thread_data;
   }
 };
 
@@ -44,7 +49,8 @@ void block_reduce_warp_reductions_impl(nvbench::state& state, nvbench::type_list
   constexpr int unroll_factor = 32;
   constexpr int total_items   = 1 << 28; // large enough to hide tail effects on current devices
   using action_t              = benchmark_op_t<BlockThreads, ItemsPerThread>;
-  const auto& kernel          = benchmark_kernel<BlockThreads, unroll_factor, action_t, T>;
+  using data_t                = cuda::std::array<T, ItemsPerThread>;
+  const auto& kernel          = benchmark_kernel<BlockThreads, unroll_factor, action_t, data_t>;
   const int grid_size         = total_items / (BlockThreads * unroll_factor);
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
     kernel<<<grid_size, BlockThreads>>>(action_t{});
@@ -108,7 +114,8 @@ void block_reduce_warp_reductions_latency(nvbench::state& state, nvbench::type_l
   constexpr int block_threads = 32; // single warp to measure latency
   constexpr int unroll_factor = 32;
   using action_t              = benchmark_op_t<block_threads, 1>;
-  const auto& kernel          = benchmark_kernel<block_threads, unroll_factor, action_t, T>;
+  using data_t                = cuda::std::array<T, 1>;
+  const auto& kernel          = benchmark_kernel<block_threads, unroll_factor, action_t, data_t>;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
     kernel<<<1, block_threads>>>(action_t{});
   });

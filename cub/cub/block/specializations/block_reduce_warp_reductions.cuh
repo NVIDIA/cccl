@@ -59,17 +59,13 @@ namespace detail
 //!   Whether the reduction is deterministic
 //!
 //! @tparam WarpAggregateThreshold
-//!   Minimum number of warps required to use the parallel warp-0 reduction path.
-//!   -1 (default): only use parallel path when HW redux is available.
-//!   0: always use sequential path.
-//!   >0: use parallel path when warps >= threshold.
-//!   Values below -1 are rejected via static_assert.
+//!   Minimum number of warps to use the parallel warp 0 reduction path
 template <typename T,
           int BlockDimX,
           int BlockDimY,
           int BlockDimZ,
           bool IsDeterministic       = true,
-          int WarpAggregateThreshold = -1>
+          int WarpAggregateThreshold = 0>
 struct BlockReduceWarpReductions
 {
   /// The thread block size in threads
@@ -84,7 +80,7 @@ struct BlockReduceWarpReductions
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (threads_per_block % logical_warp_size == 0);
 
-  static_assert(WarpAggregateThreshold >= -1, "WarpAggregateThreshold must be -1, 0, or positive");
+  static_assert(WarpAggregateThreshold >= 0, "WarpAggregateThreshold must be non-negative");
 
   using WarpReduceInternal = typename WarpReduce<T, logical_warp_size>::InternalWarpReduce;
 
@@ -189,19 +185,14 @@ struct BlockReduceWarpReductions
 
     // Below this number of warps the parallel warp-0 reduction is not worthwhile compared to a
     // single-thread sequential loop over the warp aggregates.
-    // When __reduce_<op>_sync is available (redux), the parallel path is a single HW instruction,
-    // so the default threshold (-1) enables it at 2+ warps.
-    // Without HW redux the shuffle-based path is not faster than the sequential unrolled loop
-    // over at most 31 warp aggregates, so we disable it by default.
+    // WarpAggregateThreshold defaults to 0 (always sequential). A later tuning pass can raise it
+    // to enable the parallel path when it is profitable (e.g. when HW redux is available).
     // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
-    constexpr bool use_warp_redux_path = (WarpAggregateThreshold == -1) && is_warp_redux_op_supported<ReductionOp, T>
-                                      && ::cuda::has_identity_element_v<ReductionOp, T>;
-    constexpr int effective_threshold =
-      use_warp_redux_path ? 2
-      : (WarpAggregateThreshold == 0)
-        ? (warps + 1)
-        : WarpAggregateThreshold;
-    constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
+    // Also require an identity element so inactive lanes can be padded safely.
+    constexpr int effective_threshold = (WarpAggregateThreshold == 0) ? (warps + 1) : WarpAggregateThreshold;
+    constexpr bool use_parallel_reduction =
+      (warps >= effective_threshold) && (threads_per_block >= warp_threads)
+      && ::cuda::has_identity_element_v<ReductionOp, T>;
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
