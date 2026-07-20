@@ -12,6 +12,7 @@ CUB
    warp_wide
    block_wide
    device_wide
+   environments
    determinism
    benchmarking
    tuning
