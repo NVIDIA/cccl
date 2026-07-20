@@ -35,7 +35,8 @@ namespace ptx = ::cuda::ptx;
 
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const RleLookaheadPolicy& policy)
 {
-  const int num_total_warps = 1 /*load*/ + policy.compute_warps + 1 /*poll*/ + policy.store_warps + 1 /*bookkeeper*/;
+  const int num_total_warps =
+    1 /*load*/ + policy.compute_warps + 1 /*poll*/ + policy.compute_warps /*store*/ + 1 /*bookkeeper*/;
   return num_total_warps * 32;
 }
 
@@ -587,7 +588,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
     policy.items_per_thread >= 1 && policy.items_per_thread <= 32, "items_per_thread must be in [1, 32]");
   CUB_DETAIL_STATIC_ISH_ASSERT(
     policy.compute_warps >= 1 && policy.compute_warps <= 31, "compute_warps must be in [1, 31]");
-  CUB_DETAIL_STATIC_ISH_ASSERT(policy.store_warps == policy.compute_warps, "store_warps must equal compute_warps");
   CUB_DETAIL_STATIC_ISH_ASSERT(policy.key_ring_stages >= 1, "at least one pipeline stage");
   CUB_DETAIL_STATIC_ISH_ASSERT(policy.pos_ring_stages >= 1 && 2 * policy.pos_ring_stages >= policy.key_ring_stages,
                                "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
@@ -601,7 +601,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
     "OffT must be an integer type wide enough for one tile");
   constexpr int items_per_thread       = policy.items_per_thread;
   constexpr int compute_warps          = policy.compute_warps;
-  constexpr int store_warps            = policy.store_warps;
+  constexpr int store_warps            = policy.compute_warps; // one store warp drains each compute warp's tile
   constexpr int key_ring_stages        = policy.key_ring_stages;
   constexpr int pos_ring_stages        = policy.pos_ring_stages;
   constexpr int flag_staging_threshold = policy.flag_staging_threshold;
