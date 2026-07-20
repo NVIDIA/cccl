@@ -23,7 +23,9 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/specializations/fixed_size_mask.h>
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -161,6 +163,18 @@ struct __fixed_size_operations
     for (__simd_size_type __i = 0; __i < _Np; ++__i)
     {
       __result.__data[__i] = (__lhs.__data[__i] * __rhs.__data[__i]);
+    }
+    return __result;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
+  __fma(const _SimdStorage& __lhs, const _SimdStorage& __rhs, const _SimdStorage& __add) noexcept
+  {
+    _SimdStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (__simd_size_type __i = 0; __i < _Np; ++__i)
+    {
+      __result.__data[__i] = ::cuda::std::fma(__lhs.__data[__i], __rhs.__data[__i], __add.__data[__i]);
     }
     return __result;
   }

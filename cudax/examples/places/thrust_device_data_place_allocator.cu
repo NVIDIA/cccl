@@ -48,7 +48,10 @@ public:
 
   pointer do_allocate(std::size_t bytes, std::size_t /*alignment*/) override
   {
-    void* raw = place_.allocate(static_cast<std::ptrdiff_t>(bytes));
+    // A memory resource hands out untyped bytes, so declare the geometry
+    // explicitly as a flat byte array: composite places distribute it with
+    // byte granularity (equivalent for every other place type).
+    void* raw = place_.allocate_nd(dim4(bytes), 1);
     return thrust::device_ptr<void>(raw);
   }
 

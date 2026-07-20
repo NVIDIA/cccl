@@ -92,7 +92,7 @@ inline constexpr bool is_non_deterministic_v =
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceReduce that accept an environment (except ``ReduceByKey``) can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ReducePolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ReducePolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
@@ -108,7 +108,7 @@ inline constexpr bool is_non_deterministic_v =
 //!      :end-before: example-end reduce-tuning
 //!
 //! ``DeviceReduce::ReduceByKey`` can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ReduceByKeyPolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ReduceByKeyPolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu

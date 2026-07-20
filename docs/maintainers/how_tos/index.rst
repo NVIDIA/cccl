@@ -1,5 +1,5 @@
 How Tos
-========
+=======
 
 How-to guides for maintainers.
 
@@ -8,3 +8,5 @@ How-to guides for maintainers.
 
    ../backport_process
    plan_work_with_github_issues
+   adding_ci_coverage
+   adding_new_devcontainer

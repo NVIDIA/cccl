@@ -25,5 +25,7 @@ __device__ Vec_f32_x4 test_operator_decrement_f32_x4(Vec_f32_x4 vec)
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_decrement_f32_x4.*}}
 ; SM100: {{.*FADD2.*}}
 ; SM100: {{.*FADD2.*}}
+; SM103: {{.*FADD2.*}}
+; SM103: {{.*FADD2.*}}
 
 */
