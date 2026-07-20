@@ -1582,9 +1582,9 @@ void stf_stackable_while_cond_multi(
   _CCCL_ASSERT(n_terms >= 1 && n_terms <= STF_WHILE_COND_MAX_TERMS, "invalid number of condition terms");
   _CCCL_ASSERT(combiner == STF_COND_ALL || combiner == STF_COND_ANY, "invalid condition combiner");
 
-  auto* sctx                             = from_opaque_sctx(ctx);
-  auto* guard                            = from_opaque_while(scope);
-  cudaGraphConditionalHandle cond_handle = guard->cond_handle();
+  auto* sctx                                   = from_opaque_sctx(ctx);
+  auto* guard                                  = from_opaque_while(scope);
+  const cudaGraphConditionalHandle cond_handle = guard->cond_handle();
 
   const int offset = sctx->get_head_offset();
 
@@ -1632,7 +1632,7 @@ void stf_stackable_while_cond_multi(
   task.enable_capture();
   task.start();
 
-  auto stream = task.get_stream();
+  const auto stream = task.get_stream();
 
   stf_while_cond_pack pack{};
   pack.n_terms  = n_terms;
