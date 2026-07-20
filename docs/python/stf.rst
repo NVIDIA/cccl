@@ -236,7 +236,9 @@ that reads 1-element logical data and sets the continuation predicate for the
 Conditions compare device scalars against host constants and combine with
 ``&`` (continue while all hold) or ``|`` (continue while any holds), with
 ``~`` for negation -- the usual way to pair a convergence test with an
-iteration cap so a non-converging solve cannot replay forever::
+iteration cap so a non-converging solve cannot replay forever. The following
+excerpt caps a solver loop on both the residual and an iteration counter (see
+``tests/stf/examples/cg.py`` for the complete program)::
 
     liter = ctx.logical_data_zeros((1,), np.float64, name="iter")
 
@@ -250,8 +252,8 @@ forms lower onto a single condition task and one tiny kernel regardless of
 the number of terms (at most 8, one ``&``-chain or one ``|``-chain per
 condition). Use ``and`` / ``or`` and these expressions raise ``TypeError``.
 
-See ``examples/cg.py`` and ``examples/bicgstab.py`` for complete solvers built
-on device-side while loops.
+See ``tests/stf/examples/cg.py`` and ``tests/stf/examples/bicgstab.py`` for
+complete solvers built on device-side while loops.
 
 Places
 ------
