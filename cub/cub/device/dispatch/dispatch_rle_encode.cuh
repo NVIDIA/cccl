@@ -96,7 +96,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   NumRunsOutputIteratorT d_num_runs_out,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector                    = {},
+  [[maybe_unused]] PolicySelector policy_selector   = {},
   [[maybe_unused]] LauncherFactory launcher_factory = {})
 {
 #if __cccl_ptx_isa >= 920
