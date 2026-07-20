@@ -69,7 +69,7 @@ namespace __detail
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-class _CCCL_VISIBILITY_EXPORT cuda_error : public ::std::runtime_error
+class _CCCL_VISIBILITY_DEFAULT cuda_error : public ::std::runtime_error
 {
 public:
   _CCCL_HOST_API cuda_error(
