@@ -798,7 +798,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment with a
   constexpr segment_size_t segment_size            = 640;
   const segment_size_t k                           = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
 
-  CAPTURE(segment_size, k, num_segments);
+  CAPTURE(static_max_segment_size, segment_size, k, num_segments);
 
   c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
