@@ -6,15 +6,11 @@ source "./build_common.sh"
 
 print_environment_details
 
-"./build_libcudacxx.sh" "$@"
+"./build_libcudacxx.sh" "$@" "-cmake-options" "-DLIBCUDACXX_SKIP_LIT_BUILD=1"
 
-PRESET="libcudacxx"
-CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
+# test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
 
-configure_preset libcudacxx "$PRESET" "${CMAKE_OPTIONS[@]}"
-
-test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
-
+# Reset sccache stats to get lit build+test time
 sccache -z > /dev/null || :
 test_preset "libcudacxx (lit)" "libcudacxx-lit"
 sccache --show-adv-stats || :

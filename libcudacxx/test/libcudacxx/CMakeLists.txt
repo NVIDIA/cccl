@@ -241,34 +241,40 @@ set(
 message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
-  # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
-  # Only executed if explicitly requested.
-  add_custom_target(
-    libcudacxx.test.lit.precompile
-    # HACK: There is no way to tell CMake/ninja to always build a target serially,
-    # so we make this target depend on all other libcudacxx targets to avoid oversubscribing
-    # the build machine.
-    # FIXME: This has nasty side effects:
-    # - It's fragile and must be updated every time we add new targets to libcudacxx
-    # - It oversubs `-dev` presets that configure libcudacxx alongside other CCCL projects
-    # - It makes it impossible to just build this target alone since it brings in the world
-    # See related issue https://github.com/NVIDIA/cccl/issues/6163.
-    DEPENDS
-      libcudacxx.test.public_headers
-      libcudacxx.test.internal_headers
-      libcudacxx.test.public_headers_host_only
-      libcudacxx.test.c2h_all
-    # gersemi: off
-    COMMAND
-      "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-        "${libcudacxx_LIT}"
-          -vv --no-progress-bar --time-tests
-          ${libcudacxx_LIT_FLAGS}
-          "-Dexecutor=\"NoopExecutor()\""
-          "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-    # gersemi: on
-    USES_TERMINAL
-  )
+  if (LIBCUDACXX_SKIP_LIT_BUILD)
+    add_custom_target(
+      libcudacxx.test.lit.precompile
+    )
+  else()
+    # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
+    # Only executed if explicitly requested.
+    add_custom_target(
+      libcudacxx.test.lit.precompile
+      # HACK: There is no way to tell CMake/ninja to always build a target serially,
+      # so we make this target depend on all other libcudacxx targets to avoid oversubscribing
+      # the build machine.
+      # FIXME: This has nasty side effects:
+      # - It's fragile and must be updated every time we add new targets to libcudacxx
+      # - It oversubs `-dev` presets that configure libcudacxx alongside other CCCL projects
+      # - It makes it impossible to just build this target alone since it brings in the world
+      # See related issue https://github.com/NVIDIA/cccl/issues/6163.
+      DEPENDS
+        libcudacxx.test.public_headers
+        libcudacxx.test.internal_headers
+        libcudacxx.test.public_headers_host_only
+        libcudacxx.test.c2h_all
+      # gersemi: off
+      COMMAND
+        "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+          "${libcudacxx_LIT}"
+            -vv --no-progress-bar --time-tests
+            ${libcudacxx_LIT_FLAGS}
+            "-Dexecutor=\"NoopExecutor()\""
+            "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+      # gersemi: on
+      USES_TERMINAL
+    )
+  endif()
 endif()
 
 # Restricted to avoid oversubscribing the GPU:
