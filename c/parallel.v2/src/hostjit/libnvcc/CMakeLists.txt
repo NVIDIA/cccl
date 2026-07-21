@@ -218,8 +218,7 @@ if (WIN32)
     TARGET libnvcc
     POST_BUILD
     COMMAND
-      ${CMAKE_COMMAND} -E copy_if_different
-      $<TARGET_RUNTIME_DLLS:libnvcc>
+      ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:libnvcc>
       $<TARGET_FILE_DIR:libnvcc>
     COMMAND_EXPAND_LISTS
   )
