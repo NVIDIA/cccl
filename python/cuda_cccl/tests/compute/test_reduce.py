@@ -870,6 +870,54 @@ def test_transform_iterator_stateful_op():
     np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-3)
 
 
+def test_transform_iterator_stateful_op_refreshes_captured_array_pointer():
+    """A stateful transform iterator reads a captured array's current pointer."""
+
+    class RebindableDeviceArray:
+        def __init__(self, array):
+            self._array = array
+
+        @property
+        def dtype(self):
+            return self._array.dtype
+
+        def __len__(self):
+            return len(self._array)
+
+        @property
+        def __cuda_array_interface__(self):
+            return self._array.__cuda_array_interface__
+
+        def rebind(self, array):
+            self._array = array
+
+    num_items = 1000
+    src = RebindableDeviceArray(
+        DeviceArray.from_numpy(np.zeros(num_items, dtype=np.float32))
+    )
+
+    def gather(i) -> np.float32:
+        return src[i]
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather)
+    h_replacement = np.arange(num_items, dtype=np.float32)
+    src.rebind(DeviceArray.from_numpy(h_replacement))
+
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_allclose(
+        d_output.copy_to_host(), np.sum(h_replacement), atol=1e-3
+    )
+
+
 def test_transform_iterator_stateful_op_inferred_return_type():
     """A stateful transform op without a return annotation infers its return type.
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from .._bindings import Op, OpKind
+from .._bindings import IteratorState, Op, OpKind
 from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
@@ -149,6 +149,17 @@ class TransformIterator(IteratorBase):
                 output_type,
             )
         return self._compiled_op[key]
+
+    @property
+    def state(self) -> IteratorState:
+        """Return the iterator state for CCCL interop."""
+        if not self._transform_op.is_stateful:
+            return super().state
+
+        underlying_state = bytes(self._underlying.state)
+        padding = self._op_state_offset - len(underlying_state)
+        op_state = self._transform_op.get_state()
+        return IteratorState(underlying_state + b"\x00" * padding + op_state)
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
