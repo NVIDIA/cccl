@@ -23,10 +23,13 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,47 +41,48 @@ enum BlockHistogramMemoryPreference
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
 {
   switch (mempref)
   {
     case GMEM:
-      return os << "GMEM";
+      return "GMEM";
     case SMEM:
-      return os << "SMEM";
+      return "SMEM";
     case BLEND:
-      return os << "BLEND";
-    default:
-      return os << "<unknown BlockHistogramMemoryPreference: " << static_cast<int>(mempref) << ">";
+      return "BLEND";
   }
+  return "<unknown BlockHistogramMemoryPreference>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(mempref);
 }
 #endif // _CCCL_HOSTED()
 
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(mempref), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
 //! Parameterizable tuning policy type for AgentHistogram
-//!
-//! @tparam ThreadsPerBlock
-//!   Threads per thread block
-//!
-//! @tparam PixelsPerThread
-//!   Pixels per thread (per tile of input)
-//!
-//! @tparam LoadAlgorithm
-//!   The BlockLoad algorithm to use
-//!
-//! @tparam LoadModifier
-//!   Cache load modifier for reading input elements
-//!
-//! @tparam RleCompress
-//!   Whether to perform localized RLE to compress samples before histogramming
-//!
-//! @tparam MemoryPreference
-//!   Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
-//!
-//! @tparam WorkStealing
-//!   Whether to dequeue tiles from a global work queue
-//!
-//! @tparam VecSize
-//!   Vector size for samples loading (1, 2, 4)
 template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -87,7 +91,7 @@ template <int ThreadsPerBlock,
           BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
           int VecSize = 4>
-struct AgentHistogramPolicy
+struct agent_histogram_policy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
@@ -113,6 +117,27 @@ struct AgentHistogramPolicy
   ///< Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int PixelsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          bool RleCompress,
+          BlockHistogramMemoryPreference MemoryPreference,
+          bool WorkStealing,
+          int VecSize = 4>
+using AgentHistogramPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::agent_histogram_policy<
+    ThreadsPerBlock,
+    PixelsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    RleCompress,
+    MemoryPreference,
+    WorkStealing,
+    VecSize>;
 
 namespace detail::histogram
 {
@@ -240,7 +265,7 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      for (int bin = threadIdx.x; bin < num_privatized_bins[ch]; bin += threads_per_block)
+      for (int bin = static_cast<int>(threadIdx.x); bin < num_privatized_bins[ch]; bin += threads_per_block)
       {
         privatized_histograms[ch][bin] = 0;
       }
@@ -263,7 +288,7 @@ struct AgentHistogram
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       const int channel_bins = num_privatized_bins[ch];
-      for (int bin = threadIdx.x; bin < channel_bins; bin += threads_per_block)
+      for (int bin = static_cast<int>(threadIdx.x); bin < channel_bins; bin += threads_per_block)
       {
         int output_bin       = -1;
         const CounterT count = privatized_histograms[ch][bin];
@@ -480,7 +505,7 @@ struct AgentHistogram
     ::cuda::std::true_type is_work_stealing)
   {
     int num_tiles                = num_rows * tiles_per_row;
-    int tile_idx                 = (blockIdx.y * gridDim.x) + blockIdx.x;
+    int tile_idx                 = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
     OffsetT num_even_share_tiles = gridDim.x * gridDim.y;
 
     while (tile_idx < num_tiles)
@@ -531,7 +556,7 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
-    for (int row = blockIdx.y; row < num_rows; row += gridDim.y)
+    for (int row = static_cast<int>(blockIdx.y); row < num_rows; row += static_cast<int>(gridDim.y))
     {
       OffsetT row_begin   = row * row_stride_samples;
       OffsetT row_end     = row_begin + (num_row_pixels * NumChannels);
@@ -606,13 +631,14 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
-    const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
+    const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
     // Initialize the locations of this block's privatized histograms
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + (blockId * num_privatized_bins[ch]);
+      const auto offset                 = static_cast<::cuda::std::int64_t>(blockId) * num_privatized_bins[ch];
+      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
     }
   }
 

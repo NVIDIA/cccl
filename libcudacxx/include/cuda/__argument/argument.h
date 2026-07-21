@@ -97,7 +97,7 @@ inline constexpr bool __is_sequence_v =
 // spelling carries that intent.
 
 //! @brief Wraps a compile-time constant argument value.
-template <auto _Value, class _Tp = decltype(_Value)>
+template <auto _Value, class _Tp = ::cuda::std::remove_cvref_t<decltype(_Value)>>
 class constant
 {
 public:
@@ -176,7 +176,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_lowest() noexcept
 {
   if constexpr (::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    return ::cuda::std::numeric_limits<_ElementType>::lowest();
+    return __type_lowest<_ElementType>();
   }
   else
   {
@@ -189,7 +189,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_highest() noexcept
 {
   if constexpr (::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    return (::cuda::std::numeric_limits<_ElementType>::max)();
+    return __type_highest<_ElementType>();
   }
   else
   {
@@ -200,22 +200,22 @@ _CCCL_API constexpr _ElementType __wrapper_static_highest() noexcept
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_lowest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
-  return __static_lowest > __runtime_bounds.lower() ? __static_lowest : __runtime_bounds.lower();
+  const auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
+  return __static_lowest < __runtime_bounds.lower() ? __runtime_bounds.lower() : __static_lowest;
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_highest(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
+  const auto __static_highest = __wrapper_static_highest<_ElementType, _StaticBounds>();
   return __static_highest < __runtime_bounds.upper() ? __static_highest : __runtime_bounds.upper();
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr bool __has_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  return __effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds)
-      <= __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds);
+  return __bounds_less_equal(__effective_lowest<_ElementType, _StaticBounds>(__runtime_bounds),
+                             __effective_highest<_ElementType, _StaticBounds>(__runtime_bounds));
 }
 
 template <class _ElementType, class _StaticBounds>
@@ -233,9 +233,9 @@ _CCCL_API constexpr void __validate_static_element_bounds([[maybe_unused]] const
 {
   if constexpr (!::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    _CCCL_ASSERT((__val >= __wrapper_static_lowest<_ElementType, _StaticBounds>()),
+    _CCCL_ASSERT((__bounds_greater_equal(__val, __wrapper_static_lowest<_ElementType, _StaticBounds>())),
                  "immediate argument value is below static lowest bound");
-    _CCCL_ASSERT((__val <= __wrapper_static_highest<_ElementType, _StaticBounds>()),
+    _CCCL_ASSERT((__bounds_less_equal(__val, __wrapper_static_highest<_ElementType, _StaticBounds>())),
                  "immediate argument value is above static highest bound");
   }
 }
@@ -244,8 +244,10 @@ template <class _ElementType>
 _CCCL_API constexpr void __validate_runtime_element_bounds(
   [[maybe_unused]] const _ElementType& __val, [[maybe_unused]] runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  _CCCL_ASSERT((__val >= __runtime_bounds.lower()), "immediate argument value is below runtime lower bound");
-  _CCCL_ASSERT((__val <= __runtime_bounds.upper()), "immediate argument value is above runtime upper bound");
+  _CCCL_ASSERT((__bounds_greater_equal(__val, __runtime_bounds.lower())),
+               "immediate argument value is below runtime lower bound");
+  _CCCL_ASSERT((__bounds_less_equal(__val, __runtime_bounds.upper())),
+               "immediate argument value is above runtime upper bound");
 }
 
 // =====================================================================
@@ -744,7 +746,7 @@ _CCCL_API constexpr auto __constant_sequence_compute_lowest() noexcept
 
   if (__first == __last)
   {
-    return ::cuda::std::numeric_limits<_ElementType>::lowest();
+    return __type_lowest<_ElementType>();
   }
   return static_cast<_ElementType>(*::cuda::std::min_element(__first, __last));
 }
@@ -758,7 +760,7 @@ _CCCL_API constexpr auto __constant_sequence_compute_highest() noexcept
 
   if (__first == __last)
   {
-    return (::cuda::std::numeric_limits<_ElementType>::max)();
+    return __type_highest<_ElementType>();
   }
   return static_cast<_ElementType>(*::cuda::std::max_element(__first, __last));
 }
@@ -779,8 +781,8 @@ struct __traits_impl
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = ::cuda::std::numeric_limits<element_type>::lowest();
-  static constexpr element_type highest = (::cuda::std::numeric_limits<element_type>::max)();
+  static constexpr element_type lowest  = __type_lowest<element_type>();
+  static constexpr element_type highest = __type_highest<element_type>();
 };
 
 template <auto _Value, class _Tp>
@@ -887,7 +889,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 [[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp) noexcept
 {
-  return ::cuda::std::numeric_limits<__element_type_of_t<_Tp>>::lowest();
+  return __type_lowest<__element_type_of_t<_Tp>>();
 }
 
 template <auto _Value, class _Tp>
@@ -940,7 +942,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 [[nodiscard]] _CCCL_API constexpr auto __highest_(_Tp) noexcept
 {
-  return (::cuda::std::numeric_limits<__element_type_of_t<_Tp>>::max)();
+  return __type_highest<__element_type_of_t<_Tp>>();
 }
 
 template <auto _Value, class _Tp>

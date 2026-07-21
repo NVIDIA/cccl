@@ -88,7 +88,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
@@ -102,7 +102,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         __count,
         ::cuda::always_true{},
         identity{},
-        __stream.get());
+        __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
       _CCCL_TRY_CUDA_API(
@@ -115,7 +115,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(

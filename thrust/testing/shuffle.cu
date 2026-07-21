@@ -8,6 +8,7 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/numbers>
 #include <cuda/std/random>
 
 #include <algorithm>
@@ -281,7 +282,7 @@ double inverse_erf(double x)
   x   = (1 - x) * (1 + x);
   lnx = cuda::std::log(x);
 
-  tt1 = 2 / (3.14159265358979323846 * 0.147) + 0.5f * lnx;
+  tt1 = 2 / (cuda::std::__numbers<double>::__pi() * 0.147) + 0.5f * lnx;
   tt2 = 1 / (0.147) * lnx;
 
   return (sgn * cuda::std::sqrt(-tt1 + cuda::std::sqrt(tt1 * tt1 - tt2)));
@@ -382,7 +383,7 @@ void TestShuffleUniformPermutationBase()
   ASSERT_EQUAL(permutation_counts.size(), total_permutations);
 
   double chi_squared    = 0.0;
-  double expected_count = static_cast<double>(num_samples) / total_permutations;
+  double expected_count = static_cast<double>(num_samples) / static_cast<double>(total_permutations);
   for (const auto& kv : permutation_counts)
   {
     chi_squared += std::pow(expected_count - kv.second, 2) / expected_count;

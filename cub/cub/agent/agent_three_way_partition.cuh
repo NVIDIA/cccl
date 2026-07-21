@@ -33,13 +33,16 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
 template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentThreeWayPartitionPolicy
+struct agent_three_way_partition_policy
 {
   static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
@@ -52,6 +55,23 @@ struct AgentThreeWayPartitionPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+using AgentThreeWayPartitionPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DevicePartition") = detail::agent_three_way_partition_policy<
+    ThreadsPerBlock,
+    ItemsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    ScanAlgorithm,
+    DelayConstructorT>;
 
 namespace detail::three_way_partition
 {
@@ -325,11 +345,13 @@ struct AgentThreeWayPartition
     __syncthreads();
 
     // Gather items from shared memory and scatter to global
+    // NOLINTBEGIN(bugprone-misplaced-widening-cast)
     auto first_base =
       d_first_part_out + (streaming_context.num_previously_selected_first() + num_first_selections_prefix);
     auto second_base =
       d_second_part_out + (streaming_context.num_previously_selected_second() + num_second_selections_prefix);
     auto unselected_base = d_unselected_out + (streaming_context.num_previously_rejected() + num_rejected_prefix);
+    // NOLINTEND(bugprone-misplaced-widening-cast)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
@@ -533,7 +555,7 @@ struct AgentThreeWayPartition
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     // Current tile index
-    const int tile_idx = blockIdx.x;
+    const int tile_idx = static_cast<int>(blockIdx.x);
 
     // Global offset for the current tile
     const OffsetT tile_offset = tile_idx * TILE_ITEMS;

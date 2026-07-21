@@ -56,6 +56,28 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{run-length encode}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! The ``Encode`` algorithm that accepts an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::RleEncodePolicy`.
+//!
+//! The ``NonTrivialRuns`` algorithm that accepts an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::RleNonTrivialRunsPolicy`, as shown
+//! in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin non-trivial-runs-policy-selector
+//!      :end-before: example-end non-trivial-runs-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin non-trivial-runs-tuning
+//!      :end-before: example-end non-trivial-runs-tuning
+//!
 //! @endrst
 struct DeviceRunLengthEncode
 {
@@ -73,12 +95,12 @@ struct DeviceRunLengthEncode
     {
       const RleEncodePolicy policy = PolicySelector{}(cc);
       return ReduceByKeyPolicy{
-        policy.threads_per_block,
-        policy.items_per_thread,
-        policy.load_algorithm,
-        policy.load_modifier,
-        policy.scan_algorithm,
-        policy.lookback_delay};
+        policy.lookback.threads_per_block,
+        policy.lookback.items_per_thread,
+        policy.lookback.load_algorithm,
+        policy.lookback.load_modifier,
+        policy.lookback.scan_algorithm,
+        policy.lookback.lookback_delay};
     }
   };
 #endif // _CCCL_DOXYGEN_INVOKED

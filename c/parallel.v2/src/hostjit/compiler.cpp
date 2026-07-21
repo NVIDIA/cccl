@@ -23,7 +23,9 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/thread.h>
 #include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
@@ -51,10 +53,12 @@ LLD_HAS_DRIVER(elf)
 #  include <llvm/Object/COFFImportFile.h>
 #endif
 
+#include <atomic>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <vector>
 
@@ -63,26 +67,41 @@ LLD_HAS_DRIVER(elf)
 
 namespace hostjit
 {
-static bool llvm_initialized = false;
+static std::once_flag llvm_init_flag;
 
 static void initialize_llvm()
 {
-  if (llvm_initialized)
-  {
-    return;
-  }
+  std::call_once(llvm_init_flag, [] {
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86Target();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+    LLVMInitializeNVPTXTargetInfo();
+    LLVMInitializeNVPTXTarget();
+    LLVMInitializeNVPTXTargetMC();
+    LLVMInitializeNVPTXAsmPrinter();
+  });
+}
 
-  LLVMInitializeX86TargetInfo();
-  LLVMInitializeX86Target();
-  LLVMInitializeX86TargetMC();
-  LLVMInitializeX86AsmPrinter();
-  LLVMInitializeX86AsmParser();
-  LLVMInitializeNVPTXTargetInfo();
-  LLVMInitializeNVPTXTarget();
-  LLVMInitializeNVPTXTargetMC();
-  LLVMInitializeNVPTXAsmPrinter();
+// Embedding clang as a library bypasses the clang driver's
+// runWithSufficientStackSpace guard, so the frontend runs on the caller's stack.
+// On Windows the default main-thread stack is only 1 MB, which the deep
+// (recursive-descent / template-instantiation) frontend overflows on heavier
+// kernels such as radix_sort / segmented_reduce; Linux's 8 MB default hides it.
+// Run the frontend on a worker thread sized to match clang's own
+// DesiredStackSize (8 MB), which is the proven-sufficient value on Linux.
+inline constexpr unsigned kFrontendStackSize = 8u << 20;
 
-  llvm_initialized = true;
+template <class Fn>
+static bool runWithLargeStack(Fn&& fn)
+{
+  bool result = false;
+  llvm::thread worker(std::optional<unsigned>(kFrontendStackSize), [&] {
+    result = fn();
+  });
+  worker.join();
+  return result;
 }
 
 #ifdef _WIN32
@@ -160,8 +179,22 @@ static constexpr const char* pch_preamble_source =
   "#include <cuda/std/iterator>\n"
   "#include <cuda/std/functional>\n"
   "#include <cuda/functional>\n"
+  "#include <cub/device/device_adjacent_difference.cuh>\n"
+  "#include <cub/device/device_copy.cuh>\n"
+  "#include <cub/device/device_find.cuh>\n"
+  "#include <cub/device/device_for.cuh>\n"
+  "#include <cub/device/device_histogram.cuh>\n"
+  "#include <cub/device/device_merge.cuh>\n"
+  "#include <cub/device/device_merge_sort.cuh>\n"
+  "#include <cub/device/device_partition.cuh>\n"
+  "#include <cub/device/device_radix_sort.cuh>\n"
   "#include <cub/device/device_reduce.cuh>\n"
-  "#include <cub/device/device_adjacent_difference.cuh>\n";
+  "#include <cub/device/device_scan.cuh>\n"
+  "#include <cub/device/device_segmented_radix_sort.cuh>\n"
+  "#include <cub/device/device_segmented_scan.cuh>\n"
+  "#include <cub/device/device_segmented_sort.cuh>\n"
+  "#include <cub/device/device_select.cuh>\n"
+  "#include <cub/device/device_transform.cuh>\n";
 
 class CUDACompiler::Impl
 {
@@ -191,21 +224,58 @@ public:
 
   // Write preamble to a persistent file and generate a PCH from it.
   // arg_strings[0] will be replaced with the persistent preamble path.
+  //
+  // Concurrent builds — other threads, or other processes sharing the
+  // persistent cache directory — may generate the same artifacts at the same
+  // time. All writes therefore go to a writer-unique temporary path followed
+  // by an atomic rename, so readers only ever observe complete files, and
+  // since the content is deterministic for a given path, whichever writer
+  // lands last is correct. The preamble is additionally left untouched when
+  // its content already matches: the PCH records the preamble file's
+  // identity, so a needless rewrite would invalidate concurrently generated
+  // PCHs.
   bool generatePCH(const std::string& pch_source,
                    const std::string& pch_source_path,
                    const std::string& pch_output_path,
                    std::vector<std::string> arg_strings,
                    std::string& diagnostics)
   {
-    // Write preamble to the persistent source path
-    {
-      std::ofstream f(pch_source_path);
-      if (!f)
+    static std::atomic<unsigned long> temp_counter{0};
+    const std::string temp_suffix =
+      ".tmp." + std::to_string(llvm::sys::Process::getProcessId()) + "." + std::to_string(temp_counter++);
+
+    const bool preamble_up_to_date = [&] {
+      std::ifstream existing(pch_source_path, std::ios::binary);
+      if (!existing)
       {
-        diagnostics += "Failed to write PCH preamble to " + pch_source_path;
         return false;
       }
-      f << pch_source;
+      std::stringstream contents;
+      contents << existing.rdbuf();
+      return contents.str() == pch_source;
+    }();
+
+    if (!preamble_up_to_date)
+    {
+      const std::string source_temp_path = pch_source_path + temp_suffix;
+      {
+        std::ofstream f(source_temp_path, std::ios::binary);
+        if (!f)
+        {
+          diagnostics += "Failed to write PCH preamble to " + source_temp_path;
+          return false;
+        }
+        f << pch_source;
+      }
+      std::error_code rename_error;
+      std::filesystem::rename(source_temp_path, pch_source_path, rename_error);
+      if (rename_error)
+      {
+        std::error_code ignored;
+        std::filesystem::remove(source_temp_path, ignored);
+        diagnostics += "Failed to move PCH preamble into place: " + rename_error.message();
+        return false;
+      }
     }
 
     // Replace the source file arg with the persistent path
@@ -237,15 +307,39 @@ public:
 
     compiler.createDiagnostics(diag_engine.getClient(), false);
     compiler.createFileManager();
-    compiler.getFrontendOpts().OutputFile = pch_output_path;
+    const std::string output_temp_path    = pch_output_path + temp_suffix;
+    compiler.getFrontendOpts().OutputFile = output_temp_path;
 
     clang::GeneratePCHAction pch_action;
-    bool success = compiler.ExecuteAction(pch_action);
+    const bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(pch_action);
+    });
 
     diag_stream.flush();
     diagnostics += diag_output;
 
-    return success;
+    if (!success)
+    {
+      std::error_code ignored;
+      std::filesystem::remove(output_temp_path, ignored);
+      return false;
+    }
+
+    std::error_code rename_error;
+    std::filesystem::rename(output_temp_path, pch_output_path, rename_error);
+    if (rename_error)
+    {
+      std::error_code ignored;
+      std::filesystem::remove(output_temp_path, ignored);
+      // A concurrent writer may have landed the (identical) PCH first; that
+      // counts as success for this builder too.
+      if (!std::filesystem::exists(pch_output_path))
+      {
+        diagnostics += "Failed to move PCH into place: " + rename_error.message();
+        return false;
+      }
+    }
+    return true;
   }
 
   llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem>
@@ -480,7 +574,9 @@ public:
     llvm::LLVMContext llvm_context;
 
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = compiler.ExecuteAction(emit_llvm_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
@@ -858,7 +954,9 @@ public:
 
     llvm::LLVMContext llvm_context;
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = compiler.ExecuteAction(emit_llvm_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (success)
     {
@@ -914,6 +1012,13 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("-fms-compatibility");
     arg_strings.push_back("-fms-compatibility-version=19.40");
+    // We do not have access to the windows CRT, so the guard support that
+    // threadsafe statics need (_tls_index, _Init_thread_epoch, ...) is
+    // unavailable and must be disabled. Generated code IS invoked from
+    // multiple threads: first_call_gate (util/first_call_gate.h) serializes
+    // the first call into each generated function so its function-local
+    // statics initialize race-free despite this flag.
+    arg_strings.push_back("-fno-threadsafe-statics");
 #else
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
@@ -1082,7 +1187,9 @@ public:
     }
 
     clang::EmitObjAction emit_action;
-    bool success = compiler.ExecuteAction(emit_action);
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
@@ -1373,6 +1480,7 @@ public:
        "cudaMemset",
        "cudaMemsetAsync",
        "cudaDeviceSynchronize",
+       "cudaFuncSetAttribute",
        "cudaGetDevice",
        "cudaGetDeviceProperties",
        "cudaGetLastError",
@@ -1587,20 +1695,32 @@ CUDACompiler::~CUDACompiler()
   delete impl_;
 }
 
+// clang and LLVM are embedded in-process and are not thread-safe for concurrent
+// compilation (shared global registries, cl::opt state, allocator use).
+// cuda.compute releases the GIL around native builds, so distinct ops built from
+// multiple threads -- on a GIL or free-threaded interpreter -- otherwise run
+// clang concurrently and corrupt that shared state. Serialize every native
+// compile/link through one process-wide mutex. This guards only the (cached,
+// one-time) build path; kernel launches are unaffected.
+static std::mutex g_native_compile_mutex;
+
 BitcodeResult CUDACompiler::compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   return impl_->compileToDeviceBitcode(source_code, config);
 }
 
 CompilationResult CUDACompiler::compileToObject(
   const std::string& source_code, const std::string& output_path, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   return impl_->compileToObject(source_code, output_path, config);
 }
 
 LinkResult CUDACompiler::linkToSharedLibrary(
   const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   return impl_->linkToSharedLibrary(object_files, output_path, config);
 }
 } // namespace hostjit

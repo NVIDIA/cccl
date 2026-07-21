@@ -46,7 +46,7 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
     throw std::runtime_error("Failed to create temporary file.");
   }
 
-  temp_in_file.write(static_cast<const char*>(cubin), cubin_size);
+  temp_in_file.write(static_cast<const char*>(cubin), static_cast<std::streamsize>(cubin_size));
   temp_in_file.close();
 
   std::string command = "nvdisasm -gi ";
@@ -752,6 +752,23 @@ struct pointer_t
     return vec;
   }
 };
+
+// std::vector<bool> cannot provide the contiguous storage needed by pointer_t.
+// Use byte storage for Boolean inputs and outputs while describing it to the C
+// API as its corresponding primitive type.
+inline cccl_iterator_t make_boolean_iterator(pointer_t<uint8_t>& storage)
+{
+  static_assert(sizeof(bool) == sizeof(uint8_t));
+  static_assert(alignof(bool) == alignof(uint8_t));
+
+  cccl_iterator_t iterator      = storage;
+  iterator.size                 = sizeof(bool);
+  iterator.alignment            = alignof(bool);
+  iterator.value_type.size      = sizeof(bool);
+  iterator.value_type.alignment = alignof(bool);
+  iterator.value_type.type      = cccl_type_enum::CCCL_BOOLEAN;
+  return iterator;
+}
 
 struct operation_t
 {

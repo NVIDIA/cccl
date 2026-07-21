@@ -94,10 +94,10 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 }
 #endif
 
-#define GEN_POLICY(cur, prev)                                             \
-  struct policy##cur : cub::ChainedPolicy<cur, policy##cur, policy##prev> \
-  {                                                                       \
-    static constexpr int value = cur;                                     \
+#define GEN_POLICY(cur, prev)                                                      \
+  struct policy##cur : cub::detail::chained_policy<cur, policy##cur, policy##prev> \
+  {                                                                                \
+    static constexpr int value = cur;                                              \
   }
 
 #ifdef CUDA_SM_LIST
@@ -125,7 +125,8 @@ struct policy_hub_all
   GEN_POLICY(1000, 900);
   GEN_POLICY(1010, 1000);
   GEN_POLICY(1030, 1010);
-  GEN_POLICY(1100, 1030);
+  GEN_POLICY(1070, 1030);
+  GEN_POLICY(1100, 1070);
   GEN_POLICY(1200, 1100);
   GEN_POLICY(1210, 1200);
   // add more policies here when new architectures emerge
@@ -174,6 +175,7 @@ check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storag
 
 DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_cc_list, check_wrapper_all);
 
+// TODO(bgruber): drop in CCCL 4.0
 C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
   check_wrapper_all();
@@ -263,6 +265,7 @@ struct policy_hub_minimal
   using max_policy = policy500;
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
 {
   SECTION("policy_hub_some")

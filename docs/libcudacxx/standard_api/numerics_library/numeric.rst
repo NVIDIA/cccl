@@ -38,4 +38,4 @@ The following algorithms are supported:
   * ``reduce``
   * ``transform_reduce``
 
-The current implementation status is tracked in this `Github Issue <https://github.com/NVIDIA/cccl/issues/5592>`_
+The current implementation status is tracked in this `GitHub Issue <https://github.com/NVIDIA/cccl/issues/5592>`_

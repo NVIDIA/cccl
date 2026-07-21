@@ -191,3 +191,146 @@ C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", integr
   using value_type = c2h::get<0, TestType>;
   test_vectorized<BinarySearch_IntegralTypes_UpperBound_Fixture_Tag, value_type>(upper_bound{}, std_upper_bound);
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("BinarySearch build result has serialization metadata populated", "[binary_search][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_less_binary_predicate();
+  pointer_t<T> data(1);
+  pointer_t<T> values(1);
+  pointer_t<T> out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_binary_search_build(
+      &build,
+      CCCL_BINARY_SEARCH_LOWER_BOUND,
+      data,
+      values,
+      out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.transform.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.transform.payload != nullptr && build.transform.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.transform.payload_size > 0);
+  REQUIRE(build.transform.transform_kernel_lowered_name != nullptr);
+  CHECK(build.transform.transform_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_cleanup(&build));
+}
+
+C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
+  pointer_t<T> dummy_data(1);
+  pointer_t<T> dummy_values(1);
+  pointer_t<std::ptrdiff_t> dummy_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_binary_search_compile(
+      &build,
+      CCCL_BINARY_SEARCH_LOWER_BOUND,
+      dummy_data,
+      dummy_values,
+      dummy_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.transform.payload != nullptr && build.transform.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.transform.payload_size > 0);
+  REQUIRE(build.transform.transform_kernel_lowered_name != nullptr);
+  CHECK(build.transform.library == nullptr);
+  CHECK(build.transform.transform_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_load(&build));
+  REQUIRE(build.transform.library != nullptr);
+  CHECK(build.transform.transform_kernel != nullptr);
+
+  constexpr std::size_t n_items  = 16;
+  constexpr std::size_t n_values = 4;
+  std::vector<T> data            = generate<T>(n_items);
+  std::sort(data.begin(), data.end());
+  const std::vector<T> values = generate<T>(n_values);
+  pointer_t<T> data_ptr(data);
+  pointer_t<T> values_ptr(values);
+  pointer_t<std::ptrdiff_t> output_ptr(n_values);
+  CUstream null_stream = nullptr;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_binary_search(build, data_ptr, n_items, values_ptr, n_values, output_ptr, op, null_stream));
+
+  std::vector<std::ptrdiff_t> expected(n_values);
+  for (std::size_t i = 0; i < n_values; ++i)
+  {
+    expected[i] = std::lower_bound(data.begin(), data.end(), values[i]) - data.begin();
+  }
+  REQUIRE(expected == std::vector<std::ptrdiff_t>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_cleanup(&build));
+}
+
+C2H_TEST("BinarySearch compile rejects kernel-only comparator op", "[binary_search][serialization]")
+{
+  using T                 = int32_t;
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only op: code_size == 0 with a non-empty name.
+  // binary_search wraps the comparator in a generated function, so the wrapper
+  // cannot be decoupled from the comparator type at link time.
+  cccl_op_t custom_op{};
+  custom_op.type      = CCCL_STATELESS;
+  custom_op.name      = "my_comparator";
+  custom_op.code_size = 0;
+  custom_op.code_type = CCCL_OP_LTOIR;
+  custom_op.size      = 1;
+  custom_op.alignment = 1;
+
+  pointer_t<T> dummy_data(1);
+  pointer_t<T> dummy_values(1);
+  pointer_t<std::ptrdiff_t> dummy_out(1);
+
+  cccl_device_binary_search_build_result_t build{};
+  REQUIRE(
+    CUDA_ERROR_INVALID_VALUE
+    == cccl_device_binary_search_compile(
+      &build,
+      CCCL_BINARY_SEARCH_LOWER_BOUND,
+      dummy_data,
+      dummy_values,
+      dummy_out,
+      custom_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+}
+#endif // CCCL_C_PARALLEL_V2

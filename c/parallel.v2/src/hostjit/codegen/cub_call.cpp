@@ -111,9 +111,9 @@ bool needs_env_include(const std::vector<Arg>& args)
   return false;
 }
 
-// Emits the system #includes + the CUB header + EXPORT macro defn. Hoisted
-// from source() so multi-function compiles can emit this once and wrap N
-// function bodies in N namespaces below.
+// Emits the system #includes + the CUB header. Hoisted from source() so
+// multi-function compiles can emit this once and wrap N function bodies in N
+// namespaces below.
 std::string shared_includes(const std::string& cub_include, bool needs_tuple, bool needs_env)
 {
   std::string src = R"(#include <cuda_runtime.h>
@@ -135,21 +135,13 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
     src += "#include <cuda/stream_ref>\n";
   }
   src += std::format("#include <{}>\n\n", cub_include);
-
-  src += R"(#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-
-)";
   return src;
 }
 } // namespace
 
 std::string CubCall::source() const
 {
-  // Single-function source = shared includes/EXPORT + this CubCall's body.
+  // Single-function source = shared includes + this CubCall's body.
   return shared_includes(include_, tuple_inputs_, needs_env_include(args_)) + body();
 }
 
@@ -493,12 +485,12 @@ std::string CubCall::body() const
   }
 
   // Assemble the per-function body: preamble + extern "C" function defn.
-  // System #includes and the EXPORT macro live in shared_includes(), emitted
-  // once at TU scope by either source() (single-fn) or compile() (multi-fn).
+  // System #includes live in shared_includes(), emitted once at TU scope by
+  // either source() (single-fn) or compile() (multi-fn).
   std::string src = preamble;
 
   // Function signature
-  src += std::format("extern \"C\" EXPORT int {}(\n", fn_name_);
+  src += std::format("extern \"C\" _CCCL_VISIBILITY_EXPORT int {}(\n", fn_name_);
   for (size_t i = 0; i < params.size(); ++i)
   {
     src += "    " + params[i];
@@ -745,7 +737,7 @@ MultiCubCallResult CubCall::compile(
 
   // entry_point_name is used to mark a single function as preserved during
   // internalization. Use the first CubCall's name as the primary entry; the
-  // others will still be exported via extern "C" EXPORT so dlsym finds them.
+  // others will still be exported via extern "C" _CCCL_VISIBILITY_EXPORT so dlsym finds them.
   auto jit_config = make_jit_config(cc_major, cc_minor, config, ctk_path, cccl_include_path, calls.begin()->fn_name_);
 
   // Shared BitcodeCollector across all CubCalls — identical user-op or
@@ -762,10 +754,11 @@ MultiCubCallResult CubCall::compile(
     cb.collect_bitcode(bitcode, op_idx, in_idx, out_idx);
   }
 
-  // Build the merged source: shared includes + EXPORT macro at TU scope,
-  // then one `namespace fn_<i> { ... body() }` per CubCall. The extern "C"
-  // EXPORT symbols defined inside each namespace export under the global
-  // C-linkage name (no mangling), so dlsym(handle, cb.fn_name_) finds them.
+  // Build the merged source: shared includes at TU scope, then one
+  // `namespace fn_<i> { ... body() }` per CubCall.
+  // The extern "C" _CCCL_VISIBILITY_EXPORT symbols defined inside each
+  // namespace export under the global C-linkage name (no mangling),
+  // so dlsym(handle, cb.fn_name_) finds them.
   std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
   int i                   = 0;
   for (const auto& cb : calls)

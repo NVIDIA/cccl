@@ -19,7 +19,7 @@
 struct bench_rle_policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
+    -> cub::RleNonTrivialRunsPolicy
   {
     return {
       TUNE_THREADS,

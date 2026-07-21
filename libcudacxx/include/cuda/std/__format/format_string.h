@@ -22,11 +22,12 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__format/dynamic_format.h>
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__format/format_arg_store.h>
 #include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/validation.h>
-#include <cuda/std/__format/vformat.h>
+#include <cuda/std/__format/vformat_to.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/string_view>
 
@@ -48,15 +49,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_string
       constexpr _FmtArgHandle __handles[] = {
         ::cuda::std::__fmt_make_validation_format_arg_handle<_FmtContext, remove_cvref_t<_Args>>()...};
 
-      ::cuda::std::__fmt_vformat_to(basic_format_parse_context<_CharT>{__str_, sizeof...(_Args)},
-                                    _FmtContext{__types, __handles, sizeof...(_Args)});
+      (void) ::cuda::std::__fmt_vformat_to(basic_format_parse_context<_CharT>{__str_, sizeof...(_Args)},
+                                           _FmtContext{__types, __handles, sizeof...(_Args)});
     }
     else
     {
-      ::cuda::std::__fmt_vformat_to(
+      (void) ::cuda::std::__fmt_vformat_to(
         basic_format_parse_context<_CharT>{__str_, sizeof...(_Args)}, _FmtContext{nullptr, nullptr, sizeof...(_Args)});
     }
   }
+
+  _CCCL_API constexpr basic_format_string(__dynamic_format_string<_CharT> __s) noexcept
+      : __str_{__s.__get()}
+  {}
 
   [[nodiscard]] _CCCL_API constexpr basic_string_view<_CharT> get() const noexcept
   {

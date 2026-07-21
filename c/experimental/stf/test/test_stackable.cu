@@ -18,8 +18,8 @@
 
 __global__ void scale_kernel(int cnt, double* data, double factor)
 {
-  const int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  const int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   for (int i = tid; i < cnt; i += nthreads)
   {
     data[i] *= factor;
@@ -28,8 +28,8 @@ __global__ void scale_kernel(int cnt, double* data, double factor)
 
 __global__ void increment_kernel(int cnt, double* data)
 {
-  const int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  const int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   for (int i = tid; i < cnt; i += nthreads)
   {
     data[i] += 1.0;
@@ -657,6 +657,105 @@ C2H_TEST("stackable: while-body K chained rw tasks sweep", "[stackable][while][c
 
   REQUIRE(total_mismatches == 0);
   (void) total_off_by_one;
+}
+
+namespace
+{
+// Run a while loop whose body increments a 1-element double counter once per
+// iteration and leaves a 1-element flag at its initial value 1.0.  The
+// continuation condition is built by `set_condition` from the counter and
+// flag handles.  Returns the final counter value observed on the host.
+template <typename SetCondition>
+double run_compound_while(SetCondition&& set_condition)
+{
+  stf_ctx_handle ctx = stf_stackable_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  double* host_iter;
+  REQUIRE(cudaMallocHost(&host_iter, sizeof(double)) == cudaSuccess);
+  host_iter[0] = 0.0;
+  double* host_flag;
+  REQUIRE(cudaMallocHost(&host_flag, sizeof(double)) == cudaSuccess);
+  host_flag[0] = 1.0;
+
+  stf_logical_data_handle lIter = stf_stackable_logical_data(ctx, host_iter, sizeof(double));
+  REQUIRE(lIter != nullptr);
+  stf_logical_data_handle lFlag = stf_stackable_logical_data(ctx, host_flag, sizeof(double));
+  REQUIRE(lFlag != nullptr);
+
+  stf_while_scope_handle scope = stf_stackable_push_while(ctx);
+  REQUIRE(scope != nullptr);
+  {
+    stf_task_handle t = stf_stackable_task_create(ctx);
+    REQUIRE(t != nullptr);
+    stf_stackable_task_add_dep(ctx, t, lIter, STF_RW);
+    stf_task_enable_capture(t);
+    stf_task_start(t);
+    double* d = static_cast<double*>(stf_task_get(t, 0));
+    increment_kernel<<<1, 1, 0, (cudaStream_t) stf_task_get_custream(t)>>>(1, d);
+    stf_task_end(t);
+    stf_task_destroy(t);
+
+    set_condition(ctx, scope, lIter, lFlag);
+  }
+  stf_stackable_pop_while(scope);
+
+  stf_stackable_logical_data_destroy(lIter);
+  stf_stackable_logical_data_destroy(lFlag);
+  stf_stackable_ctx_finalize(ctx);
+
+  const double result = host_iter[0];
+  REQUIRE(cudaFreeHost(host_iter) == cudaSuccess);
+  REQUIRE(cudaFreeHost(host_flag) == cudaSuccess);
+  return result;
+}
+} // namespace
+
+C2H_TEST("stackable: while compound condition", "[stackable][while][c-api]")
+{
+  SECTION("ALL combiner stops at the iteration cap")
+  {
+    // flag > 0.5 is always true; iter < 5 caps the loop at 5 iterations.
+    const double iters = run_compound_while(
+      [](stf_ctx_handle ctx, stf_while_scope_handle scope, stf_logical_data_handle lIter, stf_logical_data_handle lFlag) {
+        stf_while_cond_term terms[2] = {
+          {lFlag, STF_CMP_GT, 0.5, STF_DTYPE_FLOAT64, 0},
+          {lIter, STF_CMP_LT, 5.0, STF_DTYPE_FLOAT64, 0},
+        };
+        stf_stackable_while_cond_multi(ctx, scope, terms, 2, STF_COND_ALL);
+      });
+    REQUIRE(iters == 5.0);
+  }
+
+  SECTION("ANY combiner with a negated term")
+  {
+    // ~(flag > 0.5) is always false, so only iter < 3 keeps the loop going.
+    const double iters = run_compound_while(
+      [](stf_ctx_handle ctx, stf_while_scope_handle scope, stf_logical_data_handle lIter, stf_logical_data_handle lFlag) {
+        stf_while_cond_term terms[2] = {
+          {lIter, STF_CMP_LT, 3.0, STF_DTYPE_FLOAT64, 0},
+          {lFlag, STF_CMP_GT, 0.5, STF_DTYPE_FLOAT64, 1},
+        };
+        stf_stackable_while_cond_multi(ctx, scope, terms, 2, STF_COND_ANY);
+      });
+    REQUIRE(iters == 3.0);
+  }
+
+  SECTION("duplicate logical data across terms shares one dependency")
+  {
+    const double iters = run_compound_while(
+      [](stf_ctx_handle ctx,
+         stf_while_scope_handle scope,
+         stf_logical_data_handle lIter,
+         stf_logical_data_handle /*lFlag*/) {
+        stf_while_cond_term terms[2] = {
+          {lIter, STF_CMP_LT, 4.0, STF_DTYPE_FLOAT64, 0},
+          {lIter, STF_CMP_GT, -1.0, STF_DTYPE_FLOAT64, 0},
+        };
+        stf_stackable_while_cond_multi(ctx, scope, terms, 2, STF_COND_ALL);
+      });
+    REQUIRE(iters == 4.0);
+  }
 }
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
