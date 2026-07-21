@@ -55,6 +55,21 @@ __device__ __forceinline__ void wait_parity(cuda::std::uint64_t* bar, unsigned p
   }
 }
 
+struct RingCursorT
+{
+  int slot        = 0;
+  unsigned parity = 0;
+
+  __device__ __forceinline__ void advance(int stages)
+  {
+    if (++slot == stages)
+    {
+      slot = 0;
+      parity ^= 1u;
+    }
+  }
+};
+
 // tile_partial_states: one dword per tile, layout: u64 [published_tag:32][open_len:16][run_count:16]
 // states are cleared by rle_init_states every launch, since we do not own temp storage!
 // an aligned 64-bit access is already non-tearing, but atomic_ref doesn't hurt and has clear semantics
@@ -579,31 +594,30 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   NumRunsT* __restrict__ d_num_runs,
   TilePartialStateT* __restrict__ tile_partial_states,
   OffT num_items,
-  int num_tiles)
+  int num_tiles,
+  int key_ring_stages,
+  int pos_ring_stages)
 {
   static constexpr RleLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
-  CUB_DETAIL_STATIC_ISH_ASSERT(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
-  CUB_DETAIL_STATIC_ISH_ASSERT(alignof(KeyT) <= 16, "Alignment <= 16");
-  CUB_DETAIL_STATIC_ISH_ASSERT(
-    policy.items_per_thread >= 1 && policy.items_per_thread <= 32, "items_per_thread must be in [1, 32]");
-  CUB_DETAIL_STATIC_ISH_ASSERT(
-    policy.compute_warps >= 1 && policy.compute_warps <= 31, "compute_warps must be in [1, 31]");
-  CUB_DETAIL_STATIC_ISH_ASSERT(policy.key_ring_stages >= 1, "at least one pipeline stage");
-  CUB_DETAIL_STATIC_ISH_ASSERT(policy.pos_ring_stages >= 1 && 2 * policy.pos_ring_stages >= policy.key_ring_stages,
-                               "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
-  CUB_DETAIL_STATIC_ISH_ASSERT(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
-                               "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
-  CUB_DETAIL_STATIC_ISH_ASSERT(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
-  CUB_DETAIL_STATIC_ISH_ASSERT(
-    policy.buf_per_lane() * ((int) sizeof(KeyT) + 4) <= 64, "reg-buf rounds must fit the 64B/lane register budget");
-  CUB_DETAIL_STATIC_ISH_ASSERT(
-    cuda::std::is_integral_v<OffT> && policy.tile_size() <= cuda::std::numeric_limits<OffT>::max(),
-    "OffT must be an integer type wide enough for one tile");
+  static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
+  static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
+  static_assert(policy.items_per_thread >= 1 && policy.items_per_thread <= 32, "items_per_thread must be in [1, 32]");
+  static_assert(policy.compute_warps >= 1 && policy.compute_warps <= 31, "compute_warps must be in [1, 31]");
+  static_assert(policy.key_ring_stages >= 1, "at least one pipeline stage");
+  static_assert(policy.pos_ring_stages >= 1 && 2 * policy.pos_ring_stages >= policy.key_ring_stages,
+                "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
+  static_assert(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
+                "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
+  static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
+  static_assert(policy.buf_per_lane() * ((int) sizeof(KeyT) + 4) <= 64,
+                "reg-buf rounds must fit the 64B/lane register budget");
+  static_assert(cuda::std::is_integral_v<OffT> && policy.tile_size() <= cuda::std::numeric_limits<OffT>::max(),
+                "OffT must be an integer type wide enough for one tile");
   constexpr int items_per_thread       = policy.items_per_thread;
   constexpr int compute_warps          = policy.compute_warps;
   constexpr int store_warps            = policy.compute_warps; // one store warp drains each compute warp's tile
-  constexpr int key_ring_stages        = policy.key_ring_stages;
-  constexpr int pos_ring_stages        = policy.pos_ring_stages;
+  constexpr int max_key_ring_stages    = policy.key_ring_stages;
+  constexpr int max_pos_ring_stages    = policy.pos_ring_stages;
   constexpr int flag_staging_threshold = policy.flag_staging_threshold;
   constexpr int warp_tile_size         = policy.warp_tile_size();
   constexpr int tile_size              = policy.tile_size();
@@ -615,27 +629,29 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   extern __shared__ char smem_raw[];
   KeyT* const tile_buf = (KeyT*) smem_raw;
   short* const pos_buf = (short*) (tile_buf + (size_t) key_ring_stages * slot_stride);
-  __shared__ int tile_id_buf[key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with try_cancel)
-  __shared__ int warp_run_counts[key_ring_stages][compute_warps]; // per compute warp run counts
-  __shared__ unsigned head_flag_buf[key_ring_stages][compute_warps * 32]; // staged head-flag words
-  __shared__ int warp_first_heads[key_ring_stages][compute_warps]; // per compute warp first head idx (-1 if none)
-  __shared__ int warp_last_heads[key_ring_stages][compute_warps]; // per compute warp last head idx (-1 if none)
+  __shared__ int tile_id_buf[max_key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with
+                                                   // try_cancel)
+  __shared__ int warp_run_counts[max_key_ring_stages][compute_warps]; // per compute warp run counts
+  __shared__ unsigned head_flag_buf[max_key_ring_stages][compute_warps * 32]; // staged head-flag words
+  __shared__ int warp_first_heads[max_key_ring_stages][compute_warps]; // per compute warp first head idx (-1 if none)
+  __shared__ int warp_last_heads[max_key_ring_stages][compute_warps]; // per compute warp last head idx (-1 if none)
 
   // for POLL to pass STORE packed [open_len_prefix:32][run_count_prefix:32]
-  __shared__ PrefixT prefix_packed[key_ring_stages];
+  __shared__ PrefixT prefix_packed[max_key_ring_stages];
 
   // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where pos_ring_stages < key_ring_stages);
   // if it is mapped 1:1, then this would have been protected by empty / fall as well, but here we need an extra barrier
-  __shared__ cuda::std::uint64_t pos_buf_free[pos_ring_stages];
+  __shared__ cuda::std::uint64_t pos_buf_free[max_pos_ring_stages];
   // LOAD --full--> COMPUTE & POLL
   // COMPUTE(all warps) --computed--> COMPUTE w0, then cw0 calculates & publishes this tile's aggregate to the global
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
-  __shared__ cuda::std::uint64_t full[key_ring_stages];
-  __shared__ cuda::std::uint64_t computed[key_ring_stages], prefixed[key_ring_stages], empty[key_ring_stages];
+  __shared__ cuda::std::uint64_t full[max_key_ring_stages];
+  __shared__ cuda::std::uint64_t computed[max_key_ring_stages], prefixed[max_key_ring_stages],
+    empty[max_key_ring_stages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
-  __shared__ cuda::std::uint64_t staged_warp_tile[key_ring_stages][compute_warps];
+  __shared__ cuda::std::uint64_t staged_warp_tile[max_key_ring_stages][compute_warps];
 
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
   __shared__ __align__(16) uint4 clc_resp;
@@ -648,7 +664,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   const int skip_elems     = (int) (base_skip / sizeof(KeyT));
   if (thr_id == 0)
   {
-    for (int slot_id = 0; slot_id < key_ring_stages; ++slot_id)
+    for (int slot_id = 0; slot_id < max_key_ring_stages; ++slot_id)
     {
       ptx::mbarrier_init(&full[slot_id], 1);
       ptx::mbarrier_init(&computed[slot_id], compute_warps); // every compute warp arrives
@@ -659,7 +675,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
         ptx::mbarrier_init(&staged_warp_tile[slot_id][cw], 1); // that compute warp's lane0
       }
     }
-    for (int p = 0; p < pos_ring_stages; ++p)
+    for (int p = 0; p < max_pos_ring_stages; ++p)
     {
       ptx::mbarrier_init(&pos_buf_free[p], store_warps);
     }
@@ -692,14 +708,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
           ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
         }
-        for (int pipeline_gen = 0;; ++pipeline_gen)
+        RingCursorT key_ring;
+        for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
-          const int slot_id  = pipeline_gen % key_ring_stages; // which slot is this?
-          const int slot_gen = pipeline_gen / key_ring_stages; // how many times is this slot used?
+          const int slot_id = key_ring.slot; // which slot is this?
           if (pipeline_gen >= key_ring_stages)
           {
             // need to wait for slot to be free
-            wait_parity(&empty[slot_id], (unsigned) ((slot_gen - 1) & 1));
+            wait_parity(&empty[slot_id], key_ring.parity ^ 1u);
           }
           if (lane_id == 0)
           {
@@ -737,11 +753,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       {
         const int compute_warp_id  = squad.warpRank();
         const int warp_tile_offset = compute_warp_id * warp_tile_size;
-        for (int pipeline_gen = 0;; ++pipeline_gen)
+        RingCursorT key_ring;
+        RingCursorT pos_ring;
+        for (int pipeline_gen = 0;;
+             ++pipeline_gen, key_ring.advance(key_ring_stages), pos_ring.advance(pos_ring_stages))
         {
-          const int slot_id  = pipeline_gen % key_ring_stages;
-          const int slot_gen = pipeline_gen / key_ring_stages;
-          wait_parity(&full[slot_id], (unsigned) (slot_gen & 1));
+          const int slot_id = key_ring.slot;
+          wait_parity(&full[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -757,7 +775,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const KeyT* key_buf = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
           const int tile_len  = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
           int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
-          short* const pos_dst = pos_buf + (size_t) (pipeline_gen % pos_ring_stages) * tile_size;
+          short* const pos_dst = pos_buf + (size_t) (pos_ring.slot) * tile_size;
           const unsigned my_flags =
             compute_head_flags<items_per_thread>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, skip_elems);
           local_run_count = __reduce_add_sync(full_mask, __popc(my_flags));
@@ -785,7 +803,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // then collect results from all warptiles and publish the tile run count and tile open len
           if (compute_warp_id == 0)
           {
-            wait_parity(&computed[slot_id], (unsigned) (slot_gen & 1));
+            wait_parity(&computed[slot_id], key_ring.parity);
             reduce_and_publish_tile_state<compute_warps>(
               tile_partial_states, tile_id, tile_len, warp_run_counts[slot_id], warp_last_heads[slot_id], lane_id);
           }
@@ -820,14 +838,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // arrived pos_buf_free(g - 2P) too. So there is no race.
           else
           {
-            if constexpr (pos_ring_stages < key_ring_stages)
+            if (pos_ring_stages < key_ring_stages)
             {
               // the pos slot is shared by pipeline_gens g, g+pos_ring_stages, ...
               // need to wait for it to be cleared by STORE
               if (pipeline_gen >= pos_ring_stages)
               {
-                wait_parity(&pos_buf_free[pipeline_gen % pos_ring_stages],
-                            (unsigned) ((pipeline_gen / pos_ring_stages - 1) & 1));
+                wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
               }
             }
             stage_head_positions<items_per_thread>(my_flags, pos_dst, warp_tile_offset, lane_id);
@@ -846,11 +863,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
         OffT last_seen_prefix_run_count   = 0;
         OffT last_seen_prefix_open_length = 0;
         int poll_dense_mode               = 1;
-        for (int pipeline_gen = 0;; ++pipeline_gen)
+        RingCursorT key_ring;
+        for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
-          const int slot_id  = pipeline_gen % key_ring_stages;
-          const int slot_gen = pipeline_gen / key_ring_stages;
-          wait_parity(&full[slot_id], (unsigned) (slot_gen & 1));
+          const int slot_id = key_ring.slot;
+          wait_parity(&full[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -883,11 +900,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       else if (squad == squadStore)
       {
         const int store_warp_idx = squad.warpRank();
-        for (int pipeline_gen = 0;; ++pipeline_gen)
+        RingCursorT key_ring;
+        RingCursorT pos_ring;
+        for (int pipeline_gen = 0;;
+             ++pipeline_gen, key_ring.advance(key_ring_stages), pos_ring.advance(pos_ring_stages))
         {
-          const int slot_id = pipeline_gen % key_ring_stages;
+          const int slot_id = key_ring.slot;
           // wait for computed (1/3): all per-warp-tile metadata (run counts, first/last heads)
-          wait_parity(&computed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+          wait_parity(&computed[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -903,7 +923,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
           const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
           // staged positions
-          const short* run_positions      = pos_buf + (size_t) (pipeline_gen % pos_ring_stages) * tile_size;
+          const short* run_positions      = pos_buf + (size_t) (pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
           const int warp_tile_run_count   = __shfl_sync(full_mask, lane_warp_tile_run_count, warp_tile_id);
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
@@ -912,7 +932,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (warp_tile_run_count >= 1 && warp_tile_run_count < flag_staging_threshold)
           {
             // wait for staged_warp_tile (2/3)
-            wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+            wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
             constexpr int buf_per_lane = policy.buf_per_lane();
             KeyT buf_key[buf_per_lane];
             int buf_run_length[buf_per_lane];
@@ -935,13 +955,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             __syncwarp();
             if (lane_id == 0)
             {
-              if constexpr (pos_ring_stages < key_ring_stages)
+              if (pos_ring_stages < key_ring_stages)
               {
-                ptx::mbarrier_arrive(&pos_buf_free[pipeline_gen % pos_ring_stages]);
+                ptx::mbarrier_arrive(&pos_buf_free[pos_ring.slot]);
               }
             }
             // wait for prefixed (3/3)
-            wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+            wait_parity(&prefixed[slot_id], key_ring.parity);
             const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
 #  pragma unroll
             for (int it = 0; it < buf_per_lane; ++it)
@@ -970,10 +990,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           } // reg buf
           // if not reg buffed, we do the normal things, i.e. prefixed wait, then staged_warp_tile, then drain
           // wait for prefixed (2/3)
-          wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+          wait_parity(&prefixed[slot_id], key_ring.parity);
           const OffT curr_prefix_run_count = prefix_packed[slot_id].run_count();
           // wait for staged_warp_tile (3/3)
-          wait_parity(&staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+          wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
           // writes warp tile (warp_tile_id)'s staged output into the global arrays.
           // Per run: gather its key from the run's head position -> d_unique,
           // and write its length -> d_counts (= next run's head pos - this run's head pos).
@@ -997,9 +1017,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           __syncwarp();
           if (lane_id == 0)
           {
-            if constexpr (pos_ring_stages < key_ring_stages)
+            if (pos_ring_stages < key_ring_stages)
             {
-              ptx::mbarrier_arrive(&pos_buf_free[pipeline_gen % pos_ring_stages]);
+              ptx::mbarrier_arrive(&pos_buf_free[pos_ring.slot]);
             }
             // store done, load may proceed!
             ptx::mbarrier_arrive(&empty[slot_id]);
@@ -1009,10 +1029,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
       // if you are the bookkeeper
       else
       {
-        for (int pipeline_gen = 0;; ++pipeline_gen)
+        RingCursorT key_ring;
+        for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
-          const int slot_id = pipeline_gen % key_ring_stages;
-          wait_parity(&computed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+          const int slot_id = key_ring.slot;
+          wait_parity(&computed[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -1031,7 +1052,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             __shfl_sync(full_mask, lane_runs_before_warp_tile + lane_warp_tile_run_count, compute_warps - 1);
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(full_mask, lane_warp_tile_run_count > 0);
           // wait for prefixed
-          wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / key_ring_stages) & 1));
+          wait_parity(&prefixed[slot_id], key_ring.parity);
           const PrefixT packed_prefix        = prefix_packed[slot_id];
           const OffT curr_prefix_run_count   = packed_prefix.run_count();
           const OffT curr_prefix_open_length = packed_prefix.open_len();
@@ -1115,14 +1136,25 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
     NumRunsT* __restrict__ d_num_runs,
     TilePartialStateT* tile_partial_states,
     OffT num_items,
-    int num_tiles)
+    int num_tiles,
+    int key_ring_stages,
+    int pos_ring_stages)
 {
   static constexpr RleEncodePolicy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == RleAlgorithm::lookahead)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_100,
-                 (device_rle_encode_lookahead_body<PolicySelector>(
-                    d_keys, d_unique, d_counts, d_num_runs, tile_partial_states, num_items, num_tiles);))
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_100,
+      (device_rle_encode_lookahead_body<PolicySelector>(
+         d_keys,
+         d_unique,
+         d_counts,
+         d_num_runs,
+         tile_partial_states,
+         num_items,
+         num_tiles,
+         key_ring_stages,
+         pos_ring_stages);))
   }
   // for a lookback policy this kernel compiles to an empty stub: the fatbin carries this symbol for every
   // target architecture, and targets whose policy resolves to lookback must still compile (the host dispatch
