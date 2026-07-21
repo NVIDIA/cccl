@@ -16,7 +16,7 @@
 #include <iostream>
 
 // Verifies that cub::DeviceBatchedTopK rejects, at compile time, the determinism and tie_break requirement
-// combinations that the public contract marks as ill-formed (see docs/cub/api_docs/device_topk_requirements.rst):
+// combinations that the public contract marks as ill-formed (see docs/cub/device_topk_requirements.rst):
 //   * determinism and tie_break must be acknowledged together, both specified or both omitted to take the default
 //   * an explicit tie_break of prefer_smaller_index or prefer_larger_index pins the result set across GPUs and so
 //     requires determinism::gpu_to_gpu (it cannot be paired with not_guaranteed or run_to_run)
