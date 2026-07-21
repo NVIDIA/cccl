@@ -52,6 +52,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/concepts.h>
+#include <cuda/experimental/__utility/result_policy.cuh>
 
 #include <vector>
 
@@ -88,7 +89,6 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 
   static_assert(::cuda::std::ranges::sized_range<_InputRange>);
 
-  const auto __num_items = ::cuda::std::ranges::size(__inputs);
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
   // sendcount.
@@ -100,17 +100,16 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 
   __CUDAX_MULTI_GPU_DISPATCH(
     __logical_device,
-    __num_items,
     CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-    (::cuda::std::ranges::begin(__inputs),
-     // Similarly to above, prepare for the comm calls later. In order for those to be
-     // in-place, the sendbuff = recvbuff + rank, so we need to place our partial result
-     // there
-     __buff.begin() + __rank,
-     __num_items_fixed,
-     ::cuda::std::move(__op),
-     __rank == __ROOT_RANK ? __init : __ident,
-     __env));
+    ::cuda::std::ranges::begin(__inputs),
+    // Similarly to above, prepare for the comm calls later. In order for those to be
+    // in-place, the sendbuff = recvbuff + rank, so we need to place our partial result
+    // there
+    __buff.begin() + __rank,
+    ::cuda::std::ranges::size(__inputs),
+    ::cuda::std::move(__op),
+    __rank == __ROOT_RANK ? __init : __ident,
+    __env);
 
   return __buff;
 }
@@ -155,13 +154,15 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
   for (auto&& [__comm, __env, __buffer, __out] :
        ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
   {
-    const auto __num_items = __buffer.size();
-
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
-      __num_items,
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
-      (__buffer.begin(), __out, __num_items_fixed, __op, CUB_NS_QUALIFIER::detail::reduce::no_init, __env));
+      __buffer.begin(),
+      __out,
+      __buffer.size(),
+      __op,
+      CUB_NS_QUALIFIER::detail::reduce::no_init,
+      __env);
   }
 }
 } // namespace __detail::__reduce
@@ -231,6 +232,7 @@ _CCCL_CONCEPT __indirectly_binary_reducible = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _It
 //! element is 0. For maximum and minimum, the identity values are INT_MIN, and INT_MAX
 //! respectively.
 //!
+//! @tparam _Policy The return value policy. Currently only `broadcasted_t` is supported.
 //! @tparam _CommRange The range of communicators. Each element must model the communicator
 //!         concept.
 //! @tparam _EnvRange The range of execution environments. Each environment supplies the
@@ -242,6 +244,7 @@ _CCCL_CONCEPT __indirectly_binary_reducible = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _It
 //!         element type.
 //! @tparam _BinaryOp The binary reduction operator type. Defaults to `::cuda::std::plus<>`.
 //!
+//! @param[in] __policy The result policy object.
 //! @param[in] __comms The range of communicators.
 //! @param[in] __envs The range of execution environments. The execution environment must
 //!                   contain a stream.
@@ -250,7 +253,8 @@ _CCCL_CONCEPT __indirectly_binary_reducible = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _It
 //! @param[in] __init The initial value seeding each reduction.
 //! @param[in] __op The binary reduction operator.
 //! @param[in] __ident The identity element to be used in case of empty ranges.
-_CCCL_TEMPLATE(class _CommRange,
+_CCCL_TEMPLATE(class _Policy,
+               class _CommRange,
                class _EnvRange,
                class _InputRangeRange,
                class _OutputItRange,
@@ -260,6 +264,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                  __detail::__range_of_sized_random_access_ranges<_InputRangeRange> _CCCL_AND
                    __detail::__range_of_output_iters<_OutputItRange, _Tp>)
 _CCCL_HOST_API void reduce(
+  [[maybe_unused]] const __result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRangeRange&& __range_of_inputs,
@@ -269,6 +274,9 @@ _CCCL_HOST_API void reduce(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
+  static_assert(::cuda::std::same_as<_Policy, broadcasted_t>,
+                "Only broadcasted results are currently supported. Please open an issue at "
+                "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
     ::cuda::experimental::__detail::__in_range_out_it_properties<_InputRangeRange, _OutputItRange, _EnvRange>;
@@ -324,6 +332,7 @@ _CCCL_HOST_API void reduce(
 //! output iterator)` to the range-based overload. See the range overload for further
 //! discussion.
 //!
+//! @tparam _Policy The return value policy. Currently only `broadcasted_t` is supported.
 //! @tparam _Comm The communicator type. Must model the communicator concept.
 //! @tparam _Env The execution environment type. Supplies the stream and optional memory
 //!              resource.
@@ -332,6 +341,7 @@ _CCCL_HOST_API void reduce(
 //! @tparam _Tp The reduction and result value type.
 //! @tparam _BinaryOp The binary reduction operator type. Defaults to `::cuda::std::plus<>`.
 //!
+//! @param[in] __policy The result policy object.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
 //! @param[in] __input The input range to reduce.
@@ -339,7 +349,8 @@ _CCCL_HOST_API void reduce(
 //! @param[in] __init The initial value seeding the reduction.
 //! @param[in] __op The binary reduction operator.
 //! @param[in] __ident The identity element to be used in case of empty ranges.
-_CCCL_TEMPLATE(class _Comm,
+_CCCL_TEMPLATE(class _Policy,
+               class _Comm,
                class _Env,
                class _InputRange,
                class _OutputIt,
@@ -348,6 +359,7 @@ _CCCL_TEMPLATE(class _Comm,
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::ranges::random_access_range<_InputRange>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void reduce(
+  const __result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputRange&& __input,
@@ -356,13 +368,15 @@ _CCCL_HOST_API void reduce(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  reduce(::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
-         ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
-         ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
-         ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
-         ::cuda::std::move(__init),
-         ::cuda::std::move(__op),
-         ::cuda::std::move(__ident));
+  ::cuda::experimental::reduce(
+    __policy,
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_InputRange>, 1>{::cuda::std::addressof(__input), 1},
+    ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output), 1},
+    ::cuda::std::move(__init),
+    ::cuda::std::move(__op),
+    ::cuda::std::move(__ident));
 }
 } // namespace cuda::experimental
 

@@ -42,9 +42,11 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
   in.reserve(comms.size());
   out.reserve(comms.size());
   envs.reserve(comms.size());
+
+  constexpr auto values_per_rank = 10;
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)
   {
-    const auto values = {static_cast<T>(comms[i].rank())};
+    const std::vector<T> values(values_per_rank, static_cast<T>(comms[i].rank()));
 
     in.emplace_back(cuda::make_device_buffer<T>(streams[i], comms[i].logical_device().underlying_device(), values));
     out.emplace_back(
@@ -57,10 +59,10 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
   const auto expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size());
+    reference.reserve(comms.front().size() * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
-      reference.push_back(r);
+      reference.insert(reference.end(), values_per_rank, static_cast<T>(r));
     }
 
     const auto val = std::accumulate(reference.begin(), reference.end(), init, op);
@@ -70,7 +72,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default init, op, ident (all)")
   {
-    cudax::reduce(comms, envs, in, outputs);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs);
 
     for (const auto& buf : out)
     {
@@ -80,7 +82,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default op, ident")
   {
-    cudax::reduce(comms, envs, in, outputs, init);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init);
 
     for (const auto& buf : out)
     {
@@ -90,7 +92,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default ident")
   {
-    cudax::reduce(comms, envs, in, outputs, init, op);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op);
 
     for (const auto& buf : out)
     {
@@ -100,7 +102,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default none")
   {
-    cudax::reduce(comms, envs, in, outputs, init, op, ident);
+    cudax::reduce(cudax::broadcasted, comms, envs, in, outputs, init, op, ident);
 
     for (const auto& buf : out)
     {

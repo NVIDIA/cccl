@@ -60,11 +60,11 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! The ``Encode`` algorithm that accepts an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref RleEncodePolicy.
+//! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::RleEncodePolicy`.
 //!
 //! The ``NonTrivialRuns`` algorithm that accepts an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref RleNonTrivialRunsPolicy, as shown in the
-//! example below:
+//! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::RleNonTrivialRunsPolicy`, as shown
+//! in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
 //!      :language: c++

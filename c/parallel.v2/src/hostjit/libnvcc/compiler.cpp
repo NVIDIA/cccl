@@ -2342,6 +2342,14 @@ extern "C" const char* libnvccGetErrorString(libnvccResult result)
   return "LIBNVCC_ERROR_UNKNOWN";
 }
 
+// clang, LLVM, LLD, and the CUDA codegen helpers used below are embedded
+// in-process and are not thread-safe for concurrent compilation/linking
+// (shared global registries, cl::opt state, allocator use). cuda.compute can
+// release the GIL around native builds, so distinct operations built from
+// multiple threads must serialize the native compiler pipeline. Program handle
+// creation/destruction and log reads remain outside this lock.
+static std::mutex g_native_compile_mutex;
+
 extern "C" libnvccResult libnvccCreateProgram(libnvccProgram* prog, const char* src, const char* name)
 {
   if (!prog || !src)
@@ -2387,6 +2395,7 @@ extern "C" libnvccResult libnvccCompileProgramToDeviceBitcode(
     return LIBNVCC_ERROR_INVALID_OPTION;
   }
 
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   auto result = prog->compiler.compileToDeviceBitcode(prog->source, prog->name, outputBitcodePath, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
@@ -2416,6 +2425,7 @@ extern "C" libnvccResult libnvccCompileProgramToObject(
   }
 
   const std::string cubin_path = outputCubinPath ? outputCubinPath : "";
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   auto result = prog->compiler.compileToObject(prog->source, prog->name, outputObjectPath, cubin_path, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
@@ -2457,6 +2467,7 @@ extern "C" libnvccResult libnvccLinkToSharedLibrary(
     object_files.emplace_back(objectFiles[i]);
   }
 
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   auto result = prog->compiler.linkToSharedLibrary(object_files, outputLibraryPath, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_LINKING;
@@ -2487,6 +2498,7 @@ extern "C" libnvccResult libnvccCreatePCH(
   }
 
   std::string diagnostics;
+  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   bool success =
     prog->compiler.createPCH(prog->source, kind, pchSourcePath, pchOutputPath, parsed_options, diagnostics);
   setProgramLog(prog, diagnostics);
