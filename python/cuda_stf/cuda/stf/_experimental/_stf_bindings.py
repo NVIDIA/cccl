@@ -61,7 +61,7 @@ _BINDING_EXPORTS = (
 
 
 def _load_cuda_libraries():
-    for libname in ("nvrtc", "nvJitLink"):
+    for libname in ("cudart", "nvrtc", "nvJitLink"):
         load_nvidia_dynamic_lib(libname)
 
 
