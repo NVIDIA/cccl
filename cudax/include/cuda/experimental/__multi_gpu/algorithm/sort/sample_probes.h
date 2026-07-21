@@ -56,7 +56,7 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
   const ::cuda::std::span<const ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>> __I_j,
   _BinaryOp __cmp,
   const ::cuda::std::span<_Tp> __samples,
-  ::cuda::std::size_t* __samples_size_bytes)
+  ::cuda::std::size_t* __samples_size)
 {
   if (threadIdx.x != 0)
   {
@@ -87,19 +87,18 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     __begin = __last;
   }
 
-  *__samples_size_bytes = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin()) * sizeof(*__samples_it);
+  *__samples_size = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin());
 }
 
-template <class _Tp, class _Env, class _BinaryOp, class _InputRange>
+template <class _Tp, class _Resource, class _BinaryOp, class _InputRange>
 _CCCL_HOST_API void __sort_sample_probes(
   ::cuda::stream_ref __stream,
   _InputRange&& __input,
-  const __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, __resource_type_for<_Env>>&
-    __I_j,
+  const __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Resource>& __I_j,
   double __sampling_probability,
   _BinaryOp __cmp,
-  __buffer<_Tp, __resource_type_for<_Env>>* __samples,
-  __buffer<::cuda::std::size_t, __resource_type_for<_Env>>* __samples_size_bytes)
+  __buffer<_Tp, _Resource>* __samples,
+  __buffer<::cuda::std::size_t, _Resource>* __sample_size)
 {
   constexpr auto __config =
     ::cuda::make_config(::cuda::make_hierarchy(::cuda::block_dims<1>(), ::cuda::grid_dims<1>()));
@@ -115,7 +114,7 @@ _CCCL_HOST_API void __sort_sample_probes(
     __I_j.__get(),
     ::cuda::std::move(__cmp),
     ::cuda::std::span<_Tp>{*__samples},
-    __samples_size_bytes->__get().data());
+    __sample_size->__get().data());
 }
 } // namespace cuda::experimental::__detail
 
