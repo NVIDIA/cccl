@@ -17,7 +17,7 @@
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 5, 7};
-  auto p            = cuda::std::partition_point(a, a + 4, cuda::__is_even<int>{});
+  auto p            = cuda::std::partition_point(a, a + 4, cuda::__is_even{});
   assert(p == a + 2);
 
   return true;

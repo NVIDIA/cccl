@@ -57,7 +57,7 @@ CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]",
   expected.reserve(h_in.size());
   for (const auto value : h_in)
   {
-    if (cuda::__is_even<int>{}(value))
+    if (cuda::__is_even{}(value))
     {
       expected.push_back(value);
     }
@@ -69,7 +69,7 @@ CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]",
                      NullType*,
                      value_t*,
                      offset_t*,
-                     cuda::__is_even<int>,
+                     cuda::__is_even,
                      NullType,
                      offset_t,
                      SelectImpl::Select,
@@ -83,7 +83,7 @@ CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]",
     nullptr,
     thrust::raw_pointer_cast(d_out.data()),
     thrust::raw_pointer_cast(d_num_selected.data()),
-    cuda::__is_even<int>{},
+    cuda::__is_even{},
     NullType{},
     static_cast<offset_t>(h_in.size()),
     /* stream */ nullptr);
@@ -95,7 +95,7 @@ CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]",
     nullptr,
     thrust::raw_pointer_cast(d_out.data()),
     thrust::raw_pointer_cast(d_num_selected.data()),
-    cuda::__is_even<int>{},
+    cuda::__is_even{},
     NullType{},
     static_cast<offset_t>(h_in.size()),
     /* stream */ nullptr);

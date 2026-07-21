@@ -17,7 +17,7 @@
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 1, 3};
-  assert(cuda::std::is_partitioned(a, a + 4, cuda::__is_even<int>{}));
+  assert(cuda::std::is_partitioned(a, a + 4, cuda::__is_even{}));
 
   return true;
 }

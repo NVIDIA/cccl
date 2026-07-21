@@ -134,7 +134,7 @@ void TestRemoveIfSimple()
 
   Vector data{1, 2, 1, 3, 2};
 
-  typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), cuda::__is_even<T>{});
+  typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), cuda::__is_even{});
 
   ASSERT_EQUAL(end - data.begin(), 3);
   data.resize(end - data.begin());
@@ -241,7 +241,7 @@ void TestRemoveCopyIfSimple()
   Vector result(5);
 
   typename Vector::iterator end =
-    thrust::remove_copy_if(data.begin(), data.end(), result.begin(), cuda::__is_even<T>{});
+    thrust::remove_copy_if(data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
   ASSERT_EQUAL(end - result.begin(), 3);
   result.resize(end - result.begin());

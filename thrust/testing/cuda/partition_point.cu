@@ -21,10 +21,10 @@ void TestPartitionPointDevice(ExecutionPolicy exec)
   thrust::device_vector<int> v = unittest::random_integers<int>(n);
   using iterator               = typename thrust::device_vector<int>::iterator;
 
-  iterator ref = thrust::stable_partition(v.begin(), v.end(), cuda::__is_even<int>{});
+  iterator ref = thrust::stable_partition(v.begin(), v.end(), cuda::__is_even{});
 
   thrust::device_vector<iterator> result(1);
-  partition_point_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even<int>{}, result.begin());
+  partition_point_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
