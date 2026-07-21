@@ -129,9 +129,14 @@ struct __update_intervals_fn
   }
 };
 
-// Splitter-selection functor for __finalize_splitters. Given (target_rank, L,
-// U), returns the bracket endpoint key closest to the target rank, realizing an
-// unset (unbounded) endpoint from the probe extrema.
+// Splitter-selection functor used by __data_exchange (via the lazy __splitter_it
+// transform_iterator). Given (target_rank, L, U), returns the bracket endpoint key closest to
+// the target rank, realizing an unset (unbounded) endpoint from the probe extrema. This is HSS
+// step (5) of Section 4.2.2: "Once the histogramming phase finishes, the key ranked closest to
+// Ni/p among the keys seen so far is set as the ith splitter." The (L, U) bracket it consumes
+// is the Table 1 notation L(i)/U(i) (ranks of the largest sample key below / smallest sample
+// key above the ideal rank Ni/p), whose realized keys delimit the splitter interval I(i) =
+// [I(L(i)), I(U(i))].
 template <class _Tp, class _Probe>
 struct __finalize_splitters_fn
 {
@@ -532,58 +537,16 @@ struct _Sorter
     }
   }
 
-  // Returns the p-1 partition keys per local communicator. Data exchange uses
-  // them to route records; the post-exchange distribution is measured later in
-  // __rebalance_to_original_counts (one size all-gather), mirroring the
-  // reference, rather than predicted here.
-  template <class _CommRange, class _EnvRange>
-  [[nodiscard]] static ::std::vector<__buffer<_Tp>> __finalize_splitters(
-    _CommRange&& __comms,
-    _EnvRange&& __envs,
-    const ::std::vector<__buffer<_Bracket>>& __local_Ls,
-    const ::std::vector<__buffer<_Bracket>>& __local_Us,
-    const ::std::vector<__buffer<_Tp>>& __local_probes,
-    ::cuda::std::uint64_t __N)
-  {
-    ::std::vector<__buffer<_Tp>> __ret;
-
-    __ret.reserve(__local_Ls.size());
-    for (auto&& [__comm, __env, __Ls, __Us, __probes] :
-         ::cuda::std::ranges::views::zip(__comms, __envs, __local_Ls, __local_Us, __local_probes))
-    {
-      auto& __splitters = __ret.emplace_back(__Ls.template __make_empty_like<_Tp>());
-
-      const auto __comm_size = __comm.size();
-      const auto __num_items = __Ls.size();
-      auto __in              = ::cuda::make_zip_iterator(
-        ::cuda::make_transform_iterator(
-          ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm_size}),
-        __Ls.begin(),
-        __Us.begin());
-      auto __out           = __splitters.begin();
-      using __probe_iter_t = ::cuda::std::remove_cvref_t<decltype(__probes.begin())>;
-      auto __op            = __finalize_splitters_fn<_Tp, __probe_iter_t>{__probes.begin(), __probes.end() - 1};
-
-      __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
-        ::cub::DeviceTransform::Transform,
-        ::cuda::std::move(__in),
-        ::cuda::std::move(__out),
-        __num_items,
-        ::cuda::std::move(__op),
-        __env);
-    }
-
-    return __ret;
-  }
-
   template <class _CommRange, class _EnvRange, class _InputRange>
   _CCCL_HOST_API static void __data_exchange(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     const ::std::vector<::cuda::stream_ref>& __streams,
     const ::std::vector<__resource_type>& __resources,
-    ::std::vector<__buffer<_Tp>> __local_splitters,
+    const ::std::vector<__buffer<_Bracket>>& __local_Ls,
+    const ::std::vector<__buffer<_Bracket>>& __local_Us,
+    const ::std::vector<__buffer<_Tp>>& __local_probes,
+    ::cuda::std::uint64_t __N,
     _BinaryOp __cmp,
     _InputRange&& __local_inputs)
   {
@@ -610,8 +573,8 @@ struct _Sorter
     __local_h_recv_displs_bytes.reserve(__num_local_inputs);
     __local_recvd.reserve(__num_local_inputs);
 
-    for (auto&& [__comm, __env, __stream, __resource, __input, __splitters] :
-         ::cuda::std::ranges::views::zip(__comms, __envs, __streams, __resources, __local_inputs, __local_splitters))
+    for (auto&& [__comm, __env, __stream, __resource, __input, __Ls, __Us, __probes] : ::cuda::std::ranges::views::zip(
+           __comms, __envs, __streams, __resources, __local_inputs, __local_Ls, __local_Us, __local_probes))
     {
       auto& __send_counts_bytes =
         __local_send_counts_bytes.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env);
@@ -622,27 +585,44 @@ struct _Sorter
 
       const auto __input_begin = ::cuda::std::ranges::begin(__input);
 
-      // TODO(jfaibussowit):
-      //
-      // This kernel could actually be fused with the splitters finalization one
-      // I am fairly sure.
+      // Lazily reconstruct the finalized splitters (HSS Section 4.2.2 step (5), "the key
+      // ranked closest to Ni/p ... is set as the ith splitter") on the fly instead of
+      // materializing them. Rather than a separate Transform launch writing a splitter buffer
+      // that this kernel then reads, we fuse __finalize_splitters_fn into the data-exchange
+      // kernel through a transform_iterator: each __splitter_it[d] evaluates finalize on
+      // demand, eliminating one Transform launch and the splitter buffer. The ideal rank Ni/p
+      // (the center of the Section 2 / Table 1 target range Ti) is supplied per-splitter by
+      // __ideal_rank_fn.
+      auto __splitter_it = ::cuda::make_transform_iterator(
+        ::cuda::make_zip_iterator(
+          ::cuda::make_transform_iterator(
+            ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm.size()}),
+          __Ls.begin(),
+          __Us.begin()),
+        __finalize_splitters_fn<_Tp, ::cuda::std::remove_cvref_t<decltype(__probes.begin())>>{
+          __probes.begin(), __probes.end() - 1});
+
       auto __op =
         [__input_begin,
-         __input_end       = ::cuda::std::ranges::end(__input),
-         __splitters_begin = __splitters.__get().data(),
-         __num_splitters   = __splitters.size(),
-         __lo              = __input_begin,
+         __input_end = ::cuda::std::ranges::end(__input),
+         __splitter_it,
+         __num_splitters = __Ls.size(),
+         __lo            = __input_begin,
          __cmp] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __d) mutable {
+          // Route this rank's local keys to destination ranks via the splitter keys: the Data
+          // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
+          // processor i". HSS reuses this phase unchanged (Section 3.3), so bucket d receives
+          // the keys in [S(d - 1), S(d)) and its (count, displ) become the send metadata.
           auto __hi = __input_end;
 
           if (__d != __num_splitters)
           {
-            __hi = ::cuda::std::lower_bound(__lo, __input_end, __splitters_begin[__d], __cmp);
+            __hi = ::cuda::std::lower_bound(__lo, __input_end, __splitter_it[__d], __cmp);
           }
 
           if (__d != 0)
           {
-            __lo = ::cuda::std::lower_bound(__lo, __hi, __splitters_begin[__d - 1], __cmp);
+            __lo = ::cuda::std::lower_bound(__lo, __hi, __splitter_it[__d - 1], __cmp);
           }
 
           const auto __displ_bytes = (__lo - __input_begin) * sizeof(_Tp);
@@ -1213,125 +1193,127 @@ struct _Sorter
       return;
     }
 
-    ::std::vector<__buffer<_Bracket>> __local_Ls;
-    ::std::vector<__buffer<_Bracket>> __local_Us;
-    ::std::vector<__buffer<_Tp>> __local_probes;
-
-    __local_Ls.reserve(__num_local_inputs);
-    __local_Us.reserve(__num_local_inputs);
-    __local_probes.reserve(__num_local_inputs);
-
     {
-      ::std::vector<__buffer<_Tp>> __local_samples;
-      ::std::vector<__buffer<::cuda::std::size_t>> __local_samples_sizes_bytes;
-      ::std::vector<__buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>> __local_I_js;
-      ::std::vector<__buffer<::cuda::std::uint64_t>> __local_hist;
-      ::std::vector<::cuda::std::size_t> __local_sample_sendcounts_bytes(__num_local_inputs);
+      ::std::vector<__buffer<_Bracket>> __local_Ls;
+      ::std::vector<__buffer<_Bracket>> __local_Us;
+      ::std::vector<__buffer<_Tp>> __local_probes;
 
-      __local_samples.reserve(__num_local_inputs);
-      __local_samples_sizes_bytes.reserve(__num_local_inputs);
-      __local_I_js.reserve(__num_local_inputs);
-      __local_hist.reserve(__num_local_inputs);
+      __local_Ls.reserve(__num_local_inputs);
+      __local_Us.reserve(__num_local_inputs);
+      __local_probes.reserve(__num_local_inputs);
 
-      for (auto&& [__comm, __stream, __resource, __env] :
-           ::cuda::std::ranges::views::zip(__comms, __streams, __resources, __envs))
       {
-        const auto __n_split = __comm_size - 1;
-        // TODO(jfaibussowit): these can all be done in parallel on separate
-        // utility streams.
-        __local_Ls.emplace_back(__stream, __resource, __n_split, _Bracket{0, ::cuda::std::nullopt}, __env);
-        __local_Us.emplace_back(__stream, __resource, __n_split, _Bracket{__N, ::cuda::std::nullopt}, __env);
-        __local_I_js.emplace_back(
-          __stream,
-          __resource,
-          __n_split,
-          ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
-          __env);
-        __local_probes.emplace_back(__stream, __resource, __env);
-        __local_samples.emplace_back(__stream, __resource, __env);
-        // differing sizes for NCCL inplace
-        __local_samples_sizes_bytes.emplace_back(
-          __stream,
-          __resource,
-          /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1,
-          ::cuda::no_init,
-          __env);
-        __local_hist.emplace_back(__stream, __resource, __env);
-      }
+        ::std::vector<__buffer<_Tp>> __local_samples;
+        ::std::vector<__buffer<::cuda::std::size_t>> __local_samples_sizes_bytes;
+        ::std::vector<__buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>> __local_I_js;
+        ::std::vector<__buffer<::cuda::std::uint64_t>> __local_hist;
+        ::std::vector<::cuda::std::size_t> __local_sample_sendcounts_bytes(__num_local_inputs);
 
-      // Note: K is small, on the order of ~1-10
-      const auto __K = ::cuda::std::max(
-        static_cast<::cuda::std::int32_t>(
-          ::cuda::std::ceil(::cuda::std::log10(::cuda::std::log10(__comm_size) / __EPS))),
-        1);
-      const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
+        __local_samples.reserve(__num_local_inputs);
+        __local_samples_sizes_bytes.reserve(__num_local_inputs);
+        __local_I_js.reserve(__num_local_inputs);
+        __local_hist.reserve(__num_local_inputs);
 
-      for (int __j = 1; __j <= __K; ++__j)
-      {
-        const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
-        const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
-
-        for (auto&& [__stream, __input, __I_j, __samples, __sample_sizes_bytes, __n_local, __previous_sendcount_bytes] :
-             ::cuda::std::ranges::views::zip(
-               __streams,
-               __local_inputs,
-               __local_I_js,
-               __local_samples,
-               __local_samples_sizes_bytes,
-               __local_original_sizes,
-               __local_sample_sendcounts_bytes))
+        for (auto&& [__comm, __stream, __resource, __env] :
+             ::cuda::std::ranges::views::zip(__comms, __streams, __resources, __envs))
         {
-          // Each iteration we sample the union of splitter intervals, \gamma_j with a
-          // probability of __prob. For the first iteration, \gamm_j is the entire array, but for
-          // previous iterations it's impossible for us to tell (on the host), because:
-          //
-          // 1. We can't inspect the updated intervals __I_j, and
-          // 2. We can't count how many of our elements actually lie within those updated
-          //    intervals.
-          //
-          // So instead we use the fact that each round the number of samples must decrease,
-          // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
-          // the high-water mark for the samples is the previous round's sample vector size.
-          const auto __estimate = ::cuda::std::max(
-            __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
-                     : __previous_sendcount_bytes / sizeof(_Tp),
-            ::cuda::std::size_t{1});
-
-          __resize_for_overwrite(__samples, __estimate);
-          __sample_probes(__stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_sizes_bytes);
+          const auto __n_split = __comm_size - 1;
+          // TODO(jfaibussowit): these can all be done in parallel on separate
+          // utility streams.
+          __local_Ls.emplace_back(__stream, __resource, __n_split, _Bracket{0, ::cuda::std::nullopt}, __env);
+          __local_Us.emplace_back(__stream, __resource, __n_split, _Bracket{__N, ::cuda::std::nullopt}, __env);
+          __local_I_js.emplace_back(
+            __stream,
+            __resource,
+            __n_split,
+            ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
+            __env);
+          __local_probes.emplace_back(__stream, __resource, __env);
+          __local_samples.emplace_back(__stream, __resource, __env);
+          // differing sizes for NCCL inplace
+          __local_samples_sizes_bytes.emplace_back(
+            __stream,
+            __resource,
+            /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1,
+            ::cuda::no_init,
+            __env);
+          __local_hist.emplace_back(__stream, __resource, __env);
         }
 
-        __gather_merge_broadcast(
-          __comms,
-          __envs,
-          __streams,
-          __local_samples,
-          __cmp,
-          &__local_samples_sizes_bytes,
-          &__local_sample_sendcounts_bytes,
-          &__local_probes);
+        // Note: K is small, on the order of ~1-10
+        const auto __K = ::cuda::std::max(
+          static_cast<::cuda::std::int32_t>(
+            ::cuda::std::ceil(::cuda::std::log10(::cuda::std::log10(__comm_size) / __EPS))),
+          1);
+        const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
 
-        __local_histogram(__comms, __envs, __local_inputs, __local_probes, __cmp, &__local_hist);
-
+        for (int __j = 1; __j <= __K; ++__j)
         {
-          auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+          const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
+          const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
 
-          for (auto&& [__comm, __stream, __hist] : ::cuda::std::ranges::views::zip(__comms, __streams, __local_hist))
+          for (auto&& [__stream, __input, __I_j, __samples, __sample_sizes_bytes, __n_local, __previous_sendcount_bytes] :
+               ::cuda::std::ranges::views::zip(
+                 __streams,
+                 __local_inputs,
+                 __local_I_js,
+                 __local_samples,
+                 __local_samples_sizes_bytes,
+                 __local_original_sizes,
+                 __local_sample_sendcounts_bytes))
           {
-            auto* const __ptr = __hist.__get().data();
+            // Each iteration we sample the union of splitter intervals, \gamma_j with a
+            // probability of __prob. For the first iteration, \gamm_j is the entire array, but for
+            // previous iterations it's impossible for us to tell (on the host), because:
+            //
+            // 1. We can't inspect the updated intervals __I_j, and
+            // 2. We can't count how many of our elements actually lie within those updated
+            //    intervals.
+            //
+            // So instead we use the fact that each round the number of samples must decrease,
+            // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
+            // the high-water mark for the samples is the previous round's sample vector size.
+            const auto __estimate = ::cuda::std::max(
+              __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
+                       : __previous_sendcount_bytes / sizeof(_Tp),
+              ::cuda::std::size_t{1});
 
-            __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __stream);
+            __resize_for_overwrite(__samples, __estimate);
+            __sample_probes(__stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_sizes_bytes);
           }
+
+          __gather_merge_broadcast(
+            __comms,
+            __envs,
+            __streams,
+            __local_samples,
+            __cmp,
+            &__local_samples_sizes_bytes,
+            &__local_sample_sendcounts_bytes,
+            &__local_probes);
+
+          __local_histogram(__comms, __envs, __local_inputs, __local_probes, __cmp, &__local_hist);
+
+          {
+            auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+
+            for (auto&& [__comm, __stream, __hist] : ::cuda::std::ranges::views::zip(__comms, __streams, __local_hist))
+            {
+              auto* const __ptr = __hist.__get().data();
+
+              __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __stream);
+            }
+          }
+
+          // ---- STEP 3: tighten brackets and rebuild intervals ----
+          __update_intervals(
+            __comms, __envs, __local_probes, __local_hist, __N, &__local_Ls, &__local_Us, &__local_I_js);
         }
-
-        // ---- STEP 3: tighten brackets and rebuild intervals ----
-        __update_intervals(__comms, __envs, __local_probes, __local_hist, __N, &__local_Ls, &__local_Us, &__local_I_js);
       }
+
+      __data_exchange(
+        __comms, __envs, __streams, __resources, __local_Ls, __local_Us, __local_probes, __N, __cmp, __local_inputs);
     }
-
-    auto __splitters = __finalize_splitters(__comms, __envs, __local_Ls, __local_Us, __local_probes, __N);
-
-    __data_exchange(__comms, __envs, __streams, __resources, ::cuda::std::move(__splitters), __cmp, __local_inputs);
 
     __rebalance_to_original_counts(
       __comms, __envs, __streams, __resources, __local_original_sizes, __all_local_offsets, __N, __local_inputs);
