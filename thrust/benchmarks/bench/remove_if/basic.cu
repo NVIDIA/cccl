@@ -25,7 +25,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               thrust::remove_if(policy(alloc, launch), in.begin(), in.end(), cuda::__is_even<T>{});
+               thrust::remove_if(policy(alloc, launch), in.begin(), in.end(), cuda::__is_even{});
              });
 }
 

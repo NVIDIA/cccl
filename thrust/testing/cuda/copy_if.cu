@@ -61,10 +61,10 @@ void TestCopyIfDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even<int>{});
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even<int>{}, d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
 
@@ -184,10 +184,10 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even<int>{});
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even<int>{}, d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
 

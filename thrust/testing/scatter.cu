@@ -192,9 +192,9 @@ void test_scatter_if(const size_t n)
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
   thrust::scatter_if(
-    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), cuda::__is_even<unsigned int>());
+    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), cuda::__is_even());
   thrust::scatter_if(
-    d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), cuda::__is_even<unsigned int>());
+    d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), cuda::__is_even());
 
   REQUIRE(h_output == d_output);
 }
@@ -223,14 +223,14 @@ void test_scatter_if_to_discard_iterator(const size_t n)
     h_map.begin(),
     h_map.begin(),
     thrust::make_discard_iterator(),
-    cuda::__is_even<unsigned int>());
+    cuda::__is_even());
   thrust::scatter_if(
     d_input.begin(),
     d_input.end(),
     d_map.begin(),
     d_map.begin(),
     thrust::make_discard_iterator(),
-    cuda::__is_even<unsigned int>());
+    cuda::__is_even());
 }
 DECLARE_VARIABLE_UNITTEST(test_scatter_if_to_discard_iterator);
 

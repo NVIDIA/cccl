@@ -47,7 +47,7 @@ void test_is_partitioned()
 
   REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
 
-  thrust::partition(v.begin(), v.end(), cuda::__is_even<T>{});
+  thrust::partition(v.begin(), v.end(), cuda::__is_even{});
 
   REQUIRE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
 }

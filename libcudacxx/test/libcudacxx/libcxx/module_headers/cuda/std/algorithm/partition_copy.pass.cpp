@@ -19,7 +19,7 @@ TEST_FUNC constexpr bool test()
   constexpr int a[] = {1, 2, 3, 4};
   int t[4]          = {};
   int f[4]          = {};
-  auto p            = cuda::std::partition_copy(a, a + 4, t, f, cuda::__is_even<int>{});
+  auto p            = cuda::std::partition_copy(a, a + 4, t, f, cuda::__is_even{});
   assert(p.first == t + 2 && p.second == f + 2);
 
   return true;

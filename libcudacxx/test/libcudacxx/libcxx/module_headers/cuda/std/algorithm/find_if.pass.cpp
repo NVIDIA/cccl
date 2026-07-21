@@ -17,7 +17,7 @@
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3};
-  assert(*cuda::std::find_if(a, a + 3, cuda::__is_even<int>{}) == 2);
+  assert(*cuda::std::find_if(a, a + 3, cuda::__is_even{}) == 2);
 
   return true;
 }
