@@ -26,6 +26,7 @@
 #include <cuda/experimental/__places/places.cuh>
 
 #include <cstdio>
+#include <limits>
 
 using namespace cuda::experimental::places;
 
