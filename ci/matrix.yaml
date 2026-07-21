@@ -98,8 +98,8 @@ workflows:
     - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.X','13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
     # Deliberately unpinned: CCCL_PYTHON_TEST_LATEST_CTK skips the CTK pin so pip
     # resolves the latest minor -- catching breakage a plain `pip install
-    # cuda-cccl[cu13]` would hit before the container CTK bumps.
-    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], environment: ['CCCL_PYTHON_TEST_LATEST_CTK=1']}
+    # cuda-cccl[cu12]/[cu13]` would hit before the container CTK bumps.
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], environment: ['CCCL_PYTHON_TEST_LATEST_CTK=1']}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
     - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
