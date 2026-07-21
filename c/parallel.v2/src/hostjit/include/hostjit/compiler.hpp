@@ -1,54 +1,57 @@
 #pragma once
 
+#include <cassert>
 #include <string>
 #include <vector>
 
-namespace hostjit
+#include <libnvcc/libnvcc.h>
+
+namespace hostjit::detail
 {
-struct CompilationResult
+struct LibnvccProgramGuard
 {
-  bool success;
-  std::string object_file_path; // Path to generated .o file
-  std::string diagnostics; // Compiler messages
-  std::vector<char> cubin; // Device cubin extracted during compilation
+  libnvccProgram program = nullptr;
+
+  LibnvccProgramGuard()                                      = default;
+  LibnvccProgramGuard(const LibnvccProgramGuard&)            = delete;
+  LibnvccProgramGuard& operator=(const LibnvccProgramGuard&) = delete;
+
+  ~LibnvccProgramGuard()
+  {
+    libnvccDestroyProgram(&program);
+  }
 };
 
-struct BitcodeResult
+inline std::vector<const char*> make_libnvcc_option_ptrs(const std::vector<std::string>& options)
 {
-  bool success;
-  std::string bitcode; // LLVM bitcode bytes
-  std::string diagnostics;
-};
+  std::vector<const char*> ptrs;
+  ptrs.reserve(options.size());
+  for (const auto& option : options)
+  {
+    ptrs.push_back(option.c_str());
+  }
+  return ptrs;
+}
 
-struct LinkResult
+inline std::string get_libnvcc_program_log(libnvccProgram program)
 {
-  bool success;
-  std::string library_path; // Path to .so file
-  std::string diagnostics;
-};
+  size_t log_size = 0;
+  if (libnvccGetProgramLogSize(program, &log_size) != LIBNVCC_SUCCESS)
+  {
+    return {};
+  }
 
-// Forward declaration to avoid including heavy Clang headers
-struct CompilerConfig;
+  assert(log_size > 0 && "Log size should include NUL terminator");
+  if (log_size == 1)
+  {
+    return {};
+  }
 
-class CUDACompiler
-{
-public:
-  CUDACompiler();
-  ~CUDACompiler();
-
-  // Compile CUDA device source to LLVM bitcode
-  BitcodeResult compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config);
-
-  // Compile CUDA source code to object file
-  CompilationResult
-  compileToObject(const std::string& source_code, const std::string& output_path, const CompilerConfig& config);
-
-  // Link object files to shared library
-  LinkResult linkToSharedLibrary(
-    const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config);
-
-private:
-  class Impl;
-  Impl* impl_;
-};
-} // namespace hostjit
+  std::string log(log_size, '\0');
+  [[maybe_unused]] auto res = libnvccGetProgramLog(program, log.data());
+  assert(res == LIBNVCC_SUCCESS && "Copying the log failed even though size calculation succeeded?");
+  assert(log.back() == '\0' && "libnvccGetProgramLog() should append a NUL character");
+  log.pop_back(); // Drop the extra NUL.
+  return log;
+}
+} // namespace hostjit::detail
