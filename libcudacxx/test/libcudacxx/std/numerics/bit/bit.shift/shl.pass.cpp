@@ -79,7 +79,7 @@ TEST_FUNC constexpr void test()
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::shl(T{}, S{}))>);
   static_assert(noexcept(cuda::std::shl(T{}, S{})));
 
-  const T vs[]         = {tmin, T(-24), T(-1), T{0}, T{1}, T{20}, T{99}, T(1225), tmax};
+  const T vs[]         = {tmin, T(-24), T(-1), T{0}, T{1}, T{20}, T{99}, static_cast<T>(1225), tmax};
   const S pos_shifts[] = {S{0}, S{1}, S{7}, S{17}, S{23}, S{32}, S{33}, S{65}, smax};
 
   // Disable loop unrolling to reduce ptxas compile times.

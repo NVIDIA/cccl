@@ -60,7 +60,7 @@ TEST_FUNC constexpr void test_neg(T v, S shift)
   // There is a bug on sm100+ when cuda::std::shr returns invalid result when the shift is int64_t min. Re-enable
   // once nvbug 6471375 is resolved.
   NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                 if constexpr (sizeof(S) == sizeof(cuda::std::int64_t))
+                 if constexpr (sizeof(T) == sizeof(cuda::std::int64_t) && sizeof(S) == sizeof(cuda::std::int64_t))
                  {
                    if (shift == cuda::std::numeric_limits<S>::min())
                    {
@@ -91,7 +91,7 @@ TEST_FUNC constexpr void test()
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::shr(T{}, S{}))>);
   static_assert(noexcept(cuda::std::shr(T{}, S{})));
 
-  const T vs[]         = {tmin, T(-24), T(-1), T{0}, T{1}, T{20}, T{99}, T(1225), tmax};
+  const T vs[]         = {tmin, T(-24), T(-1), T{0}, T{1}, T{20}, T{99}, static_cast<T>(1225), tmax};
   const S pos_shifts[] = {S{0}, S{1}, S{7}, S{17}, S{23}, S{32}, S{33}, S{65}, smax};
 
   // Disable loop unrolling to reduce ptxas compile times.
