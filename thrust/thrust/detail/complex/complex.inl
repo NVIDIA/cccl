@@ -225,9 +225,12 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y)
 }
 
 // FIXME(bgruber): we should only proclaim trivial relocatability if T is so
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <typename T>
 struct proclaim_trivially_relocatable<complex<T>> : thrust::true_type
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 THRUST_NAMESPACE_END
 

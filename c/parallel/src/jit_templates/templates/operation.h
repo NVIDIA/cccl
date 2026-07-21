@@ -15,6 +15,7 @@
 #  include <cuda/std/cstddef>
 #  include <cuda/std/optional>
 #  include <cuda/std/span>
+#  include <cuda/std/tuple>
 #  include <cuda/std/type_traits>
 #  include <cuda/std/utility>
 
