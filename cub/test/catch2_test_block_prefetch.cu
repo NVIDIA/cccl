@@ -22,14 +22,16 @@
 // verified out-of-band (cuobjdump), not here.
 
 // Compile-time coverage of the trait that gates every hint.
-static_assert(cub::detail::can_prefetch_from<int*>, "raw pointers are contiguous and must be prefetchable");
-static_assert(cub::detail::can_prefetch_from<const double*>, "const raw pointers must be prefetchable");
-static_assert(cub::detail::can_prefetch_from<thrust::device_vector<int>::iterator>,
-              "thrust vector iterators are contiguous and must be prefetchable");
-static_assert(cub::detail::can_prefetch_from<thrust::universal_vector<int>::iterator>,
-              "thrust universal_vector iterators are contiguous and must be prefetchable");
-static_assert(!cub::detail::can_prefetch_from<cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, int>>,
-              "CacheModifiedInputIterator routes through an explicit cache path and must be rejected");
+C2H_TEST("can_prefetch_from accepts contiguous iterators and rejects explicit cache paths", "[prefetch][block]")
+{
+  STATIC_REQUIRE(cub::detail::can_prefetch_from<int*>);
+  STATIC_REQUIRE(cub::detail::can_prefetch_from<const double*>);
+  STATIC_REQUIRE(cub::detail::can_prefetch_from<thrust::device_vector<int>::iterator>);
+  STATIC_REQUIRE(cub::detail::can_prefetch_from<thrust::universal_vector<int>::iterator>);
+  // CacheModifiedInputIterator routes loads through an explicit cache path that a prefetch hint would defeat.
+  STATIC_REQUIRE_FALSE(
+    cub::detail::can_prefetch_from<cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, int>>);
+}
 
 // Prefetch the tile, then copy it through so the launch has an observable result.
 template <typename T, int ThreadsInBlock, cub::detail::LoadPrefetch Level, int Stride, typename InputIteratorT>
@@ -178,10 +180,10 @@ C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h:
   c2h::gen(C2H_SEED(1), d_storage);
 
   // Prefetch/copy the sub-range that starts at an unaligned offset into the allocation.
-  auto* base = thrust::raw_pointer_cast(d_storage.data()) + offset;
+  auto* start = thrust::raw_pointer_cast(d_storage.data()) + offset;
   c2h::device_vector<type> d_input(d_storage.begin() + offset, d_storage.end());
 
-  test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::bulk_l2>(d_input, base);
+  test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::bulk_l2>(d_input, start);
 }
 
 C2H_TEST("BlockPrefetch honors a non-default stride", "[prefetch][block]")

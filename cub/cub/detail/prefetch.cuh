@@ -89,6 +89,9 @@ inline constexpr bool can_prefetch_from = THRUST_NS_QUALIFIER::is_contiguous_ite
 template <int ThreadsPerBlock, LoadPrefetch PrefetchLevel = LoadPrefetch::l2, int PrefetchStride = 128>
 struct BlockPrefetch
 {
+  static_assert(ThreadsPerBlock > 0, "ThreadsPerBlock must be positive");
+  static_assert(PrefetchStride > 0, "PrefetchStride must be positive");
+
   //! Cooperatively emit prefetch hints covering the tile ``[tile_base, tile_base + items_to_prefetch)``.
   //!
   //! @param tile_base Iterator to the first item of the calling block's tile.
