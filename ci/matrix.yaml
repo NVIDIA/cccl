@@ -22,6 +22,7 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxpro6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -354,6 +355,7 @@ workflows:
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
+    - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxpro6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
     - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
