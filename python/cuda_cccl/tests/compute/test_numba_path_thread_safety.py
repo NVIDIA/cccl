@@ -48,8 +48,22 @@ pytestmark = pytest.mark.no_verify_sass(
     reason="Concurrency tests intentionally run concurrent workers."
 )
 
-THREADS = 4
+# Every input in this file is tiny (32-128 elements), so raising the thread count
+# adds no meaningful GPU-memory pressure -- it just exercises the concurrent
+# build/cache machinery harder.
+THREADS = 8
 ITERATIONS = 3
+
+# The distinct-op build storm is the canonical stress for concurrent NATIVE
+# builds. On the v2 (HostJIT) backend clang is embedded in-process and is not
+# thread-safe, so a regression in the compile-serialization lock corrupts the
+# heap and crashes here -- but only at high concurrency (at 4 threads it fires
+# only under external load). Use many threads so this stays a reliable gate.
+# One barrier-synced round of that many simultaneous builds already corrupts the
+# heap pre-fix (it crashed on the first round every time), and extra rounds are
+# expensive on v2 (builds serialize), so a single iteration is enough here.
+BUILD_STORM_THREADS = 24
+BUILD_STORM_ITERATIONS = 1
 
 
 def _run_threaded(workers):
@@ -110,9 +124,9 @@ def test_concurrent_distinct_python_ops_build_storm():
     any cross-thread op/build contamination.
     """
     num_items = 64
-    for iteration in range(ITERATIONS):
+    for iteration in range(BUILD_STORM_ITERATIONS):
         cuda.compute.clear_all_caches()
-        returned_reducers = [None] * THREADS
+        returned_reducers = [None] * BUILD_STORM_THREADS
 
         def make_thread(worker_id):
             k = 10_000 + worker_id * 7 + iteration
@@ -142,10 +156,12 @@ def test_concurrent_distinct_python_ops_build_storm():
 
             return thread
 
-        _run_threaded([make_thread(worker_id) for worker_id in range(THREADS)])
+        _run_threaded(
+            [make_thread(worker_id) for worker_id in range(BUILD_STORM_THREADS)]
+        )
 
         build_ids = {id(_single_build_result(r)) for r in returned_reducers}
-        assert len(build_ids) == THREADS
+        assert len(build_ids) == BUILD_STORM_THREADS
 
 
 def test_concurrent_shared_python_op_coalesces():
