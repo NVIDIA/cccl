@@ -237,9 +237,9 @@ void TestGatherIf(const size_t n)
   thrust::device_vector<T> d_output(n);
 
   thrust::gather_if(
-    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even<unsigned int>());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even());
   thrust::gather_if(
-    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even<unsigned int>());
+    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even());
 
   ASSERT_EQUAL(h_output, d_output);
 }
@@ -280,7 +280,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
     h_stencil.begin(),
     h_source.begin(),
     thrust::make_discard_iterator(),
-    cuda::__is_even<unsigned int>());
+    cuda::__is_even());
 
   thrust::discard_iterator<> d_result = thrust::gather_if(
     d_map.begin(),
@@ -288,7 +288,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
     d_stencil.begin(),
     d_source.begin(),
     thrust::make_discard_iterator(),
-    cuda::__is_even<unsigned int>());
+    cuda::__is_even());
 
   thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 

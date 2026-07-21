@@ -50,7 +50,7 @@ void test_partition_copy(const Policy& policy,
       static_cast<T*>(nullptr),
       static_cast<T*>(nullptr),
       static_cast<T*>(nullptr),
-      cuda::__is_even<T>{});
+      cuda::__is_even{});
     CHECK(res.first == nullptr);
     CHECK(res.second == nullptr);
   }
@@ -62,7 +62,7 @@ void test_partition_copy(const Policy& policy,
   cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
   { // contiguous iterators
     auto res = cuda::std::partition_copy(
-      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), cuda::__is_even<T>{});
+      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), cuda::__is_even{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -78,7 +78,7 @@ void test_partition_copy(const Policy& policy,
       random_access_iterator{raw_in + size},
       output_true.begin(),
       output_false.begin(),
-      cuda::__is_even<T>{});
+      cuda::__is_even{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -95,7 +95,7 @@ void test_partition_copy(const Policy& policy,
       input.end(),
       random_access_iterator{raw_true},
       random_access_iterator{raw_false},
-      cuda::__is_even<T>{});
+      cuda::__is_even{});
     CHECK(
       res
       == cuda::std::pair{random_access_iterator{raw_true + size / 2}, random_access_iterator{raw_false + size / 2}});
@@ -112,7 +112,7 @@ void test_partition_copy(const Policy& policy,
       cuda::counting_iterator<T>{static_cast<T>(size)},
       output_true.begin(),
       output_false.begin(),
-      cuda::__is_even<T>{});
+      cuda::__is_even{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -127,7 +127,7 @@ void test_partition_copy(const Policy& policy,
       cuda::counting_iterator<short>{static_cast<short>(size)},
       output_true.begin(),
       output_false.begin(),
-      cuda::__is_even<short>{});
+      cuda::__is_even{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -137,7 +137,7 @@ void test_partition_copy(const Policy& policy,
   cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
   { // contiguous input, converting predicate
     auto res = cuda::std::partition_copy(
-      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), cuda::__is_even<long>{});
+      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), cuda::__is_even{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -152,7 +152,7 @@ void test_partition_copy(const Policy& policy,
       cuda::counting_iterator<short>{static_cast<short>(size)},
       output_true.begin(),
       output_false.begin(),
-      cuda::__is_even<long>{});
+      cuda::__is_even{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));

@@ -45,11 +45,11 @@ void TestIsPartitioned()
   v[0] = 1;
   v[1] = 0;
 
-  ASSERT_EQUAL(false, thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even<T>{}));
+  ASSERT_EQUAL(false, thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even{}));
 
-  thrust::partition(v.begin(), v.end(), cuda::__is_even<T>{});
+  thrust::partition(v.begin(), v.end(), cuda::__is_even{});
 
-  ASSERT_EQUAL(true, thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even<T>{}));
+  ASSERT_EQUAL(true, thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even{}));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsPartitioned);
 
