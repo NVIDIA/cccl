@@ -284,6 +284,15 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Native blocked partition function for a given dimension
+//! (values outside [0, 3] select the highest-rank dimension, like -1),
+//! usable wherever an stf_get_executor_fn is expected without any FFI
+//! callback cost.
+stf_get_executor_fn stf_partition_fn_blocked(int dim);
+
+//! \brief Native cyclic (round-robin) partition function.
+stf_get_executor_fn stf_partition_fn_cyclic(void);
+
 //! \brief Create a data_place from green-context helper \p helper and view index \p idx.
 //! Returns NULL on failure or if \p idx is out of range.
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx);
@@ -338,6 +347,26 @@ void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, 
 //! \param h Data place handle (must not be NULL)
 //! \return 1 if stream-ordered, 0 otherwise
 int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
+
+//! \brief Allocate memory at a data place for a tensor with the given extents.
+//!
+//! For most places this is equivalent to allocating
+//! prod(data_dims) * elemsize bytes; composite places use the geometry to
+//! back each block of the allocation on the place owning it according to the
+//! partitioner (which is why the plain byte-count stf_data_place_allocate()
+//! fails on them: a byte count alone does not carry the tensor geometry).
+//! Extents follow the dimension-0-fastest linearization convention; row-major
+//! callers should present reversed extents (and a coordinate-reversing
+//! partitioner).
+//!
+//! \param h         Data place handle (must not be NULL)
+//! \param data_dims Extents of the tensor (must not be NULL)
+//! \param elemsize  Size of one element in bytes
+//! \param stream    CUDA stream for stream-ordered allocation (may be NULL)
+//! \return Pointer to allocated memory (release with
+//!         stf_data_place_deallocate()), or NULL on failure
+void* stf_data_place_allocate_nd(
+  stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream);
 
 //! \}
 
