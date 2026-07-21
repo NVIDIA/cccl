@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import ctypes
 import importlib
 
 from cuda.pathfinder import (  # type: ignore[import-not-found]
@@ -62,11 +61,6 @@ _BINDING_EXPORTS = (
 
 
 def _load_cuda_libraries():
-    # The compiled bindings resolve cudart symbols from the process image
-    # (they link only the CUDA driver), so cudart must be visible globally
-    # even when another package already loaded it RTLD_LOCAL.
-    cudart = load_nvidia_dynamic_lib("cudart")
-    ctypes.CDLL(cudart.abs_path, mode=ctypes.RTLD_GLOBAL)
     for libname in ("nvrtc", "nvJitLink"):
         load_nvidia_dynamic_lib(libname)
 

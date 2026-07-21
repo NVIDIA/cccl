@@ -56,7 +56,6 @@ cdef extern from "<cuda_runtime.h>":
         unsigned int x, y, z
     ctypedef OpaqueCUstream_st *cudaStream_t
     ctypedef int cudaError_t
-    cudaError_t cudaStreamSynchronize(cudaStream_t stream) nogil
     cdef struct CUgraphExec_st
     ctypedef CUgraphExec_st *cudaGraphExec_t
     cdef struct CUgraph_st
@@ -671,17 +670,18 @@ def _sync_cai_producer_stream(dict cai):
     stream = cai.get("stream")
     if stream is None:
         return
-    cdef long long s = int(stream)
+    s = int(stream)
     if s == 0:
         raise ValueError(
             "CUDA Array Interface 'stream' value 0 is disallowed by the CAI "
             "v3 specification"
         )
-    cdef cudaStream_t handle = <cudaStream_t><uintptr_t>s
-    cdef cudaError_t err
-    with nogil:
-        err = cudaStreamSynchronize(handle)
-    if err != 0:
+    # cuda.bindings rather than a linked cudart call: this keeps the compiled
+    # extension's symbol table driver-only (registration is not a hot path,
+    # and cuda-bindings releases the GIL around the blocking call).
+    from cuda.bindings import runtime as _cudart
+    (err,) = _cudart.cudaStreamSynchronize(s)
+    if err != _cudart.cudaError_t.cudaSuccess:
         raise RuntimeError(
             f"cudaStreamSynchronize on the CUDA Array Interface producer "
             f"stream ({stream!r}) failed with error {err}"
