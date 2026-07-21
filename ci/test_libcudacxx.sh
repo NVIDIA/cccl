@@ -8,7 +8,7 @@ print_environment_details
 
 "./build_libcudacxx.sh" "$@" "-cmake-options" "-DLIBCUDACXX_SKIP_LIT_BUILD=1"
 
-# test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
+test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
 
 # Reset sccache stats to get lit build+test time
 sccache -z > /dev/null || :
