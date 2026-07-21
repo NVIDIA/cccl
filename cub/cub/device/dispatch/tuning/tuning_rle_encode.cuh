@@ -78,7 +78,7 @@ struct RleLookbackPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleLookbackPolicy& lhs, const RleLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -86,7 +86,7 @@ struct RleLookbackPolicy
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleLookbackPolicy& lhs, const RleLookbackPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -155,7 +155,7 @@ struct RleLookaheadPolicy
          + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(short);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
   {
     return lhs.items_per_thread == rhs.items_per_thread && lhs.compute_warps == rhs.compute_warps
@@ -164,7 +164,7 @@ struct RleLookaheadPolicy
         && lhs.flag_staging_threshold == rhs.flag_staging_threshold;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -190,13 +190,13 @@ struct RleEncodePolicy
                               //!< also drives the streaming fallback (device-side callers and non-viable types)
   RleLookaheadPolicy lookahead; //!< The lookahead policy (used when algorithm is @p lookahead, otherwise ignored)
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
     return lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead && lhs.algorithm == rhs.algorithm;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
