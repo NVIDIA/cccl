@@ -187,7 +187,9 @@ _CCCL_HOST_API cudaError_t invoke_lookahead(
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_num_runs_out),
                   tile_partial_states,
                   num_items,
-                  num_tiles)))
+                  num_tiles,
+                  lookahead_policy.key_ring_stages,
+                  lookahead_policy.pos_ring_stages)))
     {
       return error;
     }
