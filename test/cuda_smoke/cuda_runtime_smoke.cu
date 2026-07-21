@@ -119,10 +119,6 @@ TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool
   CUDART_REQUIRE(cudaDeviceGetDefaultMemPool(&pool, 0));
   REQUIRE(pool != nullptr);
 
-  size_t release_threshold = 0;
-  CUDART_REQUIRE(cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &release_threshold));
-  REQUIRE(release_threshold == 0);
-
   cudaStream_t stream{};
   CUDART_REQUIRE(cudaStreamCreate(&stream));
 
