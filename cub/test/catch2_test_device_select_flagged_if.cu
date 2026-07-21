@@ -60,7 +60,7 @@ struct is_even_t : cuda::__is_even
   using __is_even::operator();
 
   template <template <typename> class... Policies>
-  __host__ __device__ bool operator()(c2h::custom_type_t<Policies> elem) const
+  __host__ __device__ bool operator()(c2h::custom_type_t<Policies...> elem) const
   {
     return cuda::__is_even{}(elem.key);
   }
