@@ -1003,6 +1003,43 @@ def test_transform_iterator_stateful_op_inferred_return_type():
     np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-3)
 
 
+def test_transform_iterator_stateful_op_infers_struct_return_type():
+    """A stateful transform op infers an unannotated gpu_struct return type."""
+
+    @gpu_struct
+    class Pair:
+        first: np.int32
+        second: np.int32
+
+    num_items = 256
+    h_src = np.arange(num_items, dtype=np.int32)
+    src = DeviceArray.from_numpy(h_src)
+
+    def make_pair(i):
+        value = src[i]
+        return Pair(value, value * np.int32(2))
+
+    def sum_pairs(lhs, rhs):
+        return Pair(lhs.first + rhs.first, lhs.second + rhs.second)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), make_pair)
+    d_output = DeviceArray.empty(1, dtype=Pair.dtype)
+    h_init = Pair(0, 0)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=sum_pairs,
+        h_init=h_init,
+    )
+
+    expected = np.zeros(1, dtype=Pair.dtype)
+    expected["first"] = np.sum(h_src, dtype=np.int32)
+    expected["second"] = np.sum(h_src * np.int32(2), dtype=np.int32)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
+
+
 def test_transform_iterator_stateful_op_multiple_arrays():
     """A stateful transform op capturing more than one device array (gh-9627)."""
     num_items = 500

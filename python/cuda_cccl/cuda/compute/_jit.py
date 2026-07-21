@@ -900,7 +900,7 @@ def _infer_stateful_return_type(op, numba_input_types, state_array_types):
     _, return_type = numba.cuda.compile(
         op, all_numba_input_types, abi_info={"abi_name": abi_name}
     )
-    return cccl_types.from_numpy_dtype(numba.np.numpy_support.as_dtype(return_type))
+    return _numba_type_to_type_descriptor(return_type)
 
 
 def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
