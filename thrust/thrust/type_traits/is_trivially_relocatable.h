@@ -221,11 +221,14 @@ proclaim_trivially_relocatable : false_type
 
 namespace detail
 {
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
     : integral_constant<bool, ::cuda::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename T, ::cuda::std::size_t N>
 struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
