@@ -110,8 +110,8 @@ struct topk_backend_selector
     const auto cluster = cub::detail::batched_topk::cluster_policy_selector{}(cc);
     constexpr auto backend =
       (selected_backend == topk_backend::cluster)
-        ? cub::detail::batched_topk::topk_backend::cluster
-        : cub::detail::batched_topk::topk_backend::baseline;
+        ? cub::detail::batched_topk::topk_algorithm::cluster
+        : cub::detail::batched_topk::topk_algorithm::baseline;
     return cub::detail::batched_topk::topk_policy{backend, baseline, cluster};
   }
 };

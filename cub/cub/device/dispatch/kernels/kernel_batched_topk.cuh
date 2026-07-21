@@ -166,13 +166,13 @@ template <class PolicySelector, class SegmentSizeParameterT, class... AgentParam
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_threads_per_block_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
-  if constexpr (policy.backend == topk_backend::baseline)
+  if constexpr (policy.backend == topk_algorithm::baseline)
   {
     return find_smallest_covering_policy<baseline_policy_selector_adaptor<PolicySelector>,
                                          SegmentSizeParameterT,
                                          AgentParamsT...>::policy.worker_per_segment_policy.threads_per_block;
   }
-  else if constexpr (policy.backend == topk_backend::cluster)
+  else if constexpr (policy.backend == topk_algorithm::cluster)
   {
     return policy.cluster.threads_per_block;
   }
@@ -188,7 +188,7 @@ template <class PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_min_blocks_per_sm_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
-  if constexpr (policy.backend == topk_backend::cluster)
+  if constexpr (policy.backend == topk_algorithm::cluster)
   {
     return policy.cluster.min_blocks_per_sm;
   }
@@ -207,7 +207,7 @@ template <class PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_max_blocks_per_cluster_helper() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
-  if constexpr (policy.backend == topk_backend::cluster)
+  if constexpr (policy.backend == topk_algorithm::cluster)
   {
     return policy.cluster.max_blocks_per_cluster;
   }
@@ -274,7 +274,7 @@ device_batched_topk_kernel(
 {
   constexpr auto policy = current_policy<PolicySelector>();
 
-  if constexpr (policy.backend == topk_backend::baseline)
+  if constexpr (policy.backend == topk_algorithm::baseline)
   {
     using agent_t = typename find_smallest_covering_policy<
       baseline_policy_selector_adaptor<PolicySelector>,
@@ -312,7 +312,7 @@ device_batched_topk_kernel(
 
     agent.Process();
   }
-  else if constexpr (policy.backend == topk_backend::cluster)
+  else if constexpr (policy.backend == topk_algorithm::cluster)
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
@@ -370,7 +370,8 @@ device_batched_topk_kernel(
   }
   else
   {
-    // topk_backend::unsupported: the host arm returns cudaErrorNotSupported before launching, so this never runs.
+    // topk_algorithm::unsupported: the host arm returns cudaErrorNotSupported before launching, so this never
+    // runs.
     return;
   }
 }

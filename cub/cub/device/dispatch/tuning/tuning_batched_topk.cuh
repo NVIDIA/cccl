@@ -361,7 +361,7 @@ static_assert(cluster_topk_policy_selector<cluster_policy_selector>);
 //! Backend algorithms for @ref DeviceBatchedTopK. Both backends are launched through a single kernel symbol; which one
 //! runs is decided per architecture by `policy_selector` below, whose result also drives the device-side agent
 //! selection (via `current_policy`).
-enum class topk_backend
+enum class topk_algorithm
 {
   baseline, //!< worker-per-segment backend (single thread block per segment)
   cluster, //!< thread-block-cluster backend (SM 9.0+)
@@ -369,13 +369,13 @@ enum class topk_backend
 };
 
 #if _CCCL_HOSTED()
-[[nodiscard]] inline ::std::ostream& operator<<(::std::ostream& os, topk_backend backend)
+[[nodiscard]] inline ::std::ostream& operator<<(::std::ostream& os, topk_algorithm backend)
 {
   switch (backend)
   {
-    case topk_backend::baseline:
+    case topk_algorithm::baseline:
       return os << "baseline";
-    case topk_backend::cluster:
+    case topk_algorithm::cluster:
       return os << "cluster";
     default:
       return os << "unsupported";
@@ -390,9 +390,9 @@ enum class topk_backend
 //! result to be `::cuda::std::regular`, hence the equality/streaming operators below.
 struct topk_policy
 {
-  topk_backend backend; //!< Backend the dispatch selected, i.e. the kernel arm that runs.
-  baseline_topk_policy baseline; //!< Sub-policy used when @p backend is @p topk_backend::baseline.
-  cluster_topk_policy cluster; //!< Sub-policy used when @p backend is @p topk_backend::cluster.
+  topk_algorithm backend; //!< Backend the dispatch selected, i.e. the kernel arm that runs.
+  baseline_topk_policy baseline; //!< Sub-policy used when @p backend is @p topk_algorithm::baseline.
+  cluster_topk_policy cluster; //!< Sub-policy used when @p backend is @p topk_algorithm::cluster.
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
@@ -449,7 +449,7 @@ enum class backend_mode
 // members on purpose: GCC 7 ICEs (PR86953, `cxx_eval_bit_field_ref`) when constant-evaluating a read of adjacent narrow
 // members (`determinism`/`tie_break`/`baseline_can_cover`/`mode`) because -O2 fuses them into one `BIT_FIELD_REF`.
 // Independent parameters are never fused, and the compile-time caller passes constants that fold the branches away.
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr topk_backend select_backend(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr topk_algorithm select_backend(
   ::cuda::std::int64_t static_max_segment_size,
   ::cuda::execution::determinism::__determinism_t determinism,
   ::cuda::execution::tie_break::__tie_break_t tie_break,
@@ -463,31 +463,31 @@ enum class backend_mode
 
   if (mode == backend_mode::force_cluster)
   {
-    return cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
+    return cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
   }
   if (mode == backend_mode::force_baseline)
   {
     // The baseline backend cannot honor a deterministic result set / concrete tie-break preference, nor cover an
     // oversize segment; reject (map to `unsupported`) in those cases rather than pinning a backend that cannot serve
     // the request -- matching the hard constraints `selector_override_adaptor` enforces.
-    return (baseline_can_cover && !deterministic) ? topk_backend::baseline : topk_backend::unsupported;
+    return (baseline_can_cover && !deterministic) ? topk_algorithm::baseline : topk_algorithm::unsupported;
   }
   if (deterministic)
   {
     // Deterministic -> cluster (arch permitting), independent of the max segment size.
-    return cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
+    return cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
   }
   if (!baseline_can_cover)
   {
     // Oversize for the baseline backend: it must never be selected (its `find_smallest_covering_policy` would fail).
-    return cluster_capable(cc) ? topk_backend::cluster : topk_backend::unsupported;
+    return cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
   }
   // Baseline can cover: prefer the cluster backend only where it is beneficial, otherwise use the baseline. The size
   // crossover is a fixed selector constant (not read from the tunable cluster policy), so tuning the cluster policy
   // never shifts the backend choice.
   const bool beneficial = cc >= ::cuda::compute_capability{cluster_beneficial_min_cc_major, 0}
                        && static_max_segment_size >= cluster_beneficial_min_segment_size;
-  return (cluster_capable(cc) && beneficial) ? topk_backend::cluster : topk_backend::baseline;
+  return (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
 }
 
 // Field-based backend selector (like DeviceScan's / DeviceTransform's `policy_selector`): one selector that builds both
@@ -568,21 +568,21 @@ struct selector_override_adaptor
     constexpr bool deterministic = (determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
                                 || (tie_break != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
 
-    topk_backend backend = overridden.backend;
-    if (backend == topk_backend::baseline)
+    topk_algorithm backend = overridden.backend;
+    if (backend == topk_algorithm::baseline)
     {
       // The baseline backend cannot honor a deterministic / tie-break request, nor cover an oversize segment.
       if (deterministic || !baseline_can_cover)
       {
-        backend = topk_backend::unsupported;
+        backend = topk_algorithm::unsupported;
       }
     }
-    else if (backend == topk_backend::cluster)
+    else if (backend == topk_algorithm::cluster)
     {
       // The cluster backend requires SM 9.0+.
       if (!cluster_capable(cc))
       {
-        backend = topk_backend::unsupported;
+        backend = topk_algorithm::unsupported;
       }
     }
     return topk_policy{backend, overridden.baseline, overridden.cluster};

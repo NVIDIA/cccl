@@ -731,7 +731,7 @@ template <class PolicySelector>
   bool any = false;
   for (const auto cc : ::cuda::__target_compute_capabilities())
   {
-    any = any || (PolicySelector{}(cc).backend == topk_backend::unsupported);
+    any = any || (PolicySelector{}(cc).backend == topk_algorithm::unsupported);
   }
   return any;
 }
@@ -893,7 +893,7 @@ _CCCL_HOST_API cudaError_t dispatch(
 
   return detail::dispatch_compute_cap(selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
-    if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_backend::baseline)
+    if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_algorithm::baseline)
     {
       if (empty_batch_no_launch())
       {
@@ -912,7 +912,7 @@ _CCCL_HOST_API cudaError_t dispatch(
         num_segments,
         stream);
     }
-    else if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_backend::cluster)
+    else if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_algorithm::cluster)
     {
       if (empty_batch_no_launch())
       {

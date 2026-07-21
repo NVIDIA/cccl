@@ -140,7 +140,7 @@ struct cluster_tuning_selector
       cluster.min_chunks_per_block = MinChunksPerBlock;
     }
     return cub::detail::batched_topk::topk_policy{
-      cub::detail::batched_topk::topk_backend::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
+      cub::detail::batched_topk::topk_algorithm::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
   }
 };
 
