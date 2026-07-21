@@ -8,11 +8,16 @@ source "$ci_dir/pyenv_helper.sh"
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-# Extract CTK major.minor version from nvcc and pin cuda-toolkit wheels to match
+# Extract CTK major.minor version from nvcc
 cuda_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1-2 | cut -d 'V' -f 2)
 cuda_major_version=$(echo "$cuda_version" | cut -d '.' -f 1)
-export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
-echo "cuda-toolkit==${cuda_version}.*" > "$PIP_CONSTRAINT"
+# Pin cuda-toolkit wheels to the container's CTK minor. A lane can set
+# CCCL_PYTHON_TEST_LATEST_CTK=1 to skip the pin and instead test whatever pip
+# resolves as the latest minor -- what a plain `pip install` (no lockfile) gets.
+if [[ "${CCCL_PYTHON_TEST_LATEST_CTK:-}" != "1" ]]; then
+  export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
+  echo "cuda-toolkit==${cuda_version}.*" > "$PIP_CONSTRAINT"
+fi
 
 # Setup Python environment
 setup_python_env "${py_version}"
