@@ -18,14 +18,28 @@ $repoRoot = Get-RepoRoot
 
 $wheelPath = Get-CudaCcclWheel
 
+# Native commands (python.exe / pip / pytest) only set $LASTEXITCODE on failure;
+# $ErrorActionPreference = "Stop" does not make them throw, so a non-zero exit
+# must be checked explicitly or a failed pip/pytest is masked by a later
+# successful command and the job passes green.
+
 # Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
 # full cu* extras because those pull in numba/numba-cuda.
 & $python -m pip install -U pip pytest pytest-xdist
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to install pytest / pytest-xdist"
+}
 & $python -m pip install "$wheelPath[minimal-cu$cudaMajor]"
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to install cuda_cccl minimal extra"
+}
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
     & $python -m pytest -n 6 -v compute/test_no_numba.py
+    if ($LASTEXITCODE -ne 0) {
+        throw "test_no_numba.py failed"
+    }
 
     if ($PyVersion -eq "3.14t") {
         # Select only tests that support the minimal extra so pytest does not
@@ -38,6 +52,9 @@ try {
             compute/test_free_threading_stress.py `
             compute/test_multi_cc_serialization.py::test_aot_build_result_load_failure_is_shared_and_retryable `
             compute/test_multi_cc_serialization.py::test_aot_serialization_waits_for_canonical_first_load
+        if ($LASTEXITCODE -ne 0) {
+            throw "free-threading stress / serialization tests failed"
+        }
 
         # Broad thread-safety sweep (pytest-run-parallel): re-run the numba-free
         # functional suite with each test executed concurrently across threads
@@ -56,6 +73,9 @@ try {
         # 3.14t path rather than for every minimal (e.g. non-free-threaded 3.14)
         # run.
         & $python -m pip install pytest-run-parallel
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install pytest-run-parallel"
+        }
 
         # Fail fast if the interpreter is not actually GIL-free (wrong build /
         # PYTHON_GIL=1): pytest-run-parallel does NOT catch a GIL that is enabled
@@ -63,7 +83,13 @@ try {
         # vacuously. (A GIL *re-enabled mid-run* by a non-free-threaded import IS
         # caught by the plugin, which is why we do not pass --ignore-gil-enabled.)
         & $python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; parallel sweep has no signal'"
+        if ($LASTEXITCODE -ne 0) {
+            throw "interpreter is not GIL-free; parallel sweep has no signal"
+        }
         & $python -m pytest -n 0 -v --parallel-threads=2 compute/test_no_numba.py
+        if ($LASTEXITCODE -ne 0) {
+            throw "parallel-threads sweep failed"
+        }
     }
 }
 finally { Pop-Location }
