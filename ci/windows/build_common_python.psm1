@@ -14,7 +14,7 @@ function Get-Python {
         [string]$Version
     )
 
-    # Install uv if not present. uv downloads pre-built CPython binaries —
+    # Install uv if not present. uv downloads pre-built CPython binaries --
     # no compilation, no build dependencies, no pyenv-win required.
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "Installing uv..."

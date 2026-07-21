@@ -17,6 +17,9 @@ cuda_major_version=$(echo "$cuda_version" | cut -d '.' -f 1)
 if [[ "${CCCL_PYTHON_TEST_LATEST_CTK:-}" != "1" ]]; then
   export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
   echo "cuda-toolkit==${cuda_version}.*" > "$PIP_CONSTRAINT"
+else
+  # Clear any inherited constraint so this lane truly tests the latest minor.
+  unset PIP_CONSTRAINT
 fi
 
 # Setup Python environment

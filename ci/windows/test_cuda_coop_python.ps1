@@ -20,6 +20,9 @@ if ($env:CCCL_PYTHON_TEST_LATEST_CTK -ne "1") {
     $cudaVersion = Get-CudaVersion
     $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
     "cuda-toolkit==$cudaVersion.*" | Out-File -FilePath $env:PIP_CONSTRAINT -Encoding ascii
+} else {
+    # Clear any inherited constraint so this lane truly tests the latest minor.
+    Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
 }
 
 ${wheelPath} = Get-CudaCcclWheel
