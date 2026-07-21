@@ -36,8 +36,8 @@ template <class Policy>
 void test_partition(const Policy& policy, thrust::device_vector<int>& input)
 {
   { // Empty does not access anything
-    auto res = cuda::std::stable_partition(
-      policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), cuda::__is_even{});
+    auto res =
+      cuda::std::stable_partition(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), cuda::__is_even{});
     CHECK(res == nullptr);
   }
 

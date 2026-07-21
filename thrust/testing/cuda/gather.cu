@@ -139,13 +139,7 @@ void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
     h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even());
 
   gather_if_kernel<<<1, 1>>>(
-    exec,
-    d_map.begin(),
-    d_map.end(),
-    d_stencil.begin(),
-    d_source.begin(),
-    d_output.begin(),
-    cuda::__is_even());
+    exec, d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);

@@ -424,18 +424,10 @@ struct TestPartitionCopyToDiscardIterator
 
     // mask both ranges
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::partition_copy(
-      h_data.begin(),
-      h_data.end(),
-      thrust::make_discard_iterator(),
-      thrust::make_discard_iterator(),
-      cuda::__is_even{});
+      h_data.begin(), h_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 = thrust::partition_copy(
-      d_data.begin(),
-      d_data.end(),
-      thrust::make_discard_iterator(),
-      thrust::make_discard_iterator(),
-      cuda::__is_even{});
+      d_data.begin(), d_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
@@ -700,18 +692,10 @@ struct TestStablePartitionCopyToDiscardIterator
 
     // mask both ranges
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::stable_partition_copy(
-      h_data.begin(),
-      h_data.end(),
-      thrust::make_discard_iterator(),
-      thrust::make_discard_iterator(),
-      cuda::__is_even{});
+      h_data.begin(), h_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 = thrust::stable_partition_copy(
-      d_data.begin(),
-      d_data.end(),
-      thrust::make_discard_iterator(),
-      thrust::make_discard_iterator(),
-      cuda::__is_even{});
+      d_data.begin(), d_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
