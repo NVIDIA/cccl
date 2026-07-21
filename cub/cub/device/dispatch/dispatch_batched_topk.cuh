@@ -531,6 +531,11 @@ _CCCL_HOST cudaError_t launch_cluster_arm_host(
 // Device (CDP) launch path of the cluster dispatch (see `launch_cluster_arm` for why the arms are separate functions).
 // Device-side launches cannot opt into more than portable total SMEM or non-portable cluster blocks, so it launches the
 // dedicated static-cluster kernel symbol; without CDP/RDC it surfaces `cudaErrorNotSupported`.
+// `_CCCL_HOST_DEVICE` rather than `_CCCL_DEVICE`: in non-RDC builds `launch_cluster_arm` is host-only, yet Clang-CUDA
+// (unlike NVCC) still type-checks the `NV_IF_TARGET` device arm below in its device pass, so the callee must be
+// host-callable.
+// The device arm is the sole reference and is stripped on the host pass, so the `__host__` attribute only satisfies
+// that type check -- no host code is emitted for this launcher.
 template <class PolicySelector,
           class LargeSegmentTileOffsetT,
           class PolicyGetter,
@@ -542,7 +547,7 @@ template <class PolicySelector,
           class KParameterT,
           class SelectDirectionParameterT,
           class NumSegmentsParameterT>
-_CCCL_DEVICE cudaError_t launch_cluster_arm_device(
+_CCCL_HOST_DEVICE cudaError_t launch_cluster_arm_device(
   PolicyGetter policy_getter,
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
@@ -741,8 +746,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
 
   // Host and device (CDP) launch paths live in dedicated launchers: their bodies are too large to sit inside
   // `NV_IF_TARGET` (GCC hits an internal compiler error on the in-macro form) and read more clearly as named
-  // functions. `NV_IF_TARGET` compiles only the arm matching the current target, so the `_CCCL_HOST` / `_CCCL_DEVICE`
-  // launchers are each referenced (and instantiated) from exactly one pass.
+  // functions. `NV_IF_TARGET` strips the non-matching arm per pass; the device launcher is `_CCCL_HOST_DEVICE` so its
+  // call type-checks even though this function is host-only in non-RDC builds (see its definition).
   NV_IF_TARGET(
     NV_IS_HOST,
     (if (const auto error = launch_cluster_arm_host<PolicySelector, LargeSegmentTileOffsetT>(
