@@ -232,9 +232,12 @@ __global__ void test_kernel()
   double array[4] = {1.0, 2.0, 3.0, 4.0};
   test_non_trivial_types(array);
 
-  // test pointers
-  auto ptr = threadIdx.x == 0 ? static_cast<const void*>(array) : nullptr;
-  assert(cuda::device::warp_shuffle_idx(ptr, 0) == static_cast<const void*>(array));
+  // Test mutable and const void pointers with the 64-bit shuffle path.
+  auto void_ptr = threadIdx.x == 0 ? static_cast<void*>(array) : nullptr;
+  assert(cuda::device::warp_shuffle_idx(void_ptr, 0) == static_cast<void*>(array));
+
+  auto const_void_ptr = threadIdx.x == 0 ? static_cast<const void*>(array + 1) : nullptr;
+  assert(cuda::device::warp_shuffle_idx(const_void_ptr, 0) == static_cast<const void*>(array + 1));
 }
 
 int main(int, char**)
