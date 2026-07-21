@@ -75,7 +75,7 @@ if (
   CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9
   AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
 )
-  list(APPEND simd_codegen_sass_cuda_archs 120f)
+  list(APPEND simd_codegen_sass_cuda_archs 103 120f)
 endif()
 
 #-----------------------------------------------------------------------------------------------------------------------
