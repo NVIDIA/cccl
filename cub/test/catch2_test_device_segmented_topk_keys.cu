@@ -1738,9 +1738,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned seg
   auto segment_sizes = cuda::std::uint16_t{segment_size};
   static_assert(cuda::args::__traits<decltype(segment_sizes)>::highest == 65535,
                 "expected the un-annotated uint16 segment size to expose its full type range as the static bound");
-  constexpr auto k_arg = cuda::args::constant<k>{};
-  auto num_segs        = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env             = cuda::std::execution::env{cuda::execution::require(
+  [[maybe_unused]] constexpr auto k_arg = cuda::args::constant<k>{}; // gcc7 warns, only used in `dispatch` lambda
+  auto num_segs                         = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                              = cuda::std::execution::env{cuda::execution::require(
     cuda::execution::determinism::not_guaranteed,
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
