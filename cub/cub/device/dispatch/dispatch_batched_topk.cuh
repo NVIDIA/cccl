@@ -49,6 +49,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -117,14 +118,13 @@ struct segment_size_to_tile_count_op
 // The dispatch is host-only: it launches the single kernel symbol (`device_batched_topk_kernel`, in
 // kernel_batched_topk.cuh) via the CUDA runtime. The algorithm does not support device-side (CDP) launch.
 
-// Host launch of the cluster dispatch (a separate function from `launch_cluster_arm` only because its body is large).
-// Derives the resolved-CC cluster policy and geometry from `policy_getter` and launches `kernel_ptr` (the single
-// kernel symbol) via `cudaLaunchKernelEx`. Returns `cudaSuccess` after a successful launch; the caller runs the shared
-// post-launch sync.
+// Cluster arm of the dispatch (host-only): after the shared query-pass / CC-guard setup, launches the single kernel
+// symbol via `cudaLaunchKernelEx` using the resolved-CC cluster policy and geometry from `policy_getter`.
+// `select_directions` arrives already wrapped; the cluster tuning comes from `policy_getter` (the resolved-CC policy)
+// and the requested `Determinism`/`TieBreak` from the `PolicySelector`.
 template <class PolicySelector,
           class LargeSegmentTileOffsetT,
           class PolicyGetter,
-          class KernelPtrT,
           class KeyInputItItT,
           class KeyOutputItItT,
           class ValueInputItItT,
@@ -133,9 +133,10 @@ template <class PolicySelector,
           class KParameterT,
           class SelectDirectionParameterT,
           class NumSegmentsParameterT>
-_CCCL_HOST cudaError_t launch_cluster_arm_host(
+_CCCL_HOST_API cudaError_t launch_cluster_arm(
   PolicyGetter policy_getter,
-  KernelPtrT kernel_ptr,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
   ValueInputItItT d_value_segments_it,
@@ -146,6 +147,51 @@ _CCCL_HOST cudaError_t launch_cluster_arm_host(
   NumSegmentsParameterT num_segments,
   cudaStream_t stream)
 {
+  // TODO: This should be taken care of in the public env-based interface.
+  // A tie-break preference is only meaningful once the result set itself is deterministic.
+  static_assert(PolicySelector::determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed
+                  || PolicySelector::tie_break == ::cuda::execution::tie_break::__tie_break_t::__unspecified,
+                "A tie-break preference requires a deterministic execution requirement");
+
+  // The harness expects temp_storage_bytes > 0.
+  size_t allocation_sizes[1] = {1};
+  void* allocations[1]       = {};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    return cudaSuccess;
+  }
+
+  // Cluster launches require compute capability 9.0+.
+  int sm_version = 0;
+  if (const auto error = CubDebug(SmVersionUncached(sm_version)))
+  {
+    return error;
+  }
+  if (sm_version < 900)
+  {
+    return cudaErrorNotSupported;
+  }
+
+  // Single kernel symbol; its cluster vs baseline arm is selected device-side via `current_policy<PolicySelector>()`.
+  // Taking its address here ODR-uses the `__global__` template, which is what drives its emission and registration.
+  constexpr auto kernel_ptr = &device_batched_topk_kernel<
+    PolicySelector,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>;
+
   // Cluster sub-policy for the *resolved* architecture -- exactly what the device kernel instantiates via
   // `current_policy<PolicySelector>()`, so the host launch config (block size, shared-memory math) stays in lock-step
   // with the device policy per CC. `policy_getter()` is a constant expression, so `policy` is a non-type template arg.
@@ -471,101 +517,6 @@ _CCCL_HOST cudaError_t launch_cluster_arm_host(
     return error;
   }
 
-  return cudaSuccess;
-}
-
-// Cluster arm of the dispatch (host-only). Handles the shared setup (single-byte temp-storage placeholder,
-// `d_temp_storage == nullptr` query short-circuit, CC 9.0+ guard), then delegates to `launch_cluster_arm_host` (the
-// `cudaLaunchKernelEx` launch). `select_directions` arrives already wrapped; the cluster tuning comes from
-// `policy_getter` (the resolved-CC policy) and the requested `Determinism`/`TieBreak` from the `PolicySelector`.
-template <class PolicySelector,
-          class LargeSegmentTileOffsetT,
-          class PolicyGetter,
-          class KeyInputItItT,
-          class KeyOutputItItT,
-          class ValueInputItItT,
-          class ValueOutputItItT,
-          class SegmentSizeParameterT,
-          class KParameterT,
-          class SelectDirectionParameterT,
-          class NumSegmentsParameterT>
-_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
-  PolicyGetter policy_getter,
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  KeyInputItItT d_key_segments_it,
-  KeyOutputItItT d_key_segments_out_it,
-  ValueInputItItT d_value_segments_it,
-  ValueOutputItItT d_value_segments_out_it,
-  SegmentSizeParameterT segment_sizes,
-  KParameterT k_param,
-  SelectDirectionParameterT select_directions,
-  NumSegmentsParameterT num_segments,
-  cudaStream_t stream)
-{
-  // TODO: This should be taken care of in the public env-based interface.
-  // A tie-break preference is only meaningful once the result set itself is deterministic.
-  static_assert(PolicySelector::determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed
-                  || PolicySelector::tie_break == ::cuda::execution::tie_break::__tie_break_t::__unspecified,
-                "A tie-break preference requires a deterministic execution requirement");
-
-  // The harness expects temp_storage_bytes > 0. Allocate a single byte placeholder.
-  size_t allocation_sizes[1] = {1};
-  void* allocations[1]       = {};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-  {
-    return error;
-  }
-
-  if (d_temp_storage == nullptr)
-  {
-    return cudaSuccess;
-  }
-
-  // Cluster launches require compute capability 9.0+.
-  int sm_version = 0;
-  if (const auto error = CubDebug(SmVersionUncached(sm_version)))
-  {
-    return error;
-  }
-  if (sm_version < 900)
-  {
-    return cudaErrorNotSupported;
-  }
-
-  // Single kernel symbol; its cluster vs baseline arm is selected device-side via `current_policy<PolicySelector>()`.
-  // Taking its address here ODR-uses the `__global__` template, which is what drives its emission and registration.
-  constexpr auto kernel_ptr = &device_batched_topk_kernel<
-    PolicySelector,
-    KeyInputItItT,
-    KeyOutputItItT,
-    ValueInputItItT,
-    ValueOutputItItT,
-    SegmentSizeParameterT,
-    KParameterT,
-    SelectDirectionParameterT,
-    NumSegmentsParameterT,
-    LargeSegmentTileOffsetT>;
-
-  // The geometry search and `cudaLaunchKernelEx` launch live in a dedicated launcher (its body is large and reads
-  // more clearly as a named function).
-  if (const auto error = launch_cluster_arm_host<PolicySelector, LargeSegmentTileOffsetT>(
-        policy_getter,
-        kernel_ptr,
-        d_key_segments_it,
-        d_key_segments_out_it,
-        d_value_segments_it,
-        d_value_segments_out_it,
-        segment_sizes,
-        k_param,
-        select_directions,
-        num_segments,
-        stream))
-  {
-    return error;
-  }
-
   // Cluster launches can fail on the device while reporting success; sync.
   if (const auto error = CubDebug(cudaPeekAtLastError()))
   {
@@ -589,7 +540,7 @@ template <class PolicySelector,
           class KParameterT,
           class SelectDirectionParameterT,
           class NumSegmentsParameterT>
-_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t launch_baseline_arm(
+_CCCL_HOST_API cudaError_t launch_baseline_arm(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -665,7 +616,9 @@ _CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t launch_baseline_arm(
     if constexpr (!only_small_segments)
     {
       const auto num_segments_val = params::get_param(num_segments, 0);
-      allocation_sizes[0]         = num_segments_val * sizeof(large_segment_tile_offset_t);
+      // TODO(topk): once this large-segment path is live, guard the `num_segments_val * sizeof(...)` byte counts
+      // against size_t overflow (safe today only because the entry bounds num_segments_val to <= INT_MAX).
+      allocation_sizes[0] = num_segments_val * sizeof(large_segment_tile_offset_t);
       if constexpr (any_small_segments)
       {
         allocation_sizes[1] = sizeof(counters_t);
@@ -807,7 +760,7 @@ template <
   class SelectDirectionT,
   class NumSegmentsParameterT,
   class TotalNumItemsGuaranteeT>
-_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t dispatch(
+_CCCL_HOST_API cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -911,6 +864,21 @@ _CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t dispatch(
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
+  }
+
+  // `num_segments` is the grid extent of both host launch arms (the baseline arm launches one block per segment; the
+  // cluster arm launches `num_segments * cluster_blocks`), so it must fit a positive 32-bit grid dimension. Reject an
+  // out-of-contract count (negative, or exceeding INT_MAX) at this single host boundary: otherwise the baseline arm
+  // would silently narrow it to `int` and the cluster arm's 64-bit grid-size product could overflow before its own
+  // range check.
+  using num_segments_val_t                  = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
+  const num_segments_val_t num_segments_val = detail::params::get_param(num_segments, num_segments_val_t{0});
+  // Unary `+` integer-promotes the count to a standard integer type so the sign-safe `cmp_*` comparators accept it:
+  // they are constrained to `__cccl_is_integer_v`, which excludes the character count types the public API permits.
+  if (::cuda::std::cmp_less(+num_segments_val, 0)
+      || ::cuda::std::cmp_greater(+num_segments_val, ::cuda::std::numeric_limits<int>::max()))
+  {
+    return cudaErrorInvalidValue;
   }
 
   // Empty batch = no work to launch: no segments, or a non-positive tightest max segment size (every segment empty,
