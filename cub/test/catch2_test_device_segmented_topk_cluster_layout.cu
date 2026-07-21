@@ -35,10 +35,10 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
   // segment_size)` is chunked (`num_chunks`), then spread across `blocks` ranks (the `ceil_div` max for both the
   // strided and blocked partitions).
   const auto max_rank_chunks = [](cuda::std::int64_t segment_size, int head_items, int blocks) {
-    using size_t            = cuda::std::int64_t;
-    const size_t tail_items = segment_size - head_items;
-    const size_t chunks     = ::cuda::ceil_div(tail_items, size_t{layout_t::chunk_items});
-    return ::cuda::ceil_div(chunks, static_cast<size_t>(blocks));
+    using count_t            = cuda::std::int64_t;
+    const count_t tail_items = segment_size - head_items;
+    const count_t chunks     = ::cuda::ceil_div(tail_items, count_t{layout_t::chunk_items});
+    return ::cuda::ceil_div(chunks, static_cast<count_t>(blocks));
   };
 
   const int heads[] = {0, 1, layout_t::chunk_items / 2, layout_t::chunk_items - 1};
