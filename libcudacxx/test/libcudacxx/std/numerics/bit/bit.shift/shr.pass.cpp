@@ -13,6 +13,7 @@
 
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/numeric>
