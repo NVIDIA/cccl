@@ -107,6 +107,10 @@ class TransformIterator(IteratorBase):
         # op's state to the underlying iterator's state and pass a pointer to it
         # when calling the op on device (see _make_input/output_deref_op).
         if self._transform_op.is_stateful:
+            # compiled_op.state (the packed captured-array descriptors) and
+            # state_alignment are cc-independent, so it is fine to take them
+            # from whichever cc _get_compiled_op compiles for; only the op's
+            # LTO-IR is arch-specific.
             compiled_op = self._get_compiled_op()
             underlying_state = bytes(self._underlying.state)
             op_state = bytes(compiled_op.state)
@@ -322,6 +326,11 @@ class TransformIterator(IteratorBase):
             self._transform_op,
             self._underlying.kind,
             value_type,
+            # The op state offset is baked into the generated deref source, so
+            # cached deref ops must never be shared across differing offsets.
+            # It is derived from the underlying state size (fixed per kind),
+            # but keying on it makes that invariant explicit.
+            self._op_state_offset,
         )
 
 
