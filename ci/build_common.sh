@@ -188,7 +188,14 @@ BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
 export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
-export CTEST_PARALLEL_LEVEL="1"
+
+# Keep ctest serial by default. When GPU parallelism is enabled, use a
+# higher job count; CTest RESOURCE_GROUPS still limit GPU concurrency.
+if [[ "${CCCL_TEST_GPU_PARALLELISM:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  export CTEST_PARALLEL_LEVEL="${CTEST_PARALLEL_LEVEL:-20}"
+else
+  export CTEST_PARALLEL_LEVEL="1"
+fi
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"

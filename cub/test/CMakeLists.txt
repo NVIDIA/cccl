@@ -15,6 +15,39 @@ cccl_get_c2h()
 cccl_get_cudatoolkit()
 cccl_get_nvtx()
 
+# GPU resource scheduling for CUB tests.
+if ("${CMAKE_VERSION}" VERSION_LESS 3.28)
+  message(WARNING "CMake 3.28 or newer is required to build CUB tests.")
+  cmake_minimum_required(VERSION 3.28)
+endif()
+cccl_get_rapids_test()
+rapids_test_init()
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CubTestFootprints.cmake")
+
+# Stage the rapids-cmake GPU runner into the build tree. The runner only uses
+# CMake features available before 3.28, so keep its local minimum aligned with
+# the CUB test floor instead of rapids-cmake's repo-wide floor.
+file(
+  READ "${rapids-cmake_SOURCE_DIR}/rapids-cmake/test/detail/run_gpu_test.cmake"
+  _cub_gpu_test_runner_content
+)
+string(
+  REGEX REPLACE
+  "cmake_minimum_required\\(VERSION [0-9.]+"
+  "cmake_minimum_required(VERSION 3.28"
+  _cub_gpu_test_runner_content
+  "${_cub_gpu_test_runner_content}"
+)
+file(
+  WRITE "${PROJECT_BINARY_DIR}/rapids-cmake/run_gpu_test.cmake"
+  "${_cub_gpu_test_runner_content}"
+)
+# Forwarded to run_test.cmake by cub_add_test:
+set(
+  _cccl_gpu_test_runner_arg
+  "-DGPU_TEST_RUNNER=${PROJECT_BINARY_DIR}/rapids-cmake/run_gpu_test.cmake"
+)
+
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
@@ -149,12 +182,19 @@ function(
            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
            "-DTYPE=Catch2"
+           ${_cccl_gpu_test_runner_arg}
            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
       # gersemi: on
     )
     set_tests_properties(
       ${test_target}
       PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+    )
+    cub_test_gpu_percent(_cub_gpu_percent "${test_name}")
+    rapids_test_gpu_requirements(
+      ${test_target}
+      GPUS 1
+      PERCENT ${_cub_gpu_percent}
     )
 
     if ("${test_target}" MATCHES "nvrtc")
@@ -278,12 +318,19 @@ function(
           "${CMAKE_COMMAND}"
             "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
             "-DTEST=$<TARGET_FILE:${test_target}>"
+            ${_cccl_gpu_test_runner_arg}
             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         # gersemi: on
       )
       set_tests_properties(
         ${test_target}
         PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+      )
+      cub_test_gpu_percent(_cub_gpu_percent "${test_name}")
+      rapids_test_gpu_requirements(
+        ${test_target}
+        GPUS 1
+        PERCENT ${_cub_gpu_percent}
       )
     endif()
   endif() # Not catch2 test
