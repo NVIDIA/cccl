@@ -249,8 +249,6 @@ void test_shaped_alloc_cute_composite(int ndevs)
 
 void test_shaped_alloc_overflow(int ndevs)
 {
-  printf("Testing shaped allocation with overflowing geometries...\n");
-
   const size_t huge = ::std::numeric_limits<size_t>::max();
   // (2^64-1)^2 wraps to 1: an unchecked size computation would hand back a
   // one-byte allocation for an astronomically large tensor
@@ -281,8 +279,6 @@ void test_shaped_alloc_overflow(int ndevs)
   auto grid    = make_device_grid(ndevs, 2);
   data_place c = data_place::composite(blocked_partition_custom<1>{}, grid);
   expect_invalid(c, wrapping_dims, 1);
-
-  printf("  shaped allocation overflow test PASSED\n");
 }
 
 void test_multi_gpu_residency(int ndevs)
