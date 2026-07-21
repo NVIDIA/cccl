@@ -726,6 +726,12 @@ public:
     return __make_mask(_Impl::__less(__lhs.__s_, __rhs.__s_));
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend basic_vec
+  __simd_fma_impl(const basic_vec& __x, const basic_vec& __y, const basic_vec& __z) noexcept
+  {
+    return basic_vec{_Impl::__fma(__x.__s_, __y.__s_, __z.__s_), __storage_tag};
+  }
+
   // [simd.cond], basic_vec exposition-only conditional operators
 
   [[nodiscard]] _CCCL_API friend constexpr basic_vec
