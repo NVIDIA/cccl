@@ -17,17 +17,17 @@
 
 // constexpr address-return-type address() const noexcept;
 
-#include <cuda/std/atomic>
-#include <cuda/std/cassert>
-#include <cuda/std/memory>
-#include <cuda/std/type_traits>
-
 #include "test_macros.h"
 
 // Suppress warnings about deprecated volatile parameters
 TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
 TEST_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
 TEST_NV_DIAG_SUPPRESS(3013)
+
+#include <cuda/std/atomic>
+#include <cuda/std/cassert>
+#include <cuda/std/memory>
+#include <cuda/std/type_traits>
 
 template <typename T>
 TEST_FUNC void test_address()
