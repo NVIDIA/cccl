@@ -81,7 +81,7 @@ template <topk::select SelectDirection,
           typename KParameterT,
           typename NumSegmentsParameterT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
+_CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorItT d_keys_in,
@@ -354,8 +354,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! This is an initial, intentionally restricted API surface. The following constraints are enforced at compile time
-//! (a ``static_assert`` fires if violated):
+//! (a compile error is emitted if violated):
 //!
+//! - **Host-only.** Unlike most CUB algorithms, ``DeviceBatchedTopK`` does not support CUDA dynamic parallelism: its
+//!   methods must be invoked from host code, not from device code.
 //! - **Segment size is architecture-dependent.** On pre-Hopper GPUs (compute capability < 9.0) every segment must be
 //!   processable by a single thread block (one worker per segment): the *statically-known maximum* segment size (the
 //!   upper bound of the ``segment_sizes`` annotation) must be small enough that such a block fits within the
@@ -419,11 +421,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!    When ``determinism::not_guaranteed`` is requested the per-segment output may be non-deterministic: if multiple
 //!    items tie at the K-th position, the subset of tied elements returned is not uniquely defined and may vary between
 //!    runs.
-//!
-//! Usage Considerations
-//! ++++++++++++++++++++++++++
-//!
-//! @cdp_class{DeviceBatchedTopK}
 //!
 //! @endrst
 struct DeviceBatchedTopK
@@ -515,7 +512,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -617,7 +614,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxKeys(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     SegmentSizeParameterT segment_sizes,
@@ -725,7 +722,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -825,7 +822,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinKeys(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     SegmentSizeParameterT segment_sizes,
@@ -952,7 +949,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -1064,7 +1061,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxPairs(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     ValueInputIteratorItT d_values_in,
@@ -1181,7 +1178,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -1293,7 +1290,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinPairs(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     ValueInputIteratorItT d_values_in,

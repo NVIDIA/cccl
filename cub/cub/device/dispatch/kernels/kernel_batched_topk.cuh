@@ -289,7 +289,6 @@ device_batched_topk_kernel(
       NumSegmentsParameterT,
       LargeSegmentTileOffsetT>::agent_t;
 
-    // Static assertions (constraints).
     static_assert(agent_t::tile_size >= ::cuda::args::__traits<SegmentSizeParameterT>::highest,
                   "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
     static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
@@ -375,106 +374,6 @@ device_batched_topk_kernel(
     return;
   }
 }
-
-#ifdef CUB_RDC_ENABLED
-// CDP-only static-cluster kernel: a compile-time `__cluster_dims__` (via `_CCCL_CLUSTER_DIMS`) lets a device-side (CDP)
-// triple-chevron launch skip the `cudaFuncSetAttribute` dynamic-cluster-dim call the host `device_batched_topk_kernel`
-// relies on (device launches can't make it). Mirrors that kernel's cluster arm; consumed by
-// `CUB_TOPK_CLUSTER_DEVICE_LAUNCH` in dispatch_batched_topk.cuh. `ClusterBlocks` is the cluster width (<=
-// `max_portable_cluster_blocks`, narrowed by the policy's `max_blocks_per_cluster`); `MinBlocksPerSm` forwards the
-// `min_blocks_per_sm` hint via `_CCCL_LAUNCH_BOUNDS`, active under EWP but stubbed under RDC (#902).
-template <int ThreadsPerBlock,
-          int HistogramItemsPerThread,
-          int PipelineStages,
-          int ChunkBytes,
-          int LoadAlignBytes,
-          int BitsPerPass,
-          int TieBreakItemsPerThread,
-          int SingleBlockMaxSegSize,
-          int MinChunksPerBlock,
-          int CopyItemsPerThread,
-          int ClusterBlocks,
-          int MinBlocksPerSm,
-          ::cuda::execution::determinism::__determinism_t Determinism,
-          ::cuda::execution::tie_break::__tie_break_t TieBreak,
-          typename KeyInputItItT,
-          typename KeyOutputItItT,
-          typename ValueInputItItT,
-          typename ValueOutputItItT,
-          typename SegmentSizeParameterT,
-          typename KParameterT,
-          typename SelectDirectionParameterT,
-          typename NumSegmentsParameterT>
-_CCCL_CLUSTER_DIMS(ClusterBlocks, 1, 1) _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock, MinBlocksPerSm)
-_CCCL_KERNEL_ATTRIBUTES void
-device_segmented_topk_cluster_kernel_static(
-  [[maybe_unused]] KeyInputItItT d_key_segments_it,
-  [[maybe_unused]] KeyOutputItItT d_key_segments_out_it,
-  [[maybe_unused]] ValueInputItItT d_value_segments_it,
-  [[maybe_unused]] ValueOutputItItT d_value_segments_out_it,
-  [[maybe_unused]] SegmentSizeParameterT segment_sizes,
-  [[maybe_unused]] KParameterT k_param,
-  [[maybe_unused]] SelectDirectionParameterT select_directions,
-  [[maybe_unused]] NumSegmentsParameterT num_segments,
-  [[maybe_unused]] ::cuda::std::uint32_t block_tile_capacity)
-{
-  // The agent's cluster/async PTX only assembles on SM90+, so gate the whole body on `NV_PROVIDES_SM_90`: host and
-  // sub-SM90 device passes emit an empty kernel and never instantiate the agent (the CDP arm only launches this on
-  // SM90+). Mirrors the cluster arm of `device_batched_topk_kernel`.
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
-       ThreadsPerBlock,
-       HistogramItemsPerThread,
-       PipelineStages,
-       ChunkBytes,
-       LoadAlignBytes,
-       BitsPerPass,
-       TieBreakItemsPerThread,
-       SingleBlockMaxSegSize,
-       MinChunksPerBlock,
-       CopyItemsPerThread,
-       Determinism,
-       TieBreak,
-       KeyInputItItT,
-       KeyOutputItItT,
-       ValueInputItItT,
-       ValueOutputItItT,
-       SegmentSizeParameterT,
-       KParameterT,
-       SelectDirectionParameterT,
-       NumSegmentsParameterT>;
-
-     __shared__ typename agent_t::TempStorage temp_storage;
-     extern __shared__ char topk_cluster_smem[];
-     char* key_slots = topk_cluster_smem;
-     // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same `load_align`
-     // alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves `base_padding_bytes`.
-     {
-       ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
-       smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
-       asm("" : "+r"(smem32));
-       key_slots = static_cast<char*>(__cvta_shared_to_generic(smem32));
-     }
-
-     agent_t agent(
-       temp_storage,
-       d_key_segments_it,
-       d_key_segments_out_it,
-       d_value_segments_it,
-       d_value_segments_out_it,
-       segment_sizes,
-       k_param,
-       select_directions,
-       num_segments,
-       key_slots,
-       block_tile_capacity);
-
-     agent.Process();),
-    // Cluster-policy kernels are only ever launched on SM90+, so the sub-SM90 device pass is unreachable at runtime.
-    (_CCCL_UNREACHABLE();));
-}
-#endif // CUB_RDC_ENABLED
 } // namespace detail::batched_topk
 
 CUB_NAMESPACE_END

@@ -170,7 +170,7 @@ template <typename KeyInputItItT,
           typename KParamT,
           typename NumSegmentsParameterT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_indexed(
+_CCCL_HOST_API static cudaError_t batched_topk_indexed(
   KeyInputItItT d_keys_in,
   KeyOutputItItT d_keys_out,
   ValueInputItItT d_values_in,

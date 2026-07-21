@@ -72,7 +72,7 @@ template <cub::detail::topk::select SelectDirection,
           typename SegmentSizeParamT,
           typename KParamT,
           typename NumSegmentsParameterT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
+_CCCL_HOST_API static cudaError_t dispatch_batched_topk_keys(
   void* d_temp_storage,
   cuda::std::size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -99,7 +99,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   }
 }
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_LAUNCH lid 0:2
 DECLARE_TMPL_LAUNCH_WRAPPER(
   dispatch_batched_topk_keys,
   batched_topk_keys,

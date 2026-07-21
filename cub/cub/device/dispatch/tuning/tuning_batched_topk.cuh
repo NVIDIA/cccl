@@ -261,14 +261,12 @@ struct cluster_topk_policy
   // concurrently running kernel, or narrowing the cluster width to co-schedule other work. The algorithm stays correct
   // at any cap: a segment that no longer fits resident simply streams the remainder from global memory.
   int max_blocks_per_cluster; //!< Upper bound on the launched cluster width (CTAs per segment); 0 = unrestricted (the
-                              //!< hardware cluster-width ceiling, queried from the runtime for a host launch and the
-                              //!< portable ceiling for a device (CDP) launch). Non-zero is additionally clamped to that
-                              //!< same ceiling. A cap narrower than a segment needs pushes it into the streaming
-                              //!< fallback (cap 1 -> single-CTA streaming).
+                              //!< hardware cluster-width ceiling, queried from the runtime). Non-zero is additionally
+                              //!< clamped to that same ceiling. A cap narrower than a segment needs pushes it into the
+                              //!< streaming fallback (cap 1 -> single-CTA streaming).
   int max_chunk_slots_per_block; //!< Upper bound on resident chunk slots per block; 0 = unrestricted (the full
-                                 //!< shared-memory budget: the hardware opt-in budget for a host launch, the portable
-                                 //!< 48 KiB budget for a device (CDP) launch). A smaller cap shrinks each CTA's
-                                 //!< resident capacity (and thus its dynamic shared-memory request), so a smaller
+                                 //!< shared-memory budget: the hardware opt-in budget). A smaller cap shrinks each
+                                 //!< CTA's resident capacity (and thus its dynamic shared-memory request), so a smaller
                                  //!< segment overflows into the streaming path.
 
   // Equality/streaming make this a regular type (required by the `policy_selector` concept / `dispatch_compute_cap`).

@@ -3204,8 +3204,8 @@ private:
     // Hardware cluster rank/size from the PTX special registers (replaces cooperative_groups' `this_cluster()`). The
     // radix path runs on the *effective* geometry (the `cluster_rank`/`cluster_blocks` members set by
     // `init_effective_cluster` below); only the pre-collapse steps here (segment id, select-all fast path) use the raw
-    // hardware values. Runtime cluster blocks match the launch attribute the dispatch passed to `cudaLaunchKernelExC`
-    // (or the kernel's `__cluster_dims__` on CDP).
+    // hardware values. Runtime cluster blocks match the launch attribute the dispatch passed to
+    // `cudaLaunchKernelExC`.
     const unsigned hw_cluster_rank   = ::cuda::ptx::get_sreg_cluster_ctarank();
     const unsigned hw_cluster_blocks = ::cuda::ptx::get_sreg_cluster_nctarank();
     _CCCL_ASSERT(hw_cluster_blocks > 0u && hw_cluster_rank < hw_cluster_blocks,

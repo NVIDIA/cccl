@@ -81,7 +81,7 @@ template <cub::detail::topk::select SelectDirection,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename NumSegmentsParameterT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
+_CCCL_HOST_API static cudaError_t dispatch_batched_topk_pairs(
   void* d_temp_storage,
   cuda::std::size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -128,7 +128,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   }
 }
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_LAUNCH lid 0:2
 DECLARE_TMPL_LAUNCH_WRAPPER(
   dispatch_batched_topk_pairs,
   batched_topk_pairs,
@@ -530,15 +530,13 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower 
 #endif // TEST_TYPES == 0
 
 // Large-segment cluster pair tests, built only in the float build (`TEST_TYPES == 1`): they fix their own key/value
-// types, so repeating them per key-type axis would only waste time on the expensive 1 Mi-element runs. They run on
-// every launch id, including device launch (`lid_1`): the CDP static config's small resident capacity is what streams
-// big segments and peels the unaligned tail edge, so it is the path that must cover them.
+// types, so repeating them per key-type axis would only waste time on the expensive 1 Mi-element runs. The large
+// segments stream from gmem and peel the unaligned tail edge -- the path these tests must cover.
 #if TEST_TYPES == 1
 // Launch-wrapper-compatible pairs cluster dispatch that also pins a whole-`topk_policy` tune override (`Selector`). The
 // env (require + tune) is built internally from the threaded stream, so -- unlike a direct-API call that owns its env
 // -- a test using it runs under every launch mode. Used only by the interface-level determinism/reproducibility test
-// below (the path-pinning tune tests stay host-only direct-API); `CUB_RUNTIME_FUNCTION` so the CDP wrapper can invoke
-// it device-side, confirming the tune override and the determinism guarantee hold when invoked from device code.
+// below (the path-pinning tune tests stay host-only direct-API).
 template <typename Selector,
           cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism,
@@ -550,7 +548,7 @@ template <typename Selector,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename NumSegmentsParameterT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_cluster_topk_pairs(
+_CCCL_HOST_API static cudaError_t dispatch_cluster_topk_pairs(
   void* d_temp_storage,
   cuda::std::size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -962,7 +960,7 @@ c2h::host_vector<IndexT> reference_deterministic_topk_indices(
 // Deterministic tie-break: a specified preference is `gpu_to_gpu` deterministic by definition, so the cluster path
 // returns a uniquely defined top-k. Few distinct key values pack many ties into the k-th bucket so the preference (not
 // the key comparison) drives the result; the value payload is the global index, so we compare per-segment index sets
-// against the host reference (within-top-k order is unspecified). `lid_1` streams the 64 Ki segments.
+// against the host reference (within-top-k order is unspecified).
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the index-ordered top-k",
          "[pairs][segmented][topk][device][cluster][determinism]",
          select_direction_list,
@@ -1325,7 +1323,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
   REQUIRE(ref == h_values_out);
 }
 
-#  if TEST_LAUNCH != 2
+#  if TEST_LAUNCH == 0
 // Reproducibility with an *unspecified* tie-break (which tied candidate wins is an implementation detail). We run twice
 // and require the same selected index set, per each requirement's contract: `run_to_run` only promises repeated runs of
 // the *same* config agree (so both runs share a tuning); `gpu_to_gpu` must be config-independent (so the second run
@@ -1337,11 +1335,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
 // (cap 1 from the schedule sweep). The CTA-count/streaming contrast is the second valid config the gpu_to_gpu check
 // needs, while forcing the cluster backend (which alone honors a deterministic request) at a racecheck-tiny footprint.
 //
-// Unlike the other tune-override tests (which pin agent-internal paths identical across launch modes and so stay
-// `TEST_LAUNCH == 0`), this one asserts an *interface-level* contract -- a deterministic request stays reproducible --
-// so it is routed through the `cluster_topk_pairs` launch wrapper and also built for device launch (CDP), confirming
-// the tune override and the determinism guarantee hold when invoked from device code. Graph launch (`TEST_LAUNCH == 2`)
-// re-runs the same host dispatch arm, so it is skipped to avoid the extra kernel instantiations.
+// Asserts an *interface-level* contract -- a deterministic request stays reproducible. Routed through the
+// `cluster_topk_pairs` launch wrapper, which builds the require+tune env internally so both runs share one call site
+// with different tunings. Built once for `TEST_LAUNCH == 0`: graph launch (`TEST_LAUNCH == 2`) re-runs the same host
+// dispatch arm, adding only redundant kernel instantiations.
 using repro_config_a = cluster_tuning_selector<2, /*slots=*/0, /*single_block=*/0, cluster_test_chunk_bytes>;
 using repro_config_b =
   cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/4>;
@@ -1391,7 +1388,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   // Runs the same problem through the public `cub::DeviceBatchedTopK` API, tuning the whole `topk_policy` via
   // `cuda::execution::tune` so each run can pick a different valid cluster tuning (the override forces the cluster
   // backend). `selector` is only used for its type; the `cluster_topk_pairs` wrapper drives the two-phase
-  // temp-storage protocol (and the host/device-launch switch) so both runs share this call site.
+  // temp-storage protocol so both runs share this call site.
   const auto run_with_tuning =
     [&](auto selector, c2h::device_vector<key_t>& keys_out, c2h::device_vector<val_t>& values_out) {
       auto d_keys_out =
@@ -1458,7 +1455,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   }
   REQUIRE(h_values_a == h_values_b);
 }
-#  endif // TEST_LAUNCH != 2
+#  endif // TEST_LAUNCH == 0
 
 #  if TEST_LAUNCH == 0
 // Cluster-width cap + tiny streaming (pairs): force the cluster backend, cap the launch to 1 or 2 CTAs, and cap the

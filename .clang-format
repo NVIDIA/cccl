@@ -42,7 +42,6 @@ AttributeMacros: [
                   '_CCCL_LAUNCH_BOUNDS',
                   '_CCCL_LAUNCH_BOUNDS_CLUSTER',
                   '_CCCL_BLOCK_SIZE',
-                  '_CCCL_CLUSTER_DIMS',
                   'CUB_RUNTIME_FUNCTION',
                   'THRUST_RUNTIME_FUNCTION',
                   'CCCL_DEPRECATED',
