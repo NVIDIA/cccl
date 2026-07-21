@@ -29,12 +29,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <class T, typename = void>
-inline constexpr bool has_native_shfl_v = false;
-
-template <class T>
-inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(::__shfl_xor_sync(0u, T{}, 0))>> = true;
-
 //! @rst
 //! The WarpBitonicSort class provides methods for sorting items partitioned across a CUDA warp
 //! using a bitonic sorting network.
@@ -605,28 +599,13 @@ private:
       const bool has_larger_lane_id = lane & stride;
       const bool reverse            = group_reverse ^ has_larger_lane_id;
 
-      KeyT& key = *keys;
-      KeyT other_key;
-      if constexpr (has_native_shfl_v<KeyT>)
-      {
-        other_key = ::__shfl_xor_sync(full_warp_mask, key, stride);
-      }
-      else
-      {
-        other_key = ::cuda::device::warp_shuffle_xor(key, stride);
-      }
+      KeyT& key      = *keys;
+      KeyT other_key = ::cuda::device::warp_shuffle_xor(key, stride);
 
       [[maybe_unused]] ValueT other_value;
       if constexpr (!keys_only)
       {
-        if constexpr (has_native_shfl_v<ValueT>)
-        {
-          other_value = ::__shfl_xor_sync(full_warp_mask, *values, stride);
-        }
-        else
-        {
-          other_value = ::cuda::device::warp_shuffle_xor(*values, stride);
-        }
+        other_value = ::cuda::device::warp_shuffle_xor(*values, stride);
       }
 
       const bool key_precede_other = compare_op(key, other_key);
