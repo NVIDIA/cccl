@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cstdint>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -109,7 +110,8 @@ C2H_TEST("blocked partition function covers every dimension selector", "[places]
   constexpr uint64_t n = dims.x * dims.y * dims.z * dims.t;
 
   // Dimensions 0-3 select that axis; out-of-range values (like -1) select the
-  // highest-rank dimension. All must yield a usable native mapper.
+  // highest axis whose extent is greater than one. All must yield a usable
+  // native mapper.
   for (const int dim : {0, 1, 2, 3, -1, 4})
   {
     const stf_get_executor_fn mapper = stf_partition_fn_blocked(dim);
@@ -126,5 +128,36 @@ C2H_TEST("blocked partition function covers every dimension selector", "[places]
     stf_data_place_destroy(dp);
   }
 
+  stf_exec_place_destroy(grid);
+}
+
+C2H_TEST("shaped allocation rejects overflowing geometries", "[places][allocate]")
+{
+  // (2^64-1)^2 wraps to 1: an unchecked size computation would hand back a
+  // one-byte allocation for an astronomically large tensor
+  constexpr stf_dim4 huge{UINT64_MAX, UINT64_MAX, 1, 1};
+
+  stf_data_place_handle const dp = stf_data_place_device(0);
+  REQUIRE(dp != nullptr);
+  REQUIRE(stf_data_place_allocate_nd(dp, &huge, 1, nullptr) == nullptr);
+
+  // elemsize participates in the product too
+  constexpr stf_dim4 max_1d{UINT64_MAX, 1, 1, 1};
+  REQUIRE(stf_data_place_allocate_nd(dp, &max_1d, 2, nullptr) == nullptr);
+
+  // A representable product that exceeds PTRDIFF_MAX must also be rejected
+  constexpr stf_dim4 above_ptrdiff{uint64_t{1} << 62, 2, 1, 1};
+  REQUIRE(stf_data_place_allocate_nd(dp, &above_ptrdiff, 1, nullptr) == nullptr);
+
+  stf_data_place_destroy(dp);
+
+  // On a composite place the wrapped geometry used to reach the blocked
+  // partitioner with a zero part_size and kill the process with SIGFPE
+  stf_exec_place_handle const grid = make_dev0_grid(2);
+  stf_data_place_handle const dpc  = stf_data_place_composite(grid, stf_partition_fn_blocked(1));
+  REQUIRE(dpc != nullptr);
+  REQUIRE(stf_data_place_allocate_nd(dpc, &huge, 1, nullptr) == nullptr);
+
+  stf_data_place_destroy(dpc);
   stf_exec_place_destroy(grid);
 }

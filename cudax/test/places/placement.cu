@@ -247,6 +247,44 @@ void test_shaped_alloc_cute_composite(int ndevs)
   printf("  shaped allocation (cute composite) test PASSED\n");
 }
 
+void test_shaped_alloc_overflow(int ndevs)
+{
+  printf("Testing shaped allocation with overflowing geometries...\n");
+
+  const size_t huge = ::std::numeric_limits<size_t>::max();
+  // (2^64-1)^2 wraps to 1: an unchecked size computation would hand back a
+  // one-byte allocation for an astronomically large tensor
+  const dim4 wrapping_dims(huge, huge, 1, 1);
+
+  auto expect_invalid = [](const data_place& dp, dim4 dims, size_t elemsize) {
+    bool thrown = false;
+    try
+    {
+      dp.allocate_nd(dims, elemsize);
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      thrown = true;
+    }
+    EXPECT(thrown, "overflowing geometry must throw invalid_argument");
+  };
+
+  data_place dev = data_place::device(0);
+  expect_invalid(dev, wrapping_dims, 1);
+  // elemsize participates in the product too
+  expect_invalid(dev, dim4(huge, 1, 1, 1), 2);
+  // A representable product that exceeds PTRDIFF_MAX must also be rejected
+  expect_invalid(dev, dim4(size_t{1} << 62, 2, 1, 1), 1);
+
+  // On a composite place the wrapped geometry used to reach the blocked
+  // partitioner with a zero part_size and kill the process with SIGFPE
+  auto grid    = make_device_grid(ndevs, 2);
+  data_place c = data_place::composite(blocked_partition_custom<1>{}, grid);
+  expect_invalid(c, wrapping_dims, 1);
+
+  printf("  shaped allocation overflow test PASSED\n");
+}
+
 void test_multi_gpu_residency(int ndevs)
 {
   if (ndevs < 2)
@@ -336,6 +374,7 @@ int main()
   test_evaluate_cute_matches_mapper();
   test_shaped_alloc_callback_composite(ndevs);
   test_shaped_alloc_cute_composite(ndevs);
+  test_shaped_alloc_overflow(ndevs);
   test_multi_gpu_residency(ndevs);
 
   printf("\n=== All placement tests PASSED ===\n");

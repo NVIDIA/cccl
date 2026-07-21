@@ -34,6 +34,7 @@
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <limits>
 #include <stdexcept>
 #include <typeinfo>
 
@@ -373,9 +374,29 @@ public:
    * composite places use the geometry to back each block of the allocation on
    * the place that owns it according to the partitioner. Extents follow the
    * dimension-0-fastest convention of dim4::get_index().
+   *
+   * @throws std::invalid_argument if the product of the extents and elemsize
+   * overflows size_t or exceeds PTRDIFF_MAX
    */
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream = nullptr) const
   {
+    // An unchecked x*y*z*t*elemsize product can wrap: an ordinary place would
+    // then silently return a tiny allocation for an astronomically large
+    // tensor, and a composite place would feed the degenerate size to its
+    // partitioner. Reject any geometry whose byte count is not representable.
+    size_t total_bytes = elemsize;
+    for (size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
+    {
+      if (extent != 0 && total_bytes > ::std::numeric_limits<size_t>::max() / extent)
+      {
+        throw ::std::invalid_argument("allocate_nd: extents and element size overflow the addressable byte count");
+      }
+      total_bytes *= extent;
+    }
+    if (total_bytes > static_cast<size_t>(::std::numeric_limits<::std::ptrdiff_t>::max()))
+    {
+      throw ::std::invalid_argument("allocate_nd: allocation size exceeds PTRDIFF_MAX");
+    }
     return pimpl_->allocate_nd(data_dims, elemsize, stream);
   }
 
