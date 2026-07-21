@@ -51,7 +51,7 @@ foreach (test_path IN LISTS warp_codegen_tests)
     add_library(${target_name} STATIC "${test_path}")
     set_target_properties(
       ${target_name}
-      PROPERTIES CUDA_ARCHITECTURES "${arch}"
+      PROPERTIES CUDA_ARCHITECTURES "${arch}-real"
     )
     target_compile_options(${target_name} PRIVATE "-dc" "-Wno-comment")
     target_include_directories(

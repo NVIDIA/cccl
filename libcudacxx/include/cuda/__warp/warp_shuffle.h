@@ -21,24 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILATION()
-#  if __cccl_ptx_isa >= 600
+#if _CCCL_CUDA_COMPILATION() && (__cccl_ptx_isa >= 600)
 
-#    include <cuda/__cmath/ceil_div.h>
-#    include <cuda/__cmath/pow2.h>
-#    include <cuda/__ptx/instructions/shfl_sync.h>
-#    include <cuda/__type_traits/is_trivially_copyable.h>
-#    include <cuda/std/__memory/addressof.h>
-#    include <cuda/std/__type_traits/enable_if.h>
-#    include <cuda/std/__type_traits/integral_constant.h>
-#    include <cuda/std/__type_traits/is_array.h>
-#    include <cuda/std/__type_traits/is_default_constructible.h>
-#    include <cuda/std/__type_traits/make_nbit_int.h>
-#    include <cuda/std/array>
-#    include <cuda/std/climits>
-#    include <cuda/std/cstdint>
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__cmath/pow2.h>
+#  include <cuda/__ptx/instructions/shfl_sync.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/is_array.h>
+#  include <cuda/std/__type_traits/is_default_constructible.h>
+#  include <cuda/std/__type_traits/make_nbit_int.h>
+#  include <cuda/std/array>
+#  include <cuda/std/climits>
+#  include <cuda/std/cstdint>
 
-#    include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -61,41 +60,44 @@ struct warp_shuffle_result
 // Internal helper
 
 // PTX shuffles 32-bit words. These paths avoid generic array packing, which adds instructions and increases register
-// pressure for 8-/16-bit values and fragments 64-bit values into independent 32-bit registers.
+// pressure for 8-/16-bit values and fragments 64-bit/128-bit values into independent 32-bit registers.
 
-#    define _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED() (_CCCL_HAS_INT128() && __cccl_ptx_isa >= 830)
+#  define _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED() (_CCCL_HAS_INT128() && __cccl_ptx_isa >= 830)
 
 // bit_cast does not support arrays. Larger types use their specialized or generic array paths.
-// CUDA 12.0 cannot discard the generic return type when deducing __shuffle_cast's auto return type.
 template <typename _Up>
 inline constexpr bool __is_shuffle_bitcast_path_v =
-  !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && !_CCCL_CUDA_COMPILER(NVRTC, ==, 12, 0)
-  && !::cuda::std::is_array_v<_Up> && (sizeof(_Up) == 1 || sizeof(_Up) == 2 || sizeof(_Up) == 4);
+  !::cuda::std::is_array_v<_Up> && (sizeof(_Up) == 1 || sizeof(_Up) == 2 || sizeof(_Up) == 4);
 
 // FP4 and FP6 have 8-bit storage, so use the storage width rather than the number of value bits.
 template <typename _Tp>
 using __shuffle_bitcast_storage_t = ::cuda::std::__make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
 
 template <typename _Tp>
-_CCCL_DEVICE_API auto __shuffle_cast(const _Tp& __data) noexcept
+_CCCL_DEVICE_API auto __shuffle_scalar_cast(const _Tp& __data) noexcept
 {
-  if constexpr (__is_shuffle_bitcast_path_v<_Tp>)
-  {
-    using __unsigned_t = __shuffle_bitcast_storage_t<_Tp>;
-    return static_cast<::cuda::std::uint32_t>(::cuda::std::bit_cast<__unsigned_t>(__data));
-  }
-  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t) && !::cuda::std::is_array_v<_Tp>)
+  using __unsigned_t = __shuffle_bitcast_storage_t<_Tp>;
+  return static_cast<::cuda::std::uint32_t>(::cuda::std::bit_cast<__unsigned_t>(__data));
+}
+
+template <typename _Tp>
+using __shuffle_array_t =
+  ::cuda::std::array<::cuda::std::uint32_t, ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t))>;
+
+template <typename _Tp>
+_CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) noexcept
+{
+  // zero-initialize -> avoid undetermined values propagation (reg pressure) with memcpy
+  __shuffle_array_t<_Tp> __array{};
+  if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t) && !::cuda::std::is_array_v<_Tp>)
   {
     const auto __value = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
-    ::cuda::std::array<::cuda::std::uint32_t, 2> __array;
     asm("mov.b64 {%0, %1}, %2;" : "=r"(__array[0]), "=r"(__array[1]) : "l"(__value));
-    return __array;
   }
-#    if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Tp>)
   {
     const auto __value = ::cuda::std::bit_cast<__uint128_t>(__data);
-    ::cuda::std::array<::cuda::std::uint32_t, 4> __array;
     NV_IF_TARGET(
       NV_PROVIDES_SM_70,
       (asm("mov.b128 {%0, %1, %2, %3}, %4;" : "=r"(__array[0]),
@@ -110,22 +112,18 @@ _CCCL_DEVICE_API auto __shuffle_cast(const _Tp& __data) noexcept
             : "=r"(__array[2]), "=r"(__array[3])
             : "l"(static_cast<::cuda::std::uint64_t>(__value >> 64)));
       }))
-    return __array;
   }
+#  endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
   else
-#    endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
   {
-    constexpr auto __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
-    using __array_t        = ::cuda::std::array<::cuda::std::uint32_t, __ratio>;
-    __array_t __array{}; // zero-initialize -> avoid undetermined values progatation (reg pressure)
     ::cuda::std::memcpy(
       static_cast<void*>(__array.data()), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Tp));
-    return __array;
   }
+  return __array;
 }
 
 template <typename _Tp, ::cuda::std::size_t _Ratio>
-_CCCL_DEVICE_API auto
+_CCCL_DEVICE_API warp_shuffle_result<_Tp>
 __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& __array, const bool __pred) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t) && !::cuda::std::is_array_v<_Tp>)
@@ -134,7 +132,7 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
     asm("mov.b64 %0, {%1, %2};" : "=l"(__shuffled) : "r"(__array[0]), "r"(__array[1]));
     return warp_shuffle_result<_Tp>{::cuda::std::bit_cast<_Tp>(__shuffled), __pred};
   }
-#    if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  if _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Tp>)
   {
     __uint128_t __shuffled;
@@ -153,7 +151,7 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
     return warp_shuffle_result<_Tp>{::cuda::std::bit_cast<_Tp>(__shuffled), __pred};
   }
   else
-#    endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
+#  endif // _CCCL_WARP_SHUFFLE_INT128_OPTIMIZED()
   {
     warp_shuffle_result<_Tp> __result;
     __result.pred = __pred; // __src_lane is always in range [minLane, maxLane]
@@ -196,14 +194,14 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
     using __unsigned_t    = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value    = ::cuda::device::__shuffle_cast(__data);
+    const auto __value    = ::cuda::device::__shuffle_scalar_cast(__data);
     const auto __shuffled = ::__shfl_sync(__lane_mask, __value, __src_lane, _Width);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), true};
   }
   else
   {
-    auto __array          = ::cuda::device::__shuffle_cast(__data);
+    auto __array          = ::cuda::device::__shuffle_array_cast(__data);
     constexpr int __ratio = __array.size();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
@@ -245,7 +243,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "xor_mask must be in the range [1, _Width)");
     using __unsigned_t    = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value    = ::cuda::device::__shuffle_cast(__data);
+    const auto __value    = ::cuda::device::__shuffle_scalar_cast(__data);
     const auto __shuffled = ::__shfl_xor_sync(__lane_mask, __value, __xor_mask, _Width);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), true};
@@ -253,7 +251,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else
   {
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "xor_mask must be in the range [1, _Width)");
-    auto __array          = ::cuda::device::__shuffle_cast(__data);
+    auto __array          = ::cuda::device::__shuffle_array_cast(__data);
     constexpr int __ratio = __array.size();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
@@ -295,14 +293,14 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
     using __unsigned_t    = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value    = ::cuda::device::__shuffle_cast(__data);
+    const auto __value    = ::cuda::device::__shuffle_scalar_cast(__data);
     const auto __shuffled = ::cuda::ptx::shfl_sync_up(__value, __pred, __delta, __clamp_segmask, __lane_mask);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), __pred};
   }
   else
   {
-    auto __array          = ::cuda::device::__shuffle_cast(__data);
+    auto __array          = ::cuda::device::__shuffle_array_cast(__data);
     constexpr int __ratio = __array.size();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
@@ -344,14 +342,14 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   else if constexpr (__is_shuffle_bitcast_path_v<_Up>)
   {
     using __unsigned_t    = __shuffle_bitcast_storage_t<_Up>;
-    const auto __value    = ::cuda::device::__shuffle_cast(__data);
+    const auto __value    = ::cuda::device::__shuffle_scalar_cast(__data);
     const auto __shuffled = ::cuda::ptx::shfl_sync_down(__value, __pred, __delta, __clamp_segmask, __lane_mask);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), __pred};
   }
   else
   {
-    auto __array          = ::cuda::device::__shuffle_cast(__data);
+    auto __array          = ::cuda::device::__shuffle_array_cast(__data);
     constexpr int __ratio = __array.size();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
@@ -371,8 +369,7 @@ warp_shuffle_down(const _Tp& __data, const int __src_lane, ::cuda::std::integral
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
-#    include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#  endif // __cccl_ptx_isa >= 600
-#endif // _CCCL_CUDA_COMPILATION()
+#endif // _CCCL_CUDA_COMPILATION() && (__cccl_ptx_isa >= 600)
 #endif // _CUDA___WARP_WARP_SHUFFLE_H
