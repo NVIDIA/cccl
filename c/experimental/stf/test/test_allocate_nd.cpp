@@ -17,7 +17,7 @@
 
 namespace
 {
-constexpr uint64_t one_mib = 1024 * 1024;
+inline constexpr uint64_t one_mib = 1024 * 1024;
 
 stf_exec_place_handle make_dev0_grid(size_t nplaces)
 {
@@ -49,8 +49,8 @@ void check_device_round_trip(void* ptr, uint64_t n)
 
 C2H_TEST("shaped allocation on an ordinary data place", "[places][allocate]")
 {
-  const uint64_t n = one_mib; // ints
-  const stf_dim4 dims{n, 1, 1, 1};
+  constexpr uint64_t n = one_mib; // ints
+  constexpr stf_dim4 dims{n, 1, 1, 1};
 
   stf_data_place_handle const dp = stf_data_place_device(0);
   REQUIRE(dp != nullptr);
@@ -68,8 +68,8 @@ C2H_TEST("shaped allocation on composite data places", "[places][allocate]")
 {
   stf_exec_place_handle const grid = make_dev0_grid(2);
 
-  const uint64_t n = one_mib; // ints
-  const stf_dim4 dims{n, 1, 1, 1};
+  constexpr uint64_t n = one_mib; // ints
+  constexpr stf_dim4 dims{n, 1, 1, 1};
 
   stf_data_place_handle const dp = stf_data_place_composite(grid, stf_partition_fn_blocked(0));
   REQUIRE(dp != nullptr);
@@ -105,8 +105,8 @@ C2H_TEST("blocked partition function covers every dimension selector", "[places]
   stf_exec_place_handle const grid = make_dev0_grid(2);
 
   // 64 * 64 * 16 * 4 ints = 1 MiB: every dimension is divisible by the grid
-  const stf_dim4 dims{64, 64, 16, 4};
-  const uint64_t n = dims.x * dims.y * dims.z * dims.t;
+  constexpr stf_dim4 dims{64, 64, 16, 4};
+  constexpr uint64_t n = dims.x * dims.y * dims.z * dims.t;
 
   // Dimensions 0-3 select that axis; out-of-range values (like -1) select the
   // highest-rank dimension. All must yield a usable native mapper.
