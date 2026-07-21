@@ -32,6 +32,7 @@ _BINDING_EXPORTS = (
     "CudaStream",
     "LaunchableGraph",
     "async_resources",
+    "cond",
     "context",
     "cuda_kernel",
     "cute_partition",

@@ -9,7 +9,6 @@ Demonstrates:
   - **stackable_context** for nested asynchronous scopes
   - **while_loop** for data-dependent iteration (conditional CUDA graph nodes)
   - **pytorch_task** for expressing GPU linear algebra with PyTorch tensors
-  - **host_launch** for asynchronous host-side observation of GPU results
 
 Solves A * x = b where A is a random diagonally-dominant tridiagonal SPD
 matrix, using the standard CG algorithm:
@@ -139,24 +138,15 @@ def cg_solver(ctx, lA, lX, lB, N, tol=1e-10, max_iter=None):
         # rsnew = R'R
         stf_dot(ctx, lR, lR, lrsnew)
 
-        # Iteration guard: control = rsnew while iterating, forced to 0
-        # (<= tol²) once the iteration cap is reached so the loop terminates
-        # instead of hanging on a non-converging system.
-        lctrl = ctx.logical_data_empty((1,), np.float64, name="ctrl")
-        with pytorch_task(ctx, lctrl.write(), lrsnew.read(), liter.rw()) as (
-            tCtrl,
-            tRsnew,
-            tIt,
-        ):
+        with pytorch_task(ctx, liter.rw()) as (tIt,):
             tIt += 1.0
-            capped = tIt.squeeze() >= float(max_iter)
-            tCtrl.copy_(torch.where(capped, torch.zeros_like(tRsnew), tRsnew))
 
         # Condition: continue while residual norm² exceeds tolerance² and the
-        # iteration cap has not been hit. This sets the predicate for the
-        # *next* replay — the P and rsold updates below still execute in the
-        # current iteration.
-        loop.continue_while(lctrl, ">", tol_sq)
+        # iteration cap has not been hit (so a non-converging system
+        # terminates instead of replaying forever). This sets the predicate
+        # for the *next* replay — the P and rsold updates below still execute
+        # in the current iteration.
+        loop.continue_while((lrsnew > tol_sq) & (liter < float(max_iter)))
 
         # P = R + beta·P   (beta = rsnew / rsold)
         with pytorch_task(ctx, lP.rw(), lR.read(), lrsnew.read(), lrsold.read()) as (

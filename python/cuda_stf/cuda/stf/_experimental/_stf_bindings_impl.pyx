@@ -25,6 +25,7 @@ from libc.string cimport memset, memcpy
 import numpy as np
 
 import ctypes
+import numbers as _numbers
 import warnings
 from enum import IntFlag
 
@@ -54,6 +55,8 @@ cdef extern from "<cuda_runtime.h>":
     cdef struct dim3:
         unsigned int x, y, z
     ctypedef OpaqueCUstream_st *cudaStream_t
+    ctypedef int cudaError_t
+    cudaError_t cudaStreamSynchronize(cudaStream_t stream) nogil
     cdef struct CUgraphExec_st
     ctypedef CUgraphExec_st *cudaGraphExec_t
     cdef struct CUgraph_st
@@ -356,6 +359,29 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         double threshold,
         stf_dtype dtype)
 
+    # Declared as an anonymous enum member so Cython treats it as a
+    # compile-time constant (usable as a C array size below).
+    cdef enum:
+        STF_WHILE_COND_MAX_TERMS
+
+    cdef enum stf_cond_combiner:
+        STF_COND_ALL
+        STF_COND_ANY
+
+    ctypedef struct stf_while_cond_term:
+        stf_logical_data_handle ld
+        stf_compare_op op
+        double threshold
+        stf_dtype dtype
+        int negate
+
+    void stf_stackable_while_cond_multi(
+        stf_ctx_handle ctx,
+        stf_while_scope_handle scope,
+        const stf_while_cond_term* terms,
+        int n_terms,
+        stf_cond_combiner combiner)
+
     stf_logical_data_handle stf_stackable_logical_data_with_place(
         stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace)
     stf_logical_data_handle stf_stackable_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
@@ -625,31 +651,40 @@ def _validate_cai_c_contiguous(dict cai, dtype):
         expected_stride *= dim
 
 
-def _reject_unsupported_cai_stream(dict cai):
-    """Reject CUDA Array Interface inputs that carry a producer stream.
+def _sync_cai_producer_stream(dict cai):
+    """Order registration behind the producer stream advertised via CAI.
 
     A non-``None`` ``stream`` means the producer may still have work in flight
-    on that stream, and the consumer must order against it before touching the
-    data. STF does not yet wire an imported producer stream into its dependency
-    graph, so honoring it would require establishing a producer-to-STF
-    prerequisite; silently ignoring it could let the first task read the buffer
-    on a different stream before the producer's work completes. Until that
-    plumbing exists we reject the input rather than race.
+    on that stream, and CAI v3 requires the consumer to synchronize with it
+    before touching the data. STF does not (yet) wire an external producer
+    stream into its dependency graph as an asynchronous prerequisite, so
+    synchronize the stream once here: after registration the buffer is
+    coherent and every STF task ordering is handled internally.
 
-    In practice this does not fire for the common producers: PyTorch exports CAI
-    v2 without a ``stream`` field, and NumPy/CuPy/Numba arrays created without an
-    explicit stream advertise ``stream=None``. If you do hit this, synchronize
-    the producer stream before calling ``logical_data(...)`` (or drop the stream
-    association), so the buffer is already coherent on registration.
+    Stream encoding per the CAI v3 spec: ``None`` means no synchronization is
+    needed, ``1`` is the legacy default stream, ``2`` the per-thread default
+    stream, any other integer a raw ``cudaStream_t`` handle. ``0`` is
+    disallowed by the spec. The numeric values 1/2 coincide with the CUDA
+    runtime's ``cudaStreamLegacy``/``cudaStreamPerThread`` handles, so all
+    non-zero values can be cast directly.
     """
     stream = cai.get("stream")
-    if stream is not None:
-        raise NotImplementedError(
-            "logical_data() received a CUDA Array Interface object advertising a "
-            f"producer stream ({stream!r}); STF does not yet order imported data "
-            "behind an external producer stream. Synchronize that stream before "
-            "registering the buffer (so it is already coherent), or register data "
-            "that advertises no stream."
+    if stream is None:
+        return
+    cdef long long s = int(stream)
+    if s == 0:
+        raise ValueError(
+            "CUDA Array Interface 'stream' value 0 is disallowed by the CAI "
+            "v3 specification"
+        )
+    cdef cudaStream_t handle = <cudaStream_t><uintptr_t>s
+    cdef cudaError_t err
+    with nogil:
+        err = cudaStreamSynchronize(handle)
+    if err != 0:
+        raise RuntimeError(
+            f"cudaStreamSynchronize on the CUDA Array Interface producer "
+            f"stream ({stream!r}) failed with error {err}"
         )
 
 
@@ -869,7 +904,7 @@ cdef class logical_data:
         if hasattr(buf, '__cuda_array_interface__'):
             cai = buf.__cuda_array_interface__
 
-            _reject_unsupported_cai_stream(cai)
+            _sync_cai_producer_stream(cai)
 
             # Extract CAI information
             data_ptr, readonly = cai['data']
@@ -2895,18 +2930,24 @@ cdef class context:
         if borrowed:
             return
 
-        self._pin = _PrimaryContextPin()
-
         cdef bint has_overrides = (stream is not None) or (handle is not None)
         cdef stf_ctx_options opts
         cdef uintptr_t stream_val = 0
+
+        # Resolve the stream pointer before retaining the primary-context pin:
+        # _get_stream_pointer raises on malformed stream arguments, and a pin
+        # acquired here would leak because _PrimaryContextPin.__dealloc__ is a
+        # deliberate no-op and __dealloc__ only sees _ctx == NULL.
+        if stream is not None:
+            stream_val = _get_stream_pointer(stream)
+
+        self._pin = _PrimaryContextPin()
 
         if has_overrides:
             opts.backend = STF_BACKEND_GRAPH if use_graph else STF_BACKEND_STREAM
             # has_stream distinguishes "user explicitly passed a stream" from
             # "user omitted stream" (unlike nullptr, which is a valid NULL stream).
             if stream is not None:
-                stream_val = _get_stream_pointer(stream)
                 opts.has_stream = 1
             else:
                 opts.has_stream = 0
@@ -3472,6 +3513,16 @@ cdef class stackable_logical_data:
     cdef str    _symbol
     cdef readonly bint _is_token
     cdef object _source_buf
+    # Read-only inputs (const CAI export or non-writable Py buffers) may not be
+    # requested with write()/rw(); STF would otherwise mutate memory the
+    # producer promised was immutable.
+    cdef readonly bint _readonly
+    # When the source is exposed through the Python buffer protocol we keep the
+    # Py_buffer export active for the whole lifetime of the logical_data: STF
+    # registers view.buf/view.len and may touch that range asynchronously, so
+    # the export must not be released until teardown.
+    cdef Py_buffer _view
+    cdef bint _has_view
     # Shared "alive" sentinel from the parent stackable_context. See
     # context._alive for the rationale.
     cdef _AliveFlag _alive
@@ -3486,6 +3537,8 @@ cdef class stackable_logical_data:
         self._symbol = None
         self._is_token = False
         self._source_buf = None
+        self._readonly = False
+        self._has_view = False
         self._alive = None
 
     def __dealloc__(self):
@@ -3505,6 +3558,11 @@ cdef class stackable_logical_data:
             except Exception as e:
                 print(f"stf.stackable_logical_data: cleanup failed: {e}")
         self._ld = NULL
+        # Release the buffer-protocol export (if any) only after the logical
+        # data has been destroyed, so STF no longer references view.buf.
+        if self._has_view:
+            PyBuffer_Release(&self._view)
+            self._has_view = False
 
     def set_symbol(self, str name):
         stf_stackable_logical_data_set_symbol(self._ld, name.encode())
@@ -3522,9 +3580,49 @@ cdef class stackable_logical_data:
     def shape(self):
         return self._shape
 
+    # Ordering comparisons against host scalars are sugar for the while-loop
+    # condition leaf ``cond(self, op, other)`` (see the condition-expression
+    # section near ``_WhileLoop``).  ``==`` / ``!=`` keep their default
+    # identity semantics, so hashing and container membership are unaffected.
+    # Anything but a real scalar RHS is rejected loudly rather than returning
+    # NotImplemented: a reflected fallback (e.g. numpy broadcasting over this
+    # object) would silently build something other than a condition.
+    def _cond_from_compare(self, other, str op):
+        if isinstance(other, stackable_logical_data):
+            raise TypeError(
+                "comparing two logical data is not supported in while "
+                "conditions; compare each against a host scalar")
+        if not isinstance(other, _numbers.Real):
+            raise TypeError(
+                "logical data comparisons expect a real scalar (int or "
+                f"float), got {type(other).__name__}")
+        return cond(self, op, other)
+
+    def __gt__(self, other):
+        return self._cond_from_compare(other, ">")
+
+    def __lt__(self, other):
+        return self._cond_from_compare(other, "<")
+
+    def __ge__(self, other):
+        return self._cond_from_compare(other, ">=")
+
+    def __le__(self, other):
+        return self._cond_from_compare(other, "<=")
+
+    def __hash__(self):
+        # Defining rich comparisons resets tp_hash; restore the default
+        # identity hash so sets/dicts keyed on logical data keep working.
+        return object.__hash__(self)
+
     def set_read_only(self):
         """Mark this logical data as read-only (enables concurrent reads across scopes)."""
         stf_stackable_logical_data_set_read_only(self._ld)
+        # STF-level read-only data may never be written again; reflect that
+        # in the Python-side flag so write()/rw()/push(WRITE|RW) fail with a
+        # clear error instead of tripping a (release-mode compiled-out)
+        # C++ assertion later.
+        self._readonly = True
 
     def push(self, mode, data_place dplace=None):
         """Explicitly import this logical data into the current stackable scope.
@@ -3547,18 +3645,38 @@ cdef class stackable_logical_data:
             default placement.
         """
         cdef int m = int(mode)
+        if self._readonly and (m & <int>STF_WRITE):
+            raise ValueError(
+                "cannot push() a write-capable access mode on read-only "
+                "logical data; use AccessMode.READ"
+            )
         cdef stf_data_place_handle dh = NULL
         if dplace is not None:
             dh = dplace._h
         stf_stackable_logical_data_push(self._ld, <stf_access_mode>m, dh)
 
+    @property
+    def readonly(self):
+        """True when the backing source forbids write()/rw() dependencies."""
+        return self._readonly
+
     def read(self, dplace=None):
         return dep(self, AccessMode.READ.value, dplace)
 
     def write(self, dplace=None):
+        if self._readonly:
+            raise ValueError(
+                "cannot request write() access on logical_data backed by a "
+                "read-only source; register it with a writable buffer/array"
+            )
         return dep(self, AccessMode.WRITE.value, dplace)
 
     def rw(self, dplace=None):
+        if self._readonly:
+            raise ValueError(
+                "cannot request rw() access on logical_data backed by a "
+                "read-only source; register it with a writable buffer/array"
+            )
         return dep(self, AccessMode.RW.value, dplace)
 
     def empty_like(self):
@@ -3735,16 +3853,35 @@ cdef uintptr_t _push_repeat_impl(stf_ctx_handle ctx, size_t count) except? 0:
 cdef _pop_repeat_impl(uintptr_t scope_ptr):
     stf_stackable_pop_repeat(<stf_repeat_scope_handle>scope_ptr)
 
-cdef _while_cond_scalar_impl(stf_ctx_handle ctx, uintptr_t scope_ptr,
-                              stf_logical_data_handle ld,
-                              int op, double threshold, int dtype_code):
-    stf_stackable_while_cond_scalar(
+cdef _while_cond_multi_impl(stf_ctx_handle ctx, uintptr_t scope_ptr,
+                             list leaves, str combiner_str):
+    """Lower flattened condition leaves onto stf_stackable_while_cond_multi.
+
+    ``leaves`` is a list of ``cond`` objects whose logical data the caller has
+    already validated (type and context ownership).
+    """
+    cdef stf_while_cond_term terms[STF_WHILE_COND_MAX_TERMS]
+    cdef int n = len(leaves)
+    cdef int i
+    cdef stackable_logical_data sld
+    if n < 1 or n > STF_WHILE_COND_MAX_TERMS:
+        raise ValueError(
+            f"while conditions support 1 to {STF_WHILE_COND_MAX_TERMS} "
+            "comparison terms")
+    for i in range(n):
+        leaf = leaves[i]
+        sld = <stackable_logical_data>leaf._ld
+        terms[i].ld = sld._ld
+        terms[i].op = <stf_compare_op>_cond_op_code(leaf._op)
+        terms[i].threshold = <double>leaf._threshold
+        terms[i].dtype = <stf_dtype>_cond_dtype_code(sld._dtype)
+        terms[i].negate = 1 if leaf._negate else 0
+    stf_stackable_while_cond_multi(
         ctx,
         <stf_while_scope_handle>scope_ptr,
-        ld,
-        <stf_compare_op>op,
-        threshold,
-        <stf_dtype>dtype_code)
+        terms,
+        n,
+        STF_COND_ALL if combiner_str == "all" else STF_COND_ANY)
 
 
 cdef uintptr_t _pop_prologue_impl(stf_ctx_handle ctx) except? 0:
@@ -4047,6 +4184,151 @@ class _LaunchableGraphScope:
         return False
 
 
+# ---------------------------------------------------------------------------
+# While-loop condition expressions
+#
+# ``cond(ld, op, threshold)`` is the canonical leaf constructor; the
+# comparison operators on ``stackable_logical_data`` are sugar that lowers
+# onto it.  Leaves combine with ``&`` / ``|`` (and negate with ``~``) into a
+# flat compound — a single combiner (all-AND or all-OR) over up to
+# ``STF_WHILE_COND_MAX_TERMS`` comparison terms, which maps 1:1 onto
+# ``stf_stackable_while_cond_multi``.  Mixed nesting like ``(a & b) | c``
+# is deliberately unsupported.
+# ---------------------------------------------------------------------------
+
+_COND_OP_STRINGS = (">", "<", ">=", "<=")
+
+
+cdef int _cond_op_code(str op_str) except -1:
+    if op_str == ">":
+        return <int>STF_CMP_GT
+    elif op_str == "<":
+        return <int>STF_CMP_LT
+    elif op_str == ">=":
+        return <int>STF_CMP_GE
+    elif op_str == "<=":
+        return <int>STF_CMP_LE
+    raise ValueError(
+        f"Unsupported comparison operator: {op_str!r} "
+        f"(expected one of {_COND_OP_STRINGS})")
+
+
+cdef int _cond_dtype_code(object dt) except -1:
+    if dt == np.float32:
+        return <int>STF_DTYPE_FLOAT32
+    elif dt == np.float64:
+        return <int>STF_DTYPE_FLOAT64
+    elif dt == np.int32:
+        return <int>STF_DTYPE_INT32
+    elif dt == np.int64:
+        return <int>STF_DTYPE_INT64
+    raise ValueError(f"Unsupported dtype for while condition: {dt}")
+
+
+class _CondExprBase:
+    """Common behavior for while-condition expressions (leaves and compounds)."""
+    __slots__ = ()
+
+    def __and__(self, other):
+        return _combine_cond(self, other, "all")
+
+    def __or__(self, other):
+        return _combine_cond(self, other, "any")
+
+    def __bool__(self):
+        raise TypeError(
+            "while-condition expressions have no Python truth value; combine "
+            "them with & / | / ~ (not and / or / not) and pass the result to "
+            "loop.continue_while(...)")
+
+
+class cond(_CondExprBase):
+    """One while-loop continuation term: ``continue while (ld <op> threshold)``.
+
+    This is the canonical leaf of a condition expression; the comparison
+    operators on ``stackable_logical_data`` (``ld > x`` etc.) are sugar that
+    lowers onto it.  Terms combine with ``&`` (continue while all hold) or
+    ``|`` (continue while any holds) and negate with ``~``::
+
+        loop.continue_while(cond(lres, ">", tol) & cond(liter, "<", cap))
+        loop.continue_while((lres > tol) & (liter < cap))   # equivalent
+
+    Parameters
+    ----------
+    ld : stackable_logical_data
+        Scalar logical data (1 element of a supported dtype) from the same
+        stackable context as the enclosing while loop.
+    op : str
+        One of ``">"``, ``"<"``, ``">="``, ``"<="``.
+    threshold : real scalar
+        Host-side constant compared against the scalar.
+    """
+    __slots__ = ("_ld", "_op", "_threshold", "_negate")
+
+    def __init__(self, ld, op, threshold, _negate=False):
+        if not isinstance(ld, stackable_logical_data):
+            raise TypeError(
+                "cond expects a stackable logical_data, got "
+                f"{type(ld).__name__}")
+        _cond_op_code(op)  # validate eagerly, keep the string form
+        if isinstance(threshold, _CondExprBase) or not isinstance(
+                threshold, _numbers.Real):
+            raise TypeError(
+                "cond threshold must be a real scalar (int or float), got "
+                f"{type(threshold).__name__}")
+        self._ld = ld
+        self._op = op
+        self._threshold = float(threshold)
+        self._negate = bool(_negate)
+
+    def __invert__(self):
+        return cond(self._ld, self._op, self._threshold, not self._negate)
+
+    def __repr__(self):
+        inner = f"cond({self._ld!r}, {self._op!r}, {self._threshold!r})"
+        return f"~{inner}" if self._negate else inner
+
+
+class _CondCompound(_CondExprBase):
+    """Flat combination of ``cond`` leaves under a single combiner."""
+    __slots__ = ("_combiner", "_terms")
+
+    def __init__(self, combiner, terms):
+        self._combiner = combiner  # "all" or "any"
+        self._terms = tuple(terms)
+
+    def __invert__(self):
+        # De Morgan: ~(a & b) == ~a | ~b, so a flat compound stays flat.
+        flipped = "any" if self._combiner == "all" else "all"
+        return _CondCompound(flipped, [~t for t in self._terms])
+
+    def __repr__(self):
+        sep = " & " if self._combiner == "all" else " | "
+        return "(" + sep.join(repr(t) for t in self._terms) + ")"
+
+
+def _combine_cond(a, b, combiner):
+    if not isinstance(a, _CondExprBase) or not isinstance(b, _CondExprBase):
+        return NotImplemented
+    terms = []
+    for expr in (a, b):
+        if isinstance(expr, cond):
+            terms.append(expr)
+            continue
+        # A multi-term compound only merges into a combination of the same
+        # kind: mixed nesting like (a & b) | c has no flat representation.
+        if expr._combiner != combiner and len(expr._terms) > 1:
+            raise NotImplementedError(
+                "mixed &/| nesting is not supported in while conditions; "
+                "use a single chain of & or a single chain of |")
+        terms.extend(expr._terms)
+    if len(terms) > STF_WHILE_COND_MAX_TERMS:
+        raise ValueError(
+            f"while conditions support at most {STF_WHILE_COND_MAX_TERMS} "
+            "comparison terms")
+    return _CondCompound(combiner, terms)
+
+
 class _WhileLoop:
     """Context manager for a CUDA 12.4+ conditional while loop."""
     def __init__(self, ctx):
@@ -4073,61 +4355,60 @@ class _WhileLoop:
         return self._cond_handle
 
     def continue_while(self, *args):
-        """Set a built-in ``continue while (ld <op> threshold)`` condition.
+        """Set the loop's built-in continuation condition.
 
-        Usage: ``loop.continue_while(ld, ">", threshold)``
+        Accepts either a single scalar comparison::
+
+            loop.continue_while(ld, ">", threshold)
+
+        or a condition expression built from :class:`cond` leaves (directly
+        or through the comparison operators on logical data), combined with
+        ``&`` (continue while all hold) or ``|`` (continue while any holds)
+        and optionally negated with ``~``::
+
+            loop.continue_while(cond(lres, ">", tol) & cond(liter, "<", cap))
+            loop.continue_while((lres > tol) & (liter < cap))  # equivalent
+
+        A single combiner applies per condition: mixed nesting such as
+        ``(a & b) | c`` is not supported.
         """
-        if len(args) != 3:
+        if len(args) == 1:
+            expr = args[0]
+            if not isinstance(expr, _CondExprBase):
+                raise TypeError(
+                    "continue_while expects a condition expression (from "
+                    "cond(...) or logical-data comparisons) or the "
+                    "(logical_data, op_string, threshold) form")
+        elif len(args) == 3:
+            ld_obj, op_str, threshold = args
+            expr = cond(ld_obj, op_str, threshold)
+        else:
             raise ValueError(
-                "continue_while expects (logical_data, op_string, threshold)")
-        ld_obj, op_str, threshold = args
-        self._set_scalar_condition(ld_obj, op_str, float(threshold))
+                "continue_while expects a condition expression or "
+                "(logical_data, op_string, threshold)")
+        self._set_condition_expr(expr)
 
-    def _set_scalar_condition(self, ld_obj, str op_str, double threshold):
-        cdef int op
-        cdef int dtype_code
+    def _set_condition_expr(self, expr):
         cdef stackable_logical_data sld
-        if op_str == ">":
-            op = <int>STF_CMP_GT
-        elif op_str == "<":
-            op = <int>STF_CMP_LT
-        elif op_str == ">=":
-            op = <int>STF_CMP_GE
-        elif op_str == "<=":
-            op = <int>STF_CMP_LE
+        if isinstance(expr, cond):
+            leaves = [expr]
+            combiner = "all"
         else:
-            raise ValueError(f"Unsupported comparison operator: {op_str}")
-
-        # Validate the type and owning context before the C-level cast: any
-        # object exposing a ``dtype`` would otherwise pass the checks below and
-        # then be reinterpreted as an STF handle through the unchecked cast.
-        if not isinstance(ld_obj, stackable_logical_data):
-            raise TypeError(
-                "continue_while expects a stackable logical_data from this context")
-        sld = <stackable_logical_data>ld_obj
-        if sld._ctx != (<stackable_context>self._ctx)._ctx:
-            raise ValueError(
-                "continue_while logical_data belongs to a different stackable context")
-
-        dt = sld._dtype
-        if dt == np.float32:
-            dtype_code = <int>STF_DTYPE_FLOAT32
-        elif dt == np.float64:
-            dtype_code = <int>STF_DTYPE_FLOAT64
-        elif dt == np.int32:
-            dtype_code = <int>STF_DTYPE_INT32
-        elif dt == np.int64:
-            dtype_code = <int>STF_DTYPE_INT64
-        else:
-            raise ValueError(f"Unsupported dtype for while condition: {dt}")
-
-        _while_cond_scalar_impl(
+            leaves = list((<object>expr)._terms)
+            combiner = (<object>expr)._combiner
+        # cond() already validated each leaf's type; the owning context can
+        # only be checked here, where the loop's context is known.
+        for leaf in leaves:
+            sld = <stackable_logical_data>leaf._ld
+            if sld._ctx != (<stackable_context>self._ctx)._ctx:
+                raise ValueError(
+                    "continue_while logical_data belongs to a different "
+                    "stackable context")
+        _while_cond_multi_impl(
             (<stackable_context>self._ctx)._ctx,
             self._scope,
-            sld._ld,
-            op,
-            threshold,
-            dtype_code)
+            leaves,
+            combiner)
 
     def condition_task(self, *args):
         """Return a ``stackable_task`` for manual condition setting (advanced)."""
@@ -4272,7 +4553,6 @@ cdef class stackable_context:
         out._ctx = self._ctx
         out._alive = self._alive
         out._source_buf = buf
-        cdef Py_buffer view
         cdef int flags
 
         if dplace is None:
@@ -4280,12 +4560,13 @@ cdef class stackable_context:
 
         if hasattr(buf, '__cuda_array_interface__'):
             cai = buf.__cuda_array_interface__
-            _reject_unsupported_cai_stream(cai)
+            _sync_cai_producer_stream(cai)
             data_ptr, readonly = cai['data']
+            out._readonly = bool(readonly)
             original_shape = cai['shape']
             out._dtype = _dtype_from_cai(cai)
             _validate_cai_c_contiguous(cai, out._dtype)
-            out._shape = original_shape
+            out._shape = tuple(int(dim) for dim in original_shape)
             out._ndim = len(out._shape)
             itemsize = out._dtype.itemsize
             total_items = 1
@@ -4295,23 +4576,42 @@ cdef class stackable_context:
             out._ld = stf_stackable_logical_data_with_place(
                 self._ctx, <void*><uintptr_t>data_ptr, out._len, dplace._h)
         else:
-            flags = PyBUF_FORMAT | PyBUF_ND | PyBUF_ANY_CONTIGUOUS
-            if PyObject_GetBuffer(buf, &view, flags) != 0:
+            # Require C-contiguous memory: STF registers view.buf/view.len as
+            # a flat byte range interpreted with the stored (C-order) shape,
+            # so a Fortran-ordered exporter would be read in the wrong
+            # element order.
+            flags = PyBUF_FORMAT | PyBUF_ND | PyBUF_C_CONTIGUOUS
+            if PyObject_GetBuffer(buf, &out._view, flags) != 0:
                 raise ValueError(
-                    "object doesn't support the buffer protocol, is not contiguous, "
+                    "object doesn't support the buffer protocol, is not C-contiguous, "
                     "or doesn't expose __cuda_array_interface__")
+            # The export stays active until __dealloc__: STF may access
+            # view.buf asynchronously, so releasing it here would let the
+            # producer resize or free the backing store out from under STF.
+            out._has_view = True
             try:
-                out._ndim = view.ndim
-                out._len = view.len
-                out._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
-                out._dtype = np.dtype(view.format)
+                out._ndim = out._view.ndim
+                out._len = out._view.len
+                out._shape = tuple(<Py_ssize_t>out._view.shape[i] for i in range(out._view.ndim))
+                out._dtype = np.dtype(out._view.format)
+                out._readonly = bool(out._view.readonly)
                 out._ld = stf_stackable_logical_data_with_place(
-                    self._ctx, view.buf, view.len, dplace._h)
-            finally:
-                PyBuffer_Release(&view)
+                    self._ctx, out._view.buf, out._view.len, dplace._h)
+            except:
+                PyBuffer_Release(&out._view)
+                out._has_view = False
+                raise
 
         if out._ld == NULL:
             raise RuntimeError("failed to create stackable_logical_data")
+
+        # A read-only source can never be written, so mark it read-only at
+        # the STF level too: nested scopes then auto-import it with READ
+        # instead of an RW freeze, which both allows concurrent readers and
+        # prevents a pop/finalize write-back into memory the exporter
+        # declared immutable.
+        if out._readonly:
+            stf_stackable_logical_data_set_read_only(out._ld)
 
         if name is not None:
             out.set_symbol(name)

@@ -54,7 +54,6 @@ def bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=400):
     lomega = ctx.logical_data_empty((1,), np.float64, name="omega")
     ltmp = ctx.logical_data_empty((1,), np.float64, name="tmp")
     liter = ctx.logical_data_empty((1,), np.float64, name="iter")
-    lcond = ctx.logical_data_empty((1,), np.float64, name="cond")
 
     with pytorch_task(ctx, lX.write()) as (tX,):
         tX.zero_()
@@ -73,9 +72,8 @@ def bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=400):
         tRhoPrev[:] = 1.0
         tAlpha[:] = 1.0
         tOmega[:] = 1.0
-    with pytorch_task(ctx, liter.write(), lcond.write()) as (tIter, tCond):
+    with pytorch_task(ctx, liter.write()) as (tIter,):
         tIter[:] = 0.0
-        tCond[:] = 1.0
 
     tol_sq = tol * tol
 
@@ -151,19 +149,10 @@ def bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=400):
 
         # Continue while residual norm² > tol² and iter < maxiter.
         stf_dot(ctx, lR, lR, ltmp)
-        with pytorch_task(ctx, liter.rw(), lcond.write(), ltmp.read()) as (
-            tIter,
-            tCond,
-            tRes,
-        ):
+        with pytorch_task(ctx, liter.rw()) as (tIter,):
             tIter += 1.0
-            tCond[:] = (
-                ((tRes.squeeze() > tol_sq) & (tIter.squeeze() < float(maxiter)))
-                .to(tCond.dtype)
-                .unsqueeze(0)
-            )
 
-        loop.continue_while(lcond, ">", 0.5)
+        loop.continue_while((ltmp > tol_sq) & (liter < float(maxiter)))
 
 
 def test_bicgstab_solver():

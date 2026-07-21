@@ -395,7 +395,6 @@ def test_jit_requires_context_or_dep_args():
 def test_numba_places():
     if len(list(cuda.gpus)) < 2:
         pytest.skip("Need at least 2 GPUs")
-        return
 
     X = np.ones(32 * 64, dtype=np.float32)
     Y = np.ones(32 * 64, dtype=np.float32)

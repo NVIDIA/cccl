@@ -121,7 +121,9 @@ Use ``with ctx.task(...) as t:`` to get a task handle. Inside the block:
 For kernels that should become native CUDA graph nodes (instead of being captured from
 a stream), use ``ctx.cuda_kernel(...)``. It accepts the same dependency and
 ``exec_place`` arguments as ``ctx.task(...)``, and the resulting object exposes a
-``launch()`` method that describes the kernel to STF directly::
+``launch()`` method that describes the kernel to STF directly. The following excerpt
+launches a precompiled AXPY ``kernel`` (see ``tests/stf/test_cuda_kernel.py`` for the
+complete program)::
 
     with ctx.cuda_kernel(lX.read(), lY.rw(), symbol="axpy") as k:
         dX, dY = k.get_arg(0), k.get_arg(1)
@@ -139,7 +141,9 @@ runtime is imported lazily inside each adapter, and a missing dependency raises 
 
 **PyTorch** (``cuda.stf._experimental.interop.pytorch``) -- ``pytorch_task`` opens a
 task, makes the task's CUDA stream the current PyTorch stream for the duration of the
-block, and yields the task arguments as ``torch.Tensor`` views::
+block, and yields the task arguments as ``torch.Tensor`` views. The following excerpt
+stores ``2 * lX`` into ``lY`` (see ``tests/stf/interop/test_pytorch.py`` for the
+complete program)::
 
     from cuda.stf._experimental.interop.pytorch import pytorch_task
 
@@ -151,7 +155,9 @@ task arguments to tensors if you manage the task block yourself.
 
 **Numba** (``cuda.stf._experimental.interop.numba``) -- ``numba_task`` opens a task and
 yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to
-``cuda.compute`` algorithms::
+``cuda.compute`` algorithms. The following excerpt sums two logical data with
+``cuda.compute`` (see ``tests/stf/interop/test_cuda_compute.py`` for the complete
+program)::
 
     from cuda.stf._experimental.interop.numba import numba_task
 
@@ -160,7 +166,9 @@ yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to
 
 The ``jit`` decorator wraps ``numba.cuda.jit`` so a kernel can be launched
 directly with STF ``dep`` arguments; the conversion into device arrays (and the
-task that scopes them) happens automatically::
+task that scopes them) happens automatically. The following excerpt declares an
+AXPY kernel and launches it on two logical data (see
+``tests/stf/interop/test_decorator.py`` for the complete program)::
 
     from numba import cuda
 
@@ -210,6 +218,42 @@ does not take ownership of those Python objects or extend their lifetime.
 The lower-level ``stackable_context.pop_prologue_shared()`` API remains
 available for advanced code that manages stackable scopes manually, but most
 Python examples should prefer ``task_graph()``.
+
+Device-side loops
+-----------------
+
+A ``stackable_context`` (created directly or owned by a ``task_graph()``) can
+nest scopes that become CUDA conditional graph nodes (CUDA 12.4+), so iteration
+runs entirely on the device with no host round-trip per step:
+
+* ``with ctx.repeat(count):`` -- run the body a fixed number of times.
+* ``with ctx.while_loop() as loop:`` -- run the body while a condition holds.
+
+A while body executes **at least once**. Call ``loop.continue_while(...)``
+exactly once per body, after the body tasks; it schedules an internal task
+that reads 1-element logical data and sets the continuation predicate for the
+**next** iteration (tasks submitted after it still run in the current one).
+Conditions compare device scalars against host constants and combine with
+``&`` (continue while all hold) or ``|`` (continue while any holds), with
+``~`` for negation -- the usual way to pair a convergence test with an
+iteration cap so a non-converging solve cannot replay forever. The following
+excerpt caps a solver loop on both the residual and an iteration counter (see
+``tests/stf/examples/cg.py`` for the complete program)::
+
+    liter = ctx.logical_data_zeros((1,), np.float64, name="iter")
+
+    with ctx.while_loop() as loop:
+        # ... solver step updating lresidual, and a task incrementing liter ...
+        loop.continue_while((lresidual > tol) & (liter < max_iter))
+
+``(lresidual > tol)`` is sugar for the canonical leaf constructor
+``stf.cond(lresidual, ">", tol)``, which also suits generated code; both
+forms lower onto a single condition task and one tiny kernel regardless of
+the number of terms (at most 8, one ``&``-chain or one ``|``-chain per
+condition). Use ``and`` / ``or`` and these expressions raise ``TypeError``.
+
+See ``tests/stf/examples/cg.py`` and ``tests/stf/examples/bicgstab.py`` for
+complete solvers built on device-side while loops.
 
 Places
 ------

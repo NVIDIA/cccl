@@ -169,6 +169,108 @@ def test_logical_data_accepts_explicit_c_contiguous_cai_strides(context_type):
     ctx.finalize()
 
 
+class _ReadonlyCudaArrayInterfaceWrapper:
+    def __init__(self, array):
+        self._array = array
+        self.__cuda_array_interface__ = {
+            "version": 3,
+            "shape": array.shape,
+            "typestr": array.dtype.str,
+            "data": (array.ctypes.data, True),  # readonly export
+            "strides": None,
+        }
+
+
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+def test_logical_data_readonly_buffer_rejects_write_deps(context_type):
+    array = np.arange(8, dtype=np.float64)
+    array.setflags(write=False)
+
+    ctx = context_type()
+    ld = ctx.logical_data(array)
+    assert ld.readonly
+    ld.read()  # read access stays legal
+    with pytest.raises(ValueError, match="read-only"):
+        ld.write()
+    with pytest.raises(ValueError, match="read-only"):
+        ld.rw()
+    ctx.finalize()
+
+
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+def test_logical_data_readonly_cai_rejects_write_deps(context_type):
+    array = np.arange(8, dtype=np.float64)
+
+    ctx = context_type()
+    ld = ctx.logical_data(_ReadonlyCudaArrayInterfaceWrapper(array))
+    assert ld.readonly
+    ld.read()
+    with pytest.raises(ValueError, match="read-only"):
+        ld.write()
+    with pytest.raises(ValueError, match="read-only"):
+        ld.rw()
+    ctx.finalize()
+
+
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+def test_logical_data_writable_source_not_readonly(context_type):
+    array = np.zeros(8, dtype=np.float64)
+
+    ctx = context_type()
+    ld = ctx.logical_data(array)
+    assert not ld.readonly
+    ld.write()
+    ld.rw()
+    ctx.finalize()
+
+
+def test_stackable_readonly_source_safe_across_scopes():
+    # A read-only source is auto-marked STF read-only, so nested scopes
+    # auto-import it with READ (no RW freeze, no write-back into the
+    # immutable source) and write-capable explicit pushes are rejected.
+    array = np.arange(8, dtype=np.float64)
+    array.setflags(write=False)
+
+    ctx = stf.stackable_context()
+    ld = ctx.logical_data(array)
+    assert ld.readonly
+    with pytest.raises(ValueError, match="read-only"):
+        ld.push(stf.AccessMode.RW)
+    with ctx.graph_scope():
+        ld.push(stf.AccessMode.READ)
+    ctx.finalize()
+
+
+def test_stackable_set_read_only_blocks_write_deps():
+    array = np.zeros(8, dtype=np.float64)
+
+    ctx = stf.stackable_context()
+    ld = ctx.logical_data(array)
+    assert not ld.readonly
+    ld.set_read_only()
+    assert ld.readonly
+    with pytest.raises(ValueError, match="read-only"):
+        ld.write()
+    with pytest.raises(ValueError, match="read-only"):
+        ld.push(stf.AccessMode.RW)
+    ctx.finalize()
+
+
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+def test_logical_data_pins_buffer_protocol_export(context_type):
+    # The Py_buffer export must stay active for the logical data's lifetime:
+    # STF holds the raw pointer, so a resizable exporter (bytearray) must be
+    # blocked from reallocating out from under it.
+    buf = bytearray(64)
+
+    ctx = context_type()
+    ld = ctx.logical_data(buf)
+    with pytest.raises(BufferError):
+        buf.extend(b"x")  # resize attempt while the export is held
+    del ld
+    ctx.finalize()
+
+
 def test_fence_returns_stream():
     """fence() returns a non-zero CUDA stream handle."""
     ctx = stf.context()

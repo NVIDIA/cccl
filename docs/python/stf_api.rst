@@ -106,7 +106,44 @@ Contexts
    .. py:method:: repeat(count)
 
       Return context managers for a nested graph, a conditional while loop, or a
-      fixed-count repeat scope.
+      fixed-count repeat scope. The object yielded by ``while_loop()`` exposes:
+
+      .. py:method:: continue_while(...)
+         :no-index:
+
+         Set the loop's continuation condition; call exactly once per body,
+         after the body tasks. Accepts a single comparison in legacy form,
+         ``continue_while(ld, op, threshold)``, or a condition expression of
+         :py:class:`cond` leaves combined with ``&`` (continue while all hold)
+         or ``|`` (continue while any holds), optionally negated with ``~``::
+
+            loop.continue_while((lres > tol_sq) & (liter < max_iter))
+
+         One combiner applies per condition (up to 8 terms); mixed nesting
+         such as ``(a & b) | c`` raises ``NotImplementedError``.
+
+      .. py:attribute:: cond_handle
+         :no-index:
+
+         Raw ``cudaGraphConditionalHandle`` as ``uint64_t``, for a custom
+         condition kernel that calls ``cudaGraphSetConditional()`` directly.
+         Advanced: such a kernel cannot be written with Numba or PyTorch --
+         ``cudaGraphSetConditional()`` is a device-runtime function, so the
+         kernel must be compiled with relocatable device code and linked
+         against ``cudadevrt`` (e.g. via NVRTC + nvJitLink). Prefer
+         ``continue_while(...)``.
+
+.. py:class:: cond(ld, op, threshold)
+
+   One while-loop continuation term: continue while ``ld <op> threshold``,
+   where ``ld`` is a 1-element logical data of a stackable context
+   (``float32`` / ``float64`` / ``int32`` / ``int64``), ``op`` is one of
+   ``">"``, ``"<"``, ``">="``, ``"<="`` and ``threshold`` is a host-side real
+   scalar. This is the canonical constructor; the ordering operators on
+   stackable logical data (``lres > tol_sq``, …) are sugar that lowers onto
+   it. Leaves combine with ``&`` / ``|`` and negate with ``~``; expressions
+   have no Python truth value, so ``and`` / ``or`` / ``not`` raise
+   ``TypeError``. ``==`` / ``!=`` on logical data keep identity semantics.
 
    .. py:method:: launchable_graph_scope()
 
