@@ -148,6 +148,12 @@ launch_docker() {
     local -;
     set -euo pipefail
 
+    if ! docker --version > /dev/null 2>&1 ; then
+      echo "Docker launch requires a working installation of docker."
+      echo "Ensure that 'docker' is reachable on PATH."
+      exit 127
+    fi
+
     ###
     # Read relevant values from devcontainer.json
     ###
@@ -291,6 +297,13 @@ launch_docker() {
 launch_vscode() {
     local -;
     set -euo pipefail;
+
+    if ! code --version > /dev/null 2>&1 ; then
+      echo "VSCode launch requires a working installation of vscode."
+      echo "Ensure that 'code' is reachable on PATH."
+      exit 127
+    fi
+
     # Since Visual Studio Code allows only one instance per `devcontainer.json`,
     # this code prepares a unique temporary directory structure for each launch of a devcontainer.
     # By doing so, it ensures that multiple instances of the same environment can be run
