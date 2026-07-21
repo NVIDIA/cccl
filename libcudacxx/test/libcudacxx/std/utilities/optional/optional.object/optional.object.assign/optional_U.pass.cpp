@@ -30,7 +30,7 @@ using cuda::std::optional;
 struct Y1
 {
   Y1() = default;
-  __host__ __device__ Y1(const int&) {}
+  TEST_FUNC Y1(const int&) {}
   Y1& operator=(const Y1&) = delete;
 };
 
@@ -38,7 +38,7 @@ struct Y2
 {
   Y2()           = default;
   Y2(const int&) = delete;
-  __host__ __device__ Y2& operator=(const int&)
+  TEST_FUNC Y2& operator=(const int&)
   {
     return *this;
   }
@@ -48,7 +48,7 @@ struct B
 {
   int val_;
 
-  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const int& other) const noexcept
   {
     return other == val_;
   }
@@ -64,7 +64,7 @@ struct AssignableFrom
   STATIC_MEMBER_VAR(int_constructed, int)
   STATIC_MEMBER_VAR(int_assigned, int)
 
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     type_constructed() = int_constructed() = 0;
     type_assigned() = int_assigned() = 0;
@@ -72,21 +72,21 @@ struct AssignableFrom
 
   AssignableFrom() = default;
 
-  __host__ __device__ explicit AssignableFrom(T)
+  TEST_FUNC explicit AssignableFrom(T)
   {
     ++type_constructed();
   }
-  __host__ __device__ AssignableFrom& operator=(T)
+  TEST_FUNC AssignableFrom& operator=(T)
   {
     ++type_assigned();
     return *this;
   }
 
-  __host__ __device__ AssignableFrom(int)
+  TEST_FUNC AssignableFrom(int)
   {
     ++int_constructed();
   }
-  __host__ __device__ AssignableFrom& operator=(int)
+  TEST_FUNC AssignableFrom& operator=(int)
   {
     ++int_assigned();
     return *this;
@@ -97,7 +97,7 @@ private:
   AssignableFrom& operator=(AssignableFrom const&) = delete;
 };
 
-__host__ __device__ void test_with_test_type()
+TEST_FUNC void test_with_test_type()
 {
   using T = TestTypes::TestType;
   T::reset();
@@ -161,7 +161,7 @@ __host__ __device__ void test_with_test_type()
   assert(T::alive() == 0);
 }
 
-__host__ __device__ void test_ambiguous_assign()
+TEST_FUNC void test_ambiguous_assign()
 {
   using OptInt = cuda::std::optional<int>;
   {
@@ -178,9 +178,9 @@ __host__ __device__ void test_ambiguous_assign()
     }
     {
       using Opt = cuda::std::optional<T>;
-      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value, "");
+      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value);
     }
   }
   {
@@ -207,15 +207,15 @@ __host__ __device__ void test_ambiguous_assign()
     }
     {
       using Opt = cuda::std::optional<T>;
-      static_assert(cuda::std::is_assignable<Opt&, OptInt&&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value, "");
+      static_assert(cuda::std::is_assignable<Opt&, OptInt&&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value);
     }
   }
 }
 
 template <class T, class U>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   { // empty assigned to empty
     optional<T> opt{};
@@ -265,12 +265,10 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, short>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<B&, D&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   enum class state_t
   {
@@ -282,7 +280,7 @@ __host__ __device__ constexpr bool test()
   class StateTracker
   {
   public:
-    __host__ __device__ constexpr StateTracker(state_t& s)
+    TEST_FUNC constexpr StateTracker(state_t& s)
         : state_(&s)
     {
       *state_ = state_t::constructed;
@@ -291,7 +289,7 @@ __host__ __device__ constexpr bool test()
     StateTracker(StateTracker&&)      = default;
     StateTracker(StateTracker const&) = default;
 
-    __host__ __device__ constexpr StateTracker& operator=(StateTracker&& other) noexcept
+    TEST_FUNC constexpr StateTracker& operator=(StateTracker&& other) noexcept
     {
       *state_      = state_t::inactive;
       state_       = other.state_;
@@ -300,7 +298,7 @@ __host__ __device__ constexpr bool test()
       return *this;
     }
 
-    __host__ __device__ constexpr StateTracker& operator=(StateTracker const& other) noexcept
+    TEST_FUNC constexpr StateTracker& operator=(StateTracker const& other) noexcept
     {
       *state_ = state_t::inactive;
       state_  = other.state_;

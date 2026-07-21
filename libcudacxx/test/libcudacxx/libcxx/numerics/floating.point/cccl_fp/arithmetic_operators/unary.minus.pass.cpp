@@ -12,6 +12,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <typename T, typename = void>
 struct has_unary_minus : cuda::std::false_type
 {};
@@ -21,7 +23,7 @@ struct has_unary_minus<T, cuda::std::void_t<decltype(-T{})>> : cuda::std::true_t
 {};
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_fp_unary_minus()
+TEST_FUNC constexpr void test_fp_unary_minus()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -38,7 +40,7 @@ __host__ __device__ constexpr void test_fp_unary_minus()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_fp_unary_minus<cuda::std::__fp_format::__binary16>();
   test_fp_unary_minus<cuda::std::__fp_format::__binary32>();

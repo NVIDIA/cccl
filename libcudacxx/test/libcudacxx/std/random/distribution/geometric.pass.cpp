@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -25,7 +28,7 @@ struct geometric_cdf
 {
   using P = typename cuda::std::geometric_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; p) = 1 - (1-p)^(floor(x)+1) for x >= 0
     // This represents P(X <= x) where X is the number of failures before the first success
@@ -39,7 +42,7 @@ struct geometric_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // Cannot be constexpr due to negative_binomial_distribution dependencies
   [[maybe_unused]] const bool test_constexpr = false;

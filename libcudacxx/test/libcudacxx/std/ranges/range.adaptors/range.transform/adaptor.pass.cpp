@@ -27,13 +27,13 @@ struct NonCopyableFunction
 {
   NonCopyableFunction(NonCopyableFunction const&) = delete;
   template <class T>
-  __host__ __device__ constexpr T operator()(T x) const
+  TEST_FUNC constexpr T operator()(T x) const
   {
     return x;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 

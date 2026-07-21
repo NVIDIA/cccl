@@ -19,7 +19,7 @@ struct A
 };
 
 template <class F>
-__host__ __device__ void test(F f)
+TEST_FUNC void test(F f)
 {
   {
     A a;

@@ -21,11 +21,11 @@
 
 struct Base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using OwningView = cuda::std::ranges::owning_view<Base>;
   OwningView ov;

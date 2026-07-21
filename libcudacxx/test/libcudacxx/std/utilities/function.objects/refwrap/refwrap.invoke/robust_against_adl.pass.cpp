@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <functional>
 
 // #include <cuda/std/functional>
@@ -22,24 +26,24 @@ struct Holder
 };
 using Ptr = Holder<Incomplete>*;
 
-__host__ __device__ Ptr no_args()
+TEST_FUNC Ptr no_args()
 {
   return nullptr;
 }
-__host__ __device__ Ptr one_arg(Ptr p)
+TEST_FUNC Ptr one_arg(Ptr p)
 {
   return p;
 }
-__host__ __device__ Ptr two_args(Ptr p, Ptr)
+TEST_FUNC Ptr two_args(Ptr p, Ptr)
 {
   return p;
 }
-__host__ __device__ Ptr three_args(Ptr p, Ptr, Ptr)
+TEST_FUNC Ptr three_args(Ptr p, Ptr, Ptr)
 {
   return p;
 }
 
-__host__ __device__ void one_arg_void(Ptr) {}
+TEST_FUNC void one_arg_void(Ptr) {}
 
 int main(int, char**)
 {

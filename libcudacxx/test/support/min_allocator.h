@@ -23,27 +23,27 @@ class bare_allocator
 public:
   using value_type = T;
 
-  __host__ __device__ bare_allocator() noexcept {}
+  TEST_FUNC bare_allocator() noexcept {}
 
   template <class U>
-  __host__ __device__ bare_allocator(bare_allocator<U>) noexcept
+  TEST_FUNC bare_allocator(bare_allocator<U>) noexcept
   {}
 
-  __host__ __device__ T* allocate(cuda::std::size_t n)
+  TEST_FUNC T* allocate(cuda::std::size_t n)
   {
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t) noexcept
+  TEST_FUNC void deallocate(T* p, cuda::std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }
 
-  __host__ __device__ friend bool operator==(bare_allocator, bare_allocator)
+  TEST_FUNC friend bool operator==(bare_allocator, bare_allocator)
   {
     return true;
   }
-  __host__ __device__ friend bool operator!=(bare_allocator, bare_allocator)
+  TEST_FUNC friend bool operator!=(bare_allocator, bare_allocator)
   {
     return false;
   }
@@ -55,10 +55,10 @@ class no_default_allocator
   no_default_allocator() = delete;
   struct construct_tag
   {};
-  __host__ __device__ explicit no_default_allocator(construct_tag) {}
+  TEST_FUNC explicit no_default_allocator(construct_tag) {}
 
 public:
-  __host__ __device__ static no_default_allocator create()
+  TEST_FUNC static no_default_allocator create()
   {
     construct_tag tag;
     return no_default_allocator(tag);
@@ -68,24 +68,24 @@ public:
   using value_type = T;
 
   template <class U>
-  __host__ __device__ no_default_allocator(no_default_allocator<U>) noexcept
+  TEST_FUNC no_default_allocator(no_default_allocator<U>) noexcept
   {}
 
-  __host__ __device__ T* allocate(cuda::std::size_t n)
+  TEST_FUNC T* allocate(cuda::std::size_t n)
   {
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t) noexcept
+  TEST_FUNC void deallocate(T* p, cuda::std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }
 
-  __host__ __device__ friend bool operator==(no_default_allocator, no_default_allocator)
+  TEST_FUNC friend bool operator==(no_default_allocator, no_default_allocator)
   {
     return true;
   }
-  __host__ __device__ friend bool operator!=(no_default_allocator, no_default_allocator)
+  TEST_FUNC friend bool operator!=(no_default_allocator, no_default_allocator)
   {
     return false;
   }
@@ -98,13 +98,13 @@ TEST_GLOBAL_VARIABLE bool malloc_allocator_base_disable_default_constructor = fa
 
 struct malloc_allocator_base
 {
-  __host__ __device__ static size_t outstanding_alloc()
+  TEST_FUNC static size_t outstanding_alloc()
   {
     assert(malloc_allocator_base_alloc_count >= malloc_allocator_base_dealloc_count);
     return (malloc_allocator_base_alloc_count - malloc_allocator_base_dealloc_count);
   }
 
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     assert(outstanding_alloc() == 0);
     malloc_allocator_base_disable_default_constructor = false;
@@ -120,16 +120,16 @@ class malloc_allocator : public malloc_allocator_base
 public:
   using value_type = T;
 
-  __host__ __device__ malloc_allocator() noexcept
+  TEST_FUNC malloc_allocator() noexcept
   {
     assert(!malloc_allocator_base_disable_default_constructor);
   }
 
   template <class U>
-  __host__ __device__ malloc_allocator(malloc_allocator<U>) noexcept
+  TEST_FUNC malloc_allocator(malloc_allocator<U>) noexcept
   {}
 
-  __host__ __device__ T* allocate(cuda::std::size_t n)
+  TEST_FUNC T* allocate(cuda::std::size_t n)
   {
     const size_t nbytes = n * sizeof(T);
     ++malloc_allocator_base_alloc_count;
@@ -137,7 +137,7 @@ public:
     return static_cast<T*>(cuda::std::malloc(nbytes));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t n) noexcept
+  TEST_FUNC void deallocate(T* p, cuda::std::size_t n) noexcept
   {
     const size_t nbytes = n * sizeof(T);
     ++malloc_allocator_base_dealloc_count;
@@ -145,11 +145,11 @@ public:
     cuda::std::free(static_cast<void*>(p));
   }
 
-  __host__ __device__ friend bool operator==(malloc_allocator, malloc_allocator)
+  TEST_FUNC friend bool operator==(malloc_allocator, malloc_allocator)
   {
     return true;
   }
-  __host__ __device__ friend bool operator!=(malloc_allocator, malloc_allocator)
+  TEST_FUNC friend bool operator!=(malloc_allocator, malloc_allocator)
   {
     return false;
   }
@@ -163,14 +163,14 @@ struct cpp03_allocator : bare_allocator<T>
   using pointer    = value_type*;
 
   // Returned value is not used but it's not prohibited.
-  __host__ __device__ pointer construct(pointer p, const value_type& val)
+  TEST_FUNC pointer construct(pointer p, const value_type& val)
   {
     ::new (p) value_type(val);
     cpp03_allocator_construct_called = true;
     return p;
   }
 
-  __host__ __device__ cuda::std::size_t max_size() const
+  TEST_FUNC cuda::std::size_t max_size() const
   {
     return UINT_MAX / sizeof(T);
   }
@@ -183,22 +183,22 @@ struct cpp03_overload_allocator : bare_allocator<T>
   using value_type = T;
   using pointer    = value_type*;
 
-  __host__ __device__ void construct(pointer p, const value_type& val)
+  TEST_FUNC void construct(pointer p, const value_type& val)
   {
     construct(p, val, cuda::std::is_class<T>());
   }
-  __host__ __device__ void construct(pointer p, const value_type& val, cuda::std::true_type)
+  TEST_FUNC void construct(pointer p, const value_type& val, cuda::std::true_type)
   {
     ::new (p) value_type(val);
     cpp03_overload_allocator_construct_called = true;
   }
-  __host__ __device__ void construct(pointer p, const value_type& val, cuda::std::false_type)
+  TEST_FUNC void construct(pointer p, const value_type& val, cuda::std::false_type)
   {
     ::new (p) value_type(val);
     cpp03_overload_allocator_construct_called = true;
   }
 
-  __host__ __device__ cuda::std::size_t max_size() const
+  TEST_FUNC cuda::std::size_t max_size() const
   {
     return UINT_MAX / sizeof(T);
   }
@@ -222,24 +222,24 @@ class min_pointer<const void, ID>
 
 public:
   min_pointer() noexcept = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t) noexcept
+  TEST_FUNC min_pointer(cuda::std::nullptr_t) noexcept
       : ptr_(nullptr)
   {}
   template <class T>
-  __host__ __device__ min_pointer(min_pointer<T, ID> p) noexcept
+  TEST_FUNC min_pointer(min_pointer<T, ID> p) noexcept
       : ptr_(p.ptr_)
   {}
 
-  __host__ __device__ explicit operator bool() const
+  TEST_FUNC explicit operator bool() const
   {
     return ptr_ != nullptr;
   }
 
-  __host__ __device__ friend bool operator==(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator==(min_pointer x, min_pointer y)
   {
     return x.ptr_ == y.ptr_;
   }
-  __host__ __device__ friend bool operator!=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator!=(min_pointer x, min_pointer y)
   {
     return !(x == y);
   }
@@ -254,24 +254,24 @@ class min_pointer<void, ID>
 
 public:
   min_pointer() noexcept = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t) noexcept
+  TEST_FUNC min_pointer(cuda::std::nullptr_t) noexcept
       : ptr_(nullptr)
   {}
   template <class T, class = typename cuda::std::enable_if<!cuda::std::is_const<T>::value>::type>
-  __host__ __device__ min_pointer(min_pointer<T, ID> p) noexcept
+  TEST_FUNC min_pointer(min_pointer<T, ID> p) noexcept
       : ptr_(p.ptr_)
   {}
 
-  __host__ __device__ explicit operator bool() const
+  TEST_FUNC explicit operator bool() const
   {
     return ptr_ != nullptr;
   }
 
-  __host__ __device__ friend bool operator==(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator==(min_pointer x, min_pointer y)
   {
     return x.ptr_ == y.ptr_;
   }
-  __host__ __device__ friend bool operator!=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator!=(min_pointer x, min_pointer y)
   {
     return !(x == y);
   }
@@ -284,20 +284,20 @@ class min_pointer
 {
   T* ptr_;
 
-  __host__ __device__ explicit min_pointer(T* p) noexcept
+  TEST_FUNC explicit min_pointer(T* p) noexcept
       : ptr_(p)
   {}
 
 public:
   min_pointer() noexcept = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t) noexcept
+  TEST_FUNC min_pointer(cuda::std::nullptr_t) noexcept
       : ptr_(nullptr)
   {}
-  __host__ __device__ explicit min_pointer(min_pointer<void, ID> p) noexcept
+  TEST_FUNC explicit min_pointer(min_pointer<void, ID> p) noexcept
       : ptr_(static_cast<T*>(p.ptr_))
   {}
 
-  __host__ __device__ explicit operator bool() const
+  TEST_FUNC explicit operator bool() const
   {
     return ptr_ != nullptr;
   }
@@ -308,106 +308,106 @@ public:
   using value_type        = T;
   using iterator_category = cuda::std::random_access_iterator_tag;
 
-  __host__ __device__ reference operator*() const
+  TEST_FUNC reference operator*() const
   {
     return *ptr_;
   }
-  __host__ __device__ pointer operator->() const
+  TEST_FUNC pointer operator->() const
   {
     return ptr_;
   }
 
-  __host__ __device__ min_pointer& operator++()
+  TEST_FUNC min_pointer& operator++()
   {
     ++ptr_;
     return *this;
   }
-  __host__ __device__ min_pointer operator++(int)
+  TEST_FUNC min_pointer operator++(int)
   {
     min_pointer tmp(*this);
     ++ptr_;
     return tmp;
   }
 
-  __host__ __device__ min_pointer& operator--()
+  TEST_FUNC min_pointer& operator--()
   {
     --ptr_;
     return *this;
   }
-  __host__ __device__ min_pointer operator--(int)
+  TEST_FUNC min_pointer operator--(int)
   {
     min_pointer tmp(*this);
     --ptr_;
     return tmp;
   }
 
-  __host__ __device__ min_pointer& operator+=(difference_type n)
+  TEST_FUNC min_pointer& operator+=(difference_type n)
   {
     ptr_ += n;
     return *this;
   }
-  __host__ __device__ min_pointer& operator-=(difference_type n)
+  TEST_FUNC min_pointer& operator-=(difference_type n)
   {
     ptr_ -= n;
     return *this;
   }
 
-  __host__ __device__ min_pointer operator+(difference_type n) const
+  TEST_FUNC min_pointer operator+(difference_type n) const
   {
     min_pointer tmp(*this);
     tmp += n;
     return tmp;
   }
 
-  __host__ __device__ friend min_pointer operator+(difference_type n, min_pointer x)
+  TEST_FUNC friend min_pointer operator+(difference_type n, min_pointer x)
   {
     return x + n;
   }
 
-  __host__ __device__ min_pointer operator-(difference_type n) const
+  TEST_FUNC min_pointer operator-(difference_type n) const
   {
     min_pointer tmp(*this);
     tmp -= n;
     return tmp;
   }
 
-  __host__ __device__ friend difference_type operator-(min_pointer x, min_pointer y)
+  TEST_FUNC friend difference_type operator-(min_pointer x, min_pointer y)
   {
     return x.ptr_ - y.ptr_;
   }
 
-  __host__ __device__ reference operator[](difference_type n) const
+  TEST_FUNC reference operator[](difference_type n) const
   {
     return ptr_[n];
   }
 
-  __host__ __device__ friend bool operator<(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator<(min_pointer x, min_pointer y)
   {
     return x.ptr_ < y.ptr_;
   }
-  __host__ __device__ friend bool operator>(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator>(min_pointer x, min_pointer y)
   {
     return y < x;
   }
-  __host__ __device__ friend bool operator<=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator<=(min_pointer x, min_pointer y)
   {
     return !(y < x);
   }
-  __host__ __device__ friend bool operator>=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator>=(min_pointer x, min_pointer y)
   {
     return !(x < y);
   }
 
-  __host__ __device__ static min_pointer pointer_to(T& t)
+  TEST_FUNC static min_pointer pointer_to(T& t)
   {
     return min_pointer(cuda::std::addressof(t));
   }
 
-  __host__ __device__ friend bool operator==(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator==(min_pointer x, min_pointer y)
   {
     return x.ptr_ == y.ptr_;
   }
-  __host__ __device__ friend bool operator!=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator!=(min_pointer x, min_pointer y)
   {
     return !(x == y);
   }
@@ -422,23 +422,23 @@ class min_pointer<const T, ID>
 {
   const T* ptr_;
 
-  __host__ __device__ explicit min_pointer(const T* p)
+  TEST_FUNC explicit min_pointer(const T* p)
       : ptr_(p)
   {}
 
 public:
   min_pointer() noexcept = default;
-  __host__ __device__ min_pointer(cuda::std::nullptr_t)
+  TEST_FUNC min_pointer(cuda::std::nullptr_t)
       : ptr_(nullptr)
   {}
-  __host__ __device__ min_pointer(min_pointer<T, ID> p)
+  TEST_FUNC min_pointer(min_pointer<T, ID> p)
       : ptr_(p.ptr_)
   {}
-  __host__ __device__ explicit min_pointer(min_pointer<const void, ID> p)
+  TEST_FUNC explicit min_pointer(min_pointer<const void, ID> p)
       : ptr_(static_cast<const T*>(p.ptr_))
   {}
 
-  __host__ __device__ explicit operator bool() const
+  TEST_FUNC explicit operator bool() const
   {
     return ptr_ != nullptr;
   }
@@ -449,106 +449,106 @@ public:
   using value_type        = const T;
   using iterator_category = cuda::std::random_access_iterator_tag;
 
-  __host__ __device__ reference operator*() const
+  TEST_FUNC reference operator*() const
   {
     return *ptr_;
   }
-  __host__ __device__ pointer operator->() const
+  TEST_FUNC pointer operator->() const
   {
     return ptr_;
   }
 
-  __host__ __device__ min_pointer& operator++()
+  TEST_FUNC min_pointer& operator++()
   {
     ++ptr_;
     return *this;
   }
-  __host__ __device__ min_pointer operator++(int)
+  TEST_FUNC min_pointer operator++(int)
   {
     min_pointer tmp(*this);
     ++ptr_;
     return tmp;
   }
 
-  __host__ __device__ min_pointer& operator--()
+  TEST_FUNC min_pointer& operator--()
   {
     --ptr_;
     return *this;
   }
-  __host__ __device__ min_pointer operator--(int)
+  TEST_FUNC min_pointer operator--(int)
   {
     min_pointer tmp(*this);
     --ptr_;
     return tmp;
   }
 
-  __host__ __device__ min_pointer& operator+=(difference_type n)
+  TEST_FUNC min_pointer& operator+=(difference_type n)
   {
     ptr_ += n;
     return *this;
   }
-  __host__ __device__ min_pointer& operator-=(difference_type n)
+  TEST_FUNC min_pointer& operator-=(difference_type n)
   {
     ptr_ -= n;
     return *this;
   }
 
-  __host__ __device__ min_pointer operator+(difference_type n) const
+  TEST_FUNC min_pointer operator+(difference_type n) const
   {
     min_pointer tmp(*this);
     tmp += n;
     return tmp;
   }
 
-  __host__ __device__ friend min_pointer operator+(difference_type n, min_pointer x)
+  TEST_FUNC friend min_pointer operator+(difference_type n, min_pointer x)
   {
     return x + n;
   }
 
-  __host__ __device__ min_pointer operator-(difference_type n) const
+  TEST_FUNC min_pointer operator-(difference_type n) const
   {
     min_pointer tmp(*this);
     tmp -= n;
     return tmp;
   }
 
-  __host__ __device__ friend difference_type operator-(min_pointer x, min_pointer y)
+  TEST_FUNC friend difference_type operator-(min_pointer x, min_pointer y)
   {
     return x.ptr_ - y.ptr_;
   }
 
-  __host__ __device__ reference operator[](difference_type n) const
+  TEST_FUNC reference operator[](difference_type n) const
   {
     return ptr_[n];
   }
 
-  __host__ __device__ friend bool operator<(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator<(min_pointer x, min_pointer y)
   {
     return x.ptr_ < y.ptr_;
   }
-  __host__ __device__ friend bool operator>(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator>(min_pointer x, min_pointer y)
   {
     return y < x;
   }
-  __host__ __device__ friend bool operator<=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator<=(min_pointer x, min_pointer y)
   {
     return !(y < x);
   }
-  __host__ __device__ friend bool operator>=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator>=(min_pointer x, min_pointer y)
   {
     return !(x < y);
   }
 
-  __host__ __device__ static min_pointer pointer_to(const T& t)
+  TEST_FUNC static min_pointer pointer_to(const T& t)
   {
     return min_pointer(cuda::std::addressof(t));
   }
 
-  __host__ __device__ friend bool operator==(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator==(min_pointer x, min_pointer y)
   {
     return x.ptr_ == y.ptr_;
   }
-  __host__ __device__ friend bool operator!=(min_pointer x, min_pointer y)
+  TEST_FUNC friend bool operator!=(min_pointer x, min_pointer y)
   {
     return !(x == y);
   }
@@ -557,25 +557,25 @@ public:
 };
 
 template <class T, class ID>
-__host__ __device__ inline bool operator==(min_pointer<T, ID> x, cuda::std::nullptr_t)
+TEST_FUNC inline bool operator==(min_pointer<T, ID> x, cuda::std::nullptr_t)
 {
   return !static_cast<bool>(x);
 }
 
 template <class T, class ID>
-__host__ __device__ inline bool operator==(cuda::std::nullptr_t, min_pointer<T, ID> x)
+TEST_FUNC inline bool operator==(cuda::std::nullptr_t, min_pointer<T, ID> x)
 {
   return !static_cast<bool>(x);
 }
 
 template <class T, class ID>
-__host__ __device__ inline bool operator!=(min_pointer<T, ID> x, cuda::std::nullptr_t)
+TEST_FUNC inline bool operator!=(min_pointer<T, ID> x, cuda::std::nullptr_t)
 {
   return static_cast<bool>(x);
 }
 
 template <class T, class ID>
-__host__ __device__ inline bool operator!=(cuda::std::nullptr_t, min_pointer<T, ID> x)
+TEST_FUNC inline bool operator!=(cuda::std::nullptr_t, min_pointer<T, ID> x)
 {
   return static_cast<bool>(x);
 }
@@ -589,24 +589,24 @@ public:
 
   min_allocator() = default;
   template <class U>
-  __host__ __device__ min_allocator(min_allocator<U>)
+  TEST_FUNC min_allocator(min_allocator<U>)
   {}
 
-  __host__ __device__ pointer allocate(cuda::std::ptrdiff_t n)
+  TEST_FUNC pointer allocate(cuda::std::ptrdiff_t n)
   {
     return pointer(static_cast<T*>(::operator new(n * sizeof(T))));
   }
 
-  __host__ __device__ void deallocate(pointer p, cuda::std::ptrdiff_t) noexcept
+  TEST_FUNC void deallocate(pointer p, cuda::std::ptrdiff_t) noexcept
   {
     return ::operator delete(p.ptr_);
   }
 
-  __host__ __device__ friend bool operator==(min_allocator, min_allocator)
+  TEST_FUNC friend bool operator==(min_allocator, min_allocator)
   {
     return true;
   }
-  __host__ __device__ friend bool operator!=(min_allocator, min_allocator)
+  TEST_FUNC friend bool operator!=(min_allocator, min_allocator)
   {
     return false;
   }
@@ -618,27 +618,27 @@ class explicit_allocator
 public:
   using value_type = T;
 
-  __host__ __device__ explicit_allocator() noexcept {}
+  TEST_FUNC explicit_allocator() noexcept {}
 
   template <class U>
-  __host__ __device__ explicit explicit_allocator(explicit_allocator<U>) noexcept
+  TEST_FUNC explicit explicit_allocator(explicit_allocator<U>) noexcept
   {}
 
-  __host__ __device__ T* allocate(cuda::std::size_t n)
+  TEST_FUNC T* allocate(cuda::std::size_t n)
   {
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t) noexcept
+  TEST_FUNC void deallocate(T* p, cuda::std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }
 
-  __host__ __device__ friend bool operator==(explicit_allocator, explicit_allocator)
+  TEST_FUNC friend bool operator==(explicit_allocator, explicit_allocator)
   {
     return true;
   }
-  __host__ __device__ friend bool operator!=(explicit_allocator, explicit_allocator)
+  TEST_FUNC friend bool operator!=(explicit_allocator, explicit_allocator)
   {
     return false;
   }

@@ -54,7 +54,7 @@ int main(int, char**)
   //  Run the example
   {
     constexpr auto mdl = February / cuda::std::chrono::last;
-    static_assert(mdl.month() == February, "");
+    static_assert(mdl.month() == February);
   }
 
   { // operator/(const month& m, last_spec) and switched
@@ -63,8 +63,8 @@ int main(int, char**)
     static_assert(noexcept(February / last));
     static_assert(cuda::std::is_same_v<month_day_last, decltype(February / last)>);
 
-    static_assert((last / February).month() == February, "");
-    static_assert((February / last).month() == February, "");
+    static_assert((last / February).month() == February);
+    static_assert((February / last).month() == February);
 
     for (unsigned i = 1; i < 12; ++i)
     {
@@ -83,8 +83,8 @@ int main(int, char**)
     static_assert(noexcept(2 / last));
     static_assert(cuda::std::is_same_v<month_day_last, decltype(2 / last)>);
 
-    static_assert((last / 2).month() == February, "");
-    static_assert((2 / last).month() == February, "");
+    static_assert((last / 2).month() == February);
+    static_assert((2 / last).month() == February);
 
     for (unsigned i = 1; i < 12; ++i)
     {

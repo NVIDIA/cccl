@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c)
+TEST_FUNC void test(C c)
 {
   cuda::std::back_insert_iterator<C> i = cuda::std::back_inserter(c);
   i                                    = 0;

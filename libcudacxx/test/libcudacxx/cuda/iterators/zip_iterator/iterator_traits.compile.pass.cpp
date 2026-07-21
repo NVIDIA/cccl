@@ -27,7 +27,7 @@ struct Foo
 {};
 
 template <template <class...> class Traits>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   { // Single iterator should have tuple value type
     using Iter       = cuda::zip_iterator<int*>;
@@ -153,7 +153,7 @@ __host__ __device__ void test()
   }
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<cuda::std::iterator_traits>();
 #if !TEST_COMPILER(NVRTC)

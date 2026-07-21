@@ -104,8 +104,8 @@ TEST_CASE("aligned_reinterpret_cast", "[alignment]")
     char data_[512];
   };
 
-  T1* a1 = 0;
-  T2* a2 = 0;
+  T1* a1 = nullptr;
+  T2* a2 = nullptr;
 
   // Cast to type with stricter (larger) alignment requirement.
   a2 = thrust::detail::aligned_reinterpret_cast<T2*>(a1);

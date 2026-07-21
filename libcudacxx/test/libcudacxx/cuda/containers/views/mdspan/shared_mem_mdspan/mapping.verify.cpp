@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void not_layout_policy()
+TEST_FUNC void not_layout_policy()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: LayoutPolicy template parameter
   // is invalid. A common mistake is to pass a layout mapping instead of a layout policy}}

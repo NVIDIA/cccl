@@ -8,12 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
-__device__ void device_test()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void device_test()
 {
   __shared__ int smem[4];
   assert(cuda::__is_valid_address_range(smem, sizeof(int) * 4));
@@ -27,7 +32,7 @@ __device__ void device_test()
   assert(!cuda::device::__is_smem_valid_address_range(&var, cuda::std::numeric_limits<size_t>::max()));
 }
 
-__host__ __device__ void host_device_test()
+TEST_FUNC void host_device_test()
 {
   int var = 0;
   assert(cuda::__is_valid_address_range(&var, sizeof(var)));
@@ -38,7 +43,7 @@ __host__ __device__ void host_device_test()
   assert(!cuda::__is_valid_address_range(ptr2, 4));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   NV_IF_TARGET(NV_IS_DEVICE, (device_test();))
   return true;

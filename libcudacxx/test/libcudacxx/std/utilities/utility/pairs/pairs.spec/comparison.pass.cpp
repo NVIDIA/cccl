@@ -85,12 +85,12 @@ int main(int, char**)
     using P = cuda::std::pair<int, short>;
     constexpr P p1(3, static_cast<short>(4));
     constexpr P p2(3, static_cast<short>(2));
-    static_assert(!(p1 == p2), "");
-    static_assert((p1 != p2), "");
-    static_assert(!(p1 < p2), "");
-    static_assert(!(p1 <= p2), "");
-    static_assert((p1 > p2), "");
-    static_assert((p1 >= p2), "");
+    static_assert(!(p1 == p2));
+    static_assert((p1 != p2));
+    static_assert(!(p1 < p2));
+    static_assert(!(p1 <= p2));
+    static_assert((p1 > p2));
+    static_assert((p1 >= p2));
   }
 
   return 0;

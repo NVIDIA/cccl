@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -22,10 +25,10 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_hypot(T val)
+TEST_FUNC void test_hypot(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{})), ret>);
 
   // hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent.
   assert(eq(cuda::std::hypot(T(1.0), T(0.25)), cuda::std::hypot(T(0.25), T(1.0))));
@@ -131,10 +134,10 @@ __host__ __device__ void test_hypot(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_hypot3(T val)
+TEST_FUNC void test_hypot3(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>);
 
   // hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent.
   assert(eq(cuda::std::hypot(T(1.0), T(0.25), T(2.0)), cuda::std::hypot(T(0.25), T(1.0), T(2.0))));
@@ -215,13 +218,13 @@ __host__ __device__ void test_hypot3(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_hypot<T>(val);
   test_hypot3<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

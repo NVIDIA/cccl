@@ -38,18 +38,18 @@ C2H_CCCLRT_TEST("cuda::buffer properties", "[container][buffer]", property_test_
   using const_reverse_iterator = typename Buffer::const_reverse_iterator;
 
   // Check the type aliases
-  static_assert(cuda::std::is_same_v<int, typename Buffer::value_type>, "");
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, typename Buffer::size_type>, "");
-  static_assert(cuda::std::is_same_v<cuda::std::ptrdiff_t, typename Buffer::difference_type>, "");
-  static_assert(cuda::std::is_same_v<int*, typename Buffer::pointer>, "");
-  static_assert(cuda::std::is_same_v<const int*, typename Buffer::const_pointer>, "");
-  static_assert(cuda::std::is_same_v<int&, typename Buffer::reference>, "");
-  static_assert(cuda::std::is_same_v<const int&, typename Buffer::const_reference>, "");
-  static_assert(cuda::std::is_same_v<iterator, typename Buffer::iterator>, "");
-  static_assert(cuda::std::is_same_v<const_iterator, typename Buffer::const_iterator>, "");
-  static_assert(cuda::std::is_same_v<cuda::std::reverse_iterator<iterator>, typename Buffer::reverse_iterator>, "");
+  static_assert(cuda::std::is_same_v<int, typename Buffer::value_type>);
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, typename Buffer::size_type>);
+  static_assert(cuda::std::is_same_v<cuda::std::ptrdiff_t, typename Buffer::difference_type>);
+  static_assert(cuda::std::is_same_v<int*, typename Buffer::pointer>);
+  static_assert(cuda::std::is_same_v<const int*, typename Buffer::const_pointer>);
+  static_assert(cuda::std::is_same_v<int&, typename Buffer::reference>);
+  static_assert(cuda::std::is_same_v<const int&, typename Buffer::const_reference>);
+  static_assert(cuda::std::is_same_v<iterator, typename Buffer::iterator>);
+  static_assert(cuda::std::is_same_v<const_iterator, typename Buffer::const_iterator>);
+  static_assert(cuda::std::is_same_v<cuda::std::reverse_iterator<iterator>, typename Buffer::reverse_iterator>);
   static_assert(
-    cuda::std::is_same_v<cuda::std::reverse_iterator<const_iterator>, typename Buffer::const_reverse_iterator>, "");
+    cuda::std::is_same_v<cuda::std::reverse_iterator<const_iterator>, typename Buffer::const_reverse_iterator>);
   // TODO fix Clang not recognizing device accessible buffers as contiguous range
 #if !_CCCL_CUDA_COMPILER(CLANG)
   static_assert(cuda::std::ranges::contiguous_range<Buffer>);

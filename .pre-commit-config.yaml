@@ -6,7 +6,7 @@ ci:
     autoupdate_branch: ''
     autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
     autoupdate_schedule: quarterly
-    skip: []
+    skip: [mypy] # mypy fails on pre-commit.ci due to numpy stub incompatibility with Python 3.14
     submodules: false
 
 repos:
@@ -30,6 +30,14 @@ repos:
         exclude_types: [python]
       - id: check-yaml
 
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        exclude: |
+          (?x)^(
+            ^.*libcudacxx/cmake/config\.guess$
+          )
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v20.1.7
@@ -59,16 +67,6 @@ repos:
     - id: ruff  # linter
     - id: ruff-format  # formatter
 
-  # TOML lint & format
-  - repo: https://github.com/ComPWA/taplo-pre-commit
-    rev: v0.9.3
-    hooks:
-      # See https://github.com/NVIDIA/cccl/issues/3426
-      # - id: taplo-lint
-      #   exclude: "^docs/"
-      - id: taplo-format
-        exclude: "^docs/"
-
   # CMake formatting
   - repo: https://github.com/BlankSpruce/gersemi
     rev: 0.23.1
@@ -91,11 +89,40 @@ repos:
     rev: 'v1.16.1'
     hooks:
       - id: mypy
-        additional_dependencies: [types-cachetools, numpy]
+        # numpy is intentionally not installed here: numpy>=2.3 ships PEP 695
+        # `type` statements in its stubs that mypy rejects under
+        # python_version=3.10, and numpy<2.3 has no wheels for the Python that
+        # pre-commit.ci runs. numpy is instead ignored in the mypy config.
+        additional_dependencies: [types-cachetools]
         args: ["--config-file=python/cuda_cccl/pyproject.toml",
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
 
+  - repo: https://github.com/sirosen/texthooks
+    rev: 0.7.1
+    hooks:
+      - id: fix-smartquotes
+      - id: fix-spaces
+      - id: forbid-bidi-controls
+      - id: fix-ligatures
+
+  - repo: local
+    hooks:
+      - id: check-shebang
+        name: check-shebang
+        entry: ci/util/pre-commit/check_shebang.py
+        language: python
+        types: [shell]
+        exclude: |
+          (?x)^(
+            ^.*libcudacxx/cmake/config\.guess$
+          )
+
+      - id: unprintable-unicode
+        name: unprintable-unicode
+        entry: ci/util/pre-commit/strip_unprintable.py
+        language: python
+        types: [text]
 
 default_language_version:
   python: python3

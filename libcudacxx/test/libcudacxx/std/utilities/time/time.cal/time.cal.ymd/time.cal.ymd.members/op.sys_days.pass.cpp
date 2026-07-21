@@ -37,13 +37,13 @@
 TEST_DIAG_SUPPRESS_MSVC(4307) // potential overflow
 TEST_DIAG_SUPPRESS_MSVC(4308) // unsigned/signed comparisons
 
-__host__ __device__ void RunTheExample()
+TEST_FUNC void RunTheExample()
 {
   using namespace cuda::std::chrono;
 
-  static_assert(year_month_day{sys_days{year{2017} / January / 0}} == year{2016} / December / 31, "");
-  static_assert(year_month_day{sys_days{year{2017} / January / 31}} == year{2017} / January / 31, "");
-  static_assert(year_month_day{sys_days{year{2017} / January / 32}} == year{2017} / February / 1, "");
+  static_assert(year_month_day{sys_days{year{2017} / January / 0}} == year{2016} / December / 31);
+  static_assert(year_month_day{sys_days{year{2017} / January / 31}} == year{2017} / January / 31);
+  static_assert(year_month_day{sys_days{year{2017} / January / 32}} == year{2017} / February / 1);
 }
 
 int main(int, char**)
@@ -62,16 +62,16 @@ int main(int, char**)
     constexpr year_month_day ymd{year{1970}, month{1}, day{1}};
     constexpr sys_days sd{ymd};
 
-    static_assert(sd.time_since_epoch() == days{0}, "");
-    static_assert(year_month_day{sd} == ymd, ""); // and back
+    static_assert(sd.time_since_epoch() == days{0});
+    static_assert(year_month_day{sd} == ymd); // and back
   }
 
   {
     constexpr year_month_day ymd{year{2000}, month{2}, day{2}};
     constexpr sys_days sd{ymd};
 
-    static_assert(sd.time_since_epoch() == days{10957 + 32}, "");
-    static_assert(year_month_day{sd} == ymd, ""); // and back
+    static_assert(sd.time_since_epoch() == days{10957 + 32});
+    static_assert(year_month_day{sd} == ymd); // and back
   }
 
   //  There's one more leap day between 1/1/40 and 1/1/70
@@ -80,8 +80,8 @@ int main(int, char**)
     constexpr year_month_day ymd{year{1940}, month{1}, day{2}};
     constexpr sys_days sd{ymd};
 
-    static_assert(sd.time_since_epoch() == days{-10957}, "");
-    static_assert(year_month_day{sd} == ymd, ""); // and back
+    static_assert(sd.time_since_epoch() == days{-10957});
+    static_assert(year_month_day{sd} == ymd); // and back
   }
 
   {
@@ -95,24 +95,24 @@ int main(int, char**)
   //  These two tests check the wording for LWG 3206
   {
     constexpr year_month_day ymd{year{1971}, month{1}, day{0}}; // bad day
-    static_assert(!ymd.ok(), "");
-    static_assert(ymd.year().ok(), "");
-    static_assert(ymd.month().ok(), "");
-    static_assert(!ymd.day().ok(), "");
+    static_assert(!ymd.ok());
+    static_assert(ymd.year().ok());
+    static_assert(ymd.month().ok());
+    static_assert(!ymd.day().ok());
     constexpr sys_days sd{ymd};
-    static_assert(sd.time_since_epoch() == days{364}, "");
-    static_assert(sd == sys_days{ymd.year() / ymd.month() / day{1}} + (ymd.day() - day{1}), "");
+    static_assert(sd.time_since_epoch() == days{364});
+    static_assert(sd == sys_days{ymd.year() / ymd.month() / day{1}} + (ymd.day() - day{1}));
   }
 
   {
     constexpr year_month_day ymd{year{1970}, month{12}, day{32}}; // bad day
-    static_assert(!ymd.ok(), "");
-    static_assert(ymd.year().ok(), "");
-    static_assert(ymd.month().ok(), "");
-    static_assert(!ymd.day().ok(), "");
+    static_assert(!ymd.ok());
+    static_assert(ymd.year().ok());
+    static_assert(ymd.month().ok());
+    static_assert(!ymd.day().ok());
     constexpr sys_days sd{ymd};
-    static_assert(sd.time_since_epoch() == days{365}, "");
-    static_assert(sd == sys_days{ymd.year() / ymd.month() / day{1}} + (ymd.day() - day{1}), "");
+    static_assert(sd.time_since_epoch() == days{365});
+    static_assert(sd == sys_days{ymd.year() / ymd.month() / day{1}} + (ymd.day() - day{1}));
   }
 
   return 0;

@@ -118,7 +118,7 @@ using Overloads = cuda::std::__variant_detail::_MakeOverloads<Types...>;
 
 #define TEST_TYPE() TestType<__COUNTER__>,
 using T1 = TEST_NS::Overloads<REPEAT_1000(TEST_TYPE) TestType<1>, TestType<1>, int>;
-static_assert(__COUNTER__ >= 1000, "");
+static_assert(__COUNTER__ >= 1000);
 
 void fn1(T1 x)
 {

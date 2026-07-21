@@ -141,6 +141,6 @@ _run_post_create_command() {
     clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules --no-update-env;
 }
 
-if [ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]; then
+if [[ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]]; then
     _run_post_create_command;
 fi

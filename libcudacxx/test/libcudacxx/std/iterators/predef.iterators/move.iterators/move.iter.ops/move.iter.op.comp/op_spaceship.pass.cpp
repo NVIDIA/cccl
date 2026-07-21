@@ -9,7 +9,7 @@
 
 // UNSUPPORTED: c++17
 // UNSUPPORTED: LIBCUDACXX-has-no-concepts
-// XFAIL: c++20
+// XFAIL: !c++17
 
 // <iterator>
 
@@ -47,27 +47,27 @@ static_assert(!HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_sent
 static_assert(!HasSpaceship<cuda::std::move_iterator<three_way_contiguous_iterator<int*>>,
                             cuda::std::move_sentinel<three_way_contiguous_iterator<int*>>>);
 
-__host__ __device__ void test_spaceshippable_but_not_three_way_comparable()
+TEST_FUNC void test_spaceshippable_but_not_three_way_comparable()
 {
   struct A
   {
     using value_type      = int;
     using difference_type = int;
-    __host__ __device__ int& operator*() const;
-    __host__ __device__ A& operator++();
-    __host__ __device__ A operator++(int);
-    __host__ __device__ cuda::std::strong_ordering operator<=>(const A&) const;
+    TEST_FUNC int& operator*() const;
+    TEST_FUNC A& operator++();
+    TEST_FUNC A operator++(int);
+    TEST_FUNC cuda::std::strong_ordering operator<=>(const A&) const;
   };
   struct B
   {
     using value_type      = int;
     using difference_type = int;
-    __host__ __device__ int& operator*() const;
-    __host__ __device__ B& operator++();
-    __host__ __device__ B operator++(int);
-    __host__ __device__ cuda::std::strong_ordering operator<=>(const B&) const;
-    __host__ __device__ bool operator==(const A&) const;
-    __host__ __device__ cuda::std::strong_ordering operator<=>(const A&) const;
+    TEST_FUNC int& operator*() const;
+    TEST_FUNC B& operator++();
+    TEST_FUNC B operator++(int);
+    TEST_FUNC cuda::std::strong_ordering operator<=>(const B&) const;
+    TEST_FUNC bool operator==(const A&) const;
+    TEST_FUNC cuda::std::strong_ordering operator<=>(const A&) const;
   };
   static_assert(cuda::std::input_iterator<A>);
   static_assert(cuda::std::input_iterator<B>);
@@ -79,7 +79,7 @@ __host__ __device__ void test_spaceshippable_but_not_three_way_comparable()
 }
 
 template <class It, class Jt>
-__host__ __device__ constexpr void test_two()
+TEST_FUNC constexpr void test_two()
 {
   int a[]                               = {3, 1, 4};
   const cuda::std::move_iterator<It> i1 = cuda::std::move_iterator<It>(It(a));
@@ -96,7 +96,7 @@ __host__ __device__ constexpr void test_two()
   assert((i2 <=> j1) == cuda::std::strong_ordering::greater);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_two<int*, int*>();
   test_two<int*, const int*>();

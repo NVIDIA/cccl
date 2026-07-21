@@ -11,7 +11,7 @@ cccl_get_c2h()
 set(c2h_all_target "libcudacxx.test.c2h_all")
 add_custom_target(${c2h_all_target})
 
-if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
+if (NOT LIBCUDACXX_TEST_WITH_NVRTC AND NOT CCCL_ENABLE_TILE)
   file(
     GLOB_RECURSE test_srcs
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
@@ -25,8 +25,13 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
     string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
     set(${target_name_var} ${target_name} PARENT_SCOPE)
 
-    add_executable(${target_name} "${source}")
-    cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+    cccl_add_executable(
+      ${target_name}
+      ADD_CTEST
+      NO_METATARGETS
+      DIALECT ${CMAKE_CUDA_STANDARD}
+      SOURCES "${source}"
+    )
     target_include_directories(
       ${target_name}
       PRIVATE
@@ -45,8 +50,6 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
     endif()
 
     add_dependencies(${c2h_all_target} ${target_name})
-
-    add_test(NAME ${target_name} COMMAND ${target_name})
   endfunction()
 
   foreach (test_src IN LISTS test_srcs)
@@ -104,9 +107,6 @@ endif()
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I ${dlpack_SOURCE_DIR}/include")
 
-# enable optional<T&>
-string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
-
 # Disable dialect deprecation
 string(
   APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
@@ -116,6 +116,14 @@ string(
   APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
   " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI"
 )
+
+# enable tile support
+if (CCCL_ENABLE_TILE)
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --enable-tile")
+  set(LIBCUDACXX_ENABLE_TILE True)
+else()
+  set(LIBCUDACXX_ENABLE_TILE False)
+endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
@@ -203,6 +211,13 @@ set(
 )
 
 set(LIBCUDACXX_TEST_STANDARD_VER "c++${CMAKE_CUDA_STANDARD}")
+
+# Pedantic = werror ON and system header pragma OFF (both at their cmake defaults)
+if (CCCL_ENABLE_WERROR AND NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+  set(LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS True)
+else()
+  set(LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS False)
+endif()
 
 set(lit_site_cfg_path "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg")
 configure_lit_site_cfg(

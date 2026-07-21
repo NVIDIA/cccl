@@ -58,16 +58,20 @@ def bench_radix_sort_pairs(state: bench.State):
     alloc_stream.synchronize()
 
     sorter = make_radix_sort(
-        d_in_keys, d_out_keys, d_in_values, d_out_values, SortOrder.ASCENDING
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        order=SortOrder.ASCENDING,
     )
 
     temp_storage_bytes = sorter(
-        None,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_elements,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_elements,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -80,13 +84,13 @@ def bench_radix_sort_pairs(state: bench.State):
 
     def launcher(launch: bench.Launch):
         sorter(
-            temp_storage,
-            d_in_keys,
-            d_out_keys,
-            d_in_values,
-            d_out_values,
-            num_elements,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_in_keys=d_in_keys,
+            d_out_keys=d_out_keys,
+            d_in_values=d_in_values,
+            d_out_values=d_out_values,
+            num_items=num_elements,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

@@ -32,7 +32,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   using output_t       = cuda::std::conditional_t<(is_argmin || is_argmax), cuda::std::pair<int, T>, T>;
   using output_it_t    = output_t*;
   using accum_t        = output_t;
-  using init_t =
+  using init_value_t =
     cuda::std::conditional_t<(is_argmin || is_argmax), cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
   using offset_t          = OffsetT;
   using begin_offset_it_t = const offset_t*;
@@ -71,7 +71,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   // Create wrapped iterator for argmin/argmax operations
   [[maybe_unused]] auto d_indexed_in = cuda::make_transform_iterator(
     cuda::counting_iterator<::cuda::std::int64_t>(0),
-    cub::detail::reduce::generate_idx_value<raw_input_it_t, T>(d_raw_in, 1));
+    cub::detail::segmented_reduce::generate_idx_value<raw_input_it_t, T>(d_raw_in, 1));
   using arg_index_input_iterator_t = decltype(d_indexed_in);
 
   auto d_in = [&] {
@@ -95,6 +95,8 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   std::size_t temp_size{};
   using override_offset_t = cuda::std::conditional_t<(is_argmin || is_argmax), int, cub::detail::use_default>;
 
+  // TODO(bgruber): rewrite this to use the public CUB API directly. But in order to do this, we need to expose the
+  // guaranteed_max_seg_size at the public API
   cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
     nullptr,
     temp_size,
@@ -104,9 +106,9 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     d_begin_offsets,
     d_end_offsets,
     op_t{},
-    init_t{},
+    init_value_t{},
     guaranteed_max_seg_size,
-    0 /* stream */);
+    nullptr /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
@@ -121,7 +123,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
       d_begin_offsets,
       d_end_offsets,
       op_t{},
-      init_t{},
+      init_value_t{},
       guaranteed_max_seg_size,
       launch.get_stream());
   });

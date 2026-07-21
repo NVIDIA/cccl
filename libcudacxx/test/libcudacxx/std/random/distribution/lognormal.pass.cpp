@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -26,7 +29,7 @@ struct lognormal_cdf
 {
   using P = typename cuda::std::lognormal_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; m, s) = 0.5 * (1 + erf((ln(x) - m) / (s * sqrt(2))))
     if (x <= 0.0)
@@ -40,7 +43,7 @@ struct lognormal_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // Cannot be constexpr due to log/exp functions
   [[maybe_unused]] const bool test_constexpr = false;

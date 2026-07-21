@@ -22,8 +22,8 @@
 
 struct NotEqualityComparable
 {
-  __host__ __device__ friend bool operator==(const NotEqualityComparable&, const NotEqualityComparable&);
-  __host__ __device__ friend bool operator!=(const NotEqualityComparable&, const NotEqualityComparable&) = delete;
+  TEST_FUNC friend bool operator==(const NotEqualityComparable&, const NotEqualityComparable&);
+  TEST_FUNC friend bool operator!=(const NotEqualityComparable&, const NotEqualityComparable&) = delete;
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::not_equal_to, NotEqualityComparable, NotEqualityComparable>);
@@ -44,18 +44,18 @@ static_assert(is_transparent<cuda::std::ranges::not_equal_to>);
 
 struct PtrAndNotEqOperator
 {
-  __host__ __device__ constexpr operator void*() const
+  TEST_FUNC constexpr operator void*() const
   {
     return nullptr;
   }
   // We *don't* want operator!= to be picked here.
-  __host__ __device__ friend constexpr bool operator!=(PtrAndNotEqOperator, PtrAndNotEqOperator)
+  TEST_FUNC friend constexpr bool operator!=(PtrAndNotEqOperator, PtrAndNotEqOperator)
   {
     return true;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   auto fn = cuda::std::ranges::not_equal_to();
 

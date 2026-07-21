@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -23,53 +26,53 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using vec = cuda::std::inplace_vector<T, 42>;
   vec range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
   const vec const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
 
   auto&& bracket = range[3];
-  static_assert(cuda::std::is_same<decltype(bracket), typename vec::reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(bracket), typename vec::reference>::value);
   assert(bracket == T(12));
 
   range[3]              = T(4);
   auto&& bracket_assign = range[3];
-  static_assert(cuda::std::is_same<decltype(bracket_assign), typename vec::reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(bracket_assign), typename vec::reference>::value);
   assert(bracket_assign == T(4));
 
   auto&& const_bracket = const_range[3];
-  static_assert(cuda::std::is_same<decltype(const_bracket), typename vec::const_reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_bracket), typename vec::const_reference>::value);
   assert(const_bracket == T(42));
 
   auto&& front = range.front();
-  static_assert(cuda::std::is_same<decltype(front), typename vec::reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(front), typename vec::reference>::value);
   assert(front == T(1));
 
   auto&& const_front = const_range.front();
-  static_assert(cuda::std::is_same<decltype(const_front), typename vec::const_reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_front), typename vec::const_reference>::value);
   assert(const_front == T(0));
 
   auto&& back = range.back();
-  static_assert(cuda::std::is_same<decltype(back), typename vec::reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(back), typename vec::reference>::value);
   assert(back == T(-1));
 
   auto&& const_back = const_range.back();
-  static_assert(cuda::std::is_same<decltype(const_back), typename vec::const_reference>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_back), typename vec::const_reference>::value);
   assert(const_back == -42);
 
   auto data = range.data();
-  static_assert(cuda::std::is_same<decltype(data), typename vec::pointer>::value, "");
+  static_assert(cuda::std::is_same<decltype(data), typename vec::pointer>::value);
   assert(*data == T(1));
   assert(data == cuda::std::addressof(front));
 
   auto const_data = const_range.data();
-  static_assert(cuda::std::is_same<decltype(const_data), typename vec::const_pointer>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_data), typename vec::const_pointer>::value);
   assert(*const_data == T(0));
   assert(const_data == cuda::std::addressof(const_front));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -148,7 +151,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

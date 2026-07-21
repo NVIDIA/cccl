@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using T = double;
@@ -42,6 +42,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

@@ -1,0 +1,29 @@
+#ifndef _HOSTJIT_NEW
+#define _HOSTJIT_NEW
+#include <cstddef>
+
+namespace std {
+struct nothrow_t { explicit nothrow_t() = default; };
+extern const nothrow_t nothrow;
+enum class align_val_t : size_t {};
+}
+
+// Placement new — needs __host__ __device__ for CUDA
+#if defined(__CUDA__)
+__host__ __device__
+#endif
+inline void* operator new(std::size_t, void* p) noexcept { return p; }
+#if defined(__CUDA__)
+__host__ __device__
+#endif
+inline void* operator new[](std::size_t, void* p) noexcept { return p; }
+#if defined(__CUDA__)
+__host__ __device__
+#endif
+inline void operator delete(void*, void*) noexcept {}
+#if defined(__CUDA__)
+__host__ __device__
+#endif
+inline void operator delete[](void*, void*) noexcept {}
+
+#endif

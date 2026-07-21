@@ -55,7 +55,8 @@ template <template <class...> class _Interface, class _Super>
 }
 
 template <template <class...> class _Interface>
-[[nodiscard]] _CCCL_API auto __basic_any_from(_Interface<> const&) noexcept -> __basic_any<_Interface<>> const&
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __basic_any_from(_Interface<> const&) noexcept
+  -> __basic_any<_Interface<>> const&
 {
   // This overload is selected when called from the thunk of an unspecialized
   // interface; e.g., `icat<>` rather than `icat<ialley_cat<>>`. The thunks of
@@ -77,7 +78,8 @@ template <template <class...> class _Interface, class _Super>
 }
 
 template <template <class...> class _Interface>
-[[nodiscard]] _CCCL_API auto __basic_any_from(_Interface<> const*) noexcept -> __basic_any<_Interface<>> const*
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __basic_any_from(_Interface<> const*) noexcept
+  -> __basic_any<_Interface<>> const*
 {
   // See comment above about the use of `__basic_any_from` in the thunks of
   // unspecialized interfaces.

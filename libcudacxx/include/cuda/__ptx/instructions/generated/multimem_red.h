@@ -26,8 +26,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint32_t* __addr,
   ::cuda::std::uint32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -92,8 +92,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint64_t* __addr,
   ::cuda::std::uint64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -158,8 +158,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int32_t* __addr,
   ::cuda::std::int32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -224,8 +224,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int64_t* __addr,
   ::cuda::std::int64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -290,8 +290,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint32_t* __addr,
   ::cuda::std::uint32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -356,8 +356,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint64_t* __addr,
   ::cuda::std::uint64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -422,8 +422,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int32_t* __addr,
   ::cuda::std::int32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -488,8 +488,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int64_t* __addr,
   ::cuda::std::int64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -554,8 +554,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint32_t* __addr,
   ::cuda::std::uint32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -620,8 +620,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::uint64_t* __addr,
   ::cuda::std::uint64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -686,8 +686,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int32_t* __addr,
   ::cuda::std::int32_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -752,8 +752,8 @@ _CCCL_DEVICE static inline void multimem_red(
   ::cuda::std::int64_t* __addr,
   ::cuda::std::int64_t __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -821,10 +821,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B32* __addr,
   _B32 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -915,10 +915,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B32* __addr,
   _B32 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1009,10 +1009,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B32* __addr,
   _B32 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1103,10 +1103,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B64* __addr,
   _B64 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1197,10 +1197,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B64* __addr,
   _B64 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1291,10 +1291,10 @@ _CCCL_DEVICE static inline void multimem_red(
   _B64* __addr,
   _B64 __val)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_release, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_release);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {

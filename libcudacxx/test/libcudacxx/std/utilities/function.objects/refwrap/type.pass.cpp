@@ -24,17 +24,16 @@ class C
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C>::type, C>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::type, void()>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::type, int*(double*)>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::type, void (*)()>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::type, int* (*) (double*)>::value),
-                "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C>::type, C>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::type, void()>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::type, int*(double*)>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::type, void (*)()>::value));
   static_assert(
-    (cuda::std::is_same<cuda::std::reference_wrapper<int* (C::*) (double*)>::type, int* (C::*) (double*)>::value), "");
+    (cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::type, int* (*) (double*)>::value));
+  static_assert(
+    (cuda::std::is_same<cuda::std::reference_wrapper<int* (C::*) (double*)>::type, int* (C::*) (double*)>::value));
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int (C::*)(double*) const volatile>::type,
-                                    int (C::*)(double*) const volatile>::value),
-                "");
+                                    int (C::*)(double*) const volatile>::value));
 
   return 0;
 }

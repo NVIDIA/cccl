@@ -29,7 +29,7 @@
 
 #include <cuda/std/__memory_>
 
-__host__ __device__ void f()
+TEST_FUNC void f()
 {
   {
     using Pointer      = cuda::std::allocator<char>::pointer; // expected-warning {{'pointer' is deprecated}}

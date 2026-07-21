@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // cuda::std::views::drop
 
 #include <cuda/std/array>
@@ -29,16 +32,16 @@ struct SizedView : cuda::std::ranges::view_base
 {
   int* begin_ = nullptr;
   int* end_   = nullptr;
-  __host__ __device__ constexpr SizedView(int* begin, int* end)
+  TEST_FUNC constexpr SizedView(int* begin, int* end)
       : begin_(begin)
       , end_(end)
   {}
 
-  __host__ __device__ constexpr auto begin() const
+  TEST_FUNC constexpr auto begin() const
   {
     return forward_iterator<int*>(begin_);
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sized_sentinel<forward_iterator<int*>>(forward_iterator<int*>(end_));
   }
@@ -54,20 +57,20 @@ struct SizedViewWithUnsizedSentinel : cuda::std::ranges::view_base
 
   int* begin_ = nullptr;
   int* end_   = nullptr;
-  __host__ __device__ constexpr SizedViewWithUnsizedSentinel(int* begin, int* end)
+  TEST_FUNC constexpr SizedViewWithUnsizedSentinel(int* begin, int* end)
       : begin_(begin)
       , end_(end)
   {}
 
-  __host__ __device__ constexpr auto begin() const
+  TEST_FUNC constexpr auto begin() const
   {
     return iterator(begin_);
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sentinel(iterator(end_));
   }
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return end_ - begin_;
   }
@@ -79,7 +82,7 @@ static_assert(
 static_assert(cuda::std::ranges::view<SizedViewWithUnsizedSentinel>);
 
 template <class T>
-__host__ __device__ constexpr void test_small_range(const T& input)
+TEST_FUNC constexpr void test_small_range(const T& input)
 {
   constexpr int N = 100;
   auto size       = cuda::std::ranges::size(input);
@@ -91,13 +94,13 @@ __host__ __device__ constexpr void test_small_range(const T& input)
 
 struct Pred
 {
-  __host__ __device__ constexpr int operator()(int i) noexcept
+  TEST_FUNC constexpr int operator()(int i) noexcept
   {
     return i;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   constexpr int N = 8;
   int buf[N]      = {1, 2, 3, 4, 5, 6, 7, 8};
@@ -281,7 +284,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   return 0;

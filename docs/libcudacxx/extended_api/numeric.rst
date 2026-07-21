@@ -1,18 +1,25 @@
 .. _libcudacxx-extended-api-numeric:
 
 Numeric
-=======
+========
 
 .. toctree::
    :hidden:
    :maxdepth: 1
 
    numeric/add_overflow
+   numeric/saturating_add_overflow
    numeric/div_overflow
+   numeric/saturating_div_overflow
+   numeric/isclose
    numeric/mul_overflow
+   numeric/saturating_mul_overflow
    numeric/narrow
+   numeric/overflow_cast
    numeric/overflow_result
+   numeric/saturating_overflow_cast
    numeric/sub_overflow
+   numeric/saturating_sub_overflow
 
 .. list-table::
    :widths: 25 45 30 30
@@ -53,32 +60,37 @@ Numeric
      - CCCL 3.2.0
      - CUDA 13.2
 
+   * - :ref:`cuda::isclose <libcudacxx-extended-api-numeric-isclose>`
+     - Checks whether two values are approximately equal
+     - CCCL 3.5.0
+     - CUDA 13.5
+
    * - :ref:`cuda::mul_overflow <libcudacxx-extended-api-numeric-mul_overflow>`
      - Performs multiplication with overflow checking
-     - CCCL 3.3.0
-     - CUDA 13.3
+     - CCCL 3.4.0
+     - CUDA 13.4
 
-   * - :ref:`cuda::saturate_overflow_cast <libcudacxx-extended-api-numeric-saturate_overflow_cast>`
+   * - :ref:`cuda::saturating_overflow_cast <libcudacxx-extended-api-numeric-saturating_overflow_cast>`
      - Performs saturating cast of a value with overflow checking
      - CCCL 3.4.0
      - CUDA 13.4
 
-   * - :ref:`cuda::add_sat_overflow <libcudacxx-extended-api-numeric-add_sat_overflow>`
+   * - :ref:`cuda::saturating_add_overflow <libcudacxx-extended-api-numeric-saturating_add_overflow>`
      - Performs saturating addition with overflow checking
      - CCCL 3.4.0
      - CUDA 13.4
 
-   * - :ref:`cuda::sub_sat_overflow <libcudacxx-extended-api-numeric-sub_sat_overflow>`
+   * - :ref:`cuda::saturating_sub_overflow <libcudacxx-extended-api-numeric-saturating_sub_overflow>`
      - Performs saturating subtraction with overflow checking
      - CCCL 3.4.0
      - CUDA 13.4
 
-   * - :ref:`cuda::div_sat_overflow <libcudacxx-extended-api-numeric-div_sat_overflow>`
+   * - :ref:`cuda::saturating_div_overflow <libcudacxx-extended-api-numeric-saturating_div_overflow>`
      - Performs saturating division with overflow checking
      - CCCL 3.4.0
      - CUDA 13.4
 
-   * - :ref:`cuda::mul_sat_overflow <libcudacxx-extended-api-numeric-mul_sat_overflow>`
+   * - :ref:`cuda::saturating_mul_overflow <libcudacxx-extended-api-numeric-saturating_mul_overflow>`
      - Performs saturating multiplication with overflow checking
      - CCCL 3.4.0
      - CUDA 13.4

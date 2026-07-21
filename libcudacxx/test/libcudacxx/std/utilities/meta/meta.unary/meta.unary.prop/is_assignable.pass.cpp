@@ -19,21 +19,21 @@ struct A
 
 struct B
 {
-  __host__ __device__ void operator=(A);
+  TEST_FUNC void operator=(A);
 };
 
 template <class T, class U>
-__host__ __device__ void test_is_assignable()
+TEST_FUNC void test_is_assignable()
 {
-  static_assert((cuda::std::is_assignable<T, U>::value), "");
-  static_assert(cuda::std::is_assignable_v<T, U>, "");
+  static_assert((cuda::std::is_assignable<T, U>::value));
+  static_assert(cuda::std::is_assignable_v<T, U>);
 }
 
 template <class T, class U>
-__host__ __device__ void test_is_not_assignable()
+TEST_FUNC void test_is_not_assignable()
 {
-  static_assert((!cuda::std::is_assignable<T, U>::value), "");
-  static_assert(!cuda::std::is_assignable_v<T, U>, "");
+  static_assert((!cuda::std::is_assignable<T, U>::value));
+  static_assert(!cuda::std::is_assignable_v<T, U>);
 }
 
 struct D;
@@ -41,12 +41,12 @@ struct D;
 struct C
 {
   template <class U>
-  __host__ __device__ D operator,(U&&);
+  TEST_FUNC D operator,(U&&);
 };
 
 struct E
 {
-  __host__ __device__ C operator=(int);
+  TEST_FUNC C operator=(int);
 };
 
 template <typename T>

@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]         = {1, 2, 3, 4, 5};
   int ir[]         = {1, 3, 6, 10, 15};
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();
@@ -70,12 +70,19 @@ __host__ __device__ constexpr bool test()
   test<const int*, random_access_iterator<int*>>();
   test<const int*, int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

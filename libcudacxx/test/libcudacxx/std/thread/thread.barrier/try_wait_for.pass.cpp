@@ -5,7 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-80
 
@@ -18,7 +22,7 @@
 #include "test_macros.h"
 
 template <typename Barrier, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-__host__ __device__ int test(bool add_delay = false)
+TEST_FUNC int test(bool add_delay = false)
 {
   printf("delay %s\r\n", add_delay ? "enabled" : "disabled");
 

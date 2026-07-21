@@ -34,7 +34,9 @@ perm_it = PermutationIterator(d_values, d_indices)
 
 # Perform the transform, scattering squared values to permuted locations.
 num_items = len(d_indices)
-cuda.compute.unary_transform(input_it, perm_it, square_op, num_items)
+cuda.compute.unary_transform(
+    d_in=input_it, d_out=perm_it, op=square_op, num_items=num_items
+)
 
 # Verify the result: values[9]=0, values[3]=1, values[7]=4, values[1]=9, values[5]=16
 # Other positions should remain 0

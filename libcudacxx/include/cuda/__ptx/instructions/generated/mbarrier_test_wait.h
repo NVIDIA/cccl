@@ -55,7 +55,7 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait(
   const ::cuda::std::uint64_t& __state)
 {
   // __sem == sem_acquire (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __waitComplete;
   if constexpr (__scope == scope_cta)
@@ -108,7 +108,7 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait(
   const ::cuda::std::uint64_t& __state)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __waitComplete;
   if constexpr (__scope == scope_cta)

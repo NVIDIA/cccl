@@ -23,9 +23,9 @@
 
 #include <cuda/__memory/check_address.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstring>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 

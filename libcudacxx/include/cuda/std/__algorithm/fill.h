@@ -48,7 +48,7 @@ __fill(_RandomAccessIterator __first, _RandomAccessIterator __last, const _Tp& _
 template <class _ForwardIterator, class _Tp>
 _CCCL_API constexpr void fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
-  ::cuda::std::__fill(__first, __last, __value_, typename iterator_traits<_ForwardIterator>::iterator_category());
+  ::cuda::std::__fill(__first, __last, __value_, __iterator_traits_category_or_concept_t<_ForwardIterator>());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

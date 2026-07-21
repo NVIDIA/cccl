@@ -35,7 +35,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   bool __enable_input_d,
   ::cuda::ptx::n32_t<_N32> __scale_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32);
 // __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)
@@ -119,7 +119,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   bool __enable_input_d,
   ::cuda::ptx::n32_t<_N32> __scale_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32);
 // __cta_group == cta_group_2 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)
@@ -211,7 +211,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   const ::cuda::std::uint32_t (&__disable_output_lane)[4],
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
 // __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
@@ -331,7 +331,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   const ::cuda::std::uint32_t (&__disable_output_lane)[8],
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
 // __cta_group == cta_group_2 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
@@ -470,8 +470,8 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   bool __enable_input_d,
   ::cuda::ptx::n32_t<_N32> __scale_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)
   if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
@@ -574,8 +574,8 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -740,7 +740,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   bool __enable_input_d,
   ::cuda::ptx::n32_t<_N32> __scale_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32);
 // __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)
@@ -824,7 +824,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   bool __enable_input_d,
   ::cuda::ptx::n32_t<_N32> __scale_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32);
 // __cta_group == cta_group_2 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)
@@ -916,7 +916,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   const ::cuda::std::uint32_t (&__disable_output_lane)[4],
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
 // __cta_group == cta_group_1 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
@@ -1036,7 +1036,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   const ::cuda::std::uint32_t (&__disable_output_lane)[8],
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
 // __cta_group == cta_group_2 (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
@@ -1176,8 +1176,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   bool __enable_input_d,
   ::cuda::ptx::n32_t<_N32> __scale_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)
   if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
@@ -1280,8 +1280,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1447,7 +1447,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -1526,8 +1526,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -1643,7 +1643,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -1723,7 +1723,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1803,8 +1803,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -1955,7 +1955,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -2034,8 +2034,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -2151,7 +2151,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -2231,7 +2231,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2311,8 +2311,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2463,7 +2463,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -2542,8 +2542,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -2659,7 +2659,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -2739,7 +2739,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_fill
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2819,8 +2819,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_fill
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -2973,7 +2973,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -3052,8 +3052,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -3169,7 +3169,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -3249,7 +3249,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3329,8 +3329,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3483,7 +3483,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -3562,8 +3562,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -3679,7 +3679,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -3759,7 +3759,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_use(
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3839,8 +3839,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_use(
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -3993,7 +3993,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -4072,8 +4072,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -4189,7 +4189,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -4269,7 +4269,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4349,8 +4349,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4503,7 +4503,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastu
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -4582,8 +4582,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -4699,7 +4699,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastu
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -4779,7 +4779,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_last
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -4859,8 +4859,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_last
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -5013,7 +5013,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -5092,8 +5092,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -5209,7 +5209,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -5289,7 +5289,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -5369,8 +5369,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -5523,7 +5523,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_disca
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -5602,8 +5602,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -5719,7 +5719,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_disca
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -5799,7 +5799,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_disc
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -5879,8 +5879,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_disc
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -6033,7 +6033,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -6112,8 +6112,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
@@ -6229,7 +6229,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   if constexpr (__cta_group == cta_group_1)
@@ -6309,7 +6309,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector
   bool __enable_input_d)
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -6389,8 +6389,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector
   ::cuda::std::uint32_t __scale_B_tmem,
   bool __enable_input_d)
 {
-  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__kind == kind_mxf8f6f4 || __kind == kind_mxf4 || __kind == kind_mxf4nvf4);
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)

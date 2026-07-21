@@ -55,10 +55,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
@@ -183,18 +179,18 @@ public:
     {
       if constexpr (random_access_range<_View>)
       {
-        return ::cuda::std::ranges::begin(__base_);
+        return ::cuda::std::ranges::__begin_cpo{}(__base_);
       }
       else
       {
         using _DifferenceT = range_difference_t<_View>;
         auto __size        = size();
-        return counted_iterator(::cuda::std::ranges::begin(__base_), static_cast<_DifferenceT>(__size));
+        return counted_iterator(::cuda::std::ranges::__begin_cpo{}(__base_), static_cast<_DifferenceT>(__size));
       }
     }
     else
     {
-      return counted_iterator(::cuda::std::ranges::begin(__base_), __count_);
+      return counted_iterator(::cuda::std::ranges::__begin_cpo{}(__base_), __count_);
     }
   }
 
@@ -206,18 +202,18 @@ public:
     {
       if constexpr (random_access_range<const _View>)
       {
-        return ::cuda::std::ranges::begin(__base_);
+        return ::cuda::std::ranges::__begin_cpo{}(__base_);
       }
       else
       {
         using _DifferenceT = range_difference_t<const _View>;
         auto __size        = size();
-        return counted_iterator(::cuda::std::ranges::begin(__base_), static_cast<_DifferenceT>(__size));
+        return counted_iterator(::cuda::std::ranges::__begin_cpo{}(__base_), static_cast<_DifferenceT>(__size));
       }
     }
     else
     {
-      return counted_iterator(::cuda::std::ranges::begin(__base_), __count_);
+      return counted_iterator(::cuda::std::ranges::__begin_cpo{}(__base_), __count_);
     }
   }
 
@@ -229,7 +225,7 @@ public:
     {
       if constexpr (random_access_range<_View>)
       {
-        return ::cuda::std::ranges::begin(__base_) + size();
+        return ::cuda::std::ranges::__begin_cpo{}(__base_) + size();
       }
       else
       {
@@ -238,7 +234,7 @@ public:
     }
     else
     {
-      return __sentinel<false>{::cuda::std::ranges::end(__base_)};
+      return __sentinel<false>{::cuda::std::ranges::__end_cpo{}(__base_)};
     }
   }
 
@@ -250,7 +246,7 @@ public:
     {
       if constexpr (random_access_range<const _View>)
       {
-        return ::cuda::std::ranges::begin(__base_) + size();
+        return ::cuda::std::ranges::__begin_cpo{}(__base_) + size();
       }
       else
       {
@@ -259,7 +255,7 @@ public:
     }
     else
     {
-      return __sentinel<true>{::cuda::std::ranges::end(__base_)};
+      return __sentinel<true>{::cuda::std::ranges::__end_cpo{}(__base_)};
     }
   }
 
@@ -267,7 +263,7 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    const auto __n = ::cuda::std::ranges::size(__base_);
+    const auto __n = ::cuda::std::ranges::__size_cpo{}(__base_);
     return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 
@@ -275,13 +271,13 @@ public:
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    auto __n = ::cuda::std::ranges::size(__base_);
+    auto __n = ::cuda::std::ranges::__size_cpo{}(__base_);
     return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE take_view(_Range&&, range_difference_t<_Range>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_view(_Range&&, range_difference_t<_Range>)
   -> take_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
@@ -385,15 +381,15 @@ struct __fn
   _CCCL_REQUIRES(__use_passthrough<_Range, _Np>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __rng, _Np&& __n) const
     noexcept(noexcept(__passthrough_type_t<_RawRange>(
-      ::cuda::std::ranges::begin(__rng),
-      ::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
+      ::cuda::std::ranges::__begin_cpo{}(__rng),
+      ::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)))))
       -> __passthrough_type_t<_RawRange>
   {
     return __passthrough_type_t<_RawRange>(
-      ::cuda::std::ranges::begin(__rng),
-      ::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)));
+      ::cuda::std::ranges::__begin_cpo{}(__rng),
+      ::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the `repeat_view` "_RawRange models sized_range" case.
@@ -403,10 +399,12 @@ struct __fn
                    __is_repeat_specialization<_RawRange> _CCCL_AND sized_range<_RawRange>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const noexcept(noexcept(views::repeat(
     ::cuda::std::forward_like<_Range>(*__range.__value_),
-    ::cuda::std::min<_Dist>(ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))) -> _RawRange
+    ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__range), ::cuda::std::forward<_Np>(__n)))))
+    -> _RawRange
   {
-    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
-                         ::cuda::std::min<_Dist>(ranges::distance(__range), ::cuda::std::forward<_Np>(__n)));
+    return views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__range), ::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the `repeat_view` "otherwise" case.
@@ -427,15 +425,15 @@ struct __fn
   _CCCL_REQUIRES(__use_iota<_Range, _Np>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __rng, _Np&& __n) const
     noexcept(noexcept(::cuda::std::ranges::iota_view(
-      *::cuda::std::ranges::begin(__rng),
-      *::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
+      *::cuda::std::ranges::__begin_cpo{}(__rng),
+      *::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)))))
       -> iota_view<range_value_t<_RawRange>, _Dist>
   {
     return ::cuda::std::ranges::iota_view(
-      *::cuda::std::ranges::begin(__rng),
-      *::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)));
+      *::cuda::std::ranges::__begin_cpo{}(__rng),
+      *::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the "otherwise" case.
@@ -464,8 +462,6 @@ _CCCL_GLOBAL_CONSTANT auto take = __take::__fn{};
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

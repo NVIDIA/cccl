@@ -18,40 +18,62 @@
 #  include <cccl/c/types.h>
 #endif
 
+template <auto Operation = nullptr>
 struct cccl_op_t_mapping
 {
-  bool is_stateless   = false;
-  int size            = 1;
-  int alignment       = 1;
-  void (*operation)() = nullptr;
+  bool is_stateless               = false;
+  int size                        = 1;
+  int alignment                   = 1;
+  static constexpr auto operation = Operation;
 };
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
 template <>
 struct parameter_mapping<cccl_op_t>
 {
-  static const constexpr auto archetype = cccl_op_t_mapping{};
+  static const constexpr auto archetype = cccl_op_t_mapping<>{};
 
   template <typename Traits, typename ArgT>
   static std::string map(template_id<Traits>, ArgT arg)
   {
     const auto& value = arg_traits<cuda::std::decay_t<ArgT>>::unwrap(arg);
     return std::format(
-      "cccl_op_t_mapping{{.is_stateless = {}, .size = {}, .alignment = {}, .operation = {}}}",
+      "cccl_op_t_mapping<{}>{{.is_stateless = {}, .size = {}, .alignment = {}}}",
+      value.name,
       value.type != cccl_op_kind_t::CCCL_STATEFUL,
       value.size,
-      value.alignment,
-      value.name);
+      value.alignment);
   }
 
   template <typename Traits, typename ArgT>
   static std::string aux(template_id<Traits>, ArgT arg)
   {
     const auto& value = arg_traits<cuda::std::decay_t<ArgT>>::unwrap(arg);
-    return std::format(R"(
-        extern "C" __device__ void {}();
+
+    std::string args;
+    if (value.type == cccl_op_kind_t::CCCL_STATEFUL)
+    {
+      args += "void*";
+      if constexpr (Traits::arity > 0)
+      {
+        args += ", ";
+      }
+    }
+
+    for (int i = 0; i < Traits::arity; ++i)
+    {
+      args += "const void*";
+      args += ", ";
+    }
+
+    args += "void*";
+
+    return std::format(
+      R"(
+        extern "C" __device__ void {}({});
         )",
-                       value.name);
+      value.name,
+      args);
   }
 };
 #endif

@@ -44,9 +44,10 @@ private:
   type* __f_{};
 
   static _CCCL_API void __fun(_Tp&) noexcept;
-  static void __fun(_Tp&&) = delete;
+  static void __fun(_Tp&&) = delete; // NOLINT(modernize-use-equals-delete)
 
 public:
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <
     class _Up,
     class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
@@ -55,6 +56,7 @@ public:
     type& __f = static_cast<_Up&&>(__u);
     __f_      = ::cuda::std::addressof(__f);
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   // access
   _CCCL_API constexpr operator type&() const noexcept
@@ -76,7 +78,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(_Tp& __t) noexcept

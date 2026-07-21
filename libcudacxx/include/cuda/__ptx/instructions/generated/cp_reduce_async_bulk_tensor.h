@@ -32,8 +32,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
+                || __op == op_and_op || __op == op_or_op || __op == op_xor_op);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__op == op_add)
   {
@@ -127,8 +126,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
+                || __op == op_and_op || __op == op_or_op || __op == op_xor_op);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__op == op_add)
   {
@@ -222,8 +220,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
+                || __op == op_and_op || __op == op_or_op || __op == op_xor_op);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__op == op_add)
   {
@@ -349,8 +346,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
+                || __op == op_and_op || __op == op_or_op || __op == op_xor_op);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__op == op_add)
   {
@@ -484,8 +480,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
   static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
+                || __op == op_and_op || __op == op_or_op || __op == op_xor_op);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__op == op_add)
   {

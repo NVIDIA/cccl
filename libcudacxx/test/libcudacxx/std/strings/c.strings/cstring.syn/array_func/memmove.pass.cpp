@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ bool test_out_of_place()
+TEST_FUNC bool test_out_of_place()
 {
   char src[] = "1234567890";
 
@@ -49,7 +49,7 @@ __host__ __device__ bool test_out_of_place()
   return true;
 }
 
-__host__ __device__ bool test_in_place()
+TEST_FUNC bool test_in_place()
 {
   {
     char buf[] = "1234567890";
@@ -82,7 +82,7 @@ __host__ __device__ bool test_in_place()
   return true;
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_out_of_place();
   test_in_place();

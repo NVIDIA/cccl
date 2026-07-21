@@ -23,19 +23,19 @@
 
 struct Base
 {
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return nullptr;
   }
-  __host__ __device__ constexpr auto end()
+  TEST_FUNC constexpr auto end()
   {
     return sentinel_wrapper<int*>(nullptr);
   }
-  __host__ __device__ constexpr char* begin() const
+  TEST_FUNC constexpr char* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sentinel_wrapper<char*>(nullptr);
   }
@@ -47,14 +47,14 @@ static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<const Base>, sent
 
 struct NoConst
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ sentinel_wrapper<int*> end();
+  TEST_FUNC int* begin();
+  TEST_FUNC sentinel_wrapper<int*> end();
 };
 
 struct DecayChecker
 {
-  __host__ __device__ int*& begin() const;
-  __host__ __device__ int*& end() const;
+  TEST_FUNC int*& begin() const;
+  TEST_FUNC int*& end() const;
 };
 
 template <class T>
@@ -63,7 +63,7 @@ _CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.begin()));
 template <class T>
 _CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.end()));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using OwningView = cuda::std::ranges::owning_view<Base>;

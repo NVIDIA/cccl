@@ -16,7 +16,7 @@
 #include "large_type.h"
 
 template <class T, template <typename, typename> class SourceSelector, template <typename, typename> class DestSelector>
-__host__ __device__ __noinline__ void test_fully_specialized()
+TEST_FUNC __noinline__ void test_fully_specialized()
 {
   SourceSelector<T, constructor_initializer> source_sel;
   typename DestSelector<T, constructor_initializer>::template offsetted<decltype(source_sel)::shared_offset> dest_sel;
@@ -53,7 +53,7 @@ __host__ __device__ __noinline__ void test_fully_specialized()
 }
 
 template <class T, template <typename, typename> class SourceSelector>
-__host__ __device__ __noinline__ void test_select_destination()
+TEST_FUNC __noinline__ void test_select_destination()
 {
   test_fully_specialized<T, SourceSelector, local_memory_selector>();
   NV_IF_TARGET(NV_IS_DEVICE,
@@ -62,7 +62,7 @@ __host__ __device__ __noinline__ void test_select_destination()
 }
 
 template <class T>
-__host__ __device__ __noinline__ void test_select_source()
+TEST_FUNC __noinline__ void test_select_source()
 {
   test_select_destination<T, local_memory_selector>();
   NV_IF_TARGET(

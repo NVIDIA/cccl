@@ -54,13 +54,19 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Sent, class _Proj, class _Comp>
 _CCCL_API constexpr pair<_Iter, _Iter> __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 {
-  auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
-
   pair<_Iter, _Iter> __result(__first, __first);
-  if (__first == __last || ++__first == __last)
+
+  if (__first == __last)
   {
     return __result;
   }
+
+  if (++__first == __last)
+  {
+    return __result;
+  }
+
+  auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
 
   if (__less(__first, __result.first))
   {
@@ -84,7 +90,7 @@ _CCCL_API constexpr pair<_Iter, _Iter> __minmax_element_impl(_Iter __first, _Sen
       {
         __result.second = __i;
       }
-      return __result;
+      break;
     }
 
     if (__less(__first, __i))
@@ -118,7 +124,7 @@ template <class _ForwardIterator, class _Compare>
 [[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
-  static_assert(__has_input_traversal<_ForwardIterator>, "::cuda::std::minmax_element requires a ForwardIterator");
+  static_assert(__has_forward_traversal<_ForwardIterator>, "::cuda::std::minmax_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
   auto __proj = identity();

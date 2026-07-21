@@ -51,7 +51,7 @@ The class ``fast_mod_div`` is used to pre-compute the modulo and division of an 
 
 **Constraints**
 
-- ``T`` and ``U`` are integer types of size up to 64-bits.
+- ``T`` and ``U`` are integer types.
 - ``max_value(dividend type) <= max_value(divisor type)``.
 
 **Preconditions**
@@ -64,7 +64,7 @@ The class ``fast_mod_div`` is used to pre-compute the modulo and division of an 
 
 - ``fast_mod_div`` needs to be initialized on the host and executed on the device for optimal performance.
 - ``T`` signed type ensures the best performance. ``T == int`` translates to ``SEL``, ``IMAD``, and x2 ``SHF`` instructions.
-- 64-bit types are in general slower than 32-bit types.
+- Larger types (> 32-bits) are slower than smaller types.
 - ``DivisorIsNeverOne == true`` can be used to skip one comparison.
 - ``__builtin_assume(dividend != cuda::std::numeric_limits<U>::max())`` can be used to skip one comparison with unsigned values.
 

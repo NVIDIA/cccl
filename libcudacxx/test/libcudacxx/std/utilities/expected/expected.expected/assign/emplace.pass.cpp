@@ -35,21 +35,21 @@ template <class T, class... Args>
 _CCCL_CONCEPT CanEmplace =
   _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...)));
 
-static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
+static_assert(CanEmplace<cuda::std::expected<int, int>, int>);
 
 template <bool Noexcept>
 struct CtorFromInt
 {
-  __host__ __device__ CtorFromInt(int) noexcept(Noexcept);
-  __host__ __device__ CtorFromInt(int, int) noexcept(Noexcept);
+  TEST_FUNC CtorFromInt(int) noexcept(Noexcept);
+  TEST_FUNC CtorFromInt(int, int) noexcept(Noexcept);
 };
 
-static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int>, "");
-static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int, int>, "");
-static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int>, "");
-static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int, int>, "");
+static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int>);
+static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int, int>);
+static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int>);
+static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int, int>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // has_value
   {
@@ -57,7 +57,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     BothNoexcept::state newState{};
     cuda::std::expected<BothNoexcept, int> e(cuda::std::in_place, oldState, 5);
     decltype(auto) x = e.emplace(newState, 10);
-    static_assert(cuda::std::same_as<decltype(x), BothNoexcept&>, "");
+    static_assert(cuda::std::same_as<decltype(x), BothNoexcept&>);
     assert(&x == &(*e));
 
     assert(oldState.dtorCalled);
@@ -70,7 +70,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     BothMayThrow::state oldState{};
     cuda::std::expected<int, BothMayThrow> e(cuda::std::unexpect, oldState, 5);
     decltype(auto) x = e.emplace(10);
-    static_assert(cuda::std::same_as<decltype(x), int&>, "");
+    static_assert(cuda::std::same_as<decltype(x), int&>);
     assert(&x == &(*e));
 
     assert(oldState.dtorCalled);

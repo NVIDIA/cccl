@@ -17,6 +17,7 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
@@ -28,7 +29,6 @@
 #include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <map>
@@ -77,6 +77,11 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
  */
 class context
 {
+public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
+private:
   template <typename T1, typename T2>
   class unified_scope
   {
@@ -136,6 +141,15 @@ class context
       };
     }
 
+    // Attach opaque user data to the scope; an optional destructor is called when the scope is destroyed
+    auto& set_user_data(const void* data, size_t sz, void (*dtor)(void*) = nullptr)
+    {
+      payload->*[&](auto& self) {
+        self.set_user_data(data, sz, dtor);
+      };
+      return *this;
+    }
+
     template <typename... Args>
     auto& add_deps(Args&&... args)
     {
@@ -183,6 +197,14 @@ class context
   };
 
 public:
+  /// Builder types returned by `cuda_kernel()` / `host_launch()` with no dependencies; exposed so the STF C API
+  /// and other code can name them without `decltype` on `context` (which would otherwise pull in private
+  /// `unified_scope`).
+  using cuda_kernel_builder =
+    unified_scope<reserved::cuda_kernel_scope<stream_ctx, false>, reserved::cuda_kernel_scope<graph_ctx, false>>;
+  using host_launch_builder =
+    unified_scope<reserved::host_launch_scope<stream_ctx, false>, reserved::host_launch_scope<graph_ctx, false>>;
+
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -273,7 +295,7 @@ public:
      * index in a task.
      *
      * @tparam T
-     * @param submitted index
+     * @param submitted_index
      * @return slice<T>
      */
     template <typename T>
@@ -296,6 +318,86 @@ public:
     {
       return payload->*[&](auto& self) {
         return self.get_stream();
+      };
+    }
+
+    /** Return the task's child CUDA graph for explicit node insertion. Only
+     * valid for tasks running in a graph context that have NOT enabled stream
+     * capture; aborts for stream-context tasks. Mutually exclusive with the
+     * capture path (get_stream()): use one mechanism or the other. */
+    cudaGraph_t get_graph()
+    {
+      return payload->*[&](auto& self) -> cudaGraph_t {
+        using task_t = ::std::decay_t<decltype(self)>;
+        if constexpr (::std::is_same_v<task_t, graph_task<Deps...>>)
+        {
+          return self.get_graph();
+        }
+        else
+        {
+          _CCCL_VERIFY(false, "get_graph() is only valid for tasks in a graph context");
+          return nullptr;
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), get the stream for the place at \p place_index
+     * (linear index). Returns nullptr for graph_task (no per-place streams), for non-grid exec places, or
+     * when \p place_index is out of range. */
+    cudaStream_t get_stream(size_t place_index) const
+    {
+      return payload->*[&](auto& self) -> cudaStream_t {
+        if constexpr (::std::is_same_v<stream_task<Deps...>, ::std::decay_t<decltype(self)>>)
+        {
+          // Per-place streams only exist for grid exec places. stream_task::get_stream(size_t) indexes the
+          // stream grid without bounds checking, so guard the linear index here before forwarding.
+          const exec_place& e = self.get_exec_place();
+          if (e.size() <= 1 || place_index >= e.size())
+          {
+            return nullptr;
+          }
+          return self.get_stream(place_index);
+        }
+        else
+        {
+          (void) place_index;
+          return nullptr;
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), write its shape to \p out_dims and return true; else return
+     * false. */
+    bool get_grid_dims(dim4* out_dims) const
+    {
+      if (out_dims == nullptr)
+      {
+        return false;
+      }
+      return payload->*[&](auto& self) -> bool {
+        const exec_place& e = self.get_exec_place();
+        if (e.size() <= 1)
+        {
+          return false;
+        }
+        *out_dims = e.get_dims();
+        return true;
+      };
+    }
+
+    // Get the underlying task base class - both stream_task and graph_task inherit from task. This is convenient when
+    // we do not need the "typed" task, for example when using the "low-level" add_deps method.
+    ::cuda::experimental::stf::task& get_base_task()
+    {
+      return payload->*[](auto& self) -> ::cuda::experimental::stf::task& {
+        return self.get_base_task();
+      };
+    }
+
+    const ::cuda::experimental::stf::task& get_base_task() const
+    {
+      return payload->*[](auto& self) -> const ::cuda::experimental::stf::task& {
+        return self.get_base_task();
       };
     }
 
@@ -718,26 +820,23 @@ public:
     };
   }
 
-  //! Release context resources using the provided stream.
-  //!
-  //! Normally this is called automatically during finalize(), but when using
-  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
-  //! times, resources must be released manually once the graph will no longer
-  //! be used, since the same resources may be accessed repeatedly during graph replay.
-  void release_resources(cudaStream_t stream)
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    payload->*[stream](auto& self) {
-      self.release_resources(stream);
-    };
-  }
-
   //! Add a resource to be managed by this context
   void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     payload->*[&resource](auto& self) {
       self.add_resource(mv(resource));
+    };
+  }
+
+  //! Release context resources using the provided stream.
+  //! Normally called automatically during finalize(); when using finalize_as_graph()
+  //! for replayable graphs, call once the graph will no longer be used.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
     };
   }
 
@@ -814,6 +913,9 @@ public:
     };
   }
 
+  // Forwards to the active backend. For a token (logical_data<void_interface>)
+  // the backend wait() returns void and only blocks on the token's
+  // dependencies, so `auto` deduces void here as well.
   template <typename T>
   auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
   {
@@ -945,6 +1047,31 @@ public:
     };
   }
 
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class from the variant payload
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& ctx) -> backend_ctx_untyped& {
+        return static_cast<backend_ctx_untyped&>(ctx);
+      },
+      payload);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](const auto& ctx) -> const backend_ctx_untyped& {
+        return static_cast<const backend_ctx_untyped&>(ctx);
+      },
+      payload);
+  }
+
 public:
   ::std::variant<stream_ctx, graph_ctx> payload;
 };
@@ -1019,11 +1146,11 @@ UNITTEST("context resources released on finalize")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1048,11 +1175,11 @@ UNITTEST("context resources released on finalize non blocking")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1061,18 +1188,19 @@ UNITTEST("context resources released on finalize non blocking")
     }
   };
 
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   bool released = false;
   context ctx(stream, async_resources_handle());
   ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
   ctx.finalize(); // non-blocking: context was created with user stream
   EXPECT(!released); // not yet, callback not run
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try<cudaStreamSynchronize>(stream);
   EXPECT(released);
-
-  cuda_safe_call(cudaStreamDestroy(stream));
 };
 
 UNITTEST("context import_resources_from")
@@ -1083,11 +1211,11 @@ UNITTEST("context import_resources_from")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1122,8 +1250,11 @@ UNITTEST("context graph and stage")
 
 UNITTEST("context with arguments")
 {
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   async_resources_handle h;
 
@@ -1138,8 +1269,6 @@ UNITTEST("context with arguments")
 
   context ctx4 = graph_ctx(stream, h);
   ctx4.finalize();
-
-  cuda_safe_call(cudaStreamDestroy(stream));
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -1504,7 +1633,7 @@ UNITTEST("context task")
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
     // no-op
-    cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    cuda_safe_call(cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
   };
 
   ctx.finalize();
@@ -1646,8 +1775,7 @@ UNITTEST("make_tuple_indexwise")
 
 UNITTEST("cuda stream place")
 {
-  cudaStream_t user_stream;
-  cuda_safe_call(cudaStreamCreate(&user_stream));
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
 
   context ctx;
 
@@ -1666,16 +1794,14 @@ UNITTEST("cuda stream place")
 
 UNITTEST("cuda stream place multi-gpu")
 {
-  cudaStream_t user_stream;
-
   // Create a CUDA stream in a different device (if available)
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   // use the last device
-  int target_dev_id = ndevices - 1;
+  const int target_dev_id = ndevices - 1;
 
-  cuda_safe_call(cudaSetDevice(target_dev_id));
-  cuda_safe_call(cudaStreamCreate(&user_stream));
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try<cudaSetDevice>(target_dev_id);
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
+  cuda_try<cudaSetDevice>(0);
 
   context ctx;
 
@@ -1742,6 +1868,20 @@ UNITTEST("token vector")
   ctx.finalize();
 };
 
+// Blocking wait on a token returns void and only synchronizes the host
+UNITTEST("wait on token")
+{
+  context ctx;
+
+  auto tok = ctx.token();
+  ctx.task(tok.write())->*[](cudaStream_t) {};
+
+  static_assert(::std::is_void_v<decltype(ctx.wait(tok))>, "wait(token) must return void");
+  ctx.wait(tok);
+
+  ctx.finalize();
+};
+
 UNITTEST("get_stream")
 {
   context ctx;
@@ -1766,8 +1906,7 @@ UNITTEST("get_stream graph")
   cudaStream_t s = t.get_stream();
   // We are not capturing so there is no stream associated
   EXPECT(s == nullptr);
-  cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
   t.end();
 
   auto t2 = ctx.task(token.rw());

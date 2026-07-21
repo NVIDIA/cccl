@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -26,18 +27,23 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_scan_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
+  cccl_type_info input_type;
+  cccl_type_info output_type;
   cccl_type_info accumulator_type;
   CUkernel init_kernel;
   CUkernel scan_kernel;
   bool force_inclusive;
   cccl_init_kind_t init_kind;
-  bool use_warpspeed;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  char* init_kernel_lowered_name;
+  char* scan_kernel_lowered_name;
 } cccl_device_scan_build_result_t;
 
 CCCL_C_API CUresult cccl_device_scan_build(
@@ -71,6 +77,24 @@ CCCL_C_API CUresult cccl_device_scan_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_scan_compile(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_type_info init,
+  bool force_inclusive,
+  cccl_init_kind_t init_kind,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_scan_load(cccl_device_scan_build_result_t* build_ptr);
 
 CCCL_C_API CUresult cccl_device_exclusive_scan(
   cccl_device_scan_build_result_t build,
@@ -126,6 +150,20 @@ CCCL_C_API CUresult cccl_device_inclusive_scan_no_init(
   cccl_op_t op,
   CUstream stream);
 
+CCCL_C_API CUresult cccl_device_scan_link_ltoir(
+  cccl_device_scan_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
+
+// Serialize a populated build_result. See cccl/c/serialization.h::cccl_serialization_buffer_free.
+CCCL_C_API CUresult
+cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by cccl_device_scan_serialize.
+// On success build is populated as if by compile(); CUlibrary/CUkernel handles
+// remain null until cccl_device_scan_load is called. On failure build is left
+// unchanged and a non-success CUresult is returned.
+CCCL_C_API CUresult cccl_device_scan_deserialize(cccl_device_scan_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

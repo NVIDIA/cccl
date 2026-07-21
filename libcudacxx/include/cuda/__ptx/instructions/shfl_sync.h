@@ -111,7 +111,7 @@ template <typename _Tp>
     : "=r"(__ret), "=r"(__pred1)
     : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   __pred = static_cast<bool>(__pred1);
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -126,7 +126,7 @@ shfl_sync_idx(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, 
                "}"
                : "=r"(__ret)
                : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -146,7 +146,7 @@ template <typename _Tp>
     : "=r"(__ret), "=r"(__pred1)
     : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   __pred = static_cast<bool>(__pred1);
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -161,7 +161,7 @@ shfl_sync_up(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, u
                "}"
                : "=r"(__ret)
                : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -181,7 +181,7 @@ template <typename _Tp>
     : "=r"(__ret), "=r"(__pred1)
     : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   __pred = static_cast<bool>(__pred1);
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -196,7 +196,7 @@ shfl_sync_down(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask,
                "}"
                : "=r"(__ret)
                : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -216,7 +216,7 @@ template <typename _Tp>
     : "=r"(__ret), "=r"(__pred1)
     : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
   __pred = static_cast<bool>(__pred1);
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 template <typename _Tp>
@@ -232,7 +232,7 @@ shfl_sync_bfly(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask,
     "}"
     : "=r"(__ret)
     : "r"(__data1), "r"(__lane_idx_offset), "r"(__clamp_segmask), "r"(__lane_mask));
-  return ::cuda::std::bit_cast<uint32_t>(__ret);
+  return ::cuda::std::bit_cast<_Tp>(__ret);
 }
 
 #endif // __cccl_ptx_isa >= 600

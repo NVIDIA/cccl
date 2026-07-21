@@ -27,17 +27,17 @@ struct DiffTypeIter
   using value_type        = int;
   using difference_type   = T;
 
-  __host__ __device__ int operator*() const;
-  __host__ __device__ DiffTypeIter& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC int operator*() const;
+  TEST_FUNC DiffTypeIter& operator++();
+  TEST_FUNC void operator++(int);
 #if TEST_STD_VER >= 2020
-  __host__ __device__ friend constexpr bool operator==(DiffTypeIter, DiffTypeIter) = default;
+  TEST_FUNC friend constexpr bool operator==(DiffTypeIter, DiffTypeIter) = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool operator==(const DiffTypeIter&, const DiffTypeIter&)
+  TEST_FUNC friend constexpr bool operator==(const DiffTypeIter&, const DiffTypeIter&)
   {
     return true;
   }
-  __host__ __device__ friend constexpr bool operator!=(const DiffTypeIter&, const DiffTypeIter&)
+  TEST_FUNC friend constexpr bool operator!=(const DiffTypeIter&, const DiffTypeIter&)
   {
     return false;
   }
@@ -47,7 +47,7 @@ struct DiffTypeIter
 struct Foo
 {};
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   { // Single iterator should have tuple value type
     using Iter = cuda::zip_iterator<int*>;

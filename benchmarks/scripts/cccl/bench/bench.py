@@ -39,21 +39,27 @@ class JsonCache:
             cls._instance.device_cache = {}
         return cls._instance
 
+    def get_jsonlist(self, algname, listname):
+        benchmark_bin = os.path.join(".", "bin", algname + ".base")
+        if not os.path.exists(benchmark_bin):
+            raise Exception(f"Benchmark binary not found: {benchmark_bin}")
+        return subprocess.check_output([benchmark_bin, f"--jsonlist-{listname}"])
+
     def get_bench(self, algname):
         if algname not in self.bench_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-benches"]
-            )
+            result = self.get_jsonlist(algname, "benches")
             self.bench_cache[algname] = json.loads(result)
         return self.bench_cache[algname]
 
     def get_device(self, algname):
         if algname not in self.device_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-devices"]
-            )
-            devices = json.loads(result)["devices"]
-
+            result = self.get_jsonlist(algname, "devices")
+            data = json.loads(result)
+            if "devices" not in data:
+                raise Exception(
+                    "JSON returned from --jsonlist-devices does not contain 'devices' key"
+                )
+            devices = data["devices"]
             if len(devices) != 1:
                 raise Exception(
                     "NVBench doesn't work well with multiple GPUs, use `CUDA_VISIBLE_DEVICES`"
@@ -268,6 +274,16 @@ def device_json(algname):
     return JsonCache().get_device(algname)
 
 
+CCCL_BENCH_GPU_ENV = "CCCL_BENCH_GPU"
+
+
+def get_gpu_name_override():
+    override = os.environ.get(CCCL_BENCH_GPU_ENV)
+    if override is not None and override.strip():
+        return override.strip()
+    return None
+
+
 def get_device_name(device):
     gpu_name = device["name"]
     bus_width = device["global_memory_bus_width"]
@@ -275,6 +291,13 @@ def get_device_name(device):
     ecc = "eccon" if device["ecc_state"] else "eccoff"
     name = "{} ({}, {}, {})".format(gpu_name, bus_width, sms, ecc)
     return name.replace("NVIDIA ", "")
+
+
+def get_gpu_name(algname):
+    override = get_gpu_name_override()
+    if override is not None:
+        return override
+    return get_device_name(device_json(algname))
 
 
 def is_ct_axis(name):
@@ -368,7 +391,7 @@ class BenchCache:
         config = Config()
         ctk = config.ctk
         cccl = config.cccl
-        gpu = get_device_name(device_json(bench.algname))
+        gpu = get_gpu_name(bench.algname)
         conn = Storage().connection()
 
         self.create_table_if_not_exists(conn, bench)
@@ -418,7 +441,7 @@ class BenchCache:
         config = Config()
         ctk = config.ctk
         cccl = config.cccl
-        gpu = get_device_name(device_json(bench.algname))
+        gpu = get_gpu_name(bench.algname)
         conn = Storage().connection()
 
         self.create_table_if_not_exists(conn, bench)

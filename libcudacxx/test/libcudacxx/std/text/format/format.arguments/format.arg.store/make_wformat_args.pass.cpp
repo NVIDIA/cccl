@@ -31,7 +31,7 @@ static_assert(can_make_wformat_args<int&>);
 static_assert(!can_make_wformat_args<int>);
 static_assert(!can_make_wformat_args<int&&>);
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   auto i = 1;
   auto c = 'c';

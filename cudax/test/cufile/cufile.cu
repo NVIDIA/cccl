@@ -40,15 +40,15 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
   STATIC_REQUIRE(cuda::std::is_nothrow_default_constructible_v<cudax::cufile>);
   {
     cudax::cufile file;
-    CUDAX_REQUIRE(file.get() == nullptr);
-    CUDAX_REQUIRE(file.native_handle() == -1);
+    REQUIRE(file.get() == nullptr);
+    REQUIRE(file.native_handle() == -1);
   }
 
   // 3. Test cufile(const char*, cufile_open_mode) constructor.
   STATIC_REQUIRE(cuda::std::is_constructible_v<cudax::cufile, const char*, cudax::cufile_open_mode>);
   {
     cudax::cufile file{filename, cudax::cufile_open_mode::out};
-    CUDAX_REQUIRE(file.get() != nullptr);
+    REQUIRE(file.get() != nullptr);
     test_check_fd_is_valid(file.native_handle());
     test_check_file_exists(filename);
 
@@ -66,9 +66,9 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
     test_check_file_exists(filename);
 
     cudax::cufile file2{cuda::std::move(file1)};
-    CUDAX_REQUIRE(file1.get() == nullptr);
-    CUDAX_REQUIRE(file1.native_handle() == -1);
-    CUDAX_REQUIRE(file2.get() != nullptr);
+    REQUIRE(file1.get() == nullptr);
+    REQUIRE(file1.native_handle() == -1);
+    REQUIRE(file2.get() != nullptr);
     test_check_fd_is_valid(file2.native_handle());
   }
   test_remove_file(filename);
@@ -86,15 +86,15 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
 
       // self move assignment
       file1 = cuda::std::move(file1);
-      CUDAX_REQUIRE(file1.get() != nullptr);
+      REQUIRE(file1.get() != nullptr);
       test_check_fd_is_valid(file1.native_handle());
       test_check_file_exists(filename);
 
       // move assignment
       file2 = cuda::std::move(file1);
-      CUDAX_REQUIRE(file1.get() == nullptr);
-      CUDAX_REQUIRE(file1.native_handle() == -1);
-      CUDAX_REQUIRE(file2.get() != nullptr);
+      REQUIRE(file1.get() == nullptr);
+      REQUIRE(file1.native_handle() == -1);
+      REQUIRE(file2.get() != nullptr);
       test_check_fd_is_valid(file2.native_handle());
     }
 
@@ -110,12 +110,12 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
   STATIC_REQUIRE(cuda::std::is_same_v<bool, decltype(cuda::std::declval<cudax::cufile>().is_open())>);
   {
     cudax::cufile file;
-    CUDAX_REQUIRE(!file.is_open());
+    REQUIRE(!file.is_open());
 
     file = cudax::cufile{filename, cudax::cufile_open_mode::out};
     test_check_file_exists(filename);
 
-    CUDAX_REQUIRE(file.is_open());
+    REQUIRE(file.is_open());
   }
   test_remove_file(filename);
 
@@ -125,12 +125,12 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
     cuda::std::is_same_v<cudax::cufile_open_mode, decltype(cuda::std::declval<cudax::cufile>().open_mode())>);
   {
     cudax::cufile file;
-    CUDAX_REQUIRE(file.open_mode() == cudax::cufile_open_mode{});
+    REQUIRE(file.open_mode() == cudax::cufile_open_mode{});
 
     file = cudax::cufile{filename, cudax::cufile_open_mode::out};
     test_check_file_exists(filename);
 
-    CUDAX_REQUIRE(file.open_mode() == cudax::cufile_open_mode::out);
+    REQUIRE(file.open_mode() == cudax::cufile_open_mode::out);
 
     // todo: test other flags
   }
@@ -145,13 +145,13 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
                            cuda::std::declval<const char*>(), cuda::std::declval<cudax::cufile_open_mode>()))>);
   {
     cudax::cufile file;
-    CUDAX_REQUIRE(!file.is_open());
+    REQUIRE(!file.is_open());
 
     file.open(filename, cudax::cufile_open_mode::out);
-    CUDAX_REQUIRE(file.get() != nullptr);
+    REQUIRE(file.get() != nullptr);
     test_check_fd_is_valid(file.native_handle());
     test_check_file_exists(filename);
-    CUDAX_REQUIRE(file.is_open());
+    REQUIRE(file.is_open());
 
     CHECK_THROWS_AS(file.open(filename, cudax::cufile_open_mode::out), std::runtime_error);
   }
@@ -164,21 +164,21 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
     cudax::cufile file;
 
     file.close();
-    CUDAX_REQUIRE(file.get() == nullptr);
-    CUDAX_REQUIRE(file.native_handle() == -1);
+    REQUIRE(file.get() == nullptr);
+    REQUIRE(file.native_handle() == -1);
 
     file.open(filename, cudax::cufile_open_mode::out);
-    CUDAX_REQUIRE(file.get() != nullptr);
+    REQUIRE(file.get() != nullptr);
     test_check_fd_is_valid(file.native_handle());
     test_check_file_exists(filename);
 
     file.close();
-    CUDAX_REQUIRE(file.get() == nullptr);
-    CUDAX_REQUIRE(file.native_handle() == -1);
+    REQUIRE(file.get() == nullptr);
+    REQUIRE(file.native_handle() == -1);
 
     file.close();
-    CUDAX_REQUIRE(file.get() == nullptr);
-    CUDAX_REQUIRE(file.native_handle() == -1);
+    REQUIRE(file.get() == nullptr);
+    REQUIRE(file.native_handle() == -1);
   }
   test_remove_file(filename);
 
@@ -191,17 +191,17 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
   STATIC_REQUIRE(cuda::std::is_same_v<int, decltype(cuda::std::declval<cudax::cufile>().release())>);
   {
     cudax::cufile file;
-    CUDAX_REQUIRE(file.release() == -1);
+    REQUIRE(file.release() == -1);
 
     file.open(filename, cudax::cufile_open_mode::out);
-    CUDAX_REQUIRE(file.get() != nullptr);
+    REQUIRE(file.get() != nullptr);
     test_check_fd_is_valid(file.native_handle());
 
     int fd = file.release();
-    CUDAX_REQUIRE(file.get() == nullptr);
-    CUDAX_REQUIRE(file.native_handle() == -1);
+    REQUIRE(file.get() == nullptr);
+    REQUIRE(file.native_handle() == -1);
 
-    CUDAX_REQUIRE(close(fd) == 0);
+    REQUIRE(close(fd) == 0);
   }
   test_remove_file(filename);
 
@@ -214,11 +214,11 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
     test_check_file_exists(filename);
 
     int fd = fileno(cfile);
-    CUDAX_REQUIRE(fd != -1);
+    REQUIRE(fd != -1);
 
     cudax::cufile file = cudax::cufile::from_native_handle(fd);
-    CUDAX_REQUIRE(file.get() != nullptr);
-    CUDAX_REQUIRE(file.native_handle() == fd);
+    REQUIRE(file.get() != nullptr);
+    REQUIRE(file.native_handle() == fd);
   }
   test_remove_file(filename);
 }

@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": true,
         "CCCL_SKIP_BUILD_CHECKS": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
@@ -35,6 +36,7 @@
       "displayName": "Installation / Packaging (only stable libraries)",
       "inherits": "base",
       "cacheVariables": {
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": false,
         "cudax_ENABLE_INSTALL_RULES": false,
         "CCCL_SKIP_BUILD_CHECKS": true
       }
@@ -82,11 +84,14 @@
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_PLACES": true,
         "cudax_ENABLE_CUDASTF": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_NCCL": true,
+        "HACK_cudax_ALLOW_MISSING_NCCL": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
@@ -102,6 +107,22 @@
         "CMAKE_CUDA_FLAGS": "-G",
         "CCCL_ENABLE_BENCHMARKS": false,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": true
+      }
+    },
+    {
+      "name": "all-tidy",
+      "displayName": "clang-tidy",
+      "inherits": "all-dev-debug",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17",
+        "THRUST_MULTICONFIG_WORKLOAD": "MEDIUM",
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_CLANG_TIDY": true,
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CUDA_FLAGS": "",
+        "CMAKE_CUDA_COMPILER": "clang++"
       }
     },
     {
@@ -140,6 +161,15 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
         "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "libcudacxx-cpp23",
+      "displayName": "libcu++: C++23",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CUDA_STANDARD": "23"
       }
     },
     {
@@ -353,11 +383,14 @@
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_PLACES": true,
         "cudax_ENABLE_CUDASTF": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
-        "cudax_ENABLE_CUFILE": false
+        "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_NCCL": true,
+        "HACK_cudax_ALLOW_MISSING_NCCL": true
       }
     },
     {
@@ -386,6 +419,15 @@
         "CCCL_ENABLE_C_PARALLEL": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
+      }
+    },
+    {
+      "name": "cccl-c-parallel-v2",
+      "displayName": "CCCL C Parallel Library v2 (HostJIT)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_C_PARALLEL_V2": true,
+        "CCCL_C_Parallel_V2_ENABLE_TESTING": true
       }
     },
     {
@@ -468,6 +510,13 @@
       "configurePreset": "all-dev-debug"
     },
     {
+      "name": "all-tidy",
+      "configurePreset": "all-tidy",
+      "targets": [
+        "cccl.tidy"
+      ]
+    },
+    {
       "name": "install",
       "configurePreset": "install"
     },
@@ -475,12 +524,14 @@
       "name": "libcudacxx",
       "configurePreset": "libcudacxx",
       "targets": [
+        "cccl.test.cuda_runtime_smoke",
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
         "libcudacxx.test.atomics.ptx",
+        "libcudacxx.test.simd.ptx",
         "libcudacxx.test.c2h_all"
       ]
     },
@@ -612,6 +663,10 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel"
+    },
+    {
+      "name": "cccl-c-parallel-v2",
+      "configurePreset": "cccl-c-parallel-v2"
     },
     {
       "name": "cccl-c-stf",
@@ -890,6 +945,11 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
+    },
+    {
+      "name": "cccl-c-parallel-v2",
+      "configurePreset": "cccl-c-parallel-v2",
       "inherits": "base"
     },
     {

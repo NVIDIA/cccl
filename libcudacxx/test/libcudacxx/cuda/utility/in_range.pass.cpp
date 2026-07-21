@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(noexcept(cuda::in_range(cuda::std::declval<T>(), cuda::std::declval<T>(), cuda::std::declval<T>())));
   assert(cuda::in_range(T{5}, T{0}, T{10}));
@@ -47,6 +47,7 @@ __host__ __device__ constexpr void test()
     assert(!cuda::in_range(inf, T{0}, T{10}));
     assert(cuda::in_range(T{1}, T{-1}, inf));
   }
+#if !TEST_CUDA_COMPILER(NVCC, ==, 13, 3) && !TEST_COMPILER(NVRTC, ==, 13, 3) // nvbug6235207
   if constexpr (cuda::std::numeric_limits<T>::has_quiet_NaN)
   {
     constexpr auto nan = cuda::std::numeric_limits<T>::quiet_NaN();
@@ -68,9 +69,10 @@ __host__ __device__ constexpr void test()
       assert(!cuda::in_range(T{1}, inf, nan));
     }
   }
+#endif // !TEST_CUDA_COMPILER(NVCC, ==, 13, 3) && !TEST_COMPILER(NVRTC, ==, 13,3)
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<unsigned char>();
   test<signed char>();
@@ -94,7 +96,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ bool runtime_test()
+TEST_FUNC bool runtime_test()
 {
 #if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
   test<__half>();

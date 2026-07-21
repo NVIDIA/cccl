@@ -19,7 +19,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::complex<T> c(1);
   const cuda::std::complex<T> c2(1.5, 2.5);
@@ -56,18 +56,18 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 #if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
 #  if !TEST_COMPILER(GCC, <, 8) // GCC 7 does not support constexpr is_nan and friends
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #    if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #    endif // _CCCL_HAS_LONG_DOUBLE()
 #  endif // !TEST_COMPILER(GCC, <, 8)
 #endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()

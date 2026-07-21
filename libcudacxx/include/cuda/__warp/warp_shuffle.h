@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPO__RATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,13 +28,11 @@
 #    include <cuda/__cmath/pow2.h>
 #    include <cuda/__ptx/instructions/get_sreg.h>
 #    include <cuda/__ptx/instructions/shfl_sync.h>
-#    include <cuda/std/__concepts/concept_macros.h>
 #    include <cuda/std/__memory/addressof.h>
 #    include <cuda/std/__type_traits/enable_if.h>
 #    include <cuda/std/__type_traits/integral_constant.h>
+#    include <cuda/std/__type_traits/is_default_constructible.h>
 #    include <cuda/std/__type_traits/is_pointer.h>
-#    include <cuda/std/__type_traits/is_void.h>
-#    include <cuda/std/__type_traits/remove_cvref.h>
 #    include <cuda/std/cstdint>
 
 #    include <cuda/std/__cccl/prologue.h>
@@ -58,12 +56,14 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_idx(
   const _Tp& __data, int __src_lane, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
+
   if constexpr (_Width == 1)
   {
     return warp_shuffle_result<_Up>{__data, true};
@@ -101,15 +101,14 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Tp> warp_shuffle_up(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
-                                                           "all active lanes must have the same delta");))
+
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
@@ -117,7 +116,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else
   {
-    _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
+    _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "delta must be in the range [0, _Width)");
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (__warp_size - _Width) << 8;
     bool __pred;
@@ -149,23 +148,22 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_down(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
-                                                           "all active lanes must have the same delta");))
+
   if constexpr (_Width == 1)
   {
-    _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
+    _CCCL_ASSERT(__delta == 0, "__delta must be 0 when Width == 1");
     return warp_shuffle_result<_Up>{__data, true};
   }
   else
   {
-    _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
+    _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "__delta must be in the range [0, _Width)");
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
@@ -197,6 +195,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_xor(
   const _Tp& __data, int __xor_mask, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,

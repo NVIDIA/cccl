@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -24,7 +25,7 @@ C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API", "[merge_sort][env]")
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::SortPairs failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::SortPairs failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
@@ -45,7 +46,7 @@ C2H_TEST("cub::DeviceMergeSort::SortKeys env-based API", "[merge_sort][env]")
     cub::DeviceMergeSort::SortKeys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::SortKeys failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::SortKeys failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
@@ -65,7 +66,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][en
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::StableSortPairs failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::StableSortPairs failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 6, 8, 9};
@@ -80,16 +81,16 @@ C2H_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][en
 C2H_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env]")
 {
   // example-begin stable-sort-keys-env
-  auto d_keys = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto d_keys = thrust::device_vector<int>{8, 6, 7, 5, 5, 3, 0, 9};
 
   auto error =
     cub::DeviceMergeSort::StableSortKeys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::StableSortKeys failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::StableSortKeys failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> expected_keys{0, 3, 5, 5, 6, 7, 8, 9};
   // example-end stable-sort-keys-env
 
   REQUIRE(error == cudaSuccess);
@@ -117,12 +118,13 @@ C2H_TEST("cub::DeviceMergeSort::SortPairsCopy env-based API", "[merge_sort][env]
     stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::SortPairsCopy failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::SortPairsCopy failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   // example-end sort-pairs-copy-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_keys_out == expected_keys);
@@ -146,11 +148,12 @@ C2H_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]"
     stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::SortKeysCopy failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::SortKeysCopy failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end sort-keys-copy-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_keys_out == expected_keys);
@@ -159,8 +162,8 @@ C2H_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]"
 C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort][env]")
 {
   // example-begin stable-sort-keys-copy-env
-  auto d_keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = thrust::device_vector<int>(7);
+  auto d_keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 5, 3, 0, 9};
+  auto d_keys_out = thrust::device_vector<int>(8);
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -173,12 +176,73 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort]
     stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMergeSort::StableSortKeysCopy failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMergeSort::StableSortKeysCopy failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> expected_keys{0, 3, 5, 5, 6, 7, 8, 9};
   // example-end stable-sort-keys-copy-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_keys_out == expected_keys);
 }
+
+C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with greater comparator", "[merge_sort][env]")
+{
+  auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto d_values = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+
+  auto error = cub::DeviceMergeSort::SortPairs(
+    d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::greater<int>{});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMergeSort::SortPairs (greater) failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_keys == expected_keys);
+  REQUIRE(d_values == expected_values);
+}
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin sort-pairs-policy-selector
+struct MergeSortPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::MergeSortPolicy
+  {
+    return {.threads_per_block = 256,
+            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 17 : 14,
+            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+            .load_modifier     = cub::LOAD_DEFAULT,
+            .store_algorithm   = cub::BLOCK_STORE_DIRECT};
+  }
+};
+// example-end sort-pairs-policy-selector
+
+C2H_TEST("cub::DeviceMergeSort::SortPairs accepts a custom policy selector", "[merge_sort][env]")
+{
+  // example-begin sort-pairs-tuning
+  auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto d_values = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+
+  const auto error = cub::DeviceMergeSort::SortPairs(
+    d_keys.data(), d_values.data(), d_keys.size(), cuda::std::less{}, cuda::execution::tune(MergeSortPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMergeSort::SortPairs failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  // example-end sort-pairs-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_keys == expected_keys);
+  REQUIRE(d_values == expected_values);
+}
+
+#endif // _CCCL_STD_VER >= 2020

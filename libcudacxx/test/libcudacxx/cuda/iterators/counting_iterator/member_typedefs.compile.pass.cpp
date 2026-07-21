@@ -25,19 +25,19 @@ struct Decrementable
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Decrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const Decrementable&) const;
-  __host__ __device__ bool operator!=(const Decrementable&) const;
+  TEST_FUNC bool operator==(const Decrementable&) const;
+  TEST_FUNC bool operator!=(const Decrementable&) const;
 
-  __host__ __device__ bool operator<(const Decrementable&) const;
-  __host__ __device__ bool operator<=(const Decrementable&) const;
-  __host__ __device__ bool operator>(const Decrementable&) const;
-  __host__ __device__ bool operator>=(const Decrementable&) const;
+  TEST_FUNC bool operator<(const Decrementable&) const;
+  TEST_FUNC bool operator<=(const Decrementable&) const;
+  TEST_FUNC bool operator>(const Decrementable&) const;
+  TEST_FUNC bool operator>=(const Decrementable&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr Decrementable& operator++();
-  __host__ __device__ constexpr Decrementable operator++(int);
-  __host__ __device__ constexpr Decrementable& operator--();
-  __host__ __device__ constexpr Decrementable operator--(int);
+  TEST_FUNC constexpr Decrementable& operator++();
+  TEST_FUNC constexpr Decrementable operator++(int);
+  TEST_FUNC constexpr Decrementable& operator--();
+  TEST_FUNC constexpr Decrementable operator--(int);
 };
 
 struct Incrementable
@@ -47,17 +47,17 @@ struct Incrementable
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Incrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const Incrementable&) const;
-  __host__ __device__ bool operator!=(const Incrementable&) const;
+  TEST_FUNC bool operator==(const Incrementable&) const;
+  TEST_FUNC bool operator!=(const Incrementable&) const;
 
-  __host__ __device__ bool operator<(const Incrementable&) const;
-  __host__ __device__ bool operator<=(const Incrementable&) const;
-  __host__ __device__ bool operator>(const Incrementable&) const;
-  __host__ __device__ bool operator>=(const Incrementable&) const;
+  TEST_FUNC bool operator<(const Incrementable&) const;
+  TEST_FUNC bool operator<=(const Incrementable&) const;
+  TEST_FUNC bool operator>(const Incrementable&) const;
+  TEST_FUNC bool operator>=(const Incrementable&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr Incrementable& operator++();
-  __host__ __device__ constexpr Incrementable operator++(int);
+  TEST_FUNC constexpr Incrementable& operator++();
+  TEST_FUNC constexpr Incrementable operator++(int);
 };
 
 struct BigType
@@ -69,17 +69,17 @@ struct BigType
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const BigType&) const = default;
 #else
-  __host__ __device__ bool operator==(const BigType&) const;
-  __host__ __device__ bool operator!=(const BigType&) const;
+  TEST_FUNC bool operator==(const BigType&) const;
+  TEST_FUNC bool operator!=(const BigType&) const;
 
-  __host__ __device__ bool operator<(const BigType&) const;
-  __host__ __device__ bool operator<=(const BigType&) const;
-  __host__ __device__ bool operator>(const BigType&) const;
-  __host__ __device__ bool operator>=(const BigType&) const;
+  TEST_FUNC bool operator<(const BigType&) const;
+  TEST_FUNC bool operator<=(const BigType&) const;
+  TEST_FUNC bool operator>(const BigType&) const;
+  TEST_FUNC bool operator>=(const BigType&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr BigType& operator++();
-  __host__ __device__ constexpr BigType operator++(int);
+  TEST_FUNC constexpr BigType& operator++();
+  TEST_FUNC constexpr BigType operator++(int);
 };
 
 struct CharDifferenceType
@@ -89,24 +89,24 @@ struct CharDifferenceType
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const CharDifferenceType&) const = default;
 #else
-  __host__ __device__ bool operator==(const CharDifferenceType&) const;
-  __host__ __device__ bool operator!=(const CharDifferenceType&) const;
+  TEST_FUNC bool operator==(const CharDifferenceType&) const;
+  TEST_FUNC bool operator!=(const CharDifferenceType&) const;
 
-  __host__ __device__ bool operator<(const CharDifferenceType&) const;
-  __host__ __device__ bool operator<=(const CharDifferenceType&) const;
-  __host__ __device__ bool operator>(const CharDifferenceType&) const;
-  __host__ __device__ bool operator>=(const CharDifferenceType&) const;
+  TEST_FUNC bool operator<(const CharDifferenceType&) const;
+  TEST_FUNC bool operator<=(const CharDifferenceType&) const;
+  TEST_FUNC bool operator>(const CharDifferenceType&) const;
+  TEST_FUNC bool operator>=(const CharDifferenceType&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr CharDifferenceType& operator++();
-  __host__ __device__ constexpr CharDifferenceType operator++(int);
+  TEST_FUNC constexpr CharDifferenceType& operator++();
+  TEST_FUNC constexpr CharDifferenceType operator++(int);
 };
 
 template <class T>
 _CCCL_CONCEPT HasIteratorCategory =
   _CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::ranges::iterator_t<T>::iterator_category));
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
 #if _CCCL_HAS_INT128()
   using widest_integer = __int128_t;
@@ -124,6 +124,20 @@ __host__ __device__ void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int64_t;
+    using Iter     = cuda::counting_iterator<char, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, char>);
+    static_assert(sizeof(Iter::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<Iter::difference_type>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<short>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
@@ -135,6 +149,20 @@ __host__ __device__ void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int8_t;
+    using Iter     = cuda::counting_iterator<short, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, short>);
+    static_assert(sizeof(Iter::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<Iter::difference_type>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<int>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
@@ -152,6 +180,20 @@ __host__ __device__ void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int8_t;
+    using Iter     = cuda::counting_iterator<int, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, int>);
+    static_assert(sizeof(Iter::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<Iter::difference_type>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<long>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
@@ -164,6 +206,20 @@ __host__ __device__ void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int8_t;
+    using Iter     = cuda::counting_iterator<long, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, long>);
+    static_assert(sizeof(Iter::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<Iter::difference_type>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<long long>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
@@ -177,6 +233,20 @@ __host__ __device__ void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int16_t;
+    using Iter     = cuda::counting_iterator<long long, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, long long>);
+    static_assert(sizeof(Iter::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<Iter::difference_type>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<Decrementable>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::bidirectional_iterator_tag>);
@@ -185,6 +255,17 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int16_t;
+    using Iter     = cuda::counting_iterator<Decrementable, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::bidirectional_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, Decrementable>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<Incrementable>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
@@ -193,6 +274,17 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int8_t;
+    using Iter     = cuda::counting_iterator<Incrementable, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, Incrementable>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<NotIncrementable>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::input_iterator_tag>);
@@ -201,6 +293,17 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int16_t;
+    using Iter     = cuda::counting_iterator<NotIncrementable, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::input_iterator_tag>);
+    static_assert(!HasIteratorCategory<Iter>);
+    static_assert(cuda::std::same_as<Iter::value_type, NotIncrementable>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<BigType>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
@@ -209,12 +312,33 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+
+  {
+    using DiffType = cuda::std::int8_t;
+    using Iter     = cuda::counting_iterator<BigType, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, BigType>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
   {
     using Iter = cuda::counting_iterator<CharDifferenceType>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, CharDifferenceType>);
     static_assert(cuda::std::same_as<Iter::difference_type, signed char>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
+  {
+    using DiffType = cuda::std::int16_t;
+    using Iter     = cuda::counting_iterator<CharDifferenceType, DiffType>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, CharDifferenceType>);
+    static_assert(cuda::std::same_as<Iter::difference_type, DiffType>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 }

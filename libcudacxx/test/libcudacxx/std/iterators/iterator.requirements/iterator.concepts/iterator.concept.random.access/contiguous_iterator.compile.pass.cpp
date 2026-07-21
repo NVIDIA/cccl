@@ -15,17 +15,17 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-static_assert(!cuda::std::contiguous_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(!cuda::std::contiguous_iterator<cpp20_input_iterator<int*>>, "");
-static_assert(!cuda::std::contiguous_iterator<forward_iterator<int*>>, "");
-static_assert(!cuda::std::contiguous_iterator<bidirectional_iterator<int*>>, "");
-static_assert(!cuda::std::contiguous_iterator<random_access_iterator<int*>>, "");
-static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
+static_assert(!cuda::std::contiguous_iterator<cpp17_input_iterator<int*>>);
+static_assert(!cuda::std::contiguous_iterator<cpp20_input_iterator<int*>>);
+static_assert(!cuda::std::contiguous_iterator<forward_iterator<int*>>);
+static_assert(!cuda::std::contiguous_iterator<bidirectional_iterator<int*>>);
+static_assert(!cuda::std::contiguous_iterator<random_access_iterator<int*>>);
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>);
 
-static_assert(cuda::std::contiguous_iterator<int*>, "");
-static_assert(cuda::std::contiguous_iterator<int const*>, "");
-static_assert(cuda::std::contiguous_iterator<int volatile*>, "");
-static_assert(cuda::std::contiguous_iterator<int const volatile*>, "");
+static_assert(cuda::std::contiguous_iterator<int*>);
+static_assert(cuda::std::contiguous_iterator<int const*>);
+static_assert(cuda::std::contiguous_iterator<int volatile*>);
+static_assert(cuda::std::contiguous_iterator<int const volatile*>);
 
 struct simple_contiguous_iterator
 {
@@ -37,58 +37,58 @@ struct simple_contiguous_iterator
   using reference         = int&;
   using self              = simple_contiguous_iterator;
 
-  __host__ __device__ simple_contiguous_iterator();
+  TEST_FUNC simple_contiguous_iterator();
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
-  __host__ __device__ friend bool operator==(const self&, const self&)
+  TEST_FUNC friend bool operator==(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator!=(const self&, const self&)
+  TEST_FUNC friend bool operator!=(const self&, const self&)
   {
     return false;
   };
-  __host__ __device__ friend bool operator<(const self&, const self&)
+  TEST_FUNC friend bool operator<(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator<=(const self&, const self&)
+  TEST_FUNC friend bool operator<=(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>(const self&, const self&)
+  TEST_FUNC friend bool operator>(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>=(const self&, const self&)
+  TEST_FUNC friend bool operator>=(const self&, const self&)
   {
     return true;
   };
 #endif
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type n, self x);
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type n, self x);
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self& n) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self& n) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
-static_assert(cuda::std::random_access_iterator<simple_contiguous_iterator>, "");
-static_assert(cuda::std::contiguous_iterator<simple_contiguous_iterator>, "");
+static_assert(cuda::std::random_access_iterator<simple_contiguous_iterator>);
+static_assert(cuda::std::contiguous_iterator<simple_contiguous_iterator>);
 
 struct mismatch_value_iter_ref_t
 {
@@ -102,58 +102,58 @@ struct mismatch_value_iter_ref_t
   using reference       = int&;
   using self            = mismatch_value_iter_ref_t;
 
-  __host__ __device__ mismatch_value_iter_ref_t();
+  TEST_FUNC mismatch_value_iter_ref_t();
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
-  __host__ __device__ friend bool operator==(const self&, const self&)
+  TEST_FUNC friend bool operator==(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator!=(const self&, const self&)
+  TEST_FUNC friend bool operator!=(const self&, const self&)
   {
     return false;
   };
-  __host__ __device__ friend bool operator<(const self&, const self&)
+  TEST_FUNC friend bool operator<(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator<=(const self&, const self&)
+  TEST_FUNC friend bool operator<=(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>(const self&, const self&)
+  TEST_FUNC friend bool operator>(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>=(const self&, const self&)
+  TEST_FUNC friend bool operator>=(const self&, const self&)
   {
     return true;
   };
 #endif
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type n, self x);
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type n, self x);
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self& n) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self& n) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
-static_assert(cuda::std::random_access_iterator<mismatch_value_iter_ref_t>, "");
-static_assert(!cuda::std::contiguous_iterator<mismatch_value_iter_ref_t>, "");
+static_assert(cuda::std::random_access_iterator<mismatch_value_iter_ref_t>);
+static_assert(!cuda::std::contiguous_iterator<mismatch_value_iter_ref_t>);
 
 struct wrong_iter_reference_t
 {
@@ -165,58 +165,58 @@ struct wrong_iter_reference_t
   using reference         = int&;
   using self              = wrong_iter_reference_t;
 
-  __host__ __device__ wrong_iter_reference_t();
+  TEST_FUNC wrong_iter_reference_t();
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
-  __host__ __device__ friend bool operator==(const self&, const self&)
+  TEST_FUNC friend bool operator==(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator!=(const self&, const self&)
+  TEST_FUNC friend bool operator!=(const self&, const self&)
   {
     return false;
   };
-  __host__ __device__ friend bool operator<(const self&, const self&)
+  TEST_FUNC friend bool operator<(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator<=(const self&, const self&)
+  TEST_FUNC friend bool operator<=(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>(const self&, const self&)
+  TEST_FUNC friend bool operator>(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>=(const self&, const self&)
+  TEST_FUNC friend bool operator>=(const self&, const self&)
   {
     return true;
   };
 #endif
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type n, self x);
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type n, self x);
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self& n) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self& n) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
-static_assert(cuda::std::random_access_iterator<wrong_iter_reference_t>, "");
-static_assert(!cuda::std::contiguous_iterator<wrong_iter_reference_t>, "");
+static_assert(cuda::std::random_access_iterator<wrong_iter_reference_t>);
+static_assert(!cuda::std::contiguous_iterator<wrong_iter_reference_t>);
 
 struct to_address_wrong_return_type
 {
@@ -228,54 +228,54 @@ struct to_address_wrong_return_type
   using reference         = int&;
   using self              = to_address_wrong_return_type;
 
-  __host__ __device__ to_address_wrong_return_type();
+  TEST_FUNC to_address_wrong_return_type();
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
-  __host__ __device__ friend bool operator==(const self&, const self&)
+  TEST_FUNC friend bool operator==(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator!=(const self&, const self&)
+  TEST_FUNC friend bool operator!=(const self&, const self&)
   {
     return false;
   };
-  __host__ __device__ friend bool operator<(const self&, const self&)
+  TEST_FUNC friend bool operator<(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator<=(const self&, const self&)
+  TEST_FUNC friend bool operator<=(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>(const self&, const self&)
+  TEST_FUNC friend bool operator>(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>=(const self&, const self&)
+  TEST_FUNC friend bool operator>=(const self&, const self&)
   {
     return true;
   };
 #endif
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type n, self x);
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type n, self x);
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self& n) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self& n) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
 namespace cuda::std
@@ -284,12 +284,12 @@ template <>
 struct pointer_traits<to_address_wrong_return_type>
 {
   using element_type = void;
-  __host__ __device__ static void* to_address(to_address_wrong_return_type const&);
+  TEST_FUNC static void* to_address(to_address_wrong_return_type const&);
 };
 } // namespace cuda::std
 
-static_assert(cuda::std::random_access_iterator<to_address_wrong_return_type>, "");
-static_assert(!cuda::std::contiguous_iterator<to_address_wrong_return_type>, "");
+static_assert(cuda::std::random_access_iterator<to_address_wrong_return_type>);
+static_assert(!cuda::std::contiguous_iterator<to_address_wrong_return_type>);
 
 template <class>
 struct template_and_no_element_type
@@ -301,62 +301,62 @@ struct template_and_no_element_type
   using reference         = int&;
   using self              = template_and_no_element_type;
 
-  __host__ __device__ template_and_no_element_type();
+  TEST_FUNC template_and_no_element_type();
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   auto operator<=>(const self&) const = default;
 #else
-  __host__ __device__ friend bool operator==(const self&, const self&)
+  TEST_FUNC friend bool operator==(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator!=(const self&, const self&)
+  TEST_FUNC friend bool operator!=(const self&, const self&)
   {
     return false;
   };
-  __host__ __device__ friend bool operator<(const self&, const self&)
+  TEST_FUNC friend bool operator<(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator<=(const self&, const self&)
+  TEST_FUNC friend bool operator<=(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>(const self&, const self&)
+  TEST_FUNC friend bool operator>(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>=(const self&, const self&)
+  TEST_FUNC friend bool operator>=(const self&, const self&)
   {
     return true;
   };
 #endif
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type, self)
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type, self)
   {
     return self{};
   }
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self& n) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self& n) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
 // Template param is used instead of element_type.
-static_assert(cuda::std::random_access_iterator<template_and_no_element_type<int>>, "");
-static_assert(cuda::std::contiguous_iterator<template_and_no_element_type<int>>, "");
+static_assert(cuda::std::random_access_iterator<template_and_no_element_type<int>>);
+static_assert(cuda::std::contiguous_iterator<template_and_no_element_type<int>>);
 
 template <bool DisableArrow, bool DisableToAddress>
 struct no_operator_arrow
@@ -369,60 +369,60 @@ struct no_operator_arrow
   using reference         = int&;
   using self              = no_operator_arrow;
 
-  __host__ __device__ no_operator_arrow();
+  TEST_FUNC no_operator_arrow();
 
-  __host__ __device__ reference operator*() const;
+  TEST_FUNC reference operator*() const;
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  __host__ __device__ pointer operator->() const
+  TEST_FUNC pointer operator->() const
     requires(!DisableArrow);
   auto operator<=>(const self&) const = default;
 #else
   template <bool B = DisableArrow, cuda::std::enable_if_t<!B, int> = 0>
-  __host__ __device__ pointer operator->() const;
-  __host__ __device__ friend bool operator==(const self&, const self&)
+  TEST_FUNC pointer operator->() const;
+  TEST_FUNC friend bool operator==(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator!=(const self&, const self&)
+  TEST_FUNC friend bool operator!=(const self&, const self&)
   {
     return false;
   };
-  __host__ __device__ friend bool operator<(const self&, const self&)
+  TEST_FUNC friend bool operator<(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator<=(const self&, const self&)
+  TEST_FUNC friend bool operator<=(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>(const self&, const self&)
+  TEST_FUNC friend bool operator>(const self&, const self&)
   {
     return true;
   };
-  __host__ __device__ friend bool operator>=(const self&, const self&)
+  TEST_FUNC friend bool operator>=(const self&, const self&)
   {
     return true;
   };
 #endif
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type, self)
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type, self)
   {
     return self{};
   }
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self& n) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self& n) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
 namespace cuda::std
@@ -430,13 +430,13 @@ namespace cuda::std
 template <>
 struct pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>
 {
-  __host__ __device__ static constexpr int* to_address(const no_operator_arrow<true, false>&);
+  TEST_FUNC static constexpr int* to_address(const no_operator_arrow<true, false>&);
 };
 } // namespace cuda::std
 
-static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/false, /*DisableToAddress=*/true>>, "");
-static_assert(!cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/true>>, "");
-static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>, "");
+static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/false, /*DisableToAddress=*/true>>);
+static_assert(!cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/true>>);
+static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>);
 
 int main(int, char**)
 {

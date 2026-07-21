@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 template <class>
-__host__ __device__ void test_typedef()
+TEST_FUNC void test_typedef()
 {}
 
 int main(int, char**)

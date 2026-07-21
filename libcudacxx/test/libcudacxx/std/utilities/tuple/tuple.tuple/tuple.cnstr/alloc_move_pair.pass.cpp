@@ -13,6 +13,9 @@
 // template <class Alloc, class U1, class U2>
 //   tuple(allocator_arg_t, const Alloc& a, pair<U1, U2>&&);
 
+// UNSUPPORTED: enable-tile
+// In tile mode virtual functions are unsupported
+
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
@@ -26,16 +29,16 @@ struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };

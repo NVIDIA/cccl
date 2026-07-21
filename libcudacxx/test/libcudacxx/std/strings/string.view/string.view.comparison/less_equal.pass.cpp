@@ -23,17 +23,17 @@ template <class T>
 struct ConvertibleTo
 {
   T t_;
-  __host__ __device__ constexpr explicit ConvertibleTo(T t)
+  TEST_FUNC constexpr explicit ConvertibleTo(T t)
       : t_(t)
   {}
-  __host__ __device__ constexpr operator T() const
+  TEST_FUNC constexpr operator T() const
   {
     return t_;
   }
 };
 
 template <class SV>
-__host__ __device__ constexpr void test_equal()
+TEST_FUNC constexpr void test_equal()
 {
   using CharT = typename SV::value_type;
 
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void test_equal()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_equal<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

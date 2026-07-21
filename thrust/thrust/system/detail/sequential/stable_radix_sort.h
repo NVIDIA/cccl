@@ -257,7 +257,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < NumHistograms; j++)
     {
-      const auto BitShift = static_cast<EncodedType>(RadixBits * j);
+      const auto BitShift = static_cast<EncodedType>(RadixBits * j); // NOLINT(bugprone-misplaced-widening-cast)
       histograms[j][(x >> BitShift) & BitMask]++;
     }
   }
@@ -285,7 +285,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   // shuffle keys and (optionally) values
   for (unsigned int i = 0; i < NumHistograms; i++)
   {
-    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i);
+    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i); // NOLINT(bugprone-misplaced-widening-cast)
 
     if (!skip_shuffle[i])
     {
@@ -344,7 +344,8 @@ struct radix_sort_dispatcher<1>
     RandomAccessIterator2 keys2,
     const size_t N)
   {
-    radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+    radix_sort_detail::radix_sort<8, false>(
+      exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
   }
 
   template <typename DerivedPolicy,
@@ -382,11 +383,13 @@ struct radix_sort_dispatcher<2>
 #endif
     if (condition)
     {
-      radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<8, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
     else
     {
-      radix_sort_detail::radix_sort<16, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<16, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
   }
 
@@ -432,11 +435,13 @@ struct radix_sort_dispatcher<4>
   {
     if (N < (1 << 22))
     {
-      radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<8, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
     else
     {
-      radix_sort_detail::radix_sort<4, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<4, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
   }
 
@@ -476,11 +481,13 @@ struct radix_sort_dispatcher<8>
   {
     if (N < (1 << 21))
     {
-      radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<8, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
     else
     {
-      radix_sort_detail::radix_sort<4, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<4, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
   }
 

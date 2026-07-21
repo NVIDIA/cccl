@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <algorithm>
 
 // template<InputIterator Iter1, ForwardIterator Iter2>
@@ -19,7 +22,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 3, 0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -53,7 +56,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

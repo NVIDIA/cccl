@@ -1,0 +1,555 @@
+.. _cccl-python-compute:
+
+``cuda.compute``: Parallel Computing Primitives
+===============================================
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   Overview <self>
+   developer_overview
+
+The ``cuda.compute`` library provides composable primitives for building custom
+parallel algorithms on the GPU—without writing CUDA kernels directly.
+
+Algorithms
+----------
+
+Algorithms are the core of ``cuda.compute``. They operate on arrays or
+:ref:`iterators <cuda.compute.iterators>` and can be composed to build specialized
+GPU operations—reductions, scans, sorts, transforms, and more.
+
+Typical usage of an algorithm looks like this:
+
+.. code-block:: python
+
+   cuda.compute.reduce_into(
+      d_in=...,       # input array or iterator
+      d_out=...,      # output array or iterator
+      op=...,         # binary operator (built-in or user-defined)
+      num_items=...,  # number of input elements
+      h_init=...,     # initial value for the reduction
+   )
+
+API conventions
++++++++++++++++
+
+* **Keyword-only parameters** — All algorithm parameters are **keyword-only**.
+  They must always be passed by name, not by position:
+
+  .. code-block:: python
+
+     # correct
+     cuda.compute.reduce_into(d_in=d_input, d_out=d_output, num_items=n, op=OpKind.PLUS, h_init=h_init)
+
+     # incorrect — positional arguments are not accepted
+     cuda.compute.reduce_into(d_input, d_output, n, OpKind.PLUS, h_init)  # TypeError
+
+* **Naming** — The ``d_`` prefix denotes *device* memory (e.g., CuPy arrays, PyTorch tensors);
+  ``h_`` denotes *host* memory (NumPy arrays). Some scalar values must be passed as
+  host arrays.
+
+* **Output semantics** — Algorithms write results into a user-provided array or iterator
+  rather than returning them. This keeps memory ownership explicit and lifetimes under
+  your control.
+
+* **Operators** — Many algorithms accept an ``op`` parameter. This can be a built-in
+  :class:`OpKind <cuda.compute.op.OpKind>` value or a
+  :ref:`user-defined operator <cuda.compute.user_defined_operators>`.
+  When possible, prefer built-in operators (e.g., ``OpKind.PLUS``) over the equivalent
+  user-defined operation (e.g., ``lambda a, b: a + b``) for better performance.
+
+* **Iterators** — Inputs and outputs can be :ref:`iterators <cuda.compute.iterators>`
+  instead of arrays, enabling lazy evaluation and operation fusion.
+
+Full Example
+++++++++++++
+
+The following example uses :func:`reduce_into <cuda.compute.algorithms.reduce_into>`
+to compute the sum of a sequence of integers:
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Sum reduction example.
+
+Object-based API (expert mode)
+++++++++++++++++++++++++++++++
+
+Many algorithms allocate temporary device memory for intermediate results. For finer
+control over allocation—or to reuse buffers across calls—use the object-based API.
+For example, :func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`
+returns a reusable reduction object that lets you manage memory explicitly.
+
+.. code-block:: python
+   :caption: Controlling temporary memory.
+
+   # create a reducer object:
+   reducer = cuda.compute.make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init)
+   # get the temporary storage size by passing None for the temp_storage argument:
+   temp_storage_bytes = reducer(temp_storage=None, d_in=d_in, d_out=d_out, num_items=num_items, op=op, h_init=h_init)
+   # allocate the temporary storage as any array-like object
+   # (e.g., CuPy array, Torch tensor):
+   temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+   # perform the reduction:
+   reducer(temp_storage=temp_storage, d_in=d_in, d_out=d_out, num_items=num_items, op=op, h_init=h_init)
+
+The object-based API splits the algorithm invocation into three phases,
+
+1. Constructing an algorithm object
+2. Determining the amount of temporary memory needed by the computation
+3. Performing the computation
+
+It is important that the type of arguments passed during construction (step 1) match
+those passed during invocation (step 2 and 3). Otherwise you may see unexpected errors
+or silent bugs.
+
+- Data types of arrays/iterators must match. If you pass an array of `int32` data type
+  as the `d_in=` argument during construction of a reducer object, you must pass
+  an array of dtype `int32` when invoking it. The array can be of a different size.
+
+- Bytecode instructions of functions must match. If you pass a function/lambda for
+  the operator during construction, you must pass a function with the same bytecode
+  instructions during invocation. This means you _can_ pass a different function
+  referencing different global/closures, but the operations within the functions
+  must be the same.
+
+
+.. _cuda.compute.user_defined_operators:
+
+User-Defined Operators
+----------------------
+
+A powerful feature is the ability to use algorithms with user-defined operators.
+For example, to compute the sum of only the even values in a sequence,
+we can use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a custom binary operation:
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Reduction with a custom binary operation.
+
+Features and Restrictions
++++++++++++++++++++++++++
+
+User-defined operations are just-in-time (JIT) compiled into device code using
+`Numba CUDA <https://nvidia.github.io/numba-cuda/>`_, so they inherit many
+of the same features and restrictions as Numba CUDA functions:
+
+* `Python features <https://nvidia.github.io/numba-cuda/user/cudapysupported.html>`_
+  and `atomic operations <https://nvidia.github.io/numba-cuda/user/intrinsics.html>`_
+  supported by Numba CUDA are also supported within user-defined operators.
+* Nested functions must be decorated with ``@numba.cuda.jit``.
+* Variables captured in closures or globals follow
+  `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
+  scalars and host arrays are captured by value (as constants),
+  while device arrays are captured by reference.
+
+
+.. _cuda.compute.iterators:
+
+Iterators
+---------
+
+Iterators represent sequences whose elements are computed **on the fly**. They can
+be used in place of arrays in most algorithms, enabling lazy evaluation, operation
+fusion, and custom data access patterns.
+
+A :func:`CountingIterator <cuda.compute.iterators.CountingIterator>`, for example,
+represents an integer sequence starting from a given value:
+
+.. code-block:: python
+
+   it = CountingIterator(np.int32(1))  # represents [1, 2, 3, 4, ...]
+
+To compute the sum of the first 100 integers, we can pass a
+:func:`CountingIterator <cuda.compute.iterators.CountingIterator>` directly to
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>`. No memory is allocated
+to store the input sequence—the values are generated as needed.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Counting iterator example.
+
+Iterators can also be used to *fuse* operations. In the example below, a
+:func:`TransformIterator <cuda.compute.iterators.TransformIterator>` lazily applies
+the square operation to each element of the input sequence. The resulting iterator
+is then passed to :func:`reduce_into <cuda.compute.algorithms.reduce_into>` to compute
+the sum of squares.
+
+Because the square is evaluated on demand during the reduction, there is no need
+to create or store an intermediate array of squared values. The transform and the
+reduction are fused into a single pass over the data.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Transform iterator example.
+
+Some iterators can also be used as the output of an algorithm. In the example below,
+a :func:`TransformOutputIterator <cuda.compute.iterators.TransformOutputIterator>`
+applies the square-root operation to the result of a reduction before writing
+it into the underlying array.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Transform output iterator example.
+
+As another example, :func:`ZipIterator <cuda.compute.iterators.ZipIterator>` combines multiple
+arrays or iterators into a single logical sequence. In the example below, we combine
+a counting iterator and an array, creating an iterator that yields ``(index, value)``
+pairs. This combined iterator is then used as the input to
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>` to compute the index of
+the maximum value in the array.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_counting.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Argmax using a zip iterator.
+
+These examples illustrate a few of the patterns enabled by iterators. See the
+:ref:`API reference <cuda_compute-module>` for the full set of available iterators.
+
+.. _cuda.compute.custom_types:
+
+Struct Types
+------------
+
+The :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator defines
+GPU-compatible struct types. These are useful when you have data laid out
+as an "array of structures", similar to `NumPy structured arrays <https://numpy.org/doc/stable/user/basics.rec.html>`_.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Custom struct type in a reduction.
+
+Array of Structures vs Structure of Arrays
+++++++++++++++++++++++++++++++++++++++++++
+
+When working with structured data, there are two common memory layouts:
+
+* **Array of Structures (AoS)** — each element is a complete struct, stored
+  contiguously. For example, an array of ``Point`` structs where each point's
+  ``x`` and ``y`` are adjacent in memory.
+
+* **Structure of Arrays (SoA)** — each field is stored in its own array.
+  For example, separate ``x_coords`` and ``y_coords`` arrays.
+
+``cuda.compute`` supports both layouts:
+
+* **``gpu_struct``** — defines a true AoS type with named fields
+* **``ZipIterator``** — combines separate arrays into tuples on the fly, letting
+  you work with SoA data as if it were AoS
+
+.. _cuda.compute.caching:
+
+Caching
+-------
+
+Algorithms in ``cuda.compute`` are compiled to GPU code at runtime. To
+avoid recompiling on every call, build results are cached in memory.
+When you invoke an algorithm with the same configuration—same dtypes,
+iterator kinds, operator, compute capability, and current device—the
+cached build is reused. On systems with multiple GPUs, GPUs with the same
+compute capability may share one compiled build, while each GPU keeps its
+own loaded state. Compiled build results may be reused by
+multiple threads in the same process on any interpreter build;
+free-threaded Python additionally runs such threads in parallel.
+
+What determines the cache key
++++++++++++++++++++++++++++++
+
+Each algorithm computes a cache key from:
+
+* **Array dtypes** — the data types of input and output arrays
+* **Iterator kinds** — for iterator inputs/outputs, a descriptor of the iterator type
+* **Operator identity** — for user-defined functions, the function's bytecode,
+  constants, and closure contents (see below)
+* **Compute capability** — the GPU architecture of the current device
+* **Current device** — determines the algorithm object and its loaded state;
+  the compiled code itself is shared across devices with the same compute
+  capability (see Multi-GPU behavior below). Not used when an explicit
+  ``compute_capability=`` is given, which keys on the requested compute
+  capabilities instead (see :ref:`cuda.compute.ahead_of_time_compilation`)
+* **Algorithm-specific parameters** — such as initial value dtype or determinism mode
+
+Note that array *contents* or *pointers* are not part of the cache key—only
+the array's dtype. This means you can reuse a cached algorithm across different
+arrays of the same type.
+
+.. _cuda.compute.multi_gpu:
+
+Multi-GPU behavior
+++++++++++++++++++
+
+Loaded builds are device-specific. With the default current-device build path,
+``cuda.compute`` compiles once per compute capability and reuses the compiled
+payload on other GPUs with the same compute capability; each GPU still receives
+its own loaded native state. An explicit ahead-of-time build behaves the same
+way across same-compute-capability GPUs. Set the intended current CUDA device
+before invoking an algorithm, and pass arrays — and a stream — that belong to
+that device; currently, the stream selects a queue on the current device and
+does not select the device itself.
+
+.. _cuda.compute.free_threading:
+
+Free-threaded Python
+++++++++++++++++++++
+
+.. important::
+
+   Free-threaded Python support is currently validated on Linux with the
+   ``minimal-cu12`` and ``minimal-cu13`` extras, which do not install Numba or
+   Numba CUDA:
+
+   .. code-block:: bash
+
+      pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+
+   The full ``cu12`` and ``cu13`` extras, ``cuda.coop._experimental``, and
+   Python-callable operators that require Numba CUDA are not currently
+   supported in free-threaded Python. Use built-in
+   :class:`OpKind <cuda.compute.op.OpKind>` operations or externally compiled
+   :class:`RawOp <cuda.compute.op.RawOp>` operations with the minimal
+   installation.
+
+Independent calls from multiple Python threads reuse compiled build results
+within the same process on any interpreter build. A free-threaded interpreter
+additionally runs those calls in parallel instead of interleaving them under
+the GIL.
+
+The cache is local to the current Python process. Separate Python processes build
+and cache independently, even if they use the same GPU and algorithm
+configuration.
+
+This does not make user-provided memory or CUDA work automatically safe to share.
+Users are still responsible for avoiding data races, such as two threads writing
+to the same output array at the same time. Read-only iterator and operator
+objects may be shared across threads, but concurrent mutation of those objects,
+captured state, or underlying arrays requires external synchronization. For
+concurrent use, prefer the direct
+algorithm APIs, such as
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>`, or create a separate
+reusable algorithm object in each thread (for example, the object returned by
+:func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`). If multiple
+threads share one of these objects, serialize access to that object.
+
+The examples below additionally use CuPy for device arrays. CuPy is not part
+of the ``minimal`` extras, so install it separately (``pip install
+cupy-cuda13x`` or ``cupy-cuda12x``; free-threaded Linux wheels are available
+starting with CuPy 14.1).
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/direct_api.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Concurrent reductions through the direct API from multiple threads.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/object_api.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Per-thread algorithm objects created with a ``make_*`` factory.
+
+How user-defined functions are cached
++++++++++++++++++++++++++++++++++++++
+
+User-defined operators and predicates are hashed based on their bytecode, constants,
+and closure contents. Two functions with identical bytecode and closures produce
+the same cache key, even if defined at different source locations.
+
+Closure contents are recursively hashed:
+
+* **Scalars and host arrays** — hashed by value
+* **Device arrays** — hashed by pointer, shape, and dtype (not contents)
+* **Nested functions** — hashed by their own bytecode and closures
+
+Because device arrays captured in closures are hashed by pointer, changing the
+array's contents does not invalidate the cache—only reassigning the variable to
+a different array does.
+
+Memory considerations
++++++++++++++++++++++
+
+The cache persists for the lifetime of the process and grows with the number of
+unique algorithm configurations. In long-running applications or exploratory
+notebooks, this can accumulate significant memory.
+
+To clear all caches and free memory:
+
+.. code-block:: python
+
+   import cuda.compute
+   cuda.compute.clear_all_caches()
+
+This forces recompilation on the next algorithm invocation—useful for benchmarking
+compilation time or reclaiming memory.
+
+In multi-threaded programs, make sure no other thread is building or running an
+algorithm while you call it: ``clear_all_caches()`` does not synchronize with
+concurrent use, and a build that is already in progress may finish afterwards
+and place its result back into the cache.
+
+.. _cuda.compute.serialization:
+
+Serialization
+-------------
+
+:ref:`Caching <cuda.compute.caching>` reuses build results *within* a single
+process. Serialization goes one step further: it lets you persist a built
+algorithm to a blob of bytes and reconstruct it later—in another process, or on
+another machine—**without recompiling**.
+
+Use :func:`serialize <cuda.compute.algorithms.serialize>` on any object returned by a
+``make_*`` factory to obtain a ``bytes`` blob, and
+:func:`deserialize <cuda.compute.algorithms.deserialize>` to reconstruct it. The blob stores
+the *compiled* build result, so :func:`deserialize <cuda.compute.algorithms.deserialize>`
+performs no JIT compilation—it neither invokes Numba nor recompiles device code.
+In practice you would write the blob to a file and load it in a later run or on
+another machine.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/serialization/serialize_roundtrip.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Serializing a built algorithm and reconstructing it without recompiling.
+
+The same argument-matching rules described above for the object-based API apply
+to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
+when invoking it must match those used when it was originally built.
+
+Blobs are versioned and self-describing, but they are not a long-term storage
+format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
+loading a blob produced by a different version may be rejected with a clear
+error. Persist the inputs needed to rebuild (or re-serialize) rather than
+relying on old blobs surviving an upgrade.
+
+The same threading rules also apply: like any other reusable algorithm object,
+a deserialized algorithm must be used by one thread at a time unless access is
+externally serialized (see :ref:`Free-threaded Python <cuda.compute.free_threading>`).
+For concurrent use, call :func:`deserialize <cuda.compute.algorithms.deserialize>`
+in each thread — reconstruction performs no recompilation, so per-thread
+deserialization from one shared blob is cheap. (Currently each deserialized
+object loads its native build state independently; a future release may share
+that state behind the scenes.)
+
+.. _cuda.compute.ahead_of_time_compilation:
+
+Ahead-of-Time Compilation
+-------------------------
+
+By default, an algorithm is compiled for the compute capability of the *current*
+device. To build for other GPUs—or to build on a machine with no GPU at all—pass
+``compute_capability=`` to any ``make_*`` factory. Combined with
+:ref:`serialization <cuda.compute.serialization>`, this lets you compile once on
+a build machine and ship a ready-to-run artifact to your deployment targets.
+
+Building for specific architectures
++++++++++++++++++++++++++++++++++++
+
+Pass a single compute capability, or a list of them, to build one artifact that
+runs on any of the listed architectures:
+
+.. code-block:: python
+
+   reducer = cuda.compute.make_reduce_into(
+       d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init,
+       compute_capability=[80, 90],   # build for sm_80 and sm_90
+   )
+
+A compute capability may be given as an integer (``90``, ``75``), a
+``(major, minor)`` pair (``(9, 0)``), or a string (``"9.0"``). When the argument
+is omitted, the current device's architecture is used.
+
+When a multi-architecture artifact is invoked, the build result matching the
+running GPU is selected and loaded on the first call. Invoking it on a GPU whose
+architecture was not built raises an error.
+
+The compiled artifact may be reused by multiple devices with the same compute
+capability. Loading remains device-specific — each device loads its own copy of
+the compiled payload — but no device recompiles.
+
+Building without a GPU
+++++++++++++++++++++++
+
+A ``make_*`` factory normally inspects its input arrays to determine dtypes,
+which requires real device allocations. To build on a machine that has no
+GPU—for example, in CI—pass :class:`ProxyArray <cuda.compute.ProxyArray>` and
+:class:`ProxyValue <cuda.compute.ProxyValue>` placeholders in place of real
+arrays and scalars. A proxy describes *only* the dtype (and, for arrays, shape
+and contiguity); it holds no GPU memory.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/serialization/ahead_of_time_compilation.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Compiling for two architectures with no GPU present.
+
+When building without a GPU you must pass ``compute_capability=`` explicitly:
+with no device to query, there is no architecture to default to. A proxy is a
+build-time placeholder only—supply the real device arrays and scalars when you
+invoke the (possibly deserialized) algorithm. Passing a proxy to a compiled
+algorithm's ``__call__`` raises ``RuntimeError``.
+
+.. _cuda.compute.externally_compiled_operators:
+
+Externally Compiled Operators
+-----------------------------
+
+:class:`RawOp <cuda.compute.op.RawOp>` can be used to directly pass compiled device code
+(LTO-IR) implementing custom operators.
+
+This is useful for users who wish to use a different compilation pipeline than the default
+used by ``cuda.compute`` (JIT compilation of Python callables using Numba CUDA).
+
+The example below shows how to compile a C++ device function
+to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/latest/>`_,
+
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>`:
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
+   :language: python
+   :start-after: # example-begin
+
+.. important::
+
+   **Required calling convention**: Compiled functions must use untyped pointers for
+   all parameters, with manual type casting inside the function. In C++, this means
+   all arguments (and the return value) must be passed as ``void*`` pointers:
+
+   .. code-block:: cpp
+
+      extern "C" __device__ void my_binary_op(void* a, void* b, void* result) {
+          *static_cast<int*>(result) = *static_cast<int*>(a) + *static_cast<int*>(b);
+      }
+
+   You must ensure that:
+
+   * All parameters are untyped pointers with manual casting in the function body
+   * Type casts match the actual data types passed at runtime
+   * For stateful operators, state is the first parameter (also an untyped pointer)
+   * State bytes have the correct layout and alignment
+
+   Type mismatches can cause crashes, memory corruption, or silent incorrect results.
+
+If you wish to use ``cuda.compute`` solely with externally compiled operators
+(i.e., without native JIT support), you can install a
+minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA dependencies:
+
+.. code-block:: bash
+
+   pip install cuda-cccl[minimal-cu13]      # or minimal-cu12  (pip-installed cuda-toolkit)
+   pip install cuda-cccl[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA toolkit)
+
+
+
+Examples
+--------
+
+For complete runnable examples and additional usage patterns, see the
+`examples directory <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples>`_.
+
+API Reference
+-------------
+
+- :ref:`cuda_compute-module`

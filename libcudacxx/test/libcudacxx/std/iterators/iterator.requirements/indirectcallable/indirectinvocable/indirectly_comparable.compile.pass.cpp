@@ -16,19 +16,21 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct Deref
 {
-  __host__ __device__ int operator()(int*) const;
+  TEST_FUNC int operator()(int*) const;
 };
 
-static_assert(!cuda::std::indirectly_comparable<int, int, cuda::std::less<int>>, ""); // not dereferenceable
-static_assert(!cuda::std::indirectly_comparable<int*, int*, int>, ""); // not a predicate
-static_assert(cuda::std::indirectly_comparable<int*, int*, cuda::std::less<int>>, "");
-static_assert(!cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>>, "");
-static_assert(cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>, Deref>, "");
-static_assert(!cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>, Deref, Deref>, "");
-static_assert(!cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>, cuda::std::identity, Deref>, "");
-static_assert(cuda::std::indirectly_comparable<int*, int**, cuda::std::less<int>, cuda::std::identity, Deref>, "");
+static_assert(!cuda::std::indirectly_comparable<int, int, cuda::std::less<int>>); // not dereferenceable
+static_assert(!cuda::std::indirectly_comparable<int*, int*, int>); // not a predicate
+static_assert(cuda::std::indirectly_comparable<int*, int*, cuda::std::less<int>>);
+static_assert(!cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>>);
+static_assert(cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>, Deref>);
+static_assert(!cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>, Deref, Deref>);
+static_assert(!cuda::std::indirectly_comparable<int**, int*, cuda::std::less<int>, cuda::std::identity, Deref>);
+static_assert(cuda::std::indirectly_comparable<int*, int**, cuda::std::less<int>, cuda::std::identity, Deref>);
 
 int main(int, char**)
 {

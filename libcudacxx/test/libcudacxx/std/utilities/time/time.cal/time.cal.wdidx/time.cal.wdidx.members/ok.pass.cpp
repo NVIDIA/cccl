@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;

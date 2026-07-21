@@ -256,7 +256,7 @@ C2H_TEST("Configuration combine", "[launch]")
 
 #if !_CCCL_CUDA_COMPILER(CLANG)
 template <typename Config>
-__host__ __device__ void test_queries_on_config(const Config& config)
+TEST_FUNC void test_queries_on_config(const Config& config)
 {
   CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, config) == dim3(1024));
   {

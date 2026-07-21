@@ -13,14 +13,16 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class T, class U>
-__host__ __device__ constexpr void test_uabs(T input, U ref)
+TEST_FUNC constexpr void test_uabs(T input, U ref)
 {
   assert(cuda::uabs(input) == ref);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using U = cuda::std::make_unsigned_t<T>;
 
@@ -40,7 +42,7 @@ __host__ __device__ constexpr void test_type()
   test_uabs(cuda::std::numeric_limits<T>::max(), static_cast<U>(cuda::std::numeric_limits<T>::max()));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<signed short>();

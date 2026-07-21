@@ -21,11 +21,11 @@
 // ensure that we allow `__device__` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator&(const with_device_op&, const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr with_device_op operator&(const with_device_op&, const with_device_op&)
   {
     return {};
   }
-  __device__ constexpr operator bool() const
+  TEST_DEVICE_FUNC constexpr operator bool() const
   {
     return true;
   }
@@ -37,14 +37,35 @@ __global__ void test_global_kernel()
   assert(f({}, {}));
 }
 
+#if _CCCL_TILE_COMPILATION()
+// ensure that we allow `__tile__` functions too
+struct with_tile_op
+{
+  TEST_TILE_FUNC friend constexpr with_tile_op operator&(const with_tile_op&, const with_tile_op&)
+  {
+    return {};
+  }
+  TEST_TILE_FUNC constexpr operator bool() const
+  {
+    return true;
+  }
+};
+
+__tile_global__ void test_tile_kernel()
+{
+  const cuda::std::bit_and<with_tile_op> f;
+  assert(f({}, {}));
+}
+#endif // _CCCL_TILE_COMPILATION()
+
 int main(int, char**)
 {
   using F   = cuda::std::bit_and<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
-  static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
-  static_assert((cuda::std::is_same<int, F::result_type>::value), "");
+  static_assert((cuda::std::is_same<int, F::first_argument_type>::value));
+  static_assert((cuda::std::is_same<int, F::second_argument_type>::value));
+  static_assert((cuda::std::is_same<int, F::result_type>::value));
 #endif // TEST_STD_VER <= 2017
   assert(f(0xEA95, 0xEA95) == 0xEA95);
   assert(f(0xEA95, 0x58D3) == 0x4891);
@@ -74,10 +95,10 @@ int main(int, char**)
   assert(f2(0xFFFFL, 0x58D3) == 0x58D3);
   assert(f2(0xFFFF, 0x58D3L) == 0x58D3);
   constexpr int foo = cuda::std::bit_and<int>()(0x58D3, 0xEA95);
-  static_assert(foo == 0x4891, "");
+  static_assert(foo == 0x4891);
 
   constexpr int bar = cuda::std::bit_and<>()(0x58D3L, 0xEA95);
-  static_assert(bar == 0x4891, "");
+  static_assert(bar == 0x4891);
 
   return 0;
 }

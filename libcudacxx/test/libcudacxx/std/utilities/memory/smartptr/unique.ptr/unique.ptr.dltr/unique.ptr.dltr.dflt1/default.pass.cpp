@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // UNSUPPORTED: true
@@ -22,7 +26,7 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::default_delete<A[]> d;
   A* p = new A[3];

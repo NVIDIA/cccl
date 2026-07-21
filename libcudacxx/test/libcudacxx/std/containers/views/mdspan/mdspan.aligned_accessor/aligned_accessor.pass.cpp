@@ -6,6 +6,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/std/cassert>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
@@ -13,19 +17,19 @@
 #include <test_macros.h>
 
 template <class ElementType>
-__host__ __device__ constexpr void take_default_accessor_generic(cuda::std::default_accessor<ElementType>)
+TEST_FUNC constexpr void take_default_accessor_generic(cuda::std::default_accessor<ElementType>)
 {}
 
 template <class ElementType>
 cuda::std::enable_if_t<cuda::std::is_const_v<ElementType>>
-  __host__ __device__ constexpr take_default_accessor_generic_const(cuda::std::default_accessor<ElementType>)
+  TEST_FUNC constexpr take_default_accessor_generic_const(cuda::std::default_accessor<ElementType>)
 {}
 
-__host__ __device__ constexpr void take_default_accessor(cuda::std::default_accessor<int>) {}
+TEST_FUNC constexpr void take_default_accessor(cuda::std::default_accessor<int>) {}
 
-__host__ __device__ constexpr void take_default_accessor_const(cuda::std::default_accessor<const int>) {}
+TEST_FUNC constexpr void take_default_accessor_const(cuda::std::default_accessor<const int>) {}
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using T = int;
   using E = cuda::std::extents<size_t, 2>;

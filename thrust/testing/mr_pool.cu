@@ -32,21 +32,17 @@ struct tracked_pointer
 {
   using raw_pointer = T*;
 
-  std::size_t id;
-  std::size_t size;
-  std::size_t alignment;
-  std::size_t offset;
-  void* ptr;
+  std::size_t id{};
+  std::size_t size{};
+  std::size_t alignment{};
+  std::size_t offset{};
+  void* ptr{nullptr};
 
   _CCCL_HOST_DEVICE explicit tracked_pointer(T* ptr = nullptr)
-      : id()
-      , size()
-      , alignment()
-      , offset()
-      , ptr(ptr)
+      : ptr(ptr)
   {}
 
-  _CCCL_HOST_DEVICE ~tracked_pointer() {}
+  ~tracked_pointer() = default;
 
   template <typename U>
   operator tracked_pointer<U>() const
@@ -103,18 +99,15 @@ struct tracked_pointer
 class tracked_resource final : public thrust::mr::memory_resource<tracked_pointer<void>>
 {
 public:
-  tracked_resource()
-      : id_to_allocate(0)
-      , id_to_deallocate(0)
-  {}
+  tracked_resource() = default;
 
-  ~tracked_resource()
+  ~tracked_resource() override
   {
     ASSERT_EQUAL(id_to_allocate, 0u);
     ASSERT_EQUAL(id_to_deallocate, 0u);
   }
 
-  virtual tracked_pointer<void> do_allocate(std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  tracked_pointer<void> do_allocate(std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     ASSERT_EQUAL(id_to_allocate || id_to_allocate == -1u, true);
 
@@ -132,7 +125,7 @@ public:
     return ret;
   }
 
-  virtual void
+  void
   do_deallocate(tracked_pointer<void> p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     ASSERT_GEQUAL(p.size, n);
@@ -147,8 +140,8 @@ public:
     upstream.do_deallocate(p.ptr, n, alignment);
   }
 
-  std::size_t id_to_allocate;
-  std::size_t id_to_deallocate;
+  std::size_t id_to_allocate{};
+  std::size_t id_to_deallocate{};
 
 private:
   thrust::mr::new_delete_resource upstream;

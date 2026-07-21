@@ -20,21 +20,21 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp)
 {
   static_assert(noexcept(sp.back()));
   return &sp.back() == sp.data() + (sp.size() - 1);
 }
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(sp.back()));
   assert(&sp.back() == sp.data() + (sp.size() - 1));
 }
 
 template <typename Span>
-__host__ __device__ void testEmptySpan(Span sp)
+TEST_FUNC void testEmptySpan(Span sp)
 {
   if (!sp.empty())
   {
@@ -44,11 +44,12 @@ __host__ __device__ void testEmptySpan(Span sp)
 
 struct A
 {};
-constexpr int iArr1[]            = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-TEST_GLOBAL_VARIABLE int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 int main(int, char**)
 {
+  constexpr int iArr1[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  int iArr2[]           = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+
   static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1)));
   static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2)));
   static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3)));

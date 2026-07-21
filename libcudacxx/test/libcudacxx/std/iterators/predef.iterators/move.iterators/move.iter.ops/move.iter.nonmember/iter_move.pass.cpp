@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__device__ int global;
+TEST_GLOBAL_VARIABLE int global;
 
 template <bool IsNoexcept>
 struct MaybeNoexceptMove
@@ -30,19 +30,19 @@ struct MaybeNoexceptMove
   using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ constexpr friend value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept)
+  TEST_FUNC constexpr friend value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept)
   {
     return cuda::std::move(global);
   }
 
-  __host__ __device__ int& operator*() const
+  TEST_FUNC int& operator*() const
   {
     static int a;
     return a;
   }
 
-  __host__ __device__ MaybeNoexceptMove& operator++();
-  __host__ __device__ MaybeNoexceptMove operator++(int);
+  TEST_FUNC MaybeNoexceptMove& operator++();
+  TEST_FUNC MaybeNoexceptMove operator++(int);
 };
 using ThrowingBase = MaybeNoexceptMove<false>;
 using NoexceptBase = MaybeNoexceptMove<true>;
@@ -50,7 +50,7 @@ static_assert(cuda::std::input_iterator<ThrowingBase>);
 static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<ThrowingBase>())));
 static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<NoexceptBase>())));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Can use `iter_move` with a regular array.
   {

@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
@@ -15,7 +17,7 @@
 #include "test_macros.h"
 
 template <class VType, class BaseType, size_t VSize>
-__host__ __device__ constexpr VType get_val()
+TEST_FUNC constexpr VType get_val()
 {
   BaseType vals[4]{};
 
@@ -53,7 +55,7 @@ __host__ __device__ constexpr VType get_val()
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index>
-__host__ __device__ constexpr BaseType get_expected()
+TEST_FUNC constexpr BaseType get_expected()
 {
   const auto val = get_val<VType, BaseType, VSize>();
   if constexpr (Index == 0)
@@ -75,20 +77,29 @@ __host__ __device__ constexpr BaseType get_expected()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_eq(const T& lhs, const T& rhs)
+TEST_FUNC constexpr bool test_eq(const T& lhs, const T& rhs)
 {
-  if constexpr (cuda::std::is_same_v<T, __half> || cuda::std::is_same_v<T, __nv_bfloat16>)
+#if _CCCL_HAS_NVFP16()
+  if constexpr (cuda::std::is_same_v<T, __half>)
   {
     return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
   }
   else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
+  {
+    return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
   {
     return lhs == rhs;
   }
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // & overload
     VType val          = get_val<VType, BaseType, VSize>();
@@ -120,7 +131,7 @@ __host__ __device__ constexpr void test()
 }
 
 template <class VType, class BaseType, size_t VSize>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   if constexpr (VSize > 0)
   {
@@ -151,7 +162,7 @@ __host__ __device__ constexpr void test()
   test<Type##2, BaseType, 2>();                    \
   test<Type##3, BaseType, 3>();
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
@@ -192,7 +203,7 @@ __host__ __device__ constexpr bool test_constexpr()
   return true;
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_constexpr();
 

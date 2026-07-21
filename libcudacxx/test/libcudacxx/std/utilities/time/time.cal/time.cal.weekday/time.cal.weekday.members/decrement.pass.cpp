@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename WD>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   WD wd{1};
   if ((--wd).c_encoding() != 0)
@@ -47,7 +47,7 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<weekday&>()--)>);
   static_assert(cuda::std::is_same_v<weekday&, decltype(--cuda::std::declval<weekday&>())>);
 
-  static_assert(testConstexpr<weekday>(), "");
+  static_assert(testConstexpr<weekday>());
 
   for (unsigned i = 0; i <= 6; ++i)
   {

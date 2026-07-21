@@ -26,7 +26,7 @@ static_assert(cuda::std::is_invocable_v<RangeSSizeT, int (&)[1]>);
 
 struct SizeMember
 {
-  __host__ __device__ constexpr size_t size()
+  TEST_FUNC constexpr size_t size()
   {
     return 42;
   }
@@ -35,7 +35,7 @@ static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::ssize), con
 
 struct SizeFunction
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunction)
+  TEST_FUNC friend constexpr size_t size(SizeFunction)
   {
     return 42;
   }
@@ -43,7 +43,7 @@ struct SizeFunction
 
 struct SizeFunctionSigned
 {
-  __host__ __device__ friend constexpr cuda::std::ptrdiff_t size(SizeFunctionSigned)
+  TEST_FUNC friend constexpr cuda::std::ptrdiff_t size(SizeFunctionSigned)
   {
     return 42;
   }
@@ -52,11 +52,11 @@ struct SizeFunctionSigned
 struct SizedSentinelRange
 {
   int data_[2] = {};
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return data_;
   }
-  __host__ __device__ constexpr auto end()
+  TEST_FUNC constexpr auto end()
   {
     return sized_sentinel<int*>(data_ + 2);
   }
@@ -64,7 +64,7 @@ struct SizedSentinelRange
 
 struct ShortUnsignedReturnType
 {
-  __host__ __device__ constexpr unsigned short size()
+  TEST_FUNC constexpr unsigned short size()
   {
     return 42;
   }
@@ -73,7 +73,7 @@ struct ShortUnsignedReturnType
 // size_t changes depending on the platform.
 using SignedSizeT = cuda::std::make_signed_t<size_t>;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[4] = {};
 

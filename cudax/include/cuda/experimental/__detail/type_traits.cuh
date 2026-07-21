@@ -45,7 +45,7 @@ using ::cuda::std::__declfn_t;
 using ::cuda::std::decay_t;
 
 template <class _Ty, bool _Nothrow = true>
-[[noreturn]] _CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty
+[[noreturn]] _CCCL_HOST_DEVICE_API auto __declfn() noexcept(_Nothrow) -> _Ty
 {
   _CCCL_ASSERT(false, "__declfn should never be called at runtime.");
   _CCCL_UNREACHABLE();

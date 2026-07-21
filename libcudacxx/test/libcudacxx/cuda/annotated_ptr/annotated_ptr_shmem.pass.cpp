@@ -8,10 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
+#include "test_macros.h"
 #include "utils.h"
 
 template <typename T, typename U>
-__device__ __noinline__ void shared_mem_test_dev()
+TEST_DEVICE_FUNC __noinline__ void shared_mem_test_dev()
 {
   T* smem  = shared_alloc<T, 128>();
   smem[10] = 42;
@@ -21,7 +25,7 @@ __device__ __noinline__ void shared_mem_test_dev()
   assert(*p == 42);
 }
 
-__device__ __noinline__ void test_all()
+TEST_DEVICE_FUNC __noinline__ void test_all()
 {
   shared_mem_test_dev<int, int>();
   shared_mem_test_dev<int, const int>();

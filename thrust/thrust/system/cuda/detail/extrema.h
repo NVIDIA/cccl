@@ -26,6 +26,7 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/__iterator/discard_iterator.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -335,71 +336,67 @@ extrema(execution_policy<Derived>& policy, InputIt first, Size num_items, Binary
   return result;
 }
 
-template <template <class, class, class> class ArgFunctor, class Derived, class ItemsIt, class BinaryPred>
-ItemsIt THRUST_RUNTIME_FUNCTION
-element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+template <class Derived, class ItemsIt, class BinaryPred>
+ItemsIt CUB_RUNTIME_FUNCTION
+cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
 {
-  if (first == last)
+  cudaStream_t stream      = cuda_cub::stream(policy);
+  using offset_t           = thrust::detail::it_difference_t<ItemsIt>;
+  const offset_t num_items = ::cuda::std::distance(first, last);
+
+  if (num_items == 0)
   {
     return last;
   }
 
-  using InputType = thrust::detail::it_value_t<ItemsIt>;
-  using IndexType = thrust::detail::it_difference_t<ItemsIt>;
+  ::cuda::std::size_t tmp_size = 0;
+  auto error                   = cub::DeviceReduce::ArgMin(
+    nullptr,
+    tmp_size,
+    first,
+    ::cuda::discard_iterator{},
+    static_cast<offset_t*>(nullptr),
+    num_items,
+    binary_pred,
+    stream);
+  throw_on_error(error, "min_element failed to allocate temporary storages");
 
-  IndexType num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
+  // We allocate both the temporary storage needed for the algorithm, and a `size_type` to store the result.
+  thrust::detail::temporary_array<char, Derived> tmp(policy, sizeof(offset_t) + tmp_size);
+  offset_t* index_ptr = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get());
+  auto tmp_ptr        = static_cast<void*>(tmp.data().get() + sizeof(offset_t));
 
-  using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
-  using zip_iterator   = thrust::zip_iterator<iterator_tuple>;
+  error = cub::DeviceReduce::ArgMin(
+    tmp_ptr, tmp_size, first, ::cuda::discard_iterator{}, index_ptr, num_items, binary_pred, stream);
+  cuda_cub::throw_on_error(error, "min_element failed to launch cub::DeviceReduce::ArgMin");
 
-  iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
+  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "min_element failed to synchronize");
 
-  using arg_min_t = ArgFunctor<InputType, IndexType, BinaryPred>;
-  using T         = ::cuda::std::tuple<InputType, IndexType>;
-
-  zip_iterator begin = thrust::make_zip_iterator(iter_tuple);
-
-  T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
-  return first + ::cuda::std::get<1>(result);
+  return first + get_value(policy, index_ptr);
 }
 } // namespace __extrema
 
 /// min element
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class ItemsIt, class BinaryPred>
+template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
 ItemsIt _CCCL_HOST_DEVICE
-min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  THRUST_CDP_DISPATCH((last = __extrema::element<__extrema::arg_min_f>(policy, first, last, binary_pred);),
-                      (last = thrust::min_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
-  return last;
-}
-
-template <class Derived, class ItemsIt>
-ItemsIt _CCCL_HOST_DEVICE min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
-{
-  using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::min_element(policy, first, last, ::cuda::std::less<value_type>());
+  THRUST_CDP_DISPATCH(({ return __extrema::cub_min_element(policy, first, last, binary_pred); }),
+                      ({ return thrust::min_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred); }));
 }
 
 /// max element
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class ItemsIt, class BinaryPred>
+template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
 ItemsIt _CCCL_HOST_DEVICE
-max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  THRUST_CDP_DISPATCH((last = __extrema::element<__extrema::arg_max_f>(policy, first, last, binary_pred);),
-                      (last = thrust::max_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
-  return last;
-}
-
-template <class Derived, class ItemsIt>
-ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
-{
-  using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::max_element(policy, first, last, ::cuda::std::less<value_type>());
+  THRUST_CDP_DISPATCH(
+    ({ return __extrema::cub_min_element(policy, first, last, cub::detail::swap_args{binary_pred}); }),
+    ({ return thrust::max_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred); }));
 }
 
 /// minmax element

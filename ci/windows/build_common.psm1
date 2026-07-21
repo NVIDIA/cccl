@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -36,6 +36,13 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
 if ($CUDA_ARCH) {
     $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_CUDA_ARCHITECTURES={0}"' -f $CUDA_ARCH
+}
+
+# Default to pedantic mode in CI (GitHub Actions)
+if ($env:GITHUB_ACTIONS) {
+    $script:GLOBAL_CMAKE_OPTIONS += ' "-DCCCL_ENABLE_WERROR=ON" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=OFF"'
+} else {
+    $script:GLOBAL_CMAKE_OPTIONS += ' "-DCCCL_ENABLE_WERROR=OFF" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=ON"'
 }
 
 if (-not $env:CCCL_BUILD_INFIX) {

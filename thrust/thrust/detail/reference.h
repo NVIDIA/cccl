@@ -18,18 +18,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/reference_forward_declaration.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
-
-#include <ostream>
 
 // Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
 #include <thrust/system/detail/sequential/assign_value.h>
@@ -73,7 +71,7 @@ template <typename Element, typename Pointer, typename Derived>
 class reference
 {
 private:
-  using derived_type = typename std::conditional<std::is_same<Derived, use_default>::value, reference, Derived>::type;
+  using derived_type = std::conditional_t<std::is_same_v<Derived, use_default>, reference, Derived>;
 
 public:
   using pointer    = Pointer;
@@ -98,8 +96,8 @@ public:
     /*! \cond
      */
     ,
-    typename std::enable_if<std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer,
-                                                pointer>::value>::type* = nullptr
+    std::enable_if_t<
+      std::is_convertible_v<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>>* = nullptr
     /*! \endcond
      */
     )
@@ -493,7 +491,7 @@ std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, reference<Element, Pointer, Derived> const& r)
 {
   using value_type = typename reference<Element, Pointer, Derived>::value_type;
-  return os << static_cast<value_type>(r);
+  return os << static_cast<value_type>(r); // NOLINT(bugprone-unintended-char-ostream-output)
 }
 
 template <typename Element, typename Tag>

@@ -16,29 +16,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_compound()
+TEST_FUNC void test_is_compound()
 {
-  static_assert(cuda::std::is_compound<T>::value, "");
-  static_assert(cuda::std::is_compound<const T>::value, "");
-  static_assert(cuda::std::is_compound<volatile T>::value, "");
-  static_assert(cuda::std::is_compound<const volatile T>::value, "");
-  static_assert(cuda::std::is_compound_v<T>, "");
-  static_assert(cuda::std::is_compound_v<const T>, "");
-  static_assert(cuda::std::is_compound_v<volatile T>, "");
-  static_assert(cuda::std::is_compound_v<const volatile T>, "");
+  static_assert(cuda::std::is_compound<T>::value);
+  static_assert(cuda::std::is_compound<const T>::value);
+  static_assert(cuda::std::is_compound<volatile T>::value);
+  static_assert(cuda::std::is_compound<const volatile T>::value);
+  static_assert(cuda::std::is_compound_v<T>);
+  static_assert(cuda::std::is_compound_v<const T>);
+  static_assert(cuda::std::is_compound_v<volatile T>);
+  static_assert(cuda::std::is_compound_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_compound()
+TEST_FUNC void test_is_not_compound()
 {
-  static_assert(!cuda::std::is_compound<T>::value, "");
-  static_assert(!cuda::std::is_compound<const T>::value, "");
-  static_assert(!cuda::std::is_compound<volatile T>::value, "");
-  static_assert(!cuda::std::is_compound<const volatile T>::value, "");
-  static_assert(!cuda::std::is_compound_v<T>, "");
-  static_assert(!cuda::std::is_compound_v<const T>, "");
-  static_assert(!cuda::std::is_compound_v<volatile T>, "");
-  static_assert(!cuda::std::is_compound_v<const volatile T>, "");
+  static_assert(!cuda::std::is_compound<T>::value);
+  static_assert(!cuda::std::is_compound<const T>::value);
+  static_assert(!cuda::std::is_compound<volatile T>::value);
+  static_assert(!cuda::std::is_compound<const volatile T>::value);
+  static_assert(!cuda::std::is_compound_v<T>);
+  static_assert(!cuda::std::is_compound_v<const T>);
+  static_assert(!cuda::std::is_compound_v<volatile T>);
+  static_assert(!cuda::std::is_compound_v<const volatile T>);
 }
 
 class incomplete_type;
@@ -48,7 +48,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -61,7 +61,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

@@ -13,9 +13,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <new>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 
@@ -42,11 +42,11 @@ public:
   // Make MemCounter super hard to accidentally construct or copy.
   class MemCounterCtorArg_
   {};
-  __host__ __device__ explicit MemCounter(MemCounterCtorArg_) {}
+  TEST_FUNC explicit MemCounter(MemCounterCtorArg_) {}
 
 private:
-  __host__ __device__ MemCounter(MemCounter const&)            = delete;
-  __host__ __device__ MemCounter& operator=(MemCounter const&) = delete;
+  TEST_FUNC MemCounter(MemCounter const&)            = delete;
+  TEST_FUNC MemCounter& operator=(MemCounter const&) = delete;
 
 public:
   // Disallow any allocations from occurring. Useful for testing that
@@ -74,7 +74,7 @@ public:
   cuda::std::size_t last_delete_array_align = 0;
 
 public:
-  __host__ __device__ void newCalled(cuda::std::size_t s)
+  TEST_FUNC void newCalled(cuda::std::size_t s)
   {
     assert(disable_allocations == false);
     assert(s);
@@ -92,28 +92,28 @@ public:
     last_new_size = s;
   }
 
-  __host__ __device__ void alignedNewCalled(cuda::std::size_t s, cuda::std::size_t a)
+  TEST_FUNC void alignedNewCalled(cuda::std::size_t s, cuda::std::size_t a)
   {
     newCalled(s);
     ++aligned_new_called;
     last_new_align = a;
   }
 
-  __host__ __device__ void deleteCalled(void* p)
+  TEST_FUNC void deleteCalled(void* p)
   {
     assert(p);
     --outstanding_new;
     ++delete_called;
   }
 
-  __host__ __device__ void alignedDeleteCalled(void* p, cuda::std::size_t a)
+  TEST_FUNC void alignedDeleteCalled(void* p, cuda::std::size_t a)
   {
     deleteCalled(p);
     ++aligned_delete_called;
     last_delete_align = a;
   }
 
-  __host__ __device__ void newArrayCalled(cuda::std::size_t s)
+  TEST_FUNC void newArrayCalled(cuda::std::size_t s)
   {
     assert(disable_allocations == false);
     assert(s);
@@ -131,38 +131,38 @@ public:
     last_new_array_size = s;
   }
 
-  __host__ __device__ void alignedNewArrayCalled(cuda::std::size_t s, cuda::std::size_t a)
+  TEST_FUNC void alignedNewArrayCalled(cuda::std::size_t s, cuda::std::size_t a)
   {
     newArrayCalled(s);
     ++aligned_new_array_called;
     last_new_array_align = a;
   }
 
-  __host__ __device__ void deleteArrayCalled(void* p)
+  TEST_FUNC void deleteArrayCalled(void* p)
   {
     assert(p);
     --outstanding_array_new;
     ++delete_array_called;
   }
 
-  __host__ __device__ void alignedDeleteArrayCalled(void* p, cuda::std::size_t a)
+  TEST_FUNC void alignedDeleteArrayCalled(void* p, cuda::std::size_t a)
   {
     deleteArrayCalled(p);
     ++aligned_delete_array_called;
     last_delete_array_align = a;
   }
 
-  __host__ __device__ void disableAllocations()
+  TEST_FUNC void disableAllocations()
   {
     disable_allocations = true;
   }
 
-  __host__ __device__ void enableAllocations()
+  TEST_FUNC void enableAllocations()
   {
     disable_allocations = false;
   }
 
-  __host__ __device__ void reset()
+  TEST_FUNC void reset()
   {
     disable_allocations = false;
     throw_after         = MemCounter_never_throw_value;
@@ -185,167 +185,167 @@ public:
   }
 
 public:
-  __host__ __device__ bool checkOutstandingNewEq(int n) const
+  TEST_FUNC bool checkOutstandingNewEq(int n) const
   {
     return MemCounter_disable_checking || n == outstanding_new;
   }
 
-  __host__ __device__ bool checkOutstandingNewNotEq(int n) const
+  TEST_FUNC bool checkOutstandingNewNotEq(int n) const
   {
     return MemCounter_disable_checking || n != outstanding_new;
   }
 
-  __host__ __device__ bool checkNewCalledEq(int n) const
+  TEST_FUNC bool checkNewCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == new_called;
   }
 
-  __host__ __device__ bool checkNewCalledNotEq(int n) const
+  TEST_FUNC bool checkNewCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != new_called;
   }
 
-  __host__ __device__ bool checkNewCalledGreaterThan(int n) const
+  TEST_FUNC bool checkNewCalledGreaterThan(int n) const
   {
     return MemCounter_disable_checking || new_called > n;
   }
 
-  __host__ __device__ bool checkDeleteCalledEq(int n) const
+  TEST_FUNC bool checkDeleteCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == delete_called;
   }
 
-  __host__ __device__ bool checkDeleteCalledNotEq(int n) const
+  TEST_FUNC bool checkDeleteCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != delete_called;
   }
 
-  __host__ __device__ bool checkAlignedNewCalledEq(int n) const
+  TEST_FUNC bool checkAlignedNewCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == aligned_new_called;
   }
 
-  __host__ __device__ bool checkAlignedNewCalledNotEq(int n) const
+  TEST_FUNC bool checkAlignedNewCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != aligned_new_called;
   }
 
-  __host__ __device__ bool checkAlignedNewCalledGreaterThan(int n) const
+  TEST_FUNC bool checkAlignedNewCalledGreaterThan(int n) const
   {
     return MemCounter_disable_checking || aligned_new_called > n;
   }
 
-  __host__ __device__ bool checkAlignedDeleteCalledEq(int n) const
+  TEST_FUNC bool checkAlignedDeleteCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == aligned_delete_called;
   }
 
-  __host__ __device__ bool checkAlignedDeleteCalledNotEq(int n) const
+  TEST_FUNC bool checkAlignedDeleteCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != aligned_delete_called;
   }
 
-  __host__ __device__ bool checkLastNewSizeEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewSizeEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n == last_new_size;
   }
 
-  __host__ __device__ bool checkLastNewSizeNotEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewSizeNotEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n != last_new_size;
   }
 
-  __host__ __device__ bool checkLastNewAlignEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewAlignEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n == last_new_align;
   }
 
-  __host__ __device__ bool checkLastNewAlignNotEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewAlignNotEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n != last_new_align;
   }
 
-  __host__ __device__ bool checkLastDeleteAlignEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastDeleteAlignEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n == last_delete_align;
   }
 
-  __host__ __device__ bool checkLastDeleteAlignNotEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastDeleteAlignNotEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n != last_delete_align;
   }
 
-  __host__ __device__ bool checkOutstandingArrayNewEq(int n) const
+  TEST_FUNC bool checkOutstandingArrayNewEq(int n) const
   {
     return MemCounter_disable_checking || n == outstanding_array_new;
   }
 
-  __host__ __device__ bool checkOutstandingArrayNewNotEq(int n) const
+  TEST_FUNC bool checkOutstandingArrayNewNotEq(int n) const
   {
     return MemCounter_disable_checking || n != outstanding_array_new;
   }
 
-  __host__ __device__ bool checkNewArrayCalledEq(int n) const
+  TEST_FUNC bool checkNewArrayCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == new_array_called;
   }
 
-  __host__ __device__ bool checkNewArrayCalledNotEq(int n) const
+  TEST_FUNC bool checkNewArrayCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != new_array_called;
   }
 
-  __host__ __device__ bool checkDeleteArrayCalledEq(int n) const
+  TEST_FUNC bool checkDeleteArrayCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == delete_array_called;
   }
 
-  __host__ __device__ bool checkDeleteArrayCalledNotEq(int n) const
+  TEST_FUNC bool checkDeleteArrayCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != delete_array_called;
   }
 
-  __host__ __device__ bool checkAlignedNewArrayCalledEq(int n) const
+  TEST_FUNC bool checkAlignedNewArrayCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == aligned_new_array_called;
   }
 
-  __host__ __device__ bool checkAlignedNewArrayCalledNotEq(int n) const
+  TEST_FUNC bool checkAlignedNewArrayCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != aligned_new_array_called;
   }
 
-  __host__ __device__ bool checkAlignedNewArrayCalledGreaterThan(int n) const
+  TEST_FUNC bool checkAlignedNewArrayCalledGreaterThan(int n) const
   {
     return MemCounter_disable_checking || aligned_new_array_called > n;
   }
 
-  __host__ __device__ bool checkAlignedDeleteArrayCalledEq(int n) const
+  TEST_FUNC bool checkAlignedDeleteArrayCalledEq(int n) const
   {
     return MemCounter_disable_checking || n == aligned_delete_array_called;
   }
 
-  __host__ __device__ bool checkAlignedDeleteArrayCalledNotEq(int n) const
+  TEST_FUNC bool checkAlignedDeleteArrayCalledNotEq(int n) const
   {
     return MemCounter_disable_checking || n != aligned_delete_array_called;
   }
 
-  __host__ __device__ bool checkLastNewArraySizeEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewArraySizeEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n == last_new_array_size;
   }
 
-  __host__ __device__ bool checkLastNewArraySizeNotEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewArraySizeNotEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n != last_new_array_size;
   }
 
-  __host__ __device__ bool checkLastNewArrayAlignEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewArrayAlignEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n == last_new_array_align;
   }
 
-  __host__ __device__ bool checkLastNewArrayAlignNotEq(cuda::std::size_t n) const
+  TEST_FUNC bool checkLastNewArrayAlignNotEq(cuda::std::size_t n) const
   {
     return MemCounter_disable_checking || n != last_new_array_align;
   }
@@ -353,7 +353,7 @@ public:
 
 TEST_GLOBAL_VARIABLE MemCounter counter{};
 
-__host__ __device__ inline constexpr MemCounter* getGlobalMemCounter()
+TEST_FUNC inline constexpr MemCounter* getGlobalMemCounter()
 {
   return &counter;
 }
@@ -462,7 +462,7 @@ void operator delete[](void* p, cuda::std::align_val_t av) noexcept
 
 struct DisableAllocationGuard
 {
-  __host__ __device__ explicit DisableAllocationGuard(bool disable = true)
+  TEST_FUNC explicit DisableAllocationGuard(bool disable = true)
       : m_disabled(disable)
   {
     // Don't re-disable if already disabled.
@@ -476,7 +476,7 @@ struct DisableAllocationGuard
     }
   }
 
-  __host__ __device__ void release()
+  TEST_FUNC void release()
   {
     if (m_disabled)
     {
@@ -485,7 +485,7 @@ struct DisableAllocationGuard
     m_disabled = false;
   }
 
-  __host__ __device__ ~DisableAllocationGuard()
+  TEST_FUNC ~DisableAllocationGuard()
   {
     release();
   }
@@ -493,31 +493,31 @@ struct DisableAllocationGuard
 private:
   bool m_disabled;
 
-  __host__ __device__ DisableAllocationGuard(DisableAllocationGuard const&)            = delete;
-  __host__ __device__ DisableAllocationGuard& operator=(DisableAllocationGuard const&) = delete;
+  TEST_FUNC DisableAllocationGuard(DisableAllocationGuard const&)            = delete;
+  TEST_FUNC DisableAllocationGuard& operator=(DisableAllocationGuard const&) = delete;
 };
 
 struct RequireAllocationGuard
 {
-  __host__ __device__ explicit RequireAllocationGuard(cuda::std::size_t RequireAtLeast = 1)
+  TEST_FUNC explicit RequireAllocationGuard(cuda::std::size_t RequireAtLeast = 1)
       : m_req_alloc(RequireAtLeast)
       , m_new_count_on_init(globalMemCounter.new_called)
       , m_outstanding_new_on_init(globalMemCounter.outstanding_new)
       , m_exactly(false)
   {}
 
-  __host__ __device__ void requireAtLeast(cuda::std::size_t N)
+  TEST_FUNC void requireAtLeast(cuda::std::size_t N)
   {
     m_req_alloc = N;
     m_exactly   = false;
   }
-  __host__ __device__ void requireExactly(cuda::std::size_t N)
+  TEST_FUNC void requireExactly(cuda::std::size_t N)
   {
     m_req_alloc = N;
     m_exactly   = true;
   }
 
-  __host__ __device__ ~RequireAllocationGuard()
+  TEST_FUNC ~RequireAllocationGuard()
   {
     assert(globalMemCounter.checkOutstandingNewEq(static_cast<int>(m_outstanding_new_on_init)));
     cuda::std::size_t Expect = m_new_count_on_init + m_req_alloc;
@@ -530,8 +530,8 @@ private:
   const cuda::std::size_t m_new_count_on_init;
   const cuda::std::size_t m_outstanding_new_on_init;
   bool m_exactly;
-  __host__ __device__ RequireAllocationGuard(RequireAllocationGuard const&)            = delete;
-  __host__ __device__ RequireAllocationGuard& operator=(RequireAllocationGuard const&) = delete;
+  TEST_FUNC RequireAllocationGuard(RequireAllocationGuard const&)            = delete;
+  TEST_FUNC RequireAllocationGuard& operator=(RequireAllocationGuard const&) = delete;
 };
 
 #endif /* COUNT_NEW_H */

@@ -14,6 +14,8 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class T, class = void>
 constexpr bool HasMoveSentinel = false;
 
@@ -25,7 +27,7 @@ struct Semiregular
 
 struct NotSemiregular
 {
-  __host__ __device__ NotSemiregular(int);
+  TEST_FUNC NotSemiregular(int);
 };
 
 static_assert(HasMoveSentinel<int>);

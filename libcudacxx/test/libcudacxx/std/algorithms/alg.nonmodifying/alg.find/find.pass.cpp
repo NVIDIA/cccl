@@ -23,16 +23,16 @@
 struct Comparable
 {
   int val_;
-  __host__ __device__ constexpr Comparable(const int val) noexcept
+  TEST_FUNC constexpr Comparable(const int val) noexcept
       : val_(val)
   {}
-  __host__ __device__ constexpr operator int() const noexcept
+  TEST_FUNC constexpr operator int() const noexcept
   {
     return val_;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int arr[] = {2, 4, 6, 8};
   using Iter          = cpp17_input_iterator<const int*>;
@@ -79,7 +79,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

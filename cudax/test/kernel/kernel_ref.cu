@@ -168,9 +168,9 @@ template <const auto& Attr, ::CUfunction_attribute ExpectedAttr, class ExpectedR
   STATIC_REQUIRE(::cuda::std::is_same_v<decltype(result), ExpectedResult>);
   if (expected_value.has_value())
   {
-    CUDAX_REQUIRE(result == expected_value.value());
+    REQUIRE(result == expected_value.value());
   }
-  CUDAX_REQUIRE(result == Attr(kernel, dev));
+  REQUIRE(result == Attr(kernel, dev));
   return result;
 }
 
@@ -202,23 +202,23 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
     // We currently have no way to check if the kernel parameters match
     {
       cudax::kernel_ref<void()> kernel_ref{kernel_ptx1_handle};
-      CUDAX_REQUIRE(kernel_ptx1_handle == kernel_ref.get());
+      REQUIRE(kernel_ptx1_handle == kernel_ref.get());
 
       cudax::kernel_ref<void()> kernel_ref2{kernel_ptx2_handle};
-      CUDAX_REQUIRE(kernel_ptx2_handle == kernel_ref2.get());
+      REQUIRE(kernel_ptx2_handle == kernel_ref2.get());
 
-      CUDAX_REQUIRE(kernel_ptx1_handle != kernel_ptx2_handle);
-      CUDAX_REQUIRE(kernel_ref.get() != kernel_ref2.get());
+      REQUIRE(kernel_ptx1_handle != kernel_ptx2_handle);
+      REQUIRE(kernel_ref.get() != kernel_ref2.get());
     }
     {
       cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
-      CUDAX_REQUIRE(kernel_ptx1_handle == kernel_ref.get());
+      REQUIRE(kernel_ptx1_handle == kernel_ref.get());
 
       cudax::kernel_ref<void(int*, int)> kernel_ref2{kernel_ptx2_handle};
-      CUDAX_REQUIRE(kernel_ptx2_handle == kernel_ref2.get());
+      REQUIRE(kernel_ptx2_handle == kernel_ref2.get());
 
-      CUDAX_REQUIRE(kernel_ptx1_handle != kernel_ptx2_handle);
-      CUDAX_REQUIRE(kernel_ref.get() != kernel_ref2.get());
+      REQUIRE(kernel_ptx1_handle != kernel_ptx2_handle);
+      REQUIRE(kernel_ref.get() != kernel_ref2.get());
     }
   }
 
@@ -230,10 +230,10 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
     STATIC_REQUIRE(!cuda::std::is_constructible_v<cudax::kernel_ref<void()>, decltype(kernel_rt)>);
 
     CUkernel kernel_rt_handle{};
-    CUDAX_REQUIRE(cudaGetKernel(&kernel_rt_handle, kernel_rt) == cudaSuccess);
+    REQUIRE_CUDART(cudaGetKernel(&kernel_rt_handle, kernel_rt));
 
     cudax::kernel_ref<void(int*, int)> kernel_ref1{kernel_rt};
-    CUDAX_REQUIRE(kernel_rt_handle == kernel_ref1.get());
+    REQUIRE(kernel_rt_handle == kernel_ref1.get());
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 
@@ -242,11 +242,11 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
     STATIC_REQUIRE(cuda::std::is_trivially_copy_constructible_v<cudax::kernel_ref<void()>>);
 
     cudax::kernel_ref<void(int*, int)> kernel_ref1{kernel_ptx1_handle};
-    CUDAX_REQUIRE(kernel_ptx1_handle == kernel_ref1.get());
+    REQUIRE(kernel_ptx1_handle == kernel_ref1.get());
 
     cudax::kernel_ref<void(int*, int)> kernel_ref2{kernel_ref1};
-    CUDAX_REQUIRE(kernel_ptx1_handle == kernel_ref2.get());
-    CUDAX_REQUIRE(kernel_ref1.get() == kernel_ref2.get());
+    REQUIRE(kernel_ptx1_handle == kernel_ref2.get());
+    REQUIRE(kernel_ref1.get() == kernel_ref2.get());
   }
 
   // Name
@@ -256,7 +256,7 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().name()), cuda::std::string_view>);
 
     cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
-    CUDAX_REQUIRE(kernel_ref.name() == "kernel_ptx1");
+    REQUIRE(kernel_ref.name() == "kernel_ptx1");
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
 
@@ -294,7 +294,7 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::kernel_ref<void()>>().get()), CUkernel>);
 
     cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
-    CUDAX_REQUIRE(kernel_ptx1_handle == kernel_ref.get());
+    REQUIRE(kernel_ptx1_handle == kernel_ref.get());
   }
 
   // Equality/Inequality comparison
@@ -302,17 +302,17 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
     cudax::kernel_ref<void(int*, int)> kernel_ref1{kernel_ptx1_handle};
     cudax::kernel_ref<void(int*, int)> kernel_ref2{kernel_ptx2_handle};
 
-    CUDAX_REQUIRE(kernel_ref1 == kernel_ref1);
-    CUDAX_REQUIRE(kernel_ref1 != kernel_ref2);
+    REQUIRE(kernel_ref1 == kernel_ref1);
+    REQUIRE(kernel_ref1 != kernel_ref2);
   }
 
   // Deduction guidelines
 #if _CCCL_CTK_AT_LEAST(12, 1)
   {
     cudax::kernel_ref kernel_ref1{kernel_rt};
-    CUDAX_REQUIRE((cuda::std::is_same_v<decltype(kernel_ref1), cudax::kernel_ref<void(int*, int)>>) );
+    REQUIRE((cuda::std::is_same_v<decltype(kernel_ref1), cudax::kernel_ref<void(int*, int)>>) );
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 
-  CUDAX_REQUIRE(::cuda::__driver::__libraryUnloadNoThrow(lib) == cudaSuccess);
+  REQUIRE_CUDART(::cuda::__driver::__libraryUnloadNoThrow(lib));
 }

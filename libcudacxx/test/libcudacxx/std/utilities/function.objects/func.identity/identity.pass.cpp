@@ -30,7 +30,7 @@ constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transparent>> 
 static_assert(is_transparent<cuda::std::identity>);
 #endif
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::identity id{};
   int i = 42;
@@ -62,8 +62,8 @@ __host__ __device__ constexpr bool test()
   struct S
   {
     constexpr S() = default;
-    __host__ __device__ constexpr S(S&&) noexcept(false) {}
-    __host__ __device__ constexpr S(S const&) noexcept(false) {}
+    TEST_FUNC constexpr S(S&&) noexcept(false) {}
+    TEST_FUNC constexpr S(S const&) noexcept(false) {}
   };
   S x{};
   static_assert(noexcept(id(x)));

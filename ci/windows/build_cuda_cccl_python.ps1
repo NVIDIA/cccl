@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build Python cuda-cccl wheels for the cuda.compute and cuda.coop packages
+    Build Python cuda-cccl wheels for the cuda.compute and cuda.coop._experimental packages
     on Windows.
 
 .DESCRIPTION
@@ -21,17 +21,18 @@
 
 .PARAMETER PyVersion
     **Required.** The Python version to use for building the wheel, expressed
-    as `<major>.<minor>` (e.g. `3.11`).
+    as `<major>.<minor>` (e.g. `3.11`) or a free-threaded version such as
+    `3.14t`.
 
 .PARAMETER OnlyCudaMajor
     Optional. Restricts the build to a single CUDA major version (`12` or `13`).
     When set, only that version is built and the *merge* step is skipped.
 
 .PARAMETER Cuda13Image
-    Optional. The Docker image name used for a nested build of the CUDA 13
-    wheel when the outer container defaults to CUDA 12.9.  The default value
+    Optional. The Docker image name used for a nested build of the CUDA 13
+    wheel when the outer container defaults to CUDA 12.9.  The default value
     matches the RAPIDS dev‑container image that contains the required
-    toolchain: `rapidsai/devcontainers:26.02-cuda13.0-cl14.44-windows2022`.
+    toolchain: `rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022`.
 
 .PARAMETER SkipUpload
     When set, prevents the final wheel(s) from being uploaded as a GitHub
@@ -39,7 +40,7 @@
     Action.
 
 .EXAMPLE
-    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
+    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
     # 12 and 13 versions), and, if in CI, upload the resulting wheel as an
     # artifact.
     .\build_cuda_cccl_python.ps1 -PyVersion 3.11
@@ -49,7 +50,7 @@
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
+    [ValidatePattern("^\d+\.\d+t?$")]
     [string]$PyVersion,
 
     [Parameter(Mandatory = $false)]
@@ -57,7 +58,7 @@ Param(
     [string]$OnlyCudaMajor,
 
     [Parameter(Mandatory = $false)]
-    [string]$Cuda13Image = "rapidsai/devcontainers:26.02-cuda13.0-cl14.44-windows2022",
+    [string]$Cuda13Image = "rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022",
 
     [Parameter(Mandatory = $false)]
     [switch]$SkipUpload
@@ -155,7 +156,7 @@ ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu
 function Invoke-Cuda13NestedBuild {
     <#
     .SYNOPSIS
-        Run the nested Docker build for CUDA 13 when we are already inside a
+        Run the nested Docker build for CUDA 13 when we are already inside a
         CUDA 12 builder image.
 
     .DESCRIPTION

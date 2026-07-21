@@ -47,10 +47,10 @@ int main(int, char**)
     constexpr local_days sd{};
     constexpr year_month_day ymd{sd};
 
-    static_assert(ymd.ok(), "");
-    static_assert(ymd.year() == year{1970}, "");
-    static_assert(ymd.month() == January, "");
-    static_assert(ymd.day() == day{1}, "");
+    static_assert(ymd.ok());
+    static_assert(ymd.year() == year{1970});
+    static_assert(ymd.month() == January);
+    static_assert(ymd.day() == day{1});
   }
 
   {
@@ -59,10 +59,10 @@ int main(int, char**)
 
     auto constexpr February = cuda::std::chrono::February;
 
-    static_assert(ymd.ok(), "");
-    static_assert(ymd.year() == year{2000}, "");
-    static_assert(ymd.month() == February, "");
-    static_assert(ymd.day() == day{2}, "");
+    static_assert(ymd.ok());
+    static_assert(ymd.year() == year{2000});
+    static_assert(ymd.month() == February);
+    static_assert(ymd.day() == day{2});
   }
 
   //  There's one more leap day between 1/1/40 and 1/1/70
@@ -71,10 +71,10 @@ int main(int, char**)
     constexpr local_days sd{days{-10957}};
     constexpr year_month_day ymd{sd};
 
-    static_assert(ymd.ok(), "");
-    static_assert(ymd.year() == year{1940}, "");
-    static_assert(ymd.month() == January, "");
-    static_assert(ymd.day() == day{2}, "");
+    static_assert(ymd.ok());
+    static_assert(ymd.year() == year{1940});
+    static_assert(ymd.month() == January);
+    static_assert(ymd.day() == day{2});
   }
 
   {

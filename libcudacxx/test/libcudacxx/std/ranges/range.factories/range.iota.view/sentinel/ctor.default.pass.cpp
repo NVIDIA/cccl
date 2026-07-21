@@ -16,7 +16,7 @@
 #include "../types.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using Sent = cuda::std::ranges::sentinel_t<
     cuda::std::ranges::iota_view<Int42<DefaultTo42>, IntComparableWith<Int42<DefaultTo42>>>>;
@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -23,7 +23,9 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__device/device_ref.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/std/__memory/addressof.h>
 
 #  include <nv/target>
@@ -34,20 +36,42 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the device address of the passed \c __device_object
 //! @param __device_object the object residing in device memory
+//! @warning The user must ensure that the current device is properly set to the device the object was allocated on.
 //! @return Valid pointer to the device object
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline _Tp* get_device_address(_Tp& __device_object)
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (return ::cuda::std::addressof(__device_object);),
-    (void* __device_ptr = nullptr; _CCCL_TRY_CUDA_API(
-       ::cudaGetSymbolAddress,
-       "failed to call cudaGetSymbolAddress in cuda::get_device_address",
-       &__device_ptr,
-       __device_object);
-     return static_cast<_Tp*>(__device_ptr);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::cuda::std::addressof(__device_object);), ({
+                      void* __device_ptr = nullptr; //
+                      _CCCL_TRY_CUDA_API(::cudaGetSymbolAddress,
+                                         "failed to call cudaGetSymbolAddress in cuda::get_device_address",
+                                         &__device_ptr,
+                                         __device_object);
+                      return static_cast<_Tp*>(__device_ptr);
+                    }))
 }
+
+#  if !_CCCL_COMPILER(NVRTC)
+//! @brief Returns the address of the passed \c __device_object for the passed \c __device.
+//!
+//! @param __device_object The object residing in device memory.
+//! @param __device The device to query the address for.
+//!
+//! @return Valid pointer to the device object.
+//!
+//! @throws cuda::cuda_error if the operation fails.
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API inline _Tp* get_device_address(_Tp& __device_object, device_ref __device)
+{
+  __ensure_current_context __ctx{__device};
+  void* __device_ptr{};
+  _CCCL_TRY_CUDA_API(::cudaGetSymbolAddress,
+                     "failed to call cudaGetSymbolAddress in cuda::get_device_address",
+                     &__device_ptr,
+                     __device_object);
+  return static_cast<_Tp*>(__device_ptr);
+}
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_END_NAMESPACE_CUDA
 

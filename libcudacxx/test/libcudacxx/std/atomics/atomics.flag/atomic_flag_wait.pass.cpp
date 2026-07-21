@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 
@@ -20,7 +23,7 @@
 #include "test_macros.h"
 
 template <template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   SHARED cuda::std::atomic_flag* t;
   execute_on_main_thread([&] {

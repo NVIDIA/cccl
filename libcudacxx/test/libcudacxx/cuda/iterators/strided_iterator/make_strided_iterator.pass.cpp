@@ -17,7 +17,7 @@
 #include "types.h"
 
 template <class Stride>
-__host__ __device__ constexpr void test(Stride stride)
+TEST_FUNC constexpr void test(Stride stride)
 {
   int buffer[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void test(Stride stride)
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(2);
   test(Stride<2>{});

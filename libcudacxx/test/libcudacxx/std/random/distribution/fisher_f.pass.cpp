@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -27,7 +30,7 @@ struct fisher_f_cdf
 {
   using P = typename cuda::std::fisher_f_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; m, n) = I_{mx/(mx+n)}(m/2, n/2)
     // where I is the regularized incomplete beta function
@@ -43,7 +46,7 @@ struct fisher_f_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::fisher_f_distribution<T>;

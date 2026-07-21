@@ -24,9 +24,9 @@ struct MinimalElementType
 
   struct tag
   {
-    __host__ __device__ constexpr tag(int) noexcept {}
+    TEST_FUNC constexpr tag(int) noexcept {}
 
-    __host__ __device__ constexpr operator int() noexcept
+    TEST_FUNC constexpr operator int() noexcept
     {
       return 42;
     }
@@ -35,11 +35,11 @@ struct MinimalElementType
   int val;
   constexpr MinimalElementType()                                     = delete;
   constexpr MinimalElementType& operator=(const MinimalElementType&) = delete;
-  __host__ __device__ constexpr explicit MinimalElementType(int v) noexcept
+  TEST_FUNC constexpr explicit MinimalElementType(int v) noexcept
       : val(v)
   {}
 
-  __host__ __device__ constexpr MinimalElementType(tag) noexcept
+  TEST_FUNC constexpr MinimalElementType(tag) noexcept
       : val(42)
   {}
 
@@ -59,16 +59,16 @@ struct ElementPool
 {
 private:
   template <int... Indices>
-  __host__ __device__ constexpr ElementPool(cuda::std::integer_sequence<int, Indices...>)
+  TEST_FUNC constexpr ElementPool(cuda::std::integer_sequence<int, Indices...>)
       : ptr_{T{MinimalElementType::tag{Indices}}...}
   {}
 
 public:
-  __host__ __device__ constexpr ElementPool()
+  TEST_FUNC constexpr ElementPool()
       : ElementPool(cuda::std::make_integer_sequence<int, N>())
   {}
 
-  __host__ __device__ constexpr T* get_ptr()
+  TEST_FUNC constexpr T* get_ptr()
   {
     return ptr_;
   }

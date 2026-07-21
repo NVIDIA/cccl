@@ -18,8 +18,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test_copy_constructor()
+TEST_FUNC constexpr void test_copy_constructor()
 {
   using C = cuda::complex<T>;
 
@@ -44,7 +46,7 @@ __host__ __device__ constexpr void test_copy_constructor()
   assert(v2.imag() == T(2));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_copy_constructor<float>();
   test_copy_constructor<double>();

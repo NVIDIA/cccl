@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -20,14 +20,14 @@ setup_python_env "${py_version}"
 # Fetch or build the cuda_cccl wheel:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" ${wheel_artifact_name} /home/coder/cccl/
+  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
 else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl
+# Install cuda_cccl, plus CuPy which the cuda.compute examples require
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cupy-cuda${cuda_major_version}x"
 
 # Run tests for parallel module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"

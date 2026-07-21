@@ -7,7 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
 // UNSUPPORTED: nvrtc
+
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 

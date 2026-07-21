@@ -25,7 +25,7 @@ struct MoveOnly
 {
   int val_;
 
-  __host__ __device__ constexpr MoveOnly(const int val) noexcept
+  TEST_FUNC constexpr MoveOnly(const int val) noexcept
       : val_(val)
   {}
 
@@ -35,12 +35,12 @@ struct MoveOnly
   MoveOnly& operator=(const MoveOnly&) = delete;
   MoveOnly& operator=(MoveOnly&&)      = default;
 
-  __host__ __device__ constexpr bool operator==(const int val) const noexcept
+  TEST_FUNC constexpr bool operator==(const int val) const noexcept
   {
     return val_ == val;
   }
 
-  __host__ __device__ constexpr bool operator==(const MoveOnly& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const MoveOnly& other) const noexcept
   {
     return val_ == other.val_;
   }
@@ -49,14 +49,14 @@ struct MoveOnly
 struct equal2
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(const T& i) const noexcept
+  TEST_FUNC constexpr bool operator()(const T& i) const noexcept
   {
     return i == 2;
   }
 };
 
 template <class Iter>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   using value_type                     = typename cuda::std::iterator_traits<Iter>::value_type;
   constexpr int N                      = 9;
@@ -70,7 +70,7 @@ constexpr __host__ __device__ void test()
   }
 }
 
-constexpr __host__ __device__ bool test()
+constexpr TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();
@@ -90,7 +90,7 @@ constexpr __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

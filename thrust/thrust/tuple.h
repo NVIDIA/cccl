@@ -101,10 +101,10 @@ using ::cuda::std::tuple_size;
  *    thrust::tuple<int, float, const char*> t(13, 0.1f, "thrust");
  *
  *    // Individual members are accessed with the free function `get`.
- *    std::cout << "The first element's value is " << thrust::get<0>(t) << std::endl;
+ *    std::cout << "The first element's value is " << thrust::get<0>(t) << '\n';
  *
  *    // ... or the member function `get`.
- *    std::cout << "The second element's value is " << t.get<1>() << std::endl;
+ *    std::cout << "The second element's value is " << t.get<1>() << '\n';
  *
  *    // We can also modify elements with the same function.
  *    thrust::get<0>(t) += 10;

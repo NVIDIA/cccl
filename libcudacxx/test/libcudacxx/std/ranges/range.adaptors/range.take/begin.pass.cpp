@@ -20,9 +20,9 @@
 
 struct NonCommonSimpleView : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ sentinel_wrapper<int*> end() const;
-  __host__ __device__ size_t size()
+  TEST_FUNC int* begin() const;
+  TEST_FUNC sentinel_wrapper<int*> end() const;
+  TEST_FUNC size_t size()
   {
     return 0;
   } // deliberately non-const
@@ -30,7 +30,7 @@ struct NonCommonSimpleView : cuda::std::ranges::view_base
 static_assert(cuda::std::ranges::sized_range<NonCommonSimpleView>);
 static_assert(!cuda::std::ranges::sized_range<const NonCommonSimpleView>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -87,7 +87,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

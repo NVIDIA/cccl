@@ -40,14 +40,16 @@ template <class _InputIterator, class _Predicate>
     return true;
   }
   ++__first;
+  bool __result = true;
   for (; __first != __last; ++__first)
   {
     if (__pred(*__first))
     {
-      return false;
+      __result = false;
+      break;
     }
   }
-  return true;
+  return __result;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

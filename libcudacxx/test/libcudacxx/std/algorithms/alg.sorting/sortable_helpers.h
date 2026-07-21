@@ -26,17 +26,17 @@ struct TrivialSortable
 {
   int value;
 
-  __host__ __device__ constexpr TrivialSortable()
+  TEST_FUNC constexpr TrivialSortable()
       : value(0)
   {}
-  __host__ __device__ constexpr TrivialSortable(int v)
+  TEST_FUNC constexpr TrivialSortable(int v)
       : value(v)
   {}
-  __host__ __device__ friend constexpr bool operator<(const TrivialSortable& a, const TrivialSortable& b)
+  TEST_FUNC friend constexpr bool operator<(const TrivialSortable& a, const TrivialSortable& b)
   {
     return a.value / 10 < b.value / 10;
   }
-  __host__ __device__ static constexpr bool less(const TrivialSortable& a, const TrivialSortable& b)
+  TEST_FUNC static constexpr bool less(const TrivialSortable& a, const TrivialSortable& b)
   {
     return a.value < b.value;
   }
@@ -45,25 +45,25 @@ struct TrivialSortable
 struct NonTrivialSortable
 {
   int value;
-  __host__ __device__ constexpr NonTrivialSortable()
+  TEST_FUNC constexpr NonTrivialSortable()
       : value(0)
   {}
-  __host__ __device__ constexpr NonTrivialSortable(int v)
+  TEST_FUNC constexpr NonTrivialSortable(int v)
       : value(v)
   {}
-  __host__ __device__ constexpr NonTrivialSortable(const NonTrivialSortable& rhs)
+  TEST_FUNC constexpr NonTrivialSortable(const NonTrivialSortable& rhs)
       : value(rhs.value)
   {}
-  __host__ __device__ constexpr NonTrivialSortable& operator=(const NonTrivialSortable& rhs)
+  TEST_FUNC constexpr NonTrivialSortable& operator=(const NonTrivialSortable& rhs)
   {
     value = rhs.value;
     return *this;
   }
-  __host__ __device__ friend constexpr bool operator<(const NonTrivialSortable& a, const NonTrivialSortable& b)
+  TEST_FUNC friend constexpr bool operator<(const NonTrivialSortable& a, const NonTrivialSortable& b)
   {
     return a.value / 10 < b.value / 10;
   }
-  __host__ __device__ static constexpr bool less(const NonTrivialSortable& a, const NonTrivialSortable& b)
+  TEST_FUNC static constexpr bool less(const NonTrivialSortable& a, const NonTrivialSortable& b)
   {
     return a.value < b.value;
   }
@@ -72,21 +72,20 @@ struct NonTrivialSortable
 struct TrivialSortableWithComp
 {
   int value;
-  __host__ __device__ constexpr TrivialSortableWithComp()
+  TEST_FUNC constexpr TrivialSortableWithComp()
       : value(0)
   {}
-  __host__ __device__ constexpr TrivialSortableWithComp(int v)
+  TEST_FUNC constexpr TrivialSortableWithComp(int v)
       : value(v)
   {}
   struct Comparator
   {
-    __host__ __device__ constexpr bool
-    operator()(const TrivialSortableWithComp& a, const TrivialSortableWithComp& b) const
+    TEST_FUNC constexpr bool operator()(const TrivialSortableWithComp& a, const TrivialSortableWithComp& b) const
     {
       return a.value / 10 < b.value / 10;
     }
   };
-  static __host__ __device__ constexpr bool less(const TrivialSortableWithComp& a, const TrivialSortableWithComp& b)
+  static TEST_FUNC constexpr bool less(const TrivialSortableWithComp& a, const TrivialSortableWithComp& b)
   {
     return a.value < b.value;
   }
@@ -95,39 +94,37 @@ struct TrivialSortableWithComp
 struct NonTrivialSortableWithComp
 {
   int value;
-  __host__ __device__ constexpr NonTrivialSortableWithComp()
+  TEST_FUNC constexpr NonTrivialSortableWithComp()
       : value(0)
   {}
-  __host__ __device__ constexpr NonTrivialSortableWithComp(int v)
+  TEST_FUNC constexpr NonTrivialSortableWithComp(int v)
       : value(v)
   {}
-  __host__ __device__ constexpr NonTrivialSortableWithComp(const NonTrivialSortableWithComp& rhs)
+  TEST_FUNC constexpr NonTrivialSortableWithComp(const NonTrivialSortableWithComp& rhs)
       : value(rhs.value)
   {}
-  __host__ __device__ constexpr NonTrivialSortableWithComp& operator=(const NonTrivialSortableWithComp& rhs)
+  TEST_FUNC constexpr NonTrivialSortableWithComp& operator=(const NonTrivialSortableWithComp& rhs)
   {
     value = rhs.value;
     return *this;
   }
   struct Comparator
   {
-    __host__ __device__ constexpr bool
-    operator()(const NonTrivialSortableWithComp& a, const NonTrivialSortableWithComp& b) const
+    TEST_FUNC constexpr bool operator()(const NonTrivialSortableWithComp& a, const NonTrivialSortableWithComp& b) const
     {
       return a.value / 10 < b.value / 10;
     }
   };
-  static __host__ __device__ constexpr bool
-  less(const NonTrivialSortableWithComp& a, const NonTrivialSortableWithComp& b)
+  static TEST_FUNC constexpr bool less(const NonTrivialSortableWithComp& a, const NonTrivialSortableWithComp& b)
   {
     return a.value < b.value;
   }
 };
 
-static_assert(cuda::std::is_trivially_copyable<TrivialSortable>::value, "");
-static_assert(cuda::std::is_trivially_copyable<TrivialSortableWithComp>::value, "");
-static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortable>::value, "");
-static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortableWithComp>::value, "");
+static_assert(cuda::std::is_trivially_copyable<TrivialSortable>::value);
+static_assert(cuda::std::is_trivially_copyable<TrivialSortableWithComp>::value);
+static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortable>::value);
+static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortableWithComp>::value);
 
 #if TEST_STD_VER >= 2020
 struct TracedCopy
@@ -136,52 +133,52 @@ struct TracedCopy
   int data   = 0;
 
   constexpr TracedCopy() = default;
-  __host__ __device__ constexpr TracedCopy(int i)
+  TEST_FUNC constexpr TracedCopy(int i)
       : data(i)
   {}
-  __host__ __device__ constexpr TracedCopy(const TracedCopy& other)
+  TEST_FUNC constexpr TracedCopy(const TracedCopy& other)
       : copied(other.copied + 1)
       , data(other.data)
   {}
 
-  __host__ __device__ constexpr TracedCopy(TracedCopy&& other)            = delete;
-  __host__ __device__ constexpr TracedCopy& operator=(TracedCopy&& other) = delete;
+  TEST_FUNC constexpr TracedCopy(TracedCopy&& other)            = delete;
+  TEST_FUNC constexpr TracedCopy& operator=(TracedCopy&& other) = delete;
 
-  __host__ __device__ constexpr TracedCopy& operator=(const TracedCopy& other)
+  TEST_FUNC constexpr TracedCopy& operator=(const TracedCopy& other)
   {
     copied = other.copied + 1;
     data   = other.data;
     return *this;
   }
 
-  __host__ __device__ constexpr bool copiedOnce() const
+  TEST_FUNC constexpr bool copiedOnce() const
   {
     return copied == 1;
   }
 
-  __host__ __device__ constexpr bool operator==(const TracedCopy& o) const
+  TEST_FUNC constexpr bool operator==(const TracedCopy& o) const
   {
     return data == o.data;
   }
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  __host__ __device__ constexpr auto operator<=>(const TracedCopy& o) const
+  TEST_FUNC constexpr auto operator<=>(const TracedCopy& o) const
   {
     return data <=> o.data;
   }
 #  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  __host__ __device__ constexpr auto operator<(const TracedCopy& o) const
+  TEST_FUNC constexpr auto operator<(const TracedCopy& o) const
   {
     return data < o.data;
   }
-  __host__ __device__ constexpr auto operator<=(const TracedCopy& o) const
+  TEST_FUNC constexpr auto operator<=(const TracedCopy& o) const
   {
     return data <= o.data;
   }
-  __host__ __device__ constexpr auto operator>(const TracedCopy& o) const
+  TEST_FUNC constexpr auto operator>(const TracedCopy& o) const
   {
     return data > o.data;
   }
-  __host__ __device__ constexpr auto operator>=(const TracedCopy& o) const
+  TEST_FUNC constexpr auto operator>=(const TracedCopy& o) const
   {
     return data >= o.data;
   }
@@ -200,16 +197,16 @@ struct NonBorrowedRange
   // there is no == between int* and sentinel_wrapper<contiguous_iterator<int*>>
   using Sent = cuda::std::conditional_t<cuda::std::contiguous_iterator<Iter>, Iter, sentinel_wrapper<Iter>>;
 
-  __host__ __device__ constexpr NonBorrowedRange(int* d, cuda::std::size_t s)
+  TEST_FUNC constexpr NonBorrowedRange(int* d, cuda::std::size_t s)
       : data_{d}
       , size_{s}
   {}
 
-  __host__ __device__ constexpr Iter begin() const
+  TEST_FUNC constexpr Iter begin() const
   {
     return Iter{data_};
   };
-  __host__ __device__ constexpr Sent end() const
+  TEST_FUNC constexpr Sent end() const
   {
     return Sent{Iter{data_ + size_}};
   };

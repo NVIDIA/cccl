@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <memory>
 
 // allocator:
@@ -44,22 +47,22 @@ template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType
 {
   char data;
-  __host__ __device__ AlignedType()
+  TEST_FUNC AlignedType()
   {
     ++AlignedType_constructed;
   }
-  __host__ __device__ AlignedType(AlignedType const&)
+  TEST_FUNC AlignedType(AlignedType const&)
   {
     ++AlignedType_constructed;
   }
-  __host__ __device__ ~AlignedType()
+  TEST_FUNC ~AlignedType()
   {
     --AlignedType_constructed;
   }
 };
 
 template <cuda::std::size_t Align>
-__host__ __device__ void test_aligned()
+TEST_FUNC void test_aligned()
 {
   using T                 = AlignedType<Align>;
   AlignedType_constructed = 0;
@@ -96,7 +99,7 @@ __host__ __device__ void test_aligned()
 
 #if TEST_STD_VER >= 2020
 template <cuda::std::size_t Align>
-__host__ __device__ constexpr bool test_aligned_constexpr()
+TEST_FUNC constexpr bool test_aligned_constexpr()
 {
   using T = AlignedType<Align>;
   cuda::std::allocator<T> a;

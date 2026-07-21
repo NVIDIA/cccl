@@ -44,7 +44,7 @@ namespace cde = cuda::device::experimental;
 
 // Compute the total number of elements in a tensor
 template <class T, size_t num_dims>
-constexpr __host__ __device__ int tensor_len(cuda::std::array<T, num_dims> dims)
+constexpr TEST_FUNC int tensor_len(cuda::std::array<T, num_dims> dims)
 {
   T len = 1;
   for (T d : dims)
@@ -59,7 +59,7 @@ constexpr __host__ __device__ int tensor_len(cuda::std::array<T, num_dims> dims)
 // into
 // a linear index into a global memory tensor.
 template <size_t num_dims>
-inline __device__ int smem_lin_idx_to_gmem_lin_idx(
+inline TEST_DEVICE_FUNC int smem_lin_idx_to_gmem_lin_idx(
   int smem_lin_idx,
   cuda::std::array<uint32_t, num_dims> smem_coord,
   cuda::std::array<uint32_t, num_dims> smem_dims,
@@ -82,7 +82,7 @@ inline __device__ int smem_lin_idx_to_gmem_lin_idx(
 }
 
 template <size_t num_dims>
-__device__ inline void cp_tensor_global_to_shared(
+TEST_DEVICE_FUNC inline void cp_tensor_global_to_shared(
   CUtensorMap* tensor_map, cuda::std::array<uint32_t, num_dims> indices, void* smem, barrier& bar)
 {
   switch (indices.size())
@@ -110,7 +110,7 @@ __device__ inline void cp_tensor_global_to_shared(
 }
 
 template <size_t num_dims>
-__device__ inline void
+TEST_DEVICE_FUNC inline void
 cp_tensor_shared_to_global(CUtensorMap* tensor_map, cuda::std::array<uint32_t, num_dims> indices, void* smem)
 {
   switch (indices.size())
@@ -160,7 +160,7 @@ __constant__ fake_cutensormap global_fake_tensor_map;
  * 6. It checks that all the values in global are properly modified.
  */
 template <size_t smem_len, size_t num_dims>
-__device__ void
+TEST_DEVICE_FUNC void
 test(cuda::std::array<uint32_t, num_dims> smem_coord,
      cuda::std::array<uint32_t, num_dims> smem_dims,
      cuda::std::array<uint64_t, num_dims> gmem_dims,

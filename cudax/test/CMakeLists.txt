@@ -16,7 +16,10 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
   set(test_sources ${ARGN})
 
   cccl_add_executable(${test_target} SOURCES ${ARGN} ADD_CTEST)
-  target_include_directories(${test_target} PRIVATE "common")
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/common"
+  )
   target_link_libraries(
     ${test_target}
     PRIVATE #
@@ -67,6 +70,8 @@ target_compile_options(
 
 cudax_add_catch2_test(test_target graph
     graph/graph_smoke.cu
+    graph/graph_node_ops_smoke.cu
+    graph/graph_buffer_smoke.cu
 )
 
 cudax_add_catch2_test(test_target stream
@@ -75,6 +80,8 @@ cudax_add_catch2_test(test_target stream
 
 cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
+    utility/unstable_unique.cu
+    utility/optionally_static.cu
 )
 
 cudax_add_catch2_test(test_target containers
@@ -86,11 +93,53 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
-cudax_add_catch2_test(test_target cuco
-    cuco/utility/test_hashers.cu
+cudax_add_catch2_test(test_target fill_bytes
+    fill_bytes/fill_bytes_mdspan.cu
+    fill_bytes/fill_bytes_mdspan_example.cu
 )
 
-cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
+cudax_add_catch2_test(test_target copy
+    copy/copy.cu
+    copy/copy_edge_cases.cu
+    copy/copy_vectorize.cu
+    copy/copy_vectorize_5d.cu
+    copy/copy_llm.cu
+    copy/copy_nvmath.cu
+    copy/copy_nvmath_transpose.cu
+    copy/copy_shared_memory.cu
+)
+
+# nvcc 12.0 fails to compile cuco hashers test
+if (
+  NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
+)
+  cudax_add_catch2_test(test_target cuco.utility.hashers
+    cuco/utility/test_hashers.cu
+  )
+endif()
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${cudax_target}
+    cuco/fixed_capacity_map/test_insert_and_contains.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
+    cuco/fixed_capacity_map/test_capacity.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.shared_memory ${cudax_target}
+    cuco/fixed_capacity_map/test_shared_memory.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.key_sentinel ${cudax_target}
+    cuco/fixed_capacity_map/test_key_sentinel.cu
+)
+
+cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
+    cuco/utility/test_capacity.cu
+)
+
+cudax_add_catch2_test(test_target cuco.hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )
 
@@ -115,8 +164,93 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target hierarchy_groups
-    hierarchy/group.cu
+add_subdirectory(multi_gpu)
+
+cudax_add_catch2_test(test_target group.mapping.binary_partition
+    group/mapping/binary_partition.cu
+)
+cudax_add_catch2_test(test_target group.mapping.composite_mapping
+    group/mapping/composite_mapping.cu
+)
+cudax_add_catch2_test(test_target group.mapping.group_as
+    group/mapping/group_as.cu
+)
+cudax_add_catch2_test(test_target group.mapping.group_by
+    group/mapping/group_by.cu
+)
+cudax_add_catch2_test(test_target group.mapping.identity_mapping
+    group/mapping/identity_mapping.cu
+)
+cudax_add_catch2_test(test_target group.mapping.take
+    group/mapping/take.cu
+)
+cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
+    group/synchronizer/lane_synchronizer.cu
+)
+cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
+    group/synchronizer/barrier_synchronizer.cu
+)
+cudax_add_catch2_test(test_target group.cooperative_algorithm
+    group/cooperative_algorithm.cu
+)
+cudax_add_catch2_test(test_target group.group
+    group/group.cu
+)
+cudax_add_catch2_test(test_target group.make_this_group
+    group/make_this_group.cu
+)
+cudax_add_catch2_test(test_target group.segmented_algorithm
+    group/segmented_algorithm.cu
+)
+cudax_add_catch2_test(test_target group.this_group
+    group/this_group.cu
+)
+cudax_add_catch2_test(test_target group.invoke_one
+    group/invoke_one.cu
+)
+
+cudax_add_catch2_test(test_target coop.any_of.this_thread
+    coop/any_of/this_thread.cu
+)
+cudax_add_catch2_test(test_target coop.any_of.this_warp
+    coop/any_of/this_warp.cu
+)
+cudax_add_catch2_test(test_target coop.any_of.threads_within_warp
+    coop/any_of/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.reduce.this_thread
+    coop/reduce/this_thread.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_warp
+    coop/reduce/this_warp.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_block
+    coop/reduce/this_block.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_cluster
+    coop/reduce/this_cluster.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_grid
+    coop/reduce/this_grid.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.threads_within_warp
+    coop/reduce/threads_within_warp.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.warps_within_block
+    coop/reduce/warps_within_block.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle.threads_within_warp
+    coop/shuffle/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
+    coop/shuffle_down/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
+    coop/shuffle_up/threads_within_warp.cu
 )
 
 if (cudax_ENABLE_CUFILE)
@@ -144,6 +278,12 @@ if (cudax_ENABLE_CUFILE)
       cufile/open_mode.cu
   )
   target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+endif()
+
+# FIXME: Enable MSVC
+if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # Places tests are handled separately:
+  add_subdirectory(places)
 endif()
 
 # FIXME: Enable MSVC

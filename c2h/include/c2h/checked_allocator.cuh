@@ -160,7 +160,7 @@ public:
     using other = checked_cuda_allocator<U>;
   };
 
-  _CCCL_HOST_DEVICE checked_cuda_allocator() {}
+  checked_cuda_allocator() = default;
 
   _CCCL_HOST_DEVICE checked_cuda_allocator(const checked_cuda_allocator& other)
       : base(other)
@@ -173,7 +173,7 @@ public:
 
   checked_cuda_allocator& operator=(const checked_cuda_allocator&) = default;
 
-  _CCCL_HOST_DEVICE ~checked_cuda_allocator() {}
+  ~checked_cuda_allocator() = default;
 };
 
 struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base

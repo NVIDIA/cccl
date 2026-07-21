@@ -7,7 +7,7 @@
 template <typename T>
 void TestCudaMallocResultAligned(const std::size_t n)
 {
-  T* ptr = 0;
+  T* ptr = nullptr;
   cudaMalloc(&ptr, n * sizeof(T));
   cudaFree(ptr);
 

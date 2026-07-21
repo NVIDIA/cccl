@@ -20,9 +20,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/errno.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <iostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -244,7 +243,7 @@ public:
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
              ,
-             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>* = 0
+             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 
@@ -315,12 +314,12 @@ inline error_code make_error_code(errc::errc_t e);
  */
 inline bool operator<(const error_code& lhs, const error_code& rhs);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 /*! Effects: <tt>os << ec.category().name() << ':' << ec.value()</tt>.
  */
 template <typename charT, typename traits>
 std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // [19.5.3] class error_condition
 
@@ -357,7 +356,7 @@ public:
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
                   ,
-                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value>* = 0
+                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 

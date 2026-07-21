@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
@@ -17,7 +20,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test_equality()
+TEST_FUNC constexpr void test_equality()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
@@ -25,16 +28,16 @@ __host__ __device__ constexpr void test_equality()
   inplace_vector other_vec{T(0), T(1), T(2), T(3), T(4)};
 
   auto res_equality = vec == vec;
-  static_assert(cuda::std::is_same<decltype(res_equality), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(res_equality), bool>::value);
   assert(res_equality);
 
   auto res_inequality = vec != other_vec;
-  static_assert(cuda::std::is_same<decltype(res_inequality), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(res_inequality), bool>::value);
   assert(res_inequality);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_relation()
+TEST_FUNC constexpr void test_relation()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
@@ -42,30 +45,30 @@ __host__ __device__ constexpr void test_relation()
   inplace_vector other_vec{T(0), T(1), T(2), T(3), T(4)};
 
   auto res_less = vec < other_vec;
-  static_assert(cuda::std::is_same<decltype(res_less), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(res_less), bool>::value);
   assert(res_less);
 
   auto res_less_equal = vec <= other_vec;
-  static_assert(cuda::std::is_same<decltype(res_less_equal), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(res_less_equal), bool>::value);
   assert(res_less_equal);
 
   auto res_greater = vec > other_vec;
-  static_assert(cuda::std::is_same<decltype(res_greater), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(res_greater), bool>::value);
   assert(!res_greater);
 
   auto res_greater_equal = vec >= other_vec;
-  static_assert(cuda::std::is_same<decltype(res_greater_equal), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(res_greater_equal), bool>::value);
   assert(!res_greater_equal);
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_equality<T>();
   test_relation<T>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -84,7 +87,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

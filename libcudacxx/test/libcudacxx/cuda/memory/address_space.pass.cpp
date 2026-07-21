@@ -8,14 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
+
+#include "test_macros.h"
 
 struct MyStruct
 {
   int v;
 };
 
-__device__ int global_var;
+TEST_GLOBAL_VARIABLE int global_var;
 __constant__ int constant_var;
 
 __global__ void test_kernel(const _CCCL_GRID_CONSTANT MyStruct grid_constant_var)

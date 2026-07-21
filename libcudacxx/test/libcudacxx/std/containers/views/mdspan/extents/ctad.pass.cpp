@@ -22,13 +22,13 @@
 #include "test_macros.h"
 
 template <class E, class Expected>
-__host__ __device__ constexpr void test(E e, Expected expected)
+TEST_FUNC constexpr void test(E e, Expected expected)
 {
   static_assert(cuda::std::is_same_v<E, Expected>);
   assert(e == expected);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr cuda::std::size_t D = cuda::std::dynamic_extent;
 
@@ -45,7 +45,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

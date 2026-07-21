@@ -10,6 +10,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 /*
  * The goal of this test is to ensure that using read access modes actually
  * results in concurrent tasks
@@ -76,7 +78,7 @@ int main(int argc, char** argv)
 
   if (argc > 3)
   {
-    std::cout << "Generating DOT output in " << argv[3] << std::endl;
+    std::cout << "Generating DOT output in " << argv[3] << '\n';
     ctx.print_to_dot(argv[3]);
   }
 

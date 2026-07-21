@@ -85,9 +85,9 @@ struct check_unwrapped_iterator
     ::cuda::std::remove_reference_t<decltype(thrust::try_unwrap_contiguous_iterator(cuda::std::declval<IteratorT>()))>;
 
   static constexpr bool value =
-    std::is_same<expected_unwrapped_type, expect_pointer>::value
-      ? std::is_same<unwrapped_t, PointerT>::value
-      : std::is_same<unwrapped_t, IteratorT>::value;
+    std::is_same_v<expected_unwrapped_type, expect_pointer>
+      ? std::is_same_v<unwrapped_t, PointerT>
+      : std::is_same_v<unwrapped_t, IteratorT>;
 };
 
 template <typename T>

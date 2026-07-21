@@ -18,7 +18,7 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/util_allocator.cuh>
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "../../test/test_util.h"
 

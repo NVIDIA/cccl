@@ -20,7 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/uabs.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/to_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -32,6 +36,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -62,26 +67,50 @@ template <class _Tp>
   {
     if (__uv < __ubase)
     {
-      return __r + 1;
+      __r += 1;
+      break;
     }
     else if (__uv < __ubase_2)
     {
-      return __r + 2;
+      __r += 2;
+      break;
     }
     else if (__uv < __ubase_3)
     {
-      return __r + 3;
+      __r += 3;
+      break;
     }
     else if (__uv < __ubase_4)
     {
-      return __r + 4;
+      __r += 4;
+      break;
     }
 
     __uv /= __ubase_4;
     __r += 4;
   }
+  return __r;
+}
 
-  _CCCL_UNREACHABLE();
+template <int _Base, class _Tp>
+[[nodiscard]] _CCCL_API constexpr int __to_chars_int_width(_Tp __v) noexcept
+{
+  if constexpr (::cuda::is_power_of_two(_Base))
+  {
+    // For bases that are powers of 2, we can count leading zeros to compute the width more efficiently.
+    constexpr auto __base_ilog2 = ::cuda::ilog2(_Base);
+
+    // If value == 0 still need one digit, so we always set the least significant bit.
+    return ::cuda::ceil_div(__num_bits_v<_Tp> - ::cuda::std::countl_zero(static_cast<_Tp>(__v | 1)), __base_ilog2);
+  }
+  else if constexpr (_Base == 10)
+  {
+    return (__v > 1) ? ::cuda::ceil_ilog10(__v) : 1;
+  }
+  else
+  {
+    return ::cuda::std::__to_chars_int_width(__v, _Base);
+  }
 }
 
 template <class _Tp>
@@ -114,7 +143,32 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
   else
   {
     const ptrdiff_t __cap = __last - __first;
-    const int __n         = ::cuda::std::__to_chars_int_width(__value, __base);
+
+    int __n{};
+    switch (__base)
+    {
+      case 2:
+        __n = ::cuda::std::__to_chars_int_width<2>(__value);
+        break;
+      case 4:
+        __n = ::cuda::std::__to_chars_int_width<4>(__value);
+        break;
+      case 8:
+        __n = ::cuda::std::__to_chars_int_width<8>(__value);
+        break;
+      case 10:
+        __n = ::cuda::std::__to_chars_int_width<10>(__value);
+        break;
+      case 16:
+        __n = ::cuda::std::__to_chars_int_width<16>(__value);
+        break;
+      case 32:
+        __n = ::cuda::std::__to_chars_int_width<32>(__value);
+        break;
+      default:
+        __n = ::cuda::std::__to_chars_int_width(__value, __base);
+        break;
+    }
 
     if (__n > __cap)
     {

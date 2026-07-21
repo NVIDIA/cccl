@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -12,8 +12,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
-#include <cuda/std/algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -23,7 +22,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = cuda::std::clamp<std::size_t>(elements * common_prefix, 0, elements - 2);
+  const auto mismatch_point = cuda::std::clamp<std::size_t>(
+    static_cast<std::size_t>(static_cast<double>(elements) * common_prefix), std::size_t{0}, elements - 2);
 
   thrust::device_vector<T> in(elements, thrust::no_init);
   thrust::sequence(in.begin(), in.end(), 0);
@@ -51,7 +51,8 @@ static void with_comp(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = cuda::std::clamp<std::size_t>(elements * common_prefix, 0, elements - 2);
+  const auto mismatch_point = cuda::std::clamp<std::size_t>(
+    static_cast<std::size_t>(static_cast<double>(elements) * common_prefix), std::size_t{0}, elements - 2);
 
   thrust::device_vector<T> in(elements, thrust::no_init);
   thrust::sequence(in.begin(), in.end(), 0);

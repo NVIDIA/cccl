@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstdlib>
 #include <cuda/std/cstring> // memmove
@@ -70,28 +71,37 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _CCCL_API constexpr bool __constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
 {
+  bool __result = false;
   while (__first != __last)
   {
     if (__first == __needle)
     {
-      return true;
+      __result = true;
+      break;
     }
     ++__first;
   }
-  return false;
+  return __result;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _CCCL_API constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [[maybe_unused]] _Tp* __last)
 {
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    return __first < __needle;
+  }
+  else
+  {
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
-                    (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
+                      (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
 #else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
-  return __constexpr_tail_overlap_fallback(__first, __needle, __last);
+    return __constexpr_tail_overlap_fallback(__first, __needle, __last);
 #endif // !_CCCL_BUILTIN_CONSTANT_P
+  }
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -107,10 +117,9 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
   {
     if (__dispatch_memmove(__result, __first, __n))
     {
-      return {__last, __result + __n};
+      return pair{__last, __result + __n};
     }
-    if ((!::cuda::std::is_constant_evaluated() && __first < __result)
-        || __constexpr_tail_overlap(__first, __result, __last))
+    if (__constexpr_tail_overlap(__first, __result, __last))
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)
       {
@@ -125,7 +134,7 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
       }
     }
   }
-  return {__last, __result + __n};
+  return pair{__last, __result + __n};
 }
 
 template <class _InputIterator, class _OutputIterator>

@@ -25,16 +25,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 
@@ -54,16 +56,16 @@ public:
   uncached_graph_allocator() = default;
 
   void*
-  allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     // This is not implemented yet
     EXPECT(!memory_node.is_composite(), "Composite data places are not implemented yet.");
 
     void* result = nullptr;
 
-    const size_t graph_stage                   = bctx.stage();
-    const cudaGraph_t graph                    = bctx.graph();
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_stage);
+    const size_t graph_stage                   = ctx.stage();
+    const cudaGraph_t graph                    = ctx.graph();
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
     cudaGraphNode_t out                        = nullptr;
 
     if (memory_node.is_host())
@@ -73,7 +75,7 @@ public:
       {
         cudaFreeHost(&result);
       };
-      cuda_try(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
+      out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
     else
     {
@@ -89,17 +91,17 @@ public:
       assert(s > 0);
     }
 
-    reserved::fork_from_graph_node(bctx, out, graph, graph_stage, prereqs, "alloc");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "alloc");
     return result;
   }
 
   void deallocate(
-    backend_ctx_untyped& bctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
   {
-    const cudaGraph_t graph                    = bctx.graph();
-    const size_t graph_stage                   = bctx.stage();
+    const cudaGraph_t graph                    = ctx.graph();
+    const size_t graph_stage                   = ctx.stage();
     cudaGraphNode_t out                        = nullptr;
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_stage);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
     if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
@@ -109,7 +111,7 @@ public:
     {
       cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
     }
-    reserved::fork_from_graph_node(bctx, out, graph, graph_stage, prereqs, "dealloc");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "dealloc");
   }
 
   ::std::string to_string() const override
@@ -173,14 +175,31 @@ private:
 /**
  * @brief A graph context, which is a CUDA graph that we can automatically built using tasks.
  *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `graph_ctx` instances launch their CUDA graph on an
+ * internal stream and block in `finalize()` until that stream drains.
+ * Instances constructed with `graph_ctx(user_stream, handle)` (or the
+ * matching explicit-graph constructor) instead launch every graph on the
+ * caller-provided `user_stream`, set `blocking_finalize = false`, and make
+ * `finalize()` non-blocking: the graph launch and the context's
+ * resource-release callback are enqueued on `user_stream` and `finalize()`
+ * returns without synchronizing it. The caller must therefore drive
+ * `user_stream` to completion (e.g. via `cudaStreamSynchronize(user_stream)`)
+ * before observing results on the host or destroying any shared
+ * `async_resources_handle` that was passed to the context (which is
+ * particularly relevant for graph contexts because the handle also owns the
+ * executable-graph cache).
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
-  class impl : public backend_ctx<graph_ctx>::impl
+  using backend_impl = typename backend_ctx<graph_ctx>::impl;
+
+  class impl : public backend_impl
   {
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        : backend_impl(mv(_async_resources))
         , _graph(shared_cuda_graph())
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
@@ -188,7 +207,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
 
     // Note that graph contexts with an explicit graph passed by the user cannot use stages
     impl(cudaGraph_t g, async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        : backend_impl(mv(_async_resources))
         , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
     {
@@ -199,7 +218,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
     impl(cudaGraph_t g,
          cudaStream_t user_stream,
          async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        : backend_impl(mv(_async_resources))
         , submitted_stream(user_stream)
         , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
@@ -539,17 +558,30 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      host_launch(ldata.read()).set_symbol("wait")->*[]() {};
 
-    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
-      out = owning_container_of<T>::get_value(data);
-    };
+      /* This forces the completion of the host callback, so that the host
+       * thread can use it as a synchronization point for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    /* This forces the completion of the host callback, so that the host
-     * thread can use the content for dynamic control flow */
-    cuda_safe_call(cudaStreamSynchronize(fence()));
+      host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      /* This forces the completion of the host callback, so that the host
+       * thread can use the content for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+
+      return out;
+    }
   }
 
 private:
@@ -591,7 +623,7 @@ private:
 
     ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
-    cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+    cuda_try<cudaGraphInstantiateWithFlags>(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
     return res;
   }
@@ -714,19 +746,10 @@ UNITTEST("movable graph_ctx")
   graph_ctx ctx2 = mv(ctx);
 };
 
-UNITTEST("copyable graph_task<>")
-{
-  graph_ctx ctx;
-  graph_task<> t     = ctx.task();
-  graph_task<> t_cpy = t;
-};
-
 UNITTEST("copyable graph_ctx")
 {
   graph_ctx ctx;
-  graph_ctx ctx2  = ctx;
-  graph_task<> t  = ctx.task();
-  graph_task<> t2 = ctx2.task();
+  graph_ctx ctx2 = ctx;
 };
 
 UNITTEST("movable graph_task<>")

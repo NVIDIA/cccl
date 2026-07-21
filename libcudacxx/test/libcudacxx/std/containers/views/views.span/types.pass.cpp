@@ -34,7 +34,7 @@
 #include "test_macros.h"
 
 template <typename S, typename Iter>
-__host__ __device__ void testIterator()
+TEST_FUNC void testIterator()
 {
   using ItT = cuda::std::iterator_traits<Iter>;
 
@@ -46,7 +46,7 @@ __host__ __device__ void testIterator()
 }
 
 template <typename S, typename ElementType, cuda::std::size_t Size>
-__host__ __device__ void testSpan()
+TEST_FUNC void testSpan()
 {
   static_assert(cuda::std::is_same_v<typename S::element_type, ElementType>);
   static_assert(cuda::std::is_same_v<typename S::value_type, typename cuda::std::remove_cv<ElementType>::type>);
@@ -57,14 +57,14 @@ __host__ __device__ void testSpan()
   static_assert(cuda::std::is_same_v<typename S::reference, ElementType&>);
   static_assert(cuda::std::is_same_v<typename S::const_reference, const ElementType&>);
 
-  static_assert(S::extent == Size, ""); // check that it exists
+  static_assert(S::extent == Size); // check that it exists
 
   testIterator<S, typename S::iterator>();
   testIterator<S, typename S::reverse_iterator>();
 }
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   testSpan<cuda::std::span<T>, T, cuda::std::dynamic_extent>();
   testSpan<cuda::std::span<const T>, const T, cuda::std::dynamic_extent>();

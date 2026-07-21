@@ -3,12 +3,12 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include "hierarchy_queries.h"
 
@@ -18,12 +18,13 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
-__device__ void test_block(
+TEST_DEVICE_FUNC void test_block(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
   // 1. Test cuda::block.dims(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{1, 1, 1};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterDim();))
@@ -32,7 +33,6 @@ __device__ void test_block(
   test_dims(gridDim, cuda::block, cuda::grid, hier);
 
   // 2. Test cuda::block.static_dims(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     const ulonglong3 exp{
       ClusterExts::static_extent(0),
@@ -51,7 +51,6 @@ __device__ void test_block(
   }
 
   // 3. Test cuda::block.extents(x)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 dims{1, 1, 1};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (dims = __clusterDim();))
@@ -71,14 +70,10 @@ __device__ void test_block(
   }
 
   // 4. Test cuda::block.static_count(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    test_static_count(cuda::block, cuda::cluster, hier);
-  }
+  test_static_count(cuda::block, cuda::cluster, hier);
   test_static_count(cuda::block, cuda::grid, hier);
 
   // 5. Test cuda::block.count(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 1;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -91,7 +86,6 @@ __device__ void test_block(
   test_count(cuda::std::size_t{gridDim.z} * gridDim.y * gridDim.x, cuda::block, cuda::grid, hier);
 
   // 6. test cuda::block.index(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{0, 0, 0};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterRelativeBlockIdx();))
@@ -100,7 +94,6 @@ __device__ void test_block(
   test_index(blockIdx, cuda::block, cuda::grid, hier);
 
   // 7. Test cuda::block.rank(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 0;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -116,10 +109,12 @@ __device__ void test_block(
   }
 }
 
-__device__ void test_device()
+TEST_DEVICE_FUNC void test_device()
 {
-  // todo: make hierarchy constructible on device
-  // test_thread(cuda::make_hierarchy(cuda::grid_dims(gridDim), cuda::block_dims(blockDim)));
+  test_block(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
+             cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},
+             cuda::std::extents<unsigned, 1, 1, 1>{},
+             cuda::std::dims<3, unsigned>{blockDim.x, blockDim.y, blockDim.z});
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -225,8 +220,8 @@ void test()
   const bool enable_clusters = cc_major >= 9;
 
   test_launch(cuda::std::extents<unsigned, 1, 1, 1>{}, cuda::std::extents<unsigned, 128, 1, 1>{});
-  test_launch(cuda::std::extents<unsigned, 128, 1, 1>{}, cuda::std::extents<unsigned, 1, 1, 1>{});
-  test_launch(cuda::std::extents<unsigned, 2, 3, 1>{}, cuda::std::extents<unsigned, 4, 2, 1>{});
+  test_launch(cuda::std::extents<unsigned, 128, 1, 1>{}, cuda::std::extents<unsigned, 32, 1, 1>{});
+  test_launch(cuda::std::extents<unsigned, 2, 3, 1>{}, cuda::std::extents<unsigned, 7, 5, 1>{});
   test_launch(cuda::std::extents<unsigned, 2, 3, 4>{}, cuda::std::extents<unsigned, 4, 2, 8>{});
 
   if (enable_clusters)

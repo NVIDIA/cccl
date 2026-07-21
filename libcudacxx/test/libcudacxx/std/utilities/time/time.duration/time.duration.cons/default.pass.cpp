@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class D>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   D d{};
   assert(d.count() == typename D::rep());

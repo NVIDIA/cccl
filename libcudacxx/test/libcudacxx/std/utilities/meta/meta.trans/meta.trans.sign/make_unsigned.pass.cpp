@@ -34,7 +34,7 @@ enum HugeEnum : __int128_t
 #endif // _CCCL_HAS_INT128()
 
 template <class T, class U>
-__host__ __device__ void test_make_unsigned()
+TEST_FUNC void test_make_unsigned()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::make_unsigned<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::make_unsigned_t<T>>);

@@ -11,9 +11,14 @@
 #pragma once
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+#  include <cuda/std/array>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/optional>
+#  include <cuda/std/span>
 #  include <cuda/std/type_traits>
 #  include <cuda/std/utility>
+
+#  include <string_view>
 
 #  include <cccl/c/types.h>
 #  include <util/types.h>
@@ -28,20 +33,15 @@ using cccl_mapping_to_type = decltype(RetT)::Type;
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
-  // Note: The user provided C f  unction (Operation.operation) must match the signature:
+  // Note: The user provided C function must match the signature:
   // void (void* arg1, ..., void* argN, void* result_ptr)
   __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args) const
   {
-    using TargetCFuncPtr = void (*)(const decltype(args, void())*..., void*);
-
-    // Cast the stored operation pointer (assumed to be void* or compatible)
-    auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
-
     // Prepare storage for the result
     typename decltype(RetT)::Type result;
 
     // Call the C function, casting argument addresses to void*
-    c_func_ptr((const_cast<void*>(static_cast<const void*>(&args)))..., &result);
+    decltype(Operation)::operation((const_cast<void*>(static_cast<const void*>(&args)))..., &result);
 
     return result;
   }
@@ -59,18 +59,13 @@ struct stateful_user_operation
   user_operation_state<Operation.size, Operation.alignment> state;
   __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args)
   {
-    // Note: The user provided C function (Operation.operation) must match the signature:
+    // Note: The user provided C function must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
-    using TargetCFuncPtr = void (*)(void*, const decltype(args, void())*..., void*);
-
-    // Cast the stored operation pointer (assumed to be void* or compatible)
-    auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
-
     // Prepare storage for the result
     typename decltype(RetT)::Type result;
 
     // Call the C function, passing state address, casting argument addresses to void*, and result pointer
-    c_func_ptr(&state, (const_cast<void*>(static_cast<const void*>(&args)))..., &result);
+    decltype(Operation)::operation(&state, (const_cast<void*>(static_cast<const void*>(&args)))..., &result);
 
     return result;
   }
@@ -328,7 +323,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
         std::string type_names[] = {cccl_type_enum_to_name<RetStorageT>(ret.value.type),
                                     cccl_type_enum_to_name<ArgStorageTs>(arguments.value.type)...};
         auto type_name_views     = [&]<auto... Is>(std::index_sequence<Is...>) {
-          return std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
+          return cuda::std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
         }(std::make_index_sequence<1 + sizeof...(arguments)>());
         aux += builder(cuda::std::span(type_name_views), *entry->symbol, operation.name);
       }
@@ -354,18 +349,54 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
 #endif
 };
 
+struct unary_user_operation_traits
+{
+  static const constexpr auto name = "unary_user_operation_traits::type";
+  // Input operand count for generated C ABI declarations.
+  static constexpr int arity = 1;
+
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping ValueT>
+  using type = user_operation_traits::type<Tag, Operation, RetT, ValueT>;
+
+#ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+  template <typename Tag, typename RetArg, typename ValueArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, RetArg ret, ValueArg value)
+  {
+    return user_operation_traits::special<Tag>(operation, ret, value);
+  }
+#endif
+};
+
+struct unary_user_predicate_traits
+{
+  static const constexpr auto name = "unary_user_predicate_traits::type";
+  static constexpr int arity       = 1;
+
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT>
+  using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT>;
+
+#ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+  template <typename Tag, typename ValueArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, ValueArg value)
+  {
+    return user_operation_traits::special<Tag>(
+      operation, cccl_type_info{sizeof(bool), alignof(bool), CCCL_BOOLEAN}, value);
+  }
+#endif
+};
+
 struct binary_user_operation_traits
 {
   static const constexpr auto name = "binary_user_operation_traits::type";
-  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT>
-  using type = user_operation_traits::type<Tag, Operation, ValueT, ValueT, ValueT>;
+  static constexpr int arity       = 2;
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
+  using type = user_operation_traits::type<Tag, Operation, RetT, ArgTs...>;
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
-  template <typename Tag, typename Arg>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, Arg arg)
+  template <typename Tag, typename RetArg, typename LhsArg, typename RhsArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, RetArg ret, LhsArg lhs, RhsArg rhs)
   {
-    auto wrapped = arg_traits<cuda::std::decay_t<Arg>>::wrap(arg);
-    return user_operation_traits::special<Tag>(operation, wrapped, wrapped, wrapped);
+    return user_operation_traits::special<Tag>(operation, ret, lhs, rhs);
   }
 #endif
 };
@@ -373,15 +404,16 @@ struct binary_user_operation_traits
 struct binary_user_predicate_traits
 {
   static const constexpr auto name = "binary_user_predicate_traits::type";
-  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT>
-  using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT, ValueT>;
+  static constexpr int arity       = 2;
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT, cccl_type_info_mapping... OtherArgTs>
+  using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT, OtherArgTs...>;
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
-  template <typename Tag, typename Arg>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, Arg arg)
+  template <typename Tag, typename LhsArg, typename RhsArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, LhsArg lhs, RhsArg rhs)
   {
-    auto wrapped = arg_traits<cuda::std::decay_t<Arg>>::wrap(arg);
-    return user_operation_traits::special<Tag>(operation, wrapped, wrapped, wrapped);
+    return user_operation_traits::special<Tag>(
+      operation, cccl_type_info{sizeof(bool), alignof(bool), CCCL_BOOLEAN}, lhs, rhs);
   }
 #endif
 };

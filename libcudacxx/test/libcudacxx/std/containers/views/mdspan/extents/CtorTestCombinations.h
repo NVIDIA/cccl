@@ -25,7 +25,7 @@
 // Furthermore, the indices/array/span can have integer types other than index_type
 
 template <class E, class AllExtents, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
-__host__ __device__ constexpr void test_runtime_observers(E ext, AllExtents expected)
+TEST_FUNC constexpr void test_runtime_observers(E ext, AllExtents expected)
 {
   for (typename E::rank_type r = 0; r < ext.rank(); r++)
   {
@@ -36,19 +36,19 @@ __host__ __device__ constexpr void test_runtime_observers(E ext, AllExtents expe
 }
 
 template <class E, class AllExtents, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_runtime_observers(E ext, AllExtents expected)
+TEST_FUNC constexpr void test_runtime_observers(E ext, AllExtents expected)
 {
   // Nothing to do here
 }
 
 template <class E, class AllExtents>
-__host__ __device__ constexpr void test_implicit_construction_call(E e, AllExtents all_ext)
+TEST_FUNC constexpr void test_implicit_construction_call(E e, AllExtents all_ext)
 {
   test_runtime_observers(e, all_ext);
 }
 
 template <class E, class Test, class AllExtents, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_construction(AllExtents all_ext)
+TEST_FUNC constexpr void test_construction(AllExtents all_ext)
 {
   // test construction from all extents
   Test::template test_construction<E>(all_ext, all_ext, cuda::std::make_index_sequence<E::rank()>());
@@ -60,7 +60,7 @@ __host__ __device__ constexpr void test_construction(AllExtents all_ext)
 }
 
 template <class E, class Test, class AllExtents, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
-__host__ __device__ constexpr void test_construction(AllExtents all_ext)
+TEST_FUNC constexpr void test_construction(AllExtents all_ext)
 {
   // test construction from all extents
   Test::template test_construction<E>(all_ext, all_ext, cuda::std::make_index_sequence<E::rank()>());
@@ -81,7 +81,7 @@ __host__ __device__ constexpr void test_construction(AllExtents all_ext)
 }
 
 template <class T, class TArg, class Test>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -113,7 +113,7 @@ __host__ __device__ constexpr void test()
 }
 
 template <class Test>
-__host__ __device__ constexpr bool test_index_type_combo()
+TEST_FUNC constexpr bool test_index_type_combo()
 {
   test<int, int, Test>();
   test<int, size_t, Test>();

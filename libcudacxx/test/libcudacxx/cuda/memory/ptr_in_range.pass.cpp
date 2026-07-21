@@ -8,12 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <typename Pointer>
-__host__ __device__ void test_in_range([[maybe_unused]] Pointer first, [[maybe_unused]] Pointer last)
+TEST_FUNC void test_in_range([[maybe_unused]] Pointer first, [[maybe_unused]] Pointer last)
 {
   assert(cuda::ptr_in_range(first, first, last));
   assert(cuda::ptr_in_range(first + 1, first, last));
@@ -22,7 +27,7 @@ __host__ __device__ void test_in_range([[maybe_unused]] Pointer first, [[maybe_u
 }
 
 template <typename T>
-__host__ __device__ void test_variants()
+TEST_FUNC void test_variants()
 {
   T arrayA[6] = {};
   T* firstA   = arrayA + 1;
@@ -50,7 +55,7 @@ __host__ __device__ void test_variants()
 }
 
 template <typename T>
-__host__ __device__ void test_void_variants()
+TEST_FUNC void test_void_variants()
 {
   T arrayA[6] = {};
   T* firstA   = arrayA + 1;
@@ -58,7 +63,7 @@ __host__ __device__ void test_void_variants()
   test_in_range(static_cast<void*>(firstA), static_cast<void*>(lastA));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   constexpr auto nullptr_int = static_cast<int*>(nullptr);
   static_assert(noexcept(cuda::ptr_in_range(nullptr_int, nullptr_int, nullptr_int)));
@@ -70,7 +75,7 @@ __host__ __device__ bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   constexpr int array[5] = {0, 1, 2, 3, 4};
   assert(cuda::ptr_in_range(array + 1, array, array + 5));

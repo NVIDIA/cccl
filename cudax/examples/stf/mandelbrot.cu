@@ -91,7 +91,7 @@ int main(int argc, char** argv)
       std::ofstream imageFile(fileName, std::ios::binary);
       if (!imageFile)
       {
-        std::cerr << "Failed to create image file: " << fileName << std::endl;
+        std::cerr << "Failed to create image file: " << fileName << '\n';
         return;
       }
 
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
       }
 
       imageFile.close();
-      std::cout << "Mandelbrot image generated and saved as " << fileName << std::endl;
+      std::cout << "Mandelbrot image generated and saved as " << fileName << '\n';
     };
   }
 

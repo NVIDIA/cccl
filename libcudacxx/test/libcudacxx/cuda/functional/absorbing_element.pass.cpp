@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 #include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
@@ -20,7 +23,7 @@
  **********************************************************************************************************************/
 
 template <class T>
-__host__ __device__ constexpr T get_value()
+TEST_FUNC constexpr T get_value()
 {
   if constexpr (cuda::std::is_same_v<T, bool>)
   {
@@ -44,7 +47,7 @@ __host__ __device__ constexpr T get_value()
  **********************************************************************************************************************/
 
 template <class Op, class T>
-__host__ __device__ constexpr void test_absorbing_impl2()
+TEST_FUNC constexpr void test_absorbing_impl2()
 {
   using U = cuda::std::remove_cv_t<T>;
   Op op{};
@@ -57,7 +60,7 @@ __host__ __device__ constexpr void test_absorbing_impl2()
 }
 
 template <class Op, class T>
-__host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[maybe_unused]] T absorbing)
+TEST_FUNC constexpr void test_absorbing_impl(bool has_absorbing, [[maybe_unused]] T absorbing)
 {
   assert((has_absorbing == cuda::has_absorbing_element_v<Op, T>) );
   if constexpr (cuda::has_absorbing_element_v<Op, T>)
@@ -86,14 +89,14 @@ __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[may
 }
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr void test_absorbing(bool has_absorbing, T absorbing)
+TEST_FUNC constexpr void test_absorbing(bool has_absorbing, T absorbing)
 {
   test_absorbing_impl<Op<T>, T>(has_absorbing, absorbing);
   test_absorbing_impl<Op<>, T>(has_absorbing, absorbing);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_absorbing_integral()
+TEST_FUNC constexpr void test_absorbing_integral()
 {
   test_absorbing<cuda::std::multiplies, T>(true, T{});
   test_absorbing<cuda::std::bit_and, T>(true, T{});
@@ -102,7 +105,7 @@ __host__ __device__ constexpr void test_absorbing_integral()
   test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::max());
 }
 
-__host__ __device__ constexpr void test_absorbing_integral()
+TEST_FUNC constexpr void test_absorbing_integral()
 {
   test_absorbing<cuda::std::logical_and, bool>(true, false);
   test_absorbing<cuda::std::logical_or, bool>(true, true);
@@ -126,13 +129,13 @@ __host__ __device__ constexpr void test_absorbing_integral()
 // floating-point
 
 template <class T>
-__host__ __device__ constexpr void test_absorbing_floating_point()
+TEST_FUNC constexpr void test_absorbing_floating_point()
 {
   test_absorbing<cuda::minimum, T>(true, cuda::std::__fp_neg(cuda::std::numeric_limits<T>::infinity()));
   test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::infinity());
 }
 
-__host__ __device__ constexpr void test_absorbing_floating_point()
+TEST_FUNC constexpr void test_absorbing_floating_point()
 {
   test_absorbing_floating_point<float>();
   test_absorbing_floating_point<double>();
@@ -141,7 +144,7 @@ __host__ __device__ constexpr void test_absorbing_floating_point()
 #endif // _CCCL_HAS_FLOAT128()
 }
 
-__host__ __device__ void test_absorbing_extended_floating_point()
+TEST_FUNC void test_absorbing_extended_floating_point()
 {
 #if _CCCL_HAS_NVFP16()
   test_absorbing_floating_point<__half>();
@@ -160,20 +163,20 @@ __host__ __device__ void test_absorbing_extended_floating_point()
  **********************************************************************************************************************/
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr bool no_absorbing()
+TEST_FUNC constexpr bool no_absorbing()
 {
   return !cuda::has_absorbing_element_v<Op<T>, T> && !cuda::has_absorbing_element_v<Op<>, T>;
 }
 
 template <class T>
-__host__ __device__ constexpr void test_no_absorbing()
+TEST_FUNC constexpr void test_no_absorbing()
 {
   static_assert(no_absorbing<cuda::std::minus, T>());
   static_assert(no_absorbing<cuda::std::divides, T>());
   static_assert(no_absorbing<cuda::std::modulus, T>());
 }
 
-__host__ __device__ constexpr void test_negative_integral()
+TEST_FUNC constexpr void test_negative_integral()
 {
   test_no_absorbing<signed char>();
   test_no_absorbing<unsigned char>();
@@ -206,7 +209,7 @@ __host__ __device__ constexpr void test_negative_integral()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr void test_negative_floating_point()
+TEST_FUNC constexpr void test_negative_floating_point()
 {
   test_no_absorbing<float>();
   test_no_absorbing<double>();
@@ -227,7 +230,7 @@ __host__ __device__ constexpr void test_negative_floating_point()
 #endif // _CCCL_HAS_FLOAT128()
 }
 
-__host__ __device__ void test_negative_extended_floating_point()
+TEST_FUNC void test_negative_extended_floating_point()
 {
 #if _CCCL_HAS_NVFP16()
   test_no_absorbing<__half>();
@@ -255,7 +258,7 @@ __host__ __device__ void test_negative_extended_floating_point()
  * Test dispatch
  **********************************************************************************************************************/
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_absorbing_integral();
   test_absorbing_floating_point();
@@ -264,7 +267,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ bool test_extended_floating_point()
+TEST_FUNC bool test_extended_floating_point()
 {
   test_absorbing_extended_floating_point();
   test_negative_extended_floating_point();

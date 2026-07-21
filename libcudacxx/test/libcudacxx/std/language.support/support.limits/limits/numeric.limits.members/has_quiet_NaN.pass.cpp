@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T, bool expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::has_quiet_NaN == expected, "has_quiet_NaN test 1");
   static_assert(cuda::std::numeric_limits<const T>::has_quiet_NaN == expected, "has_quiet_NaN test 2");

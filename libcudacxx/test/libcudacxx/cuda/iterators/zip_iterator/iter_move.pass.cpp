@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr auto iter_move(const iterator& i) noexcept(see below);
 
 #include <cuda/iterator>
@@ -20,19 +23,19 @@
 
 struct ThrowingMove
 {
-  __host__ __device__ constexpr ThrowingMove() noexcept {}
-  __host__ __device__ constexpr ThrowingMove(ThrowingMove&&) noexcept(false) {}
+  TEST_FUNC constexpr ThrowingMove() noexcept {}
+  TEST_FUNC constexpr ThrowingMove(ThrowingMove&&) noexcept(false) {}
 };
 
 struct ToThrowingMove
 {
-  __host__ __device__ constexpr ThrowingMove operator()(int) const noexcept
+  TEST_FUNC constexpr ThrowingMove operator()(int) const noexcept
   {
     return ThrowingMove{};
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int a[]          = {1, 2, 3, 4};
   const double b[] = {3.0, 4.0};

@@ -69,16 +69,16 @@ void operator delete[](void* ptr, cuda::std::size_t) noexcept
 }
 #endif // TEST_COMPILER(GCC)
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     decltype(auto) ptr = cuda::std::make_unique_for_overwrite<int>();
-    static_assert(cuda::std::same_as<cuda::std::unique_ptr<int>, decltype(ptr)>, "");
+    static_assert(cuda::std::same_as<cuda::std::unique_ptr<int>, decltype(ptr)>);
     NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(ptr.get())) == pattern);))
   }
   {
     decltype(auto) ptr = cuda::std::make_unique_for_overwrite<int[]>(3);
-    static_assert(cuda::std::same_as<cuda::std::unique_ptr<int[]>, decltype(ptr)>, "");
+    static_assert(cuda::std::same_as<cuda::std::unique_ptr<int[]>, decltype(ptr)>);
     NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(&ptr[0])) == pattern);))
     NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(&ptr[1])) == pattern);))
     NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(&ptr[2])) == pattern);))

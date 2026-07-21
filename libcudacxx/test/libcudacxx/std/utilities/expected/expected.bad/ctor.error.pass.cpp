@@ -24,8 +24,8 @@
 
 #if TEST_HAS_EXCEPTIONS()
 // test explicit
-static_assert(cuda::std::convertible_to<int, int>, "");
-static_assert(!cuda::std::convertible_to<int, cuda::std::bad_expected_access<int>>, "");
+static_assert(cuda::std::convertible_to<int, int>);
+static_assert(!cuda::std::convertible_to<int, cuda::std::bad_expected_access<int>>);
 #endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)

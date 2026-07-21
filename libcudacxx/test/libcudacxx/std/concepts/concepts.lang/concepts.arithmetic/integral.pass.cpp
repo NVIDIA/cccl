@@ -19,80 +19,80 @@
 using cuda::std::integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckIntegralQualifiers()
+TEST_FUNC constexpr bool CheckIntegralQualifiers()
 {
   constexpr bool result = integral<T>;
-  static_assert(integral<const T> == result, "");
-  static_assert(integral<volatile T> == result, "");
-  static_assert(integral<const volatile T> == result, "");
+  static_assert(integral<const T> == result);
+  static_assert(integral<volatile T> == result);
+  static_assert(integral<const volatile T> == result);
 
-  static_assert(!integral<T&>, "");
-  static_assert(!integral<const T&>, "");
-  static_assert(!integral<volatile T&>, "");
-  static_assert(!integral<const volatile T&>, "");
+  static_assert(!integral<T&>);
+  static_assert(!integral<const T&>);
+  static_assert(!integral<volatile T&>);
+  static_assert(!integral<const volatile T&>);
 
-  static_assert(!integral<T&&>, "");
-  static_assert(!integral<const T&&>, "");
-  static_assert(!integral<volatile T&&>, "");
-  static_assert(!integral<const volatile T&&>, "");
+  static_assert(!integral<T&&>);
+  static_assert(!integral<const T&&>);
+  static_assert(!integral<volatile T&&>);
+  static_assert(!integral<const volatile T&&>);
 
-  static_assert(!integral<T*>, "");
-  static_assert(!integral<const T*>, "");
-  static_assert(!integral<volatile T*>, "");
-  static_assert(!integral<const volatile T*>, "");
+  static_assert(!integral<T*>);
+  static_assert(!integral<const T*>);
+  static_assert(!integral<volatile T*>);
+  static_assert(!integral<const volatile T*>);
 
-  static_assert(!integral<T (*)()>, "");
-  static_assert(!integral<T (&)()>, "");
-  static_assert(!integral<T (&&)()>, "");
+  static_assert(!integral<T (*)()>);
+  static_assert(!integral<T (&)()>);
+  static_assert(!integral<T (&&)()>);
 
   return result;
 }
 
 // standard signed and unsigned integers
-static_assert(CheckIntegralQualifiers<signed char>(), "");
-static_assert(CheckIntegralQualifiers<unsigned char>(), "");
-static_assert(CheckIntegralQualifiers<short>(), "");
-static_assert(CheckIntegralQualifiers<unsigned short>(), "");
-static_assert(CheckIntegralQualifiers<int>(), "");
-static_assert(CheckIntegralQualifiers<unsigned int>(), "");
-static_assert(CheckIntegralQualifiers<long>(), "");
-static_assert(CheckIntegralQualifiers<unsigned long>(), "");
-static_assert(CheckIntegralQualifiers<long long>(), "");
-static_assert(CheckIntegralQualifiers<unsigned long long>(), "");
+static_assert(CheckIntegralQualifiers<signed char>());
+static_assert(CheckIntegralQualifiers<unsigned char>());
+static_assert(CheckIntegralQualifiers<short>());
+static_assert(CheckIntegralQualifiers<unsigned short>());
+static_assert(CheckIntegralQualifiers<int>());
+static_assert(CheckIntegralQualifiers<unsigned int>());
+static_assert(CheckIntegralQualifiers<long>());
+static_assert(CheckIntegralQualifiers<unsigned long>());
+static_assert(CheckIntegralQualifiers<long long>());
+static_assert(CheckIntegralQualifiers<unsigned long long>());
 
 // extended integers
 #if _CCCL_HAS_INT128()
-static_assert(CheckIntegralQualifiers<__int128_t>(), "");
-static_assert(CheckIntegralQualifiers<__uint128_t>(), "");
+static_assert(CheckIntegralQualifiers<__int128_t>());
+static_assert(CheckIntegralQualifiers<__uint128_t>());
 #endif
 
 // bool and char types are also integral
-static_assert(CheckIntegralQualifiers<wchar_t>(), "");
-static_assert(CheckIntegralQualifiers<bool>(), "");
-static_assert(CheckIntegralQualifiers<char>(), "");
+static_assert(CheckIntegralQualifiers<wchar_t>());
+static_assert(CheckIntegralQualifiers<bool>());
+static_assert(CheckIntegralQualifiers<char>());
 #if _CCCL_HAS_CHAR8_T()
-static_assert(CheckIntegralQualifiers<char8_t>(), "");
+static_assert(CheckIntegralQualifiers<char8_t>());
 #endif // _CCCL_HAS_CHAR8_T()
-static_assert(CheckIntegralQualifiers<char16_t>(), "");
-static_assert(CheckIntegralQualifiers<char32_t>(), "");
+static_assert(CheckIntegralQualifiers<char16_t>());
+static_assert(CheckIntegralQualifiers<char32_t>());
 
 // types that aren't integral
-static_assert(!integral<void>, "");
-static_assert(!CheckIntegralQualifiers<float>(), "");
-static_assert(!CheckIntegralQualifiers<double>(), "");
-static_assert(!CheckIntegralQualifiers<long double>(), "");
+static_assert(!integral<void>);
+static_assert(!CheckIntegralQualifiers<float>());
+static_assert(!CheckIntegralQualifiers<double>());
+static_assert(!CheckIntegralQualifiers<long double>());
 
-static_assert(!CheckIntegralQualifiers<ClassicEnum>(), "");
+static_assert(!CheckIntegralQualifiers<ClassicEnum>());
 
-static_assert(!CheckIntegralQualifiers<ScopedEnum>(), "");
+static_assert(!CheckIntegralQualifiers<ScopedEnum>());
 
-static_assert(!CheckIntegralQualifiers<EmptyStruct>(), "");
-static_assert(!CheckIntegralQualifiers<int EmptyStruct::*>(), "");
-static_assert(!CheckIntegralQualifiers<int (EmptyStruct::*)()>(), "");
+static_assert(!CheckIntegralQualifiers<EmptyStruct>());
+static_assert(!CheckIntegralQualifiers<int EmptyStruct::*>());
+static_assert(!CheckIntegralQualifiers<int (EmptyStruct::*)()>());
 
 #if TEST_STD_VER > 2017
-static_assert(CheckSubsumption(0), "");
-static_assert(CheckSubsumption(0U), "");
+static_assert(CheckSubsumption(0));
+static_assert(CheckSubsumption(0U));
 #endif // TEST_STD_VER > 2017
 
 int main(int, char**)

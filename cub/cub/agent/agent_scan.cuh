@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::AgentScan implements a stateful abstraction of CUDA thread blocks
- *       for participating in device-wide prefix scan .
+ * @file
+ * @brief cub::AgentScan implements a stateful abstraction of CUDA thread blocks
+ *        for participating in device-wide prefix scan.
  */
 
 #pragma once
@@ -27,15 +28,37 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
-#endif
-
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+// TODO(bgruber): remove when C++20 is the minimum, since then we can pass policy values as NTTPs
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockStoreAlgorithm StoreAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>,
+          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
+struct agent_scan_policy : ScalingType
+{
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
+};
+} // namespace detail
 
 /******************************************************************************
  * Tuning policy types
@@ -44,7 +67,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentScan
  *
- * @tparam NominalBlockThreads4B
+ * @tparam NominalThreadsPerBlock4B
  *   Threads per thread block
  *
  * @tparam NominalItemsPerThread4B
@@ -69,48 +92,26 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int NominalBlockThreads4B,
+//! Deprecated [Since 3.5]
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockStoreAlgorithm StoreAlgorithm,
           BlockScanAlgorithm ScanAlgorithm,
-          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>,
           typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
-struct AgentScanPolicy : ScalingType
-{
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
-  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
-  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
-
-  struct detail
-  {
-    using delay_constructor_t = DelayConstructorT;
-  };
-};
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ScanAgentPolicy,
-  (UniqueByKeyAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::BlockStoreAlgorithm),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+using AgentScanPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") = detail::agent_scan_policy<
+  NominalThreadsPerBlock4B,
+  NominalItemsPerThread4B,
+  ComputeT,
+  LoadAlgorithm,
+  LoadModifier,
+  StoreAlgorithm,
+  ScanAlgorithm,
+  ScalingType,
+  DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -149,8 +150,9 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false,
-          bool UsePDL         = false>
+          bool ForceInclusive       = false,
+          bool UsePDL               = false,
+          bool StableReductionOrder = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -198,8 +200,9 @@ struct AgentScan
   using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT>;
+  using DelayConstructorT = typename AgentScanPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT, StableReductionOrder>;
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
@@ -406,7 +409,7 @@ struct AgentScan
     // block
 
     // Current tile index
-    int tile_idx = start_tile + blockIdx.x;
+    int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;

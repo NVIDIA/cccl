@@ -25,36 +25,35 @@ class X
   int i_;
 
 public:
-  __host__ __device__ constexpr explicit X(int i)
+  TEST_FUNC constexpr explicit X(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr X(X&& x)
+  TEST_FUNC constexpr X(X&& x)
       : i_(x.i_)
   {
     x.i_ = 0;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~X()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~X()
   {
     i_ = 0;
   }
-  __host__ __device__ friend constexpr bool operator==(const X& x, const int& y)
+  TEST_FUNC friend constexpr bool operator==(const X& x, const int& y)
   {
     return x.i_ == y;
   }
 };
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
 struct ConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ constexpr operator T&() noexcept
+  TEST_FUNC constexpr operator T&() noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -65,21 +64,19 @@ struct ExplicitlyConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ explicit constexpr operator T&() noexcept
+  TEST_FUNC explicit constexpr operator T&() noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool
-  operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
 };
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // constructed from empty
     optional<U> input{};
@@ -102,24 +99,22 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<X, int>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&, ConvertibleToReference<int>>();
   test<int&, ExplicitlyConvertibleToReference<int>>();
 
   test<const int&, ConvertibleToReference<int>>();
   test<const int&, ExplicitlyConvertibleToReference<int>>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
 
 struct TerminatesOnConstruction
 {
-  __host__ __device__ explicit TerminatesOnConstruction(int)
+  TEST_FUNC explicit TerminatesOnConstruction(int)
   {
     cuda::std::terminate();
   }
@@ -138,7 +133,7 @@ public:
 template <class T, class U>
 void test_exception(optional<U>&& rhs)
 {
-  static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value), "");
+  static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value));
   try
   {
     optional<T> lhs(cuda::std::move(rhs));
@@ -162,7 +157,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

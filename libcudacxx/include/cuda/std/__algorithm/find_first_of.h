@@ -28,7 +28,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 __find_first_of_ce(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1 __find_first_of_ce(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -49,7 +49,7 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 find_first_of(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1 find_first_of(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -60,7 +60,7 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 find_first_of(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1 find_first_of(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return ::cuda::std::__find_first_of_ce(__first1, __last1, __first2, __last2, __equal_to{});

@@ -36,7 +36,7 @@ struct atomic : public ::cuda::std::__atomic_impl<_Tp, _Sco>
 
   _CCCL_HIDE_FROM_ABI constexpr atomic() noexcept = default;
 
-  _CCCL_API constexpr atomic(_Tp __d) noexcept
+  _CCCL_HOST_DEVICE_API constexpr atomic(_Tp __d) noexcept
       : ::cuda::std::__atomic_impl<_Tp, _Sco>(__d)
   {}
 
@@ -44,31 +44,31 @@ struct atomic : public ::cuda::std::__atomic_impl<_Tp, _Sco>
   atomic& operator=(const atomic&)          = delete;
   atomic& operator=(const atomic&) volatile = delete;
 
-  _CCCL_API inline _Tp operator=(_Tp __d) volatile noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp operator=(_Tp __d) volatile noexcept
   {
     this->store(__d);
     return __d;
   }
-  _CCCL_API inline _Tp operator=(_Tp __d) noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp operator=(_Tp __d) noexcept
   {
     this->store(__d);
     return __d;
   }
 
-  _CCCL_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
     return ::cuda::std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
-  _CCCL_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
     return ::cuda::std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
 
-  _CCCL_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
     return ::cuda::std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
-  _CCCL_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
     return ::cuda::std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
@@ -85,11 +85,11 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
 
   static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
-  _CCCL_API explicit constexpr atomic_ref(_Tp& __ref)
+  _CCCL_HOST_DEVICE_API explicit constexpr atomic_ref(_Tp& __ref)
       : ::cuda::std::__atomic_ref_impl<_Tp, _Sco>(__ref)
   {}
 
-  _CCCL_API inline _Tp operator=(_Tp __v) const noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp operator=(_Tp __v) const noexcept
   {
     this->store(__v);
     return __v;
@@ -99,18 +99,18 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
   atomic_ref& operator=(const atomic_ref&)                   = delete;
   atomic_ref& operator=(const atomic_ref&) const             = delete;
 
-  _CCCL_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return ::cuda::std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
 
-  _CCCL_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_HOST_DEVICE_API inline _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return ::cuda::std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, ::cuda::std::__scope_to_tag<_Sco>{});
   }
 };
 
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 atomic_thread_fence(memory_order __m, [[maybe_unused]] thread_scope _Scope = thread_scope::thread_scope_system)
 {
   NV_DISPATCH_TARGET(
@@ -133,7 +133,7 @@ atomic_thread_fence(memory_order __m, [[maybe_unused]] thread_scope _Scope = thr
     (::cuda::std::atomic_thread_fence(__m);))
 }
 
-_CCCL_API inline void atomic_signal_fence(memory_order __m)
+_CCCL_HOST_DEVICE_API inline void atomic_signal_fence(memory_order __m)
 {
   ::cuda::std::atomic_signal_fence(__m);
 }

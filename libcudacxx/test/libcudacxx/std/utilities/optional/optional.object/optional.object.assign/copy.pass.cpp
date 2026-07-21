@@ -56,12 +56,12 @@ void test_exceptions()
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::std::remove_reference_t<T> val{42};
   cuda::std::remove_reference_t<T> other_val{1337};
 
-  static_assert(cuda::std::is_nothrow_copy_assignable<optional<T>>::value, "");
+  static_assert(cuda::std::is_nothrow_copy_assignable<optional<T>>::value);
   // empty copy assigned to empty
   {
     optional<T> opt{};
@@ -106,12 +106,10 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   test<TrivialTestTypes::TestType>();
 
@@ -121,7 +119,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   {
     using T = TestTypes::TestType;

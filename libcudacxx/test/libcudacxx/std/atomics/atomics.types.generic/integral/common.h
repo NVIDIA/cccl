@@ -20,7 +20,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ __noinline__ void do_test()
+TEST_FUNC __noinline__ void do_test()
 {
   Selector<A, constructor_initializer> sel;
   A& obj                   = *sel.construct(T(0));

@@ -66,7 +66,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *    thrust::device_reference<int> ref_to_thirteen = vec[0];
  *
- *    std::cout << ref_to_thirteen << std::endl;
+ *    std::cout << ref_to_thirteen << '\n';
  *
  *    // 13 is printed
  *
@@ -86,7 +86,7 @@ THRUST_NAMESPACE_BEGIN
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
- *    std::cout << vec[0] << std::endl;
+ *    std::cout << vec[0] << '\n';
  *
  *    // 13 is printed
  *
@@ -231,9 +231,9 @@ public:
    *  \endverbatim
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE
-  device_reference(const device_reference<OtherT>& other,
-                   thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
+  _CCCL_HOST_DEVICE device_reference(
+    const device_reference<OtherT>& other,
+    thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = nullptr)
       : super_t(other)
   {}
 

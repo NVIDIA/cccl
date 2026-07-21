@@ -12,11 +12,13 @@
 
 #include <assert.h>
 
+#include "test_macros.h"
+
 int main(int argc, char** argv)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (auto f = cuda::proclaim_return_type<double>([] __device__() -> int {
+    (auto f = cuda::proclaim_return_type<double>([] TEST_DEVICE_FUNC() -> int {
        return 42;
      });
 

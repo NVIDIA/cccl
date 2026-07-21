@@ -11,7 +11,7 @@
 
 #include <cuda/std/__string_>
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] auto i = cuda::std::char_traits<char16_t>::eof();
 

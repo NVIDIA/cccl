@@ -209,21 +209,25 @@ public:
     }
   }
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
                    _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_convertible_v<_Up, _Tp>)
   _CCCL_API constexpr expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
-      : __base(in_place, ::cuda::std::forward<_Up>(__u))
+      : __base(in_place_t{}, ::cuda::std::forward<_Up>(__u))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
                    _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND(!is_convertible_v<_Up, _Tp>))
   _CCCL_API constexpr explicit expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
-      : __base(in_place, ::cuda::std::forward<_Up>(__u))
+      : __base(in_place_t{}, ::cuda::std::forward<_Up>(__u))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(is_constructible_v<_Err, const _OtherErr&> _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
@@ -257,14 +261,14 @@ public:
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit expected(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>) // strengthened
-      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit expected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, initializer_list<_Up>&, _Args...>) // strengthened
-      : __base(in_place, __il, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class... _Args)
@@ -289,7 +293,7 @@ private:
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
-               in_place,
+               in_place_t{},
                ::cuda::std::forward<_Fun>(__fun),
                ::cuda::std::forward<_Args>(__args)...)
   {}
@@ -493,6 +497,11 @@ public:
     return this->__has_val_;
   }
 
+  _CCCL_API constexpr bool has_error() const noexcept
+  {
+    return !this->__has_val_;
+  }
+
   _CCCL_API constexpr const _Tp& value() const&
   {
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
@@ -672,7 +681,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _Res{in_place, this->__union_.__val_};
+      return _Res{in_place_t{}, this->__union_.__val_};
     }
     else
     {
@@ -693,7 +702,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _Res{in_place, this->__union_.__val_};
+      return _Res{in_place_t{}, this->__union_.__val_};
     }
     else
     {
@@ -714,7 +723,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _Res{in_place, ::cuda::std::move(this->__union_.__val_)};
+      return _Res{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
@@ -735,7 +744,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _Res{in_place, ::cuda::std::move(this->__union_.__val_)};
+      return _Res{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
@@ -779,7 +788,7 @@ public:
     if (this->__has_val_)
     {
       return expected<_Res, _Err>{
-        __expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
+        __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
     else
     {
@@ -824,7 +833,7 @@ public:
     if (this->__has_val_)
     {
       return expected<_Res, _Err>{
-        __expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
+        __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
     else
     {
@@ -867,7 +876,7 @@ public:
     {
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{},
-        in_place,
+        in_place_t{},
         ::cuda::std::forward<_Fun>(__fun),
         ::cuda::std::move(this->__union_.__val_)};
     }
@@ -915,7 +924,7 @@ public:
     {
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{},
-        in_place,
+        in_place_t{},
         ::cuda::std::forward<_Fun>(__fun),
         ::cuda::std::move(this->__union_.__val_)};
     }
@@ -941,7 +950,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, this->__union_.__val_};
+      return expected<_Tp, _Res>{in_place_t{}, this->__union_.__val_};
     }
     else
     {
@@ -967,7 +976,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, this->__union_.__val_};
+      return expected<_Tp, _Res>{in_place_t{}, this->__union_.__val_};
     }
     else
     {
@@ -992,7 +1001,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, ::cuda::std::move(this->__union_.__val_)};
+      return expected<_Tp, _Res>{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
@@ -1021,7 +1030,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, ::cuda::std::move(this->__union_.__val_)};
+      return expected<_Tp, _Res>{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
@@ -1391,6 +1400,11 @@ public:
     return this->__has_val_;
   }
 
+  _CCCL_API constexpr bool has_error() const noexcept
+  {
+    return !this->__has_val_;
+  }
+
   _CCCL_API constexpr void operator*() const noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
@@ -1632,7 +1646,8 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{
+        __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1672,7 +1687,8 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{
+        __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1711,7 +1727,8 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{
+        __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1751,7 +1768,8 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{
+        __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {

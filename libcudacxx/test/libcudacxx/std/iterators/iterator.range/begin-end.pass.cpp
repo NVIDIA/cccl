@@ -7,7 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: c++98, c++03
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 // <cuda/std/iterator>
 // template <class C> constexpr auto begin(C& c) -> decltype(c.begin());
@@ -52,7 +53,7 @@ TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 template <typename C>
-__host__ __device__ void test_const_container(const C& c, typename C::value_type val)
+TEST_FUNC void test_const_container(const C& c, typename C::value_type val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -70,7 +71,7 @@ __host__ __device__ void test_const_container(const C& c, typename C::value_type
 }
 
 template <typename T>
-__host__ __device__ void test_const_container(const cuda::std::initializer_list<T>& c, T val)
+TEST_FUNC void test_const_container(const cuda::std::initializer_list<T>& c, T val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -83,7 +84,7 @@ __host__ __device__ void test_const_container(const cuda::std::initializer_list<
 }
 
 template <typename C>
-__host__ __device__ void test_container(C& c, typename C::value_type val)
+TEST_FUNC void test_container(C& c, typename C::value_type val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -101,7 +102,7 @@ __host__ __device__ void test_container(C& c, typename C::value_type val)
 }
 
 template <typename T>
-__host__ __device__ void test_container(cuda::std::initializer_list<T>& c, T val)
+TEST_FUNC void test_container(cuda::std::initializer_list<T>& c, T val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -113,7 +114,7 @@ __host__ __device__ void test_container(cuda::std::initializer_list<T>& c, T val
 }
 
 template <typename T, size_t Sz>
-__host__ __device__ void test_const_array(const T (&array)[Sz])
+TEST_FUNC void test_const_array(const T (&array)[Sz])
 {
   assert(cuda::std::begin(array) == array);
   assert(*cuda::std::begin(array) == array[0]);
@@ -125,10 +126,10 @@ __host__ __device__ void test_const_array(const T (&array)[Sz])
   assert(cuda::std::cend(array) == array + Sz);
 }
 
-TEST_GLOBAL_VARIABLE constexpr int global_array[]{1, 2, 3};
-TEST_GLOBAL_VARIABLE constexpr int global_const_array[] = {0, 1, 2, 3, 4};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int global_array[]{1, 2, 3};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int global_const_array[] = {0, 1, 2, 3, 4};
 
-__host__ __device__ void test_ambiguous_std()
+TEST_FUNC void test_ambiguous_std()
 {
 #if !TEST_COMPILER(NVRTC)
   // clang-format off
@@ -199,45 +200,49 @@ int main(int, char**)
   test_const_container(a, 3);
   test_const_container(il, 4);
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("arrA") cannot be used in tile code
   test_const_array(global_array);
   constexpr const int* b = cuda::std::cbegin(global_array);
   constexpr const int* e = cuda::std::cend(global_array);
-  static_assert(e - b == 3, "");
+  static_assert(e - b == 3);
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     using C = cuda::std::array<int, 5>;
     constexpr const C local_const_array{0, 1, 2, 3, 4};
 
-    static_assert(local_const_array.begin() == cuda::std::begin(local_const_array), "");
-    static_assert(local_const_array.cbegin() == cuda::std::cbegin(local_const_array), "");
-    static_assert(local_const_array.end() == cuda::std::end(local_const_array), "");
-    static_assert(local_const_array.cend() == cuda::std::cend(local_const_array), "");
+    static_assert(local_const_array.begin() == cuda::std::begin(local_const_array));
+    static_assert(local_const_array.cbegin() == cuda::std::cbegin(local_const_array));
+    static_assert(local_const_array.end() == cuda::std::end(local_const_array));
+    static_assert(local_const_array.cend() == cuda::std::cend(local_const_array));
 
-    static_assert(local_const_array.rbegin() == cuda::std::rbegin(local_const_array), "");
-    static_assert(local_const_array.crbegin() == cuda::std::crbegin(local_const_array), "");
-    static_assert(local_const_array.rend() == cuda::std::rend(local_const_array), "");
-    static_assert(local_const_array.crend() == cuda::std::crend(local_const_array), "");
+    static_assert(local_const_array.rbegin() == cuda::std::rbegin(local_const_array));
+    static_assert(local_const_array.crbegin() == cuda::std::crbegin(local_const_array));
+    static_assert(local_const_array.rend() == cuda::std::rend(local_const_array));
+    static_assert(local_const_array.crend() == cuda::std::crend(local_const_array));
 
-    static_assert(cuda::std::begin(local_const_array) != cuda::std::end(local_const_array), "");
-    static_assert(cuda::std::rbegin(local_const_array) != cuda::std::rend(local_const_array), "");
-    static_assert(cuda::std::cbegin(local_const_array) != cuda::std::cend(local_const_array), "");
-    static_assert(cuda::std::crbegin(local_const_array) != cuda::std::crend(local_const_array), "");
+    static_assert(cuda::std::begin(local_const_array) != cuda::std::end(local_const_array));
+    static_assert(cuda::std::rbegin(local_const_array) != cuda::std::rend(local_const_array));
+    static_assert(cuda::std::cbegin(local_const_array) != cuda::std::cend(local_const_array));
+    static_assert(cuda::std::crbegin(local_const_array) != cuda::std::crend(local_const_array));
 
-    static_assert(*local_const_array.begin() == 0, "");
-    static_assert(*local_const_array.rbegin() == 4, "");
+    static_assert(*local_const_array.begin() == 0);
+    static_assert(*local_const_array.rbegin() == 4);
 
-    static_assert(*cuda::std::begin(local_const_array) == 0, "");
-    static_assert(*cuda::std::cbegin(local_const_array) == 0, "");
-    static_assert(*cuda::std::rbegin(local_const_array) == 4, "");
-    static_assert(*cuda::std::crbegin(local_const_array) == 4, "");
+    static_assert(*cuda::std::begin(local_const_array) == 0);
+    static_assert(*cuda::std::cbegin(local_const_array) == 0);
+    static_assert(*cuda::std::rbegin(local_const_array) == 4);
+    static_assert(*cuda::std::crbegin(local_const_array) == 4);
   }
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("arrA") cannot be used in tile code
   {
-    static_assert(*cuda::std::begin(global_const_array) == 0, "");
-    static_assert(*cuda::std::cbegin(global_const_array) == 0, "");
-    static_assert(*cuda::std::rbegin(global_const_array) == 4, "");
-    static_assert(*cuda::std::crbegin(global_const_array) == 4, "");
+    static_assert(*cuda::std::begin(global_const_array) == 0);
+    static_assert(*cuda::std::cbegin(global_const_array) == 0);
+    static_assert(*cuda::std::rbegin(global_const_array) == 4);
+    static_assert(*cuda::std::crbegin(global_const_array) == 4);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   test_ambiguous_std();
 

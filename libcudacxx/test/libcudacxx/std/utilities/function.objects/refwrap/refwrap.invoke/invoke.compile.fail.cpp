@@ -24,14 +24,14 @@
 
 struct A_int_1
 {
-  __host__ __device__ A_int_1()
+  TEST_FUNC A_int_1()
       : data_(5)
   {}
 
   int data_;
 };
 
-__host__ __device__ void test_int_1()
+TEST_FUNC void test_int_1()
 {
   // member data pointer
   {

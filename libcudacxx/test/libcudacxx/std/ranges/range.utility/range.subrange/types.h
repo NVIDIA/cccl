@@ -18,7 +18,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__device__ int globalBuff[8];
+TEST_GLOBAL_VARIABLE int globalBuff[8];
 
 struct Empty
 {};
@@ -46,42 +46,42 @@ struct MoveOnlyForwardIter
   MoveOnlyForwardIter(MoveOnlyForwardIter&&)            = default;
   MoveOnlyForwardIter& operator=(MoveOnlyForwardIter&&) = default;
   MoveOnlyForwardIter(MoveOnlyForwardIter const&)       = delete;
-  __host__ __device__ constexpr MoveOnlyForwardIter(int* ptr)
+  TEST_FUNC constexpr MoveOnlyForwardIter(int* ptr)
       : base(ptr)
   {}
 
-  __host__ __device__ friend bool operator==(const self&, const self&);
+  TEST_FUNC friend bool operator==(const self&, const self&);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(const self&, const self&);
+  TEST_FUNC friend bool operator!=(const self&, const self&);
 #endif
 
-  __host__ __device__ friend constexpr bool operator==(const self& lhs, int* rhs)
+  TEST_FUNC friend constexpr bool operator==(const self& lhs, int* rhs)
   {
     return lhs.base == rhs;
   }
 #if TEST_STD_VER < 2020 || TEST_COMPILER(CLANG) || TEST_COMPILER(NVRTC) || TEST_COMPILER(MSVC)
-  __host__ __device__ friend constexpr bool operator==(int* rhs, const self& lhs)
+  TEST_FUNC friend constexpr bool operator==(int* rhs, const self& lhs)
   {
     return lhs.base == rhs;
   }
-  __host__ __device__ friend constexpr bool operator!=(const self& lhs, int* rhs)
+  TEST_FUNC friend constexpr bool operator!=(const self& lhs, int* rhs)
   {
     return lhs.base != rhs;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* rhs, const self& lhs)
+  TEST_FUNC friend constexpr bool operator!=(int* rhs, const self& lhs)
   {
     return lhs.base != rhs;
   }
 #endif
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ constexpr operator pointer() const
+  TEST_FUNC constexpr operator pointer() const
   {
     return base;
   }
@@ -98,30 +98,30 @@ struct SizedSentinelForwardIter
   using self              = SizedSentinelForwardIter;
 
   SizedSentinelForwardIter() = default;
-  __host__ __device__ constexpr explicit SizedSentinelForwardIter(int* ptr, bool* minusWasCalled)
+  TEST_FUNC constexpr explicit SizedSentinelForwardIter(int* ptr, bool* minusWasCalled)
       : base_(ptr)
       , minusWasCalled_(minusWasCalled)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const self& lhs, const self& rhs)
+  TEST_FUNC friend constexpr bool operator==(const self& lhs, const self& rhs)
   {
     return lhs.base_ == rhs.base_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const self& lhs, const self& rhs)
+  TEST_FUNC friend constexpr bool operator!=(const self& lhs, const self& rhs)
   {
     return lhs.base_ != rhs.base_;
   }
 #endif
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ friend constexpr difference_type
+  TEST_FUNC friend constexpr difference_type
   operator-(SizedSentinelForwardIter const& a, SizedSentinelForwardIter const& b)
   {
     if (a.minusWasCalled_)
@@ -139,7 +139,7 @@ private:
   int* base_            = nullptr;
   bool* minusWasCalled_ = nullptr;
 };
-static_assert(cuda::std::sized_sentinel_for<SizedSentinelForwardIter, SizedSentinelForwardIter>, "");
+static_assert(cuda::std::sized_sentinel_for<SizedSentinelForwardIter, SizedSentinelForwardIter>);
 
 struct ConvertibleForwardIter
 {
@@ -153,34 +153,34 @@ struct ConvertibleForwardIter
   int* base_ = nullptr;
 
   constexpr ConvertibleForwardIter() = default;
-  __host__ __device__ constexpr explicit ConvertibleForwardIter(int* ptr)
+  TEST_FUNC constexpr explicit ConvertibleForwardIter(int* ptr)
       : base_(ptr)
   {}
 
-  __host__ __device__ friend bool operator==(const self&, const self&);
+  TEST_FUNC friend bool operator==(const self&, const self&);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(const self&, const self&);
+  TEST_FUNC friend bool operator!=(const self&, const self&);
 #endif
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ constexpr operator pointer() const
+  TEST_FUNC constexpr operator pointer() const
   {
     return base_;
   }
 
   // Explicitly deleted so this doesn't model sized_sentinel_for.
-  __host__ __device__ friend constexpr difference_type operator-(int*, self const&) = delete;
-  __host__ __device__ friend constexpr difference_type operator-(self const&, int*) = delete;
+  TEST_FUNC friend constexpr difference_type operator-(int*, self const&) = delete;
+  TEST_FUNC friend constexpr difference_type operator-(self const&, int*) = delete;
 };
 using ConvertibleForwardSubrange =
   cuda::std::ranges::subrange<ConvertibleForwardIter, int*, cuda::std::ranges::subrange_kind::unsized>;
-static_assert(cuda::std::is_convertible_v<ConvertibleForwardIter, int*>, "");
+static_assert(cuda::std::is_convertible_v<ConvertibleForwardIter, int*>);
 
 template <bool EnableConvertible>
 struct ConditionallyConvertibleBase
@@ -196,36 +196,36 @@ struct ConditionallyConvertibleBase
   int* base_ = nullptr;
 
   constexpr ConditionallyConvertibleBase() = default;
-  __host__ __device__ constexpr explicit ConditionallyConvertibleBase(int* ptr)
+  TEST_FUNC constexpr explicit ConditionallyConvertibleBase(int* ptr)
       : base_(ptr)
   {}
 
-  __host__ __device__ constexpr int* base() const
+  TEST_FUNC constexpr int* base() const
   {
     return base_;
   }
 
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator==(const self& lhs, const self& rhs)
+  TEST_FUNC friend bool operator==(const self& lhs, const self& rhs)
   {
     return lhs.base_ == rhs.base_;
   }
-  __host__ __device__ friend bool operator!=(const self& lhs, const self& rhs)
+  TEST_FUNC friend bool operator!=(const self& lhs, const self& rhs)
   {
     return lhs.base_ != rhs.base_;
   }
 #else
-  __host__ __device__ friend bool operator==(const self&, const self&) = default;
+  TEST_FUNC friend bool operator==(const self&, const self&) = default;
 #endif
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
   template <bool E = EnableConvertible, cuda::std::enable_if_t<E, int> = 0>
-  __host__ __device__ constexpr operator pointer() const
+  TEST_FUNC constexpr operator pointer() const
   {
     return base_;
   }
@@ -239,11 +239,11 @@ using ConvertibleSizedSentinelForwardSubrange =
 
 struct ForwardBorrowedRange
 {
-  __host__ __device__ constexpr ForwardIter begin() const
+  TEST_FUNC constexpr ForwardIter begin() const
   {
     return ForwardIter(globalBuff);
   }
-  __host__ __device__ constexpr ForwardIter end() const
+  TEST_FUNC constexpr ForwardIter end() const
   {
     return ForwardIter(globalBuff + 8);
   }
@@ -257,17 +257,17 @@ inline constexpr bool enable_borrowed_range<ForwardBorrowedRange> = true;
 
 struct ForwardRange
 {
-  __host__ __device__ ForwardIter begin() const;
-  __host__ __device__ ForwardIter end() const;
+  TEST_FUNC ForwardIter begin() const;
+  TEST_FUNC ForwardIter end() const;
 };
 
 struct ConvertibleForwardBorrowedRange
 {
-  __host__ __device__ constexpr ConvertibleForwardIter begin() const
+  TEST_FUNC constexpr ConvertibleForwardIter begin() const
   {
     return ConvertibleForwardIter(globalBuff);
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return globalBuff + 8;
   }
@@ -284,31 +284,31 @@ struct ForwardBorrowedRangeDifferentSentinel
   struct sentinel
   {
     int* value;
-    __host__ __device__ friend bool operator==(sentinel s, ForwardIter i)
+    TEST_FUNC friend bool operator==(sentinel s, ForwardIter i)
     {
       return s.value == base(i);
     }
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(ForwardIter i, sentinel s)
+    TEST_FUNC friend bool operator==(ForwardIter i, sentinel s)
     {
       return s.value == base(i);
     }
-    __host__ __device__ friend bool operator!=(sentinel s, ForwardIter i)
+    TEST_FUNC friend bool operator!=(sentinel s, ForwardIter i)
     {
       return s.value != base(i);
     }
-    __host__ __device__ friend bool operator!=(ForwardIter i, sentinel s)
+    TEST_FUNC friend bool operator!=(ForwardIter i, sentinel s)
     {
       return s.value != base(i);
     }
 #endif
   };
 
-  __host__ __device__ constexpr ForwardIter begin() const
+  TEST_FUNC constexpr ForwardIter begin() const
   {
     return ForwardIter(globalBuff);
   }
-  __host__ __device__ constexpr sentinel end() const
+  TEST_FUNC constexpr sentinel end() const
   {
     return sentinel{globalBuff + 8};
   }
@@ -328,35 +328,35 @@ struct DifferentSentinelWithSizeMember
   struct sentinel
   {
     int* value;
-    __host__ __device__ friend bool operator==(sentinel s, ForwardIter i)
+    TEST_FUNC friend bool operator==(sentinel s, ForwardIter i)
     {
       return s.value == base(i);
     }
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(ForwardIter i, sentinel s)
+    TEST_FUNC friend bool operator==(ForwardIter i, sentinel s)
     {
       return s.value == base(i);
     }
-    __host__ __device__ friend bool operator!=(sentinel s, ForwardIter i)
+    TEST_FUNC friend bool operator!=(sentinel s, ForwardIter i)
     {
       return s.value != base(i);
     }
-    __host__ __device__ friend bool operator!=(ForwardIter i, sentinel s)
+    TEST_FUNC friend bool operator!=(ForwardIter i, sentinel s)
     {
       return s.value != base(i);
     }
 #endif
   };
 
-  __host__ __device__ constexpr ForwardIter begin() const
+  TEST_FUNC constexpr ForwardIter begin() const
   {
     return ForwardIter(globalBuff);
   }
-  __host__ __device__ constexpr sentinel end() const
+  TEST_FUNC constexpr sentinel end() const
   {
     return sentinel{globalBuff + 8};
   }
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return 8;
   }

@@ -21,7 +21,7 @@ struct A
 
 int main(int, char**)
 {
-  static_assert(noexcept(offsetof(A, x)), "");
+  static_assert(noexcept(offsetof(A, x)));
 
   return 0;
 }

@@ -21,13 +21,13 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // non-const &
   {
     cuda::std::expected<int, int> e(5);
     decltype(auto) x = e.value();
-    static_assert(cuda::std::same_as<decltype(x), int&>, "");
+    static_assert(cuda::std::same_as<decltype(x), int&>);
     assert(&x == &(*e));
     assert(x == 5);
   }
@@ -36,7 +36,7 @@ __host__ __device__ constexpr bool test()
   {
     const cuda::std::expected<int, int> e(5);
     decltype(auto) x = e.value();
-    static_assert(cuda::std::same_as<decltype(x), const int&>, "");
+    static_assert(cuda::std::same_as<decltype(x), const int&>);
     assert(&x == &(*e));
     assert(x == 5);
   }
@@ -45,7 +45,7 @@ __host__ __device__ constexpr bool test()
   {
     cuda::std::expected<int, int> e(5);
     decltype(auto) x = cuda::std::move(e).value();
-    static_assert(cuda::std::same_as<decltype(x), int&&>, "");
+    static_assert(cuda::std::same_as<decltype(x), int&&>);
     assert(&x == &(*e));
     assert(x == 5);
   }
@@ -54,7 +54,7 @@ __host__ __device__ constexpr bool test()
   {
     const cuda::std::expected<int, int> e(5);
     decltype(auto) x = cuda::std::move(e).value();
-    static_assert(cuda::std::same_as<decltype(x), const int&&>, "");
+    static_assert(cuda::std::same_as<decltype(x), const int&&>);
     assert(&x == &(*e));
     assert(x == 5);
   }
@@ -175,7 +175,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

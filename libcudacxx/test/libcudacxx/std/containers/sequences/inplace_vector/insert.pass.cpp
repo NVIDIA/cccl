@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -27,7 +30,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
 template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 5ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -35,7 +38,7 @@ __host__ __device__ constexpr void test_range()
   { // inplace_vector<T, 0>::insert_range(iter, range)
     cuda::std::inplace_vector<T, 0> vec{};
     const auto res = vec.insert_range(vec.begin(), Range<T, 0>{});
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(vec.empty());
     assert(res == vec.begin());
   }
@@ -43,7 +46,7 @@ __host__ __device__ constexpr void test_range()
   { // inplace_vector<T, N>::insert_range(iter, range)
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert_range(vec.begin() + 1, Range<T, 3>{T(42), T(3), T(1337)});
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(42), T(3), T(1337), T(5)}));
     assert(res == vec.begin() + 1);
   }
@@ -51,7 +54,7 @@ __host__ __device__ constexpr void test_range()
   { // inplace_vector<T, 0>::insert_range(const iter, range)
     cuda::std::inplace_vector<T, 0> vec{};
     const auto res = vec.insert_range(vec.cbegin(), Range<T, 0>{});
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(vec.empty());
     assert(res == vec.begin());
   }
@@ -59,7 +62,7 @@ __host__ __device__ constexpr void test_range()
   { // inplace_vector<T, N>::insert_range(const_iter, range)
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert_range(vec.cbegin() + 1, Range<T, 3>{T(42), T(3), T(1337)});
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(42), T(3), T(1337), T(5)}));
     assert(res == vec.cbegin() + 1);
   }
@@ -80,7 +83,7 @@ __host__ __device__ constexpr void test_range()
     Range<T, 3> input{T(42), T(3), T(1337)};
     cuda::std::inplace_vector<T, 0> vec{};
     auto res = vec.try_append_range(input);
-    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value);
     assert(vec.empty());
     assert(res == input.begin());
   }
@@ -89,7 +92,7 @@ __host__ __device__ constexpr void test_range()
     Range<T, 3> input{T(42), T(3), T(1337)};
     inplace_vector vec{T(0), T(5)};
     auto res = vec.try_append_range(input);
-    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value);
     assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(5), T(42), T(3), T(1337)}));
     assert(res == input.end());
   }
@@ -98,14 +101,14 @@ __host__ __device__ constexpr void test_range()
     Range<T, 4> input{T(42), T(3), T(1337), T(1)};
     inplace_vector vec{T(0), T(5)};
     auto res = vec.try_append_range(input);
-    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::ranges::iterator_t<Range<T, 3>>>::value);
     assert(equal_range(vec, cuda::std::array<T, 5>{T(0), T(5), T(42), T(3), T(1337)}));
     assert(++res == input.end());
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -114,7 +117,7 @@ __host__ __device__ constexpr void test()
     const T to_be_inserted = 3;
     inplace_vector vec     = {T(0), T(5)};
     const auto res         = vec.insert(vec.begin() + 1, to_be_inserted);
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, cuda::std::array<T, 3>{T(0), T(3), T(5)}));
     assert(res == vec.begin() + 1);
   }
@@ -123,7 +126,7 @@ __host__ __device__ constexpr void test()
     const T to_be_inserted = 3;
     inplace_vector vec     = {T(0), T(5)};
     const auto res         = vec.insert(vec.cbegin() + 1, to_be_inserted);
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, cuda::std::array<T, 3>{T(0), T(3), T(5)}));
     assert(res == vec.begin() + 1);
   }
@@ -131,7 +134,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::insert(iter, T&&)
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.begin() + 1, T(3));
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, cuda::std::array<T, 3>{T(0), T(3), T(5)}));
     assert(res == vec.begin() + 1);
   }
@@ -139,7 +142,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::insert(const_iter, T&&)
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.cbegin() + 1, T(3));
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, cuda::std::array<T, 3>{T(0), T(3), T(5)}));
     assert(res == vec.begin() + 1);
   }
@@ -150,7 +153,7 @@ __host__ __device__ constexpr void test()
     using iter         = cpp17_input_iterator<const T*>;
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.begin() + 1, iter{input.begin()}, iter{input.end()});
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.begin() + 1);
   }
@@ -159,7 +162,7 @@ __host__ __device__ constexpr void test()
     using iter         = cpp17_input_iterator<const T*>;
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.cbegin() + 1, iter{input.begin()}, iter{input.end()});
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.cbegin() + 1);
   }
@@ -167,7 +170,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::insert(iter, iter, iter), forward iterators
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.begin() + 1, input.begin(), input.end());
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.begin() + 1);
   }
@@ -175,7 +178,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::insert(const_iter, iter, iter), forward iterators
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.cbegin() + 1, input.begin(), input.end());
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.cbegin() + 1);
   }
@@ -183,7 +186,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::insert(iter, init_list)
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.begin() + 1, input);
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.begin() + 1);
   }
@@ -191,7 +194,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::insert(const_iter, init_list)
     inplace_vector vec = {T(0), T(5)};
     const auto res     = vec.insert(vec.cbegin() + 1, input);
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.cbegin() + 1);
   }
@@ -202,7 +205,7 @@ __host__ __device__ constexpr void test()
   test_range<T, cuda::std::array>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -401,7 +404,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

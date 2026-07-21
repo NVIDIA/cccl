@@ -17,12 +17,16 @@
 // XFAIL: clang && !nvcc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/barrier>
 
 #include <cuda/barrier>
 #include <cuda/std/array>
 
 #include "cp_async_bulk_tensor_generic.h"
+#include "test_macros.h"
 
 // Define the size of contiguous tensor in global and shared memory.
 //
@@ -34,16 +38,16 @@
 // cuda::std::array cannot be shared between host and device as some of its
 // member functions take a const reference, which is unsupported by nvcc.
 constexpr cuda::std::array<uint64_t, 1> GMEM_DIMS{256};
-__device__ constexpr cuda::std::array<uint64_t, 1> GMEM_DIMS_DEV{256};
+TEST_GLOBAL_VARIABLE constexpr cuda::std::array<uint64_t, 1> GMEM_DIMS_DEV{256};
 constexpr cuda::std::array<uint32_t, 1> SMEM_DIMS{32};
-__device__ constexpr cuda::std::array<uint32_t, 1> SMEM_DIMS_DEV{32};
+TEST_GLOBAL_VARIABLE constexpr cuda::std::array<uint32_t, 1> SMEM_DIMS_DEV{32};
 
-__device__ constexpr cuda::std::array<uint32_t, 1> TEST_SMEM_COORDS[] = {{0}, {4}, {8}};
+TEST_GLOBAL_VARIABLE constexpr cuda::std::array<uint32_t, 1> TEST_SMEM_COORDS[] = {{0}, {4}, {8}};
 
 constexpr size_t gmem_len = tensor_len(GMEM_DIMS);
 constexpr size_t smem_len = tensor_len(SMEM_DIMS);
 
-__device__ int gmem_tensor[gmem_len];
+TEST_GLOBAL_VARIABLE int gmem_tensor[gmem_len];
 
 int main(int, char**)
 {

@@ -34,8 +34,9 @@
   {                                                             \
     auto seed_val = seed.get();                                 \
     /* Verify assumptions: */                                   \
-    static_assert(sizeof(seed_val) == 8, "");                   \
-    static_assert(sizeof(xor_mask) == 8, "");                   \
+    static_assert(sizeof(seed_val) == 8);                       \
+    /* NOLINTNEXTLINE(bugprone-sizeof-expression) */            \
+    static_assert(sizeof(xor_mask) == 8);                       \
     return c2h::seed_t{seed_val ^ xor_mask};                    \
   }
 
@@ -127,7 +128,8 @@ public:
 
     for (int i = 0; i < count; i++)
     {
-      auto const next_end = (i == count - 1) ? out_keys.size() : unique_indexes_out[i + 1];
+      auto const next_end =
+        (i == count - 1) ? out_keys.size() : unique_indexes_out[i + 1]; // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(keys_histogram[unique_keys_out[i]] == next_end - unique_indexes_out[i]);
     }
   }
@@ -767,7 +769,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   const int* d_begin_offsets,
   const int* d_end_offsets,
 
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   using KeyT                = unwrap_value_t<WrappedKeyT>;
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
@@ -1101,14 +1103,13 @@ private:
   bool m_is_descending;
   bool m_double_buffer;
   bool m_stable_sort;
-  int* m_selectors;
+  int* m_selectors{nullptr};
 
 public:
   explicit segmented_sort_launcher_t(bool is_descending, bool double_buffer, bool stable_sort)
       : m_is_descending(is_descending)
       , m_double_buffer(double_buffer)
       , m_stable_sort(stable_sort)
-      , m_selectors(nullptr)
   {}
 
   void initialize()
@@ -1544,19 +1545,18 @@ struct generate_edge_case_offsets_dispatch
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION cudaError_t Invoke()
   {
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (using SmallPolicyT        = typename ActivePolicyT::SmallSegmentPolicy;
-       using MediumPolicyT       = typename ActivePolicyT::MediumSegmentPolicy;
-       using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   using SmallPolicyT        = typename ActivePolicyT::SmallSegmentPolicy;
+                   using MediumPolicyT       = typename ActivePolicyT::MediumSegmentPolicy;
+                   using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
 
-       small_segment_max_segment_size  = SmallPolicyT::ITEMS_PER_TILE;
-       items_per_small_segment         = SmallPolicyT::ITEMS_PER_THREAD;
-       medium_segment_max_segment_size = MediumPolicyT::ITEMS_PER_TILE;
-       single_thread_segment_size      = items_per_small_segment;
-       large_cached_segment_max_segment_size =
-         LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD; //
-       ));
+                   small_segment_max_segment_size  = SmallPolicyT::ITEMS_PER_TILE;
+                   items_per_small_segment         = SmallPolicyT::ITEMS_PER_THREAD;
+                   medium_segment_max_segment_size = MediumPolicyT::ITEMS_PER_TILE;
+                   single_thread_segment_size      = items_per_small_segment;
+                   large_cached_segment_max_segment_size =
+                     LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
+                 }));
 
     return cudaSuccess;
   }
@@ -1641,7 +1641,7 @@ inline int generate_unspecified_segments_offsets(
   c2h::gen(make_offset_eraser_seed(seed), erase_indices, 1, num_segments - 2);
 
   auto const_zero_begin = cuda::constant_iterator<int>(0);
-  auto const_zero_end   = const_zero_begin + erase_indices.size();
+  auto const_zero_end   = const_zero_begin + static_cast<std::ptrdiff_t>(erase_indices.size());
 
   thrust::scatter(
     c2h::nosync_device_policy, const_zero_begin, const_zero_end, erase_indices.cbegin(), d_begin_offsets.begin());

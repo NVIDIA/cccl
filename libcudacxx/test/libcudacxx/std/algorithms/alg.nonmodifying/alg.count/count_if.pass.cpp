@@ -22,17 +22,17 @@
 
 struct eq
 {
-  __host__ __device__ constexpr eq(int val)
+  TEST_FUNC constexpr eq(int val)
       : v(val)
   {}
-  __host__ __device__ constexpr bool operator()(int v2) const
+  TEST_FUNC constexpr bool operator()(int v2) const
   {
     return v == v2;
   }
   int v;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

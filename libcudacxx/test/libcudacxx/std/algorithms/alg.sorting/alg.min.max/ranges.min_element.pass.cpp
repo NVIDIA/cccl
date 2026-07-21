@@ -34,7 +34,7 @@ struct NoLessThanOp
 struct NotTotallyOrdered
 {
   int i;
-  __host__ __device__ bool operator<(const NotTotallyOrdered& o) const
+  TEST_FUNC bool operator<(const NotTotallyOrdered& o) const
   {
     return i < o.i;
   }
@@ -46,7 +46,7 @@ static_assert(!HasMinElement<NoLessThanOp>);
 static_assert(!HasMinElement<NotTotallyOrdered>);
 
 template <class Iter>
-__host__ __device__ constexpr void test_iterators(Iter first, Iter last)
+TEST_FUNC constexpr void test_iterators(Iter first, Iter last)
 {
   decltype(auto) it = cuda::std::ranges::min_element(first, last);
   static_assert(cuda::std::same_as<decltype(it), Iter>);
@@ -64,7 +64,7 @@ __host__ __device__ constexpr void test_iterators(Iter first, Iter last)
 }
 
 template <class Range, class Iter>
-__host__ __device__ constexpr void test_range(Range&& rng, Iter begin, Iter end)
+TEST_FUNC constexpr void test_range(Range&& rng, Iter begin, Iter end)
 {
   auto it = cuda::std::ranges::min_element(cuda::std::forward<Range>(rng));
   static_assert(cuda::std::same_as<decltype(it), Iter>);
@@ -82,7 +82,7 @@ __host__ __device__ constexpr void test_range(Range&& rng, Iter begin, Iter end)
 }
 
 template <class It>
-__host__ __device__ constexpr void test(cuda::std::initializer_list<int> a, int expected)
+TEST_FUNC constexpr void test(cuda::std::initializer_list<int> a, int expected)
 {
   const int* first = a.begin();
   const int* last  = a.end();
@@ -113,7 +113,7 @@ __host__ __device__ constexpr void test(cuda::std::initializer_list<int> a, int 
 }
 
 template <class It>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<It>({}, 0);
   test<It>({1}, 0);
@@ -125,7 +125,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr void test_borrowed_range_and_sentinel()
+TEST_FUNC constexpr void test_borrowed_range_and_sentinel()
 {
   int a[] = {7, 6, 1, 3, 5, 1, 2, 4};
 
@@ -134,7 +134,7 @@ __host__ __device__ constexpr void test_borrowed_range_and_sentinel()
   assert(*ret == 1);
 }
 
-__host__ __device__ constexpr void test_comparator()
+TEST_FUNC constexpr void test_comparator()
 {
   int a[]  = {7, 6, 9, 3, 5, 1, 2, 4};
   int* ret = cuda::std::ranges::min_element(a, cuda::std::ranges::greater{});
@@ -142,7 +142,7 @@ __host__ __device__ constexpr void test_comparator()
   assert(*ret == 9);
 }
 
-__host__ __device__ constexpr void test_projection()
+TEST_FUNC constexpr void test_projection()
 {
   int a[] = {7, 6, 9, 3, 5, 1, 2, 4};
   {
@@ -165,47 +165,47 @@ struct Immobile
 {
   int i;
 
-  __host__ __device__ constexpr Immobile(int i_)
+  TEST_FUNC constexpr Immobile(int i_)
       : i(i_)
   {}
   Immobile(const Immobile&) = delete;
   Immobile(Immobile&&)      = delete;
 
-  __host__ __device__ bool operator==(const Immobile& lhs) const
+  TEST_FUNC bool operator==(const Immobile& lhs) const
   {
     return i == lhs.i;
   }
-  __host__ __device__ bool operator!=(const Immobile& lhs) const
+  TEST_FUNC bool operator!=(const Immobile& lhs) const
   {
     return i != lhs.i;
   }
 
-  __host__ __device__ bool operator<(const Immobile& lhs) const
+  TEST_FUNC bool operator<(const Immobile& lhs) const
   {
     return i < lhs.i;
   }
-  __host__ __device__ bool operator<=(const Immobile& lhs) const
+  TEST_FUNC bool operator<=(const Immobile& lhs) const
   {
     return i <= lhs.i;
   }
-  __host__ __device__ bool operator>(const Immobile& lhs) const
+  TEST_FUNC bool operator>(const Immobile& lhs) const
   {
     return i > lhs.i;
   }
-  __host__ __device__ bool operator>=(const Immobile& lhs) const
+  TEST_FUNC bool operator>=(const Immobile& lhs) const
   {
     return i >= lhs.i;
   }
 };
 
-__host__ __device__ constexpr void test_immobile()
+TEST_FUNC constexpr void test_immobile()
 {
   Immobile arr[] = {1, 2, 3};
   assert(cuda::std::ranges::min_element(arr) == arr);
   assert(cuda::std::ranges::min_element(arr, arr + 3) == arr);
 }
 
-__host__ __device__ constexpr void test_dangling()
+TEST_FUNC constexpr void test_dangling()
 {
   int compares    = 0;
   int projections = 0;
@@ -224,12 +224,19 @@ __host__ __device__ constexpr void test_dangling()
   unused(ret);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>>();
   test<const int*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   int a[] = {7, 6, 5, 3, 4, 2, 1, 8};
   test_iterators(a, a + 8);

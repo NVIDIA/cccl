@@ -27,7 +27,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_expect_tx(
   const ::cuda::std::uint32_t& __tx_count)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster);
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __state;
@@ -116,7 +116,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_expect_tx(
   const ::cuda::std::uint32_t& __txCount)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster);
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __state;

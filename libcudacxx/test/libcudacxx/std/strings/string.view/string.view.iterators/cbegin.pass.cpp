@@ -20,7 +20,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_cbegin()
+TEST_FUNC constexpr void test_cbegin()
 {
   using CharT = typename SV::value_type;
   using It    = typename SV::const_iterator;
@@ -40,7 +40,7 @@ __host__ __device__ constexpr void test_cbegin()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_cbegin<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

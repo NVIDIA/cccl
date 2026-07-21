@@ -25,6 +25,14 @@
 
 #include <nv/target>
 
+/// In device code, _CCCL_PTX_ARCH() expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH()'s value is implementation defined.
+#if !defined(__CUDA_ARCH__)
+#  define _CCCL_PTX_ARCH() 0
+#else
+#  define _CCCL_PTX_ARCH() __CUDA_ARCH__
+#endif
+
 #ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! When this macro is defined, Programmatic Dependent Launch (PDL) is disabled across CCCL
 #  define CCCL_DISABLE_PDL
@@ -93,9 +101,9 @@
 // __block_size__ attribute is available for nvcc and nvrtc 12.9+ for hopper+ architectures. For older nvcc and nvrtc,
 // we can fallback to __cluster_dims__ attribute only specifying the ncta per cluster.
 // This attribute should be used only for cluster launches.
-#if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH >= 900
-#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __block_size__(_NTID, )
-#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH >= 900
+#if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __block_size__(_NTID, _NCTA_PER_CLUSTER)
+#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH() >= 900
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __cluster_dims__ _NCTA_PER_CLUSTER
 #else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)

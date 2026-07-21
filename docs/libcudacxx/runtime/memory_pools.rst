@@ -1,21 +1,29 @@
 .. _cccl-runtime-memory-pools:
 
+.. |cuda_memory_pool_attributes| replace:: ``cuda::memory_pool_attributes``
+.. _cuda_memory_pool_attributes: ../api/memory_pool_attributes.html
+
 Memory Pools
 ============
 
 Memory pools provide efficient, stream-ordered memory allocation using CUDA's memory pool API. They support both synchronous and stream-ordered allocation/deallocation and can be configured with various memory spaces, properties and attributes.
 
-Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extended-api-memory-resources-resource>` interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and ``deallocate_sync(ptr, size, alignment)`` member functions. For all of them, the alignment argument is optional.
+Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extended-api-memory-resources-resource>`
+interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member
+functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and
+``deallocate_sync(ptr, size, alignment)`` member functions. For all of them, the alignment argument is optional.
 
 For the full memory resource model and property system, see :ref:`Memory Resources (Extended API) <libcudacxx-extended-api-memory-resources>`.
 
 Host memory pools are supported on CUDA 12.9 and later. Managed memory pools are supported on CUDA 13.0 and later and are not supported on Windows. For those cases use :ref:`cuda::mr::legacy_pinned_memory_resource <libcudacxx-memory-resource-legacy-pinned-memory-resource>` and :ref:`cuda::mr::legacy_managed_memory_resource <libcudacxx-memory-resource-legacy-managed-memory-resource>` instead.
 
-``cuda::device_memory_pool``
-----------------------------
+:cpp:struct:`cuda::device_memory_pool`
+---------------------------------------
 .. _cccl-runtime-memory-pools-device-memory-pool:
 
-``cuda::device_memory_pool`` allocates device memory using CUDA's stream-ordered memory pool API (``cudaMallocFromPoolAsync`` / ``cudaFreeAsync``). When constructed, it creates and owns an underlying ``cudaMemPool_t`` with location type set to ``cudaMemLocationTypeDevice``.
+:cpp:struct:`cuda::device_memory_pool` allocates device memory using CUDA's stream-ordered memory pool API
+(``cudaMallocFromPoolAsync`` / ``cudaFreeAsync``). When constructed, it creates and owns an underlying
+``cudaMemPool_t`` with location type set to ``cudaMemLocationTypeDevice``.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -40,11 +48,12 @@ Example:
      pool.deallocate(stream, ptr, 1024, 16);
    }
 
-``cuda::device_memory_pool_ref``
----------------------------------
+:cpp:class:`cuda::device_memory_pool_ref`
+-------------------------------------------
 .. _cccl-runtime-memory-pools-device-memory-pool-ref:
 
-``cuda::device_memory_pool_ref`` is a non-owning reference to a device memory pool. It does not own the underlying ``cudaMemPool_t``, so the user must ensure the pool's lifetime exceeds the reference's lifetime.
+:cpp:class:`cuda::device_memory_pool_ref` is a non-owning reference to a device memory pool. It does not own the
+underlying ``cudaMemPool_t``, so the user must ensure the pool's lifetime exceeds the reference's lifetime.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -61,11 +70,13 @@ Example:
      pool_ref.deallocate(stream, ptr, 1024);
    }
 
-``cuda::managed_memory_pool``
------------------------------
+:cpp:struct:`cuda::managed_memory_pool`
+----------------------------------------
 .. _cccl-runtime-memory-pools-managed-memory-pool:
 
-``cuda::managed_memory_pool`` allocates managed (unified) memory using CUDA's memory pool API. It creates and owns an underlying ``cudaMemPool_t`` with allocation type set to ``cudaMemAllocationTypeManaged``. Managed memory is accessible from both host and device.
+:cpp:struct:`cuda::managed_memory_pool` allocates managed (unified) memory using CUDA's memory pool API. It creates and
+owns an underlying ``cudaMemPool_t`` with allocation type set to ``cudaMemAllocationTypeManaged``. Managed memory is
+accessible from both host and device.
 
 Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 13.0+). Not supported on Windows
 
@@ -88,19 +99,21 @@ Example:
      pool.deallocate(stream, ptr, 1024);
    }
 
-``cuda::managed_memory_pool_ref``
-----------------------------------
+:cpp:class:`cuda::managed_memory_pool_ref`
+--------------------------------------------
 .. _cccl-runtime-memory-pools-managed-memory-pool-ref:
 
-``cuda::managed_memory_pool_ref`` is a non-owning reference to a managed memory pool.
+:cpp:class:`cuda::managed_memory_pool_ref` is a non-owning reference to a managed memory pool.
 
 Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 13.0+). Not supported on Windows
 
-``cuda::pinned_memory_pool``
------------------------------
+:cpp:struct:`cuda::pinned_memory_pool`
+---------------------------------------
 .. _cccl-runtime-memory-pools-pinned-memory-pool:
 
-``cuda::pinned_memory_pool`` allocates pinned (page-locked) host memory using CUDA's memory pool API. Pinned memory enables faster host-to-device transfers and can be accessed from all devices. The pool can be optionally created for a specific host NUMA node.
+:cpp:struct:`cuda::pinned_memory_pool` allocates pinned (page-locked) host memory using CUDA's memory pool API. Pinned
+memory enables faster host-to-device transfers and can be accessed from all devices. The pool can be optionally
+created for a specific host NUMA node.
 
 Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.9+)
 
@@ -131,11 +144,11 @@ Example:
      pool.deallocate(stream, ptr, 1024);
    }
 
-``cuda::pinned_memory_pool_ref``
----------------------------------
+:cpp:class:`cuda::pinned_memory_pool_ref`
+-------------------------------------------
 .. _cccl-runtime-memory-pools-pinned-memory-pool-ref:
 
-``cuda::pinned_memory_pool_ref`` is a non-owning reference to a pinned memory pool.
+:cpp:class:`cuda::pinned_memory_pool_ref` is a non-owning reference to a pinned memory pool.
 
 Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.9+)
 
@@ -145,11 +158,12 @@ Default Memory Pools
 
 CUDA provides default memory pools for each memory type. These pools are managed by the CUDA runtime and can be accessed through helper functions. Default pools are useful when you don't need custom pool configuration and want to use the system defaults.
 
-``cuda::device_default_memory_pool``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:cpp:func:`cuda::device_default_memory_pool`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. _cccl-runtime-memory-pools-device-default:
 
-``cuda::device_default_memory_pool(device_ref)`` returns a non-owning reference to the default device memory pool for the specified device. The default pool is created automatically by CUDA and is shared across all users of the device.
+:cpp:func:`cuda::device_default_memory_pool` returns a non-owning reference to the default device memory pool for the
+specified device. The default pool is created automatically by CUDA and is shared across all users of the device.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -174,11 +188,12 @@ Example:
      pool.deallocate(stream, ptr, 1024);
    }
 
-``cuda::managed_default_memory_pool``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:cpp:func:`cuda::managed_default_memory_pool`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. _cccl-runtime-memory-pools-managed-default:
 
-``cuda::managed_default_memory_pool()`` returns a non-owning reference to the default managed (unified) memory pool.
+:cpp:func:`cuda::managed_default_memory_pool` returns a non-owning reference to the default managed (unified) memory
+pool.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -202,11 +217,12 @@ Example:
      pool.deallocate(stream, ptr, 1024);
    }
 
-``cuda::pinned_default_memory_pool``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:cpp:func:`cuda::pinned_default_memory_pool`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. _cccl-runtime-memory-pools-pinned-default:
 
-``cuda::pinned_default_memory_pool()`` returns a non-owning reference to the default pinned (page-locked) host memory pool.
+:cpp:func:`cuda::pinned_default_memory_pool` returns a non-owning reference to the default pinned (page-locked) host
+memory pool.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -243,7 +259,7 @@ Memory Pool Properties
 ----------------------
 .. _cccl-runtime-memory-pools-pool-properties:
 
-``cuda::memory_pool_properties`` controls memory pool creation options:
+:cpp:struct:`cuda::memory_pool_properties` controls memory pool creation options:
 
 - ``initial_pool_size`` - Initial size of the pool (default: 0)
 - ``release_threshold`` - Threshold at which unused memory is released (default: no limit on the reserved memory)
@@ -271,7 +287,8 @@ Memory Pool Attributes
 ----------------------
 .. _cccl-runtime-memory-pools-pool-attributes:
 
-``cuda::memory_pool_attributes`` provides access to pool attributes for querying and configuration:
+|cuda_memory_pool_attributes|_ provides access to pool attributes for
+querying and configuration:
 
 - ``release_threshold`` - Get/set the release threshold, which controls how much memory the pool can keep reserved, both used and unused
 - ``reuse_follow_event_dependencies`` - Enable/disable reuse across streams with event dependencies

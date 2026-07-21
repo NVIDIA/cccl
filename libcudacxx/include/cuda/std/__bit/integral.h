@@ -41,6 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 _CCCL_API constexpr uint32_t __bit_log2(_Tp __t) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) <= 8)
@@ -55,6 +56,7 @@ _CCCL_API constexpr uint32_t __bit_log2(_Tp __t) noexcept
                     return __high == ~uint32_t{0} ? ::cuda::ptx::bfind(static_cast<uint64_t>(__t)) : __high + 64;))
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return numeric_limits<_Tp>::digits - 1 - ::cuda::std::countl_zero(__t);
 }
 
@@ -76,9 +78,10 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   _CCCL_ASSERT(__t <= numeric_limits<_Tp>::max() / 2, "bit_ceil overflow");
   // if __t == 0, __t - 1 == 0xFFFFFFFF, bit_width(0xFFFFFFFF) returns 32
   auto __width = ::cuda::std::bit_width(static_cast<_Up>(__t) - 1);
-  if constexpr (sizeof(_Tp) <= 8)
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    if constexpr (sizeof(_Tp) <= 8)
     {
       // CUDA right shift (ptx::shr) returns 0 if the right operand is larger than the number of bits of the type
       // The result is computed as max(1, bit_width(__t - 1)) because it is more efficient than the ternary operator
@@ -89,6 +92,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
                     return __ret;))
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
   auto __ret = static_cast<_Tp>(__t <= 1 ? _Up{1} : _Up{1} << __width);
   _CCCL_ASSUME(__ret >= __t);
   return __ret;
@@ -101,9 +105,10 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   using _Up   = _If<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __log2 = ::cuda::std::__bit_log2(static_cast<_Up>(__t));
   // __bit_log2 returns 0xFFFFFFFF if __t == 0
-  if constexpr (sizeof(_Tp) <= 8)
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    if constexpr (sizeof(_Tp) <= 8)
     {
       // CUDA left shift (ptx::shl) returns 0 if the right operand is larger than the number of bits of the type
       // -> the result is 0 if __t == 0
@@ -113,6 +118,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
                     return __ret;))
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
   auto __ret = static_cast<_Tp>(__t == 0 ? _Up{0} : _Up{1} << __log2);
   _CCCL_ASSUME(__ret >= __t / 2 && __ret <= __t);
   return __ret;

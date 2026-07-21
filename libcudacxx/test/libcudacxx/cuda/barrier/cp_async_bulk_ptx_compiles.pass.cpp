@@ -12,6 +12,9 @@
 // UNSUPPORTED: pre-sm-90
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/barrier>
 
 #include <cuda/barrier>

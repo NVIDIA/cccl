@@ -27,17 +27,17 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
   using output_t = input_t;
   using offset_t = typename c2h::get<1, TestType>;
 
-  using op_t    = cuda::std::plus<>;
-  using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
-  using init_t  = input_t;
+  using op_t         = cuda::std::plus<>;
+  using accum_t      = cuda::std::__accumulator_t<op_t, input_t, output_t>;
+  using init_value_t = input_t;
 
-  cuda::arch_id arch_id{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  auto full_policy = cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{}(arch_id);
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  auto full_policy = cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{}(cc);
 
   const int small_segment_size  = full_policy.small_reduce.items_per_tile();
   const int medium_segment_size = full_policy.medium_reduce.items_per_tile();
-  const int large_segment_size  = full_policy.large_reduce.block_threads * full_policy.large_reduce.items_per_thread;
+  const int large_segment_size = full_policy.large_reduce.threads_per_block * full_policy.large_reduce.items_per_thread;
 
   constexpr int min_items = 1;
   constexpr int max_items = 10000;
@@ -97,9 +97,9 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     d_offsets_it,
     d_offsets_it + 1,
     op_t{},
-    init_t{},
+    init_value_t{},
     guaranteed_max_seg_size,
-    0,
+    nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
 
   c2h::device_vector<::cuda::std::uint8_t> temp(temp_size, thrust::no_init);
@@ -114,9 +114,9 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     d_offsets_it,
     d_offsets_it + 1,
     op_t{},
-    init_t{},
+    init_value_t{},
     guaranteed_max_seg_size,
-    0,
+    nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
 
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

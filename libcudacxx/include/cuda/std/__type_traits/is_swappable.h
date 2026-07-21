@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_complete.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
@@ -49,7 +51,7 @@ namespace __detect_hidden_friend_swap
 // This will intentionally create an ambiguity with std::swap if that is find-able by ADL. But it will not interfere
 // with hidden friend swap
 template <class _Tp>
-_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&);
+_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&); // NOLINT(performance-noexcept-swap)
 
 struct __hidden_friend_swap_found
 {};
@@ -192,6 +194,15 @@ is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable : public bool_constant<is_nothrow_swappable_v<_Tp>>
 {};
+
+// Do not use this trait over is_nothrow_swappable unless necessary. It is only useful in rare
+// cases where a type may need to work with incomplete types and has friend functions that
+// greedily instantiate the nothrow_swappable functions.
+template <class _Tp, bool = __is_complete_v<_Tp>>
+inline constexpr bool __is_complete_and_nothrow_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool __is_complete_and_nothrow_swappable_v<_Tp, true> = is_nothrow_swappable_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -22,7 +26,7 @@
 // test assignment from null
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT               = typename cuda::std::conditional<IsArray, A[], A>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -45,7 +49,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

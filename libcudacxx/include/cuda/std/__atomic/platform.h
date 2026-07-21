@@ -72,7 +72,7 @@ struct __atomic_is_always_lock_free
 {
   enum
   {
-    __value = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0)
+    __value = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr)
   };
 };
 #else

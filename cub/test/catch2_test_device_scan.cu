@@ -84,8 +84,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     10,
     1337,
     3000,
-    1 * 31 * 128, // tile size for int64s for lookahead
-    10'000, // a handful of tiles for lookahead
+    1 * 31 * 128, // tile size for int64s for lookahead scan
+    10'000, // a handful of tiles for lookahead scan
     take(3, random(min_items, max_items)),
     values({
       min_items,
@@ -135,7 +135,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -164,7 +164,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -199,7 +199,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
@@ -235,7 +235,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
@@ -261,17 +261,17 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value_t{}, num_items);
 
     // Verify result
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
-      device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
+      device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value_t{}, num_items);
 
       // Verify result
       REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
@@ -297,18 +297,18 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    c2h::device_vector<init_t> d_initial_value(1);
-    d_initial_value[0]     = static_cast<init_t>(*unwrap_it(&init_value));
-    auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    c2h::device_vector<init_value_t> d_initial_value(1);
+    d_initial_value[0]     = static_cast<init_value_t>(*unwrap_it(&init_value));
+    auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, future_init_value, num_items);
 
     // Verify result
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 

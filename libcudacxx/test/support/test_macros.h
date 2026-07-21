@@ -16,6 +16,7 @@
 // Use the CCCL compiler detection
 #define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILATION() _CCCL_CUDA_COMPILATION()
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -23,6 +24,12 @@
 #define TEST_DIAG_SUPPRESS_NVHPC(...) _CCCL_DIAG_SUPPRESS_NVHPC(__VA_ARGS__)
 #define TEST_DIAG_SUPPRESS_MSVC(...)  _CCCL_DIAG_SUPPRESS_MSVC(__VA_ARGS__)
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
+
+// Use the CCCL host device function
+#define TEST_FUNC             _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC      _CCCL_DEVICE
+#define TEST_TILE_FUNC        _CCCL_TILE
+#define TEST_TILE_DEVICE_FUNC _CCCL_TILE _CCCL_DEVICE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -94,36 +101,33 @@
 #define TEST_IGNORE_NODISCARD (void)
 
 #if TEST_COMPILER(NVRTC, >=, 13)
-#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION __host__ __device__
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION TEST_FUNC
 #else
 #  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 #endif
 
+// Include <intrin.h> for _ReadWriteBarrier.
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
-template <class Tp>
-inline void DoNotOptimize(Tp const& value)
-{
-  [[maybe_unused]] const volatile void* volatile unused = __builtin_addressof(value);
-  _ReadWriteBarrier();
-}
-#else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
-template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp const& value)
-{
-  asm volatile("" : : "r,m"(value) : "memory");
-}
+#endif // TEST_COMPILER(MSVC)
 
 template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp& value)
+TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
-#  if TEST_COMPILER(CLANG)
-  asm volatile("" : "+r,m"(value) : : "memory");
-#  else
-  asm volatile("" : "+m,r"(value) : : "memory");
-#  endif
+  [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
+
+  // Device path.
+  NV_IF_TARGET(NV_IS_DEVICE, ({ asm volatile("" ::"l"(ptr) : "memory"); }))
+
+  // Host path.
+#if TEST_COMPILER(CLANG)
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+r,m"(value) : : "memory"); }))
+#elif TEST_COMPILER(MSVC)
+  NV_IF_TARGET(NV_IS_HOST, ({ _ReadWriteBarrier(); }))
+#else
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+m,r"(value) : : "memory"); }))
+#endif
 }
-#endif // !TEST_COMPILER(MSVC)
 
 // NVCC can't handle static member variables, so with a little care
 // a function returning a reference will result in the same thing
@@ -133,17 +137,25 @@ __host__ __device__ inline void DoNotOptimize(Tp& value)
 #  define _STATIC_MEMBER_IMPL(type) static type v;
 #endif
 
-#define STATIC_MEMBER_VAR(name, type)     \
-  __host__ __device__ static type& name() \
-  {                                       \
-    _STATIC_MEMBER_IMPL(type);            \
-    return v;                             \
+#define STATIC_MEMBER_VAR(name, type) \
+  TEST_FUNC static type& name()       \
+  {                                   \
+    _STATIC_MEMBER_IMPL(type);        \
+    return v;                         \
   }
 
 template <class... T>
-__host__ __device__ constexpr bool unused(T&&...)
+TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }
+
+// Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
+  && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)
+#  define TEST_HAS_CLASS_NTTP 1
+#else
+#  define TEST_HAS_CLASS_NTTP 0
+#endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

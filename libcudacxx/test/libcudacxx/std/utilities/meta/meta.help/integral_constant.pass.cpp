@@ -18,22 +18,22 @@
 int main(int, char**)
 {
   using _5 = cuda::std::integral_constant<int, 5>;
-  static_assert(_5::value == 5, "");
-  static_assert((cuda::std::is_same<_5::value_type, int>::value), "");
-  static_assert((cuda::std::is_same<_5::type, _5>::value), "");
-  static_assert((_5() == 5), "");
+  static_assert(_5::value == 5);
+  static_assert((cuda::std::is_same<_5::value_type, int>::value));
+  static_assert((cuda::std::is_same<_5::type, _5>::value));
+  static_assert((_5() == 5));
   assert(_5() == 5);
 
-  static_assert(_5{}() == 5, "");
-  static_assert(cuda::std::true_type{}(), "");
+  static_assert(_5{}() == 5);
+  static_assert(cuda::std::true_type{}());
 
-  static_assert(cuda::std::false_type::value == false, "");
-  static_assert((cuda::std::is_same<cuda::std::false_type::value_type, bool>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::false_type::type, cuda::std::false_type>::value), "");
+  static_assert(cuda::std::false_type::value == false);
+  static_assert((cuda::std::is_same<cuda::std::false_type::value_type, bool>::value));
+  static_assert((cuda::std::is_same<cuda::std::false_type::type, cuda::std::false_type>::value));
 
-  static_assert(cuda::std::true_type::value == true, "");
-  static_assert((cuda::std::is_same<cuda::std::true_type::value_type, bool>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::true_type::type, cuda::std::true_type>::value), "");
+  static_assert(cuda::std::true_type::value == true);
+  static_assert((cuda::std::is_same<cuda::std::true_type::value_type, bool>::value));
+  static_assert((cuda::std::is_same<cuda::std::true_type::type, cuda::std::true_type>::value));
 
   cuda::std::false_type f1;
   cuda::std::false_type f2 = f1;

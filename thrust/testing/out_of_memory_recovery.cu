@@ -18,8 +18,8 @@
 
 struct non_trivial
 {
-  _CCCL_HOST_DEVICE non_trivial() {}
-  _CCCL_HOST_DEVICE ~non_trivial() {}
+  _CCCL_HOST_DEVICE non_trivial() {} // NOLINT(modernize-use-equals-default)
+  _CCCL_HOST_DEVICE ~non_trivial() {} // NOLINT(modernize-use-equals-default)
 };
 
 void test_out_of_memory_recovery()
@@ -31,6 +31,8 @@ void test_out_of_memory_recovery()
     thrust::device_vector<std::uint32_t> y(0x00ffffffffffffff);
   }
   catch (...)
-  {}
+  {
+    return;
+  }
 }
 DECLARE_UNITTEST(test_out_of_memory_recovery);

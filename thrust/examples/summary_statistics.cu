@@ -4,6 +4,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/iterator>
+
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -121,7 +123,7 @@ struct summary_stats_binary_op
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
@@ -148,17 +150,17 @@ int main()
   // compute summary statistics
   summary_stats_data<T> result = thrust::transform_reduce(d_x.begin(), d_x.end(), unary_op, init, binary_op);
 
-  std::cout << "******Summary Statistics Example*****" << std::endl;
+  std::cout << "******Summary Statistics Example*****" << '\n';
   print_range("The data", d_x.begin(), d_x.end());
 
-  std::cout << "Count              : " << result.n << std::endl;
-  std::cout << "Minimum            : " << result.min << std::endl;
-  std::cout << "Maximum            : " << result.max << std::endl;
-  std::cout << "Mean               : " << result.mean << std::endl;
-  std::cout << "Variance           : " << result.variance() << std::endl;
-  std::cout << "Standard Deviation : " << std::sqrt(result.variance_n()) << std::endl;
-  std::cout << "Skewness           : " << result.skewness() << std::endl;
-  std::cout << "Kurtosis           : " << result.kurtosis() << std::endl;
+  std::cout << "Count              : " << result.n << '\n';
+  std::cout << "Minimum            : " << result.min << '\n';
+  std::cout << "Maximum            : " << result.max << '\n';
+  std::cout << "Mean               : " << result.mean << '\n';
+  std::cout << "Variance           : " << result.variance() << '\n';
+  std::cout << "Standard Deviation : " << std::sqrt(result.variance_n()) << '\n';
+  std::cout << "Skewness           : " << result.skewness() << '\n';
+  std::cout << "Kurtosis           : " << result.kurtosis() << '\n';
 
   return 0;
 }

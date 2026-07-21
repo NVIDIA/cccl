@@ -23,273 +23,331 @@
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+CUB_NAMESPACE_BEGIN
+
+//! The algorithm to use for radix sorting.
+enum class RadixSortAlgorithm
+{
+  multi_pass, //!< Multi-pass radix sort (upsweep + scan + downsweep per digit)
+  onesweep //!< Single-pass radix sort using decoupled look-back
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case RadixSortAlgorithm::multi_pass:
+      return "RadixSortAlgorithm::multi_pass";
+    case RadixSortAlgorithm::onesweep:
+      return "RadixSortAlgorithm::onesweep";
+  }
+  return "<unknown RadixSortAlgorithm>";
+}
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::RadixSortAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::RadixSortAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 
 CUB_NAMESPACE_BEGIN
-namespace detail::radix_sort
-{
-using detail::scan::make_mem_scaled_scan_policy;
-using detail::scan::scan_policy;
 
-struct radix_sort_histogram_policy
+//! The tuning policy for the histogram pass of @ref DeviceRadixSort (used by the onesweep algorithm).
+struct RadixSortHistogramPolicy
 {
-  int block_threads;
-  int items_per_thread;
-  int num_parts;
-  int radix_bits;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
 
-  _CCCL_API constexpr friend bool
-  operator==(const radix_sort_histogram_policy& lhs, const radix_sort_histogram_policy& rhs)
+  //! The number of private histogram partitions in shared memory each histogram is split during counting to reduce the
+  //! contention of atomic operations
+  int private_partitions;
+  int radix_bits; //!< Number of bits per radix digit
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.num_parts == rhs.num_parts && lhs.radix_bits == rhs.radix_bits;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.private_partitions == rhs.private_partitions && lhs.radix_bits == rhs.radix_bits;
   }
 
-  _CCCL_API constexpr friend bool
-  operator!=(const radix_sort_histogram_policy& lhs, const radix_sort_histogram_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_histogram_policy& p)
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortHistogramPolicy& p)
   {
-    return os << "radix_sort_histogram_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
-              << p.items_per_thread << ", .num_parts = " << p.num_parts << ", .radix_bits = " << p.radix_bits << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-struct radix_sort_exclusive_sum_policy
-{
-  int block_threads;
-  int radix_bits;
-
-  _CCCL_API constexpr friend bool
-  operator==(const radix_sort_exclusive_sum_policy& lhs, const radix_sort_exclusive_sum_policy& rhs)
-  {
-    return lhs.block_threads == rhs.block_threads && lhs.radix_bits == rhs.radix_bits;
-  }
-
-  _CCCL_API constexpr friend bool
-  operator!=(const radix_sort_exclusive_sum_policy& lhs, const radix_sort_exclusive_sum_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_exclusive_sum_policy& p)
-  {
-    return os << "radix_sort_exclusive_sum_policy { .block_threads = " << p.block_threads
+    return os << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .private_partitions = " << p.private_partitions
               << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
-struct radix_sort_onesweep_policy
+//! The tuning policy for the exclusive sum pass of @ref DeviceRadixSort (used by the onesweep algorithm).
+struct RadixSortExclusiveSumPolicy
 {
-  int block_threads;
-  int items_per_thread;
-  int rank_num_parts;
-  int radix_bits;
-  RadixRankAlgorithm rank_algorith;
-  BlockScanAlgorithm scan_algorithm;
-  RadixSortStoreAlgorithm store_algorithm;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int radix_bits; //!< Number of bits per radix digit
 
-  _CCCL_API constexpr friend bool
-  operator==(const radix_sort_onesweep_policy& lhs, const radix_sort_onesweep_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RadixSortExclusiveSumPolicy& lhs, const RadixSortExclusiveSumPolicy& rhs) noexcept
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.rank_num_parts == rhs.rank_num_parts && lhs.radix_bits == rhs.radix_bits
-        && lhs.rank_algorith == rhs.rank_algorith && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.store_algorithm == rhs.store_algorithm;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.radix_bits == rhs.radix_bits;
   }
 
-  _CCCL_API constexpr friend bool
-  operator!=(const radix_sort_onesweep_policy& lhs, const radix_sort_onesweep_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RadixSortExclusiveSumPolicy& lhs, const RadixSortExclusiveSumPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_onesweep_policy& p)
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortExclusiveSumPolicy& p)
   {
-    return os
-        << "radix_sort_onesweep_policy { .block_threads = " << p.block_threads
-        << ", .items_per_thread = " << p.items_per_thread << ", .rank_num_parts = " << p.rank_num_parts
-        << ", .radix_bits = " << p.radix_bits << ", .rank_algorith = " << p.rank_algorith
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
+    return os << "RadixSortExclusiveSumPolicy { .threads_per_block = " << p.threads_per_block
+              << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
-_CCCL_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
-  int nominal_4b_block_threads,
+//! The tuning policy for the onesweep pass of @ref DeviceRadixSort.
+struct RadixSortOnesweepPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  RadixSortStoreAlgorithm store_algorithm; //!< The @ref RadixSortStoreAlgorithm used for writing results
+  RadixRankAlgorithm rank_algorithm; //!< The @ref RadixRankAlgorithm used for ranking keys
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
+
+  //! The number of private histogram partitions in shared memory each histogram is split during the ranking phase to
+  //! reduce the contention of atomic operations. Ignored if @p rank_algorithm is not one of
+  //! RADIX_RANK_MATCH_EARLY_COUNTS_*
+  int rank_private_partitions;
+
+  int radix_bits; //!< Number of bits per radix digit
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.rank_algorithm == rhs.rank_algorithm
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.rank_private_partitions == rhs.rank_private_partitions
+        && lhs.radix_bits == rhs.radix_bits;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortOnesweepPolicy& p)
+  {
+    return os
+        << "RadixSortOnesweepPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .store_algorithm = " << p.store_algorithm
+        << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm
+        << ", .rank_private_partitions = " << p.rank_private_partitions << ", .radix_bits = " << p.radix_bits << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The tuning policy for the downsweep pass (and single-tile path) of @ref DeviceRadixSort.
+struct RadixSortDownsweepPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  RadixRankAlgorithm rank_algorithm; //!< The @ref RadixRankAlgorithm used for ranking keys
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
+  int radix_bits; //!< Number of bits per radix digit
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RadixSortDownsweepPolicy& lhs, const RadixSortDownsweepPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.rank_algorithm == rhs.rank_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
+        && lhs.radix_bits == rhs.radix_bits;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RadixSortDownsweepPolicy& lhs, const RadixSortDownsweepPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortDownsweepPolicy& p)
+  {
+    return os
+        << "RadixSortDownsweepPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .rank_algorithm = " << p.rank_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .radix_bits = " << p.radix_bits << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The tuning policy for the upsweep pass of @ref DeviceRadixSort (used by the multi-pass algorithm).
+struct RadixSortUpsweepPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  int radix_bits; //!< Number of bits per radix digit
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RadixSortUpsweepPolicy& lhs, const RadixSortUpsweepPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_modifier == rhs.load_modifier && lhs.radix_bits == rhs.radix_bits;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RadixSortUpsweepPolicy& lhs, const RadixSortUpsweepPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortUpsweepPolicy& p)
+  {
+    return os
+        << "RadixSortUpsweepPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_modifier = " << p.load_modifier << ", .radix_bits = " << p.radix_bits << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The tuning policy for all algorithms in @ref DeviceRadixSort.
+struct RadixSortPolicy
+{
+  RadixSortAlgorithm algorithm; //!< The radix sort algorithm to use
+  RadixSortHistogramPolicy histogram; //!< Histogram pass policy (onesweep only)
+  RadixSortExclusiveSumPolicy exclusive_sum; //!< Exclusive sum pass policy (onesweep only)
+  RadixSortOnesweepPolicy onesweep; //!< Onesweep pass policy
+  ScanPolicy scan; //!< Scan policy (multi-pass only)
+  RadixSortDownsweepPolicy downsweep; //!< Downsweep pass policy (multi-pass only)
+  RadixSortDownsweepPolicy alt_downsweep; //!< Alternate downsweep pass policy with fewer radix bits
+  RadixSortUpsweepPolicy upsweep; //!< Upsweep pass policy (multi-pass only)
+  RadixSortUpsweepPolicy alt_upsweep; //!< Alternate upsweep pass policy with fewer radix bits
+  RadixSortDownsweepPolicy single_tile; //!< Single-tile sort policy for small inputs
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RadixSortPolicy& lhs, const RadixSortPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.histogram == rhs.histogram && lhs.exclusive_sum == rhs.exclusive_sum
+        && lhs.onesweep == rhs.onesweep && lhs.scan == rhs.scan && lhs.downsweep == rhs.downsweep
+        && lhs.alt_downsweep == rhs.alt_downsweep && lhs.upsweep == rhs.upsweep && lhs.alt_upsweep == rhs.alt_upsweep
+        && lhs.single_tile == rhs.single_tile;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RadixSortPolicy& lhs, const RadixSortPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortPolicy& p)
+  {
+    return os
+        << "RadixSortPolicy { .algorithm = " << p.algorithm << ", .histogram = " << p.histogram
+        << ", .exclusive_sum = " << p.exclusive_sum << ", .onesweep = " << p.onesweep << ", .scan = " << p.scan
+        << ", .downsweep = " << p.downsweep << ", .alt_downsweep = " << p.alt_downsweep << ", .upsweep = " << p.upsweep
+        << ", .alt_upsweep = " << p.alt_upsweep << ", .single_tile = " << p.single_tile << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+namespace detail::radix_sort
+{
+using detail::scan::make_mem_scaled_lookback_scan_policy;
+
+_CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
+  int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
-  int rank_num_parts,
-  int radix_bits,
-  RadixRankAlgorithm rank_algorith,
+  RadixSortStoreAlgorithm store_algorithm,
+  RadixRankAlgorithm rank_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  RadixSortStoreAlgorithm store_algorithm) -> radix_sort_onesweep_policy
+  int rank_private_partitions,
+  int radix_bits) -> RadixSortOnesweepPolicy
 {
-  const auto scaled = scale_reg_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
-  return radix_sort_onesweep_policy{
-    scaled.block_threads,
+  const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
+  return RadixSortOnesweepPolicy{
+    scaled.threads_per_block,
     scaled.items_per_thread,
-    rank_num_parts,
-    radix_bits,
-    rank_algorith,
+    store_algorithm,
+    rank_algorithm,
     scan_algorithm,
-    store_algorithm};
+    rank_private_partitions,
+    radix_bits};
 }
 
-struct radix_sort_downsweep_policy
-{
-  int block_threads;
-  int items_per_thread;
-  int radix_bits;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  RadixRankAlgorithm rank_algorithm;
-  BlockScanAlgorithm scan_algorithm;
-
-  _CCCL_API constexpr friend bool
-  operator==(const radix_sort_downsweep_policy& lhs, const radix_sort_downsweep_policy& rhs)
-  {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.radix_bits == rhs.radix_bits && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.load_modifier == rhs.load_modifier && lhs.rank_algorithm == rhs.rank_algorithm
-        && lhs.scan_algorithm == rhs.scan_algorithm;
-  }
-
-  _CCCL_API constexpr friend bool
-  operator!=(const radix_sort_downsweep_policy& lhs, const radix_sort_downsweep_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_downsweep_policy& p)
-  {
-    return os
-        << "radix_sort_downsweep_policy { .block_threads = " << p.block_threads
-        << ", .items_per_thread = " << p.items_per_thread << ", .radix_bits = " << p.radix_bits
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-_CCCL_API constexpr auto make_reg_scaled_radix_sort_downsweep_policy(
-  int nominal_4b_block_threads,
+_CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_downsweep_policy(
+  int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
-  int radix_bits,
   BlockLoadAlgorithm load_algorithm,
   CacheLoadModifier load_modifier,
   RadixRankAlgorithm rank_algorithm,
-  BlockScanAlgorithm scan_algorithm) -> radix_sort_downsweep_policy
+  BlockScanAlgorithm scan_algorithm,
+  int radix_bits) -> RadixSortDownsweepPolicy
 {
-  const auto scaled = scale_reg_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
-  return radix_sort_downsweep_policy{
-    scaled.block_threads,
+  const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
+  return RadixSortDownsweepPolicy{
+    scaled.threads_per_block,
     scaled.items_per_thread,
-    radix_bits,
     load_algorithm,
     load_modifier,
     rank_algorithm,
-    scan_algorithm};
+    scan_algorithm,
+    radix_bits};
 }
 
-struct radix_sort_upsweep_policy
-{
-  int block_threads;
-  int items_per_thread;
-  int radix_bits;
-  CacheLoadModifier load_modifier;
-
-  _CCCL_API constexpr friend bool operator==(const radix_sort_upsweep_policy& lhs, const radix_sort_upsweep_policy& rhs)
-  {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.radix_bits == rhs.radix_bits && lhs.load_modifier == rhs.load_modifier;
-  }
-
-  _CCCL_API constexpr friend bool operator!=(const radix_sort_upsweep_policy& lhs, const radix_sort_upsweep_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_upsweep_policy& p)
-  {
-    return os
-        << "radix_sort_upsweep_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
-        << p.items_per_thread << ", .radix_bits = " << p.radix_bits << ", .load_modifier = " << p.load_modifier << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-_CCCL_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
-  int nominal_4b_block_threads,
+_CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
+  int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
-  int radix_bits,
-  CacheLoadModifier load_modifier) -> radix_sort_upsweep_policy
+  CacheLoadModifier load_modifier,
+  int radix_bits) -> RadixSortUpsweepPolicy
 {
-  const auto scaled = scale_reg_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
-  return radix_sort_upsweep_policy{scaled.block_threads, scaled.items_per_thread, radix_bits, load_modifier};
+  const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
+  return RadixSortUpsweepPolicy{scaled.threads_per_block, scaled.items_per_thread, load_modifier, radix_bits};
 }
-
-struct radix_sort_policy
-{
-  bool use_onesweep;
-  int onesweep_radix_bits;
-  radix_sort_histogram_policy histogram;
-  radix_sort_exclusive_sum_policy exclusive_sum;
-  radix_sort_onesweep_policy onesweep;
-  scan_policy scan;
-  radix_sort_downsweep_policy downsweep;
-  radix_sort_downsweep_policy alt_downsweep;
-  radix_sort_upsweep_policy upsweep;
-  radix_sort_upsweep_policy alt_upsweep;
-  radix_sort_downsweep_policy single_tile;
-  // TODO(bgruber): move those over to segmented radix sort when we port it
-  radix_sort_downsweep_policy segmented;
-  radix_sort_downsweep_policy alt_segmented;
-
-  _CCCL_API constexpr friend bool operator==(const radix_sort_policy& lhs, const radix_sort_policy& rhs)
-  {
-    return lhs.use_onesweep == rhs.use_onesweep && lhs.onesweep_radix_bits == rhs.onesweep_radix_bits
-        && lhs.histogram == rhs.histogram && lhs.exclusive_sum == rhs.exclusive_sum && lhs.onesweep == rhs.onesweep
-        && lhs.scan == rhs.scan && lhs.downsweep == rhs.downsweep && lhs.alt_downsweep == rhs.alt_downsweep
-        && lhs.upsweep == rhs.upsweep && lhs.alt_upsweep == rhs.alt_upsweep && lhs.single_tile == rhs.single_tile
-        && lhs.segmented == rhs.segmented && lhs.alt_segmented == rhs.alt_segmented;
-  }
-
-  _CCCL_API constexpr friend bool operator!=(const radix_sort_policy& lhs, const radix_sort_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_policy& p)
-  {
-    return os
-        << "radix_sort_policy { .use_onesweep = " << p.use_onesweep
-        << ", .onesweep_radix_bits = " << p.onesweep_radix_bits << ", .histogram = " << p.histogram
-        << ", .exclusive_sum = " << p.exclusive_sum << ", .onesweep = " << p.onesweep << ", .scan = " << p.scan
-        << ", .downsweep = " << p.downsweep << ", .alt_downsweep = " << p.alt_downsweep << ", .upsweep = " << p.upsweep
-        << ", .alt_upsweep = " << p.alt_upsweep << ", .single_tile = " << p.single_tile
-        << ", .segmented = " << p.segmented << ", .alt_segmented = " << p.alt_segmented << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
 
 // TODO(bgruber): remove for CCCL 4.0 when we drop the public radix sort dispatcher
 // sm90 default
@@ -528,7 +586,8 @@ struct small_key_tuning_values
   int items;
 };
 
-_CCCL_API constexpr auto get_sm90_tuning(int key_size, int value_size, int offset_size) -> small_key_tuning_values
+_CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning(int key_size, int value_size, int offset_size)
+  -> small_key_tuning_values
 {
   // keys
   if (value_size == 0)
@@ -578,7 +637,7 @@ _CCCL_API constexpr auto get_sm90_tuning(int key_size, int value_size, int offse
   return {384, 23};
 }
 
-_CCCL_API constexpr auto get_sm100_tuning(int key_size, int value_size, int offset_size, type_t key_type)
+_CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning(int key_size, int value_size, int offset_size, type_t key_type)
   -> small_key_tuning_values
 {
   // keys
@@ -795,10 +854,6 @@ struct RadixSortPolicyWrapper : PolicyT
   {}
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-using namespace radix_sort_runtime_policies;
-#endif
-
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
@@ -831,7 +886,7 @@ struct RadixSortPolicyWrapper<
   }
 
   template <typename PolicyT>
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int ThreadsPerBlock(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }
@@ -847,25 +902,6 @@ struct RadixSortPolicyWrapper<
   CUB_DEFINE_SUB_POLICY_GETTER(ExclusiveSum);
   CUB_DEFINE_SUB_POLICY_GETTER(Segmented);
   CUB_DEFINE_SUB_POLICY_GETTER(AltSegmented);
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<
-      key<"SingleTilePolicy">()     = SingleTile().EncodedPolicy(),
-      key<"OnesweepPolicy">()       = Onesweep().EncodedPolicy(),
-      key<"UpsweepPolicy">()        = Upsweep().EncodedPolicy(),
-      key<"AltUpsweepPolicy">()     = AltUpsweep().EncodedPolicy(),
-      key<"DownsweepPolicy">()      = Downsweep().EncodedPolicy(),
-      key<"AltDownsweepPolicy">()   = AltDownsweep().EncodedPolicy(),
-      key<"HistogramPolicy">()      = Histogram().EncodedPolicy(),
-      key<"ScanPolicy">()           = Scan().EncodedPolicy(),
-      key<"ScanDelayConstructor">() = StaticPolicyT::ScanPolicy::detail::delay_constructor_t::EncodedConstructor(),
-      key<"ExclusiveSumPolicy">()   = ExclusiveSum().EncodedPolicy(),
-      key<"Onesweep">()             = value<IsOnesweep()>()>();
-  }
-#endif
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
@@ -876,69 +912,70 @@ _CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(Pol
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename DownsweepPolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_downsweep_policy(DownsweepPolicy)
+{
+  return RadixSortDownsweepPolicy{
+    DownsweepPolicy::BLOCK_THREADS,
+    DownsweepPolicy::ITEMS_PER_THREAD,
+    DownsweepPolicy::LOAD_ALGORITHM,
+    DownsweepPolicy::LOAD_MODIFIER,
+    DownsweepPolicy::RANK_ALGORITHM,
+    DownsweepPolicy::SCAN_ALGORITHM,
+    DownsweepPolicy::RADIX_BITS};
+};
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> radix_sort_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> RadixSortPolicy
 {
   using active_policy = LegacyActivePolicy;
 
-  auto convert_downsweep_policy = [](auto p) {
-    (void) p;
-    using p_t = decltype(p);
-    return radix_sort_downsweep_policy{
-      p_t::BLOCK_THREADS,
-      p_t::ITEMS_PER_THREAD,
-      p_t::RADIX_BITS,
-      p_t::LOAD_ALGORITHM,
-      p_t::LOAD_MODIFIER,
-      p_t::RANK_ALGORITHM,
-      p_t::SCAN_ALGORITHM};
-  };
-
   using hist_pol       = typename active_policy::HistogramPolicy;
-  const auto histogram = radix_sort_histogram_policy{
+  const auto histogram = RadixSortHistogramPolicy{
     hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
 
   using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
-  const auto exclusive_sum = radix_sort_exclusive_sum_policy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
+  const auto exclusive_sum = RadixSortExclusiveSumPolicy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
 
   using one_pol       = typename active_policy::OnesweepPolicy;
-  const auto onesweep = radix_sort_onesweep_policy{
+  const auto onesweep = RadixSortOnesweepPolicy{
     one_pol::BLOCK_THREADS,
     one_pol::ITEMS_PER_THREAD,
-    one_pol::RANK_NUM_PARTS,
-    one_pol::RADIX_BITS,
+    one_pol::STORE_ALGORITHM,
     one_pol::RANK_ALGORITHM,
     one_pol::SCAN_ALGORITHM,
-    one_pol::STORE_ALGORITHM};
+    one_pol::RANK_NUM_PARTS,
+    one_pol::RADIX_BITS};
 
   using scan_pol  = typename active_policy::ScanPolicy;
-  const auto scan = scan_policy{
-    scan_pol::BLOCK_THREADS,
-    scan_pol::ITEMS_PER_THREAD,
-    scan_pol::LOAD_ALGORITHM,
-    scan_pol::LOAD_MODIFIER,
-    scan_pol::STORE_ALGORITHM,
-    scan_pol::SCAN_ALGORITHM,
-    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
+  const auto scan = ScanPolicy{
+    ScanAlgorithm::lookback,
+    ScanLookbackPolicy{
+      scan_pol::BLOCK_THREADS,
+      scan_pol::ITEMS_PER_THREAD,
+      scan_pol::LOAD_ALGORITHM,
+      scan_pol::LOAD_MODIFIER,
+      scan_pol::STORE_ALGORITHM,
+      scan_pol::SCAN_ALGORITHM,
+      lookback_delay_policy_from_type<typename scan_pol::detail::delay_constructor_t>},
+    {}};
 
-  const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
-  const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
+  const auto downsweep     = radix_sort::convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
+  const auto alt_downsweep = radix_sort::convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
 
-  using up_pol       = typename active_policy::UpsweepPolicy;
-  const auto upsweep = radix_sort_upsweep_policy{
-    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
+  using up_pol = typename active_policy::UpsweepPolicy;
+  const auto upsweep =
+    RadixSortUpsweepPolicy{up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::LOAD_MODIFIER, up_pol::RADIX_BITS};
 
   using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
-  const auto alt_upsweep = radix_sort_upsweep_policy{
-    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
+  const auto alt_upsweep = RadixSortUpsweepPolicy{
+    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::LOAD_MODIFIER, alt_up_pol::RADIX_BITS};
 
-  const auto single_tile   = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
-  const auto segmented     = convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
-  const auto alt_segmented = convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+  const auto single_tile = radix_sort::convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
 
-  return radix_sort_policy{
-    active_policy::ONESWEEP,
-    active_policy::ONESWEEP_RADIX_BITS,
+  return RadixSortPolicy{
+    active_policy::ONESWEEP ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass,
     histogram,
     exclusive_sum,
     onesweep,
@@ -947,15 +984,13 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
     alt_downsweep,
     upsweep,
     alt_upsweep,
-    single_tile,
-    segmented,
-    alt_segmented};
+    single_tile};
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
-  -> radix_sort_policy
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
+  -> RadixSortPolicy
 {
   return convert_policy<LegacyActivePolicy>();
 }
@@ -964,7 +999,7 @@ _CCCL_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> radix_sort_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> RadixSortPolicy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
@@ -1001,7 +1036,7 @@ struct policy_hub
   //------------------------------------------------------------------------------
 
   /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1010,13 +1045,13 @@ struct policy_hub
     static constexpr int ONESWEEP_RADIX_BITS    = 8;
 
     // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy = detail::agent_radix_sort_histogram_policy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
 
     // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
     // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicy = detail::agent_radix_sort_onesweep_policy<
       256,
       21,
       DominantT,
@@ -1028,16 +1063,16 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       160,
       39,
       DominantT,
@@ -1046,7 +1081,7 @@ struct policy_hub
       RADIX_RANK_BASIC,
       BLOCK_SCAN_WARP_SCANS,
       PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       16,
       DominantT,
@@ -1061,7 +1096,7 @@ struct policy_hub
     using AltUpsweepPolicy = AltDownsweepPolicy;
 
     // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1072,7 +1107,7 @@ struct policy_hub
       SINGLE_TILE_RADIX_BITS>;
 
     // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using SegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       31,
       DominantT,
@@ -1081,7 +1116,7 @@ struct policy_hub
       RADIX_RANK_MEMOIZE,
       BLOCK_SCAN_WARP_SCANS,
       SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using AltSegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       11,
       DominantT,
@@ -1093,7 +1128,7 @@ struct policy_hub
   };
 
   /// SM60 (GP100)
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1103,13 +1138,13 @@ struct policy_hub
     static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
 
     // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy = detail::agent_radix_sort_histogram_policy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
 
     // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
     // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicy = detail::agent_radix_sort_onesweep_policy<
       256,
       OFFSET_64BIT ? 29 : 30,
       DominantT,
@@ -1121,16 +1156,16 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       25,
       DominantT,
@@ -1139,7 +1174,7 @@ struct policy_hub
       RADIX_RANK_MATCH,
       BLOCK_SCAN_WARP_SCANS,
       PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       OFFSET_64BIT ? 32 : 39,
       DominantT,
@@ -1154,7 +1189,7 @@ struct policy_hub
     using AltUpsweepPolicy = AltDownsweepPolicy;
 
     // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1165,7 +1200,7 @@ struct policy_hub
       SINGLE_TILE_RADIX_BITS>;
 
     // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using SegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       39,
       DominantT,
@@ -1174,7 +1209,7 @@ struct policy_hub
       RADIX_RANK_MEMOIZE,
       BLOCK_SCAN_WARP_SCANS,
       SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using AltSegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       384,
       11,
       DominantT,
@@ -1186,7 +1221,7 @@ struct policy_hub
   };
 
   /// SM61 (GP104)
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
+  struct Policy610 : detail::chained_policy<610, Policy610, Policy600>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1195,13 +1230,13 @@ struct policy_hub
     static constexpr int ONESWEEP_RADIX_BITS    = 8;
 
     // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy = detail::agent_radix_sort_histogram_policy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
 
     // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
     // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicy = detail::agent_radix_sort_onesweep_policy<
       256,
       30,
       DominantT,
@@ -1213,16 +1248,16 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       384,
       31,
       DominantT,
@@ -1231,7 +1266,7 @@ struct policy_hub
       RADIX_RANK_MATCH,
       BLOCK_SCAN_RAKING_MEMOIZE,
       PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       35,
       DominantT,
@@ -1242,11 +1277,12 @@ struct policy_hub
       PRIMARY_RADIX_BITS - 1>;
 
     // Upsweep policies
-    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<128, 16, DominantT, LOAD_LDG, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<128, 16, DominantT, LOAD_LDG, PRIMARY_RADIX_BITS - 1>;
+    using UpsweepPolicy = detail::agent_radix_sort_upsweep_policy<128, 16, DominantT, LOAD_LDG, PRIMARY_RADIX_BITS>;
+    using AltUpsweepPolicy =
+      detail::agent_radix_sort_upsweep_policy<128, 16, DominantT, LOAD_LDG, PRIMARY_RADIX_BITS - 1>;
 
     // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1257,7 +1293,7 @@ struct policy_hub
       SINGLE_TILE_RADIX_BITS>;
 
     // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using SegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       39,
       DominantT,
@@ -1266,7 +1302,7 @@ struct policy_hub
       RADIX_RANK_MEMOIZE,
       BLOCK_SCAN_WARP_SCANS,
       SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using AltSegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       384,
       11,
       DominantT,
@@ -1278,7 +1314,7 @@ struct policy_hub
   };
 
   /// SM62 (Tegra, less RF)
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
+  struct Policy620 : detail::chained_policy<620, Policy620, Policy610>
   {
     static constexpr int PRIMARY_RADIX_BITS  = 5;
     static constexpr int ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1;
@@ -1286,13 +1322,13 @@ struct policy_hub
     static constexpr int ONESWEEP_RADIX_BITS = 8;
 
     // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy = detail::agent_radix_sort_histogram_policy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
 
     // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
     // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicy = detail::agent_radix_sort_onesweep_policy<
       256,
       30,
       DominantT,
@@ -1304,16 +1340,16 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       16,
       DominantT,
@@ -1322,7 +1358,7 @@ struct policy_hub
       RADIX_RANK_MEMOIZE,
       BLOCK_SCAN_RAKING_MEMOIZE,
       PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       16,
       DominantT,
@@ -1337,7 +1373,7 @@ struct policy_hub
     using AltUpsweepPolicy = AltDownsweepPolicy;
 
     // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1353,7 +1389,7 @@ struct policy_hub
   };
 
   /// SM70 (GV100)
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
+  struct Policy700 : detail::chained_policy<700, Policy700, Policy620>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1363,13 +1399,13 @@ struct policy_hub
     static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
 
     // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy = detail::agent_radix_sort_histogram_policy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
 
     // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
     // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicy = detail::agent_radix_sort_onesweep_policy<
       256,
       sizeof(KeyT) == 4 && sizeof(ValueT) == 4 ? 46 : 23,
       DominantT,
@@ -1381,16 +1417,16 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       512,
       23,
       DominantT,
@@ -1399,7 +1435,7 @@ struct policy_hub
       RADIX_RANK_MATCH,
       BLOCK_SCAN_WARP_SCANS,
       PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       (sizeof(KeyT) > 1) ? 256 : 128,
       OFFSET_64BIT ? 46 : 47,
       DominantT,
@@ -1410,12 +1446,12 @@ struct policy_hub
       PRIMARY_RADIX_BITS - 1>;
 
     // Upsweep policies
-    using UpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy =
-      AgentRadixSortUpsweepPolicy<256, OFFSET_64BIT ? 46 : 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
+    using UpsweepPolicy = detail::agent_radix_sort_upsweep_policy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
+    using AltUpsweepPolicy = detail::
+      agent_radix_sort_upsweep_policy<256, OFFSET_64BIT ? 46 : 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
 
     // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1426,7 +1462,7 @@ struct policy_hub
       SINGLE_TILE_RADIX_BITS>;
 
     // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using SegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       39,
       DominantT,
@@ -1435,7 +1471,7 @@ struct policy_hub
       RADIX_RANK_MEMOIZE,
       BLOCK_SCAN_WARP_SCANS,
       SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using AltSegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       384,
       11,
       DominantT,
@@ -1447,7 +1483,7 @@ struct policy_hub
   };
 
   /// SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1457,13 +1493,13 @@ struct policy_hub
     static constexpr bool OFFSET_64BIT          = sizeof(OffsetT) == 8;
 
     // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy = detail::agent_radix_sort_histogram_policy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
 
     // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
     // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicy = detail::agent_radix_sort_onesweep_policy<
       384,
       OFFSET_64BIT && sizeof(KeyT) == 4 && !KEYS_ONLY ? 17 : 21,
       DominantT,
@@ -1475,16 +1511,16 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       512,
       23,
       DominantT,
@@ -1493,7 +1529,7 @@ struct policy_hub
       RADIX_RANK_MATCH,
       BLOCK_SCAN_WARP_SCANS,
       PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       (sizeof(KeyT) > 1) ? 256 : 128,
       47,
       DominantT,
@@ -1504,11 +1540,12 @@ struct policy_hub
       PRIMARY_RADIX_BITS - 1>;
 
     // Upsweep policies
-    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
+    using UpsweepPolicy = detail::agent_radix_sort_upsweep_policy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
+    using AltUpsweepPolicy =
+      detail::agent_radix_sort_upsweep_policy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
 
     // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1519,7 +1556,7 @@ struct policy_hub
       SINGLE_TILE_RADIX_BITS>;
 
     // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using SegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       39,
       DominantT,
@@ -1528,7 +1565,7 @@ struct policy_hub
       RADIX_RANK_MEMOIZE,
       BLOCK_SCAN_WARP_SCANS,
       SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using AltSegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       384,
       11,
       DominantT,
@@ -1545,8 +1582,8 @@ struct policy_hub
     static constexpr bool ONESWEEP           = true;
     static constexpr int ONESWEEP_RADIX_BITS = 8;
 
-    using HistogramPolicy    = AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
+    using HistogramPolicy    = detail::agent_radix_sort_histogram_policy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
+    using ExclusiveSumPolicy = detail::agent_radix_sort_exclusive_sum_policy<256, ONESWEEP_RADIX_BITS>;
 
   private:
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
@@ -1555,7 +1592,7 @@ struct policy_hub
     static constexpr int OFFSET_64BIT           = sizeof(OffsetT) == 8 ? 1 : 0;
     static constexpr int FLOAT_KEYS             = ::cuda::std::is_same_v<KeyT, float> ? 1 : 0;
 
-    using OnesweepPolicyKey32 = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicyKey32 = detail::agent_radix_sort_onesweep_policy<
       384,
       KEYS_ONLY ? 20 - OFFSET_64BIT - FLOAT_KEYS
                 : (sizeof(ValueT) < 8 ? (OFFSET_64BIT ? 17 : 23) : (OFFSET_64BIT ? 29 : 30)),
@@ -1566,7 +1603,7 @@ struct policy_hub
       RADIX_SORT_STORE_DIRECT,
       ONESWEEP_RADIX_BITS>;
 
-    using OnesweepPolicyKey64 = AgentRadixSortOnesweepPolicy<
+    using OnesweepPolicyKey64 = detail::agent_radix_sort_onesweep_policy<
       384,
       sizeof(ValueT) < 8 ? 30 : 24,
       DominantT,
@@ -1578,7 +1615,7 @@ struct policy_hub
 
     using OnesweepLargeKeyPolicy = ::cuda::std::_If<sizeof(KeyT) == 4, OnesweepPolicyKey32, OnesweepPolicyKey64>;
 
-    using OnesweepSmallKeyPolicy = AgentRadixSortOnesweepPolicy<
+    using OnesweepSmallKeyPolicy = detail::agent_radix_sort_onesweep_policy<
       OnesweepSmallKeyPolicySizes::threads,
       OnesweepSmallKeyPolicySizes::items,
       DominantT,
@@ -1597,15 +1634,15 @@ struct policy_hub
     // below to set the launch bounds. The device compiler pass will also compile all kernels for SM70 **and** SM90,
     // even though only the Onesweep kernel is used on SM90.
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using DownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       512,
       23,
       DominantT,
@@ -1615,7 +1652,7 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       PRIMARY_RADIX_BITS>;
 
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+    using AltDownsweepPolicy = detail::agent_radix_sort_downsweep_policy<
       (sizeof(KeyT) > 1) ? 256 : 128,
       47,
       DominantT,
@@ -1625,10 +1662,11 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       PRIMARY_RADIX_BITS - 1>;
 
-    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
+    using UpsweepPolicy = detail::agent_radix_sort_upsweep_policy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
+    using AltUpsweepPolicy =
+      detail::agent_radix_sort_upsweep_policy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
 
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
+    using SingleTilePolicy = detail::agent_radix_sort_downsweep_policy<
       256,
       19,
       DominantT,
@@ -1638,7 +1676,7 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       SINGLE_TILE_RADIX_BITS>;
 
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using SegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       192,
       39,
       DominantT,
@@ -1648,7 +1686,7 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       SEGMENTED_RADIX_BITS>;
 
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
+    using AltSegmentedPolicy = detail::agent_radix_sort_downsweep_policy<
       384,
       11,
       DominantT,
@@ -1660,12 +1698,12 @@ struct policy_hub
   };
 
   struct Policy900
-      : ChainedPolicy<900, Policy900, Policy800>
+      : detail::chained_policy<900, Policy900, Policy800>
       , OnesweepSmallKeyTunedPolicy<sm90_small_key_tuning<sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
 
   struct Policy1000
-      : ChainedPolicy<1000, Policy1000, Policy900>
+      : detail::chained_policy<1000, Policy1000, Policy900>
       , OnesweepSmallKeyTunedPolicy<
           sm100_small_key_tuning<ValueT, sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
@@ -1673,14 +1711,14 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-[[nodiscard]] _CCCL_API constexpr int __scale_num_parts(int nominal_4b_num_parts, int compute_t_size)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __scale_num_parts(int nominal_4b_num_parts, int compute_t_size)
 {
   return ::cuda::std::max(1, nominal_4b_num_parts * 4 / ::cuda::std::max(compute_t_size, 4));
 }
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept radix_sort_policy_selector = detail::policy_selector<T, radix_sort_policy>;
+concept radix_sort_policy_selector = detail::policy_selector<T, RadixSortPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -1691,28 +1729,27 @@ struct policy_selector
   type_t key_type;
 
   // Whether this is a keys-only (or key-value) sort
-  [[nodiscard]] _CCCL_API constexpr int __keys_only() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __keys_only() const
   {
     return value_size == 0;
   }
 
   // Dominant-sized key/value type
-  [[nodiscard]] _CCCL_API constexpr int __dominant_size() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
     return ::cuda::std::max(value_size, key_size);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto make_onesweep_small_key_policy(const small_key_tuning_values& tuning) const
-    -> radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  make_onesweep_small_key_policy(const small_key_tuning_values& tuning) const -> RadixSortPolicy
   {
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-    const int segmented_radix_bits   = (key_size > 1) ? 6 : 5;
     const int onesweep_radix_bits    = 8;
 
-    const auto histogram = radix_sort_histogram_policy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
+    const auto histogram = RadixSortHistogramPolicy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
 
-    const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+    const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
     const bool offset_64bit = offset_size == 8;
     const bool key_is_float = key_type == type_t::float32;
@@ -1722,21 +1759,21 @@ struct policy_selector
       __keys_only() ? 20 - offset_64bit - key_is_float
                     : (value_size < 8 ? (offset_64bit ? 17 : 23) : (offset_64bit ? 29 : 30)),
       __dominant_size(),
-      1,
-      onesweep_radix_bits,
+      RADIX_SORT_STORE_DIRECT,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT);
+      1,
+      onesweep_radix_bits);
 
     const auto onesweep_policy_key64 = make_reg_scaled_radix_sort_onesweep_policy(
       384,
       value_size < 8 ? 30 : 24,
       __dominant_size(),
-      1,
-      onesweep_radix_bits,
+      RADIX_SORT_STORE_DIRECT,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT);
+      1,
+      onesweep_radix_bits);
 
     const auto onesweep_large_key_policy = key_size == 4 ? onesweep_policy_key32 : onesweep_policy_key64;
 
@@ -1744,11 +1781,11 @@ struct policy_selector
       tuning.threads,
       tuning.items,
       __dominant_size(),
-      1,
-      8,
+      RADIX_SORT_STORE_DIRECT,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT);
+      1,
+      8);
 
     const auto onesweep = key_size < 4 ? onesweep_small_key_policy : onesweep_large_key_policy;
 
@@ -1758,7 +1795,7 @@ struct policy_selector
     // device compiler pass will also compile all kernels for SM70 **and** SM90, even though only the onesweep kernel is
     // used on SM90.
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,
@@ -1771,61 +1808,40 @@ struct policy_selector
       512,
       23,
       __dominant_size(),
-      primary_radix_bits,
       BLOCK_LOAD_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      primary_radix_bits);
 
     const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
       (key_size > 1) ? 256 : 128,
       47,
       __dominant_size(),
-      primary_radix_bits - 1,
       BLOCK_LOAD_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      primary_radix_bits - 1);
 
     const auto upsweep =
-      make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
+      make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), LOAD_DEFAULT, primary_radix_bits);
 
     const auto alt_upsweep =
-      make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), primary_radix_bits - 1, LOAD_DEFAULT);
+      make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), LOAD_DEFAULT, primary_radix_bits - 1);
 
     const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
       256,
       19,
       __dominant_size(),
-      single_tile_radix_bits,
       BLOCK_LOAD_DIRECT,
       LOAD_LDG,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      single_tile_radix_bits);
 
-    const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
-      192,
-      39,
-      __dominant_size(),
-      segmented_radix_bits,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
-
-    const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
-      384,
-      11,
-      __dominant_size(),
-      segmented_radix_bits - 1,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
-
-    return radix_sort_policy{
-      /* use_onesweep */ true,
-      onesweep_radix_bits,
+    return RadixSortPolicy{
+      RadixSortAlgorithm::onesweep,
       histogram,
       exclusive_sum,
       onesweep,
@@ -1834,49 +1850,45 @@ struct policy_selector
       alt_downsweep,
       upsweep,
       alt_upsweep,
-      single_tile,
-      segmented,
-      alt_segmented};
+      single_tile};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RadixSortPolicy
   {
-    // TODO(bgruber): we should probably separate the segmented policies and move them somewhere else
-
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       return make_onesweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       return make_onesweep_small_key_policy(get_sm90_tuning(key_size, value_size, offset_size));
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const int segmented_radix_bits   = (key_size > 1) ? 6 : 5;
-      const bool use_onesweep          = key_size >= int{sizeof(uint32_t)};
-      const int onesweep_radix_bits    = 8;
-      const bool offset_64bit          = offset_size == 8;
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+      const int onesweep_radix_bits = 8;
+      const bool offset_64bit       = offset_size == 8;
 
-      const auto histogram = radix_sort_histogram_policy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
+      const auto histogram = RadixSortHistogramPolicy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
 
-      const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+      const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
       const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
         384,
         offset_64bit && key_size == 4 && !__keys_only() ? 17 : 21,
         __dominant_size(),
-        1,
-        onesweep_radix_bits,
+        RADIX_SORT_STORE_DIRECT,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_RAKING_MEMOIZE,
-        RADIX_SORT_STORE_DIRECT);
+        1,
+        onesweep_radix_bits);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -1889,61 +1901,40 @@ struct policy_selector
         512,
         23,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         (key_size > 1) ? 256 : 128,
         47,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits - 1);
 
       const auto upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
+        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), LOAD_DEFAULT, primary_radix_bits);
 
       const auto alt_upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), primary_radix_bits - 1, LOAD_DEFAULT);
+        make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), LOAD_DEFAULT, primary_radix_bits - 1);
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        192,
-        39,
-        __dominant_size(),
-        segmented_radix_bits,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        384,
-        11,
-        __dominant_size(),
-        segmented_radix_bits - 1,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      return radix_sort_policy{
+      return RadixSortPolicy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -1952,35 +1943,34 @@ struct policy_selector
         alt_downsweep,
         upsweep,
         alt_upsweep,
-        single_tile,
-        segmented,
-        alt_segmented};
+        single_tile};
     }
 
-    if (arch >= ::cuda::arch_id::sm_70)
+    if (cc >= ::cuda::compute_capability{7, 0})
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const int segmented_radix_bits   = (key_size > 1) ? 6 : 5; // 8.7B 32b segmented keys/s (GV100)
-      const bool use_onesweep = key_size >= int{sizeof(uint32_t)}; // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
+      // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = offset_size == 8;
 
-      const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
 
-      const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+      const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
       const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
         256,
         key_size == 4 && value_size == 4 ? 46 : 23,
         __dominant_size(),
-        4,
-        onesweep_radix_bits,
+        RADIX_SORT_STORE_DIRECT,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        4,
+        onesweep_radix_bits);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -1993,61 +1983,40 @@ struct policy_selector
         512,
         23,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         (key_size > 1) ? 256 : 128,
         offset_64bit ? 46 : 47,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits - 1);
 
       const auto upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
+        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), LOAD_DEFAULT, primary_radix_bits);
 
       const auto alt_upsweep = make_reg_scaled_radix_sort_upsweep_policy(
-        256, offset_64bit ? 46 : 47, __dominant_size(), primary_radix_bits - 1, LOAD_DEFAULT);
+        256, offset_64bit ? 46 : 47, __dominant_size(), LOAD_DEFAULT, primary_radix_bits - 1);
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        192,
-        39,
-        __dominant_size(),
-        segmented_radix_bits,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        384,
-        11,
-        __dominant_size(),
-        segmented_radix_bits - 1,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      return radix_sort_policy{
+      return RadixSortPolicy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2056,33 +2025,32 @@ struct policy_selector
         alt_downsweep,
         upsweep,
         alt_upsweep,
-        single_tile,
-        segmented,
-        alt_segmented};
+        single_tile};
     }
 
-    if (static_cast<int>(arch) >= 62) // TODO(bgruber): add ::cuda::arch_id::sm_62
+    if (cc >= ::cuda::compute_capability{6, 2})
     {
-      const int primary_radix_bits  = 5;
-      const int alt_radix_bits      = primary_radix_bits - 1;
-      const bool use_onesweep       = key_size >= int{sizeof(uint32_t)};
+      const int primary_radix_bits = 5;
+      const int alt_radix_bits     = primary_radix_bits - 1;
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
 
-      const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
 
-      const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+      const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
       const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
         256,
         30,
         __dominant_size(),
-        2,
-        onesweep_radix_bits,
+        RADIX_SORT_STORE_DIRECT,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        2,
+        onesweep_radix_bits);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2095,47 +2063,43 @@ struct policy_selector
         256,
         16,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
-        alt_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        alt_radix_bits);
 
-      const auto upsweep = radix_sort_upsweep_policy{
-        downsweep.block_threads, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
+      const auto upsweep = RadixSortUpsweepPolicy{
+        downsweep.threads_per_block, downsweep.items_per_thread, downsweep.load_modifier, downsweep.radix_bits};
 
-      const auto alt_upsweep = radix_sort_upsweep_policy{
-        alt_downsweep.block_threads,
+      const auto alt_upsweep = RadixSortUpsweepPolicy{
+        alt_downsweep.threads_per_block,
         alt_downsweep.items_per_thread,
-        alt_downsweep.radix_bits,
-        alt_downsweep.load_modifier};
+        alt_downsweep.load_modifier,
+        alt_downsweep.radix_bits};
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         19,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
-      const auto segmented     = downsweep;
-      const auto alt_segmented = alt_downsweep;
-
-      return radix_sort_policy{
+      return RadixSortPolicy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2144,34 +2108,33 @@ struct policy_selector
         alt_downsweep,
         upsweep,
         alt_upsweep,
-        single_tile,
-        segmented,
-        alt_segmented};
+        single_tile};
     }
 
-    if (arch >= ::cuda::arch_id::sm_61)
+    if (cc >= ::cuda::compute_capability{6, 1})
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const int segmented_radix_bits   = (key_size > 1) ? 6 : 5; // 3.3B 32b segmented keys/s (1080)
-      const bool use_onesweep          = key_size >= int{sizeof(uint32_t)}; // 10.0B 32b keys/s (GP100, 64M random keys)
-      const int onesweep_radix_bits    = 8;
+      // 10.0B 32b keys/s (GP100, 64M random keys)
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+      const int onesweep_radix_bits = 8;
 
-      const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
 
-      const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+      const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
       const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
         256,
         30,
         __dominant_size(),
-        2,
-        onesweep_radix_bits,
+        RADIX_SORT_STORE_DIRECT,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        2,
+        onesweep_radix_bits);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2184,61 +2147,40 @@ struct policy_selector
         384,
         31,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         35,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits - 1);
 
       const auto upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), primary_radix_bits, LOAD_LDG);
+        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), LOAD_LDG, primary_radix_bits);
 
       const auto alt_upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), primary_radix_bits - 1, LOAD_LDG);
+        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), LOAD_LDG, primary_radix_bits - 1);
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        192,
-        39,
-        __dominant_size(),
-        segmented_radix_bits,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        384,
-        11,
-        __dominant_size(),
-        segmented_radix_bits - 1,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      return radix_sort_policy{
+      return RadixSortPolicy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2247,35 +2189,34 @@ struct policy_selector
         alt_downsweep,
         upsweep,
         alt_upsweep,
-        single_tile,
-        segmented,
-        alt_segmented};
+        single_tile};
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const int segmented_radix_bits   = (key_size > 1) ? 6 : 5; // 5.9B 32b segmented keys/s (Quadro P100)
-      const bool use_onesweep          = key_size >= int{sizeof(uint32_t)}; // 10.0B 32b keys/s (GP100, 64M random keys)
-      const int onesweep_radix_bits    = 8;
-      const bool offset_64bit          = (offset_size == 8);
+      // 10.0B 32b keys/s (GP100, 64M random keys)
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+      const int onesweep_radix_bits = 8;
+      const bool offset_64bit       = (offset_size == 8);
 
-      const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
 
-      const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+      const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
       const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
         256,
         offset_64bit ? 29 : 30,
         __dominant_size(),
-        2,
-        onesweep_radix_bits,
+        RADIX_SORT_STORE_DIRECT,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        2,
+        onesweep_radix_bits);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2288,64 +2229,43 @@ struct policy_selector
         256,
         25,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         offset_64bit ? 32 : 39,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits - 1);
 
-      const auto upsweep = radix_sort_upsweep_policy{
-        downsweep.block_threads, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
+      const auto upsweep = RadixSortUpsweepPolicy{
+        downsweep.threads_per_block, downsweep.items_per_thread, downsweep.load_modifier, downsweep.radix_bits};
 
-      const auto alt_upsweep = radix_sort_upsweep_policy{
-        alt_downsweep.block_threads,
+      const auto alt_upsweep = RadixSortUpsweepPolicy{
+        alt_downsweep.threads_per_block,
         alt_downsweep.items_per_thread,
-        alt_downsweep.radix_bits,
-        alt_downsweep.load_modifier};
+        alt_downsweep.load_modifier,
+        alt_downsweep.radix_bits};
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        192,
-        39,
-        __dominant_size(),
-        segmented_radix_bits,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
-        384,
-        11,
-        __dominant_size(),
-        segmented_radix_bits - 1,
-        BLOCK_LOAD_TRANSPOSE,
-        LOAD_DEFAULT,
-        RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
-
-      return radix_sort_policy{
+      return RadixSortPolicy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2354,33 +2274,30 @@ struct policy_selector
         alt_downsweep,
         upsweep,
         alt_upsweep,
-        single_tile,
-        segmented,
-        alt_segmented};
+        single_tile};
     }
 
     // SM50
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-    const int segmented_radix_bits   = (key_size > 1) ? 6 : 5; // 3.1B 32b segmented keys/s (TitanX)
-    const bool use_onesweep          = false;
+    const auto use_onesweep          = RadixSortAlgorithm::multi_pass;
     const int onesweep_radix_bits    = 8;
 
-    const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(1, key_size), onesweep_radix_bits};
+    const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(1, key_size), onesweep_radix_bits};
 
-    const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, onesweep_radix_bits};
+    const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
     const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
       256,
       21,
       __dominant_size(),
-      1,
-      onesweep_radix_bits,
+      RADIX_SORT_STORE_DIRECT,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT);
+      1,
+      onesweep_radix_bits);
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,
@@ -2393,64 +2310,43 @@ struct policy_selector
       160,
       39,
       __dominant_size(),
-      primary_radix_bits,
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_BASIC,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      primary_radix_bits);
 
     const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
       256,
       16,
       __dominant_size(),
-      primary_radix_bits - 1,
       BLOCK_LOAD_DIRECT,
       LOAD_LDG,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_RAKING_MEMOIZE);
+      BLOCK_SCAN_RAKING_MEMOIZE,
+      primary_radix_bits - 1);
 
-    const auto upsweep = radix_sort_upsweep_policy{
-      downsweep.block_threads, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
+    const auto upsweep = RadixSortUpsweepPolicy{
+      downsweep.threads_per_block, downsweep.items_per_thread, downsweep.load_modifier, downsweep.radix_bits};
 
-    const auto alt_upsweep = radix_sort_upsweep_policy{
-      alt_downsweep.block_threads,
+    const auto alt_upsweep = RadixSortUpsweepPolicy{
+      alt_downsweep.threads_per_block,
       alt_downsweep.items_per_thread,
-      alt_downsweep.radix_bits,
-      alt_downsweep.load_modifier};
+      alt_downsweep.load_modifier,
+      alt_downsweep.radix_bits};
 
     const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
       256,
       19,
       __dominant_size(),
-      single_tile_radix_bits,
       BLOCK_LOAD_DIRECT,
       LOAD_LDG,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      single_tile_radix_bits);
 
-    const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
-      192,
-      31,
-      __dominant_size(),
-      segmented_radix_bits,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
-
-    const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
-      256,
-      11,
-      __dominant_size(),
-      segmented_radix_bits - 1,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
-
-    return radix_sort_policy{
+    return RadixSortPolicy{
       use_onesweep,
-      onesweep_radix_bits,
       histogram,
       exclusive_sum,
       onesweep,
@@ -2459,9 +2355,7 @@ struct policy_selector
       alt_downsweep,
       upsweep,
       alt_upsweep,
-      single_tile,
-      segmented,
-      alt_segmented};
+      single_tile};
   }
 };
 
@@ -2472,14 +2366,14 @@ static_assert(radix_sort_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::arch_id arch) const -> radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> RadixSortPolicy
   {
     constexpr auto policies = policy_selector{
       int{sizeof(KeyT)},
       ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)},
       int{sizeof(OffsetT)},
       classify_type<KeyT>};
-    return policies(arch);
+    return policies(cc);
   }
 };
 } // namespace detail::radix_sort

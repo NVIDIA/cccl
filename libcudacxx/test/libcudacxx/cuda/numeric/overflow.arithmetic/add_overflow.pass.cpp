@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085768: compiler hangs
+
 #include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -17,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename Result, typename Lhs, typename Rhs>
-__host__ __device__ constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool overflow)
+TEST_FUNC constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool overflow)
 {
   using UResult         = cuda::std::make_unsigned_t<Result>;
   const auto ref_result = static_cast<Result>(static_cast<UResult>(lhs) + static_cast<UResult>(rhs));
@@ -51,7 +54,7 @@ __host__ __device__ constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool over
 }
 
 template <typename Lhs, typename Rhs, typename Result>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using cuda::std::is_same_v;
   using cuda::std::is_signed_v;
@@ -137,7 +140,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <typename T, typename R>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<T, R, cuda::std::common_type_t<T, R>>();
   test_type<T, R, unsigned>();
@@ -152,7 +155,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <typename T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<T, signed char>();
   test_type<T, unsigned char>();
@@ -170,7 +173,7 @@ __host__ __device__ constexpr void test_type()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<unsigned char>();

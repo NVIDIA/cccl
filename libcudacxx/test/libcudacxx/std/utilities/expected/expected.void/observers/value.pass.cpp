@@ -19,34 +19,34 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // const &
   {
     const cuda::std::expected<void, int> e;
     e.value();
-    static_assert(cuda::std::is_same_v<decltype(e.value()), void>, "");
+    static_assert(cuda::std::is_same_v<decltype(e.value()), void>);
   }
 
   // &
   {
     cuda::std::expected<void, int> e;
     e.value();
-    static_assert(cuda::std::is_same_v<decltype(e.value()), void>, "");
+    static_assert(cuda::std::is_same_v<decltype(e.value()), void>);
   }
 
   // &&
   {
     cuda::std::expected<void, int> e;
     cuda::std::move(e).value();
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>, "");
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>);
   }
 
   // const &&
   {
     const cuda::std::expected<void, int> e;
     cuda::std::move(e).value();
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>, "");
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>);
   }
 
   return true;
@@ -72,7 +72,7 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -24,7 +27,7 @@
 template <template <typename, typename> class Selector>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     {
       struct key

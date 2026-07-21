@@ -21,7 +21,7 @@ _CCCL_DEVICE static inline void
 tensormap_replace_global_address(::cuda::ptx::space_global_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -57,7 +57,7 @@ _CCCL_DEVICE static inline void
 tensormap_replace_global_address(::cuda::ptx::space_shared_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -92,7 +92,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void tensormap_replace_rank(::cuda::ptx::space_global_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -127,7 +127,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void tensormap_replace_rank(::cuda::ptx::space_shared_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -164,7 +164,7 @@ _CCCL_DEVICE static inline void
 tensormap_replace_box_dim(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -203,7 +203,7 @@ _CCCL_DEVICE static inline void
 tensormap_replace_box_dim(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -242,7 +242,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_dim(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -281,7 +281,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_dim(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -320,7 +320,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_stride(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -359,7 +359,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_stride(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -398,7 +398,7 @@ _CCCL_DEVICE static inline void tensormap_replace_element_stride(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -437,7 +437,7 @@ _CCCL_DEVICE static inline void tensormap_replace_element_stride(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -476,7 +476,7 @@ _CCCL_DEVICE static inline void tensormap_replace_element_size(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
@@ -515,7 +515,7 @@ _CCCL_DEVICE static inline void tensormap_replace_element_size(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \

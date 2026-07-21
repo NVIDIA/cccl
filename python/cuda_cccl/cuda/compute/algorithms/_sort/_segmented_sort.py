@@ -9,8 +9,9 @@ import numpy as np
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
-from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._caching import cache_build_results, cache_with_registered_key_functions
+from ..._cccl_interop import set_cccl_iterator_state
+from ..._serialization import BUILD_RESULTS, ITER, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -20,9 +21,11 @@ from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
-class _SegmentedSort:
+class _SegmentedSort(Serializable):
     __slots__ = [
-        "build_result",
+        "_bound_build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_keys_cccl",
         "d_out_keys_cccl",
         "d_in_values_cccl",
@@ -30,6 +33,16 @@ class _SegmentedSort:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceSegmentedSortBuildResult)),
+    )
 
     def __init__(
         self,
@@ -40,6 +53,7 @@ class _SegmentedSort:
         start_offsets_in: DeviceArrayLike,
         end_offsets_in: DeviceArrayLike,
         order: SortOrder,
+        compute_capability=None,
     ):
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
@@ -52,19 +66,35 @@ class _SegmentedSort:
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
-        self.build_result = call_build(
-            _bindings.DeviceSegmentedSortBuildResult,
+        build_order = (
             _bindings.SortOrder.ASCENDING
             if order is SortOrder.ASCENDING
-            else _bindings.SortOrder.DESCENDING,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
+            else _bindings.SortOrder.DESCENDING
+        )
+        self.build_results, self._bound_build_result = cache_build_results(
+            _bindings.DeviceSegmentedSortBuildResult,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            start_offsets_in,
+            end_offsets_in,
+            order,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceSegmentedSortBuildResult,
+                build_order,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in_keys,
         d_out_keys,
@@ -76,6 +106,11 @@ class _SegmentedSort:
         end_offsets_in,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(
                 "Segmented sort does not currently support more than 2^31-1 segments."
@@ -105,7 +140,7 @@ class _SegmentedSort:
         is_overwrite_okay = isinstance(d_in_keys, DoubleBuffer)
         selector = -1
 
-        temp_storage_bytes, selector = self.build_result.compute(
+        temp_storage_bytes, selector = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -134,13 +169,15 @@ class _SegmentedSort:
 
 @cache_with_registered_key_functions
 def make_segmented_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | None = None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     start_offsets_in: DeviceArrayLike,
     end_offsets_in: DeviceArrayLike,
     order: SortOrder,
+    compute_capability=None,
 ):
     """
     Performs a device-wide segmented sort using the specified keys and values.
@@ -160,6 +197,11 @@ def make_segmented_sort(
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
         order: SortOrder specifying the order of the sort
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the segmented sort
@@ -172,14 +214,16 @@ def make_segmented_sort(
         start_offsets_in,
         end_offsets_in,
         order,
+        compute_capability=compute_capability,
     )
 
 
 def segmented_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | None = None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     num_items: int,
     num_segments: int,
     start_offsets_in: DeviceArrayLike,
@@ -200,7 +244,7 @@ def segmented_sort(
             :start-after: # example-begin
 
 
-        In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer` for reduced temporary storage.
+        In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer`` for reduced temporary storage.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_buffer.py
             :language: python
@@ -219,36 +263,36 @@ def segmented_sort(
         stream: CUDA stream for the operation (optional)
     """
     sorter = make_segmented_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        start_offsets_in,
-        end_offsets_in,
-        order,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        order=order,
     )
     tmp_storage_bytes = sorter(
-        None,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        stream=stream,
     )

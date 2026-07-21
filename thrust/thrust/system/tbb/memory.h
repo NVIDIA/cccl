@@ -23,9 +23,8 @@
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/tbb/memory_resource.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/limits>
-
-#include <ostream>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb

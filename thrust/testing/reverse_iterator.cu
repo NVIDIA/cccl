@@ -54,8 +54,8 @@ void TestReverseIteratorCopyConstructor()
   ASSERT_EQUAL(*d_iter2, *d_iter3);
 }
 DECLARE_UNITTEST(TestReverseIteratorCopyConstructor);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value, "");
-static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value);
+static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value);
 
 void TestReverseIteratorIncrement()
 {

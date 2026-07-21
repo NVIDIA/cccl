@@ -12,7 +12,7 @@
 
 #include <cuda/std/__new_>
 
-__host__ __device__ void f()
+TEST_FUNC void f()
 {
   int* p = nullptr;
   cuda::std::launder(p); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}

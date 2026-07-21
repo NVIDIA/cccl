@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class To, class From>
-__host__ __device__ constexpr void test_comparison(bool equal, To dest, From src)
+TEST_FUNC constexpr void test_comparison(bool equal, To dest, From src)
 {
   static_assert(noexcept(dest == src));
   assert((dest == src) == equal);
@@ -33,7 +33,7 @@ __host__ __device__ constexpr void test_comparison(bool equal, To dest, From src
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_different_rank()
+TEST_FUNC constexpr void test_comparison_different_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void test_comparison_different_rank()
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_same_rank()
+TEST_FUNC constexpr void test_comparison_same_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -79,13 +79,13 @@ __host__ __device__ constexpr void test_comparison_same_rank()
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison()
+TEST_FUNC constexpr void test_comparison()
 {
   test_comparison_same_rank<T1, T2>();
   test_comparison_different_rank<T1, T2>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_comparison<int, int>();
   test_comparison<int, size_t>();
@@ -97,6 +97,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

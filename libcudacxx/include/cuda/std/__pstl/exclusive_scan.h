@@ -21,11 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
@@ -55,6 +56,15 @@ _CCCL_HOST_API _OutputIterator exclusive_scan(
   _Tp __init,
   _BinaryOp __binary_op)
 {
+  static_assert(is_invocable_v<_BinaryOp, iter_reference_t<_InputIterator>, iter_reference_t<_InputIterator>>,
+                "cuda::std::exclusive_scan requires UnaryOp to be invocable with "
+                "iter_reference_t<InputIterator>, iter_reference_t<InputIterator>");
+
+  static_assert(
+    indirectly_writable<_OutputIterator,
+                        invoke_result_t<_BinaryOp, iter_reference_t<_InputIterator>, iter_reference_t<_InputIterator>>>,
+    "cuda::std::exclusive_scan requires OutputIterator to be indirectly writable with the return value of BinaryOp");
+
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__exclusive_scan, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
@@ -111,6 +121,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_EXCLUSIVE_SCAN_H

@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
@@ -22,6 +21,8 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -84,6 +85,25 @@ CUB_NAMESPACE_BEGIN
 //!      d_temp_storage, temp_storage_bytes, d_values, num_items);
 //!
 //!    // d_values <-- [1, 1, -1, 1, -1, 1, -1, 1]
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceAdjacentDifference that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::AdjacentDifferencePolicy`, as shown
+//! in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin subtract-left-copy-policy-selector
+//!      :end-before: example-end subtract-left-copy-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin subtract-left-copy-tuning
+//!      :end-before: example-end subtract-left-copy-tuning
 //!
 //! @endrst
 struct DeviceAdjacentDifference
@@ -155,19 +175,10 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam InputIteratorT
-  //!   @rst
-  //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
-  //!   and ``x`` and ``y`` are objects of ``InputIteratorT``'s ``value_type``, then
-  //!   ``x - y`` is defined, and ``InputIteratorT``'s ``value_type`` is convertible to
-  //!   a type in ``OutputIteratorT``'s set of ``value_types``, and the return type
-  //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
-  //!   ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
   //!
   //! @tparam OutputIteratorT
-  //!   @rst
-  //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
-  //!   @endrst
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s set of `value_types`.
@@ -175,9 +186,11 @@ struct DeviceAdjacentDifference
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -194,14 +207,15 @@ struct DeviceAdjacentDifference
   //! @param[in] difference_op
   //!   The binary function used to compute differences
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename DifferenceOpT = ::cuda::std::minus<>,
-            typename NumItemsT     = uint32_t>
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeftCopy(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -209,12 +223,15 @@ struct DeviceAdjacentDifference
     OutputIteratorT d_output,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    const EnvT& env             = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
-      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
+
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+          storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -277,13 +294,7 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
-  //!   @rst
-  //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
-  //!   ``RandomAccessIteratorT`` is mutable. If ``x`` and ``y`` are objects of
-  //!   ``RandomAccessIteratorT``'s ``value_type``, and ``x - y`` is defined, then the
-  //!   return type of ``x - y`` should be convertible to a type in
-  //!   ``RandomAccessIteratorT``'s set of ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access iterator type for reading and writing elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
@@ -292,10 +303,11 @@ struct DeviceAdjacentDifference
   //! @tparam NumItemsT
   //!   **[inferred]** Type of `num_items`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -309,23 +321,29 @@ struct DeviceAdjacentDifference
   //! @param[in] difference_op
   //!   The binary function used to compute differences
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename RandomAccessIteratorT, typename DifferenceOpT = ::cuda::std::minus<>, typename NumItemsT = uint32_t>
+  template <typename RandomAccessIteratorT,
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeft(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     RandomAccessIteratorT d_input,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    const EnvT& env             = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
-      d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
+
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+          storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -394,31 +412,23 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam InputIteratorT
-  //!   @rst
-  //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
-  //!   and ``x`` and ``y`` are objects of ``InputIteratorT``'s ``value_type``, then
-  //!   ``x - y`` is defined, and ``InputIteratorT``'s ``value_type`` is convertible to
-  //!   a type in ``OutputIteratorT``'s set of ``value_types``, and the return type
-  //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
-  //!   ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
   //!
   //! @tparam OutputIteratorT
-  //!   @rst
-  //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
-  //!   @endrst
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
   //!
   //! @tparam DifferenceOpT
-  //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
+  //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s
   //!   set of `value_types`.
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -435,14 +445,15 @@ struct DeviceAdjacentDifference
   //! @param[in] difference_op
   //!   The binary function used to compute differences.
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename DifferenceOpT = ::cuda::std::minus<>,
-            typename NumItemsT     = uint32_t>
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractRightCopy(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -450,12 +461,15 @@ struct DeviceAdjacentDifference
     OutputIteratorT d_output,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    const EnvT& env             = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
-      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
+
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+          storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -507,13 +521,7 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
-  //!   @rst
-  //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
-  //!   ``RandomAccessIteratorT`` is mutable. If ``x`` and ``y`` are objects of
-  //!   ``RandomAccessIteratorT``'s `value_type`, and ``x - y`` is defined, then the
-  //!   return type of ``x - y`` should be convertible to a type in
-  //!   ``RandomAccessIteratorT``'s set of ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access iterator type for reading and writing elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
@@ -522,10 +530,11 @@ struct DeviceAdjacentDifference
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -539,23 +548,29 @@ struct DeviceAdjacentDifference
   //! @param[in] difference_op
   //!   The binary function used to compute differences
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename RandomAccessIteratorT, typename DifferenceOpT = ::cuda::std::minus<>, typename NumItemsT = uint32_t>
+  template <typename RandomAccessIteratorT,
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractRight(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     RandomAccessIteratorT d_input,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    const EnvT& env             = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
-      d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
+
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+          storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -567,6 +582,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -624,24 +640,27 @@ struct DeviceAdjacentDifference
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename DifferenceOpT        = ::cuda::std::minus<>,
+    typename NumItemsT            = uint32_t,
+    typename EnvT                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::__indirectly_binary_invocable<DifferenceOpT, InputIteratorT, InputIteratorT>,
+                             int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeftCopy(
-    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+    InputIteratorT d_input,
+    OutputIteratorT d_output,
+    NumItemsT num_items,
+    DifferenceOpT difference_op = {},
+    const EnvT& env             = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
-          d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+        storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -653,6 +672,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -703,22 +723,21 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<
+              ::cuda::std::__indirectly_binary_invocable<DifferenceOpT, RandomAccessIteratorT, RandomAccessIteratorT>,
+              int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeft(
+    RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
-          d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+        storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -730,6 +749,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -789,24 +809,27 @@ struct DeviceAdjacentDifference
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename DifferenceOpT        = ::cuda::std::minus<>,
+    typename NumItemsT            = uint32_t,
+    typename EnvT                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::__indirectly_binary_invocable<DifferenceOpT, InputIteratorT, InputIteratorT>,
+                             int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRightCopy(
-    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+    InputIteratorT d_input,
+    OutputIteratorT d_output,
+    NumItemsT num_items,
+    DifferenceOpT difference_op = {},
+    const EnvT& env             = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
-          d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+        storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -818,6 +841,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -868,22 +892,21 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<
+              ::cuda::std::__indirectly_binary_invocable<DifferenceOpT, RandomAccessIteratorT, RandomAccessIteratorT>,
+              int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRight(
+    RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
-          d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+        storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+    });
   }
 };
 

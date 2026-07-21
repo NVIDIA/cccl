@@ -30,6 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
 _CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _Tp __init)
@@ -42,6 +43,7 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
   return __result;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _BinaryOp>
 _CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b)

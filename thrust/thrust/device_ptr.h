@@ -17,7 +17,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/memory.h>
+
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 

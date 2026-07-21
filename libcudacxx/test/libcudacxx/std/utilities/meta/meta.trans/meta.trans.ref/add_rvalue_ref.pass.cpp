@@ -19,21 +19,21 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_add_rvalue_reference()
+TEST_FUNC void test_add_rvalue_reference()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::add_rvalue_reference<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::add_rvalue_reference_t<T>>);
 }
 
 template <class F>
-__host__ __device__ void test_function0()
+TEST_FUNC void test_function0()
 {
   static_assert(cuda::std::is_same_v<F&&, typename cuda::std::add_rvalue_reference<F>::type>);
   static_assert(cuda::std::is_same_v<F&&, cuda::std::add_rvalue_reference_t<F>>);
 }
 
 template <class F>
-__host__ __device__ void test_function1()
+TEST_FUNC void test_function1()
 {
   static_assert(cuda::std::is_same_v<F, typename cuda::std::add_rvalue_reference<F>::type>);
   static_assert(cuda::std::is_same_v<F, cuda::std::add_rvalue_reference_t<F>>);

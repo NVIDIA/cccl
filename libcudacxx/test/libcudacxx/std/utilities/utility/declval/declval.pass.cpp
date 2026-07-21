@@ -18,14 +18,14 @@
 
 class A
 {
-  __host__ __device__ A(const A&);
-  __host__ __device__ A& operator=(const A&);
+  TEST_FUNC A(const A&);
+  TEST_FUNC A& operator=(const A&);
 };
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::declval<A>()), A&&>::value), "");
-  static_assert(noexcept(cuda::std::declval<A>()), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::declval<A>()), A&&>::value));
+  static_assert(noexcept(cuda::std::declval<A>()));
 
   return 0;
 }

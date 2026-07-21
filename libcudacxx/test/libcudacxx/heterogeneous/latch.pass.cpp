@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc, pre-sm-70
 
 // uncomment for a really verbose output detailing what test steps are being launched
@@ -23,7 +26,7 @@ struct count_down
   static constexpr size_t threadcount = N;
 
   template <typename Latch>
-  __host__ __device__ static void perform(Latch& latch)
+  TEST_FUNC static void perform(Latch& latch)
   {
     latch.count_down(1);
   }
@@ -36,7 +39,7 @@ struct arrive_and_wait
   static constexpr size_t threadcount = N;
 
   template <typename Latch>
-  __host__ __device__ static void perform(Latch& latch)
+  TEST_FUNC static void perform(Latch& latch)
   {
     latch.arrive_and_wait(1);
   }
@@ -51,7 +54,7 @@ struct latch_wait
   using async = cuda::std::true_type;
 
   template <typename Latch>
-  __host__ __device__ static void perform(Latch& latch)
+  TEST_FUNC static void perform(Latch& latch)
   {
     latch.wait();
   }
@@ -61,7 +64,7 @@ template <int Expected>
 struct reset
 {
   template <typename Latch>
-  __host__ __device__ static void perform(Latch& latch)
+  TEST_FUNC static void perform(Latch& latch)
   {
     new (&latch) Latch(Expected);
   }

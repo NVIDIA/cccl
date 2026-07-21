@@ -20,7 +20,7 @@
 #include "types.h"
 
 template <class Bijection>
-__host__ __device__ constexpr bool test(Bijection fun)
+TEST_FUNC constexpr bool test(Bijection fun)
 {
   auto iter1 = cuda::make_shuffle_iterator(fun, short{0});
   auto iter2 = cuda::make_shuffle_iterator(fun, short{4});
@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool test(Bijection fun)
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(fake_bijection<true>{});
   test(fake_bijection<false>{});

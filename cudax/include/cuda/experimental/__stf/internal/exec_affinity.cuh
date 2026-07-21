@@ -38,9 +38,14 @@
 #include <stack>
 #include <vector>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 class exec_place;
+} // namespace cuda::experimental::places
+
+namespace cuda::experimental::stf
+{
+using ::cuda::experimental::places::exec_place;
 
 /**
  * @brief Defines the current execution places associated with a context.

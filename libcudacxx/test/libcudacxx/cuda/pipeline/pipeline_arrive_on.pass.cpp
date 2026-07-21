@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // Remove after bump to version 4
 #include <cuda/barrier>
 
@@ -26,18 +29,18 @@ TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 using nvcuda::experimental::pipeline;
 
-__host__ __device__ bool operator==(int2 a, int2 b)
+TEST_FUNC bool operator==(int2 a, int2 b)
 {
   return a.x == b.x && a.y == b.y;
 }
 
-__host__ __device__ bool operator==(int4 a, int4 b)
+TEST_FUNC bool operator==(int4 a, int4 b)
 {
   return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 }
 
 template <typename T>
-__device__ void arrive_on_device_copy(
+TEST_DEVICE_FUNC void arrive_on_device_copy(
   T* global_array, T* shared_array, unsigned copy_count, cuda::barrier<cuda::thread_scope_block>* barrier)
 {
   pipeline pipe;
@@ -62,7 +65,7 @@ __device__ void arrive_on_device_copy(
 }
 
 template <typename T>
-__device__ bool arrive_on_test(char* global_buffer, size_t buffer_size)
+TEST_DEVICE_FUNC bool arrive_on_test(char* global_buffer, size_t buffer_size)
 {
   assert(blockDim.y == 1 && blockDim.z == 1);
 
@@ -94,7 +97,7 @@ __device__ bool arrive_on_test(char* global_buffer, size_t buffer_size)
 }
 
 #if TEST_COMPILER(NVRTC)
-__device__ void arrive_on_nvrtc(size_t buffer_size)
+TEST_DEVICE_FUNC void arrive_on_nvrtc(size_t buffer_size)
 {
   auto scramble_buffer = [](char* buffer, size_t buffer_size, size_t base_value) {
     if (threadIdx.x == 0)

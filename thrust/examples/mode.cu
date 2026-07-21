@@ -2,12 +2,13 @@
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+#include <cuda/iterator>
 
 #include <iostream>
 #include <iterator>
@@ -35,17 +36,17 @@ int main()
   thrust::device_vector<int> d_data(h_data);
 
   // print the initial data
-  std::cout << "initial data" << std::endl;
+  std::cout << "initial data" << '\n';
   thrust::copy(d_data.begin(), d_data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // sort data to bring equal elements together
   thrust::sort(d_data.begin(), d_data.end());
 
   // print the sorted data
-  std::cout << "sorted data" << std::endl;
+  std::cout << "sorted data" << '\n';
   thrust::copy(d_data.begin(), d_data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // count number of unique keys
   size_t num_unique = thrust::unique_count(d_data.begin(), d_data.end());
@@ -54,17 +55,17 @@ int main()
   thrust::device_vector<int> d_output_keys(num_unique);
   thrust::device_vector<int> d_output_counts(num_unique);
   thrust::reduce_by_key(
-    d_data.begin(), d_data.end(), thrust::constant_iterator<int>(1), d_output_keys.begin(), d_output_counts.begin());
+    d_data.begin(), d_data.end(), cuda::constant_iterator<int>(1), d_output_keys.begin(), d_output_counts.begin());
 
   // print the counts
-  std::cout << "values" << std::endl;
+  std::cout << "values" << '\n';
   thrust::copy(d_output_keys.begin(), d_output_keys.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // print the counts
-  std::cout << "counts" << std::endl;
+  std::cout << "counts" << '\n';
   thrust::copy(d_output_counts.begin(), d_output_counts.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // find the index of the maximum count
   thrust::device_vector<int>::iterator mode_iter;
@@ -73,7 +74,7 @@ int main()
   int mode        = d_output_keys[cuda::std::distance(d_output_counts.begin(), mode_iter)];
   int occurrences = *mode_iter;
 
-  std::cout << "Modal value " << mode << " occurs " << occurrences << " times " << std::endl;
+  std::cout << "Modal value " << mode << " occurs " << occurrences << " times " << '\n';
 
   return 0;
 }

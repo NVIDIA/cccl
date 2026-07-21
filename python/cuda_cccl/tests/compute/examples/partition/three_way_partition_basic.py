@@ -32,14 +32,14 @@ def greater_than_equal_op(x):
 
 # Perform the three_way_partition.
 cuda.compute.three_way_partition(
-    d_input,
-    d_first_part,
-    d_second_part,
-    d_unselected,
-    d_num_selected,
-    less_than_op,
-    greater_than_equal_op,
-    len(h_input),
+    d_in=d_input,
+    d_first_part_out=d_first_part,
+    d_second_part_out=d_second_part,
+    d_unselected_out=d_unselected,
+    d_num_selected_out=d_num_selected,
+    select_first_part_op=less_than_op,
+    select_second_part_op=greater_than_equal_op,
+    num_items=len(h_input),
 )
 
 # Verify the result.

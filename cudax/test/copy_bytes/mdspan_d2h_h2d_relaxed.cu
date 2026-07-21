@@ -37,7 +37,7 @@ void test_impl_relaxed(
     cuda::device_mdspan<T, extents_t> device_md(thrust::raw_pointer_cast(device_data.data()), dst_mapping);
     cuda::experimental::copy_bytes(host_md, device_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected);
+    REQUIRE(thrust::host_vector<T>(device_data) == expected);
   }
   {
     // device to host
@@ -48,7 +48,7 @@ void test_impl_relaxed(
     cuda::host_mdspan<T, extents_t> host_md(host_output.data(), dst_mapping);
     cuda::experimental::copy_bytes(device_md, host_md, stream);
     stream.sync();
-    CUDAX_REQUIRE(host_output == expected);
+    REQUIRE(host_output == expected);
   }
 }
 
@@ -72,7 +72,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, sliding window", "[copy_bytes][rela
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i + j;
+      expected[static_cast<std::size_t>(i) * N + j] = i + j;
     }
   }
 
@@ -118,7 +118,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, 2D column-reversed", "[copy_bytes][
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i * N + (N - 1 - j);
+      expected[static_cast<std::size_t>(i) * N + j] = static_cast<int>(static_cast<std::size_t>(i) * N + (N - 1 - j));
     }
   }
   using extents_t = cuda::std::extents<int, M, N>;

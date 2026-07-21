@@ -36,13 +36,13 @@ struct CustomIt
   using iterator_category = cuda::std::input_iterator_tag;
 
   CustomIt() = default;
-  __host__ __device__ constexpr explicit CustomIt(int* p)
+  TEST_FUNC constexpr explicit CustomIt(int* p)
       : p_(p)
   {}
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ CustomIt& operator++();
-  __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ constexpr friend difference_type operator-(const CustomIt& a, const CustomIt& b)
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC CustomIt& operator++();
+  TEST_FUNC CustomIt operator++(int);
+  TEST_FUNC constexpr friend difference_type operator-(const CustomIt& a, const CustomIt& b)
   {
     return static_cast<difference_type>(a.p_ - b.p_);
   }
@@ -50,7 +50,7 @@ struct CustomIt
 };
 
 template <class It, class Sent = sized_sentinel<It>>
-__host__ __device__ constexpr void test_one()
+TEST_FUNC constexpr void test_one()
 {
   int arr[] = {3, 1, 4};
 
@@ -85,7 +85,7 @@ __host__ __device__ constexpr void test_one()
   assert(sent_c - it_b == 1);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_one<CustomIt>();
   test_one<cpp17_input_iterator<int*>>();

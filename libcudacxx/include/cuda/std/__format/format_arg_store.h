@@ -27,6 +27,7 @@
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -44,12 +45,12 @@ inline constexpr bool __is_bounded_array_of = false;
 template <class _Elem, size_t _Len>
 inline constexpr bool __is_bounded_array_of<_Elem[_Len], _Elem> = true;
 
-template <class _Context, class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+template <class _Context, class _Tp, class _Dummy>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t_impl(_Dummy) noexcept
 {
   using _CtxCharT = typename _Context::char_type;
 
-  __fmt_arg_t __ret = __fmt_arg_t::__none;
+  __fmt_arg_t __ret = __fmt_arg_t::__handle;
 
   if constexpr (is_same_v<_Tp, bool>)
   {
@@ -113,20 +114,27 @@ template <class _Context, class _Tp>
   {
     __ret = __fmt_arg_t::__ptr;
   }
-
-  if constexpr (__formattable_with<_Tp, _Context>)
-  {
-    __ret = (__ret == __fmt_arg_t::__none) ? __fmt_arg_t::__handle : __ret;
-  }
-
   return __ret;
 }
 
 template <class _Context, class _Tp>
-[[nodiscard]] _CCCL_API basic_format_arg<_Context> __fmt_make_format_arg(_Tp& __value) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL enable_if_t<!__formattable_with<_Tp, _Context>, __fmt_arg_t>
+__fmt_determine_arg_t_impl(int) noexcept
+{
+  return __fmt_arg_t::__none;
+}
+
+template <class _Context, class _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t() noexcept
+{
+  return ::cuda::std::__fmt_determine_arg_t_impl<_Context, _Tp>(0);
+}
+
+template <class _Context, class _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<_Context> __fmt_make_format_arg(_Tp& __value) noexcept
 {
   using _Dp                   = remove_const_t<_Tp>;
-  constexpr __fmt_arg_t __arg = __fmt_determine_arg_t<_Context, _Dp>();
+  constexpr __fmt_arg_t __arg = ::cuda::std::__fmt_determine_arg_t<_Context, _Dp>();
 
   static_assert(__arg != __fmt_arg_t::__none, "the supplied type is not formattable");
   static_assert(__formattable_with<_Tp, _Context>);
@@ -196,7 +204,7 @@ template <class _Context, class _Tp>
 }
 
 template <class _Context, class _Tp>
-_CCCL_API void __fmt_make_packed_storage_impl(
+_CCCL_HOST_DEVICE_API void __fmt_make_packed_storage_impl(
   uint64_t& __types, __basic_format_arg_value<_Context>*& __values, int& __shift, _Tp& __v) noexcept
 {
   basic_format_arg<_Context> __arg = ::cuda::std::__fmt_make_format_arg<_Context>(__v);
@@ -214,7 +222,7 @@ _CCCL_API void __fmt_make_packed_storage_impl(
 }
 
 template <class _Context, class... _Args>
-_CCCL_API void
+_CCCL_HOST_DEVICE_API void
 __fmt_make_packed_storage(uint64_t& __types, __basic_format_arg_value<_Context>* __values, _Args&... __args) noexcept
 {
   int __shift = 0;
@@ -222,7 +230,7 @@ __fmt_make_packed_storage(uint64_t& __types, __basic_format_arg_value<_Context>*
 }
 
 template <class _Context, class... _Args>
-_CCCL_API void __fmt_store_basic_format_arg(basic_format_arg<_Context>* __data, _Args&... __args) noexcept
+_CCCL_HOST_DEVICE_API void __fmt_store_basic_format_arg(basic_format_arg<_Context>* __data, _Args&... __args) noexcept
 {
   ((*__data++ = ::cuda::std::__fmt_make_format_arg<_Context>(__args)), ...);
 }
@@ -249,7 +257,7 @@ struct __unpacked_format_arg_store
 template <class _Context, class... _Args>
 struct __format_arg_store
 {
-  _CCCL_API __format_arg_store(_Args&... __args) noexcept
+  _CCCL_HOST_DEVICE_API __format_arg_store(_Args&... __args) noexcept
   {
     if constexpr (sizeof...(_Args) != 0)
     {

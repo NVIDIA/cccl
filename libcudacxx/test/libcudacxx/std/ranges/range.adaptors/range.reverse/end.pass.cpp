@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr reverse_iterator<iterator_t<V>> end();
 // constexpr auto end() const requires common_range<const V>;
 
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -69,7 +72,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017
-  static_assert(test(), "");
+  static_assert(test());
 #endif
 
   return 0;

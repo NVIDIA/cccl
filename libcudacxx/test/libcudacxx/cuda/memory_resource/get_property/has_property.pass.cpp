@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -21,16 +25,16 @@ struct prop_with_value
 struct prop
 {};
 
-static_assert(cuda::property_with_value<prop_with_value>, "");
-static_assert(!cuda::property_with_value<prop>, "");
+static_assert(cuda::property_with_value<prop_with_value>);
+static_assert(!cuda::property_with_value<prop>);
 
 struct valid_property
 {
   friend void get_property(const valid_property&, prop) {}
 };
-static_assert(!cuda::has_property<valid_property, prop_with_value>, "");
-static_assert(cuda::has_property<valid_property, prop>, "");
-static_assert(!cuda::has_property_with<valid_property, prop, int>, "");
+static_assert(!cuda::has_property<valid_property, prop_with_value>);
+static_assert(cuda::has_property<valid_property, prop>);
+static_assert(!cuda::has_property_with<valid_property, prop, int>);
 
 struct valid_property_with_value
 {
@@ -39,10 +43,10 @@ struct valid_property_with_value
     return 42;
   }
 };
-static_assert(cuda::has_property<valid_property_with_value, prop_with_value>, "");
-static_assert(!cuda::has_property<valid_property_with_value, prop>, "");
-static_assert(cuda::has_property_with<valid_property_with_value, prop_with_value, int>, "");
-static_assert(!cuda::has_property_with<valid_property_with_value, prop_with_value, double>, "");
+static_assert(cuda::has_property<valid_property_with_value, prop_with_value>);
+static_assert(!cuda::has_property<valid_property_with_value, prop>);
+static_assert(cuda::has_property_with<valid_property_with_value, prop_with_value, int>);
+static_assert(!cuda::has_property_with<valid_property_with_value, prop_with_value, double>);
 
 struct derived_from_property : public valid_property
 {
@@ -51,10 +55,10 @@ struct derived_from_property : public valid_property
     return 42;
   }
 };
-static_assert(cuda::has_property<derived_from_property, prop_with_value>, "");
-static_assert(cuda::has_property<derived_from_property, prop>, "");
-static_assert(cuda::has_property_with<derived_from_property, prop_with_value, int>, "");
-static_assert(!cuda::has_property_with<derived_from_property, prop_with_value, double>, "");
+static_assert(cuda::has_property<derived_from_property, prop_with_value>);
+static_assert(cuda::has_property<derived_from_property, prop>);
+static_assert(cuda::has_property_with<derived_from_property, prop_with_value, int>);
+static_assert(!cuda::has_property_with<derived_from_property, prop_with_value, double>);
 
 int main(int, char**)
 {

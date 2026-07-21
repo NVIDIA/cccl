@@ -27,7 +27,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
@@ -210,7 +209,7 @@ public:
   {}
 
   /**
-   * @name Copies a shape.
+   * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */

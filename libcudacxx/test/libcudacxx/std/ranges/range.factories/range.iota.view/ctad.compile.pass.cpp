@@ -23,7 +23,7 @@
 template <class T, class U>
 _CCCL_CONCEPT CanDeduce = _CCCL_REQUIRES_EXPR((T, U), const T& t, const U& u)(cuda::std::ranges::iota_view(t, u));
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(
     cuda::std::same_as<decltype(cuda::std::ranges::iota_view(0, 0)), cuda::std::ranges::iota_view<int, int>>);

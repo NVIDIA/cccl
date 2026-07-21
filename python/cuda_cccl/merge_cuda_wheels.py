@@ -68,7 +68,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             # Extract wheel - wheel unpack creates the directory itself
             run_command(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "wheel",
                     "unpack",
@@ -125,7 +125,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         print(f"Repacking merged wheel as: {base_wheel_name}")
         run_command(
             [
-                "python",
+                sys.executable,
                 "-m",
                 "wheel",
                 "pack",
@@ -182,7 +182,7 @@ def main():
 
     # Check that we have wheel tool available
     try:
-        run_command(["python", "-m", "wheel", "--help"])
+        run_command([sys.executable, "-m", "wheel", "--help"])
     except Exception:
         print("Error: wheel package not available. Install with: pip install wheel")
         sys.exit(1)

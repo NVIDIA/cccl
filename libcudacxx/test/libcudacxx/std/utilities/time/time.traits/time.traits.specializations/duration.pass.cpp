@@ -16,11 +16,13 @@
 
 #include <cuda/std/chrono>
 
+#include "test_macros.h"
+
 template <class D1, class D2, class De>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Dc = typename cuda::std::common_type<D1, D2>::type;
-  static_assert((cuda::std::is_same<Dc, De>::value), "");
+  static_assert((cuda::std::is_same<Dc, De>::value));
 }
 
 int main(int, char**)

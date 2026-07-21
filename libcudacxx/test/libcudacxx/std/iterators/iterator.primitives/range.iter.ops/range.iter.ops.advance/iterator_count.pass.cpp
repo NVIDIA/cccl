@@ -20,14 +20,14 @@
 struct Abs
 {
   template <class T>
-  __host__ __device__ constexpr T operator()(T x) const noexcept
+  TEST_FUNC constexpr T operator()(T x) const noexcept
   {
     return x < 0 ? -x : x;
   };
 };
 
 template <bool Count, typename It>
-__host__ __device__ constexpr void check(int* first, cuda::std::iter_difference_t<It> n, int* expected)
+TEST_FUNC constexpr void check(int* first, cuda::std::iter_difference_t<It> n, int* expected)
 {
   using Difference   = cuda::std::iter_difference_t<It>;
   Difference const M = (expected - first); // expected travel distance (which may be negative)
@@ -58,7 +58,7 @@ __host__ __device__ constexpr void check(int* first, cuda::std::iter_difference_
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 

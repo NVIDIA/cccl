@@ -27,6 +27,9 @@ file(
   "src/*.cpp"
 )
 
+# hostjit sources are built as a separate library; exclude from cccl.c.parallel
+list(FILTER srcs EXCLUDE REGEX "src/hostjit/")
+
 add_library(cccl.c.parallel SHARED ${srcs})
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
 cccl_configure_target(cccl.c.parallel DIALECT 20)
@@ -44,7 +47,6 @@ endif()
 
 cccl_get_cub()
 cccl_get_cudatoolkit()
-cccl_get_json()
 cccl_get_thrust()
 
 add_subdirectory(src/jit_templates)
@@ -61,7 +63,6 @@ target_link_libraries(
     cccl.c.parallel.jit_template
     CUB::CUB
     Thrust::Thrust
-    nlohmann_json::nlohmann_json
 )
 
 if (WIN32)

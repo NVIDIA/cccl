@@ -30,7 +30,7 @@ int main(int, char**)
   static_assert(
     cuda::std::is_same_v<weekday_indexed, decltype(cuda::std::declval<const year_month_weekday>().weekday_indexed())>);
 
-  static_assert(year_month_weekday{}.weekday_indexed() == weekday_indexed{}, "");
+  static_assert(year_month_weekday{}.weekday_indexed() == weekday_indexed{});
 
   for (unsigned i = 1; i <= 50; ++i)
   {

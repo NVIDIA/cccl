@@ -19,29 +19,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_literal_type()
+TEST_FUNC void test_is_literal_type()
 {
-  static_assert(cuda::std::is_literal_type<T>::value, "");
-  static_assert(cuda::std::is_literal_type<const T>::value, "");
-  static_assert(cuda::std::is_literal_type<volatile T>::value, "");
-  static_assert(cuda::std::is_literal_type<const volatile T>::value, "");
-  static_assert(cuda::std::is_literal_type_v<T>, "");
-  static_assert(cuda::std::is_literal_type_v<const T>, "");
-  static_assert(cuda::std::is_literal_type_v<volatile T>, "");
-  static_assert(cuda::std::is_literal_type_v<const volatile T>, "");
+  static_assert(cuda::std::is_literal_type<T>::value);
+  static_assert(cuda::std::is_literal_type<const T>::value);
+  static_assert(cuda::std::is_literal_type<volatile T>::value);
+  static_assert(cuda::std::is_literal_type<const volatile T>::value);
+  static_assert(cuda::std::is_literal_type_v<T>);
+  static_assert(cuda::std::is_literal_type_v<const T>);
+  static_assert(cuda::std::is_literal_type_v<volatile T>);
+  static_assert(cuda::std::is_literal_type_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_literal_type()
+TEST_FUNC void test_is_not_literal_type()
 {
-  static_assert(!cuda::std::is_literal_type<T>::value, "");
-  static_assert(!cuda::std::is_literal_type<const T>::value, "");
-  static_assert(!cuda::std::is_literal_type<volatile T>::value, "");
-  static_assert(!cuda::std::is_literal_type<const volatile T>::value, "");
-  static_assert(!cuda::std::is_literal_type_v<T>, "");
-  static_assert(!cuda::std::is_literal_type_v<const T>, "");
-  static_assert(!cuda::std::is_literal_type_v<volatile T>, "");
-  static_assert(!cuda::std::is_literal_type_v<const volatile T>, "");
+  static_assert(!cuda::std::is_literal_type<T>::value);
+  static_assert(!cuda::std::is_literal_type<const T>::value);
+  static_assert(!cuda::std::is_literal_type<volatile T>::value);
+  static_assert(!cuda::std::is_literal_type<const volatile T>::value);
+  static_assert(!cuda::std::is_literal_type_v<T>);
+  static_assert(!cuda::std::is_literal_type_v<const T>);
+  static_assert(!cuda::std::is_literal_type_v<volatile T>);
+  static_assert(!cuda::std::is_literal_type_v<const volatile T>);
 }
 
 class Empty
@@ -49,7 +49,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -62,7 +62,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

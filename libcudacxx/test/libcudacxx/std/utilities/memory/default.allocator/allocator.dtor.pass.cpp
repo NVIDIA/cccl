@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::allocator<T> alloc;
   unused(alloc);

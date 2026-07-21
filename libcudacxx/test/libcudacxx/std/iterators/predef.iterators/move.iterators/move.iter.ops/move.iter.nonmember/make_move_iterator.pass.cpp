@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ void test(It i)
+TEST_FUNC void test(It i)
 {
   const cuda::std::move_iterator<It> r(i);
   assert(cuda::std::make_move_iterator(i) == r);
@@ -49,7 +49,7 @@ int main(int, char**)
   {
     constexpr const char* p = "123456789";
     constexpr auto iter     = cuda::std::make_move_iterator<const char*>(p);
-    static_assert(iter.base() == p, "");
+    static_assert(iter.base() == p);
   }
 
   return 0;

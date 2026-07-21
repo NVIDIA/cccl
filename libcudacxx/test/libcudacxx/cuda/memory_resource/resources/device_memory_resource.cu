@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
 #include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
@@ -20,14 +21,16 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-static_assert(!cuda::std::is_trivial<cuda::device_memory_pool_ref>::value, "");
-static_assert(!cuda::std::is_trivially_default_constructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_copy_constructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_move_constructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_copy_assignable<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_move_assignable<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_trivially_destructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value, "");
+#include "pool_availability.cuh"
+
+static_assert(!cuda::std::is_trivial<cuda::device_memory_pool_ref>::value);
+static_assert(!cuda::std::is_trivially_default_constructible<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_copy_constructible<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_move_constructible<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_copy_assignable<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_move_assignable<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_trivially_destructible<cuda::device_memory_pool_ref>::value);
+static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value);
 
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
@@ -67,6 +70,8 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
 
 C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 {
+  test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
+
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
 
@@ -99,11 +104,14 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       &ptr,
       42,
       current_default_pool,
-      ::cudaStream_t{0});
+      ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync,
+      "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
+      ptr,
+      ::cudaStream_t{nullptr});
   }
 
   SECTION("Construct from mempool handle")
@@ -130,11 +138,14 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       &ptr,
       42,
       current_default_pool,
-      ::cudaStream_t{0});
+      ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync,
+      "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
+      ptr,
+      ::cudaStream_t{nullptr});
   }
 
   SECTION("Construct with initial pool size")
@@ -219,6 +230,8 @@ static void ensure_device_ptr(void* ptr)
 
 C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 {
+  test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
+
   cudaStream_t raw_stream;
   {
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
@@ -228,7 +241,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_device_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -236,7 +249,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_device_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -246,7 +259,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
     cuda::stream_ref stream{raw_stream};
 
     auto* ptr = res.allocate(stream, 42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
     stream.sync();
     ensure_device_ptr(ptr);
@@ -258,7 +271,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
     cuda::stream_ref stream{raw_stream};
 
     auto* ptr = res.allocate(stream, 42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
     stream.sync();
     ensure_device_ptr(ptr);
@@ -334,6 +347,8 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 
 C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
 {
+  test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
+
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
 
@@ -342,6 +357,16 @@ C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
     cuda::device_memory_pool_ref second = cuda::device_default_memory_pool(cuda::device_ref{0});
     CHECK((first == second));
     CHECK(!(first != second));
+  }
+
+  { // default pools are cached per physical device
+    if (cuda::devices.size() > 1)
+    {
+      cuda::device_memory_pool_ref second = cuda::device_default_memory_pool(cuda::device_ref{1});
+      CHECK(first.get() != second.get());
+      CHECK((first != second));
+      CHECK(!(first == second));
+    }
   }
 
   { // comparison against a plain device_memory_pool_ref with a different pool
@@ -381,6 +406,8 @@ C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
 
 C2H_CCCLRT_TEST("Async memory resource access", "")
 {
+  test::skip_if_unsupported_memory_pool<cuda::device_memory_pool>();
+
   if (cuda::devices.size() > 1)
   {
     auto peers = cuda::devices[0].peers();
@@ -438,11 +465,11 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
         cuda::device_memory_pool_ref another_default_pool_resource =
           cuda::device_default_memory_pool(cuda::device_ref{0});
 
-        pool.enable_access_from(peers_ext.front());
+        default_pool_resource.enable_access_from(peers_ext);
 
-        CCCLRT_CHECK(default_pool_resource.is_accessible_from(peers_ext.front()));
+        CCCLRT_REQUIRE(default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(default_pool_resource);
-        CCCLRT_CHECK(another_default_pool_resource.is_accessible_from(peers_ext.front()));
+        CCCLRT_REQUIRE(another_default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(another_default_pool_resource);
       }
     }

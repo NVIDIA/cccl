@@ -5,7 +5,9 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__nvtx/nvtx.h>
+#include <cuda/buffer>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -19,6 +21,7 @@
 #include <type_traits>
 
 #include <c2h/catch2_main.h>
+#include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
@@ -31,35 +34,6 @@
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
-
-// workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
-#if _CCCL_COMPILER(NVHPC)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
-#endif
-// The nv_diagnostic pragmas in Catch2 macros cause cicc to hang indefinitely in CTK 13.0.
-// See NVBugs 5475335.
-#if _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, 13, 0)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#endif
-// workaround for error
-// * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
-// * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
-//              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
-// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
-#if _CCCL_COMPILER(MSVC)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
-#endif
 
 #ifndef VAR_IDX
 #  define VAR_IDX 0
@@ -387,8 +361,8 @@ struct vector_compare_result_t
   std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
 };
 
-template <typename T>
-auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+template <typename LhsRange, typename RhsRange, typename T = typename LhsRange::value_type>
+auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> vector_compare_result_t<T>
 {
   constexpr size_t good_values_before_mismatch = 3;
   constexpr size_t first_mismatches_count      = 5;
@@ -399,6 +373,7 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   result.expected_size = expected.size();
   if (result.actual_size != result.expected_size)
   {
+    result.total_mismatches = actual.size();
     return result;
   }
 
@@ -435,6 +410,36 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   }
 
   return result;
+}
+
+template <typename T>
+auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+{
+  return compare_host_ranges(actual, expected);
+}
+
+template <typename T>
+auto compare_vectors(const device_vector<T>& actual, const device_vector<T>& expected) -> vector_compare_result_t<T>
+{
+  return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
+}
+
+template <typename T, typename... LhsProps, typename... RhsProps>
+auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buffer<T, RhsProps...>& expected)
+  -> vector_compare_result_t<T>
+{
+  const auto actual_host   = cuda::make_buffer(actual.stream(), cuda::mr::legacy_pinned_memory_resource{}, actual);
+  const auto expected_host = cuda::make_buffer(expected.stream(), cuda::mr::legacy_pinned_memory_resource{}, expected);
+
+  actual.stream().sync();
+  expected.stream().sync();
+  return compare_host_ranges(actual_host, expected_host);
+}
+
+template <typename LhsVec, typename RhsVec, typename T = typename LhsVec::value_type>
+auto compare_vectors(const LhsVec& actual, const RhsVec& expected) -> vector_compare_result_t<T>
+{
+  return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
 }
 
 template <typename T>
@@ -494,9 +499,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   template <typename OtherVec>
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
-    using T           = typename Vec::value_type;
-    comparison_result = compare_vectors(host_vector<T>(actual_vec), host_vector<T>(expected_vec));
-    return actual_vec == expected_vec;
+    comparison_result = compare_vectors(actual_vec, expected_vec);
+    return comparison_result.total_mismatches == 0;
   }
 
   std::string describe() const override
@@ -520,8 +524,26 @@ auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
   return {expected};
 }
 
+template <typename T, typename... Props>
+auto Equals(const cuda::buffer<T, Props...>& expected) -> c2h::detail::vector_matcher<cuda::buffer<T, Props...>>
+{
+  return {expected};
+}
+
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <typename T1,
+          typename T2,
+          // provide this operator only when the pair's content is also streamable
+          ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
+                                       << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
+::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
+{
+  return os << "[" << pair.first << ", " << pair.second << "]";
+}
+
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
@@ -545,6 +567,18 @@ template <typename... T>
   return os << "]";
 }
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename T, typename... Props>
+::std::ostream& operator<<(::std::ostream& os, const cuda::buffer<T, Props...>& buffer)
+{
+  const auto host_buf = cuda::make_buffer(buffer.stream(), cuda::mr::legacy_pinned_memory_resource{}, buffer);
+
+  buffer.stream().sync();
+  os << ::Catch::Detail::stringify(::std::vector<T>{host_buf.begin(), host_buf.end()});
+  return os;
+}
+_CCCL_END_NAMESPACE_CUDA
 
 template <>
 struct Catch::StringMaker<cudaError>
@@ -583,26 +617,26 @@ class nvtx_fixture
 
 #define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...)            \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
   C2H_TEST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_LIST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...) \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>;   \
-  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
   C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)

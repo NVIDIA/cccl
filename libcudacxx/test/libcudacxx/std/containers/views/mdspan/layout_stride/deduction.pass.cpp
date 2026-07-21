@@ -24,7 +24,7 @@
 // but implicit deduction guides for constructor taking extents and strides
 // should work
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -63,6 +63,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

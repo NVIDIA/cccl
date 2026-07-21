@@ -7,6 +7,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
@@ -86,8 +87,6 @@ __global__ void thread_scan_inclusive_partial_kernel_span(
   }
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel_mdspan(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
@@ -108,8 +107,6 @@ __global__ void thread_scan_inclusive_partial_kernel_mdspan(
     d_out[i] = thread_data[i];
   }
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * Type list definition
@@ -361,7 +358,6 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
-#if _CCCL_STD_VER >= 2023
   thrust::fill(d_out.begin(), d_out.end(), 0);
   thread_scan_inclusive_partial_kernel_mdspan<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
@@ -373,7 +369,6 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
-#endif // _CCCL_STD_VER >= 2023
 }
 
 C2H_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]")

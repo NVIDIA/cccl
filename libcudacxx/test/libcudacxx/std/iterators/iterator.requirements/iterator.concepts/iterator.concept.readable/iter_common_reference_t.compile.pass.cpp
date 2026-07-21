@@ -12,6 +12,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 struct X
 {};
 
@@ -19,17 +21,17 @@ struct X
 struct T1
 {
   using value_type = X;
-  __host__ __device__ X operator*() const;
+  TEST_FUNC X operator*() const;
 };
-static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T1>, X>, "");
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T1>, X>);
 
 // value_type and dereferencing are the same (modulo qualifiers)
 struct T2
 {
   using value_type = X;
-  __host__ __device__ X& operator*() const;
+  TEST_FUNC X& operator*() const;
 };
-static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>, "");
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>);
 
 // There's a custom common reference between value_type and the type of dereferencing
 struct A
@@ -38,8 +40,8 @@ struct B
 {};
 struct Common
 {
-  __host__ __device__ Common(A);
-  __host__ __device__ Common(B);
+  TEST_FUNC Common(A);
+  TEST_FUNC Common(B);
 };
 
 namespace cuda::std
@@ -57,9 +59,9 @@ struct basic_common_reference<B, A, TQual, QQual> : basic_common_reference<A, B,
 struct T3
 {
   using value_type = A;
-  __host__ __device__ B&& operator*() const;
+  TEST_FUNC B&& operator*() const;
 };
-static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>, "");
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>);
 
 // Make sure we're SFINAE-friendly
 template <class T>
@@ -67,7 +69,7 @@ _CCCL_CONCEPT has_common_reference = _CCCL_REQUIRES_EXPR((T))(typename(cuda::std
 
 struct NotIndirectlyReadable
 {};
-static_assert(!has_common_reference<NotIndirectlyReadable>, "");
+static_assert(!has_common_reference<NotIndirectlyReadable>);
 
 int main(int, char**)
 {

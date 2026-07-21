@@ -13,6 +13,9 @@
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // IMPORTANT: The include order is part of the test. We want to pick up
 // the following definitions in this order:
 //   1) is_swappable, is_nothrow_swappable
@@ -32,8 +35,8 @@ int main(int, char**)
   // Use a builtin type so we don't get ADL lookup.
   using T = double[17][29];
   {
-    static_assert(cuda::std::is_nothrow_swappable_v<T>, "");
-    static_assert(cuda::std::is_swappable_v<T>, "");
+    static_assert(cuda::std::is_nothrow_swappable_v<T>);
+    static_assert(cuda::std::is_swappable_v<T>);
   }
   {
     T t1 = {};

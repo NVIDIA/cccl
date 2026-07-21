@@ -17,7 +17,7 @@
 #include "test_range.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -45,7 +45,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

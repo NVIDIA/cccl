@@ -26,7 +26,9 @@ h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
 it_input = TransformIterator(d_input, lambda a: a**2)
 
 # Use `reduce_into` to compute the sum of the squares of the input.
-reduce_into(it_input, d_output, OpKind.PLUS, len(d_input), h_init)
+reduce_into(
+    d_in=it_input, d_out=d_output, num_items=len(d_input), op=OpKind.PLUS, h_init=h_init
+)
 
 # Verify the result.
 expected_output = cp.sum(d_input**2).get()

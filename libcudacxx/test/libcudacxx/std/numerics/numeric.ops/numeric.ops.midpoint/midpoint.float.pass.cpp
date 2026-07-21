@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <numeric>
 
 // template <class _Float>
@@ -14,6 +17,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/numbers>
 #include <cuda/std/numeric>
 
 #include "fp_compare.h"
@@ -21,28 +25,28 @@
 
 //  Totally arbitrary picks for precision
 template <typename T>
-__host__ __device__ constexpr T fp_error_pct();
+TEST_FUNC constexpr T fp_error_pct();
 
 template <>
-__host__ __device__ constexpr float fp_error_pct<float>()
+TEST_FUNC constexpr float fp_error_pct<float>()
 {
   return 1.0e-4f;
 }
 
 template <>
-__host__ __device__ constexpr double fp_error_pct<double>()
+TEST_FUNC constexpr double fp_error_pct<double>()
 {
   return 1.0e-12;
 }
 
 template <>
-__host__ __device__ constexpr long double fp_error_pct<long double>()
+TEST_FUNC constexpr long double fp_error_pct<long double>()
 {
   return 1.0e-13l;
 }
 
 template <typename T>
-__host__ __device__ void fp_test()
+TEST_FUNC void fp_test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::midpoint(T(), T()))>);
   static_assert(noexcept(cuda::std::midpoint(T(), T())));
@@ -68,8 +72,7 @@ __host__ __device__ void fp_test()
   assert((fptest_close_pct(cuda::std::midpoint(T(11.2345), T(14.5432)), T(12.88885), pct)));
 
   //  From e to pi
-  assert((fptest_close_pct(cuda::std::midpoint(T(2.71828182845904523536028747135266249775724709369995),
-                                               T(3.14159265358979323846264338327950288419716939937510)),
+  assert((fptest_close_pct(cuda::std::midpoint(cuda::std::__numbers<T>::__e(), cuda::std::__numbers<T>::__pi()),
                            T(2.92993724102441923691146542731608269097720824653752),
                            pct)));
 

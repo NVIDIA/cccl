@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // <memory>
 
 // default_delete[]
@@ -22,7 +23,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::default_delete<int[]> d1;
   cuda::std::default_delete<const int[]> d2 = d1;

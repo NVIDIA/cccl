@@ -80,10 +80,8 @@ void TestMerge(size_t n)
   const thrust::device_vector<T> d_a = h_a;
   const thrust::device_vector<T> d_b = h_b;
 
-  for (size_t i = 0; i < num_sizes; i++)
+  for (const auto size : sizes)
   {
-    const size_t size = sizes[i];
-
     thrust::host_vector<T> h_result(n + size);
     thrust::device_vector<T> d_result(n + size);
 
@@ -113,7 +111,7 @@ void TestMergeToDiscardIterator(size_t n)
   const auto h_result = thrust::merge(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), thrust::make_discard_iterator());
   const auto d_result = thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(2 * n);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);

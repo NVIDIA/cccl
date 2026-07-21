@@ -19,32 +19,32 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_constexpr()
+TEST_FUNC constexpr void test_constexpr()
 {
   {
     constexpr T lhs(-2.5);
     constexpr cuda::std::complex<T> rhs(1.5, 2.5);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr T lhs(-2.5);
     constexpr cuda::std::complex<T> rhs(1.5, 0);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr T lhs(1.5);
     constexpr cuda::std::complex<T> rhs(1.5, 2.5);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr T lhs(1.5);
     constexpr cuda::std::complex<T> rhs(1.5, 0);
-    static_assert(lhs == rhs, "");
+    static_assert(lhs == rhs);
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_nonconstexpr()
+TEST_FUNC constexpr void test_nonconstexpr()
 {
   {
     T lhs(-2.5);
@@ -69,7 +69,7 @@ __host__ __device__ constexpr void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();
@@ -84,17 +84,17 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test_nonconstexpr<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test_nonconstexpr<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   //     test_constexpr<int>();
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
   return 0;

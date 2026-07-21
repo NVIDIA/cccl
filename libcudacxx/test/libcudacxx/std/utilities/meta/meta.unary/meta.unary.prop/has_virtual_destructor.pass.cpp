@@ -15,29 +15,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_has_virtual_destructor()
+TEST_FUNC void test_has_virtual_destructor()
 {
-  static_assert(cuda::std::has_virtual_destructor<T>::value, "");
-  static_assert(cuda::std::has_virtual_destructor<const T>::value, "");
-  static_assert(cuda::std::has_virtual_destructor<volatile T>::value, "");
-  static_assert(cuda::std::has_virtual_destructor<const volatile T>::value, "");
-  static_assert(cuda::std::has_virtual_destructor_v<T>, "");
-  static_assert(cuda::std::has_virtual_destructor_v<const T>, "");
-  static_assert(cuda::std::has_virtual_destructor_v<volatile T>, "");
-  static_assert(cuda::std::has_virtual_destructor_v<const volatile T>, "");
+  static_assert(cuda::std::has_virtual_destructor<T>::value);
+  static_assert(cuda::std::has_virtual_destructor<const T>::value);
+  static_assert(cuda::std::has_virtual_destructor<volatile T>::value);
+  static_assert(cuda::std::has_virtual_destructor<const volatile T>::value);
+  static_assert(cuda::std::has_virtual_destructor_v<T>);
+  static_assert(cuda::std::has_virtual_destructor_v<const T>);
+  static_assert(cuda::std::has_virtual_destructor_v<volatile T>);
+  static_assert(cuda::std::has_virtual_destructor_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_has_not_virtual_destructor()
+TEST_FUNC void test_has_not_virtual_destructor()
 {
-  static_assert(!cuda::std::has_virtual_destructor<T>::value, "");
-  static_assert(!cuda::std::has_virtual_destructor<const T>::value, "");
-  static_assert(!cuda::std::has_virtual_destructor<volatile T>::value, "");
-  static_assert(!cuda::std::has_virtual_destructor<const volatile T>::value, "");
-  static_assert(!cuda::std::has_virtual_destructor_v<T>, "");
-  static_assert(!cuda::std::has_virtual_destructor_v<const T>, "");
-  static_assert(!cuda::std::has_virtual_destructor_v<volatile T>, "");
-  static_assert(!cuda::std::has_virtual_destructor_v<const volatile T>, "");
+  static_assert(!cuda::std::has_virtual_destructor<T>::value);
+  static_assert(!cuda::std::has_virtual_destructor<const T>::value);
+  static_assert(!cuda::std::has_virtual_destructor<volatile T>::value);
+  static_assert(!cuda::std::has_virtual_destructor<const volatile T>::value);
+  static_assert(!cuda::std::has_virtual_destructor_v<T>);
+  static_assert(!cuda::std::has_virtual_destructor_v<const T>);
+  static_assert(!cuda::std::has_virtual_destructor_v<volatile T>);
+  static_assert(!cuda::std::has_virtual_destructor_v<const volatile T>);
 }
 
 class Empty
@@ -45,7 +45,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -58,12 +58,12 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 struct A
 {
-  __host__ __device__ ~A();
+  TEST_FUNC ~A();
 };
 
 int main(int, char**)

@@ -28,6 +28,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class To, class From, class = void>
 struct bit_cast_is_valid : cuda::std::false_type
 {};
@@ -49,8 +51,8 @@ struct From
   char a;
   char b;
 };
-static_assert(!bit_cast_is_valid<To, From>::value, "");
-static_assert(!bit_cast_is_valid<From&, From>::value, "");
+static_assert(!bit_cast_is_valid<To, From>::value);
+static_assert(!bit_cast_is_valid<From&, From>::value);
 } // namespace ns1
 
 // To is not trivially copyable
@@ -59,13 +61,13 @@ namespace ns2
 struct To
 {
   char a;
-  __host__ __device__ To(To const&);
+  TEST_FUNC To(To const&);
 };
 struct From
 {
   char a;
 };
-static_assert(!bit_cast_is_valid<To, From>::value, "");
+static_assert(!bit_cast_is_valid<To, From>::value);
 } // namespace ns2
 
 // From is not trivially copyable
@@ -78,9 +80,9 @@ struct To
 struct From
 {
   char a;
-  __host__ __device__ From(From const&);
+  TEST_FUNC From(From const&);
 };
-static_assert(!bit_cast_is_valid<To, From>::value, "");
+static_assert(!bit_cast_is_valid<To, From>::value);
 } // namespace ns3
 
 // The return type is ill-formed
@@ -91,8 +93,8 @@ struct From
   char a;
   char b;
 };
-static_assert(!bit_cast_is_valid<char[2], From>::value, "");
-static_assert(!bit_cast_is_valid<int(), From>::value, "");
+static_assert(!bit_cast_is_valid<char[2], From>::value);
+static_assert(!bit_cast_is_valid<int(), From>::value);
 } // namespace ns4
 
 int main(int, char**)

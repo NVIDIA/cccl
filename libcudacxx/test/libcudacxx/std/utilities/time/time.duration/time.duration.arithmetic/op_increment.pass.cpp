@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 #if TEST_STD_VER > 14
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::chrono::hours h(3);
   return (++h).count() == 4;

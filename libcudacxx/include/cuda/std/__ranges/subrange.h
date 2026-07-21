@@ -37,8 +37,8 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -53,10 +53,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
@@ -69,19 +65,9 @@ template <class _From, class _To>
 concept __convertible_to_non_slicing =
   convertible_to<_From, _To> && !__uses_nonqualification_pointer_conversion<decay_t<_From>, decay_t<_To>>;
 
-template <class _Tp>
-concept __pair_like = !is_reference_v<_Tp> && requires(_Tp __t) {
-  typename tuple_size<_Tp>::type; // Ensures `tuple_size<T>` is complete.
-  requires derived_from<tuple_size<_Tp>, integral_constant<size_t, 2>>;
-  typename tuple_element_t<0, remove_const_t<_Tp>>;
-  typename tuple_element_t<1, remove_const_t<_Tp>>;
-  { ::cuda::std::get<0>(__t) } -> convertible_to<const tuple_element_t<0, _Tp>&>;
-  { ::cuda::std::get<1>(__t) } -> convertible_to<const tuple_element_t<1, _Tp>&>;
-};
-
 template <class _Pair, class _Iter, class _Sent>
 concept __pair_like_convertible_from =
-  !range<_Pair> && __pair_like<_Pair> && constructible_from<_Pair, _Iter, _Sent>
+  __pair_like<_Pair> && !range<_Pair> && constructible_from<_Pair, _Iter, _Sent>
   && __convertible_to_non_slicing<_Iter, tuple_element_t<0, _Pair>> && convertible_to<_Sent, tuple_element_t<1, _Pair>>;
 
 // We have issues with MSVC and _StoreSize being unable to be properly determined in SFINAE, so we need to pull that out
@@ -100,10 +86,6 @@ template <class _Iter, class _Sent, subrange_kind _Kind, class _Range>
 concept __subrange_from_range_size =
   _Kind == subrange_kind::sized && borrowed_range<_Range> && __convertible_to_non_slicing<iterator_t<_Range>, _Iter>
   && convertible_to<sentinel_t<_Range>, _Sent>;
-
-template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
-concept __subrange_to_pair = __different_from<_Pair, subrange<_Iter, _Sent, _Kind>>
-                          && __pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>;
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
@@ -126,27 +108,11 @@ _CCCL_CONCEPT_FRAGMENT(__convertible_to_non_slicing_,
 template <class _From, class _To>
 _CCCL_CONCEPT __convertible_to_non_slicing = _CCCL_FRAGMENT(__convertible_to_non_slicing_, _From, _To);
 
-// We relax the requirement on tuple_size due to a gcc issue
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __pair_like_,
-  requires(_Tp __t)(
-    requires(!is_reference_v<_Tp>),
-    typename(typename tuple_size<_Tp>::type),
-    requires(tuple_size<_Tp>::value == 2),
-    typename(tuple_element_t<0, remove_const_t<_Tp>>),
-    typename(tuple_element_t<1, remove_const_t<_Tp>>),
-    requires(convertible_to<decltype(::cuda::std::get<0>(__t)), const tuple_element_t<0, _Tp>&>),
-    requires(convertible_to<decltype(::cuda::std::get<1>(__t)), const tuple_element_t<1, _Tp>&>)));
-
-template <class _Tp>
-_CCCL_CONCEPT __pair_like = _CCCL_FRAGMENT(__pair_like_, _Tp);
-
 template <class _Pair, class _Iter, class _Sent>
 _CCCL_CONCEPT_FRAGMENT(
   __pair_like_convertible_from_,
-  requires()(requires(!range<_Pair>),
-             requires(__pair_like<_Pair>),
+  requires()(requires(__pair_like<_Pair>),
+             requires(!range<_Pair>),
              requires(constructible_from<_Pair, _Iter, _Sent>),
              requires(__convertible_to_non_slicing<_Iter, tuple_element_t<0, _Pair>>),
              requires(convertible_to<_Sent, tuple_element_t<1, _Pair>>)));
@@ -201,15 +167,6 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Range>
 _CCCL_CONCEPT __subrange_from_range_size =
   _CCCL_FRAGMENT(__subrange_from_range_size_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Range);
-
-template <class _Iter, class _Sent, class _Kind, class _Pair>
-_CCCL_CONCEPT_FRAGMENT(__subrange_to_pair_,
-                       requires()(requires(__different_from<_Pair, subrange<_Iter, _Sent, _Kind::value>>),
-                                  requires(__pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)));
-
-template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
-_CCCL_CONCEPT __subrange_to_pair =
-  _CCCL_FRAGMENT(__subrange_to_pair_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Pair);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 #if _CCCL_HAS_CONCEPTS()
@@ -278,25 +235,26 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))
+      : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(__range, ::cuda::std::ranges::size(__range))
+      : subrange(__range, ::cuda::std::ranges::__size_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
   _CCCL_API constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
-      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __n)
+      : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __n)
   {}
 
   // This often ICEs all of clang and old gcc when it encounteres a rvalue subrange in a pipe
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_TEMPLATE(class _Pair)
-  _CCCL_REQUIRES(__pair_like<_Pair> _CCCL_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
+  _CCCL_REQUIRES(__different_from<_Pair, subrange<_Iter, _Sent, _Kind>> _CCCL_AND
+                   __pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)
   _CCCL_API constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
@@ -371,7 +329,7 @@ public:
     {
       if (__n < 0)
       {
-        ::cuda::std::ranges::advance(__begin_, __n);
+        ::cuda::std::ranges::__advance_cpo{}(__begin_, __n);
         if constexpr (_StoreSize)
         {
           __size_ += ::cuda::std::__to_unsigned_like(-__n);
@@ -380,7 +338,7 @@ public:
       }
     }
 
-    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::advance(__begin_, __n, __end_);
+    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::__advance_cpo{}(__begin_, __n, __end_);
     if constexpr (_StoreSize)
     {
       __size_ -= ::cuda::std::__to_unsigned_like(__d);
@@ -391,16 +349,16 @@ public:
 
 _CCCL_TEMPLATE(class _Iter, class _Sent)
 _CCCL_REQUIRES(input_or_output_iterator<_Iter> _CCCL_AND sentinel_for<_Sent, _Iter>)
-_CCCL_HOST_DEVICE subrange(_Iter, _Sent) -> subrange<_Iter, _Sent>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Iter, _Sent) -> subrange<_Iter, _Sent>;
 
 _CCCL_TEMPLATE(class _Iter, class _Sent)
 _CCCL_REQUIRES(input_or_output_iterator<_Iter> _CCCL_AND sentinel_for<_Sent, _Iter>)
-_CCCL_HOST_DEVICE subrange(_Iter, _Sent, make_unsigned_t<iter_difference_t<_Iter>>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Iter, _Sent, make_unsigned_t<iter_difference_t<_Iter>>)
   -> subrange<_Iter, _Sent, subrange_kind::sized>;
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(borrowed_range<_Range>)
-_CCCL_HOST_DEVICE subrange(_Range&&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Range&&)
   -> subrange<iterator_t<_Range>,
               sentinel_t<_Range>,
               (sized_range<_Range> || sized_sentinel_for<sentinel_t<_Range>, iterator_t<_Range>>)
@@ -409,7 +367,7 @@ _CCCL_HOST_DEVICE subrange(_Range&&)
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(borrowed_range<_Range>)
-_CCCL_HOST_DEVICE subrange(_Range&&, make_unsigned_t<range_difference_t<_Range>>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Range&&, make_unsigned_t<range_difference_t<_Range>>)
   -> subrange<iterator_t<_Range>, sentinel_t<_Range>, subrange_kind::sized>;
 
 // Not _CCCL_TEMPLATE because we need to forward declare them
@@ -471,39 +429,66 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::cuda::std::ranges::get;
 
-// [ranges.syn]
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::ranges::subrange
 
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
-struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : integral_constant<size_t, 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : integral_constant<size_t, 2>
+{};
+
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
+};
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
+};
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
+};
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::ranges::subrange
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : ::cuda::std::integral_constant<::cuda::std::size_t, 2>
 {};
 
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Ip;
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
 };
-
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Sp;
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
 };
-
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Ip;
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
 };
-
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Sp;
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
 };
 
-_CCCL_END_NAMESPACE_CUDA_STD
-
-_CCCL_DIAG_POP
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

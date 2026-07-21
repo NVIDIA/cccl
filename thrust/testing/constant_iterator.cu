@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/copy.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
@@ -73,8 +75,8 @@ void TestConstantIteratorIncrement()
   ASSERT_EQUAL(-2, lhs - rhs);
 }
 DECLARE_UNITTEST(TestConstantIteratorIncrement);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value, "");
-static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value);
 
 void TestConstantIteratorIncrementBig()
 {

@@ -12,7 +12,7 @@ struct large_type
 {
   constexpr static int size = 32;
 
-  __host__ __device__ large_type(int val = 0)
+  TEST_FUNC large_type(int val = 0)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -23,7 +23,7 @@ struct large_type
   large_type(const large_type&)            = default;
   large_type& operator=(const large_type&) = default;
 
-  __host__ __device__ friend bool operator==(const large_type& lhs, const large_type& rhs)
+  TEST_FUNC friend bool operator==(const large_type& lhs, const large_type& rhs)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {

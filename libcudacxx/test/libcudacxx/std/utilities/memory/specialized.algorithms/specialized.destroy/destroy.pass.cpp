@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-6
-
 // <memory>
 
 // template <class ForwardIt>
@@ -25,24 +23,24 @@
 struct Counted
 {
   int* counter_ = nullptr;
-  __host__ __device__ constexpr Counted(int* counter)
+  TEST_FUNC constexpr Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ constexpr Counted(Counted const& other)
+  TEST_FUNC constexpr Counted(Counted const& other)
       : counter_(other.counter_)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~Counted()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~Counted()
   {
     --*counter_;
   }
-  __host__ __device__ friend void operator&(Counted) = delete;
+  TEST_FUNC friend void operator&(Counted) = delete;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_arrays()
 {
   {
     int counter     = 0;
@@ -83,7 +81,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
 }
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 void test()
 {
   int counter     = 0;
   Counted pool[5] = {{&counter}, {&counter}, {&counter}, {&counter}, {&counter}};
@@ -100,7 +98,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool tests()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool tests()
 {
   test<Counted*>();
   test<forward_iterator<Counted*>>();

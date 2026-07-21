@@ -43,14 +43,14 @@ inline constexpr bool variable<int> = false;
 // 3. Attribute applied to a template function
 
 template <class T>
-_CCCL_NO_SPECIALIZATIONS __host__ __device__ T function()
+_CCCL_NO_SPECIALIZATIONS TEST_FUNC T function()
 {
   return T{0};
 }
 
 // This should fail to compile
 template <>
-__host__ __device__ int function<int>()
+TEST_FUNC int function<int>()
 {
   return 1;
 }

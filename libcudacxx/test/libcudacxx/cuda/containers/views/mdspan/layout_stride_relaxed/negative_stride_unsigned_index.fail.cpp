@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using E = cuda::std::extents<unsigned, 3>;
   using S = cuda::dstrides<cuda::std::int16_t, 1>;

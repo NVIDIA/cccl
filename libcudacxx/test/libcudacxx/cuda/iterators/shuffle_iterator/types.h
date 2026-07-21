@@ -20,18 +20,18 @@ struct fake_rng
 
   constexpr fake_rng() = default;
 
-  [[nodiscard]] __host__ __device__ constexpr result_type operator()() noexcept
+  [[nodiscard]] TEST_FUNC constexpr result_type operator()() noexcept
   {
     return __random_indices[__start++ % 5];
   }
 
   // Needed for uniform_int_distribution
-  [[nodiscard]] __host__ __device__ static constexpr result_type min() noexcept
+  [[nodiscard]] TEST_FUNC static constexpr result_type min() noexcept
   {
     return 0;
   }
 
-  [[nodiscard]] __host__ __device__ static constexpr result_type max() noexcept
+  [[nodiscard]] TEST_FUNC static constexpr result_type max() noexcept
   {
     return 5;
   }
@@ -50,14 +50,14 @@ struct fake_bijection
 
   _CCCL_TEMPLATE(class RNG, bool HasConstructor2 = HasConstructor)
   _CCCL_REQUIRES(HasConstructor2)
-  __host__ __device__ constexpr fake_bijection(index_type, RNG&&) noexcept {}
+  TEST_FUNC constexpr fake_bijection(index_type, RNG&&) noexcept {}
 
-  [[nodiscard]] __host__ __device__ constexpr index_type size() const noexcept(HasNothrowCallOperator)
+  [[nodiscard]] TEST_FUNC constexpr index_type size() const noexcept(HasNothrowCallOperator)
   {
     return 5;
   }
 
-  [[nodiscard]] __host__ __device__ constexpr index_type operator()(index_type n) const noexcept(HasNothrowCallOperator)
+  [[nodiscard]] TEST_FUNC constexpr index_type operator()(index_type n) const noexcept(HasNothrowCallOperator)
   {
     return __random_indices[n];
   }

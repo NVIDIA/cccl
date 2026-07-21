@@ -10,7 +10,7 @@
 
 #include "utils.h"
 
-__host__ __device__ __noinline__ void test_access_property_fail()
+TEST_FUNC __noinline__ void test_access_property_fail()
 {
   cuda::access_property o = cuda::access_property::normal{};
   // Test implicit conversion fails

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Generate a version number string using metadata from git or JSON.
 # Use the PyPi package versioning convention for pre-release or
@@ -9,7 +9,7 @@ CCCL_BRANCH="${CCCL_BRANCH:-dev}"
 PACKAGE_VERSION_PREFIX="${PACKAGE_VERSION_PREFIX:-}"
 
 GIT_DESCRIBE_TAG=$(git describe --tags --match "v[0-9]*" --abbrev=0)
-GIT_DESCRIBE_NUMBER=$(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)
+GIT_DESCRIBE_NUMBER=$(git rev-list "${GIT_DESCRIBE_TAG}"..HEAD --count)
 
 JSON_VERSION=$(jq -r .full /workspace/cccl-version.json)
 

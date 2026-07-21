@@ -16,7 +16,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     using Iter = cuda::transform_output_iterator<PlusOne, int*>;

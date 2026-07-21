@@ -106,7 +106,7 @@ public:
     assert(grid_p * grid_q == ndevs);
 
     // std::cout << "FOUND " << ndevs << " DEVICES "
-    //           << "p=" << grid_p << " q=" << grid_q << std::endl;
+    //           << "p=" << grid_p << " q=" << grid_q << '\n';
   }
 
   int get_preferred_devid(int row, int col)

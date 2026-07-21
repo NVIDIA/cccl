@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename D, typename Ds>
-__host__ __device__ constexpr bool testConstexpr(D d1)
+TEST_FUNC constexpr bool testConstexpr(D d1)
 {
   if (static_cast<int>((d1).year()) != 1)
   {
@@ -75,8 +75,7 @@ int main(int, char**)
   constexpr month January   = cuda::std::chrono::January;
 
   static_assert(
-    testConstexpr<year_month_weekday_last, years>(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}),
-    "");
+    testConstexpr<year_month_weekday_last, years>(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}));
 
   for (int i = 1000; i <= 1010; ++i)
   {

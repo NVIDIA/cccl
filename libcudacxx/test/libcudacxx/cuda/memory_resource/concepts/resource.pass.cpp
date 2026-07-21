@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -36,7 +40,7 @@ struct valid_resource
     return false;
   }
 };
-static_assert(cuda::mr::synchronous_resource<valid_resource>, "");
+static_assert(cuda::mr::synchronous_resource<valid_resource>);
 
 struct invalid_allocate_argument
 {
@@ -54,7 +58,7 @@ struct invalid_allocate_argument
     return false;
   }
 };
-static_assert(!cuda::mr::synchronous_resource<invalid_allocate_argument>, "");
+static_assert(!cuda::mr::synchronous_resource<invalid_allocate_argument>);
 
 struct invalid_allocate_return
 {
@@ -72,7 +76,7 @@ struct invalid_allocate_return
     return false;
   }
 };
-static_assert(!cuda::mr::synchronous_resource<invalid_allocate_return>, "");
+static_assert(!cuda::mr::synchronous_resource<invalid_allocate_return>);
 
 struct invalid_deallocate_argument
 {
@@ -90,7 +94,7 @@ struct invalid_deallocate_argument
     return false;
   }
 };
-static_assert(!cuda::mr::synchronous_resource<invalid_deallocate_argument>, "");
+static_assert(!cuda::mr::synchronous_resource<invalid_deallocate_argument>);
 
 struct non_comparable
 {
@@ -100,7 +104,7 @@ struct non_comparable
   }
   void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 };
-static_assert(!cuda::mr::synchronous_resource<non_comparable>, "");
+static_assert(!cuda::mr::synchronous_resource<non_comparable>);
 
 struct non_eq_comparable
 {
@@ -114,7 +118,7 @@ struct non_eq_comparable
     return false;
   }
 };
-static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>, "");
+static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>);
 
 #if TEST_STD_VER < 2020
 struct non_neq_comparable
@@ -129,7 +133,7 @@ struct non_neq_comparable
     return true;
   }
 };
-static_assert(!cuda::mr::synchronous_resource<non_neq_comparable>, "");
+static_assert(!cuda::mr::synchronous_resource<non_neq_comparable>);
 #endif // TEST_STD_VER < 2020
 
 int main(int, char**)

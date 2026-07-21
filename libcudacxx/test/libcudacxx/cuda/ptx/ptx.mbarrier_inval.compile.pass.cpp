@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 
 // <cuda/ptx>

@@ -19,7 +19,7 @@
 #include "types.h"
 
 template <class InputFn, class OutputFn>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
   InputFn input_func{};
@@ -85,7 +85,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<PlusOne, TimesTwo>();
   NV_IF_ELSE_TARGET(NV_IS_HOST, (test<PlusOneHost, TimesTwo>();), (test<PlusOneDevice, TimesTwo>();))
@@ -96,7 +96,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

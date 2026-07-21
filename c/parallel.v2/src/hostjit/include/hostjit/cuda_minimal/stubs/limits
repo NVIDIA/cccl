@@ -1,0 +1,61 @@
+// Minimal <limits> stub for hostjit device compilation.
+//
+// Clang's __clang_cuda_cmath.h includes <limits> unconditionally, then expands
+// __CUDA_CLANG_FN_INTEGER_OVERLOAD_1/2 macros that reference
+// std::numeric_limits<__T>::is_integer in return-type SFINAE at parse time.
+// Clang evaluates these dependent names during template parsing, so the struct
+// must be declared — not just forward-declared — before the macro expansion.
+//
+// In the hostjit device-compilation include path, <limits> would normally
+// resolve to libcudacxx/include/cuda/std/limits, which cascades through
+// numeric_limits, bit_cast, popcount, etc. — incompatible with freestanding.
+//
+// This stub (found first on -internal-isystem) stops that cascade, providing
+// only the two members that __clang_cuda_cmath.h actually inspects.
+#pragma once
+
+namespace std {
+
+template <typename _Tp>
+struct numeric_limits {
+  static constexpr bool is_specialized = false;
+  static constexpr bool is_integer     = false;
+};
+
+// Integer specializations — needed so the SFINAE in __clang_cuda_cmath.h
+// correctly dispatches integer arguments.
+#define _HOSTJIT_NUM_LIM_INT(_T) \
+  template <> struct numeric_limits<_T> { \
+    static constexpr bool is_specialized = true; \
+    static constexpr bool is_integer     = true; \
+  };
+
+_HOSTJIT_NUM_LIM_INT(bool)
+_HOSTJIT_NUM_LIM_INT(char)
+_HOSTJIT_NUM_LIM_INT(signed char)
+_HOSTJIT_NUM_LIM_INT(unsigned char)
+_HOSTJIT_NUM_LIM_INT(short)
+_HOSTJIT_NUM_LIM_INT(unsigned short)
+_HOSTJIT_NUM_LIM_INT(int)
+_HOSTJIT_NUM_LIM_INT(unsigned int)
+_HOSTJIT_NUM_LIM_INT(long)
+_HOSTJIT_NUM_LIM_INT(unsigned long)
+_HOSTJIT_NUM_LIM_INT(long long)
+_HOSTJIT_NUM_LIM_INT(unsigned long long)
+
+#undef _HOSTJIT_NUM_LIM_INT
+
+// Floating-point specializations.
+#define _HOSTJIT_NUM_LIM_FP(_T) \
+  template <> struct numeric_limits<_T> { \
+    static constexpr bool is_specialized = true; \
+    static constexpr bool is_integer     = false; \
+  };
+
+_HOSTJIT_NUM_LIM_FP(float)
+_HOSTJIT_NUM_LIM_FP(double)
+_HOSTJIT_NUM_LIM_FP(long double)
+
+#undef _HOSTJIT_NUM_LIM_FP
+
+} // namespace std

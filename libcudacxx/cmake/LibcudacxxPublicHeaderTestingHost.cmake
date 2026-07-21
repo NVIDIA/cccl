@@ -10,6 +10,10 @@ cccl_get_cudatoolkit()
 add_custom_target(libcudacxx.test.public_headers_host_only)
 add_custom_target(libcudacxx.test.public_headers_host_only_with_ctk)
 
+if (CCCL_ENABLE_TILE) # TODO(miscco): For now only test public headers with tile
+  return()
+endif()
+
 # Grep all public headers
 file(
   GLOB public_headers_host_only

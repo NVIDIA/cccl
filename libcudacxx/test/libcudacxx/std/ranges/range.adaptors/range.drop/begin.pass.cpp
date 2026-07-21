@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr auto begin()
 //   requires (!(simple-view<V> &&
 //               random_access_range<const V> && sized_range<const V>));
@@ -29,21 +32,21 @@ struct MaybeSimpleView : cuda::std::ranges::view_base
   int* num_of_non_const_begin_calls;
   int* num_of_const_begin_calls;
 
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     ++(*num_of_non_const_begin_calls);
     return nullptr;
   }
-  __host__ __device__ constexpr cuda::std::conditional_t<IsSimple, int*, const int*> begin() const
+  TEST_FUNC constexpr cuda::std::conditional_t<IsSimple, int*, const int*> begin() const
   {
     ++(*num_of_const_begin_calls);
     return nullptr;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return nullptr;
   }
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return 0;
   }
@@ -52,7 +55,7 @@ struct MaybeSimpleView : cuda::std::ranges::view_base
 using SimpleView    = MaybeSimpleView<true>;
 using NonSimpleView = MaybeSimpleView<false>;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // random_access_range<const V> && sized_range<const V>
   cuda::std::ranges::drop_view dropView1(MoveOnlyView(), 4);
@@ -165,7 +168,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   return 0;

@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   using A1 = cuda::std::allocator<T>;
   using A2 = cuda::std::allocator<long>;

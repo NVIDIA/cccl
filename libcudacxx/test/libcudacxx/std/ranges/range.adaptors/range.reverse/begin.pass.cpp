@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr reverse_iterator<iterator_t<V>> begin();
 // constexpr reverse_iterator<iterator_t<V>> begin() requires common_range<V>;
 // constexpr auto begin() const requires common_range<const V>;
@@ -30,58 +33,58 @@ struct CountedIter
   using self              = CountedIter;
 
   pointer ptr_;
-  __host__ __device__ CountedIter(pointer ptr)
+  TEST_FUNC CountedIter(pointer ptr)
       : ptr_(ptr)
   {}
   CountedIter() = default;
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const self&) const = default;
 #else
-  __host__ __device__ bool operator==(const self& rhs) const
+  TEST_FUNC bool operator==(const self& rhs) const
   {
     return ptr_ == rhs.ptr_;
   }
-  __host__ __device__ bool operator!=(const self& rhs) const
+  TEST_FUNC bool operator!=(const self& rhs) const
   {
     return ptr_ != rhs.ptr_;
   }
 
-  __host__ __device__ bool operator<(const self& rhs) const
+  TEST_FUNC bool operator<(const self& rhs) const
   {
     return ptr_ < rhs.ptr_;
   }
-  __host__ __device__ bool operator<=(const self& rhs) const
+  TEST_FUNC bool operator<=(const self& rhs) const
   {
     return ptr_ <= rhs.ptr_;
   }
-  __host__ __device__ bool operator>(const self& rhs) const
+  TEST_FUNC bool operator>(const self& rhs) const
   {
     return ptr_ > rhs.ptr_;
   }
-  __host__ __device__ bool operator>=(const self& rhs) const
+  TEST_FUNC bool operator>=(const self& rhs) const
   {
     return ptr_ >= rhs.ptr_;
   }
 #endif
 
-  __host__ __device__ self& operator++()
+  TEST_FUNC self& operator++()
   {
     globalCount++;
     ++ptr_;
     return *this;
   }
-  __host__ __device__ self operator++(int)
+  TEST_FUNC self operator++(int)
   {
     auto tmp = *this;
     ++*this;
     return tmp;
   }
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 };
 
 struct CountedView : cuda::std::ranges::view_base
@@ -89,24 +92,24 @@ struct CountedView : cuda::std::ranges::view_base
   int* begin_;
   int* end_;
 
-  __host__ __device__ CountedView(int* b, int* e)
+  TEST_FUNC CountedView(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
 
-  __host__ __device__ auto begin()
+  TEST_FUNC auto begin()
   {
     return CountedIter(begin_);
   }
-  __host__ __device__ auto begin() const
+  TEST_FUNC auto begin() const
   {
     return CountedIter(begin_);
   }
-  __host__ __device__ auto end()
+  TEST_FUNC auto end()
   {
     return sentinel_wrapper<CountedIter>(CountedIter(end_));
   }
-  __host__ __device__ auto end() const
+  TEST_FUNC auto end() const
   {
     return sentinel_wrapper<CountedIter>(CountedIter(end_));
   }
@@ -120,24 +123,24 @@ struct RASentRange : cuda::std::ranges::view_base
   int* begin_;
   int* end_;
 
-  __host__ __device__ constexpr RASentRange(int* b, int* e)
+  TEST_FUNC constexpr RASentRange(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
 
-  __host__ __device__ constexpr random_access_iterator<int*> begin()
+  TEST_FUNC constexpr random_access_iterator<int*> begin()
   {
     return random_access_iterator<int*>{begin_};
   }
-  __host__ __device__ constexpr random_access_iterator<const int*> begin() const
+  TEST_FUNC constexpr random_access_iterator<const int*> begin() const
   {
     return random_access_iterator<const int*>{begin_};
   }
-  __host__ __device__ constexpr sent_t end()
+  TEST_FUNC constexpr sent_t end()
   {
     return sent_t{random_access_iterator<int*>{end_}};
   }
-  __host__ __device__ constexpr sent_const_t end() const
+  TEST_FUNC constexpr sent_const_t end() const
   {
     return sent_const_t{random_access_iterator<const int*>{end_}};
   }
@@ -154,7 +157,7 @@ template <class T>
 inline constexpr bool BeginInvocable<T, cuda::std::void_t<decltype(cuda::std::declval<T>().begin())>> = true;
 #endif
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -224,7 +227,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

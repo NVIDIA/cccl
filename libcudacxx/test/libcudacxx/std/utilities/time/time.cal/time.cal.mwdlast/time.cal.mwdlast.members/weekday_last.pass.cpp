@@ -33,7 +33,7 @@ int main(int, char**)
   static_assert(
     cuda::std::is_same_v<weekday_last, decltype(cuda::std::declval<const month_weekday_last>().weekday_last())>);
 
-  static_assert(month_weekday_last{month{}, lastTuesday}.weekday_last() == lastTuesday, "");
+  static_assert(month_weekday_last{month{}, lastTuesday}.weekday_last() == lastTuesday);
 
   for (unsigned i = 1; i <= 50; ++i)
   {

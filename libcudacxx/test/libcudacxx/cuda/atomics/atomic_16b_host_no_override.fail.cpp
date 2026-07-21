@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: nvrtc
 
 // <cuda/atomic>
@@ -17,7 +17,7 @@
 
 // Check that host atomics fail to build
 template <class T>
-__host__ __device__ void do_test()
+TEST_FUNC void do_test()
 {
   T v(0);
   cuda::atomic_ref<T> a(v);

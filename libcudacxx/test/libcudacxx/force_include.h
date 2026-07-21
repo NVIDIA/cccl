@@ -45,12 +45,22 @@ void list_devices()
   }
 }
 
-__host__ __device__ int fake_main(int, char**);
+#ifdef __CUDACC_TILE__
+__tile__
+#endif // __CUDACC_TILE__
+  __host__ __device__ int
+  fake_main(int, char**);
 
 int cuda_thread_count = 1;
 int cuda_cluster_size = 1;
 
-__global__ void fake_main_kernel(int* ret)
+#ifdef __CUDACC_TILE__
+__tile_global__
+#else // ^^^ __CUDACC_TILE__ ^^^ / vvv !__CUDACC_TILE__ vvv
+__global__
+#endif // !__CUDACC_TILE__
+  void
+  fake_main_kernel(int* ret)
 {
   *ret = fake_main(0, nullptr);
 }
@@ -123,6 +133,10 @@ int main(int argc, char** argv)
   return ret;
 }
 
-#define main(...) __host__ __device__ fake_main(__VA_ARGS__)
+#ifdef __CUDACC_TILE__
+#  define main(...) __tile__ __host__ __device__ fake_main(__VA_ARGS__)
+#else // ^^^ __CUDACC_TILE__ ^^^ / vvv !__CUDACC_TILE__ vvv
+#  define main(...) __host__ __device__ fake_main(__VA_ARGS__)
+#endif // !__CUDACC_TILE__
 
 #endif

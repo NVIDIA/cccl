@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -22,10 +25,10 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_fma(T val)
+TEST_FUNC void test_fma(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::fma(T{}, T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::fma(T{}, T{}, T{})), ret>);
 
   // fma(x, y, z), fma(y, x, z) are equivalent.
   assert(eq(cuda::std::fma(val, T(3.0), T(2.0)), cuda::std::fma(T(3.0), val, T(2.0))));
@@ -201,12 +204,12 @@ __host__ __device__ void test_fma(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_fma<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

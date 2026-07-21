@@ -11,10 +11,9 @@
 
 // template <class T1, class T2> pair<V1, V2> make_pair(T1&&, T2&&);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -27,26 +26,23 @@ int main(int, char**)
     assert(p1.second == 4);
   }
 
-  // cuda/std/memory not supported
-  /*
   {
-      using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
-      P1 p1 = cuda::std::make_pair(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
-      assert(*p1.first == 3);
-      assert(p1.second == 4);
+    using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
+    P1 p1    = cuda::std::make_pair(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
+    assert(*p1.first == 3);
+    assert(p1.second == 4);
   }
   {
-      using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
-      P1 p1 = cuda::std::make_pair(nullptr, static_cast<short>(4));
-      assert(p1.first == nullptr);
-      assert(p1.second == 4);
+    using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
+    P1 p1    = cuda::std::make_pair(nullptr, static_cast<short>(4));
+    assert(p1.first == nullptr);
+    assert(p1.second == 4);
   }
-  */
   {
     using P1        = cuda::std::pair<int, short>;
     constexpr P1 p1 = cuda::std::make_pair(3, static_cast<short>(4));
-    static_assert(p1.first == 3, "");
-    static_assert(p1.second == 4, "");
+    static_assert(p1.first == 3);
+    static_assert(p1.second == 4);
   }
 
   return 0;

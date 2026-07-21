@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // log
 
 // 0.5 * log1p on [-0.25, 0.5]:
-[[nodiscard]] _CCCL_API inline float __internal_unsafe_log1p_poly(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float __internal_unsafe_log1p_poly(float __x) noexcept
 {
   float __log1p_poly = 0.5f * -4.50736098e-2f;
   __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.10464530f);
@@ -55,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 
 // 0.5 * log1p on [-0.25, 0.5]:
-[[nodiscard]] _CCCL_API inline double __internal_unsafe_log1p_poly(double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double __internal_unsafe_log1p_poly(double __x) noexcept
 {
   double __log1p_poly = 0.5 * -7.09111630733153322503e-3;
   __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 2.66022308034025677103e-2);
@@ -85,7 +85,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> log(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> log(const complex<_Tp>& __x)
 {
   // Uint of the same size as our fp type.
   // Shouldn't need make_unsigned, but just in case:
@@ -251,49 +251,49 @@ template <class _Tp>
   return complex<_Tp>(__abs_rescaled, ::cuda::std::atan2(__x.imag(), __x.real()));
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-// The general template for log when generated for __nv_bfloat16 is both worse for
-// accuracy and slower than the fp32 version.
-_CCCL_API inline complex<__nv_bfloat16> log(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::log(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 // The general template for log when generated for __half is both worse for
 // accuracy and slower than the fp32 version.
-_CCCL_API inline complex<__half> log(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> log(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::log(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+// The general template for log when generated for __nv_bfloat16 is both worse for
+// accuracy and slower than the fp32 version.
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> log(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::log(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 // log10
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> log10(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> log10(const complex<_Tp>& __x)
 {
   return ::cuda::std::log(__x) * __numbers<_Tp>::__log10e();
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> log10(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::log10(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> log10(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> log10(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::log10(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> log10(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::log10(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

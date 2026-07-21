@@ -15,7 +15,7 @@ inline std::string demangle(const char* name)
 {
 #if __GNUC__ && !_NVHPC_CUDA
   int status     = 0;
-  char* realname = abi::__cxa_demangle(name, 0, 0, &status);
+  char* realname = abi::__cxa_demangle(name, nullptr, nullptr, &status);
   std::string result(realname);
   std::free(realname);
   return result;

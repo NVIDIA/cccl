@@ -7,7 +7,10 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: gcc-6
+
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
 
 // <cuda/std/tuple>
 
@@ -28,13 +31,13 @@
 TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
-__host__ __device__ constexpr int constexpr_sum_fn()
+TEST_FUNC constexpr int constexpr_sum_fn()
 {
   return 0;
 }
 
 template <class... Ints>
-__host__ __device__ constexpr int constexpr_sum_fn(int x1, Ints... rest)
+TEST_FUNC constexpr int constexpr_sum_fn(int x1, Ints... rest)
 {
   return x1 + constexpr_sum_fn(rest...);
 }
@@ -44,56 +47,56 @@ struct ConstexprSumT
   constexpr ConstexprSumT() = default;
 
   template <class... Ints>
-  __host__ __device__ constexpr int operator()(Ints... values) const
+  TEST_FUNC constexpr int operator()(Ints... values) const
   {
     return constexpr_sum_fn(values...);
   }
 };
 
-__host__ __device__ void test_constexpr_evaluation()
+TEST_FUNC void test_constexpr_evaluation()
 {
   constexpr ConstexprSumT sum_obj{};
   {
     using Tup = cuda::std::tuple<>;
     using Fn  = int (&)();
     constexpr Tup t;
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 0, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 0, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 0);
+    static_assert(cuda::std::apply(sum_obj, t) == 0);
   }
   {
     using Tup = cuda::std::tuple<int>;
     using Fn  = int (&)(int);
     constexpr Tup t(42);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 42, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 42, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 42);
+    static_assert(cuda::std::apply(sum_obj, t) == 42);
   }
   {
     using Tup = cuda::std::tuple<int, long>;
     using Fn  = int (&)(int, int);
     constexpr Tup t(42, 101);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 143, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143);
+    static_assert(cuda::std::apply(sum_obj, t) == 143);
   }
   {
     using Tup = cuda::std::pair<int, long>;
     using Fn  = int (&)(int, int);
     constexpr Tup t(42, 101);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 143, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143);
+    static_assert(cuda::std::apply(sum_obj, t) == 143);
   }
   {
     using Tup = cuda::std::tuple<int, long, int>;
     using Fn  = int (&)(int, int, int);
     constexpr Tup t(42, 101, -1);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 142, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142);
+    static_assert(cuda::std::apply(sum_obj, t) == 142);
   }
   {
     using Tup       = cuda::std::array<int, 3>;
     using Fn        = int (&)(int, int, int);
     constexpr Tup t = {42, 101, -1};
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 142, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142);
+    static_assert(cuda::std::apply(sum_obj, t) == 142);
   }
 }
 
@@ -114,7 +117,7 @@ struct CallInfo
   Tuple args;
 
   template <class... Args>
-  __host__ __device__ CallInfo(CallQuals q, Args&&... xargs)
+  TEST_FUNC CallInfo(CallQuals q, Args&&... xargs)
       : quals(q)
       , arg_types(&makeArgumentID<Args&&...>())
       , args(cuda::std::forward<Args>(xargs)...)
@@ -122,7 +125,7 @@ struct CallInfo
 };
 
 template <class... Args>
-__host__ __device__ inline CallInfo<decltype(cuda::std::forward_as_tuple(cuda::std::declval<Args>()...))>
+TEST_FUNC inline CallInfo<decltype(cuda::std::forward_as_tuple(cuda::std::declval<Args>()...))>
 makeCallInfo(CallQuals quals, Args&&... args)
 {
   return {quals, cuda::std::forward<Args>(args)...};
@@ -133,32 +136,32 @@ struct TrackedCallable
   TrackedCallable() = default;
 
   template <class... Args>
-  __host__ __device__ auto operator()(Args&&... xargs) &
+  TEST_FUNC auto operator()(Args&&... xargs) &
   {
     return makeCallInfo(CQ_LValue, cuda::std::forward<Args>(xargs)...);
   }
 
   template <class... Args>
-  __host__ __device__ auto operator()(Args&&... xargs) const&
+  TEST_FUNC auto operator()(Args&&... xargs) const&
   {
     return makeCallInfo(CQ_ConstLValue, cuda::std::forward<Args>(xargs)...);
   }
 
   template <class... Args>
-  __host__ __device__ auto operator()(Args&&... xargs) &&
+  TEST_FUNC auto operator()(Args&&... xargs) &&
   {
     return makeCallInfo(CQ_RValue, cuda::std::forward<Args>(xargs)...);
   }
 
   template <class... Args>
-  __host__ __device__ auto operator()(Args&&... xargs) const&&
+  TEST_FUNC auto operator()(Args&&... xargs) const&&
   {
     return makeCallInfo(CQ_ConstRValue, cuda::std::forward<Args>(xargs)...);
   }
 };
 
 template <class... ExpectArgs, class Tuple>
-__host__ __device__ void check_apply_quals_and_types(Tuple&& t)
+TEST_FUNC void check_apply_quals_and_types(Tuple&& t)
 {
   TypeID const* const expect_args = &makeArgumentID<ExpectArgs...>();
   TrackedCallable obj;
@@ -189,7 +192,7 @@ __host__ __device__ void check_apply_quals_and_types(Tuple&& t)
   }
 }
 
-__host__ __device__ void test_call_quals_and_arg_types()
+TEST_FUNC void test_call_quals_and_arg_types()
 {
   using Tup   = cuda::std::tuple<int, int const&, unsigned&&>;
   const int x = 42;
@@ -205,21 +208,21 @@ __host__ __device__ void test_call_quals_and_arg_types()
 struct NothrowMoveable
 {
   NothrowMoveable() noexcept = default;
-  __host__ __device__ NothrowMoveable(NothrowMoveable const&) noexcept(false) {}
-  __host__ __device__ NothrowMoveable(NothrowMoveable&&) noexcept {}
+  TEST_FUNC NothrowMoveable(NothrowMoveable const&) noexcept(false) {}
+  TEST_FUNC NothrowMoveable(NothrowMoveable&&) noexcept {}
 };
 
 template <bool IsNoexcept>
 struct TestNoexceptCallable
 {
   template <class... Args>
-  __host__ __device__ NothrowMoveable operator()(Args...) const noexcept(IsNoexcept)
+  TEST_FUNC NothrowMoveable operator()(Args...) const noexcept(IsNoexcept)
   {
     return {};
   }
 };
 
-__host__ __device__ void test_noexcept()
+TEST_FUNC void test_noexcept()
 {
   TestNoexceptCallable<true> nec;
   TestNoexceptCallable<false> tc;
@@ -258,80 +261,80 @@ template <int N>
 struct index
 {};
 
-__host__ __device__ void f(index<0>) {}
+TEST_FUNC void f(index<0>) {}
 
-__host__ __device__ int f(index<1>)
+TEST_FUNC int f(index<1>)
 {
   return 0;
 }
 
-__host__ __device__ int& f(index<2>)
+TEST_FUNC int& f(index<2>)
 {
   return static_cast<int&>(my_int);
 }
-__host__ __device__ int const& f(index<3>)
+TEST_FUNC int const& f(index<3>)
 {
   return static_cast<int const&>(my_int);
 }
-__host__ __device__ int volatile& f(index<4>)
+TEST_FUNC int volatile& f(index<4>)
 {
   return static_cast<int volatile&>(my_int);
 }
-__host__ __device__ int const volatile& f(index<5>)
+TEST_FUNC int const volatile& f(index<5>)
 {
   return static_cast<int const volatile&>(my_int);
 }
 
-__host__ __device__ int&& f(index<6>)
+TEST_FUNC int&& f(index<6>)
 {
   return static_cast<int&&>(my_int);
 }
-__host__ __device__ int const&& f(index<7>)
+TEST_FUNC int const&& f(index<7>)
 {
   return static_cast<int const&&>(my_int);
 }
-__host__ __device__ int volatile&& f(index<8>)
+TEST_FUNC int volatile&& f(index<8>)
 {
   return static_cast<int volatile&&>(my_int);
 }
-__host__ __device__ int const volatile&& f(index<9>)
+TEST_FUNC int const volatile&& f(index<9>)
 {
   return static_cast<int const volatile&&>(my_int);
 }
 
-__host__ __device__ int* f(index<10>)
+TEST_FUNC int* f(index<10>)
 {
   return static_cast<int*>(&my_int);
 }
-__host__ __device__ int const* f(index<11>)
+TEST_FUNC int const* f(index<11>)
 {
   return static_cast<int const*>(&my_int);
 }
-__host__ __device__ int volatile* f(index<12>)
+TEST_FUNC int volatile* f(index<12>)
 {
   return static_cast<int volatile*>(&my_int);
 }
-__host__ __device__ int const volatile* f(index<13>)
+TEST_FUNC int const volatile* f(index<13>)
 {
   return static_cast<int const volatile*>(&my_int);
 }
 
 template <int Func, class Expect>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using RawInvokeResult = decltype(f(index<Func>{}));
-  static_assert(cuda::std::is_same<RawInvokeResult, Expect>::value, "");
+  static_assert(cuda::std::is_same<RawInvokeResult, Expect>::value);
   using FnType = RawInvokeResult (*)(index<Func>);
   FnType fn    = f;
   cuda::std::tuple<index<Func>> t;
   using InvokeResult = decltype(cuda::std::apply(fn, t));
-  static_assert(cuda::std::is_same<InvokeResult, Expect>::value, "");
+  static_assert(cuda::std::is_same<InvokeResult, Expect>::value);
   unused(t);
   unused(fn);
 }
 } // end namespace ReturnTypeTest
 
-__host__ __device__ void test_return_type()
+TEST_FUNC void test_return_type()
 {
   using ReturnTypeTest::test;
   test<0, void>();

@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using cuda::std::nullopt;
   using cuda::std::nullopt_t;
@@ -36,17 +36,15 @@ __host__ __device__ constexpr void test()
     assert((o1 <= nullopt));
     assert(!(o2 <= nullopt));
 
-    static_assert(noexcept(nullopt <= o1), "");
-    static_assert(noexcept(o1 <= nullopt), "");
+    static_assert(noexcept(nullopt <= o1));
+    static_assert(noexcept(o1 <= nullopt));
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }

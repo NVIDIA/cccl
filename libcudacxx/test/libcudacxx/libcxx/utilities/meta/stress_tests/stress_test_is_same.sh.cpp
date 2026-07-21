@@ -51,7 +51,7 @@ int x = sink(REPEAT_10000(TEST_CASE_NOP) REPEAT_10000(TEST_CASE_NOP) 42);
 
 void Foo(REPEAT_1000(TEST_CASE_TYPE) int) {}
 
-static_assert(__COUNTER__ > 10000, "");
+static_assert(__COUNTER__ > 10000);
 
 void escape()
 {

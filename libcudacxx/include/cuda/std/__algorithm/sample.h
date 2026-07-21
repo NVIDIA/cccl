@@ -89,7 +89,7 @@ _CCCL_API _SampleIterator __sample(
   _Distance __n,
   _UniformRandomNumberGenerator& __g)
 {
-  using _PopCategory = typename iterator_traits<_PopulationIterator>::iterator_category;
+  using _PopCategory = __iterator_traits_category_or_concept_t<_PopulationIterator>;
   using _Difference  = typename iterator_traits<_PopulationIterator>::difference_type;
   static_assert(__has_forward_traversal<_PopulationIterator> || __has_random_access_traversal<_SampleIterator>,
                 "SampleIterator must meet the requirements of RandomAccessIterator");

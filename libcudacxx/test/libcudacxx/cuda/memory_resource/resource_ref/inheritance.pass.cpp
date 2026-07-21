@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -75,7 +79,7 @@ struct resource_derived_first : public resource_base<Properties...>
 
   int _val = 0;
 };
-static_assert(cuda::mr::synchronous_resource<resource_derived_first<>>, "");
+static_assert(cuda::mr::synchronous_resource<resource_derived_first<>>);
 
 struct some_data
 {

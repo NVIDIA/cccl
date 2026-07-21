@@ -39,7 +39,7 @@ error_condition ::error_condition(ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
                                   ,
-                                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value>*
+                                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
 )
 {

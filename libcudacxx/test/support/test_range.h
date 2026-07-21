@@ -17,22 +17,22 @@
 struct sentinel
 {
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator==(sentinel const&, I const&)
+  TEST_FUNC friend bool operator==(sentinel const&, I const&)
   {
     return true;
   }
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator==(I const&, sentinel const&)
+  TEST_FUNC friend bool operator==(I const&, sentinel const&)
   {
     return true;
   }
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator!=(sentinel const&, I const&)
+  TEST_FUNC friend bool operator!=(sentinel const&, I const&)
   {
     return false;
   }
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator!=(I const&, sentinel const&)
+  TEST_FUNC friend bool operator!=(I const&, sentinel const&)
   {
     return false;
   }
@@ -41,19 +41,19 @@ struct sentinel
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_range
 {
-  __host__ __device__ I<int*> begin()
+  TEST_FUNC I<int*> begin()
   {
     return I<int*>{nullptr};
   }
-  __host__ __device__ I<int const*> begin() const
+  TEST_FUNC I<int const*> begin() const
   {
     return I<int const*>{nullptr};
   }
-  __host__ __device__ sentinel end()
+  TEST_FUNC sentinel end()
   {
     return sentinel{};
   }
-  __host__ __device__ sentinel end() const
+  TEST_FUNC sentinel end() const
   {
     return sentinel{};
   }
@@ -62,11 +62,11 @@ struct test_range
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_non_const_range
 {
-  __host__ __device__ I<int*> begin()
+  TEST_FUNC I<int*> begin()
   {
     return I<int*>{nullptr};
   }
-  __host__ __device__ sentinel end()
+  TEST_FUNC sentinel end()
   {
     return sentinel{};
   }
@@ -75,19 +75,19 @@ struct test_non_const_range
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_common_range
 {
-  __host__ __device__ I<int*> begin()
+  TEST_FUNC I<int*> begin()
   {
     return I<int*>{nullptr};
   }
-  __host__ __device__ I<int const*> begin() const
+  TEST_FUNC I<int const*> begin() const
   {
     return I<int const*>{nullptr};
   }
-  __host__ __device__ I<int*> end()
+  TEST_FUNC I<int*> end()
   {
     return I<int*>{nullptr};
   }
-  __host__ __device__ I<int const*> end() const
+  TEST_FUNC I<int const*> end() const
   {
     return I<int const*>{nullptr};
   }
@@ -96,11 +96,11 @@ struct test_common_range
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_non_const_common_range
 {
-  __host__ __device__ I<int*> begin()
+  TEST_FUNC I<int*> begin()
   {
     return I<int*>{nullptr};
   }
-  __host__ __device__ I<int*> end()
+  TEST_FUNC I<int*> end()
   {
     return I<int*>{nullptr};
   }
@@ -109,19 +109,19 @@ struct test_non_const_common_range
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_view : cuda::std::ranges::view_base
 {
-  __host__ __device__ I<int*> begin()
+  TEST_FUNC I<int*> begin()
   {
     return I<int*>{nullptr};
   }
-  __host__ __device__ I<int const*> begin() const
+  TEST_FUNC I<int const*> begin() const
   {
     return I<int const*>{nullptr};
   }
-  __host__ __device__ sentinel end()
+  TEST_FUNC sentinel end()
   {
     return sentinel{};
   }
-  __host__ __device__ sentinel end() const
+  TEST_FUNC sentinel end() const
   {
     return sentinel{};
   }
@@ -129,15 +129,15 @@ struct test_view : cuda::std::ranges::view_base
 
 struct BorrowedRange
 {
-  __host__ __device__ int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ int* end() const
+  TEST_FUNC int* end() const
   {
     return nullptr;
   }
-  __host__ __device__ BorrowedRange(BorrowedRange&&) = delete;
+  TEST_FUNC BorrowedRange(BorrowedRange&&) = delete;
 };
 
 namespace cuda::std::ranges
@@ -146,16 +146,16 @@ template <>
 inline constexpr bool enable_borrowed_range<BorrowedRange> = true;
 } // namespace cuda::std::ranges
 
-static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
+static_assert(!cuda::std::ranges::view<BorrowedRange>);
+static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>);
 
 using BorrowedView = cuda::std::ranges::empty_view<int>;
-static_assert(cuda::std::ranges::view<BorrowedView>, "");
-static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
+static_assert(cuda::std::ranges::view<BorrowedView>);
+static_assert(cuda::std::ranges::borrowed_range<BorrowedView>);
 
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
-static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
-static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");
+static_assert(cuda::std::ranges::view<NonBorrowedView>);
+static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>);
 
 template <class Range>
 inline constexpr bool simple_view =

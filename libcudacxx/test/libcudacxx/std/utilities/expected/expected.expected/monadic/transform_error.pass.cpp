@@ -23,7 +23,7 @@
 
 struct LVal
 {
-  __host__ __device__ constexpr int operator()(TestError&)
+  TEST_FUNC constexpr int operator()(TestError&)
   {
     return 42;
   }
@@ -35,7 +35,7 @@ struct LVal
 struct CLVal
 {
   int operator()(TestError&) = delete;
-  __host__ __device__ constexpr int operator()(const TestError&)
+  TEST_FUNC constexpr int operator()(const TestError&)
   {
     return 42;
   }
@@ -47,7 +47,7 @@ struct RVal
 {
   int operator()(TestError&)       = delete;
   int operator()(const TestError&) = delete;
-  __host__ __device__ constexpr int operator()(TestError&&)
+  TEST_FUNC constexpr int operator()(TestError&&)
   {
     return 42;
   }
@@ -59,7 +59,7 @@ struct CRVal
   int operator()(TestError&)       = delete;
   int operator()(const TestError&) = delete;
   int operator()(TestError&&)      = delete;
-  __host__ __device__ constexpr int operator()(const TestError&&)
+  TEST_FUNC constexpr int operator()(const TestError&&)
   {
     return 42;
   }
@@ -67,7 +67,7 @@ struct CRVal
 
 struct RefQual
 {
-  __host__ __device__ constexpr int operator()(TestError) &
+  TEST_FUNC constexpr int operator()(TestError) &
   {
     return 42;
   }
@@ -79,7 +79,7 @@ struct RefQual
 struct CRefQual
 {
   int operator()(TestError) & = delete;
-  __host__ __device__ constexpr int operator()(TestError) const&
+  TEST_FUNC constexpr int operator()(TestError) const&
   {
     return 42;
   }
@@ -91,7 +91,7 @@ struct RVRefQual
 {
   int operator()(TestError) &      = delete;
   int operator()(TestError) const& = delete;
-  __host__ __device__ constexpr int operator()(TestError) &&
+  TEST_FUNC constexpr int operator()(TestError) &&
   {
     return 42;
   }
@@ -103,13 +103,13 @@ struct RVCRefQual
   int operator()(TestError) &      = delete;
   int operator()(TestError) const& = delete;
   int operator()(TestError) &&     = delete;
-  __host__ __device__ constexpr int operator()(TestError) const&&
+  TEST_FUNC constexpr int operator()(TestError) const&&
   {
     return 42;
   }
 };
 
-__host__ __device__ constexpr void test_val_types()
+TEST_FUNC constexpr void test_val_types()
 {
   const cuda::std::expected<int, TestError> previous_value{cuda::std::in_place, 42};
   const cuda::std::expected<int, TestError> expected_error{cuda::std::unexpect, 42};
@@ -245,7 +245,7 @@ __host__ __device__ constexpr void test_val_types()
 
 struct NonConst
 {
-  __host__ __device__ constexpr int non_const()
+  TEST_FUNC constexpr int non_const()
   {
     return 1;
   }
@@ -256,14 +256,14 @@ struct NonConst
 struct nvrtc_workaround
 {
   template <typename T>
-  __host__ __device__ constexpr int operator()(T&& t)
+  TEST_FUNC constexpr int operator()(T&& t)
   {
     return t.non_const();
   }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__ constexpr void test_sfinae()
+TEST_FUNC constexpr void test_sfinae()
 {
   cuda::std::expected<int, NonConst> expect{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -273,9 +273,9 @@ __host__ __device__ constexpr void test_sfinae()
 
 struct NoCopy
 {
-  NoCopy()                                            = default;
-  __host__ __device__ constexpr NoCopy(const NoCopy&) = delete;
-  __host__ __device__ constexpr int operator()(const NoCopy&&)
+  NoCopy()                                  = default;
+  TEST_FUNC constexpr NoCopy(const NoCopy&) = delete;
+  TEST_FUNC constexpr int operator()(const NoCopy&&)
   {
     return 42;
   }
@@ -285,7 +285,7 @@ struct NoCopy
 template <class T>
 struct AlwaysFalse
 {
-  __host__ __device__ constexpr AlwaysFalse()
+  TEST_FUNC constexpr AlwaysFalse()
   {
     assert(false);
   }
@@ -294,13 +294,13 @@ struct AlwaysFalse
 struct NeverCalled
 {
   template <class T>
-  __host__ __device__ constexpr int operator()(T) const
+  TEST_FUNC constexpr int operator()(T) const
   {
     return AlwaysFalse<T>{}, 42;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_sfinae();
   test_val_types();
@@ -323,6 +323,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

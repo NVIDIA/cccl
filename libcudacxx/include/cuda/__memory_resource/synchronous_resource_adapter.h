@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -54,6 +55,7 @@ template <class _Resource>
 struct synchronous_resource_adapter
     : ::cuda::mr::__copy_default_queries<_Resource>
     , ::cuda::forward_property<synchronous_resource_adapter<_Resource>, _Resource>
+    , ::cuda::mr::memory_resource_base<synchronous_resource_adapter<_Resource>>
 {
   _CCCL_HOST_API synchronous_resource_adapter(const _Resource& __resource) noexcept
       : __resource(__resource)

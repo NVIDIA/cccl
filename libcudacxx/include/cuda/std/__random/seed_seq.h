@@ -61,7 +61,7 @@ public:
   /// @param __begin Iterator pointing to the first seed value.
   /// @param __end Iterator one-past-the-last seed value.
   template <class _InputIt>
-  _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(_InputIt __begin, _InputIt __end)
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_CXX20 seed_seq(_InputIt __begin, _InputIt __end)
   {
     auto __n = ::cuda::std::distance(__begin, __end);
     if (__n <= 0)
@@ -89,14 +89,14 @@ public:
   /// @param __il The list of seed values.
   _CCCL_TEMPLATE(typename _InitT)
   _CCCL_REQUIRES(__cccl_is_integer_v<_InitT>)
-  _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(initializer_list<_InitT> __il)
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_CXX20 seed_seq(initializer_list<_InitT> __il)
       : seed_seq(__il.begin(), __il.end())
   {}
 
   /// @brief seed_seq is not copyable.
   seed_seq(const seed_seq&) = delete;
 
-  _CCCL_API _CCCL_CONSTEXPR_CXX20 ~seed_seq()
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_CXX20 ~seed_seq()
   {
     delete[] __data_;
   }
@@ -106,7 +106,7 @@ public:
 
   /// @brief Returns the number of seed values stored.
   /// @return Number of internal seed values (may be 0).
-  [[nodiscard]] _CCCL_API constexpr size_t size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_t size() const noexcept
   {
     return __size_;
   }
@@ -115,7 +115,7 @@ public:
   /// @tparam _OutputIt Output iterator type accepting `result_type` values.
   /// @param __dest Destination iterator where stored values will be written.
   template <class _OutputIt>
-  _CCCL_API constexpr void param(_OutputIt __dest) const
+  _CCCL_HOST_DEVICE_API constexpr void param(_OutputIt __dest) const
   {
     ::cuda::std::copy_n(__data_, __size_, __dest);
   }
@@ -128,7 +128,7 @@ public:
   /// @param __begin Iterator to the beginning of the destination range.
   /// @param __end Iterator one-past-the-end of the destination range.
   template <class _RandomIt>
-  _CCCL_API constexpr void generate(_RandomIt __begin, _RandomIt __end) const
+  _CCCL_HOST_DEVICE_API constexpr void generate(_RandomIt __begin, _RandomIt __end) const
   {
     if (__begin == __end)
     {
@@ -189,7 +189,7 @@ public:
   }
 
 private:
-  [[nodiscard]] _CCCL_API static constexpr result_type __generate_T(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type __generate_T(result_type __x) noexcept
   {
     return (__x ^ (__x >> 27));
   }

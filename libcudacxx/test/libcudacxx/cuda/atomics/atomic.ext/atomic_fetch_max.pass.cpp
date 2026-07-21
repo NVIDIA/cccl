@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -25,7 +28,7 @@ template <class T,
           bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     // Test greater
     {
@@ -67,7 +70,7 @@ struct TestFn
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn<T, Selector, ThreadScope, true>
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     // Call unsigned tests
     TestFn<T, Selector, ThreadScope, false>()();
@@ -111,7 +114,7 @@ struct TestFn<T, Selector, ThreadScope, true>
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFnDispatch
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     TestFn<T, Selector, ThreadScope>()();
   }

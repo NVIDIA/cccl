@@ -24,11 +24,11 @@
 // comparisons between different types.
 struct TypeID
 {
-  __host__ __device__ friend bool operator==(TypeID const& LHS, TypeID const& RHS)
+  TEST_FUNC friend bool operator==(TypeID const& LHS, TypeID const& RHS)
   {
     return LHS.m_id == RHS.m_id;
   }
-  __host__ __device__ friend bool operator!=(TypeID const& LHS, TypeID const& RHS)
+  TEST_FUNC friend bool operator!=(TypeID const& LHS, TypeID const& RHS)
   {
     return LHS.m_id != RHS.m_id;
   }
@@ -38,13 +38,13 @@ struct TypeID
     return demangle(m_id);
   }
 #else
-  __host__ __device__ const char* name() const
+  TEST_FUNC const char* name() const
   {
     return m_id;
   }
 #endif
 
-  __host__ __device__ void dump() const
+  TEST_FUNC void dump() const
   {
 #if 0
     std::string s = name();
@@ -55,7 +55,7 @@ struct TypeID
   }
 
 private:
-  __host__ __device__ explicit constexpr TypeID(const char* xid)
+  TEST_FUNC explicit constexpr TypeID(const char* xid)
       : m_id(xid)
   {}
 
@@ -64,12 +64,12 @@ private:
 
   const char* const m_id;
   template <class T>
-  __host__ __device__ friend TypeID const& makeTypeIDImp();
+  TEST_FUNC friend TypeID const& makeTypeIDImp();
 };
 
 // makeTypeID - Return the TypeID for the specified type 'T'.
 template <class T>
-__host__ __device__ inline TypeID const& makeTypeIDImp()
+TEST_FUNC inline TypeID const& makeTypeIDImp()
 {
 #ifdef __CUDA_ARCH__
   __constant__ static const TypeID id{__PRETTY_FUNCTION__};
@@ -87,7 +87,7 @@ struct TypeWrapper
 {};
 
 template <class T>
-__host__ __device__ inline TypeID const& makeTypeID()
+TEST_FUNC inline TypeID const& makeTypeID()
 {
   return makeTypeIDImp<TypeWrapper<T>>();
 }
@@ -99,7 +99,7 @@ struct ArgumentListID
 // makeArgumentID - Create and return a unique identifier for a given set
 // of arguments.
 template <class... Args>
-__host__ __device__ inline TypeID const& makeArgumentID()
+TEST_FUNC inline TypeID const& makeArgumentID()
 {
   return makeTypeIDImp<ArgumentListID<Args...>>();
 }
@@ -108,7 +108,7 @@ __host__ __device__ inline TypeID const& makeArgumentID()
 // two typeid's are expected to be equal
 #define COMPARE_TYPEID(LHS, RHS) CompareTypeIDVerbose(#LHS, LHS, #RHS, RHS)
 
-__host__ __device__ inline bool
+TEST_FUNC inline bool
 CompareTypeIDVerbose(const char* LHSString, TypeID const* LHS, const char* RHSString, TypeID const* RHS)
 {
   if (*LHS == *RHS)

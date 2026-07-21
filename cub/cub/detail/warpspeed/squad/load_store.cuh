@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
@@ -203,6 +205,29 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
   }
 }
 
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void squadStoreMasked16B(
+  Squad squad,
+  ::cuda::std::byte* dstGmem,
+  const ::cuda::std::byte* srcSmem,
+  ::cuda::std::uint16_t byteMask,
+  int firstByte,
+  int lastByte)
+{
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_100,
+    (if (::cuda::ptx::elect_sync(~0)) {
+      ::cuda::ptx::cp_async_bulk_cp_mask(
+        ::cuda::ptx::space_global, ::cuda::ptx::space_shared, dstGmem, srcSmem, /*size*/ 16, byteMask);
+    }),
+    ({
+      const int rank = squad.threadRank();
+      if (firstByte <= rank && rank < lastByte)
+      {
+        dstGmem[rank] = srcSmem[rank];
+      }
+    }));
+}
+
 template <typename OutputT>
 _CCCL_DEVICE_API void
 squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::cuda::std::byte* srcSmem)
@@ -224,11 +249,13 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 
-    // FIXME(bgruber): for some reason the optimizer propagates some information from the computation of
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+    // for some reason the optimizer propagates some information from the computation of
     // overCopySizeBytes to the masked bulk copy below and generates an unaligned access error.
     // The artificial read modification of overCopySizeBytes prevents the propagation here works around this.
     // It also solves the issue described in nvbug 5848313 by accident on nvcc 13.2+
     asm volatile("" : "+r"(cpAsyncOobInfo.overCopySizeBytes));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
 
     const bool doStartCopy  = cpAsyncOobInfo.smemStartSkipBytes > 0;
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
@@ -259,6 +286,10 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       // (hopefully) hide all the arithmetic behind this instruction.
       if (::cuda::ptx::elect_sync(~0))
       {
+        // need to work around another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8644
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemStartAlignUp));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         ::cuda::ptx::cp_async_bulk(
           ::cuda::ptx::space_global,
           ::cuda::ptx::space_shared,
@@ -268,46 +299,48 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       }
       if (doStartCopy)
       {
+        // need to work around yet another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8838
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemStartAlignDown));
+        asm volatile("" : "+l"(srcSmem));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
-        if (::cuda::ptx::elect_sync(~0))
-        {
-          ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global,
-            ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemStartAlignDown,
-            srcSmem,
-            /*size*/ 16,
-            byteMaskStart);
-        }
+        squadStoreMasked16B(
+          squad,
+          cpAsyncOobInfo.ptrGmemStartAlignDown,
+          srcSmem,
+          byteMaskStart,
+          static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
+          16);
       }
       if (doEndCopy)
       {
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+        // nvc++ seems to have an optimizer bug, crashing with an unaligned access error below. The addresses are fine
+        // when printed, so let's shake the optimizer a bit.
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemEndAlignDown));
+#  endif // _CCCL_CUDA_COMPILER(NVHPC)
+
         // Copy a subset of the last 16 bytes
-        if (::cuda::ptx::elect_sync(~0))
-        {
-          ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global,
-            ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemEndAlignDown,
-            ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
-            /*size*/ 16,
-            byteMaskEnd);
-        }
+        squadStoreMasked16B(
+          squad,
+          cpAsyncOobInfo.ptrGmemEndAlignDown,
+          ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
+          byteMaskEnd,
+          0,
+          static_cast<int>(cpAsyncOobInfo.smemEndBytesAfter16BBoundary));
       }
     }
     else
     {
       // Copy a subset of the first 16 bytes
-      if (::cuda::ptx::elect_sync(~0))
-      {
-        ::cuda::ptx::cp_async_bulk_cp_mask(
-          ::cuda::ptx::space_global,
-          ::cuda::ptx::space_shared,
-          cpAsyncOobInfo.ptrGmemStartAlignDown,
-          srcSmem,
-          /*size*/ 16,
-          byteMaskSmall);
-      }
+      squadStoreMasked16B(
+        squad,
+        cpAsyncOobInfo.ptrGmemStartAlignDown,
+        srcSmem,
+        byteMaskSmall,
+        static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
+        static_cast<int>(cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown));
     }
     // Commit and wait for store to have completed reading from shared memory
     ::cuda::ptx::cp_async_bulk_commit_group();

@@ -9,27 +9,18 @@
 
 #include <nvbench_helper.cuh>
 
-#if !TUNE_BASE
-#  if !USES_WARPSPEED()
-#    include <look_back_helper.cuh>
-#  endif // !USES_WARPSPEED()
-#endif // TUNE_BASE
-
 #include "../policy_selector.h"
 
 template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
-  using init_t         = T;
-  using wrapped_init_t = cub::detail::InputValue<init_t>;
-  using accum_t        = ::cuda::std::__accumulator_t<op_t, init_t, T>;
-  using input_it_t     = const T*;
-  using output_it_t    = T*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-#if USES_WARPSPEED()
-  static_assert(sizeof(offset_t) == sizeof(size_t)); // warpspeed scan uses size_t internally
-#endif // USES_WARPSPEED()
+  using init_value_t             = T;
+  using accum_t [[maybe_unused]] = ::cuda::std::__accumulator_t<op_t, init_value_t, T>;
+  using offset_t                 = cub::detail::choose_offset_t<OffsetT>;
+#if USES_LOOKAHEAD()
+  static_assert(sizeof(offset_t) == sizeof(size_t)); // lookahead scan uses size_t internally
+#endif // USES_LOOKAHEAD()
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())
@@ -48,38 +39,25 @@ try
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(elements);
 
-  size_t tmp_size;
-  cub::detail::scan::dispatch_with_accum<accum_t>(
-    nullptr,
-    tmp_size,
-    d_input,
-    d_output,
-    op_t{},
-    wrapped_init_t{T{}},
-    static_cast<offset_t>(input.size()),
-    0 /* stream */
-#if !TUNE_BASE
-    ,
-    policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::scan::dispatch_with_accum<accum_t>(
-      thrust::raw_pointer_cast(tmp.data()),
-      tmp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::ExclusiveScan,
+      "ExclusiveScan failed",
       d_input,
       d_output,
       op_t{},
-      wrapped_init_t{T{}},
+      init_value_t{},
       static_cast<offset_t>(input.size()),
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-    );
+      env);
   });
 }
 catch (const std::bad_alloc&)
@@ -87,7 +65,24 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, scan_offset_types))
+// __half and __nv_bfloat16 are added for full (non-tuning) runs; CUB has fast paths for them (see #9587).
+#ifdef TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
+using value_types =
+  push_back_t<all_types
+#  if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __half
+#  endif
+#  if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __nv_bfloat16
+#  endif
+              >;
+#endif
+
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(value_types, scan_offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

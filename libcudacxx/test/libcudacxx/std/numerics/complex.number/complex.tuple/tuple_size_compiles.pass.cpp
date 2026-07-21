@@ -28,31 +28,31 @@ struct HasTupleSize<C, cuda::std::void_t<decltype(cuda::std::tuple_size<C>{})>> 
 struct SomeObject
 {};
 
-static_assert(!HasTupleSize<SomeObject>::value, "");
+static_assert(!HasTupleSize<SomeObject>::value);
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using C = cuda::std::complex<T>;
 
-  static_assert(HasTupleSize<C>::value, "");
+  static_assert(HasTupleSize<C>::value);
   static_assert(cuda::std::is_same_v<size_t, typename cuda::std::tuple_size<C>::value_type>);
-  static_assert(cuda::std::tuple_size<C>() == 2, "");
+  static_assert(cuda::std::tuple_size<C>() == 2);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<float>();
   test<double>();
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 }
 
 int main(int, char**)

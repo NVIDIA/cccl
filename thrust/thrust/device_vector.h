@@ -76,9 +76,8 @@ public:
 
   /*! The destructor erases the elements.
    */
-  //  Define an empty destructor to explicitly specify
-  //  its execution space qualifier, as a workaround for nvcc warning
-  ~device_vector() {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST ~device_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
@@ -148,7 +147,7 @@ public:
   /*! Move constructor moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector(device_vector&& v)
+  device_vector(device_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -172,7 +171,7 @@ public:
   /*! Move assign operator moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector& operator=(device_vector&& v)
+  device_vector& operator=(device_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;

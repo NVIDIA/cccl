@@ -31,16 +31,16 @@ static_assert(
 
 struct ForwardRange
 {
-  __host__ __device__ forward_iterator<int*> begin() const;
-  __host__ __device__ forward_iterator<int*> end() const;
+  TEST_FUNC forward_iterator<int*> begin() const;
+  TEST_FUNC forward_iterator<int*> end() const;
 };
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<ForwardRange> = true;
 
 struct SizedRange
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
 };
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<SizedRange> = true;

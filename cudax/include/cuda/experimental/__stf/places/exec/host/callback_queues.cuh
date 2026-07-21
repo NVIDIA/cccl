@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/traits.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cstdio>
 #include <stack>
@@ -33,6 +33,7 @@
 #ifndef _CCCL_DOXYGEN_INVOKED // do not document
 
 #  if !_CCCL_COMPILER(MSVC)
+#    include <pthread.h>
 #    define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf
@@ -40,7 +41,7 @@ namespace cuda::experimental::stf
 class cb;
 
 #    ifdef STATEFUL_CALLBACKS
-class cudaCallbackStateCtxKeys : public reserved::meyers_singleton<cudaCallbackStateCtxKeys>
+class cudaCallbackStateCtxKeys : public ::cuda::experimental::meyers_singleton<cudaCallbackStateCtxKeys>
 {
 protected:
   cudaCallbackStateCtxKeys()  = default;
@@ -54,7 +55,7 @@ public:
   pthread_once_t cb_key_once;
 };
 
-class cudaCallbackStateCtx : public reserved::meyers_singleton<cudaCallbackStateCtx>
+class cudaCallbackStateCtx : public ::cuda::experimental::meyers_singleton<cudaCallbackStateCtx>
 {
 protected:
   cudaCallbackStateCtx()
@@ -220,7 +221,7 @@ public:
   }
 };
 
-class callback_queue : public reserved::meyers_singleton<callback_queue>
+class callback_queue : public ::cuda::experimental::meyers_singleton<callback_queue>
 {
 protected:
   callback_queue()

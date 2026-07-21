@@ -68,7 +68,7 @@ namespace system
  *    }
  *    catch(thrust::system_error e)
  *    {
- *      std::cerr << "Error inside sort: " << e.what() << std::endl;
+ *      std::cerr << "Error inside sort: " << e.what() << '\n';
  *      terminate_gracefully();
  *    }
  *
@@ -134,7 +134,7 @@ public:
 
   /*! Destructor does not throw.
    */
-  inline virtual ~system_error() noexcept {}
+  inline ~system_error() noexcept override = default;
 
   /*! Returns an object encoding the error.
    *  \return <tt>ec</tt> or <tt>error_code(ev, ecat)</tt>, from the
@@ -146,7 +146,7 @@ public:
    *  \return a string incorporating <tt>code().message()</tt> and the
    *          arguments supplied in the constructor.
    */
-  inline const char* what() const noexcept;
+  inline const char* what() const noexcept override;
 
   /*! \cond
    */

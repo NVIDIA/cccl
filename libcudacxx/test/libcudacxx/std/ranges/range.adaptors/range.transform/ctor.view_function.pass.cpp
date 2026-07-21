@@ -17,15 +17,15 @@
 
 struct Range : cuda::std::ranges::view_base
 {
-  __host__ __device__ constexpr explicit Range(int* b, int* e)
+  TEST_FUNC constexpr explicit Range(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return begin_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return end_;
   }
@@ -37,13 +37,13 @@ private:
 
 struct F
 {
-  __host__ __device__ constexpr int operator()(int i) const
+  TEST_FUNC constexpr int operator()(int i) const
   {
     return i + 100;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buff[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -74,7 +74,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;

@@ -34,7 +34,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
   KeyOutputIteratorT d_keys_out,
   NumItemsT num_items,
   NumOutItemsT k,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   auto stream_env = cuda::stream_ref{stream};
   auto requirements =
@@ -190,7 +190,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
@@ -305,5 +305,5 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }

@@ -47,6 +47,7 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -65,49 +66,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @{
 
 //! @cond
-
-template <class _Int>
-struct __get_wider_signed
-{
-  _CCCL_API inline static auto __call() noexcept
-  {
-    if constexpr (sizeof(_Int) < sizeof(short))
-    {
-      return ::cuda::std::type_identity<short>{};
-    }
-    else if constexpr (sizeof(_Int) < sizeof(int))
-    {
-      return ::cuda::std::type_identity<int>{};
-    }
-    else if constexpr (sizeof(_Int) < sizeof(long))
-    {
-      return ::cuda::std::type_identity<long>{};
-    }
-#if _CCCL_HAS_INT128()
-    else if constexpr (sizeof(_Int) < sizeof(long long))
-    {
-      return ::cuda::std::type_identity<long long>{};
-    }
-    else // if constexpr (sizeof(_Int) < sizeof(__int128_t))
-    {
-      return ::cuda::std::type_identity<__int128_t>{};
-    }
-#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-    else // if constexpr (sizeof(_Int) < sizeof(long long))
-    {
-      return ::cuda::std::type_identity<long long>{};
-    }
-#endif // _CCCL_HAS_INT128()
-  }
-
-  using type = typename decltype(__call())::type;
-};
-
-template <class _Start>
-using _IotaDiffT = typename ::cuda::std::conditional_t<
-  (!::cuda::std::integral<_Start> || sizeof(::cuda::std::iter_difference_t<_Start>) > sizeof(_Start)),
-  ::cuda::std::type_identity<::cuda::std::iter_difference_t<_Start>>,
-  __get_wider_signed<_Start>>::type;
 
 template <class _Iter>
 _CCCL_CONCEPT __decrementable = _CCCL_REQUIRES_EXPR((_Iter), _Iter __iter)(
@@ -164,12 +122,14 @@ struct __counting_iterator_category<_Tp, ::cuda::std::enable_if_t<::cuda::std::i
 //! std::copy(iter, iter + vec.size(), vec.begin());
 //! @endcode
 #if _CCCL_HAS_CONCEPTS()
-template <::cuda::std::weakly_incrementable _Start>
+template <::cuda::std::weakly_incrementable _Start, ::cuda::std::signed_integral _DiffT>
   requires ::cuda::std::copyable<_Start>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
+          class _DiffT,
           ::cuda::std::enable_if_t<::cuda::std::weakly_incrementable<_Start>, int>,
-          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>>
+          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>,
+          ::cuda::std::enable_if_t<::cuda::std::signed_integral<_DiffT>, int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator : public __counting_iterator_category<_Start>
 {
@@ -187,12 +147,29 @@ public:
                                                           /*Else*/ ::cuda::std::input_iterator_tag>>>;
 
   using value_type      = _Start;
-  using difference_type = _IotaDiffT<_Start>;
+  using difference_type = _DiffT;
 
   // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
   // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
   using reference = _Start;
   using pointer   = void;
+
+  // Needed for comparison operators and constructors, because the other side might have a
+  // different difference type so we cannot reach into their private members. Usually you solve
+  // this with the power of friendship, but since this class uses concepts or SFINAE, spelling
+  // out the friendship is a faff.
+  //
+  // We also cannot use operator*() here to get the value because that imposes the additional
+  // burden of requiring _Start to be copy-constructible which is not needed for comparisons.
+  [[nodiscard]] _CCCL_API constexpr const _Start& __get_value() const noexcept
+  {
+    return __value_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Start& __get_value() noexcept
+  {
+    return __value_;
+  }
 
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counting_iterator()
@@ -210,6 +187,43 @@ public:
     ::cuda::std::is_nothrow_move_constructible_v<_Start>)
       : __value_(::cuda::std::move(__value))
   {}
+
+  constexpr counting_iterator(const counting_iterator&)            = default;
+  constexpr counting_iterator(counting_iterator&&)                 = default;
+  constexpr counting_iterator& operator=(const counting_iterator&) = default;
+  constexpr counting_iterator& operator=(counting_iterator&&)      = default;
+
+  //! @brief Creates a @c counting_iterator from another @c counting_iterator of a different
+  //! difference type.
+  //! @param __other The @c counting_iterator to copy from.
+  _CCCL_TEMPLATE(class _DiffT2)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_DiffT, _DiffT2>) )
+  _CCCL_API constexpr explicit counting_iterator(const counting_iterator<_Start, _DiffT2>& __other) noexcept(
+    ::cuda::std::is_nothrow_copy_constructible_v<_Start>)
+      : __value_(__other.__get_value())
+  {}
+
+  //! @brief Creates a @c counting_iterator from another @c counting_iterator of a different
+  //! difference type.
+  //! @param __other The @c counting_iterator to move from.
+  _CCCL_TEMPLATE(class _DiffT2)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_DiffT, _DiffT2>) )
+  _CCCL_API constexpr explicit counting_iterator(counting_iterator<_Start, _DiffT2>&& __other) noexcept(
+    ::cuda::std::is_nothrow_move_constructible_v<_Start>)
+      : __value_(::cuda::std::move(__other.__get_value()))
+  {}
+
+  //! @brief Assignment between counting iterators of differing difference types is explicitly
+  //! deleted. If such a conversion is intended, use the copy or move constructors to convert.
+  _CCCL_TEMPLATE(class _DiffT2)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_DiffT, _DiffT2>) )
+  _CCCL_API constexpr counting_iterator& operator=(const counting_iterator<_Start, _DiffT2>&) = delete;
+
+  //! @brief Assignment between counting iterators of differing difference types is explicitly
+  //! deleted. If such a conversion is intended, use the copy or move constructors
+  _CCCL_TEMPLATE(class _DiffT2)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_DiffT, _DiffT2>) )
+  _CCCL_API constexpr counting_iterator& operator=(counting_iterator<_Start, _DiffT2>&&) = delete;
 
   //! @brief Returns the value currently stored in the @c counting_iterator
   [[nodiscard]] _CCCL_API constexpr _Start operator*() const
@@ -394,81 +408,81 @@ public:
     }
   }
 
-  //! @brief Compares two @c counting_iterator for equality.
-  //! @return True if the stored values compare equal
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(::cuda::std::equality_comparable<_Start2>)
+  _CCCL_TEMPLATE(class _Start2, class _DiffT2)
+  _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Start, _Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() == ::cuda::std::declval<const _Start2&>()))
+  operator==(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    noexcept(::cuda::std::__is_cpp17_nothrow_equality_comparable_v<_Start, _Start2>))
   {
-    return __x.__value_ == __y.__value_;
+    return __x.__value_ == __y.__get_value();
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two @c counting_iterator for inequality.
   //! @return True if the stored values do not compare equal
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(::cuda::std::equality_comparable<_Start2>)
+  _CCCL_TEMPLATE(class _Start2, class _DiffT2)
+  _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Start, _Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() != ::cuda::std::declval<const _Start2&>()))
+  operator!=(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    noexcept(::cuda::std::declval<const _Start&>() != ::cuda::std::declval<const _Start2&>()))
   {
-    return __x.__value_ != __y.__value_;
+    return __x.__value_ != __y.__get_value();
   }
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   //! @brief Three-way compares two @c counting_iterator.
   //! @return The three-way comparison of the stored values
+  template <class _Start2, class _DiffT2>
   [[nodiscard]] _CCCL_API friend constexpr auto
-  operator<=>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() <=> ::cuda::std::declval<const _Start2&>()))
-    requires ::cuda::std::totally_ordered<_Start> && ::cuda::std::three_way_comparable<_Start>
+  operator<=>(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    noexcept(::cuda::std::declval<const _Start&>() <=> ::cuda::std::declval<const _Start2&>()))
+    requires ::cuda::std::totally_ordered_with<_Start, _Start2>
+          && ::cuda::std::three_way_comparable_with<_Start, _Start2>
   {
-    return __x.__value_ <=> __y.__value_;
+    return __x.__value_ <=> __y.__get_value();
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Compares two @c counting_iterator for less than.
   //! @return True if stored values compare less than
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
+  _CCCL_TEMPLATE(class _Start2, class _DiffT2)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Start, _Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator<(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
+  operator<(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    noexcept(::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<_Start, _Start2>))
   {
-    return __x.__value_ < __y.__value_;
+    return __x.__value_ < __y.__get_value();
   }
 
   //! @brief Compares two @c counting_iterator for greater than.
   //! @return True if stored values compare greater than
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
+  _CCCL_TEMPLATE(class _Start2, class _DiffT2)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Start, _Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
+  operator>(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<_Start2, _Start>)
   {
     return __y < __x;
   }
 
   //! @brief Compares two @c counting_iterator for less equal.
   //! @return True if stored values compare less equal
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
+  _CCCL_TEMPLATE(class _Start2, class _DiffT2)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Start, _Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator<=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
+  operator<=(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<_Start2, _Start>)
   {
     return !(__y < __x);
   }
 
   //! @brief Compares two @c counting_iterator for greater equal.
   //! @return True if stored values compare greater equal
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
+  _CCCL_TEMPLATE(class _Start2, class _DiffT2)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Start, _Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator>=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
+  operator>=(const counting_iterator& __x, const counting_iterator<_Start2, _DiffT2>& __y) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<_Start, _Start2>)
   {
     return !(__x < __y);
   }
@@ -494,25 +508,25 @@ _CCCL_BEGIN_NAMESPACE_STD
 
 //! counting_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
 //! To work around that specialize those functions for counting_iterator
-template <class _Diff, class _Start>
+template <class _Diff, class _Start, class _DiffT2>
 _CCCL_HOST_API constexpr void
-advance(::cuda::counting_iterator<_Start>& __iter, _Diff __diff) noexcept(::cuda::std::__integer_like<_Start>)
+advance(::cuda::counting_iterator<_Start, _DiffT2>& __iter, _Diff __diff) noexcept(::cuda::std::__integer_like<_Start>)
 {
   ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
 }
 
-template <class _Start>
-[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::_IotaDiffT<_Start>
-distance(::cuda::counting_iterator<_Start> __first,
-         ::cuda::counting_iterator<_Start> __last) noexcept(::cuda::std::__integer_like<_Start>)
+template <class _Start, class _DiffT>
+[[nodiscard]] _CCCL_HOST_API constexpr typename ::cuda::counting_iterator<_Start, _DiffT>::difference_type
+distance(::cuda::counting_iterator<_Start, _DiffT> __first,
+         ::cuda::counting_iterator<_Start, _DiffT> __last) noexcept(::cuda::std::__integer_like<_Start>)
 {
   return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
 }
 
-template <class _Start>
-[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::counting_iterator<_Start>
-next(::cuda::counting_iterator<_Start> __iter,
-     ::cuda::_IotaDiffT<_Start> __n = 1) noexcept(::cuda::std::__integer_like<_Start>)
+template <class _Start, class _DiffT>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::counting_iterator<_Start, _DiffT>
+next(::cuda::counting_iterator<_Start, _DiffT> __iter,
+     ::cuda::std::type_identity_t<_DiffT> __n = 1) noexcept(::cuda::std::__integer_like<_Start>)
 {
   _CCCL_ASSERT(__n >= 0 || ::cuda::__decrementable<_Start>,
                "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
@@ -520,10 +534,10 @@ next(::cuda::counting_iterator<_Start> __iter,
   return __iter;
 }
 
-template <class _Start>
-[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::counting_iterator<_Start>
-prev(::cuda::counting_iterator<_Start> __iter,
-     ::cuda::_IotaDiffT<_Start> __n = 1) noexcept(::cuda::std::__integer_like<_Start>)
+template <class _Start, class _DiffT>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::counting_iterator<_Start, _DiffT>
+prev(::cuda::counting_iterator<_Start, _DiffT> __iter,
+     ::cuda::std::type_identity_t<_DiffT> __n = 1) noexcept(::cuda::std::__integer_like<_Start>)
 {
   _CCCL_ASSERT(__n >= 0 || ::cuda::__decrementable<_Start>, "Attempt to std::prev(it, +n) on a non-bidi iterator");
   ::cuda::std::advance(__iter, -__n);

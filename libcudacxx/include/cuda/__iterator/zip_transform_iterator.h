@@ -26,6 +26,7 @@
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/__iterator/zip_common.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
@@ -57,6 +58,7 @@ template <class _Fn, class... _Iterators>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __get_zip_transform_iterator_category()
 {
   using _Constraints = __zip_iter_constraints<_Iterators...>;
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (!::cuda::std::is_reference_v<
                   ::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iterators>...>>)
   {
@@ -78,6 +80,7 @@ template <class _Fn, class... _Iterators>
   {
     return ::cuda::std::input_iterator_tag{};
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 //! @brief @c zip_transform_iterator is an iterator which represents the result of a transformation of a set of
@@ -204,12 +207,14 @@ public:
   {}
 
   //! @brief Constructs a @c zip_transform_iterator from a tuple of iterators
+  //! @param __fun The functor used to transform dereferenced elements.
   //! @param __iters A tuple or pair of iterators
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __iters)
       : __store_(::cuda::std::move(__iters), ::cuda::std::move(__fun))
   {}
 
   //! @brief Constructs a @c zip_transform_iterator from variadic set of iterators
+  //! @param __fun The functor used to transform dereferenced elements.
   //! @param __iters The input iterators
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, _Iterators... __iters)
       : __store_(::cuda::std::tuple<_Iterators...>{::cuda::std::move(__iters)...}, ::cuda::std::move(__fun))
@@ -406,68 +411,14 @@ public:
     return __rhs;
   }
 
-  struct __zip_op_minus
-  {
-    struct __less_abs
-    {
-      // abs in cstdlib is not constexpr
-      _CCCL_EXEC_CHECK_DISABLE
-      [[nodiscard]] _CCCL_API static constexpr difference_type
-      __abs(difference_type __t) noexcept(noexcept(__t < 0 ? -__t : __t))
-      {
-        return __t < 0 ? -__t : __t;
-      }
-
-      _CCCL_EXEC_CHECK_DISABLE
-      [[nodiscard]] _CCCL_API constexpr bool operator()(difference_type __n, difference_type __y) const
-        noexcept(noexcept(__abs(__n) < __abs(__y)))
-      {
-        return __abs(__n) < __abs(__y);
-      }
-    };
-
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t _Zero, size_t... _Indices>
-    [[nodiscard]] _CCCL_API constexpr difference_type
-    operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-               const ::cuda::std::tuple<_Iterators...>& __iters2,
-               ::cuda::std::index_sequence<_Zero, _Indices...>) const //
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2)) && ...)))
-    {
-      const auto __first = static_cast<difference_type>(::cuda::std::get<0>(__iters1) - ::cuda::std::get<0>(__iters2));
-      if (__first == 0)
-      {
-        return __first;
-      }
-
-      const difference_type __temp[] = {
-        __first,
-        static_cast<difference_type>(::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2))...};
-      return *::cuda::std::ranges::min_element(__temp, __zip_op_minus::__less_abs{});
-    }
-  };
-
   //! @brief Returns the distance between two @c zip_transform_iterators
   //! @returns The minimal distance between any of the stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator-(const zip_transform_iterator& __n, const zip_transform_iterator& __y)
     _CCCL_TRAILING_REQUIRES(difference_type)(_Constraints::__all_sized_sentinel)
   {
-    return __zip_apply(__zip_op_minus{}, __n.__iters(), __y.__iters());
+    return __zip_apply(__zip_op_minus<difference_type>{}, __n.__iters(), __y.__iters());
   }
-
-  struct __zip_op_eq
-  {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t... _Indices>
-    _CCCL_API constexpr bool operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
-                                        ::cuda::std::index_sequence<_Indices...>) const
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
-    {
-      return ((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...);
-    }
-  };
 
   //! @brief Compares two @c zip_transform_iterator for equality by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
@@ -548,15 +499,16 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
   -> zip_transform_iterator<_Fn, _Iterators...>;
 
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_iterator(_Fn, _Iterators...)
+  -> zip_transform_iterator<_Fn, _Iterators...>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_transform_iterator from a tuple of iterators.
-//! @param __fun The functor used to transform the input ranges
+//! @param __fun The functor used to transform dereferenced elements.
 //! @param __t The tuple of iterators to wrap
 //! @relates zip_transform_iterator
 template <class _Fn, class... _Iterators>
@@ -569,7 +521,7 @@ make_zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __t) no
 }
 
 //! @brief Creates a @c zip_transform_iterator from a variadic number of iterators.
-//! @param __fun The functor used to transform the input ranges
+//! @param __fun The functor used to transform dereferenced elements.
 //! @param __iters The iterators to wrap
 //! @relates zip_transform_iterator
 template <class _Fn, class... _Iterators>

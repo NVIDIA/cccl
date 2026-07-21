@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void
+TEST_FUNC void
 test(C c1,
      typename C::difference_type j,
      typename C::value_type x1,
@@ -38,7 +38,7 @@ test(C c1,
 }
 
 template <class C>
-__host__ __device__ void
+TEST_FUNC void
 insert3at(C& c, typename C::iterator i, typename C::value_type x1, typename C::value_type x2, typename C::value_type x3)
 {
   i = c.insert(i, x1);

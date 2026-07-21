@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void testType()
+TEST_FUNC constexpr void testType()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::views::empty<T>), const cuda::std::ranges::empty_view<T>>);
   static_assert(cuda::std::is_same_v<decltype((cuda::std::views::empty<T>) ), const cuda::std::ranges::empty_view<T>&>);
@@ -34,7 +34,7 @@ struct BigType
   char buff[8];
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testType<int>();
   testType<const int>();

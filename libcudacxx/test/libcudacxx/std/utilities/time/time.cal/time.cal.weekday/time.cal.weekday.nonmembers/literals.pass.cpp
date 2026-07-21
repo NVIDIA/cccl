@@ -32,13 +32,13 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Friday)>);
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Saturday)>);
 
-  static_assert(cuda::std::chrono::Sunday == cuda::std::chrono::weekday(0), "");
-  static_assert(cuda::std::chrono::Monday == cuda::std::chrono::weekday(1), "");
-  static_assert(cuda::std::chrono::Tuesday == cuda::std::chrono::weekday(2), "");
-  static_assert(cuda::std::chrono::Wednesday == cuda::std::chrono::weekday(3), "");
-  static_assert(cuda::std::chrono::Thursday == cuda::std::chrono::weekday(4), "");
-  static_assert(cuda::std::chrono::Friday == cuda::std::chrono::weekday(5), "");
-  static_assert(cuda::std::chrono::Saturday == cuda::std::chrono::weekday(6), "");
+  static_assert(cuda::std::chrono::Sunday == cuda::std::chrono::weekday(0));
+  static_assert(cuda::std::chrono::Monday == cuda::std::chrono::weekday(1));
+  static_assert(cuda::std::chrono::Tuesday == cuda::std::chrono::weekday(2));
+  static_assert(cuda::std::chrono::Wednesday == cuda::std::chrono::weekday(3));
+  static_assert(cuda::std::chrono::Thursday == cuda::std::chrono::weekday(4));
+  static_assert(cuda::std::chrono::Friday == cuda::std::chrono::weekday(5));
+  static_assert(cuda::std::chrono::Saturday == cuda::std::chrono::weekday(6));
 
   assert(cuda::std::chrono::Sunday == cuda::std::chrono::weekday(0));
   assert(cuda::std::chrono::Monday == cuda::std::chrono::weekday(1));

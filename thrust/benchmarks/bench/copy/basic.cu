@@ -41,11 +41,13 @@ struct non_trivial
   {}
 
   // the user-defined copy constructor prevents the type from being trivially copyable
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE non_trivial(const non_trivial& nt)
       : a(nt.a)
       , b(nt.b)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE non_trivial& operator=(const non_trivial& nt)
   {
     a = nt.a;
@@ -54,8 +56,8 @@ struct non_trivial
   }
 };
 
-static_assert(!::cuda::std::is_trivially_copyable<non_trivial>::value, ""); // as required by the C++ standard
-static_assert(!thrust::is_trivially_relocatable<non_trivial>::value, ""); // thrust uses this check internally
+static_assert(!::cuda::std::is_trivially_copyable<non_trivial>::value); // as required by the C++ standard
+static_assert(!thrust::is_trivially_relocatable<non_trivial>::value); // thrust uses this check internally
 
 using types =
   nvbench::type_list<nvbench::uint8_t, nvbench::uint16_t, nvbench::uint32_t, nvbench::uint64_t, non_trivial>;

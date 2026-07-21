@@ -13,6 +13,8 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::iota_view<int, int>>);
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::iota_view<int, cuda::std::unreachable_sentinel_t>>);
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::iota_view<int*, int*>>);

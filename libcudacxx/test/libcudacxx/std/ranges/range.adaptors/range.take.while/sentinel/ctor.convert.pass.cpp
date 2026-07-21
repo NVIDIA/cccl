@@ -18,24 +18,24 @@
 struct Sent
 {
   int i = 0;
-  __host__ __device__ constexpr Sent() noexcept {}
-  __host__ __device__ constexpr Sent(int ii)
+  TEST_FUNC constexpr Sent() noexcept {}
+  TEST_FUNC constexpr Sent(int ii)
       : i(ii)
   {}
-  __host__ __device__ friend constexpr bool operator==(int* iter, const Sent& s)
+  TEST_FUNC friend constexpr bool operator==(int* iter, const Sent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const Sent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator==(const Sent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const Sent& s)
+  TEST_FUNC friend constexpr bool operator!=(int* iter, const Sent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Sent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator!=(const Sent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -45,27 +45,27 @@ struct Sent
 struct ConstSent
 {
   int i = 0;
-  __host__ __device__ constexpr ConstSent() noexcept {}
-  __host__ __device__ constexpr ConstSent(int ii)
+  TEST_FUNC constexpr ConstSent() noexcept {}
+  TEST_FUNC constexpr ConstSent(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr ConstSent(const Sent& s)
+  TEST_FUNC constexpr ConstSent(const Sent& s)
       : i(s.i)
   {}
-  __host__ __device__ friend constexpr bool operator==(int* iter, const ConstSent& s)
+  TEST_FUNC friend constexpr bool operator==(int* iter, const ConstSent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const ConstSent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator==(const ConstSent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const ConstSent& s)
+  TEST_FUNC friend constexpr bool operator!=(int* iter, const ConstSent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const ConstSent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator!=(const ConstSent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -74,15 +74,15 @@ struct ConstSent
 
 struct Range : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ Sent end()
+  TEST_FUNC Sent end()
   {
     return Sent{};
   }
-  __host__ __device__ ConstSent end() const
+  TEST_FUNC ConstSent end() const
   {
     return ConstSent{};
   }
@@ -90,30 +90,30 @@ struct Range : cuda::std::ranges::view_base
 
 struct Pred
 {
-  __host__ __device__ bool operator()(int i) const;
+  TEST_FUNC bool operator()(int i) const;
 };
 
 struct NonConvertConstSent
 {
   int i = 0;
-  __host__ __device__ constexpr NonConvertConstSent() noexcept {}
-  __host__ __device__ constexpr NonConvertConstSent(int ii)
+  TEST_FUNC constexpr NonConvertConstSent() noexcept {}
+  TEST_FUNC constexpr NonConvertConstSent(int ii)
       : i(ii)
   {}
-  __host__ __device__ friend constexpr bool operator==(int* iter, const NonConvertConstSent& s)
+  TEST_FUNC friend constexpr bool operator==(int* iter, const NonConvertConstSent& s)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const NonConvertConstSent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator==(const NonConvertConstSent& s, int* iter)
   {
     return s.i > *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(int* iter, const NonConvertConstSent& s)
+  TEST_FUNC friend constexpr bool operator!=(int* iter, const NonConvertConstSent& s)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ friend constexpr bool operator!=(const NonConvertConstSent& s, int* iter)
+  TEST_FUNC friend constexpr bool operator!=(const NonConvertConstSent& s, int* iter)
   {
     return s.i <= *iter;
   }
@@ -122,15 +122,15 @@ struct NonConvertConstSent
 
 struct NonConvertConstSentRange : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   };
-  __host__ __device__ Sent end()
+  TEST_FUNC Sent end()
   {
     return Sent{};
   }
-  __host__ __device__ NonConvertConstSent end() const
+  TEST_FUNC NonConvertConstSent end() const
   {
     return NonConvertConstSent{};
   }
@@ -154,26 +154,26 @@ static_assert(!cuda::std::is_constructible_v<
 struct MoveOnlyConvert
 {
   int i = 0;
-  __host__ __device__ constexpr MoveOnlyConvert() noexcept {}
-  __host__ __device__ constexpr MoveOnlyConvert(Sent&& s)
+  TEST_FUNC constexpr MoveOnlyConvert() noexcept {}
+  TEST_FUNC constexpr MoveOnlyConvert(Sent&& s)
       : i(s.i)
   {
     s.i = 0;
   }
-  __host__ __device__ constexpr friend bool operator==(const MoveOnlyConvert& s, int* iter)
+  TEST_FUNC constexpr friend bool operator==(const MoveOnlyConvert& s, int* iter)
   {
     return s.i > *iter;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ constexpr friend bool operator==(int* iter, const MoveOnlyConvert& s)
+  TEST_FUNC constexpr friend bool operator==(int* iter, const MoveOnlyConvert& s)
   {
     return s.i > *iter;
   }
-  __host__ __device__ constexpr friend bool operator!=(const MoveOnlyConvert& s, int* iter)
+  TEST_FUNC constexpr friend bool operator!=(const MoveOnlyConvert& s, int* iter)
   {
     return s.i <= *iter;
   }
-  __host__ __device__ constexpr friend bool operator!=(int* iter, const MoveOnlyConvert& s)
+  TEST_FUNC constexpr friend bool operator!=(int* iter, const MoveOnlyConvert& s)
   {
     return s.i <= *iter;
   }
@@ -182,21 +182,21 @@ struct MoveOnlyConvert
 
 struct Rng : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const
+  TEST_FUNC int* begin() const
   {
     return nullptr;
   };
-  __host__ __device__ Sent end()
+  TEST_FUNC Sent end()
   {
     return Sent{};
   }
-  __host__ __device__ MoveOnlyConvert end() const
+  TEST_FUNC MoveOnlyConvert end() const
   {
     return MoveOnlyConvert{};
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // base is init correctly
   {
@@ -251,7 +251,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

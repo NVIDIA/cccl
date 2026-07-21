@@ -31,31 +31,31 @@ class MoveOnly
   int data_;
 
 public:
-  __host__ __device__ explicit MoveOnly(int data = 1)
+  TEST_FUNC explicit MoveOnly(int data = 1)
       : data_(data)
   {}
-  __host__ __device__ MoveOnly(MoveOnly&& x)
+  TEST_FUNC MoveOnly(MoveOnly&& x)
       : data_(x.data_)
   {
     x.data_ = 0;
   }
-  __host__ __device__ MoveOnly& operator=(MoveOnly&& x)
+  TEST_FUNC MoveOnly& operator=(MoveOnly&& x)
   {
     data_   = x.data_;
     x.data_ = 0;
     return *this;
   }
 
-  __host__ __device__ int get() const
+  TEST_FUNC int get() const
   {
     return data_;
   }
 
-  __host__ __device__ bool operator==(const MoveOnly& x) const
+  TEST_FUNC bool operator==(const MoveOnly& x) const
   {
     return data_ == x.data_;
   }
-  __host__ __device__ bool operator<(const MoveOnly& x) const
+  TEST_FUNC bool operator<(const MoveOnly& x) const
   {
     return data_ < x.data_;
   }

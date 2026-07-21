@@ -18,22 +18,22 @@
 
 struct Copyable
 {
-  __host__ __device__ constexpr Copyable() noexcept
+  TEST_FUNC constexpr Copyable() noexcept
       : val_(0)
   {}
-  __host__ __device__ constexpr Copyable(const Copyable&)
+  TEST_FUNC constexpr Copyable(const Copyable&)
       : val_(0)
   {}
-  __host__ __device__ constexpr Copyable(Copyable&&)
+  TEST_FUNC constexpr Copyable(Copyable&&)
       : val_(0)
   {}
-  __host__ __device__ constexpr Copyable& operator=(const Copyable&)
+  TEST_FUNC constexpr Copyable& operator=(const Copyable&)
   {
     val_ = 42;
     return *this;
   }
 
-  __host__ __device__ constexpr Copyable& operator=(Copyable&&)
+  TEST_FUNC constexpr Copyable& operator=(Copyable&&)
   {
     val_ = 1337;
     return *this;
@@ -53,7 +53,7 @@ struct NotAssignable
   NotAssignable& operator=(NotAssignable&&)      = delete;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     const cuda::std::ranges::single_view<NotAssignable> a;

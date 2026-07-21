@@ -16,6 +16,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct FormattableType
 {};
 struct UnformattableType
@@ -25,14 +27,14 @@ template <class CharT>
 struct cuda::std::formatter<FormattableType, CharT>
 {
   template <class ParseContext>
-  __host__ __device__ constexpr typename ParseContext::iterator parse(ParseContext& pc);
+  TEST_FUNC constexpr typename ParseContext::iterator parse(ParseContext& pc);
 
   template <class FmtContext>
-  __host__ __device__ typename FmtContext::iterator format(FormattableType v, FmtContext& ctx) const;
+  TEST_FUNC typename FmtContext::iterator format(FormattableType v, FmtContext& ctx) const;
 };
 
 template <class CharT>
-__host__ __device__ void test_arg_of_v()
+TEST_FUNC void test_arg_of_v()
 {
   using cuda::std::__fmt_arg_t;
   using cuda::std::__fmt_determine_arg_t;
@@ -108,7 +110,7 @@ __host__ __device__ void test_arg_of_v()
   static_assert(__fmt_determine_arg_t<Context, UnformattableType>() == __fmt_arg_t::__none);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_arg_of_v<char>();
 #if _CCCL_HAS_WCHAR_T()

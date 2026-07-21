@@ -43,7 +43,13 @@ d_output = cp.empty(n_segments, dtype=dtype)
 
 # Perform the segmented reduce.
 cuda.compute.segmented_reduce(
-    d_input, d_output, start_o, end_o, min_op, h_init, n_segments
+    d_in=d_input,
+    d_out=d_output,
+    num_segments=n_segments,
+    start_offsets_in=start_o,
+    end_offsets_in=end_o,
+    op=min_op,
+    h_init=h_init,
 )
 
 # Verify the result.

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: Calling a __device__ function in tile code
+
 // void* memset(void* s, int c, size_t n);
 
 #include <cuda/std/cassert>
@@ -15,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ void test(int c)
+TEST_FUNC void test(int c)
 {
   T obj{};
   assert(cuda::std::memset(&obj, c, sizeof(T)) == &obj);

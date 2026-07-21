@@ -23,6 +23,93 @@ void TestMismatchSimple()
 }
 DECLARE_VECTOR_UNITTEST(TestMismatchSimple);
 
+template <class Vector>
+void TestMismatchBoundedSimple()
+{
+  using T = typename Vector::value_type;
+
+  // Equal-length ranges with mismatch
+  {
+    Vector a{1, 2, 3, 4};
+    Vector b{1, 2, 4, 3};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end());
+    ASSERT_EQUAL(result.first - a.begin(), 2);
+    ASSERT_EQUAL(result.second - b.begin(), 2);
+  }
+
+  // Equal-length ranges, no mismatch
+  {
+    Vector a{1, 2, 3};
+    Vector b{1, 2, 3};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end());
+    ASSERT_EQUAL(result.first - a.begin(), 3);
+    ASSERT_EQUAL(result.second - b.begin(), 3);
+  }
+
+  // Range1 shorter: stops when range1 exhausted
+  {
+    Vector a{1, 2};
+    Vector b{1, 2, 99};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end());
+    ASSERT_EQUAL(result.first - a.begin(), 2); // exhausted range1
+    ASSERT_EQUAL(result.second - b.begin(), 2);
+  }
+
+  // Range2 shorter: stops when range2 exhausted
+  {
+    Vector a{1, 2, 99};
+    Vector b{1, 2};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end());
+    ASSERT_EQUAL(result.first - a.begin(), 2);
+    ASSERT_EQUAL(result.second - b.begin(), 2); // exhausted range2
+  }
+
+  // Mismatch before either range ends (range2 shorter)
+  {
+    Vector a{1, 9, 3};
+    Vector b{1, 2};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end());
+    ASSERT_EQUAL(result.first - a.begin(), 1);
+    ASSERT_EQUAL(result.second - b.begin(), 1);
+  }
+
+  // With binary predicate
+  {
+    Vector a{1, 2, 3};
+    Vector b{1, 2};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end(), ::cuda::std::equal_to<T>());
+    ASSERT_EQUAL(result.first - a.begin(), 2);
+    ASSERT_EQUAL(result.second - b.begin(), 2);
+  }
+
+  // Empty ranges
+  {
+    Vector a;
+    Vector b{1, 2};
+    auto result = thrust::mismatch(a.begin(), a.end(), b.begin(), b.end());
+    ASSERT_EQUAL(result.first - a.begin(), 0);
+    ASSERT_EQUAL(result.second - b.begin(), 0);
+  }
+}
+DECLARE_VECTOR_UNITTEST(TestMismatchBoundedSimple);
+
+void TestMismatchBoundedWithExec()
+{
+  thrust::device_vector<int> a{1, 2, 3, 4};
+  thrust::device_vector<int> b{1, 2, 99};
+
+  // range1 longer, range2 shorter — stops at range2 end
+  auto result = thrust::mismatch(thrust::device, a.begin(), a.end(), b.begin(), b.end());
+  ASSERT_EQUAL(result.first - a.begin(), 2);
+  ASSERT_EQUAL(result.second - b.begin(), 2);
+
+  // With predicate
+  result = thrust::mismatch(thrust::device, a.begin(), a.end(), b.begin(), b.end(), ::cuda::std::equal_to<int>());
+  ASSERT_EQUAL(result.first - a.begin(), 2);
+  ASSERT_EQUAL(result.second - b.begin(), 2);
+}
+DECLARE_UNITTEST(TestMismatchBoundedWithExec);
+
 template <typename InputIterator1, typename InputIterator2>
 cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(my_system& system, InputIterator1 first, InputIterator1, InputIterator2)

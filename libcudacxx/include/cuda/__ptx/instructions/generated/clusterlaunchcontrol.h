@@ -64,7 +64,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_clusterlaunchcontrol_query_cancel_is_can
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline bool clusterlaunchcontrol_query_cancel_is_canceled(_B128 __try_cancel_response)
 {
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   ::cuda::std::uint32_t __pred_is_canceled;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
@@ -103,8 +103,8 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_x(_B128 __try_cancel_response)
 {
-  static_assert(sizeof(_B32) == 4, "");
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B32) == 4);
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   ::cuda::std::uint32_t __ret_dim;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
@@ -141,8 +141,8 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_y(_B128 __try_cancel_response)
 {
-  static_assert(sizeof(_B32) == 4, "");
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B32) == 4);
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   ::cuda::std::uint32_t __ret_dim;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
@@ -179,8 +179,8 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_z(_B128 __try_cancel_response)
 {
-  static_assert(sizeof(_B32) == 4, "");
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B32) == 4);
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   ::cuda::std::uint32_t __ret_dim;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
@@ -219,8 +219,8 @@ template <typename _B32,
 _CCCL_DEVICE static inline void
 clusterlaunchcontrol_query_cancel_get_first_ctaid(_B32 (&__block_dim)[4], _B128 __try_cancel_response)
 {
-  static_assert(sizeof(_B32) == 4, "");
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B32) == 4);
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
       "mov.b128 B128_try_cancel_response, {%4, %5}; \n"

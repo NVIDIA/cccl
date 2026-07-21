@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // UNSUPPORTED: libcpp-has-no-threads
 
 // <cuda/ptx>

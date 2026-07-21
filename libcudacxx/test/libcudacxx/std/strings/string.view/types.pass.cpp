@@ -36,8 +36,10 @@
 #include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Traits>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using SV = cuda::std::basic_string_view<typename Traits::char_type, Traits>;
 
@@ -63,7 +65,7 @@ __host__ __device__ constexpr void test_type()
   static_assert(cuda::std::is_same_v<typename SV::reverse_iterator, typename SV::const_reverse_iterator>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<cuda::std::char_traits<char>>();
 #if _CCCL_HAS_CHAR8_T()

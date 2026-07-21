@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void testType()
+TEST_FUNC constexpr void testType()
 {
   static_assert(cuda::std::ranges::range<cuda::std::ranges::empty_view<T>>);
   static_assert(cuda::std::ranges::range<const cuda::std::ranges::empty_view<T>>);
@@ -57,7 +57,7 @@ template <class T>
 constexpr bool ValidEmptyView<T, cuda::std::void_t<cuda::std::ranges::empty_view<T>>> = true;
 #endif // TEST_STD_VER <= 2017
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Not objects:
   static_assert(!ValidEmptyView<int&>);

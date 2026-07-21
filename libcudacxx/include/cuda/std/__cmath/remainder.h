@@ -112,7 +112,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> remainder(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::remainder((__result_type) __x, (__result_type) __y);
 }
 
@@ -196,7 +196,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> remquo(_A1 __x, _A2 __y, int* __quotient) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::remquo((__result_type) __x, (__result_type) __y, __quotient);
 }
 

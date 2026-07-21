@@ -88,7 +88,7 @@ int main() {
 
   auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
-    std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
+    std::cout << "Error: " << cudaGetErrorString(err) << '\n';
     return -1;
   }
 
@@ -282,7 +282,7 @@ but at least the most recent host compiler of any supported older CUDA Toolkit.
 We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
 But we will not invest significant time in triaging or fixing issues for older compilers.
 
-In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst) for more information on exactly what we test.
 
 ### GPU Architectures
 
@@ -314,7 +314,7 @@ For each CUDA version, builds are completed against all supported host compilers
 
 The testing strategy and matrix are constantly evolving.
 The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
-For more information about our CI pipeline, see [here](ci-overview.md).
+For more information about our CI pipeline, see [here](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Versioning
 
@@ -476,7 +476,7 @@ CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
 
 ## CI Pipeline Overview
 
-For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md).
+For a detailed overview of the CI pipeline, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Related Projects
 
@@ -507,6 +507,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Hypre](https://github.com/hypre-space/hypre) - Multigrid linear solvers
 - [LightSeq](https://github.com/bytedance/lightseq) - Training and inference for sequence processing and generation
 - [MatX](https://github.com/NVIDIA/matx) - Numerical computing library using expression templates to provide efficient, Python-like syntax
+- [Parrot](https://github.com/NVlabs/parrot) - Array fusion GPU library
 - [PyTorch](https://github.com/pytorch/pytorch) - Tensor and neural network computations
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations

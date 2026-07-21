@@ -16,6 +16,8 @@
 
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 int main(int, char**)
 {
   NV_IF_ELSE_TARGET(
