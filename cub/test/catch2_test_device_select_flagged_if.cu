@@ -170,7 +170,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -211,7 +211,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
   c2h::device_vector<input_type> out(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), flags);
@@ -322,7 +322,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
   c2h::device_vector<input_type> in(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), flags);
@@ -430,7 +430,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -458,7 +458,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);

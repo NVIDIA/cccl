@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -31,10 +32,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 struct __is_even
 {
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<::cuda::std::remove_cvref_t<_Tp>>)
   [[nodiscard]] _CCCL_API _CCCL_HOST_DEVICE constexpr bool operator()(const _Tp& __value) const noexcept
   {
-    return (__value & 1) == 0;
+    using _Up = ::cuda::std::remove_cvref_t<_Tp>;
+    return (static_cast<_Up>(__value) & 1) == 0;
   }
 };
 
