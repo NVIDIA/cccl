@@ -121,6 +121,11 @@ typedef struct stf_exec_place_scope_opaque_t* stf_exec_place_scope_handle;
 //! stf_exec_place_resources_destroy().
 typedef struct stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle;
 
+//! \brief Forward declaration of \c stf_ctx_handle (full definition appears
+//! below in the context section). Declared here so the
+//! stf_ctx_get_place_resources() accessor can refer to it.
+typedef struct stf_ctx_handle_t* stf_ctx_handle;
+
 //! \brief 4D position (coordinates) for partition mapping.
 //! Layout matches C++ pos4 for use as partition function arguments/result.
 typedef struct stf_pos4
@@ -155,6 +160,16 @@ stf_exec_place_handle stf_exec_place_device(int dev_id);
 
 //! \brief Create execution place for the current CUDA device.
 stf_exec_place_handle stf_exec_place_current_device(void);
+
+//! \brief Create an execution place from an externally-owned CUDA driver context \p ctx.
+//!
+//! The place is non-owning: the caller must keep \p ctx alive while the place is in
+//! use. This is the natural entry point for contexts created by other libraries, e.g.
+//! green contexts converted with cuCtxFromGreenCtx (such as the ones produced by
+//! cuda.core in Python). \p dev_id is the device ordinal of the context, or -1 to
+//! derive it from the context. \p ctx must not be NULL. Returns NULL on failure
+//! (invalid context, allocation failure), with a diagnostic printed to stderr.
+stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id);
 
 //! \brief Create a green-context helper for \p dev_id with \p sm_count SMs per green context.
 //! Requires CUDA 12.4+. Returns NULL on failure.
@@ -335,8 +350,7 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
 //!
 //! Context stores the state of the STF library and serves as entry point for all API calls.
 //! Must be created with stf_ctx_create() or stf_ctx_create_graph() and destroyed with stf_ctx_finalize().
-
-typedef struct stf_ctx_handle_t* stf_ctx_handle;
+//! (Forward declared earlier in the place section.)
 
 //!
 //! \brief Opaque handle for logical data
@@ -2035,6 +2049,51 @@ void stf_stackable_while_cond_scalar(
   stf_compare_op op,
   double threshold,
   stf_dtype dtype);
+
+//! \brief Maximum number of terms accepted by \c stf_stackable_while_cond_multi().
+#  define STF_WHILE_COND_MAX_TERMS 8
+
+//! \brief Combiner for multi-term while conditions.
+typedef enum stf_cond_combiner
+{
+  STF_COND_ALL = 0, //!< Continue while every term holds (logical AND)
+  STF_COND_ANY = 1, //!< Continue while at least one term holds (logical OR)
+} stf_cond_combiner;
+
+//! \brief One comparison term of a multi-term while condition.
+//!
+//! Evaluates as ``(*ld <op> threshold)``, then negated if \c negate is nonzero.
+typedef struct stf_while_cond_term
+{
+  stf_logical_data_handle ld; //!< Scalar logical data (1 element of \c dtype)
+  stf_compare_op op; //!< Comparison operator
+  double threshold; //!< Right-hand side compared against the scalar
+  stf_dtype dtype; //!< Element type of \c ld
+  int negate; //!< Nonzero to negate the term result
+} stf_while_cond_term;
+
+//! \brief Set a compound while-loop condition combining several scalar comparisons.
+//!
+//! Schedules a single internal task that reads every referenced scalar
+//! logical data, evaluates each ``(*ld <op> threshold)`` term (with optional
+//! negation) and folds the results with the requested combiner: continue
+//! while *all* terms hold (\c STF_COND_ALL) or while *any* term holds
+//! (\c STF_COND_ANY). Call exactly once per iteration after the loop body
+//! tasks of the current scope.
+//!
+//! With \p n_terms == 1 this is equivalent to \c stf_stackable_while_cond_scalar().
+//!
+//! \param ctx      Stackable context handle
+//! \param scope    While scope handle
+//! \param terms    Array of \p n_terms comparison terms
+//! \param n_terms  Number of terms (1 to \c STF_WHILE_COND_MAX_TERMS)
+//! \param combiner How the term results are combined
+void stf_stackable_while_cond_multi(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  const stf_while_cond_term* terms,
+  int n_terms,
+  stf_cond_combiner combiner);
 
 #endif // CUDART_VERSION >= 12040
 

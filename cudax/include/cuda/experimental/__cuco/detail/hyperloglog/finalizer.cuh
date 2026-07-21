@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
 #define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -126,7 +126,7 @@ private:
     auto __high = ::cuda::std::min(__low + __k, __n);
     // Keep moving bounds as long as the (exclusive) high bound is closer to the estimate than
     // the lower (inclusive) bound.
-    while (__high < __n && this->__distance(__e, __high) < this->__distance(__e, __low))
+    while (__high < __n && __distance(__e, __high) < __distance(__e, __low))
     {
       __low += 1;
       __high += 1;

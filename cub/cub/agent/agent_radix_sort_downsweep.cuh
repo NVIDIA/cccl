@@ -95,6 +95,7 @@ struct agent_radix_sort_downsweep_policy : ScalingType
  * Tuning policy types
  ******************************************************************************/
 
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -280,7 +281,9 @@ struct AgentRadixSortDownsweep
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
 
-      if (FULL_TILE || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) < valid_items))
+      if (FULL_TILE
+          || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
+              < valid_items))
       {
         d_keys_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * BLOCK_THREADS)] = key;
       }
@@ -314,7 +317,9 @@ struct AgentRadixSortDownsweep
     {
       ValueT value = exchange_values[threadIdx.x + (ITEM * BLOCK_THREADS)];
 
-      if (FULL_TILE || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) < valid_items))
+      if (FULL_TILE
+          || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
+              < valid_items))
       {
         d_values_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * BLOCK_THREADS)] = value;
       }

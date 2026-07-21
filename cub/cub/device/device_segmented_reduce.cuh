@@ -77,6 +77,25 @@ CUB_NAMESPACE_BEGIN
 //! ``gpu_to_gpu`` is not supported and is rejected at compile time. See the
 //! :ref:`determinism guarantees <cccl-determinism>` for what each level means.
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedReduce that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedReducePolicy`, as shown in
+//! the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-reduce-sum-policy-selector
+//!      :end-before: example-end segmented-reduce-sum-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-reduce-sum-tuning
+//!      :end-before: example-end segmented-reduce-sum-tuning
+//!
 //! @endrst
 struct DeviceSegmentedReduce
 {
@@ -121,8 +140,8 @@ private:
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::segmented_reduce::segmented_reduce_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
 
     return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
       d_temp_storage,
@@ -194,10 +213,8 @@ private:
         env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
           using default_policy_selector_t =
             detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
-          using policy_selector_t =
-            ::cuda::std::execution::__query_result_or_t<decltype(tuning),
-                                                        detail::segmented_reduce::segmented_reduce_policy,
-                                                        default_policy_selector_t>;
+          using policy_selector_t = ::cuda::std::execution::
+            __query_result_or_t<decltype(tuning), SegmentedReducePolicy, default_policy_selector_t>;
           // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
             d_temp_storage,

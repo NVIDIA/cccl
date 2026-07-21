@@ -31,6 +31,7 @@
 #include <cuda/experimental/__group/mapping/group_as.cuh>
 #include <cuda/experimental/__group/mapping/group_by.cuh>
 #include <cuda/experimental/__group/mapping/identity_mapping.cuh>
+#include <cuda/experimental/__group/mapping/take.cuh>
 #include <cuda/experimental/__group/queries.cuh>
 #include <cuda/experimental/__group/synchronizer/barrier_synchronizer.cuh>
 #include <cuda/experimental/__group/synchronizer/lane_synchronizer.cuh>

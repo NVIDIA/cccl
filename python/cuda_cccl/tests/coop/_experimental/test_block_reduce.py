@@ -8,6 +8,7 @@ from operator import mul
 import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 from helpers import (
     NUMBA_TYPES_TO_NP,
     Complex,
@@ -65,10 +66,9 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(
             output[1] = block_output.imag
 
     h_input = random_int(2 * num_threads_per_block, "int32")
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(2, dtype="int32")
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(2, dtype="int32")
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = (
         np.sum(h_input[:num_threads_per_block]),
@@ -129,10 +129,9 @@ def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
             output[1] = block_output.imag
 
     h_input = random_int(2 * num_threads_per_block, "int32")
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(2, dtype="int32")
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(2, dtype="int32")
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = (
         np.sum(h_input[:num_threads_per_block]),
@@ -182,10 +181,9 @@ def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(num_threads_per_block, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.min(h_input)
 
@@ -234,10 +232,9 @@ def test_block_reduction_valid(T, threads_per_block, algorithm):
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(num_threads_per_block, dtype)
     h_input[-1] = 0
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.min(h_input[: num_threads_per_block // 2])
 
@@ -296,10 +293,9 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread, alg
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(items_per_thread * num_threads_per_block, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.min(h_input)
 
@@ -357,10 +353,9 @@ def test_block_reduction_array_global(
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(items_per_thread * num_threads_per_block, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.min(h_input)
 
@@ -403,10 +398,9 @@ def test_block_sum(T, threads_per_block, algorithm):
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(num_threads_per_block, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.sum(h_input)
 
@@ -452,10 +446,9 @@ def test_block_sum_valid(T, threads_per_block, algorithm):
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(num_threads_per_block, dtype)
     h_input[-1] = 0
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.sum(h_input[: num_threads_per_block // 2])
 
@@ -510,10 +503,9 @@ def test_block_sum_array_local(T, threads_per_block, items_per_thread, algorithm
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(items_per_thread * num_threads_per_block, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.sum(h_input)
 
@@ -565,10 +557,9 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread, algorith
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(items_per_thread * num_threads_per_block, dtype)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=dtype)
     kernel[1, threads_per_block](d_input, d_output)
-    cuda.synchronize()
     h_output = d_output.copy_to_host()
     h_expected = np.sum(h_input)
 

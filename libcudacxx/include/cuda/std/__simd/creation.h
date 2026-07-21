@@ -73,8 +73,8 @@ using __simd_size_seq = integer_sequence<__simd_size_type, _Ns...>;
 template <__simd_size_type _Np>
 using __make_simd_size_seq = make_integer_sequence<__simd_size_type, _Np>;
 
-// "If basic_vec<​typename T​::​​value_type, Abi>​::​size() % T​::​size() is not 0, then
-// resize_t<basic_vec<​typename T​::​​value_type, Abi>​::​size() % T​::​size(), T> is valid and denotes
+// "If basic_vec<typename T::value_type, Abi>::size() % T::size() is not 0, then
+// resize_t<basic_vec<typename T::value_type, Abi>::size() % T::size(), T> is valid and denotes
 // a type."
 //
 // Vector: resize_t<V> is valid if __deduce_abi_t<V> is a specialized ABI type
@@ -142,7 +142,7 @@ __make_chunk_tuple_element(const _Src& __src) noexcept
 }
 
 // Remainder case: return tuple<_SubVec, ..., _SubVec, _Tail>
-// where _Tail is resize_t<src.size() % _SubVec​::​size(), _SubVec​>
+// where _Tail is resize_t<src.size() % _SubVec::size(), _SubVec>
 template <typename _SubVec, typename _Tail, typename _Src, __simd_size_type... _Js>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 __make_chunk_tuple(const _Src& __src, __simd_size_seq<_Js...>) noexcept

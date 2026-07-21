@@ -30,7 +30,18 @@ fi
 # full cu* extras because those pull in numba/numba-cuda.
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
-python -m pip install pytest pytest-xdist "cupy-cuda${cuda_major_version}x"
+python -m pip install pytest pytest-xdist
 
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 -v compute/test_no_numba.py
+if [[ "${py_version}" == "3.14t" ]]; then
+  # Select only tests that support the minimal extra so pytest does not collect
+  # tests that import numba-cuda and re-enable the GIL. These tests provide their
+  # own worker threads, so keep pytest itself in a single process.
+  # The serialization node-ids are module-skipped on the v2 backend today and
+  # will start running there automatically once v2 gains serialization support.
+  python -m pytest -n 0 -v \
+    compute/test_free_threading_stress.py \
+    compute/test_multi_cc_serialization.py::test_aot_build_result_load_failure_is_shared_and_retryable \
+    compute/test_multi_cc_serialization.py::test_aot_serialization_waits_for_canonical_first_load
+fi

@@ -219,6 +219,13 @@ stf_exec_place_handle stf_exec_place_current_device(void)
   }));
 }
 
+stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
+{
+  return to_opaque(stf_try_allocate([ctx, dev_id] {
+    return new exec_place(exec_place::cuda_context(ctx, dev_id));
+  }));
+}
+
 stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id)
 {
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -1272,33 +1279,77 @@ decltype(auto) visit_sld(stf_logical_data_handle h, F&& f)
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
-// Built-in condition kernel for while_cond_scalar.  Reads the head of the
-// scalar logical data, applies the requested comparison and updates the
-// conditional handle in place.  Lives outside extern "C" because it is a
-// device kernel template.
-template <typename T>
-__global__ void
-stf_stackable_while_cond_kernel(const T* value, cudaGraphConditionalHandle handle, double threshold, int op)
+// Built-in condition kernel for while_cond_scalar / while_cond_multi.  Reads
+// the head scalar of each referenced logical data, applies the requested
+// comparison (optionally negated), folds the term results with the requested
+// combiner and updates the conditional handle in place.  The whole term pack
+// is passed by value through kernel parameters (at most
+// STF_WHILE_COND_MAX_TERMS entries, well under the parameter-space limit) so
+// no device allocation is needed.  Lives outside extern "C" because it is a
+// device kernel.
+struct stf_while_cond_term_dev
 {
-  const double v = static_cast<double>(*value);
-  bool result;
-  switch (op)
+  const void* ptr;
+  double threshold;
+  int op;
+  int dtype;
+  int negate;
+};
+
+struct stf_while_cond_pack
+{
+  stf_while_cond_term_dev terms[STF_WHILE_COND_MAX_TERMS];
+  int n_terms;
+  int combiner;
+};
+
+__global__ void stf_stackable_while_cond_kernel(stf_while_cond_pack pack, cudaGraphConditionalHandle handle)
+{
+  bool result = (pack.combiner == STF_COND_ALL);
+  for (int i = 0; i < pack.n_terms; ++i)
   {
-    case STF_CMP_GT:
-      result = v > threshold;
-      break;
-    case STF_CMP_LT:
-      result = v < threshold;
-      break;
-    case STF_CMP_GE:
-      result = v >= threshold;
-      break;
-    case STF_CMP_LE:
-      result = v <= threshold;
-      break;
-    default:
-      result = false;
-      break;
+    const stf_while_cond_term_dev& t = pack.terms[i];
+    double v                         = 0.0;
+    switch (t.dtype)
+    {
+      case STF_DTYPE_FLOAT32:
+        v = static_cast<double>(*static_cast<const float*>(t.ptr));
+        break;
+      case STF_DTYPE_FLOAT64:
+        v = *static_cast<const double*>(t.ptr);
+        break;
+      case STF_DTYPE_INT32:
+        v = static_cast<double>(*static_cast<const int*>(t.ptr));
+        break;
+      case STF_DTYPE_INT64:
+        v = static_cast<double>(*static_cast<const long long*>(t.ptr));
+        break;
+      default:
+        break;
+    }
+    bool term = false;
+    switch (t.op)
+    {
+      case STF_CMP_GT:
+        term = v > t.threshold;
+        break;
+      case STF_CMP_LT:
+        term = v < t.threshold;
+        break;
+      case STF_CMP_GE:
+        term = v >= t.threshold;
+        break;
+      case STF_CMP_LE:
+        term = v <= t.threshold;
+        break;
+      default:
+        break;
+    }
+    if (t.negate)
+    {
+      term = !term;
+    }
+    result = (pack.combiner == STF_COND_ALL) ? (result && term) : (result || term);
   }
   cudaGraphSetConditional(handle, result ? 1 : 0);
 }
@@ -1514,60 +1565,89 @@ void stf_stackable_while_cond_scalar(
   double threshold,
   stf_dtype dtype)
 {
+  stf_while_cond_term term{ld, op, threshold, dtype, /* negate */ 0};
+  stf_stackable_while_cond_multi(ctx, scope, &term, 1, STF_COND_ALL);
+}
+
+void stf_stackable_while_cond_multi(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  const stf_while_cond_term* terms,
+  int n_terms,
+  stf_cond_combiner combiner)
+{
   _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
   _CCCL_ASSERT(scope != nullptr, "while scope handle must not be null");
-  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+  _CCCL_ASSERT(terms != nullptr, "condition terms must not be null");
+  _CCCL_ASSERT(n_terms >= 1 && n_terms <= STF_WHILE_COND_MAX_TERMS, "invalid number of condition terms");
+  _CCCL_ASSERT(combiner == STF_COND_ALL || combiner == STF_COND_ANY, "invalid condition combiner");
 
-  auto* sctx                             = from_opaque_sctx(ctx);
-  auto* guard                            = from_opaque_while(scope);
-  cudaGraphConditionalHandle cond_handle = guard->cond_handle();
+  auto* sctx                                   = from_opaque_sctx(ctx);
+  auto* guard                                  = from_opaque_while(scope);
+  const cudaGraphConditionalHandle cond_handle = guard->cond_handle();
 
   const int offset = sctx->get_head_offset();
 
-  // Validate (and auto-push if necessary) the read access on this scope,
-  // then materialise the untyped logical_data for the task dep.  The
-  // concrete stackable_logical_data<T> is dispatched through visit_sld()
-  // so both slice<char>-backed data and void_interface tokens resolve
-  // correctly; the while-condition kernel below only makes sense on a
-  // scalar-typed slice, but validate_access/get_ld are type-agnostic.
-  logical_data_untyped ld_ut = visit_sld(ld, [&](auto& sld) {
-    sld.validate_access(offset, *sctx, access_mode::read);
-    return logical_data_untyped{sld.get_ld(offset)};
-  });
-
   auto& underlying_ctx = sctx->get_ctx(offset);
   auto task            = underlying_ctx.task();
-  task.add_deps(task_dep_untyped(ld_ut, access_mode::read));
+
+  // Validate (and auto-push if necessary) the read access of every term on
+  // this scope, then materialise the untyped logical_data for the task dep.
+  // The concrete stackable_logical_data<T> is dispatched through visit_sld()
+  // so both slice<char>-backed data and void_interface tokens resolve
+  // correctly; the while-condition kernel below only makes sense on
+  // scalar-typed slices, but validate_access/get_ld are type-agnostic.
+  // Duplicate handles share a single read dependency (dep_index remembers
+  // which task-dep slot each term resolves to).
+  int dep_index[STF_WHILE_COND_MAX_TERMS];
+  int n_deps = 0;
+  for (int i = 0; i < n_terms; ++i)
+  {
+    _CCCL_ASSERT(terms[i].ld != nullptr, "stackable logical data handle must not be null");
+    _CCCL_ASSERT(terms[i].dtype >= STF_DTYPE_FLOAT32 && terms[i].dtype <= STF_DTYPE_INT64,
+                 "unsupported dtype for stf_stackable_while_cond_multi");
+    int found = -1;
+    for (int j = 0; j < i; ++j)
+    {
+      if (terms[j].ld == terms[i].ld)
+      {
+        found = dep_index[j];
+        break;
+      }
+    }
+    if (found >= 0)
+    {
+      dep_index[i] = found;
+      continue;
+    }
+    logical_data_untyped ld_ut = visit_sld(terms[i].ld, [&](auto& sld) {
+      sld.validate_access(offset, *sctx, access_mode::read);
+      return logical_data_untyped{sld.get_ld(offset)};
+    });
+    task.add_deps(task_dep_untyped(ld_ut, access_mode::read));
+    dep_index[i] = n_deps++;
+  }
+
   task.set_symbol("while_condition");
   task.enable_capture();
   task.start();
 
-  auto stream     = task.get_stream();
-  auto s          = task.template get<slice<const char>>(0);
-  const void* ptr = s.data_handle();
+  const auto stream = task.get_stream();
 
-  switch (dtype)
+  stf_while_cond_pack pack{};
+  pack.n_terms  = n_terms;
+  pack.combiner = static_cast<int>(combiner);
+  for (int i = 0; i < n_terms; ++i)
   {
-    case STF_DTYPE_FLOAT32:
-      stf_stackable_while_cond_kernel<float>
-        <<<1, 1, 0, stream>>>(static_cast<const float*>(ptr), cond_handle, threshold, op);
-      break;
-    case STF_DTYPE_FLOAT64:
-      stf_stackable_while_cond_kernel<double>
-        <<<1, 1, 0, stream>>>(static_cast<const double*>(ptr), cond_handle, threshold, op);
-      break;
-    case STF_DTYPE_INT32:
-      stf_stackable_while_cond_kernel<int>
-        <<<1, 1, 0, stream>>>(static_cast<const int*>(ptr), cond_handle, threshold, op);
-      break;
-    case STF_DTYPE_INT64:
-      stf_stackable_while_cond_kernel<long long>
-        <<<1, 1, 0, stream>>>(static_cast<const long long*>(ptr), cond_handle, threshold, op);
-      break;
-    default:
-      _CCCL_ASSERT(false, "unsupported dtype for stf_stackable_while_cond_scalar");
-      break;
+    auto s                  = task.template get<slice<const char>>(dep_index[i]);
+    pack.terms[i].ptr       = s.data_handle();
+    pack.terms[i].threshold = terms[i].threshold;
+    pack.terms[i].op        = static_cast<int>(terms[i].op);
+    pack.terms[i].dtype     = static_cast<int>(terms[i].dtype);
+    pack.terms[i].negate    = terms[i].negate;
   }
+
+  stf_stackable_while_cond_kernel<<<1, 1, 0, stream>>>(pack, cond_handle);
 
   task.end();
 }

@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
 #define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -34,7 +34,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/span>
 
@@ -42,7 +41,6 @@
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
-#include <cuda/experimental/memory_resource.cuh>
 
 #include <cooperative_groups.h>
 
@@ -126,7 +124,7 @@ public:
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
   template <class _CG>
-  _CCCL_DEVICE constexpr void __clear(_CG __group) noexcept
+  _CCCL_DEVICE_API constexpr void __clear(_CG __group) noexcept
   {
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
@@ -140,7 +138,7 @@ public:
   //! `__clear_async`.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST constexpr void __clear(::cuda::stream_ref __stream)
+  _CCCL_HOST_API constexpr void __clear(::cuda::stream_ref __stream)
   {
     __clear_async(__stream);
     __stream.sync();
@@ -149,7 +147,7 @@ public:
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST constexpr void __clear_async(::cuda::stream_ref __stream)
+  _CCCL_HOST_API constexpr void __clear_async(::cuda::stream_ref __stream)
   {
     constexpr auto __block_size = 1024;
     ::cuda::experimental::cuco::__hyperloglog_ns::__clear<<<1, __block_size, 0, __stream.get()>>>(*this);
@@ -160,10 +158,10 @@ public:
   //! @note Hash, register index, and rho are determined by the active policy.
   //!
   //! @param __item The item to be counted
-  _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
+  _CCCL_DEVICE_API constexpr void __add(const _Tp& __item) noexcept
   {
     const auto __h = __policy.hash(__item);
-    this->__update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
+    __update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
   }
 
   //! @brief Asynchronously adds to be counted items to the estimator.
@@ -176,7 +174,7 @@ public:
   //! @param __last End of the sequence of items
   //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  _CCCL_HOST constexpr void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API constexpr void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
     const auto __num_items = ::cuda::std::distance(__first, __last);
     if (__num_items == 0)
@@ -232,7 +230,7 @@ public:
           __kernel,
           __shmem_bytes);
 
-        const auto __ptr      = ::cuda::std::addressof(__first[0]);
+        const auto __ptr      = ::cuda::std::to_address(__first);
         void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
                                  const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
@@ -315,7 +313,7 @@ public:
   //! @param __last End of the sequence of items
   //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  _CCCL_HOST constexpr void __add(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API constexpr void __add(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
     __add_async(__first, __last, __stream);
     __stream.sync();
@@ -331,7 +329,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
+  _CCCL_DEVICE_API constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
   {
     if (__other.__precision != __precision)
     {
@@ -354,7 +352,7 @@ public:
   //! @param __other Other estimator reference to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void
+  _CCCL_HOST_API constexpr void
   __merge_async(const __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other, ::cuda::stream_ref __stream)
   {
     if (__other.__precision != __precision)
@@ -378,7 +376,7 @@ public:
   //! @param __other Other estimator reference to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void
+  _CCCL_HOST_API constexpr void
   __merge(const __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other, ::cuda::stream_ref __stream)
   {
     __merge_async(__other, __stream);
@@ -390,7 +388,7 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t
   __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
@@ -444,7 +442,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource>
-  [[nodiscard]] _CCCL_HOST ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
   __estimate(_HostMemoryResource __host_mr, ::cuda::stream_ref __stream) const
   {
     const auto __num_regs = __sketch.size();
@@ -527,7 +525,7 @@ public:
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
-    auto const __precision_from_sd =
+    const auto __precision_from_sd =
       static_cast<::cuda::std::int32_t>(::cuda::std::ceil(2.0 * ::cuda::std::log2(1.106 / __standard_deviation)));
 
     //  minimum precision is 4 or 64 bytes
@@ -565,7 +563,7 @@ private:
   //!
   //! @param __i Register index
   //! @param __value New value
-  _CCCL_DEVICE constexpr void __update_max(int __i, __register_type __value) noexcept
+  _CCCL_DEVICE_API constexpr void __update_max(int __i, __register_type __value) noexcept
   {
     ::cuda::atomic_ref<__register_type, _Scope> __register_ref(__sketch[__i]);
     __register_ref.fetch_max(__value, ::cuda::memory_order_relaxed);
@@ -580,7 +578,7 @@ private:
   //!
   //! @returns True iff kernel configuration is successful
   template <typename _Kernel>
-  [[nodiscard]] _CCCL_HOST constexpr bool __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes) const
+  [[nodiscard]] _CCCL_HOST_API constexpr bool __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes) const
   {
     int __device = -1;
     _CCCL_TRY_CUDA_API(::cudaGetDevice, "cudaGetDevice failed", &__device);
