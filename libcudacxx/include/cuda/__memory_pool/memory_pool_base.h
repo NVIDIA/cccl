@@ -446,7 +446,6 @@ public:
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
-
     _CCCL_ASSERT_CUDA_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
