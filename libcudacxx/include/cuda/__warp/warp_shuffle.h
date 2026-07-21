@@ -103,8 +103,12 @@ _CCCL_DEVICE_API auto __shuffle_cast(const _Tp& __data) noexcept
            "=r"(__array[2]),
            "=r"(__array[3]) : "q"(__value));),
       ({
-        asm("mov.b64 {%0, %1}, %2;" : "=r"(__array[0]), "=r"(__array[1]) : "l"(__value));
-        asm("mov.b64 {%0, %1}, %2;" : "=r"(__array[2]), "=r"(__array[3]) : "l"(__value >> 64));
+        asm("mov.b64 {%0, %1}, %2;"
+            : "=r"(__array[0]), "=r"(__array[1])
+            : "l"(static_cast<::cuda::std::uint64_t>(__value)));
+        asm("mov.b64 {%0, %1}, %2;"
+            : "=r"(__array[2]), "=r"(__array[3])
+            : "l"(static_cast<::cuda::std::uint64_t>(__value >> 64)));
       }))
     return __array;
   }
