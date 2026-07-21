@@ -870,6 +870,60 @@ def test_transform_iterator_stateful_op():
     np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-3)
 
 
+def test_transform_iterator_stateful_op_alignment_padding():
+    """A stateful transform op follows an aligned int32 counting state."""
+    num_items = 257
+    h_src = np.arange(num_items, dtype=np.int64)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_plus_one(i: np.int32) -> np.int64:
+        return src[i] + np.int64(1)
+
+    transform_it = TransformIterator(CountingIterator(np.int32(0)), gather_plus_one)
+    d_output = DeviceArray.empty(1, dtype=np.int64)
+    h_init = np.zeros(1, dtype=np.int64)
+    expected = np.sum(h_src + np.int64(1))
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_array_equal(d_output.copy_to_host(), np.asarray([expected]))
+
+
+def test_transform_iterator_stateful_op_advance():
+    """Advancing a stateful transform iterator preserves its captured state."""
+    num_items = 311
+    offset = 67
+    h_src = np.arange(num_items, dtype=np.float32)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_double(i: np.int64) -> np.float32:
+        return src[i] * np.float32(2.0)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+    advanced_it = transform_it + offset
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+    expected = np.sum(h_src[offset:] * np.float32(2.0))
+
+    cuda.compute.reduce_into(
+        d_in=advanced_it,
+        d_out=d_output,
+        num_items=num_items - offset,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_allclose(
+        d_output.copy_to_host(), np.asarray([expected]), atol=1e-3
+    )
+
+
 def test_transform_iterator_stateful_op_refreshes_captured_array_pointer():
     """A stateful transform iterator reads a captured array's current pointer."""
 
