@@ -280,7 +280,8 @@ struct _Sorter
     _BinaryOp __cmp,
     ::std::vector<__buffer<::cuda::std::size_t>>* __local_samples_size_bytes,
     ::std::vector<::cuda::std::size_t>* __local_sendcounts_bytes,
-    ::std::vector<__buffer<_Tp>>* __local_probes)
+    ::std::vector<__buffer<_Tp>>* __local_probes,
+    ::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible>* __probe_count)
   {
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
@@ -373,17 +374,6 @@ struct _Sorter
     }
 
     // ---- 4. Root merges the p sorted runs into one sorted probe set ----
-#if _CCCL_CTK_AT_LEAST(12, 9)
-    auto __probe_count = ::cuda::make_pinned_buffer<::cuda::std::uint64_t>(
-      ::cuda::stream_ref{::cudaStream_t{}}, /*__size=*/::cuda::std::size_t{1}, ::cuda::no_init);
-#else // ^^^ CUDA 12.9+ ^^^ / vvv CUDA 12.8- vvv
-    auto __probe_count = ::cuda::make_buffer<::cuda::std::uint64_t>(
-      ::cuda::stream_ref{::cudaStream_t{}},
-      ::cuda::mr::legacy_pinned_memory_resource{},
-      /*__size=*/::cuda::std::size_t{1},
-      ::cuda::no_init);
-#endif // ^^^ CUDA 12.8- ^^^
-
     for (auto&& [__comm, __env, __probes] : ::cuda::std::ranges::views::zip(__comms, __envs, *__local_probes))
     {
       if (__comm.rank() == __ROOT_RANK)
@@ -397,7 +387,7 @@ struct _Sorter
           ::cuda::std::move(__cmp),
           &__probes);
 
-        __probe_count.front() = __probes.size();
+        __probe_count->front() = __probes.size();
         break;
       }
     }
@@ -410,7 +400,7 @@ struct _Sorter
 
       for (auto&& [__comm, __stream] : ::cuda::std::ranges::views::zip(__comms, __streams))
       {
-        auto* const __ptr = __probe_count.data();
+        auto* const __ptr = __probe_count->data();
 
         __comm.broadcast(__guard, __ptr, __ptr, 1, __ROOT_RANK, __stream);
       }
@@ -422,7 +412,7 @@ struct _Sorter
       {
         // wait for comm
         __stream.sync();
-        __resize_for_overwrite(__probes, __probe_count.front());
+        __resize_for_overwrite(__probes, __probe_count->front());
       }
     }
 
@@ -433,7 +423,7 @@ struct _Sorter
       {
         auto* const __ptr = __probes.__get().data();
 
-        __comm.broadcast(__guard, __ptr, __ptr, __probe_count.front(), __ROOT_RANK, __stream);
+        __comm.broadcast(__guard, __ptr, __ptr, __probe_count->front(), __ROOT_RANK, __stream);
       }
     }
   }
@@ -551,13 +541,9 @@ struct _Sorter
     _InputRange&& __local_inputs)
   {
     ::std::vector<__buffer<::cuda::std::size_t>> __local_send_counts_bytes;
-    ::std::vector<__buffer<::cuda::std::size_t>> __local_send_displs_bytes;
     ::std::vector<__buffer<::cuda::std::size_t>> __local_recv_counts_bytes;
-
     ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs_bytes;
     ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs_bytes;
 
     ::std::vector<__buffer<_Tp>> __local_recvd;
 
@@ -565,12 +551,10 @@ struct _Sorter
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
     __local_send_counts_bytes.reserve(__num_local_inputs);
-    __local_send_displs_bytes.reserve(__num_local_inputs);
     __local_recv_counts_bytes.reserve(__num_local_inputs);
     __local_h_send_counts_bytes.reserve(__num_local_inputs);
-    __local_h_send_displs_bytes.reserve(__num_local_inputs);
     __local_h_recv_counts_bytes.reserve(__num_local_inputs);
-    __local_h_recv_displs_bytes.reserve(__num_local_inputs);
+
     __local_recvd.reserve(__num_local_inputs);
 
     for (auto&& [__comm, __env, __stream, __resource, __input, __Ls, __Us, __probes] : ::cuda::std::ranges::views::zip(
@@ -578,10 +562,8 @@ struct _Sorter
     {
       auto& __send_counts_bytes =
         __local_send_counts_bytes.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env);
-      auto& __send_displs_bytes =
-        __local_send_displs_bytes.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env);
 
-      auto __out = ::cuda::make_zip_iterator(__send_counts_bytes.begin(), __send_displs_bytes.begin());
+      auto __out = __send_counts_bytes.begin();
 
       const auto __input_begin = ::cuda::std::ranges::begin(__input);
 
@@ -612,7 +594,10 @@ struct _Sorter
           // Route this rank's local keys to destination ranks via the splitter keys: the Data
           // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
           // processor i". HSS reuses this phase unchanged (Section 3.3), so bucket d receives
-          // the keys in [S(d - 1), S(d)) and its (count, displ) become the send metadata.
+          // the keys in [S(d - 1), S(d)) and its count becomes the send metadata. The send
+          // displacements are the exclusive prefix-sum of these counts (buckets are contiguous
+          // and non-overlapping), so we recompute them on the host below instead of emitting a
+          // second device column here.
           auto __hi = __input_end;
 
           if (__d != __num_splitters)
@@ -625,11 +610,10 @@ struct _Sorter
             __lo = ::cuda::std::lower_bound(__lo, __hi, __splitter_it[__d - 1], __cmp);
           }
 
-          const auto __displ_bytes = (__lo - __input_begin) * sizeof(_Tp);
           const auto __count_bytes = (__hi - __lo) * sizeof(_Tp);
 
           __lo = __hi;
-          return ::cuda::std::tuple{__count_bytes, __displ_bytes};
+          return __count_bytes;
         };
 
       __CUDAX_MULTI_GPU_DISPATCH(
@@ -656,30 +640,27 @@ struct _Sorter
       }
     }
 
-    for (auto&& [__comm, __stream, __resource, __env, __send_counts_bytes, __send_displs_bytes, __recv_counts_bytes] :
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs_bytes;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs_bytes;
+
+    __local_h_send_displs_bytes.reserve(__num_local_inputs);
+    __local_h_recv_displs_bytes.reserve(__num_local_inputs);
+    for (auto&& [__comm, __stream, __resource, __env, __send_counts_bytes, __recv_counts_bytes] :
          ::cuda::std::ranges::views::zip(
-           __comms,
-           __streams,
-           __resources,
-           __envs,
-           __local_send_counts_bytes,
-           __local_send_displs_bytes,
-           __local_recv_counts_bytes))
+           __comms, __streams, __resources, __envs, __local_send_counts_bytes, __local_recv_counts_bytes))
     {
-      auto __recv_displs_bytes = __recv_counts_bytes.__make_empty_like();
-
-      __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
-        ::cub::DeviceScan::ExclusiveSum,
-        __recv_counts_bytes.begin(),
-        __recv_displs_bytes.begin(),
-        __recv_counts_bytes.size(),
-        __env);
-
       auto& __h_send_counts_bytes = __local_h_send_counts_bytes.emplace_back(__send_counts_bytes.size());
-      auto& __h_send_displs_bytes = __local_h_send_displs_bytes.emplace_back(__send_displs_bytes.size());
       auto& __h_recv_counts_bytes = __local_h_recv_counts_bytes.emplace_back(__recv_counts_bytes.size());
-      auto& __h_recv_displs_bytes = __local_h_recv_displs_bytes.emplace_back(__recv_displs_bytes.size());
+
+      auto& __h_send_displs_bytes = __local_h_send_displs_bytes.emplace_back();
+      auto& __h_recv_displs_bytes = __local_h_recv_displs_bytes.emplace_back();
+
+      // The send/recv displacements are just the exclusive prefix-sums of the
+      // corresponding counts, and both are consumed only on the host (below and in the
+      // all_to_all_v). counts is small (O(ranks)), so we scan on the host after the
+      // sync instead of paying a device scan plus a D2H copy of the result.
+      __h_send_displs_bytes.reserve(__send_counts_bytes.size());
+      __h_recv_displs_bytes.reserve(__recv_counts_bytes.size());
 
       ::cuda::copy_bytes(
         __stream,
@@ -690,27 +671,25 @@ struct _Sorter
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
         __stream,
-        __send_displs_bytes.__get(),
-        __h_send_displs_bytes,
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
-      ::cuda::copy_bytes(
-        __stream,
         __recv_counts_bytes.__get(),
         __h_recv_counts_bytes,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
-      ::cuda::copy_bytes(
-        __stream,
-        __recv_displs_bytes,
-        __h_recv_displs_bytes,
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
 
       __stream.sync();
+
+      // Host counts are only valid post-sync, so scan the displacements here.
+      ::cuda::std::exclusive_scan(
+        __h_send_counts_bytes.begin(),
+        __h_send_counts_bytes.end(),
+        ::cuda::std::back_inserter(__h_send_displs_bytes),
+        ::cuda::std::size_t{0});
+      ::cuda::std::exclusive_scan(
+        __h_recv_counts_bytes.begin(),
+        __h_recv_counts_bytes.end(),
+        ::cuda::std::back_inserter(__h_recv_displs_bytes),
+        ::cuda::std::size_t{0});
 
       const auto __total_recv = (__h_recv_displs_bytes.back() + __h_recv_counts_bytes.back()) / sizeof(_Tp);
 
@@ -1240,6 +1219,21 @@ struct _Sorter
           __local_hist.emplace_back(__stream, __resource, __env);
         }
 
+        // Allocated once and reused across sampling rounds. It is fully
+        // overwritten each round (root writes it before the broadcast), so
+        // storage-only reuse is safe. Pinned allocation is expensive and
+        // serializes the stream, so we avoid re-allocating it K times.
+#if _CCCL_CTK_AT_LEAST(12, 9)
+        auto __probe_count = ::cuda::make_pinned_buffer<::cuda::std::uint64_t>(
+          ::cuda::stream_ref{::cudaStream_t{}}, /*__size=*/::cuda::std::size_t{1}, ::cuda::no_init);
+#else // ^^^ CUDA 12.9+ ^^^ / vvv CUDA 12.8- vvv
+        auto __probe_count = ::cuda::make_buffer<::cuda::std::uint64_t>(
+          ::cuda::stream_ref{::cudaStream_t{}},
+          ::cuda::mr::legacy_pinned_memory_resource{},
+          /*__size=*/::cuda::std::size_t{1},
+          ::cuda::no_init);
+#endif // ^^^ CUDA 12.8- ^^^
+
         // Note: K is small, on the order of ~1-10
         const auto __K = ::cuda::std::max(
           static_cast<::cuda::std::int32_t>(
@@ -1290,7 +1284,8 @@ struct _Sorter
             __cmp,
             &__local_samples_sizes_bytes,
             &__local_sample_sendcounts_bytes,
-            &__local_probes);
+            &__local_probes,
+            &__probe_count);
 
           __local_histogram(__comms, __envs, __local_inputs, __local_probes, __cmp, &__local_hist);
 
