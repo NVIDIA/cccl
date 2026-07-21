@@ -242,9 +242,7 @@ message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   if (LIBCUDACXX_SKIP_LIT_BUILD)
-    add_custom_target(
-      libcudacxx.test.lit.precompile
-    )
+    add_custom_target(libcudacxx.test.lit.precompile)
   else()
     # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
     # Only executed if explicitly requested.
