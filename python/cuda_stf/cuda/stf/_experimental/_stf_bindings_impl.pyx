@@ -292,11 +292,10 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps)
 
     #
-    # Stackable contexts (PR #8165 features ported on top of the opaque-handle
-    # C API). All stackable_* entry points reuse existing handle types where
-    # appropriate (stf_ctx_handle, stf_logical_data_handle, stf_task_handle,
-    # stf_host_launch_handle); only while/repeat scopes have their own opaque
-    # handles.
+    # Stackable contexts. All stackable_* entry points reuse existing handle
+    # types where appropriate (stf_ctx_handle, stf_logical_data_handle,
+    # stf_task_handle, stf_host_launch_handle); only while/repeat scopes have
+    # their own opaque handles.
     #
     stf_ctx_handle stf_stackable_ctx_create()
     void stf_stackable_ctx_finalize(stf_ctx_handle ctx) nogil
@@ -3496,10 +3495,10 @@ cdef class context:
 
 
 # ===========================================================================
-# Stackable bindings (PR #8165 features ported on top of the opaque-handle
-# C API). The classes below mirror the non-stackable surface, but every C
-# call goes through the stf_stackable_* entry points so logical data is
-# auto-pushed across nested scopes (push_graph / push_while / push_repeat).
+# Stackable bindings. The classes below mirror the non-stackable surface,
+# but every C call goes through the stf_stackable_* entry points so logical
+# data is auto-pushed across nested scopes (push_graph / push_while /
+# push_repeat).
 # ===========================================================================
 
 cdef class stackable_logical_data:
