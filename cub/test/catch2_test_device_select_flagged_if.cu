@@ -55,13 +55,9 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, select_flagged_if);
 
 using custom_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 
-struct is_even_t
+struct is_even_t : cuda::__is_even
 {
-  template <typename T>
-  __host__ __device__ bool operator()(T const& elem) const
-  {
-    return cuda::__is_even{}(elem);
-  }
+  using __is_even::operator();
 
   template <template <typename> class... Policies>
   __host__ __device__ bool operator()(c2h::custom_type_t<Policies> elem) const
