@@ -2994,7 +2994,8 @@ private:
       detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
-    constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
+    // Only read inside the `needs_set_determinism` branch below; unused otherwise.
+    [[maybe_unused]] constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
 
     // `process_impl` handles `k == 0` and select-all, so the radix path sees a strict `0 < k < segment_size`.
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
