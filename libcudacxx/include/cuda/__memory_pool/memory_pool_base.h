@@ -443,15 +443,14 @@ public:
   _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
     const size_t,
-    [[maybe_unused]] const size_t __alignment =
-      ::cuda::mr::default_cuda_malloc_alignment) noexcept // NOLINT(bugprone-exception-escape)
+    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
+
     _CCCL_ASSERT_CUDA_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
       reinterpret_cast<::CUdeviceptr>(__ptr),
-      // This may throw
       __cccl_allocation_stream().get());
   }
 

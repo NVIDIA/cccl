@@ -483,12 +483,13 @@ _CCCL_HOST_API inline void __mempoolTrimTo(::CUmemoryPool __pool, ::cuda::std::s
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to trim a memory pool", __pool, __min_bytes_to_keep);
 }
 
-_CCCL_HOST_API inline ::cudaError_t
-__freeAsyncNoThrow(::CUdeviceptr __dptr, ::CUstream __stream) noexcept // NOLINT(bugprone-exception-escape)
+// NOLINTBEGIN(bugprone-exception-escape)
+_CCCL_HOST_API inline ::cudaError_t __freeAsyncNoThrow(::CUdeviceptr __dptr, ::CUstream __stream) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFreeAsync);
   return static_cast<::cudaError_t>(__driver_fn(__dptr, __stream));
 }
+// NOLINTEND(bugprone-exception-escape)
 
 _CCCL_HOST_API inline void
 __mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::cuda::std::size_t __count)

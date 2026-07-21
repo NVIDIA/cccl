@@ -67,7 +67,6 @@ thrust::host_vector<float> sort_unordered_results(thrust::host_vector<float> h_r
 //---------------------------------------------------------------------
 // Main
 //--------------------------------------------------------------------
-
 int main(int argc, char** argv)
 {
   int num_items = 10240;
