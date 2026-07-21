@@ -9,4 +9,4 @@ set -euo pipefail
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export CCCL_C_PARALLEL_SANITIZE_THREAD=1
-exec "$ci_dir/build_cuda_cccl_python.sh" "$@"
+"$ci_dir/build_cuda_cccl_python.sh" "$@"

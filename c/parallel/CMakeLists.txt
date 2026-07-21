@@ -58,12 +58,14 @@ endif()
 
 if (CCCL_C_PARALLEL_SANITIZE_THREAD)
   # Host-only: -fsanitize=thread on C++ TUs, and forwarded to the host compiler
-  # for the host side of each .cu. -g keeps file:line frames in TSan reports.
+  # (-Xcompiler, one flag per prefix) for the host side of each .cu. -g keeps
+  # file:line frames in TSan reports; -fno-omit-frame-pointer keeps complete stack
+  # traces through heavily inlined CUB/Thrust code.
   target_compile_options(
     cccl.c.parallel
     PRIVATE
-      $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=thread;-g>
-      $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fsanitize=thread;-g>
+      $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=thread;-fno-omit-frame-pointer;-g>
+      $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fsanitize=thread;-Xcompiler=-fno-omit-frame-pointer;-g>
   )
   target_link_options(cccl.c.parallel PRIVATE -fsanitize=thread)
 endif()

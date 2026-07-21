@@ -75,13 +75,14 @@ fi
 #
 # ignore_noninstrumented_modules=1: only c.parallel is instrumented, so ignore
 # races inside uninstrumented CPython / CUDA libs (avoids boundary false
-# positives). halt_on_error=0: report every race, not just the first.
+# positives). halt_on_error=1: stop at the first race -- it is usually the root
+# cause, and later reports are typically downstream noise.
 # exitcode=66: exit non-zero when any (unsuppressed) race is found, failing the
 # job even though pytest itself passes.
 run_under_tsan() {
   setarch -R env \
     LD_PRELOAD="${tsan_runtime}" \
-    TSAN_OPTIONS="ignore_noninstrumented_modules=1 halt_on_error=0 history_size=7 exitcode=66" \
+    TSAN_OPTIONS="ignore_noninstrumented_modules=1 halt_on_error=1 history_size=7 exitcode=66" \
     "$@"
 }
 
