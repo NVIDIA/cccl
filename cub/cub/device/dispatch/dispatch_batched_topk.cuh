@@ -892,8 +892,8 @@ _CCCL_HOST_API cudaError_t dispatch(
   };
 
   return detail::dispatch_compute_cap(selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
-    CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
-    if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_algorithm::baseline)
+    constexpr topk_policy active_policy = policy_getter();
+    if constexpr (active_policy.backend == topk_algorithm::baseline)
     {
       if (empty_batch_no_launch())
       {
@@ -912,7 +912,7 @@ _CCCL_HOST_API cudaError_t dispatch(
         num_segments,
         stream);
     }
-    else if CUB_DETAIL_CONSTEXPR_ISH (active_policy.backend == topk_algorithm::cluster)
+    else if constexpr (active_policy.backend == topk_algorithm::cluster)
     {
       if (empty_batch_no_launch())
       {

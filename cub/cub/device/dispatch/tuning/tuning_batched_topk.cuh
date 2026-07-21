@@ -490,8 +490,6 @@ enum class backend_mode
   return (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
 }
 
-// Field-based backend selector (like DeviceScan's / DeviceTransform's `policy_selector`): one selector that builds both
-// sub-policies inline and makes the backend decision from plain value fields (keeping it a regular value type).
 // `baseline_can_cover` is supplied by the dispatch, which alone knows the concrete agent types needed for the
 // shared-memory fit, so this selector stays free of the agent-type-dependent `find_smallest_covering_policy` machinery.
 struct policy_selector
