@@ -275,7 +275,7 @@ Test organization:
 
 ## Continuous Integration (CI)
 
-See `ci-overview.md` for detailed examples and troubleshooting guidance.
+See `docs/infrastructure/ci/references/ci_overview.rst` for detailed examples and troubleshooting guidance.
 
 CCCL's CI is built on GitHub Actions and relies on a dynamically generated job matrix plus several helper scripts.
 
@@ -364,7 +364,7 @@ When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills
 
 * Validate changes with builds/tests; report results.
 * Run `pre-commit` before committing.
-* Review `CONTRIBUTING.md` and `ci-overview.md` before starting work.
+* Review `CONTRIBUTING.md` and `docs/infrastructure/ci/references/ci_overview.rst` before starting work.
 
 ### Performance Tips
 

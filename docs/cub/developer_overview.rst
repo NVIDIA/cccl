@@ -1,4 +1,4 @@
-CUB Developer Overview
+Developer Overview
 ##########################
 
 .. toctree::
