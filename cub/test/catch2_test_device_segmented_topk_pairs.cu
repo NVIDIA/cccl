@@ -1053,9 +1053,13 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr auto direction     = c2h::get<0, TestType>::value;
-  constexpr auto tie_break     = c2h::get<1, TestType>::value;
-  constexpr auto determinism   = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr auto direction                    = c2h::get<0, TestType>::value;
+  constexpr auto tie_break                    = c2h::get<1, TestType>::value;
+  [[maybe_unused]] constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu; // nvhpc
+                                                                                                             // warns,
+                                                                                                             // only
+                                                                                                             // used in
+                                                                                                             // nttp
   constexpr bool prefer_larger = tie_break == cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
   constexpr segment_size_t static_max_segment_size = 2048;
   constexpr segment_size_t static_max_k            = 1024;
