@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -66,14 +67,20 @@ _CCCL_GLOBAL_CONSTANT auto __get_guarantees = __get_guarantees_t{};
 
 //! @brief Bundles a pack of guarantees into an environment that can be passed to device-wide parallel algorithms.
 //!
-//! Each guarantee is stored by value, preserving any runtime state it carries.
+//! @param __guarantees The guarantees to bundle. Each guarantee must be nothrow copy constructible. It is stored by
+//! value, preserving any runtime state it carries.
+//! @return An environment carrying the bundled guarantees.
 // The returned property is keyed by __get_guarantees_t so that individual guarantees are only visible to algorithms
-// through the guarantees environment, mirroring how cuda::execution::require exposes requirements.
+// through the guarantees environment, mirroring how cuda::execution::require exposes requirements. The key is spelled
+// __get_guarantees_t{} rather than reusing the __get_guarantees global: odr-using the global inside this inline
+// host-device function would reference a per-TU internal-linkage object in device passes (see _CCCL_GLOBAL_CONSTANT).
 template <class... _Guarantees>
 [[nodiscard]] _CCCL_NODEBUG_API constexpr auto guarantee(_Guarantees... __guarantees) noexcept
 {
   static_assert((::cuda::std::is_base_of_v<__guarantee, _Guarantees> && ...),
                 "Only guarantees can be passed to guarantee");
+  static_assert((::cuda::std::is_nothrow_copy_constructible_v<_Guarantees> && ...),
+                "Guarantees must be nothrow copy constructible");
 
   ::cuda::std::execution::env<_Guarantees...> __env{__guarantees...};
 

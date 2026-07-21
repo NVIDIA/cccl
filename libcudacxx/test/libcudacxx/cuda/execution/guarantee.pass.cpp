@@ -28,7 +28,7 @@ struct bound_guarantee : exec::__guarantee
 {
   int __bound;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto query(get_bound_t) const noexcept -> int
+  [[nodiscard]] TEST_FUNC constexpr auto query(get_bound_t) const noexcept -> int
   {
     return __bound;
   }
@@ -36,7 +36,7 @@ struct bound_guarantee : exec::__guarantee
 
 struct flag_guarantee : exec::__guarantee
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto query(get_flag_t) const noexcept -> bool
+  [[nodiscard]] TEST_FUNC constexpr auto query(get_flag_t) const noexcept -> bool
   {
     return true;
   }
@@ -50,11 +50,20 @@ TEST_FUNC constexpr bool test()
   const auto guarantees = exec::__get_guarantees(genv);
   assert(guarantees.query(get_bound_t{}) == 42);
 
-  // guarantee(...) accepts multiple guarantees; each is stored by value and stays individually queryable.
+  // guarantee(...) accepts multiple guarantees. Each stays individually queryable.
   const auto multi_genv       = exec::guarantee(bound_guarantee{{}, 7}, flag_guarantee{});
   const auto multi_guarantees = exec::__get_guarantees(multi_genv);
   assert(multi_guarantees.query(get_bound_t{}) == 7);
   assert(multi_guarantees.query(get_flag_t{}));
+
+  // Guarantees are stored by value: mutating the original after bundling must not affect the bundled copy.
+  bound_guarantee original{{}, 1};
+  const auto stored = exec::guarantee(original);
+  original.__bound  = 2;
+  assert(exec::__get_guarantees(stored).query(get_bound_t{}) == 1);
+
+  // Bundling guarantees is noexcept.
+  static_assert(noexcept(exec::guarantee(bound_guarantee{{}, 42}, flag_guarantee{})));
 
   // The guarantees environment only answers the queries of the guarantees it bundles.
   static_assert(!cuda::std::execution::__queryable_with<decltype(guarantees), get_flag_t>);
