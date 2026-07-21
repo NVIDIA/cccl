@@ -82,6 +82,13 @@ parse_options() {
 
     local -a DOCKER_RUN_ARGS=();
 
+    if command -v code > /dev/null 2>&1 ; then
+      docker_mode=false
+    else
+      # no vscode, default to docker
+      docker_mode=true
+    fi
+
     while true; do
         case "$1" in
             -c|--cuda)
@@ -328,6 +335,16 @@ main() {
     if [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
         path=".devcontainer"
     else
+        if [[ -z ${cuda_version:-} ]]; then
+          echo "Must also provide a CUDA version when specifying the host compiler" >&2
+          exit 2
+        fi
+
+        if [[ -z ${host_compiler:-} ]]; then
+          echo "Must also provide a host compiler when specifying the cuda version" >&2
+          exit 2
+        fi
+
         if ${cuda_ext:-false}; then
           cuda_suffix="ext"
         fi
