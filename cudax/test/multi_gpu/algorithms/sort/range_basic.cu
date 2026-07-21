@@ -229,7 +229,7 @@ MULTI_GPU_TEST("inputs with some empty ranks", sort_types)
   std::vector<c2h::host_vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 1; rank < input.size(); rank += 2)
   {
-    fill_random(input[rank], 100, rng);
+    fill_random(input[rank], 1'000, rng);
   }
 
   check_sort_case_sections(comms, input);
@@ -311,7 +311,7 @@ MULTI_GPU_TEST("inputs with many equal keys", sort_types)
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(100);
+    local.resize(1'000);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
@@ -333,7 +333,7 @@ MULTI_GPU_TEST("presorted inputs", sort_types)
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(100);
+    local.resize(1'000);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
@@ -355,7 +355,7 @@ MULTI_GPU_TEST("reverse-sorted inputs", sort_types)
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(100);
+    local.resize(1'000);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
@@ -377,7 +377,7 @@ MULTI_GPU_TEST("skewed rank sizes", sort_types)
   std::vector<c2h::host_vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
-    fill_random(input[rank], rank == 0 ? 200 : 1, rng);
+    fill_random(input[rank], rank == 0 ? 1'000 : 1, rng);
   }
 
   check_sort_case_sections(comms, input);
@@ -391,7 +391,7 @@ MULTI_GPU_TEST("nonstandard comparator", )
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(100);
+    local.resize(1'000);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
