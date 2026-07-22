@@ -922,8 +922,9 @@ _CCCL_HOST_API cudaError_t dispatch(
 
   // A deterministic result set / concrete tie-break preference can only be honored by the cluster backend. A `tune`d
   // selector that forces the baseline backend for such a request cannot serve it; guard it below.
-  constexpr bool deterministic = (Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
-                              || (TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
+  [[maybe_unused]] constexpr bool deterministic =
+    (Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
+    || (TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
 
 #if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
   && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
