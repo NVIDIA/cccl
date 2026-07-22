@@ -158,18 +158,18 @@ namespace cuda::experimental
 //! a public alias can be introduced then.
 //!
 //! Holds the IEEE-754 binary encoding of a double (sign, exponent and mantissa bits).
-typedef uint64_t __fpbits64;
+using __fpbits64 = uint64_t;
 
 //! @brief Unpacked representation of a double-precision floating point number
 //!
 //! @internal Library-internal type (see __fpbits64). Represents a double in unpacked
 //! form (separate sign, exponent, mantissa) for the *_unpacked builtins; not public.
-typedef struct
+struct __fpbits64_unpacked
 {
   uint32_t sign;
   uint32_t exponent;
   uint64_t mantissa;
-} __fpbits64_unpacked;
+};
 
 //! @brief Rounding modes for floating point operations (internal)
 //!
@@ -320,49 +320,6 @@ constexpr uint32_t __fpemu_bias           = 1023;
 constexpr uint32_t __fpemu_inf_zero       = 0x00007ff0 - __fpemu_bias - 2048 - 1 + 0xC;
 ; // - 128
 
-/*
-// by default route fpemu's internal bit-casts through
-// cuda::std::bit_cast. _CCCL_FPEMU_BIT_CAST is the single switch point --
-// define it before including the fpemu headers for a fast re-map back to the
-// in-house polyfill, e.g.:
-//   #define _CCCL_FPEMU_BIT_CAST(To, v) \
-//       ::cuda::experimental::__fpemu_builtin_bit_cast<To>(v)
-*/
-#ifndef _CCCL_FPEMU_BIT_CAST
-#  define _CCCL_FPEMU_BIT_CAST(To, v) ::cuda::std::bit_cast<To>(v)
-#endif
-
-// In-house bit cast polyfill, kept available as the _CCCL_FPEMU_BIT_CAST
-// fallback target. Similar to C++20 std::bit_cast.
-template <typename _Tp, typename _Rp>
-_CCCL_API _Tp __fpemu_builtin_bit_cast(const _Rp __value) noexcept
-{
-  _Tp __dst;
-#if defined __DO_NOT_USE_MEMCPY__
-  for (unsigned __i = 0U; __i < sizeof(_Tp); __i++)
-  {
-    unsigned char* __ptr_src = __i + (unsigned char*) (&__value);
-    unsigned char* __ptr_dst = __i + (unsigned char*) (&__dst);
-    *__ptr_dst               = *__ptr_src;
-  }
-#else
-#  if !defined(__CUDA_LIBDEVICE__)
-  std::memcpy(static_cast<void*>(&__dst), static_cast<const void*>(&__value), sizeof(_Tp));
-#  else
-  memcpy(static_cast<void*>(&__dst), static_cast<const void*>(&__value), sizeof(_Tp));
-#  endif
-#endif
-  return __dst;
-}
-
-// Internal bit cast utility used throughout the library. Delegates to the
-// _CCCL_FPEMU_BIT_CAST switch macro (cuda::std::bit_cast by default).
-template <typename _Tp, typename _Rp>
-_CCCL_API _Tp __fpemu_bit_cast(const _Rp __value) noexcept
-{
-  return _CCCL_FPEMU_BIT_CAST(_Tp, __value);
-}
-
 //! @brief Enumeration for classifying floating point numbers
 //!
 //! This enum class defines the different categories that a floating point number
@@ -451,7 +408,7 @@ struct __uint32x4
 //! front end follows `cl.exe` and has no 128-bit type) it falls back to a small
 //! emulation that implements only the operations fpemu needs. The layout is
 //! little-endian (`__lo_` then `__hi_`) so the type stays bit-compatible with
-//! `__uint64x2` / `__uint32x4` (for `__fpemu_bit_cast`) and with
+//! `__uint64x2` / `__uint32x4` (for `::cuda::std::bit_cast`) and with
 //! `reinterpret_cast<uint64_t*>` (low word first).
 //!
 //! The define `_CCCL_FPEMU_FORCE_EMULATED_INT128` forces the emulated path even
@@ -632,8 +589,8 @@ _CCCL_TRIVIAL_API uint32_t __mul_32(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   uint32_t __res;
 #if defined __CUDA_ARCH__
-  __uint32x2 __a64 = __fpemu_bit_cast<__uint32x2>(__a);
-  __uint32x2 __b64 = __fpemu_bit_cast<__uint32x2>(__b);
+  __uint32x2 __a64 = ::cuda::std::bit_cast<__uint32x2>(__a);
+  __uint32x2 __b64 = ::cuda::std::bit_cast<__uint32x2>(__b);
   uint32_t __res32;
   asm("{\n\t"
       ".reg .u32 r0, ahi, bhi;\n\t"
@@ -675,8 +632,8 @@ _CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
   __uint32x2 __res;
 #if defined __CUDA_ARCH__
-  uint64_t __a64 = __fpemu_bit_cast<uint64_t>(__a);
-  uint64_t __b64 = __fpemu_bit_cast<uint64_t>(__b);
+  uint64_t __a64 = ::cuda::std::bit_cast<uint64_t>(__a);
+  uint64_t __b64 = ::cuda::std::bit_cast<uint64_t>(__b);
   uint64_t __res64;
   asm("{\n\t"
       ".reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;\n\t"
@@ -693,7 +650,7 @@ _CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
       "}"
       : "=l"(__res64)
       : "l"(__a64), "l"(__b64));
-  __res = __fpemu_bit_cast<__uint32x2>(__res64);
+  __res = ::cuda::std::bit_cast<__uint32x2>(__res64);
 #else
   // Split inputs into 32-bit parts
   uint32_t __alo = __a.x[0], __ahi = __a.x[1];
@@ -768,10 +725,10 @@ _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
   __res.lo.x[1] = __mid_lo;
 
 #if defined __CUDA_ARCH__
-  uint64_t __a64   = __fpemu_bit_cast<uint64_t>(__a);
-  uint64_t __b64   = __fpemu_bit_cast<uint64_t>(__b);
+  uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
+  uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
   uint64_t __res64 = __umul64hi(__a64, __b64);
-  __res.hi         = __fpemu_bit_cast<__uint32x2>(__res64);
+  __res.hi         = ::cuda::std::bit_cast<__uint32x2>(__res64);
 #else
   uint64_t __hi_hi    = uint64_t(__ahi) * __bhi; // (a.hi * b.hi)
   uint32_t __lo_hi_hi = uint32_t(__lo_hi >> 32);
@@ -798,9 +755,9 @@ _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @return The shifted value as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
 {
-  uint64_t __man64 = __fpemu_bit_cast<uint64_t>(__man);
+  uint64_t __man64 = ::cuda::std::bit_cast<uint64_t>(__man);
   __man64 <<= __shift;
-  return __fpemu_bit_cast<__uint32x2>(__man64);
+  return ::cuda::std::bit_cast<__uint32x2>(__man64);
 } //__shl_64
 
 //! @brief Shift a 64-bit value right by a specified amount
@@ -813,12 +770,12 @@ _CCCL_TRIVIAL_API __uint32x2 __shl_64(__uint32x2 __man, int __shift) noexcept
 //! @return The shifted value as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __shr_64(__uint32x2 __man, int __shift) noexcept
 {
-  uint64_t __man64 = __fpemu_bit_cast<uint64_t>(__man);
+  uint64_t __man64 = ::cuda::std::bit_cast<uint64_t>(__man);
 #ifndef __CUDA_ARCH__
   __shift = (__shift > 0) ? (__shift > 64) ? 64 : __shift : 0;
 #endif
   __man64 = __man64 >> __shift;
-  return __fpemu_bit_cast<__uint32x2>(__man64);
+  return ::cuda::std::bit_cast<__uint32x2>(__man64);
 } //__shr_64
 
 //! @brief Logical right shift with directed rounding (HA/def paths)
@@ -892,7 +849,7 @@ _CCCL_TRIVIAL_API float __fadd_dir(float __x, float __y) noexcept
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __sign = false) noexcept
 {
-  uint64_t __man64 = __fpemu_bit_cast<uint64_t>(__man);
+  uint64_t __man64 = ::cuda::std::bit_cast<uint64_t>(__man);
 #ifndef __CUDA_ARCH__
   __shift = (__shift > 0) ? (__shift > 64) ? 64 : __shift : 0;
 #endif
@@ -919,7 +876,7 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __
       __man64++;
     }
   }
-  return __fpemu_bit_cast<__uint32x2>(__man64);
+  return ::cuda::std::bit_cast<__uint32x2>(__man64);
 } //__shr_64_rnd
 
 //! @brief Logical right shift of 128-bit mantissa with directed rounding
@@ -985,9 +942,9 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64(__uint32x2 __man, int __shift) noexcept
 #ifndef __CUDA_ARCH__
   __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
 #endif
-  int64_t __man64  = __fpemu_bit_cast<int64_t>(__man);
+  int64_t __man64  = ::cuda::std::bit_cast<int64_t>(__man);
   __man64          = __man64 >> __shift;
-  __uint32x2 __res = __fpemu_bit_cast<__uint32x2>(__man64);
+  __uint32x2 __res = ::cuda::std::bit_cast<__uint32x2>(__man64);
   return __res;
 } //__sar_64_rnd
 
@@ -1009,9 +966,9 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __
 #ifndef __CUDA_ARCH__
   __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
 #endif
-  int64_t __man64     = __fpemu_bit_cast<int64_t>(__man);
+  int64_t __man64     = ::cuda::std::bit_cast<int64_t>(__man);
   int64_t __man64_res = __man64 >> __shift;
-  __uint32x2 __res    = __fpemu_bit_cast<__uint32x2>(__man64_res);
+  __uint32x2 __res    = ::cuda::std::bit_cast<__uint32x2>(__man64_res);
   if constexpr (_Acc == fpemu_accuracy::high)
   {
     uint64_t __mask = (1LLU << __shift) - 1;
@@ -1060,7 +1017,7 @@ _CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __input) noexcept
   __input.x[1] &= 0x7fffffff;
 
   // Shift exponent bits to the beginning
-  __exp = __input.x[1] >> 20;
+  __exp = static_cast<int32_t>(__input.x[1] >> 20);
 
   // Extract mantissa bits
   __input.x[1] = __input.x[1] & 0x000fffff;
@@ -1255,7 +1212,7 @@ _CCCL_TRIVIAL_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man)
   // Pack everything to FP64
   __uint32x2 __res = {__man.x[0], __man.x[1] | (__sign << 31)};
 
-  return __fpemu_bit_cast<uint64_t>(__res);
+  return ::cuda::std::bit_cast<uint64_t>(__res);
 } //__pack
 
 //! @brief Convert a 64-bit value to its two's complement
@@ -1268,9 +1225,9 @@ _CCCL_TRIVIAL_API uint64_t __pack(bool __sign, uint32_t __exp, __uint32x2 __man)
 //! @return The two's complement of the input value
 _CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
 {
-  uint64_t __c64   = __fpemu_bit_cast<uint64_t>(__c);
+  uint64_t __c64   = ::cuda::std::bit_cast<uint64_t>(__c);
   uint64_t __res64 = 0 - __c64; // IMAD.WIDE.U32 Rd, RZ, RZ, -Rc
-  return __fpemu_bit_cast<__uint32x2>(__res64);
+  return ::cuda::std::bit_cast<__uint32x2>(__res64);
 } //__imad_wide_sub
 
 //! @brief Find the position of the most significant set bit in a signed 64-bit value
@@ -1282,7 +1239,7 @@ _CCCL_TRIVIAL_API __uint32x2 __two_comp(__uint32x2 __c) noexcept
 //! @return The position of the most significant set bit (0-based)
 _CCCL_TRIVIAL_API int32_t __flo_s64(__uint32x2 __x) noexcept
 {
-  int64_t __x64 = __fpemu_bit_cast<int64_t>(__x);
+  int64_t __x64 = ::cuda::std::bit_cast<int64_t>(__x);
   return ::cuda::std::countl_zero((uint64_t) (__x64 << 1));
 } //__flo_s64
 
@@ -1295,7 +1252,7 @@ _CCCL_TRIVIAL_API int32_t __flo_s64(__uint32x2 __x) noexcept
 //! @return The position of the most significant set bit (0-based)
 _CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
 {
-  uint64_t __x64 = __fpemu_bit_cast<uint64_t>(__x);
+  uint64_t __x64 = ::cuda::std::bit_cast<uint64_t>(__x);
   // Skip sign bit
   return ::cuda::std::countl_zero((uint64_t) (__x64 & _CCCL_FPEMU_ABS_64));
 } //__flo_u64
@@ -1310,10 +1267,10 @@ _CCCL_TRIVIAL_API int32_t __flo_u64(__uint32x2 __x) noexcept
 //! @return The sum as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
-  uint64_t __a64   = __fpemu_bit_cast<uint64_t>(__a);
-  uint64_t __b64   = __fpemu_bit_cast<uint64_t>(__b);
+  uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
+  uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
   uint64_t __res64 = __a64 + __b64;
-  return __fpemu_bit_cast<__uint32x2>(__res64);
+  return ::cuda::std::bit_cast<__uint32x2>(__res64);
 } //__iadd_u64
 
 //! @brief Subtract two 64-bit unsigned integers
@@ -1326,10 +1283,10 @@ _CCCL_TRIVIAL_API __uint32x2 __iadd_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 //! @return The difference as two 32-bit integers
 _CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 {
-  uint64_t __a64   = __fpemu_bit_cast<uint64_t>(__a);
-  uint64_t __b64   = __fpemu_bit_cast<uint64_t>(__b);
+  uint64_t __a64   = ::cuda::std::bit_cast<uint64_t>(__a);
+  uint64_t __b64   = ::cuda::std::bit_cast<uint64_t>(__b);
   uint64_t __res64 = __a64 - __b64;
-  return __fpemu_bit_cast<__uint32x2>(__res64);
+  return ::cuda::std::bit_cast<__uint32x2>(__res64);
 } //__isub_u64
 
 //! @brief Round a 64-bit value to a specified number of bits
@@ -1345,8 +1302,8 @@ _CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool __sign = false) noexcept
 {
-  uint64_t __man64             = __fpemu_bit_cast<uint64_t>(__man);
-  const int __rshift           = __fpemu_extra_bits + __shift;
+  uint64_t __man64             = ::cuda::std::bit_cast<uint64_t>(__man);
+  const int __rshift           = static_cast<int>(__fpemu_extra_bits) + __shift;
   const uint64_t __round_bit   = 1ULL << (__rshift - 1);
   const uint64_t __sticky_mask = (__round_bit << 1) - 1;
   const uint64_t __tie_mask    = (__round_bit << 2) - 1;
@@ -1379,7 +1336,7 @@ _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool _
       }
     }
   }
-  return __fpemu_bit_cast<__uint32x2>(__man64);
+  return ::cuda::std::bit_cast<__uint32x2>(__man64);
 } //__round
 
 // NOTE: the representation pack/unpack routines

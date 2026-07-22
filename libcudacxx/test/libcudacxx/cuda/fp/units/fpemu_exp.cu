@@ -108,10 +108,10 @@ _CCCL_HOST_DEVICE bool run_test()
   const double tv[10] = {0.0, 0.00001, 1.0, -1.0, 0.5, -0.5, 10.0, -10.0, 700.0, -700.0};
 
   bool ok = true;
-  for (int i = 0; i < 10; i++)
+  for (const double x : tv)
   {
-    const double ref = ::cuda::std::exp(tv[i]);
-    const double got = (double) exp_impl<fp64emu>(tv[i]);
+    const double ref = ::cuda::std::exp(x);
+    const double got = (double) exp_impl<fp64emu>(x);
     const double rel = (ref != 0.0) ? ::cuda::std::fabs(got - ref) / ref : 0.0;
     ok               = ok && (rel < epsilon);
   }

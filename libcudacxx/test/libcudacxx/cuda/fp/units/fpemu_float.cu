@@ -45,8 +45,8 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // ambiguous with the float/double ctors), so quad construction is deliberately
 // deleted for the single-double emulated types, mirroring the deleted 128-bit
 // integer ctors. (fp64mp2's double-double CAN hold a quad and keeps its ctor.)
-static_assert(!::cuda::std::is_constructible_v<fpemu<double>, __float128>, "");
-static_assert(!::cuda::std::is_constructible_v<fpemu_unpacked<double>, __float128>, "");
+static_assert(!::cuda::std::is_constructible_v<fpemu<double>, __float128>);
+static_assert(!::cuda::std::is_constructible_v<fpemu_unpacked<double>, __float128>);
 #endif // _CCCL_HAS_FLOAT128()
 
 // ---------------------------------------------------------------------------
@@ -126,7 +126,8 @@ _CCCL_HOST_DEVICE inline bool d2f_ok(double v)
 #if _CCCL_CUDA_COMPILATION()
 __global__ void kern_f2d(const float* v, int n, int* mism)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+  for (int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x); i < n;
+       i += static_cast<int>(blockDim.x * gridDim.x))
   {
     if (!f2d_ok(v[i]))
     {
@@ -137,7 +138,8 @@ __global__ void kern_f2d(const float* v, int n, int* mism)
 
 __global__ void kern_d2f(const double* v, int n, int* mism)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+  for (int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x); i < n;
+       i += static_cast<int>(blockDim.x * gridDim.x))
   {
     if (!d2f_ok(v[i]))
     {

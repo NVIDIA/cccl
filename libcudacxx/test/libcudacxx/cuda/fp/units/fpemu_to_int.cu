@@ -44,12 +44,12 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // 128-bit integer conversion is deliberately deleted: it would silently truncate
 // to 64 bits. Verify no emulated type converts to __int128 while the standard
 // integer widths remain (explicitly) convertible.
-static_assert(!::cuda::std::is_constructible_v<__int128_t, fpemu<double>>, "");
-static_assert(!::cuda::std::is_constructible_v<__uint128_t, fpemu<double>>, "");
-static_assert(!::cuda::std::is_constructible_v<__int128_t, fpemu_unpacked<double>>, "");
-static_assert(!::cuda::std::is_constructible_v<__uint128_t, fpemu_unpacked<double>>, "");
-static_assert(::cuda::std::is_constructible_v<int64_t, fpemu<double>>, "");
-static_assert(::cuda::std::is_constructible_v<uint64_t, fpemu<double>>, "");
+static_assert(!::cuda::std::is_constructible_v<__int128_t, fpemu<double>>);
+static_assert(!::cuda::std::is_constructible_v<__uint128_t, fpemu<double>>);
+static_assert(!::cuda::std::is_constructible_v<__int128_t, fpemu_unpacked<double>>);
+static_assert(!::cuda::std::is_constructible_v<__uint128_t, fpemu_unpacked<double>>);
+static_assert(::cuda::std::is_constructible_v<int64_t, fpemu<double>>);
+static_assert(::cuda::std::is_constructible_v<uint64_t, fpemu<double>>);
 #endif // _CCCL_HAS_INT128()
 
 // Target type / rounding-mode indices. conv index = type*4 + mode.
@@ -150,6 +150,8 @@ _CCCL_HOST_DEVICE static uint64_t ref_one(double d, int type, int mode)
       return enc_u64(__double2ull_ru(d));
     case T_U64 * 4 + M_RD:
       return enc_u64(__double2ull_rd(d));
+    default:
+      break;
   }
   return 0;
 #else
@@ -285,7 +287,8 @@ _CCCL_HOST_DEVICE static bool check_value(double x)
 #if _CCCL_CUDA_COMPILATION()
 __global__ void kern_check(const double* x, int n, int* mism)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+  for (int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x); i < n;
+       i += static_cast<int>(blockDim.x * gridDim.x))
   {
     if (!check_value(x[i]))
     {
@@ -399,7 +402,7 @@ static const int g_special_n = (int) (sizeof(g_special) / sizeof(g_special[0]));
 static void fill_random(double* xs, int N, unsigned seed)
 {
   std::mt19937_64 gen(seed);
-  std::uniform_real_distribution<double> small(-4.0, 4.0);
+  std::uniform_real_distribution<double> dist_small(-4.0, 4.0);
   std::uniform_real_distribution<double> med(-1.0e10, 1.0e10);
   std::uniform_real_distribution<double> big(-2.0e19, 2.0e19);
   for (int i = 0; i < N; i++)
@@ -410,7 +413,7 @@ static void fill_random(double* xs, int N, unsigned seed)
         xs[i] = g_special[gen() % g_special_n];
         break;
       case 1:
-        xs[i] = small(gen);
+        xs[i] = dist_small(gen);
         break; // fractional / ties
       case 2:
         xs[i] = med(gen);

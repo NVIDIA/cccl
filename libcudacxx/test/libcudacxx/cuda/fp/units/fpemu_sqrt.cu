@@ -139,7 +139,8 @@ _CCCL_HOST_DEVICE static bool check_value(double x)
 #if _CCCL_CUDA_COMPILATION()
 __global__ void kern_check(const double* x, int n, int* mism)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+  for (int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x); i < n;
+       i += static_cast<int>(blockDim.x * gridDim.x))
   {
     if (!check_value(x[i]))
     {
@@ -245,7 +246,7 @@ C2H_TEST("fpemu square root (correctly rounded, bit-exact)", "[fpemu]")
   constexpr int NR = 400000;
   std::vector<double> rx(NR);
   std::mt19937_64 gen(0x5417u);
-  std::uniform_real_distribution<double> small(0.0, 16.0);
+  std::uniform_real_distribution<double> dist_small(0.0, 16.0);
   std::uniform_real_distribution<double> med(0.0, 1.0e150);
   for (int i = 0; i < NR; i++)
   {
@@ -255,7 +256,7 @@ C2H_TEST("fpemu square root (correctly rounded, bit-exact)", "[fpemu]")
         rx[i] = g_special[gen() % g_special_n];
         break;
       case 1:
-        rx[i] = small(gen);
+        rx[i] = dist_small(gen);
         break;
       case 2:
         rx[i] = med(gen);

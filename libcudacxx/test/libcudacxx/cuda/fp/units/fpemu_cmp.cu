@@ -103,7 +103,8 @@ _CCCL_HOST_DEVICE static bool check_pair(double x, double y)
 #if _CCCL_CUDA_COMPILATION()
 __global__ void kern_check(const double* x, const double* y, int n, int* mism)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+  for (int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x); i < n;
+       i += static_cast<int>(blockDim.x * gridDim.x))
   {
     if (!check_pair(x[i], y[i]))
     {
@@ -216,12 +217,12 @@ C2H_TEST("fpemu comparison vs native double", "[fpemu]")
 
   // All ordered pairs of the special values (covers NaN/inf/zero corners).
   std::vector<double> sx, sy;
-  for (int i = 0; i < g_special_n; i++)
+  for (const double vi : g_special)
   {
-    for (int j = 0; j < g_special_n; j++)
+    for (const double vj : g_special)
     {
-      sx.push_back(g_special[i]);
-      sy.push_back(g_special[j]);
+      sx.push_back(vi);
+      sy.push_back(vj);
     }
   }
   REQUIRE(run_dataset("special pairs", sx.data(), sy.data(), (int) sx.size()) == 0);

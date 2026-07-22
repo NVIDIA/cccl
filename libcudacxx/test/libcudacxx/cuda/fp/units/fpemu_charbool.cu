@@ -30,15 +30,15 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 
 // bool and character types must be constructible (mirrors double), while 128-bit
 // integers remain deleted.
-static_assert(::cuda::std::is_constructible_v<fpemu<double>, bool>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu<double>, char>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu<double>, signed char>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu<double>, unsigned char>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu<double>, wchar_t>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, bool>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, char>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, signed char>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, unsigned char>, "");
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, bool>);
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, char>);
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, signed char>);
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, unsigned char>);
+static_assert(::cuda::std::is_constructible_v<fpemu<double>, wchar_t>);
+static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, bool>);
+static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, char>);
+static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, signed char>);
+static_assert(::cuda::std::is_constructible_v<fpemu_unpacked<double>, unsigned char>);
 
 template <class FP>
 _CCCL_HOST_DEVICE bool run_test()

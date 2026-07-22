@@ -68,14 +68,14 @@ namespace cuda::experimental
 _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
 {
   __fpbits64_unpacked __a_unpacked;
-  __uint32x2 __a32  = __fpemu_bit_cast<__uint32x2>(__x);
+  __uint32x2 __a32  = ::cuda::std::bit_cast<__uint32x2>(__x);
   __a_unpacked.sign = __a32.x[1] & (1U << 31);
   __a32.x[1] &= 0x7fffffff;
   int32_t __exponent = static_cast<int32_t>(__a32.x[1] >> 20);
 
   // Normalize denormals: leading-zero count of the magnitude (clamped so a
   // normal stays at shift == EXTRA_BITS, and a true zero maps to the zero band).
-  uint64_t __abs_a = __fpemu_bit_cast<uint64_t>(__a32);
+  uint64_t __abs_a = ::cuda::std::bit_cast<uint64_t>(__a32);
   int __nzeros     = ::cuda::std::countl_zero(__abs_a);
   if (__nzeros < 11)
   {
@@ -102,7 +102,7 @@ _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) 
   }
 
   int __shift    = EXTRA_BITS + __nzeros - 11;
-  uint64_t __a64 = __fpemu_bit_cast<uint64_t>(__a32);
+  uint64_t __a64 = ::cuda::std::bit_cast<uint64_t>(__a32);
 
   __a_unpacked.exponent = static_cast<uint32_t>(__exponent);
   __a_unpacked.mantissa = __a64 << __shift;
@@ -166,7 +166,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) no
     }
   }
 
-  __uint32x2 __mantissa32 = __fpemu_bit_cast<__uint32x2>(__x.mantissa);
+  __uint32x2 __mantissa32 = ::cuda::std::bit_cast<__uint32x2>(__x.mantissa);
   __mantissa32            = __round<_Rm>(__mantissa32, 0, __sign);
 
   const bool __is_nan = (__exponent >= (int) (0x0007ff00 - __fpemu_bias - 2048 - 1 - 128 + 0xC));
@@ -205,7 +205,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) no
   }
 
   __mantissa32.x[1] += __x.sign;
-  return __fpemu_bit_cast<__fpbits64>(__mantissa32);
+  return ::cuda::std::bit_cast<__fpbits64>(__mantissa32);
 }
 } // namespace cuda::experimental
 

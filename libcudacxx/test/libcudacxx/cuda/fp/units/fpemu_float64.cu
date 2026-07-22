@@ -37,11 +37,11 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // _Float64 is a distinct type here, yet fpemu<_Float64> must still be a valid,
 // trivially copyable emulated double that constructs from / converts to double.
 static_assert(!::cuda::std::is_same_v<double, _Float64>, "expected _Float64 to be a distinct type in this mode");
-static_assert(::cuda::std::is_trivially_copyable_v<fpemu<_Float64>>, "");
-static_assert(::cuda::std::is_trivially_copyable_v<fpemu_unpacked<_Float64>>, "");
-static_assert(sizeof(fpemu<_Float64>) == sizeof(fpemu<double>), "");
-static_assert(::cuda::std::is_constructible_v<fpemu<_Float64>, double>, "");
-static_assert(::cuda::std::is_constructible_v<fpemu<_Float64>, int>, "");
+static_assert(::cuda::std::is_trivially_copyable_v<fpemu<_Float64>>);
+static_assert(::cuda::std::is_trivially_copyable_v<fpemu_unpacked<_Float64>>);
+static_assert(sizeof(fpemu<_Float64>) == sizeof(fpemu<double>));
+static_assert(::cuda::std::is_constructible_v<fpemu<_Float64>, double>);
+static_assert(::cuda::std::is_constructible_v<fpemu<_Float64>, int>);
 
 _CCCL_HOST_DEVICE bool run_test()
 {

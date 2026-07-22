@@ -54,14 +54,14 @@ _CCCL_HOST_DEVICE bool run_test()
   // Packed fpemu<double>: reinterpret to/from the 64-bit IEEE-754 representation
   // via the standard bit_cast (fpemu::bits is private, so this is the only way).
   const double packed_vals[6] = {1.5, -2.0, 0.0, -0.0, 42.0, 3.14159265358979323846};
-  for (int i = 0; i < 6; i++)
+  for (const double packed_val : packed_vals)
   {
-    const fpemu<double> p(packed_vals[i]);
+    const fpemu<double> p(packed_val);
     const uint64_t pbits = ::cuda::std::bit_cast<uint64_t>(p);
     // fpemu<double> is a faithful double, so its bits match the native double's.
-    ok = ok && (pbits == ::cuda::std::bit_cast<uint64_t>(packed_vals[i]));
+    ok = ok && (pbits == ::cuda::std::bit_cast<uint64_t>(packed_val));
     // uint64_t -> fpemu<double> -> double round-trips the value exactly.
-    ok = ok && (static_cast<double>(::cuda::std::bit_cast<fpemu<double>>(pbits)) == packed_vals[i]);
+    ok = ok && (static_cast<double>(::cuda::std::bit_cast<fpemu<double>>(pbits)) == packed_val);
   }
 
   // Unpacked fpemu is layout-compatible with, and trivially copyable to, its raw
@@ -74,12 +74,12 @@ _CCCL_HOST_DEVICE bool run_test()
 
   // Round-trip: double -> unpacked -> (equal-size) bits -> unpacked -> value.
   const double test_vals[5] = {1.5, -2.0, 0.0, 42.0, 3.14159265358979323846};
-  for (int i = 0; i < 5; i++)
+  for (const double test_val : test_vals)
   {
-    fpemu_unpacked<double, fpemu_accuracy::def> x(test_vals[i]);
+    fpemu_unpacked<double, fpemu_accuracy::def> x(test_val);
     const auto rep = ::cuda::std::bit_cast<fpemu_unpacked_bits>(x);
     const auto y   = ::cuda::std::bit_cast<fpemu_unpacked<double, fpemu_accuracy::def>>(rep);
-    ok             = ok && (static_cast<double>(y) == test_vals[i]);
+    ok             = ok && (static_cast<double>(y) == test_val);
   }
 
   // Arithmetic result via value conversion: 2 * 3 + 1 == 7.

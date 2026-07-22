@@ -140,7 +140,8 @@ _CCCL_HOST_DEVICE static bool check_pair(double x, double y)
 #if _CCCL_CUDA_COMPILATION()
 __global__ void kern_check(const double* x, const double* y, int n, int* mism)
 {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+  for (int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x); i < n;
+       i += static_cast<int>(blockDim.x * gridDim.x))
   {
     if (!check_pair(x[i], y[i]))
     {
@@ -244,14 +245,14 @@ static const int g_special_n = (int) (sizeof(g_special) / sizeof(g_special[0]));
 
 static double rand_one(std::mt19937_64& gen)
 {
-  std::uniform_real_distribution<double> small(-4.0, 4.0);
+  std::uniform_real_distribution<double> dist_small(-4.0, 4.0);
   std::uniform_real_distribution<double> med(-1.0e150, 1.0e150);
   switch ((int) (gen() % 4))
   {
     case 0:
       return g_special[gen() % g_special_n];
     case 1:
-      return small(gen);
+      return dist_small(gen);
     case 2:
       return med(gen);
     default:
@@ -268,12 +269,12 @@ C2H_TEST("fpemu division (correctly rounded, bit-exact)", "[fpemu]")
 
   // All ordered pairs of the special values.
   std::vector<double> sx, sy;
-  for (int i = 0; i < g_special_n; i++)
+  for (const double vi : g_special)
   {
-    for (int j = 0; j < g_special_n; j++)
+    for (const double vj : g_special)
     {
-      sx.push_back(g_special[i]);
-      sy.push_back(g_special[j]);
+      sx.push_back(vi);
+      sy.push_back(vj);
     }
   }
   REQUIRE(run_dataset("special pairs", sx.data(), sy.data(), (int) sx.size()) == 0);

@@ -74,8 +74,8 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dmul(__fpbits64 __x, __fpbi
   uint64_t __a = __x;
   uint64_t __b = __y;
 
-  __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__a);
-  __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__b);
+  __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__a);
+  __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__b);
 
   __uint32x2 __man_a_32x2, __man_b_32x2, __man_c_32x2;
   int32_t __exp_a, __exp_b, __exp_c, __shift;
@@ -147,7 +147,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dmul(__fpbits64 __x, __fpbi
   __is_impl_bit = (__man_c_32x2.x[1] >= 0x08000000);
 
   // Calculate exponent
-  __exp_c = __exp_a + __exp_b - (__fpemu_bias + 1) + __is_impl_bit;
+  __exp_c = static_cast<int32_t>(__exp_a + __exp_b - (__fpemu_bias + 1) + __is_impl_bit);
 
   // Calculate SIGN
   __is_sign_c = __is_sign_a ^ __is_sign_b;
@@ -211,8 +211,8 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dmul(__fpbits64 __x, __fpbi
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dmul(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__x);
-  __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__y);
+  __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__x);
+  __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__y);
   __fpbits64 __result;
 
   // Extract exponents
@@ -272,7 +272,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dmul(__fpbits64 __x, __fpbit
     }
 
     // Add the carry bit to the exponent
-    __result_exp = __result_exp + __carry_bit;
+    __result_exp = __result_exp + static_cast<int32_t>(__carry_bit);
 
     // Clear the unused high bits
     __result_32x2.x[1] &= _CCCL_FP64_HI_MANT_MASK;
@@ -318,7 +318,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dmul(__fpbits64 __x, __fpbit
   // Set the exponent
   __result_32x2.x[1] |= (uint64_t) __result_exp << _CCCL_FP64_HI_MANT_SHIFT;
 
-  __result = __fpemu_bit_cast<uint64_t>(__result_32x2);
+  __result = ::cuda::std::bit_cast<uint64_t>(__result_32x2);
   return __result;
 } // __internal_fp64emu_mid_dmul
 
@@ -332,8 +332,8 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_mid_dmul(__fpbits64 __x, __fpbit
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
 _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_low_dmul(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__x);
-  __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__y);
+  __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__x);
+  __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__y);
   __fpbits64 __result;
 
   // Extract exponents
@@ -365,14 +365,14 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_low_dmul(__fpbits64 __x, __fpbit
   __mant_b_sp = _CCCL_FP32_ONE | __mant_b_sp;
 
   // Convert to single precision for multiplication
-  float __mant_a_float = __fpemu_bit_cast<float>(__mant_a_sp);
-  float __mant_b_float = __fpemu_bit_cast<float>(__mant_b_sp);
+  float __mant_a_float = ::cuda::std::bit_cast<float>(__mant_a_sp);
+  float __mant_b_float = ::cuda::std::bit_cast<float>(__mant_b_sp);
 
   // Perform single precision multiplication with directed rounding on device
   float __mant_product_float = __fmul_dir<_Rm>(__mant_a_float, __mant_b_float);
 
   // Extract mantissa directly from the float result
-  uint32_t __mant_product_bits = __fpemu_bit_cast<uint32_t>(__mant_product_float);
+  uint32_t __mant_product_bits = ::cuda::std::bit_cast<uint32_t>(__mant_product_float);
 
   // Extract 23-bit mantissa
   uint32_t __result_mant = __mant_product_bits & _CCCL_FP32_MANT_MASK;
@@ -412,7 +412,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_low_dmul(__fpbits64 __x, __fpbit
   // Set the exponent
   __result_32x2.x[1] |= (uint64_t) __result_exp << _CCCL_FP64_HI_MANT_SHIFT;
 
-  __result = __fpemu_bit_cast<uint64_t>(__result_32x2);
+  __result = ::cuda::std::bit_cast<uint64_t>(__result_32x2);
   return __result;
 } // __internal_fp64emu_low_dmul
 
@@ -462,8 +462,8 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
     // ---- accurate: full product -> correctly-rounded by pack ----
     // The low product bits feed the sticky LSB so the universal full pack
     // does a single correct rounding.
-    __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__a.mantissa);
-    __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__b.mantissa);
+    __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__a.mantissa);
+    __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__b.mantissa);
     __uint32x4 __prod   = __mul_128<__acc_used>(__a_32x2, __b_32x2);
 
     int32_t __exponent_ab = (int32_t) __a.exponent + (int32_t) __b.exponent - (int32_t) __fpemu_bias;
@@ -483,8 +483,8 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
     // sh, pulling in the top sh bits of the low word (the guard bits), and
     // fold the remaining low bits into the sticky LSB -- this is how the
     // legacy accurate kernel stays in 64-bit.
-    uint64_t __hi     = __fpemu_bit_cast<uint64_t>(__prod.hi);
-    uint64_t __lo     = __fpemu_bit_cast<uint64_t>(__prod.lo);
+    uint64_t __hi     = ::cuda::std::bit_cast<uint64_t>(__prod.hi);
+    uint64_t __lo     = ::cuda::std::bit_cast<uint64_t>(__prod.lo);
     uint64_t __hi_n   = (__hi << __sh) | (__lo >> (64 - __sh));
     uint64_t __sticky = ((__lo << __sh) != 0) ? 1u : 0u;
     __r.sign          = __sign_ab;
@@ -504,8 +504,8 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
     // cheaper): inf*0 -> NaN folds into the exponent band, and inf/overflow/
     // subnormal/rounding are all emitted by the full pack. This is what lets
     // a def core run on the accurate pack/unpack (~2 ulp on normals).
-    __uint32x2 __a_32x2 = __fpemu_bit_cast<__uint32x2>(__a.mantissa);
-    __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__b.mantissa);
+    __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__a.mantissa);
+    __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__b.mantissa);
     __uint32x2 __hi     = __mul_64<__acc_used>(__a_32x2, __b_32x2);
 
     int32_t __exponent_ab = (int32_t) __a.exponent + (int32_t) __b.exponent - (int32_t) __fpemu_bias;
@@ -518,7 +518,7 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
       __e = __nan_exp;
     }
 
-    uint64_t __m = __fpemu_bit_cast<uint64_t>(__hi) << (11 - EXTRA_BITS + __mul_nzeros);
+    uint64_t __m = ::cuda::std::bit_cast<uint64_t>(__hi) << (11 - EXTRA_BITS + __mul_nzeros);
     __r.sign     = __sign_ab;
     __r.exponent = static_cast<uint32_t>(__e);
     __r.mantissa = __m;
@@ -539,10 +539,10 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
     uint32_t __mant_a_sp = ((uint32_t) (__a.mantissa >> 38) & _CCCL_FP32_MANT_MASK) | _CCCL_FP32_ONE;
     uint32_t __mant_b_sp = ((uint32_t) (__b.mantissa >> 38) & _CCCL_FP32_MANT_MASK) | _CCCL_FP32_ONE;
 
-    float __fa       = __fpemu_bit_cast<float>(__mant_a_sp);
-    float __fb       = __fpemu_bit_cast<float>(__mant_b_sp);
+    float __fa       = ::cuda::std::bit_cast<float>(__mant_a_sp);
+    float __fb       = ::cuda::std::bit_cast<float>(__mant_b_sp);
     float __fp       = __fmul_dir<__fpemu_rounding::rn>(__fa, __fb);
-    uint32_t __pbits = __fpemu_bit_cast<uint32_t>(__fp);
+    uint32_t __pbits = ::cuda::std::bit_cast<uint32_t>(__fp);
 
     // Product of two [1,2) significands lands in [1,4): a binade bump when
     // it reaches [2,4) carries into the result exponent. Express the exponent
@@ -626,20 +626,15 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dmul(__fpbits64 __x, __fpbits64 
     {
       return __internal_fp64emu_high_dmul<_Rm, __acc_used>(__x, __y);
     }
-    else if constexpr (__acc_used == fpemu_accuracy::mid)
-    {
-      return __internal_fp64emu_mid_dmul<_Rm, __acc_used>(__x, __y);
-    }
+#  if _CCCL_FP64EMU_DMUL_FP32_FAST_ENABLE == 1
     else if constexpr (__acc_used == fpemu_accuracy::low)
     {
-#  if _CCCL_FP64EMU_DMUL_FP32_FAST_ENABLE == 1
       return __internal_fp64emu_low_dmul<_Rm, __acc_used>(__x, __y);
-#  else
-      return __internal_fp64emu_mid_dmul<_Rm, __acc_used>(__x, __y);
-#  endif
     }
+#  endif
     else
     {
+      // mid and def -- and low when the fp32 fast path is disabled -- all use mid.
       return __internal_fp64emu_mid_dmul<_Rm, __acc_used>(__x, __y);
     }
 #endif
@@ -766,19 +761,19 @@ _CCCL_API fpemu<double, _Acc> operator*(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dmul_rn(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dmul_rn(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dmul_rn(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dmul_rn(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dmul_rn(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dmul_rn(__x.__bits_, __y.__bits_));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(__fp64emu_dmul_rn(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dmul_rn(__x.__bits_, __y.__bits_));
   }
 } // operator*
 
@@ -787,18 +782,18 @@ _CCCL_API fpemu<double, _Acc> __dmul_rn(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_high_dmul_rn(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_high_dmul_rn(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_low_dmul_rn(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_rn(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_mid_dmul_rn(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_rn(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -806,23 +801,23 @@ _CCCL_API fpemu<double, _Acc> __dmul_rz(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rz(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_mid_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_rz(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_low_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_rz(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_dmul_rz(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rz(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -830,23 +825,23 @@ _CCCL_API fpemu<double, _Acc> __dmul_ru(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_ru(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_mid_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_ru(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_low_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_ru(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_dmul_ru(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_ru(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -854,23 +849,23 @@ _CCCL_API fpemu<double, _Acc> __dmul_rd(const fpemu<double, _Acc>& __x, const fp
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rd(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_mid_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_mid_dmul_rd(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_low_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_low_dmul_rd(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu<double, _Acc>>(
-      __fp64emu_dmul_rd(__fpemu_bit_cast<__fpbits64>(__x), __fpemu_bit_cast<__fpbits64>(__y)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      __fp64emu_dmul_rd(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
   }
 }
 
@@ -881,19 +876,19 @@ operator*(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_dmul(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_dmul(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::mid)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_dmul(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_dmul(__x.__bits_, __y.__bits_));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_dmul(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_dmul(__x.__bits_, __y.__bits_));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_dmul(__x.__bits_, __y.__bits_));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_dmul(__x.__bits_, __y.__bits_));
   }
 } // operator*
 
@@ -903,18 +898,18 @@ __dmul_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_dmul(
-      __fpemu_bit_cast<__fpbits64_unpacked>(__x), __fpemu_bit_cast<__fpbits64_unpacked>(__y)));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_high_dmul(
+      ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_dmul(
-      __fpemu_bit_cast<__fpbits64_unpacked>(__x), __fpemu_bit_cast<__fpbits64_unpacked>(__y)));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_low_dmul(
+      ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y)));
   }
   else
   {
-    return __fpemu_bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_dmul(
-      __fpemu_bit_cast<__fpbits64_unpacked>(__x), __fpemu_bit_cast<__fpbits64_unpacked>(__y)));
+    return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(__fp64emu_unpacked_mid_dmul(
+      ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y)));
   }
 }
 

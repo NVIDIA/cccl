@@ -47,13 +47,13 @@ static_assert(!::cuda::std::is_convertible_v<U_hi, U_lo>, "accuracy conversion m
 static_assert(!::cuda::std::is_convertible_v<P_hi, U_hi>, "packed -> unpacked must be explicit");
 static_assert(!::cuda::std::is_convertible_v<U_hi, P_hi>, "unpacked -> packed must be explicit");
 // ... but explicitly constructible.
-static_assert(::cuda::std::is_constructible_v<P_lo, P_hi>, "");
-static_assert(::cuda::std::is_constructible_v<U_lo, U_hi>, "");
-static_assert(::cuda::std::is_constructible_v<U_hi, P_hi>, "");
-static_assert(::cuda::std::is_constructible_v<P_hi, U_hi>, "");
+static_assert(::cuda::std::is_constructible_v<P_lo, P_hi>);
+static_assert(::cuda::std::is_constructible_v<U_lo, U_hi>);
+static_assert(::cuda::std::is_constructible_v<U_hi, P_hi>);
+static_assert(::cuda::std::is_constructible_v<P_hi, U_hi>);
 // The added converting ctors must not break trivial copyability.
-static_assert(::cuda::std::is_trivially_copyable_v<P_hi>, "");
-static_assert(::cuda::std::is_trivially_copyable_v<U_hi>, "");
+static_assert(::cuda::std::is_trivially_copyable_v<P_hi>);
+static_assert(::cuda::std::is_trivially_copyable_v<U_hi>);
 
 _CCCL_HOST_DEVICE bool run_test()
 {
@@ -61,10 +61,8 @@ _CCCL_HOST_DEVICE bool run_test()
   constexpr double kTol = 1e-10;
 
   const double vals[6] = {0.0, 1.5, -2.0, 42.0, 1234.5678, -9.999e12};
-  for (int i = 0; i < 6; i++)
+  for (const double d : vals)
   {
-    const double d = vals[i];
-
     const P_hi p(d);
     const P_lo p2(p); // packed accuracy converting ctor
     const U_hi u(p); // packed -> unpacked ctor
