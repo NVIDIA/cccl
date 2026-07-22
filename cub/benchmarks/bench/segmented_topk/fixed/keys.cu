@@ -68,13 +68,14 @@ inline constexpr topk_backend selected_backend =
 inline constexpr auto selected_determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
 inline constexpr auto selected_tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
 
-// The baseline/device backends ignore these requirements, so require the defaults there to avoid a silent mismatch. The
-// cluster backend implements them, and automatic honors them via the library's selector, so both allow non-defaults.
-static_assert(selected_backend == topk_backend::cluster || selected_backend == topk_backend::automatic
+// The baseline requirement is enforced inside `topk_backend_selector` (instantiated only for a forced baseline/cluster
+// backend). The device backend bypasses that selector (one cub::DeviceTopK call per segment), so its requirement is
+// guarded here; the cluster and automatic backends honor determinism/tie-break, so both allow non-defaults.
+static_assert(selected_backend != topk_backend::device
                 || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
                     && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified),
-              "Only the cluster and automatic backends honor determinism/tie-break requirements; keep "
-              "selected_determinism and selected_tie_break at their defaults for the baseline/device backends.");
+              "The device backend does not honor determinism/tie-break requirements; keep selected_determinism and "
+              "selected_tie_break at their defaults for it.");
 
 // Policy selector threaded through the public API's tuning environment when a concrete backend is forced (not
 // `automatic`). Its `.backend` pins the backend for this build. In a TUNE_BASE build the forced backend uses the
@@ -86,6 +87,16 @@ struct topk_backend_selector
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
     -> cub::detail::batched_topk::topk_policy
   {
+    // The baseline backend cannot honor a deterministic result set / concrete tie-break request. The `sizeof(KeyT) ==
+    // 0` dependent term defers the check to instantiation, which happens only for a forced baseline/cluster backend
+    // (not the automatic/device builds that never instantiate this selector).
+    static_assert(
+      selected_backend == topk_backend::cluster
+        || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
+            && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified)
+        || sizeof(KeyT) == 0,
+      "The baseline backend cannot honor a deterministic result set or a concrete tie-break preference; "
+      "force the cluster backend or request the non-deterministic defaults.");
 #if TUNE_BASE
     const auto baseline =
       cub::detail::batched_topk::baseline_policy_selector_from_types<KeyT, ValueT, OffsetT, MaxK>{}(cc);

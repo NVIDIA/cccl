@@ -413,12 +413,6 @@ struct topk_policy
 #endif // _CCCL_HOSTED()
 };
 
-// Sentinel meaning "no backend-selecting tuning override was provided", so the dispatch builds its automatic selector.
-// Used as the default for `dispatch`'s `PolicySelectorOverride` and as the not-found result of the public
-// API's `topk_policy` tuning query (a real empty type -- `void` cannot be a query default).
-struct no_override
-{};
-
 // Crossover knobs (TODO: tune via SM100 benchmarks).
 //! Clusters require SM 9.0+.
 inline constexpr int cluster_min_cc_major = 9;
@@ -434,159 +428,6 @@ inline constexpr ::cuda::std::int64_t cluster_beneficial_min_segment_size = 8 * 
   return cc >= ::cuda::compute_capability{cluster_min_cc_major, 0};
 }
 
-// How the backend is chosen. `automatic` applies the determinism/arch/size rules below; the `force_*` modes let a
-// caller pin a specific backend (e.g. a tuning override that forces the cluster backend while still launching the
-// single kernel symbol).
-enum class backend_mode
-{
-  automatic,
-  force_baseline,
-  force_cluster,
-};
-
-// Backend decision, shared by the runtime field-based `policy_selector` and the compile-time
-// `policy_selector_from_types`. The facts are taken as independent scalar arguments rather than read back from selector
-// members on purpose: GCC 7 ICEs (PR86953, `cxx_eval_bit_field_ref`) when constant-evaluating a read of adjacent narrow
-// members (`determinism`/`tie_break`/`baseline_can_cover`/`mode`) because -O2 fuses them into one `BIT_FIELD_REF`.
-// Independent parameters are never fused, and the compile-time caller passes constants that fold the branches away.
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr topk_algorithm select_backend(
-  ::cuda::std::int64_t static_max_segment_size,
-  ::cuda::execution::determinism::__determinism_t determinism,
-  ::cuda::execution::tie_break::__tie_break_t tie_break,
-  bool baseline_can_cover,
-  backend_mode mode,
-  ::cuda::compute_capability cc)
-{
-  // A deterministic result set (or a concrete tie-break preference) can only be honored by the cluster backend.
-  const bool deterministic = (determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
-                          || (tie_break != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
-
-  if (mode == backend_mode::force_cluster)
-  {
-    return cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
-  }
-  if (mode == backend_mode::force_baseline)
-  {
-    // The baseline backend cannot honor a deterministic result set / concrete tie-break preference, nor cover an
-    // oversize segment; reject (map to `unsupported`) in those cases rather than pinning a backend that cannot serve
-    // the request -- matching the hard constraints `selector_override_adaptor` enforces.
-    return (baseline_can_cover && !deterministic) ? topk_algorithm::baseline : topk_algorithm::unsupported;
-  }
-  if (deterministic)
-  {
-    // Deterministic -> cluster (arch permitting), independent of the max segment size.
-    return cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
-  }
-  if (!baseline_can_cover)
-  {
-    // Oversize for the baseline backend: it must never be selected (its `find_smallest_covering_policy` would fail).
-    return cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
-  }
-  // Baseline can cover: prefer the cluster backend only where it is beneficial, otherwise use the baseline. The size
-  // crossover is a fixed selector constant (not read from the tunable cluster policy), so tuning the cluster policy
-  // never shifts the backend choice.
-  const bool beneficial = cc >= ::cuda::compute_capability{cluster_beneficial_min_cc_major, 0}
-                       && static_max_segment_size >= cluster_beneficial_min_segment_size;
-  return (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
-}
-
-// `baseline_can_cover` is supplied by the dispatch, which alone knows the concrete agent types needed for the
-// shared-memory fit, so this selector stays free of the agent-type-dependent `find_smallest_covering_policy` machinery.
-struct policy_selector
-{
-  ::cuda::std::int64_t static_max_segment_size;
-  ::cuda::execution::determinism::__determinism_t determinism;
-  ::cuda::execution::tie_break::__tie_break_t tie_break;
-  bool baseline_can_cover;
-  backend_mode mode;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
-  {
-    return topk_policy{select_backend(static_max_segment_size, determinism, tie_break, baseline_can_cover, mode, cc),
-                       make_baseline_policy(),
-                       make_cluster_policy()};
-  }
-};
-
-// Stateless selector built purely from the compile-time request facts; makes the backend decision via `select_backend`
-// on its template constants. This is the type threaded into the dispatch and kernel: `current_policy` /
-// `dispatch_compute_cap` default-construct it, so the behavior must live in the type. The facts are re-exposed as
-// static members so the tuning-override adaptor can borrow them.
-template <class KeyT,
-          class ValueT,
-          class OffsetT,
-          ::cuda::std::int64_t MaxK,
-          ::cuda::std::int64_t StaticMaxSegSize,
-          ::cuda::execution::determinism::__determinism_t Determinism,
-          ::cuda::execution::tie_break::__tie_break_t TieBreak,
-          bool BaselineCanCover,
-          backend_mode Mode = backend_mode::automatic>
-struct policy_selector_from_types
-{
-  static constexpr auto determinism                             = Determinism;
-  static constexpr auto tie_break                               = TieBreak;
-  static constexpr bool baseline_can_cover                      = BaselineCanCover;
-  static constexpr ::cuda::std::int64_t static_max_segment_size = StaticMaxSegSize;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
-  {
-    // Call `select_backend` directly with the fact constants rather than through a `policy_selector` value: the
-    // latter's member reads trip the GCC 7 constexpr ICE described on `select_backend`.
-    return topk_policy{select_backend(StaticMaxSegSize, Determinism, TieBreak, BaselineCanCover, Mode, cc),
-                       make_baseline_policy(),
-                       make_cluster_policy()};
-  }
-};
-
-// Adapts a tune-provided selector (which only implements `operator() -> topk_policy`) to the full `PolicySelector`
-// interface. The request facts (`baseline_can_cover` / `determinism` / `tie_break` / `static_max_segment_size`) are
-// borrowed from the dispatch's automatic selector -- they are properties of the call, not the tuning.
-// `baseline_can_cover` reflects the *default* baseline sub-policy's coverage (the adaptor lacks the concrete agent
-// types needed to recompute it for an override's baseline sub-policy), so a tuning override that changes the baseline
-// tile shape is still validated against the default's coverage.
-//
-// The override's sub-policies are forwarded verbatim and its `.backend` is honored, but validated against the chosen
-// backend's hard constraints: an override selecting a backend that cannot serve the request is *rejected* (mapped to
-// `unsupported`) rather than silently rerouted, surfacing the misconfiguration (compile error in strict mode, else
-// cudaErrorNotSupported at runtime). Rejected cases:
-//   * baseline for a deterministic / tie-break request or a segment size it cannot cover, and
-//   * cluster on a pre-SM90 architecture.
-template <class Override, class Default>
-struct selector_override_adaptor
-{
-  static constexpr auto determinism                             = Default::determinism;
-  static constexpr auto tie_break                               = Default::tie_break;
-  static constexpr bool baseline_can_cover                      = Default::baseline_can_cover;
-  static constexpr ::cuda::std::int64_t static_max_segment_size = Default::static_max_segment_size;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
-  {
-    const auto overridden = Override{}(cc);
-
-    constexpr bool deterministic = (determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
-                                || (tie_break != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
-
-    topk_algorithm backend = overridden.backend;
-    if (backend == topk_algorithm::baseline)
-    {
-      // The baseline backend cannot honor a deterministic / tie-break request, nor cover an oversize segment.
-      if (deterministic || !baseline_can_cover)
-      {
-        backend = topk_algorithm::unsupported;
-      }
-    }
-    else if (backend == topk_algorithm::cluster)
-    {
-      // The cluster backend requires SM 9.0+.
-      if (!cluster_capable(cc))
-      {
-        backend = topk_algorithm::unsupported;
-      }
-    }
-    return topk_policy{backend, overridden.baseline, overridden.cluster};
-  }
-};
-
 // Adapts a (combined) policy selector to a plain baseline policy selector (returns just the `.baseline` sub-policy), so
 // the kernel can drive `find_smallest_covering_policy` from a single `PolicySelector` template parameter.
 template <class PolicySelector>
@@ -598,19 +439,6 @@ struct baseline_policy_selector_adaptor
     return PolicySelector{}(cc).baseline;
   }
 };
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(
-  detail::policy_selector<policy_selector_from_types<int,
-                                                     int,
-                                                     ::cuda::std::int64_t,
-                                                     1024,
-                                                     1024,
-                                                     ::cuda::execution::determinism::__determinism_t::__not_guaranteed,
-                                                     ::cuda::execution::tie_break::__tie_break_t::__unspecified,
-                                                     true>,
-                          topk_policy>);
-#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::batched_topk
 
 CUB_NAMESPACE_END

@@ -24,6 +24,8 @@
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/argument>
 #include <cuda/std/cstdint>
 
@@ -245,7 +247,9 @@ template <typename PolicySelector,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT,
-          typename LargeSegmentTileOffsetT>
+          typename LargeSegmentTileOffsetT,
+          ::cuda::execution::determinism::__determinism_t Determinism,
+          ::cuda::execution::tie_break::__tie_break_t TieBreak>
 _CCCL_LAUNCH_BOUNDS_CLUSTER((topk_threads_per_block<PolicySelector,
                                                     SegmentSizeParameterT,
                                                     KeyInputItItT,
@@ -327,8 +331,8 @@ device_batched_topk_kernel(
          policy.cluster.single_block_max_seg_size,
          policy.cluster.min_chunks_per_block,
          policy.cluster.copy_items_per_thread,
-         PolicySelector::determinism,
-         PolicySelector::tie_break,
+         Determinism,
+         TieBreak,
          KeyInputItItT,
          KeyOutputItItT,
          ValueInputItItT,

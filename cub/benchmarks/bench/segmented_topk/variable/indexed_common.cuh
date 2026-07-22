@@ -90,14 +90,8 @@ inline constexpr auto selected_tie_break =
     cuda::execution::tie_break::__tie_break_t::__unspecified;
 #endif
 
-// The baseline backend ignores determinism/tie-break, so require the defaults there to avoid a silently ignored
-// selection. The cluster backend implements them, and automatic honors them via the library's selector, so both allow
-// non-defaults.
-static_assert(selected_backend == topk_backend::cluster || selected_backend == topk_backend::automatic
-                || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
-                    && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified),
-              "Only the cluster and automatic backends honor determinism/tie-break requirements; keep TUNE_REQUIREMENT "
-              "at 0 (non-deterministic) for the baseline backend.");
+// The baseline backend's determinism/tie-break requirement is enforced inside `topk_backend_selector` (instantiated
+// only for a forced baseline/cluster backend); there is no device backend here to guard at file scope.
 
 // Policy selector threaded through the public API's tuning environment when a concrete backend is forced (not
 // `automatic`). Its `.backend` pins the backend for this build. In a base build both sub-policies are the defaults;
@@ -109,6 +103,16 @@ struct topk_backend_selector
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
     -> cub::detail::batched_topk::topk_policy
   {
+    // The baseline backend cannot honor a deterministic result set / concrete tie-break request. The `sizeof(KeyT) ==
+    // 0` dependent term defers the check to instantiation, which happens only for a forced baseline/cluster backend
+    // (not the automatic build, which never instantiates this selector).
+    static_assert(
+      selected_backend == topk_backend::cluster
+        || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
+            && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified)
+        || sizeof(KeyT) == 0,
+      "The baseline backend cannot honor a deterministic result set or a concrete tie-break preference; "
+      "force the cluster backend or request the non-deterministic defaults.");
 #if !TUNE_BASE && TUNE_BACKEND == 0
     constexpr auto store_alg = cub::BLOCK_STORE_WARP_TRANSPOSE;
 #  if TUNE_BLOCK_LOAD_ALGORITHM == 0

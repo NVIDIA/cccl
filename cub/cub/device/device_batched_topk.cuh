@@ -108,12 +108,12 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   //      (gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index}) -- while `sorted` / `stable_sorted`
   //      (and therefore the empty-env default, which resolves to `stable_sorted`) remain rejected.
   //
-  // Backend routing implied by the request (exact rules in `select_backend`, tuning_batched_topk.cuh): any request
-  // beyond fully non-deterministic -- determinism stronger than not_guaranteed (run_to_run/gpu_to_gpu), or a concrete
-  // tie-break -- is served only by the cluster backend (SM 9.0+). A fully non-deterministic request (not_guaranteed +
-  // unspecified tie-break) leaves the backend open, chosen from the target architecture and the statically-known
-  // maximum segment size: a segment too large for the single-block baseline forces the cluster backend, otherwise the
-  // baseline runs unless the cluster is measured to win.
+  // Backend routing implied by the request (exact rules in `policy_selector_from_types`, dispatch_batched_topk.cuh):
+  // any request beyond fully non-deterministic -- determinism stronger than not_guaranteed (run_to_run/gpu_to_gpu), or
+  // a concrete tie-break -- is served only by the cluster backend (SM 9.0+). A fully non-deterministic request
+  // (not_guaranteed + unspecified tie-break) leaves the backend open, chosen from the target architecture and the
+  // statically-known maximum segment size: a segment too large for the single-block baseline forces the cluster
+  // backend, otherwise the baseline runs unless the cluster is measured to win.
   // ---------------------------------------------------------------------------
   static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                 "Determinism should be used inside cuda::execution::require to have an effect.");
@@ -167,17 +167,6 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
     "output ordering is stable_sorted, an empty (no-requirement) environment is rejected: request unsorted output "
     "explicitly, e.g. cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
     "cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted).");
-
-  // ---------------------------------------------------------------------------
-  // Resolve the (optionally tuned) policy selector from the environment.
-  // ---------------------------------------------------------------------------
-  // A single tuning query on the whole `topk_policy`: a `tune`d selector returning `topk_policy` picks the backend
-  // (baseline vs cluster) and both sub-policies in one shot. Absent by default (the sentinel `no_override`), in which
-  // case the dispatch's automatic arch+size selector is used. Strip cv/ref so the override is a value type.
-  using tuning_env_t =
-    ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
-  using selector_override_t = ::cuda::std::remove_cvref_t<
-    ::cuda::std::execution::__query_result_or_t<tuning_env_t, batched_topk::topk_policy, batched_topk::no_override>>;
 
   // ---------------------------------------------------------------------------
   // Argument-annotation constraints surfaced at the call site.
@@ -235,15 +224,16 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   {
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
+    // A `tune`d policy selector (keyed on `topk_policy`) is forwarded to the dispatch, which queries it from this
+    // tuning env; absent one, the dispatch builds its automatic arch+size selector.
+    const auto tuning_env = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
+
     // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
     // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
     // conservative 64-bit upper bound here.
     constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
-    return batched_topk::dispatch<requested_determinism_t::value,
-                                  requested_tie_break_t::value,
-                                  batched_topk::backend_mode::automatic,
-                                  selector_override_t>(
+    return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -255,7 +245,8 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
       ::cuda::args::constant<SelectDirection>{},
       num_segments,
       total_num_items,
-      stream.get());
+      stream.get(),
+      tuning_env);
   }
   else
   {
