@@ -70,7 +70,7 @@ struct ScanByKeyLookbackPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The algorithm used by the @ref ScanByKeyPolicy.
+//! The algorithm used by the @ref cub::ScanByKeyPolicy "ScanByKeyPolicy".
 enum class ScanByKeyAlgorithm
 {
   lookback
