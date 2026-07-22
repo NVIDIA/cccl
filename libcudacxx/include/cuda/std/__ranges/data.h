@@ -46,7 +46,7 @@ _CCCL_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_data = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.data()) } -> __ptr_to_object;
+  { _CCCL_AUTO_CAST(__t.data()) } -> __ptr_to_object;
 };
 
 template <class _Tp>
@@ -58,7 +58,7 @@ template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__member_data_,
                        requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                                            requires(__workaround_52970<_Tp>),
-                                           requires(__ptr_to_object<decltype(_LIBCUDACXX_AUTO_CAST(__t.data()))>)));
+                                           requires(__ptr_to_object<decltype(_CCCL_AUTO_CAST(__t.data()))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __member_data = _CCCL_FRAGMENT(__member_data_, _Tp);
