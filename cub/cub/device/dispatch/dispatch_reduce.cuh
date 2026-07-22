@@ -839,7 +839,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   if constexpr (StableReductionOrder)
-  { // Log single_reduce_sweep_kernel configuration
+  {
+    // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
