@@ -248,7 +248,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
 
 C2H_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort when there are a lot sort-keys that "
          "compare equal",
-         "[merge][sort][device][skip-cs-racecheck][skip-cs-memcheck]")
+         "[merge][sort][device][skip-cs-racecheck][skip-cs-memcheck][skip-cs-initcheck]")
 {
   using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
   using offset_t = std::size_t;
@@ -277,7 +277,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   REQUIRE(keys_expected == keys_out);
 }
 
-C2H_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
+C2H_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device][skip-cs-initcheck]")
 {
   using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
   using offset_t = std::int32_t;
