@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/__bit/bitmask.h>
+#include <cuda/std/__bit/shl.h>
+#include <cuda/std/__bit/shr.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
@@ -91,7 +93,7 @@ _CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, in
   }
 #endif // !_CCCL_TILE_COMPILATION()
   auto __mask = ::cuda::bitmask<_Tp>(__start, __width);
-  return (::cuda::__shl(__source, __start) & __mask) | (__dest & ~__mask);
+  return (::cuda::std::shl(__source, static_cast<unsigned>(__start)) & __mask) | (__dest & ~__mask);
 }
 
 template <typename _Tp>
@@ -117,7 +119,7 @@ template <typename _Tp>
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
-  return ::cuda::__shr(__value, __start) & ::cuda::bitmask<_Tp>(0, __width);
+  return ::cuda::std::shr(__value, static_cast<unsigned>(__start)) & ::cuda::bitmask<_Tp>(0, __width);
 }
 
 _CCCL_END_NAMESPACE_CUDA

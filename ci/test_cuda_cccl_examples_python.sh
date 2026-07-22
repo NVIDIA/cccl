@@ -21,10 +21,32 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl, plus CuPy which the cuda.compute examples require
+# Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus
+# pytest-benchmark for the host-overhead benchmark smoke test below. (cuda-bench,
+# for the throughput smoke, is installed best-effort further down since it does
+# not always ship a wheel for the newest Python.)
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cupy-cuda${cuda_major_version}x"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark
 
 # Run tests for parallel module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
 python -m pytest -n 6 test_examples.py
+
+# Smoke-test the host-overhead benchmark harness: run every benchmark case
+# exactly once (pass/fail only, no timing) so harness rot fails CI here instead
+# of silently surviving until someone runs the perf suite.
+cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/host/"
+python -m pytest -v --benchmark-disable .
+
+# Smoke-test the throughput (nvbench) benchmarks the same way. --profile runs
+# each configuration once (no sampling); --quick uses the reduced quick_configs
+# axes (one dtype, smallest size) so every benchmark harness still imports,
+# registers, launches, and completes. cuda-bench does not always ship a wheel for
+# the newest Python, so install it best-effort and skip (with a warning) rather
+# than failing the lane when it is unavailable.
+if python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml; then
+  cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/"
+  python run_benchmarks.py --py --profile --quick
+else
+  echo "::warning::cuda-bench has no wheel for Python ${py_version}; skipping the throughput benchmark smoke test."
+fi
