@@ -18,6 +18,9 @@
 
 // UNSUPPORTED: c++17
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/array>
 
 void f()

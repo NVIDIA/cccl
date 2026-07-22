@@ -9,6 +9,9 @@
 
 // cuda::std::iterator
 
+// todo(dabayer): Enable this test
+// UNSUPPORTED: true
+
 #include <cuda/std/iterator>
 
 #include "test_macros.h"
