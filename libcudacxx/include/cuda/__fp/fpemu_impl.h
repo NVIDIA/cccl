@@ -1364,7 +1364,7 @@ _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool _
 //! @brief Right shift keeping a sticky bit.
 _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_shr_jam64(uint64_t __a, uint32_t __dist) noexcept
 {
-  return (__dist < 63) ? (__a >> __dist) | ((uint64_t) ((__a << (-__dist & 63)) != 0)) : (uint64_t) (__a != 0);
+  return (__dist < 63) ? (__a >> __dist) | ((uint64_t) ((__a << ((0u - __dist) & 63)) != 0)) : (uint64_t) (__a != 0);
 } // __internal_fp64emu_shr_jam64
 
 //! @brief Round and pack a result whose 'sig' carries its leading significand

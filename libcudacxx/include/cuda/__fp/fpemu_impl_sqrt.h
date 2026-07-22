@@ -45,12 +45,19 @@
 namespace cuda::experimental
 {
 #if !(defined(__CUDA_ARCH__))
-// Host seeds: the libm symbols. Declared noexcept to match the standard
-// <math.h> prototypes (glibc marks them __THROW); otherwise the extern-"C"
+// Host seeds: the libm symbols. On glibc these are declared noexcept to match
+// the standard <math.h> prototypes (marked __THROW); otherwise the extern-"C"
 // redeclarations conflict with ::sqrt/::sqrtf when <cmath> is also in the TU
-// (-Werror).
+// (-Werror). On MSVC the CRT/CUDA prototypes carry no exception specification,
+// so a noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
+// under C++20); declare them without noexcept to match.
+#  if defined(_MSC_VER)
+extern "C" double sqrt(double __x);
+extern "C" float sqrtf(float __x); // host seed for the reciprocal-sqrt builtin
+#  else
 extern "C" double sqrt(double __x) noexcept;
 extern "C" float sqrtf(float __x) noexcept; // host seed for the reciprocal-sqrt builtin
+#  endif
 #endif
 
 // ========================================================================
