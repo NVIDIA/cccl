@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_BIT
-#define _CUDA_STD_BIT
+#ifndef _CUDA_EXECUTION_EXECUTION_GUARANTEE_H
+#define _CUDA_EXECUTION_EXECUTION_GUARANTEE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,17 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/byteswap.h>
-#include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/countr.h>
-#include <cuda/std/__bit/endian.h>
-#include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__bit/integral.h>
-#include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__bit/rotate.h>
-#include <cuda/std/__bit/shl.h>
-#include <cuda/std/__bit/shr.h>
-#include <cuda/std/version>
+#include <cuda/__execution/guarantee.h>
 
-#endif // _CUDA_STD_BIT
+#endif // _CUDA_EXECUTION_EXECUTION_GUARANTEE_H
