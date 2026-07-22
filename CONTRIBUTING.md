@@ -250,6 +250,33 @@ Now code linters and formatters will be run each time you commit changes.
 
 You can skip these checks with `git commit --no-verify` or with the short version `git commit -n`.
 
+## Secret Scanning
+
+Two complementary controls prevent accidental credential leakage:
+
+- **Local pre-commit** (`secret-scan-trufflehog`, via `.pre-commit-config.yaml`): catches credentials before commit. Requires `trufflehog` on your PATH (the wrapper prints install commands if missing). Never commit a flagged secret; check with maintainers on false positives, and only use `git commit --no-verify` in exceptional, agreed cases.
+- **Server-side enforcement** (Pulse reusable workflow from `NVIDIA/security-workflows`, pinned by SHA): runs on `main` and trusted copy-pr-bot branches, and blocks merges on verified secrets.
+
+The local hook is skipped on hosted pre-commit.ci (no `trufflehog` binary there); Pulse remains the authoritative CI enforcement.
+
+### How to test locally
+
+1. Install pre-commit and trufflehog:
+
+```bash
+pip install pre-commit trufflehog
+pre-commit install
+```
+
+2. Stage a file containing a mock secret and run the hook:
+
+```bash
+git add <file-with-mock-secret>
+pre-commit run secret-scan-trufflehog --hook-stage commit
+```
+
+3. If the hook flags the mock secret, fix or remove the secret before committing.
+
 ## Continuous Integration (CI)
 
 CCCL's CI pipeline tests across various CUDA versions, compilers, and GPU architectures.

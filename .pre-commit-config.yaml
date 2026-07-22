@@ -6,10 +6,18 @@ ci:
     autoupdate_branch: ''
     autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
     autoupdate_schedule: quarterly
-    skip: [mypy] # mypy fails on pre-commit.ci due to numpy stub incompatibility with Python 3.14
+    skip: [mypy, secret-scan-trufflehog] # mypy fails on pre-commit.ci due to numpy stub incompatibility with Python 3.14
     submodules: false
 
 repos:
+  # Runs first so a leaked credential blocks the commit before any formatter runs.
+  # Requires `trufflehog` on $PATH; the wrapper prints install commands if missing.
+  # Skipped on pre-commit.ci (no trufflehog binary there); Pulse CI enforces server-side.
+  - repo: https://github.com/NVIDIA/security-workflows
+    rev: v0.1.0
+    hooks:
+      - id: secret-scan-trufflehog
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
