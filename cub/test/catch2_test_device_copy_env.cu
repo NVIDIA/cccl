@@ -139,8 +139,11 @@ struct batch_copy_tuning
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::BatchedCopyPolicy
   {
     return {
-      {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
-      {256, 32},
+      cub::BatchedCopyAlgorithm::lookback,
+      {
+        {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
+        {256, 32},
+      },
     };
   }
 };

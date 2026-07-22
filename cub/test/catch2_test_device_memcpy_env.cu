@@ -140,8 +140,11 @@ struct batch_memcpy_tuning
   _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
     return {
-      {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
-      {256, 32},
+      cub::BatchedCopyAlgorithm::lookback,
+      {
+        {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
+        {256, 32},
+      },
     };
   }
 };
@@ -206,7 +209,8 @@ C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   constexpr auto p1_large = cub::BatchedCopyLargeBufferPolicy{256, 32};
-  constexpr auto p1       = cub::BatchedCopyPolicy{p1_small, p1_large};
+  constexpr auto p1 =
+    cub::BatchedCopyPolicy{cub::BatchedCopyAlgorithm::lookback, cub::BatchedCopyLookbackPolicy{p1_small, p1_large}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -223,7 +227,9 @@ C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
     .block_lookback_delay = cub::LookbackDelayPolicy{
       .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   constexpr auto p2_large = cub::BatchedCopyLargeBufferPolicy{.threads_per_block = 256, .bytes_per_thread = 32};
-  constexpr auto p2       = cub::BatchedCopyPolicy{.small_buffer = p2_small, .large_buffer = p2_large};
+  constexpr auto p2       = cub::BatchedCopyPolicy{
+          .algorithm = cub::BatchedCopyAlgorithm::lookback,
+          .lookback  = cub::BatchedCopyLookbackPolicy{.small_buffer = p2_small, .large_buffer = p2_large}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2_small = p1_small;
   constexpr auto p2_large = p1_large;
@@ -257,7 +263,9 @@ C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
   REQUIRE(to_string(p1_large) == "BatchedCopyLargeBufferPolicy { .threads_per_block = 256, .bytes_per_thread = 32 }");
   REQUIRE(
     to_string(p1)
-    == "BatchedCopyPolicy { .small_buffer = BatchedCopySmallBufferPolicy { .threads_per_block = 128"
+    == "BatchedCopyPolicy { .algorithm = BatchedCopyAlgorithm::lookback"
+       ", .lookback = BatchedCopyLookbackPolicy { .small_buffer = BatchedCopySmallBufferPolicy { .threads_per_block = "
+       "128"
        ", .buffers_per_thread = 4, .bytes_per_thread = 8, .prefer_pow2_bits = 0"
        ", .block_level_tile_size = 8192, .warp_level_threshold = 128, .block_level_threshold = 8192"
        ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
@@ -265,6 +273,6 @@ C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
        ", .block_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
        ", .delay = 350, .l2_write_latency = 450 } }"
        ", .large_buffer = BatchedCopyLargeBufferPolicy { .threads_per_block = 256"
-       ", .bytes_per_thread = 32 } }");
+       ", .bytes_per_thread = 32 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
