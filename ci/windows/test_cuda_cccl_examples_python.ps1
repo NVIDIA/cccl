@@ -25,7 +25,7 @@ ${wheelPath} = Get-CudaCcclWheel
 # pytest-benchmark is for the host-benchmark smoke test below.
 & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark
 if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install pytest / pytest-xdist"
+    throw "Failed to install pytest / pytest-xdist / pytest-benchmark"
 }
 # CuPy is required by the cuda.compute examples and is not part of the test extras
 & $python -m pip install "${wheelPath}[test-cu$cudaMajor]" "cupy-cuda${cudaMajor}x"
