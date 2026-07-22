@@ -35,20 +35,47 @@ class HostBenchmarkCase:
 
 
 class NoopBuildResult:
-    """Proxy that skips native compute while preserving wrapper host work."""
+    """Proxy over a loaded build result that skips the native kernel launch.
+
+    The host-overhead benchmarks want to measure everything ``__call__`` does on
+    the host — iterator/op state updates, stream validation, build-result
+    resolution — without paying for (or allocating correct temp storage for) the
+    GPU kernel. Wrapping the loaded build result intercepts every kernel-launch
+    entry point with a fabricated return, while delegating any other attribute
+    (e.g. ``determinism``, which reduce reads to pick its entry point) to the
+    real result.
+    """
+
+    # Every build-result method an algorithm's __call__ dispatches its kernel
+    # through. Keep in sync with cuda/compute/algorithms/ (grep for
+    # ``loaded_build_result.compute``). A new entry point missing here would run
+    # the real kernel on the benchmark's 1-byte temp storage and fail loudly —
+    # which the CI smoke test (rounds=iterations=1) exists to catch.
+    _COMPUTE_METHODS = frozenset(
+        {
+            "compute",
+            "compute_even",
+            "compute_nondeterministic",
+            "compute_inclusive",
+            "compute_inclusive_no_init",
+            "compute_inclusive_future_value",
+            "compute_exclusive",
+            "compute_exclusive_future_value",
+        }
+    )
 
     def __init__(self, real_build_result: Any, return_kind: NoopReturnKind):
         self._real_build_result = real_build_result
         self._return_kind = return_kind
 
     def __getattr__(self, name: str) -> Any:
+        if name in NoopBuildResult._COMPUTE_METHODS:
+
+            def noop_compute(*args, **kwargs):
+                return _noop_return(self._return_kind)
+
+            return noop_compute
         return getattr(self._real_build_result, name)
-
-    def compute(self, *args, **kwargs):
-        return _noop_return(self._return_kind)
-
-    def compute_even(self, *args, **kwargs):
-        return _noop_return(self._return_kind)
 
 
 def _noop_return(return_kind: NoopReturnKind):
@@ -64,18 +91,20 @@ def _noop_return(return_kind: NoopReturnKind):
 def patch_wrapper_to_skip_native_compute(
     wrapper: Any, return_kind: NoopReturnKind
 ) -> None:
-    """Patch a cached wrapper so measured calls skip native compute."""
-    if hasattr(wrapper, "build_result"):
-        wrapper.build_result = NoopBuildResult(wrapper.build_result, return_kind)
+    """Patch a cached wrapper so measured calls skip the native kernel launch.
 
-    if hasattr(wrapper, "device_reduce_fn"):
-        wrapper.device_reduce_fn = lambda *args, **kwargs: _noop_return(return_kind)
+    Default-build wrappers resolve, on every ``__call__``, to the loaded build
+    result bound at construction (``_bound_build_result``; see
+    ``resolve_build_result``). Replacing it with a NoopBuildResult is therefore
+    enough: the per-call re-resolution and any re-binding of the compute fn both
+    read through it. ``_Select`` owns no build result of its own — it delegates
+    to a nested three-way-partition wrapper — so recurse into ``partitioner``.
+    """
+    if (bound := getattr(wrapper, "_bound_build_result", None)) is not None:
+        wrapper._bound_build_result = NoopBuildResult(bound, return_kind)
 
-    if hasattr(wrapper, "device_scan_fn"):
-        wrapper.device_scan_fn = lambda *args, **kwargs: _noop_return(return_kind)
-
-    if hasattr(wrapper, "partitioner"):
-        patch_wrapper_to_skip_native_compute(wrapper.partitioner, return_kind)
+    if (partitioner := getattr(wrapper, "partitioner", None)) is not None:
+        patch_wrapper_to_skip_native_compute(partitioner, return_kind)
 
 
 def make_tiny_temp_storage() -> cp.ndarray:
