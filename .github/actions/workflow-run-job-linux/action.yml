@@ -136,7 +136,7 @@ runs:
         eval "${COMMAND}" || exit_code=$?
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
-          echo "::error:: To replicate this failure locally, follow the steps below:"
+          echo "To replicate this failure locally, follow the steps below:"
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
           echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
           echo ""
