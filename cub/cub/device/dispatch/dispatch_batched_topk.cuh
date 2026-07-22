@@ -249,7 +249,8 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
 
   // Single kernel symbol; its cluster vs baseline arm is selected device-side via `current_policy<PolicySelector>()`.
   // Taking its address here ODR-uses the `__global__` template, which is what drives its emission and registration.
-  constexpr auto kernel_ptr = &device_batched_topk_kernel<
+  // Not `constexpr`: MSVC (C2326) rejects a `constexpr` local captured and ODR-used inside the lambdas below.
+  auto kernel_ptr = &device_batched_topk_kernel<
     PolicySelector,
     KeyInputItItT,
     KeyOutputItItT,

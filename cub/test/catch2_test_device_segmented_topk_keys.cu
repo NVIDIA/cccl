@@ -514,8 +514,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a deferred (device-resident
 
   constexpr auto direction = c2h::get<1, TestType>::value;
 
-  constexpr segment_size_t segment_size     = 384;
-  constexpr segment_size_t max_segment_size = 512;
+  constexpr segment_size_t segment_size                      = 384;
+  [[maybe_unused]] constexpr segment_size_t max_segment_size = 512; // msvc warns, only used in nttp
   const segment_size_t k             = GENERATE_COPY(values({segment_size_t{1}, segment_size_t{17}, segment_size}));
   const segment_index_t num_segments = GENERATE_COPY(
     values({segment_index_t{1}, segment_index_t{37}}), take(2, random(segment_index_t{1}, segment_index_t{500})));
