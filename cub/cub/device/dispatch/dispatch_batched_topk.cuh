@@ -50,6 +50,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
@@ -913,8 +914,11 @@ _CCCL_HOST_API cudaError_t dispatch(
     NumSegmentsParameterT,
     LargeSegmentTileOffsetT>;
 
-  auto policy_selector = ::cuda::std::execution::__query_or(tuning_env, topk_policy{}, default_selector_t{});
-  using selector_t     = decltype(policy_selector);
+  // Type derived from the query-result trait rather than `decltype(policy_selector)`: GCC 7 rejects the latter ("use of
+  // 'policy_selector' before deduction of 'auto'") when `selector_t` is later named inside the dispatch lambda.
+  using selector_t =
+    ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, topk_policy, default_selector_t>>;
+  selector_t policy_selector = ::cuda::std::execution::__query_or(tuning_env, topk_policy{}, default_selector_t{});
 #if _CCCL_HAS_CONCEPTS()
   static_assert(detail::policy_selector<selector_t, topk_policy>,
                 "Invalid policy selector for cub::DeviceBatchedTopK::dispatch");
