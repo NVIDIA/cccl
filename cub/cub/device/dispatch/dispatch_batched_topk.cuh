@@ -137,11 +137,13 @@ template <class KeyT,
           class LargeSegmentTileOffsetT>
 struct policy_selector_from_types
 {
-  // TODO(bgruber): going forward, we want to move the baseline_can_cover_v check inside operator() and make it a
-  // constexpr function to be able to select a different baseline policy based on the passed CC. We currently cannot do
-  // this, since baseline_can_cover_v needs to instantiate the agent to check its temporary storage size, which cannot
-  // be done in constant evaluation yet (we need to compute a type based on the passed non-constexpr CC). This could be
-  // solved if we had a constexpr function returning the agent's temporary storage size.
+  // TODO(bgruber): to let the baseline policy vary per CC, move this coverage check into operator() and evaluate it for
+  // the passed CC. Only the check is hard: it instantiates the agent for sizeof(TempStorage), so it needs the CC as a
+  // compile-time constant, whereas operator()'s `cc` is a runtime parameter (building the policy itself is just the
+  // value make_baseline_policy(cc)). Recover the compile-time CC by folding over
+  // ::cuda::__target_compute_capabilities() (as detail::dispatch_to_cc_list does) and evaluate baseline_can_cover_v for
+  // the matching CC. That also removes the invariant below, since coverage and the returned baseline would then derive
+  // from the same cc.
 
   // note: the baseline policy passed to baseline_can_cover_v must be the same as returned from operator(cc) below
   static constexpr baseline_topk_policy baseline_policy = make_baseline_policy();
