@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from .._bindings import Op, OpKind
+from .._bindings import IteratorState, Op, OpKind
 from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
@@ -46,6 +46,7 @@ class TransformIterator(IteratorBase):
         "_value_type",
         "_is_input",
         "_compiled_op",
+        "_op_state_offset",
     ]
 
     def __init__(
@@ -77,6 +78,7 @@ class TransformIterator(IteratorBase):
         # first arch's op (nvJitLink rejects a newer-arch input linked into an
         # older-arch result). Mirrors the per-cc op caches in IteratorBase.
         self._compiled_op: dict = {}
+        self._op_state_offset = 0  # Byte offset of the op state within iterator state
 
         # Determine value type
         if value_type is None:
@@ -98,9 +100,34 @@ class TransformIterator(IteratorBase):
         assert value_type is not None
         self._value_type = value_type
 
+        # A stateful transform op (one that captures device arrays) carries its
+        # state as a packed array of pointers. Unlike a direct algorithm op,
+        # that state is not threaded through the algorithm separately here — the
+        # op is invoked from inside the iterator's dereference. So we append the
+        # op's state to the underlying iterator's state and pass a pointer to it
+        # when calling the op on device (see _make_input/output_deref_op).
+        if self._transform_op.is_stateful:
+            # compiled_op.state (the packed captured-array descriptors) and
+            # state_alignment are cc-independent, so it is fine to take them
+            # from whichever cc _get_compiled_op compiles for; only the op's
+            # LTO-IR is arch-specific.
+            compiled_op = self._get_compiled_op()
+            underlying_state = bytes(self._underlying.state)
+            op_state = bytes(compiled_op.state)
+            op_alignment = compiled_op.state_alignment
+            padding = (
+                op_alignment - (len(underlying_state) % op_alignment)
+            ) % op_alignment
+            self._op_state_offset = len(underlying_state) + padding
+            state_bytes = underlying_state + b"\x00" * padding + op_state
+            state_alignment = max(self._underlying.state_alignment, op_alignment)
+        else:
+            state_bytes = bytes(self._underlying.state)
+            state_alignment = self._underlying.state_alignment
+
         super().__init__(
-            state_bytes=bytes(self._underlying.state),
-            state_alignment=self._underlying.state_alignment,
+            state_bytes=state_bytes,
+            state_alignment=state_alignment,
             value_type=value_type,
         )
 
@@ -122,6 +149,17 @@ class TransformIterator(IteratorBase):
                 output_type,
             )
         return self._compiled_op[key]
+
+    @property
+    def state(self) -> IteratorState:
+        """Return the iterator state for CCCL interop."""
+        if not self._transform_op.is_stateful:
+            return super().state
+
+        underlying_state = bytes(self._underlying.state)
+        padding = self._op_state_offset - len(underlying_state)
+        op_state = self._transform_op.get_state()
+        return IteratorState(underlying_state + b"\x00" * padding + op_state)
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
@@ -160,18 +198,36 @@ class TransformIterator(IteratorBase):
         symbol = self._make_input_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
-        source = dedent(f"""
-            {CUDA_PREAMBLE}
+        if self._transform_op.is_stateful:
+            # The stateful op takes its state pointer as the first argument. The
+            # op state is packed after the underlying iterator's state (which
+            # lives at offset 0, where the underlying child expects it).
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
 
-            extern "C" __device__ void {child_op.name}(void* state, void* result);
-            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+                extern "C" __device__ void {child_op.name}(void* state, void* result);
+                extern "C" __device__ void {compiled_op.name}(void* op_state, void* input, void* output);
 
-            extern "C" __device__ void {symbol}(void* state, void* result) {{
-                {temp_decl}
-                {child_op.name}(state, &temp);
-                {compiled_op.name}(&temp, result);
-            }}
-        """).strip()
+                extern "C" __device__ void {symbol}(void* state, void* result) {{
+                    {temp_decl}
+                    {child_op.name}(state, &temp);
+                    char* op_state = static_cast<char*>(state) + {self._op_state_offset};
+                    {compiled_op.name}(op_state, &temp, result);
+                }}
+            """).strip()
+        else:
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {child_op.name}(void* state, void* result);
+                extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+
+                extern "C" __device__ void {symbol}(void* state, void* result) {{
+                    {temp_decl}
+                    {child_op.name}(state, &temp);
+                    {compiled_op.name}(&temp, result);
+                }}
+            """).strip()
 
         code = compile_cpp_op_code(source)
 
@@ -200,18 +256,36 @@ class TransformIterator(IteratorBase):
         symbol = self._make_output_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
-        source = dedent(f"""
-            {CUDA_PREAMBLE}
+        if self._transform_op.is_stateful:
+            # The stateful op takes its state pointer as the first argument. The
+            # op state is packed after the underlying iterator's state (which
+            # lives at offset 0, where the underlying child expects it).
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
 
-            extern "C" __device__ void {child_op.name}(void* state, void* value);
-            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+                extern "C" __device__ void {child_op.name}(void* state, void* value);
+                extern "C" __device__ void {compiled_op.name}(void* op_state, void* input, void* output);
 
-            extern "C" __device__ void {symbol}(void* state, void* value) {{
-                {temp_decl}
-                {compiled_op.name}(value, &temp);
-                {child_op.name}(state, &temp);
-            }}
-        """).strip()
+                extern "C" __device__ void {symbol}(void* state, void* value) {{
+                    {temp_decl}
+                    char* op_state = static_cast<char*>(state) + {self._op_state_offset};
+                    {compiled_op.name}(op_state, value, &temp);
+                    {child_op.name}(state, &temp);
+                }}
+            """).strip()
+        else:
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {child_op.name}(void* state, void* value);
+                extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+
+                extern "C" __device__ void {symbol}(void* state, void* value) {{
+                    {temp_decl}
+                    {compiled_op.name}(value, &temp);
+                    {child_op.name}(state, &temp);
+                }}
+            """).strip()
 
         code = compile_cpp_op_code(source)
 
@@ -263,6 +337,11 @@ class TransformIterator(IteratorBase):
             self._transform_op,
             self._underlying.kind,
             value_type,
+            # The op state offset is baked into the generated deref source, so
+            # cached deref ops must never be shared across differing offsets.
+            # It is derived from the underlying state size (fixed per kind),
+            # but keying on it makes that invariant explicit.
+            self._op_state_offset,
         )
 
 
