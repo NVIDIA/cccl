@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/logging.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -370,10 +369,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
 #ifdef CUB_DEBUG_LOG
     _CubLog(
       "Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
-#endif // CUB_DEBUG_LOG
+#endif
 
     this->max_cached_bytes = max_cached_bytes_;
 
@@ -489,16 +485,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
                   (long long) search_key.bytes,
                   (long long) search_key.associated_stream,
                   (long long) block_itr->associated_stream);
-#else // CUB_DEBUG_LOG
-          detail::log(
-            "\tDevice %d reused cached block at %p (%lld bytes) for stream %lld (previously associated with "
-            "stream %lld).\n",
-            device,
-            search_key.d_ptr,
-            (long long) search_key.bytes,
-            (long long) search_key.associated_stream,
-            (long long) block_itr->associated_stream);
-#endif // CUB_DEBUG_LOG
+#endif
 
           cached_blocks.erase(block_itr);
 
@@ -540,13 +527,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
                 device,
                 (long long) search_key.bytes,
                 (long long) search_key.associated_stream);
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "\tDevice %d failed to allocate %lld bytes for stream %lld, retrying after freeing cached allocations",
-          device,
-          (long long) search_key.bytes,
-          (long long) search_key.associated_stream);
-#endif // CUB_DEBUG_LOG
+#endif
 
         error = cudaSuccess; // Reset the error we will return
         cudaGetLastError(); // Reset CUDART's error
@@ -589,17 +570,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
                   (long long) cached_bytes[device].free,
                   (long long) live_blocks.size(),
                   (long long) cached_bytes[device].live);
-#else // CUB_DEBUG_LOG
-          detail::log(
-            "\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks "
-            "(%lld bytes) outstanding.\n",
-            device,
-            (long long) block_itr->bytes,
-            (long long) cached_blocks.size(),
-            (long long) cached_bytes[device].free,
-            (long long) live_blocks.size(),
-            (long long) cached_bytes[device].live);
-#endif // CUB_DEBUG_LOG
+#endif
 
           block_itr = cached_blocks.erase(block_itr);
         }
@@ -641,13 +612,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
               search_key.d_ptr,
               (long long) search_key.bytes,
               (long long) search_key.associated_stream);
-#else // CUB_DEBUG_LOG
-      detail::log("\tDevice %d allocated new device block at %p (%lld bytes associated with stream %lld).\n",
-                  device,
-                  search_key.d_ptr,
-                  (long long) search_key.bytes,
-                  (long long) search_key.associated_stream);
-#endif // CUB_DEBUG_LOG
+#endif
 
       // Attempt to revert back to previous device if necessary
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
@@ -672,16 +637,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
               (long long) live_blocks.size(),
               (long long) cached_bytes[device].live);
     }
-#else // CUB_DEBUG_LOG
-    if (debug)
-    {
-      detail::log("\t\t%lld available blocks cached (%lld bytes), %lld live blocks outstanding(%lld bytes).\n",
-                  (long long) cached_blocks.size(),
-                  (long long) cached_bytes[device].free,
-                  (long long) live_blocks.size(),
-                  (long long) cached_bytes[device].live);
-    }
-#endif // CUB_DEBUG_LOG
+#endif
 
     return error;
   }
@@ -765,18 +721,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
                 (long long) cached_bytes[device].free,
                 (long long) live_blocks.size(),
                 (long long) cached_bytes[device].live);
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "\tDevice %d returned %lld bytes from associated stream %lld.\n\t\t %lld available blocks cached (%lld "
-          "bytes), %lld live blocks outstanding. (%lld bytes)\n",
-          device,
-          (long long) search_key.bytes,
-          (long long) search_key.associated_stream,
-          (long long) cached_blocks.size(),
-          (long long) cached_bytes[device].free,
-          (long long) live_blocks.size(),
-          (long long) cached_bytes[device].live);
-#endif // CUB_DEBUG_LOG
+#endif
       }
     }
 
@@ -834,18 +779,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
               (long long) cached_bytes[device].free,
               (long long) live_blocks.size(),
               (long long) cached_bytes[device].live);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "\tDevice %d freed %lld bytes from associated stream %lld.\n\t\t  %lld available blocks cached (%lld "
-        "bytes), %lld live blocks (%lld bytes) outstanding.\n",
-        device,
-        (long long) search_key.bytes,
-        (long long) search_key.associated_stream,
-        (long long) cached_blocks.size(),
-        (long long) cached_bytes[device].free,
-        (long long) live_blocks.size(),
-        (long long) cached_bytes[device].live);
-#endif // CUB_DEBUG_LOG
+#endif
     }
 
     // Reset device
@@ -939,17 +873,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
               (long long) cached_bytes[current_device].free,
               (long long) live_blocks.size(),
               (long long) cached_bytes[current_device].live);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld "
-        "bytes) outstanding.\n",
-        current_device,
-        (long long) block_bytes,
-        (long long) cached_blocks.size(),
-        (long long) cached_bytes[current_device].free,
-        (long long) live_blocks.size(),
-        (long long) cached_bytes[current_device].live);
-#endif // CUB_DEBUG_LOG
+#endif
     }
 
     mutex.unlock();
