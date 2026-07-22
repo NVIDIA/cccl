@@ -67,7 +67,11 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
+#  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
     const bool has_cluster = cluster_dim.x != 0;
+#  else // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+    const bool has_cluster = false;
+#  endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
 #  if _CCCL_HAS_PDL()
     const bool needs_launch_ex = dependent_launch || has_cluster;
 #  else // _CCCL_HAS_PDL()
@@ -86,6 +90,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
         ++num_attrs;
       }
 #  endif // _CCCL_HAS_PDL()
+#  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
       if (has_cluster)
       {
         attribute[num_attrs].id               = cudaLaunchAttributeClusterDimension;
@@ -94,6 +99,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
         attribute[num_attrs].val.clusterDim.z = cluster_dim.z;
         ++num_attrs;
       }
+#  endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
 
       cudaLaunchConfig_t config{};
       config.gridDim          = grid;

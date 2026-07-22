@@ -927,17 +927,21 @@ _CCCL_HOST_API cudaError_t dispatch(
 #if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
   && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
   // Strict mode (default): fail at compile time if the request cannot be served on *any* architecture this translation
-  // unit targets (e.g. a deterministic / large-segment request while a pre-SM90 target is present, since the cluster
-  // backend requires SM90+). This is the least-surprising UX for callers whose build targets multiple architectures.
-  // Define `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` to defer the diagnosis to runtime instead (the dispatch then
-  // returns `cudaErrorNotSupported` on unsupported devices); CUB's own tests and benchmarks do this so they can compile
-  // the full configuration space across all target architectures and skip at runtime where unsupported.
+  // unit targets. Two causes reach here: a deterministic / large-segment request while a pre-SM90 target is present
+  // (the cluster backend requires SM90+), or CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH disabling the cluster backend on all
+  // architectures. This is the least-surprising UX for callers whose build targets multiple architectures. Define
+  // `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` to defer the diagnosis to runtime instead (the dispatch then returns
+  // `cudaErrorNotSupported` on unsupported devices); CUB's own tests and benchmarks do this so they can compile the
+  // full configuration space across all target architectures and skip at runtime where unsupported.
   static_assert(
     !any_target_cc_unsupported<selector_t>(),
-    "cub::DeviceBatchedTopK: the requested top-k configuration is not supported on at least one architecture this "
-    "translation unit targets (the deterministic / large-segment cluster backend requires SM90+). Remove the "
-    "unsupported architecture(s), relax the request, or define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the "
-    "diagnosis to runtime (cudaErrorNotSupported).");
+    "cub::DeviceBatchedTopK: the requested top-k configuration cannot be served on at least one architecture this "
+    "translation unit targets. The deterministic / large-segment path requires the cluster backend (SM90+), which is "
+    "unavailable either because a pre-SM90 architecture is targeted or because CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH is "
+    "defined (which disables the cluster backend on all architectures). To fix: target only SM90+ and leave "
+    "CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH undefined, relax the request (non-deterministic and small enough for the "
+    "baseline backend), or define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the diagnosis to runtime "
+    "(cudaErrorNotSupported).");
 #endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
        // && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
 
@@ -1021,6 +1025,14 @@ _CCCL_HOST_API cudaError_t dispatch(
     }
     else if constexpr (active_policy.backend == topk_algorithm::cluster)
     {
+#if !_CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+      // The automatic selector never picks the cluster backend when dynamic cluster launches are disabled (see
+      // cluster_capable), so reaching here means a `tune`d selector forced it. The kernel would launch without its
+      // cluster extent (triple_chevron drops it), so reject the contradiction at compile time rather than run wrong.
+      static_assert(active_policy.backend != topk_algorithm::cluster,
+                    "cub::DeviceBatchedTopK: a tuned policy selector forced the cluster backend, but "
+                    "CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH is defined. Drop the override or the macro.");
+#endif // !_CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
       if (empty_batch_no_launch())
       {
         return cudaSuccess;

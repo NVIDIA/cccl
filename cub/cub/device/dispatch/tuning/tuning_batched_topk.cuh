@@ -423,9 +423,15 @@ inline constexpr int cluster_beneficial_min_cc_major = 10;
 //! that tuning the cluster policy (e.g. its single-CTA threshold) does not silently shift which backend is chosen.
 inline constexpr ::cuda::std::int64_t cluster_beneficial_min_segment_size = 8 * 1024;
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool cluster_capable(::cuda::compute_capability cc)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool cluster_capable([[maybe_unused]] ::cuda::compute_capability cc)
 {
+#if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
   return cc >= ::cuda::compute_capability{cluster_min_cc_major, 0};
+#else // ^^^ dynamic cluster launches enabled ^^^ / vvv dynamic cluster launches disabled vvv
+  // The cluster backend launches with a runtime cluster width, which CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH compiles out;
+  // reporting no architecture as cluster-capable makes the selector fall back to baseline (or report unsupported).
+  return false;
+#endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
 }
 
 // Adapts a (combined) policy selector to a plain baseline policy selector (returns just the `.baseline` sub-policy), so

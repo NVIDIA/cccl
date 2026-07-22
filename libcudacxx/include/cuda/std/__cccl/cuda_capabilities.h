@@ -56,6 +56,19 @@
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH()
 #endif // _CCCL_HAS_PDL()
 
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
+//! When this macro is defined, CCCL device algorithms do not launch kernels with runtime (dynamic) thread-block cluster
+//! extents (in particular, CUB's DeviceBatchedTopK cluster backend is disabled). Kernels with static cluster extents
+//! (i.e. the `__cluster_dims__` attribute) and the standalone `cuda::launch` cluster APIs are unaffected.
+#  define CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#endif // _CCCL_DOXYGEN_INVOKED
+
+#ifdef CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#  define _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH() 0
+#else // CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#  define _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH() 1
+#endif // CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+
 // Check whether the relocatable device code (RDC) is being generated.
 #if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__) || defined(_NVHPC_RDC)
 #  define _CCCL_HAS_RDC() 1
