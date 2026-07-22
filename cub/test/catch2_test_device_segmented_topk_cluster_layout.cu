@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/agent/agent_batched_topk_cluster.cuh> // smem_block_tile_layout
-#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // batched_topk::cluster_policy_selector
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_cluster_policy()
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/cstdint>
@@ -82,8 +82,7 @@ void check_layout_matrix()
 TEST_CASE("Segmented TopK cluster SMEM layout exposes the full physical capacity (head is an edge, not a chunk)",
           "[keys][segmented][topk][cluster][layout]")
 {
-  using default_policy  = cub::detail::batched_topk::cluster_policy_selector;
-  constexpr auto policy = default_policy{}(cuda::compute_capability{9, 0});
+  constexpr auto policy = cub::detail::batched_topk::make_cluster_policy();
 
   using default_float_layout =
     cub::detail::batched_topk_cluster::smem_block_tile_layout<float, policy.chunk_bytes, policy.load_align_bytes>;

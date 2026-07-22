@@ -98,8 +98,7 @@ struct topk_backend_selector
       "The baseline backend cannot honor a deterministic result set or a concrete tie-break preference; "
       "force the cluster backend or request the non-deterministic defaults.");
 #if TUNE_BASE
-    const auto baseline =
-      cub::detail::batched_topk::baseline_policy_selector_from_types<KeyT, ValueT, OffsetT, MaxK>{}(cc);
+    const auto baseline = cub::detail::batched_topk::make_baseline_policy();
 #else
     constexpr auto store_alg = cub::BLOCK_STORE_WARP_TRANSPOSE;
 #  if TUNE_BLOCK_LOAD_ALGORITHM == 0
@@ -118,7 +117,7 @@ struct topk_backend_selector
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
     }}};
 #endif // TUNE_BASE
-    const auto cluster = cub::detail::batched_topk::cluster_policy_selector{}(cc);
+    const auto cluster = cub::detail::batched_topk::make_cluster_policy();
     constexpr auto backend =
       (selected_backend == topk_backend::cluster)
         ? cub::detail::batched_topk::topk_algorithm::cluster

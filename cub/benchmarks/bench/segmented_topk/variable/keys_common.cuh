@@ -144,8 +144,7 @@ struct topk_backend_selector
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
     }}};
 #else
-    const auto baseline =
-      cub::detail::batched_topk::baseline_policy_selector_from_types<KeyT, ValueT, OffsetT, MaxK>{}(cc);
+    const auto baseline = cub::detail::batched_topk::make_baseline_policy();
 #endif
 
 #if !TUNE_BASE && TUNE_BACKEND == 1
@@ -164,7 +163,7 @@ struct topk_backend_selector
       /*max_blocks_per_cluster=*/0,
       /*max_chunk_slots_per_block=*/0};
 #else
-    const auto cluster = cub::detail::batched_topk::cluster_policy_selector{}(cc);
+    const auto cluster = cub::detail::batched_topk::make_cluster_policy();
 #endif
 
     constexpr auto backend =

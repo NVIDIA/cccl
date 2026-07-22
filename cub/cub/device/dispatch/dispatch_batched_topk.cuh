@@ -137,10 +137,27 @@ template <class KeyT,
           class LargeSegmentTileOffsetT>
 struct policy_selector_from_types
 {
+  // TODO(bgruber): going forward, we want to move the baseline_can_cover_v check inside operator() and make it a
+  // constexpr function to be able to select a different baseline policy based on the passed CC. We currently cannot do
+  // this, since baseline_can_cover_v needs to instantiate the agent to check its temporary storage size, which cannot
+  // be done in constant evaluation yet (we need to compute a type based on the passed non-constexpr CC). This could be
+  // solved if we had a constexpr function returning the agent's temporary storage size.
+
+  // note: the baseline policy passed to baseline_can_cover_v must be the same as returned from operator(cc) below
+  static constexpr baseline_topk_policy baseline_policy = make_baseline_policy();
+
+  struct policy_getter_17 // TODO(bgruber): remove in C++20 and pass policy by value
+  {
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()() const -> topk_policy
+    {
+      return topk_policy{topk_algorithm::baseline, baseline_policy, {}};
+    }
+  };
+
   // Whether a one-worker-per-segment (default baseline) policy fits the static max segment size in shared memory; feeds
   // the backend decision below.
   static constexpr bool baseline_can_cover = baseline_can_cover_v<
-    baseline_policy_selector_from_types<KeyT, ValueT, ::cuda::std::int64_t, MaxK>,
+    policy_getter_17,
     SegmentSizeParameterT,
     KeyInputItItT,
     KeyOutputItItT,
@@ -172,7 +189,7 @@ struct policy_selector_from_types
       const bool beneficial = StaticMaxSegSize >= cluster_beneficial_min_segment_size;
       backend               = (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
     }
-    return topk_policy{backend, make_baseline_policy(), make_cluster_policy()};
+    return topk_policy{backend, baseline_policy, make_cluster_policy()};
   }
 };
 
@@ -596,9 +613,10 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
 // Baseline host-launch arm of the dispatch. Launches the single kernel symbol
 // (`device_batched_topk_kernel`, packing the large-segment bookkeeping into `baseline_kernel_args` and passing an empty
 // `cluster_kernel_args`). `select_directions` arrives already wrapped and the baseline tuning is taken from the
-// `PolicySelector` (via `baseline_policy_selector_adaptor`). All kernel launches, memsets and nested scans go through
+// `PolicySelector`. All kernel launches, memsets and nested scans go through
 // `launcher_factory`.
 template <class PolicySelector,
+          class PolicyGetter,
           class LargeSegmentTileOffsetT,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
@@ -630,7 +648,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
   // does not expose a `baseline_can_cover` member). The selector never routes here when this is false, so the arm is
   // pruned per-arch in AOT builds; kept assert-free so it also compiles under runtime-policies mode.
   constexpr bool baseline_can_cover = baseline_can_cover_v<
-    baseline_policy_selector_adaptor<PolicySelector>,
+    PolicyGetter,
     SegmentSizeParameterT,
     KeyInputItItT,
     KeyOutputItItT,
@@ -653,11 +671,10 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
   else
   {
     using large_segment_tile_offset_t = LargeSegmentTileOffsetT;
-    using baseline_selector_t         = baseline_policy_selector_adaptor<PolicySelector>;
 
     // Determine which one-worker-per-segment policy covers the segment-size range and k.
     constexpr auto policy = find_smallest_covering_policy<
-      baseline_selector_t,
+      PolicySelector,
       SegmentSizeParameterT,
       KeyInputItItT,
       KeyOutputItItT,
@@ -897,7 +914,7 @@ _CCCL_HOST_API cudaError_t dispatch(
 
   // Default automatic selector from the compile-time inputs; it computes its own baseline coverage. A `tune`d selector
   // in the environment (keyed on `topk_policy`) replaces it wholesale.
-  using default_selector_t = policy_selector_from_types<
+  using default_policy_selector_t = policy_selector_from_types<
     key_t,
     value_t,
     max_k,
@@ -915,12 +932,11 @@ _CCCL_HOST_API cudaError_t dispatch(
     LargeSegmentTileOffsetT>;
 
   // Type derived from the query-result trait rather than `decltype(policy_selector)`: GCC 7 rejects the latter ("use of
-  // 'policy_selector' before deduction of 'auto'") when `selector_t` is later named inside the dispatch lambda.
-  using selector_t =
-    ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, topk_policy, default_selector_t>>;
-  selector_t policy_selector = ::cuda::std::execution::__query_or(tuning_env, topk_policy{}, default_selector_t{});
+  // 'policy_selector' before deduction of 'auto'") when `policy_selector_t` is later named inside the dispatch lambda.
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, topk_policy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
-  static_assert(detail::policy_selector<selector_t, topk_policy>,
+  static_assert(topk_policy_selector<policy_selector_t>,
                 "Invalid policy selector for cub::DeviceBatchedTopK::dispatch");
 #endif // _CCCL_HAS_CONCEPTS()
 
@@ -934,7 +950,7 @@ _CCCL_HOST_API cudaError_t dispatch(
   // `cudaErrorNotSupported` on unsupported devices); CUB's own tests and benchmarks do this so they can compile the
   // full configuration space across all target architectures and skip at runtime where unsupported.
   static_assert(
-    !any_target_cc_unsupported<selector_t>(),
+    !any_target_cc_unsupported<policy_selector_t>(),
     "cub::DeviceBatchedTopK: the requested top-k configuration cannot be served on at least one architecture this "
     "translation unit targets. The deterministic / large-segment path requires the cluster backend (SM90+), which is "
     "unavailable either because a pre-SM90 architecture is targeted or because CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH is "
@@ -983,7 +999,7 @@ _CCCL_HOST_API cudaError_t dispatch(
         && (detail::params::get_param(num_segments, 0) == 0 || ::cuda::args::__highest_(segment_sizes) <= 0);
   };
 
-  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+  return detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     constexpr topk_policy active_policy = policy_getter();
     if constexpr (active_policy.backend == topk_algorithm::baseline)
     {
@@ -1008,7 +1024,11 @@ _CCCL_HOST_API cudaError_t dispatch(
         {
           return cudaSuccess;
         }
-        return launch_baseline_arm<selector_t, LargeSegmentTileOffsetT, Determinism, TieBreak>(
+        return launch_baseline_arm<policy_selector_t,
+                                   decltype(policy_getter),
+                                   LargeSegmentTileOffsetT,
+                                   Determinism,
+                                   TieBreak>(
           d_temp_storage,
           temp_storage_bytes,
           d_key_segments_it,
@@ -1037,7 +1057,7 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return cudaSuccess;
       }
-      return launch_cluster_arm<selector_t, LargeSegmentTileOffsetT, Determinism, TieBreak>(
+      return launch_cluster_arm<policy_selector_t, LargeSegmentTileOffsetT, Determinism, TieBreak>(
         policy_getter,
         d_temp_storage,
         temp_storage_bytes,

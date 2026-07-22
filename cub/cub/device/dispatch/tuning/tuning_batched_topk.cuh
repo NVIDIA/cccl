@@ -156,13 +156,7 @@ struct baseline_topk_policy
 #endif // _CCCL_HOSTED()
 };
 
-#if _CCCL_HAS_CONCEPTS()
-template <typename T>
-concept baseline_topk_policy_selector = policy_selector<T, baseline_topk_policy>;
-#endif // _CCCL_HAS_CONCEPTS()
-
-// Default baseline sub-policy. A free function so both `baseline_policy_selector` and the combined `policy_selector`
-// can build it inline. Tuning is currently CC-independent.
+// Default baseline sub-policy. Tuning is currently CC-independent.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_baseline_policy() -> baseline_topk_policy
 {
   constexpr auto load_alg  = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -200,29 +194,6 @@ baseline_max_covered_segment_size(const baseline_topk_policy& policy)
   }
   return max_tile_size;
 }
-
-struct baseline_policy_selector
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
-    -> baseline_topk_policy
-  {
-    return make_baseline_policy();
-  }
-};
-
-template <typename KeyT, typename ValueT, typename SegmentSizeT, ::cuda::std::int64_t MaxK>
-struct baseline_policy_selector_from_types
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> baseline_topk_policy
-  {
-    return baseline_policy_selector{}(cc);
-  }
-};
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(baseline_topk_policy_selector<baseline_policy_selector>);
-#endif // _CCCL_HAS_CONCEPTS()
 
 //! Execution shape for the thread-block-cluster backend of @ref DeviceBatchedTopK. The dispatch picks the number of
 //! cluster blocks and the dynamic shared-memory block_tile capacity at runtime (occupancy / wave-aware), so this policy
@@ -305,13 +276,7 @@ struct cluster_topk_policy
 #endif // _CCCL_HOSTED()
 };
 
-#if _CCCL_HAS_CONCEPTS()
-template <typename T>
-concept cluster_topk_policy_selector = policy_selector<T, cluster_topk_policy>;
-#endif // _CCCL_HAS_CONCEPTS()
-
-// Default cluster sub-policy. A free function so both `cluster_policy_selector` and the combined `policy_selector`
-// can build it inline. Tuning is currently CC-independent.
+// Default cluster sub-policy. Tuning is currently CC-independent.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_cluster_policy() -> cluster_topk_policy
 {
   return cluster_topk_policy{
@@ -341,19 +306,6 @@ concept cluster_topk_policy_selector = policy_selector<T, cluster_topk_policy>;
 }
 
 static_assert(is_valid_cluster_policy(make_cluster_policy()));
-
-// Default selector for cluster-capable architectures (SM 9.0+). The tuning is currently identical across CCs.
-struct cluster_policy_selector
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cluster_topk_policy
-  {
-    return make_cluster_policy();
-  }
-};
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(cluster_topk_policy_selector<cluster_policy_selector>);
-#endif // _CCCL_HAS_CONCEPTS()
 
 // -----------------------------------------------------------------------------
 // Backend selection
@@ -413,6 +365,11 @@ struct topk_policy
 #endif // _CCCL_HOSTED()
 };
 
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept topk_policy_selector = policy_selector<T, topk_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
 // Crossover knobs (TODO: tune via SM100 benchmarks).
 //! Clusters require SM 9.0+.
 inline constexpr int cluster_min_cc_major = 9;
@@ -431,18 +388,6 @@ inline constexpr ::cuda::std::int64_t cluster_beneficial_min_segment_size = 8 * 
   return false;
 #endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
 }
-
-// Adapts a (combined) policy selector to a plain baseline policy selector (returns just the `.baseline` sub-policy), so
-// the kernel can drive `find_smallest_covering_policy` from a single `PolicySelector` template parameter.
-template <class PolicySelector>
-struct baseline_policy_selector_adaptor
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> baseline_topk_policy
-  {
-    return PolicySelector{}(cc).baseline;
-  }
-};
 } // namespace detail::batched_topk
 
 CUB_NAMESPACE_END

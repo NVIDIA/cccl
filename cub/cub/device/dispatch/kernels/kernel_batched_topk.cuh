@@ -40,7 +40,7 @@ namespace detail::batched_topk
 // instantiated agent's shared memory usage fits within the static shared memory limit (max_smem_per_block), or -1 if
 // none does. Kept separate from `find_smallest_covering_policy` so callers can query coverage as a bool without
 // tripping that trait's hard `static_assert`.
-template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
+template <typename PolicyGetter, typename SegmentSizeParameterT, typename... AgentParamsT>
 struct find_covering_policy_index
 {
 private:
@@ -50,26 +50,26 @@ private:
     multi_worker_policy multi_worker_per_segment_policy;
   };
   static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::args::__traits<SegmentSizeParameterT>::highest;
-  static constexpr baseline_topk_policy active_policy    = current_policy<PolicySelector>();
+  static constexpr topk_policy active_policy             = PolicyGetter{}();
 
   template <int Index>
   [[nodiscard]] static constexpr int find_index()
   {
-    if constexpr (Index >= active_policy.worker_per_segment_policies.size())
+    if constexpr (Index >= active_policy.baseline.worker_per_segment_policies.size())
     {
       return -1;
     }
     else
     {
-      constexpr worker_policy wp = active_policy.worker_per_segment_policies[Index];
+      constexpr worker_policy wp = active_policy.baseline.worker_per_segment_policies[Index];
       constexpr auto tile_size   = ::cuda::std::int64_t{wp.threads_per_block} * wp.items_per_thread;
 
-      struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
+      struct policy_getter_17 // TODO(bgruber): drop this in C++20 and pass wp directly
       {
         _CCCL_HOST_DEVICE_API constexpr auto operator()() const
         {
-          return policy_t{active_policy.worker_per_segment_policies[Index],
-                          active_policy.multi_worker_per_segment_policy};
+          return policy_t{active_policy.baseline.worker_per_segment_policies[Index],
+                          active_policy.baseline.multi_worker_per_segment_policy};
         }
       };
       using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
@@ -94,9 +94,9 @@ public:
 // True iff some one-worker-per-segment policy covers the statically-known maximum segment size within the shared-memory
 // limit. Used by the backend selector to decide whether the baseline backend is viable at all (an oversize
 // bound must route to the cluster backend instead of tripping the `static_assert` below).
-template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
+template <typename PolicyGetter, typename SegmentSizeParameterT, typename... AgentParamsT>
 inline constexpr bool baseline_can_cover_v =
-  find_covering_policy_index<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::value >= 0;
+  find_covering_policy_index<PolicyGetter, SegmentSizeParameterT, AgentParamsT...>::value >= 0;
 
 // Resolves the agent type the kernel instantiates via the same covering-policy search as `find_covering_policy_index`,
 // adding a hard `static_assert` when no policy covers the segment size within the shared-memory limit.
@@ -104,14 +104,25 @@ template <typename PolicySelector, typename SegmentSizeParameterT, typename... A
 struct find_smallest_covering_policy
 {
 private:
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(topk_policy_selector<PolicySelector>);
+#endif
+
   struct policy_t
   {
     worker_policy worker_per_segment_policy;
     multi_worker_policy multi_worker_per_segment_policy;
   };
-  static constexpr baseline_topk_policy active_policy = current_policy<PolicySelector>();
+  static constexpr topk_policy active_policy = current_policy<PolicySelector>();
+  struct active_policy_getter_17 // TODO(bgruber): drop this in C++20 and pass policy directly
+  {
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+    {
+      return active_policy;
+    }
+  };
   static constexpr int selected_index =
-    find_covering_policy_index<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::value;
+    find_covering_policy_index<active_policy_getter_17, SegmentSizeParameterT, AgentParamsT...>::value;
 
 public:
   // TODO (elstehle): extend support for variable-size segments
@@ -119,10 +130,10 @@ public:
                 "cub::DeviceBatchedTopK: no baseline worker policy covers the statically-known maximum segment size "
                 "within the shared-memory limit. Reduce the maximum segment size encoded in the segment-size argument "
                 "annotation (larger segments are served by the SM 9.0+ cluster backend).");
-  static constexpr policy_t policy = {
-    active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
+  static constexpr policy_t policy = {active_policy.baseline.worker_per_segment_policies[selected_index],
+                                      active_policy.baseline.multi_worker_per_segment_policy};
 
-  struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
+  struct policy_getter_17 // TODO(bgruber): drop this in C++20 and pass policy directly
   {
     _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
@@ -170,9 +181,8 @@ template <class PolicySelector, class SegmentSizeParameterT, class... AgentParam
   constexpr auto policy = current_policy<PolicySelector>();
   if constexpr (policy.backend == topk_algorithm::baseline)
   {
-    return find_smallest_covering_policy<baseline_policy_selector_adaptor<PolicySelector>,
-                                         SegmentSizeParameterT,
-                                         AgentParamsT...>::policy.worker_per_segment_policy.threads_per_block;
+    return find_smallest_covering_policy<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::policy
+      .worker_per_segment_policy.threads_per_block;
   }
   else if constexpr (policy.backend == topk_algorithm::cluster)
   {
@@ -281,7 +291,7 @@ device_batched_topk_kernel(
   if constexpr (policy.backend == topk_algorithm::baseline)
   {
     using agent_t = typename find_smallest_covering_policy<
-      baseline_policy_selector_adaptor<PolicySelector>,
+      PolicySelector,
       SegmentSizeParameterT,
       KeyInputItItT,
       KeyOutputItItT,

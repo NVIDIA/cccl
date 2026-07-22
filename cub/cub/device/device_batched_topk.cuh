@@ -226,7 +226,8 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 
     // A `tune`d policy selector (keyed on `topk_policy`) is forwarded to the dispatch, which queries it from this
     // tuning env; absent one, the dispatch builds its automatic arch+size selector.
-    const auto tuning_env = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
+    using tuning_env_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
     // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
     // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
@@ -246,7 +247,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
       num_segments,
       total_num_items,
       stream.get(),
-      tuning_env);
+      tuning_env_t{});
   }
   else
   {
