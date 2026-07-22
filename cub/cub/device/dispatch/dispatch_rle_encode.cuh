@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
@@ -57,6 +58,39 @@ struct policy_selector_adapter
   }
 };
 
+template <class PolicySelector,
+          class InputIteratorT,
+          class UniqueOutputIteratorT,
+          class LengthsOutputIteratorT,
+          class NumRunsOutputIteratorT,
+          class OffsetT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_streaming(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  UniqueOutputIteratorT d_unique_out,
+  LengthsOutputIteratorT d_counts_out,
+  NumRunsOutputIteratorT d_num_runs_out,
+  OffsetT num_items,
+  cudaStream_t stream)
+{
+  using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
+  using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, OffsetT>;
+  return detail::reduce_by_key::dispatch_streaming(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_unique_out,
+    lengths_input_iterator_t(length_t{1}),
+    d_counts_out,
+    d_num_runs_out,
+    ::cuda::std::equal_to<>{},
+    ::cuda::std::plus<>{},
+    num_items,
+    stream,
+    policy_selector_adapter<PolicySelector>{});
+}
+
 // a preprocessor directive inside the NV_IF_TARGET argument list is undefined behavior (MSVC C5101),
 // so the CUB_DEBUG_LOG guard has to live in this macro instead of around the _CubLog calls
 #ifdef CUB_DEBUG_LOG
@@ -84,9 +118,10 @@ inline constexpr bool lookahead_instantiable =
   && (alignof(it_value_t<InputIteratorT>) == sizeof(it_value_t<InputIteratorT>))
   && ::cuda::std::is_signed_v<OffsetT> && (sizeof(OffsetT) == 4 || sizeof(OffsetT) == 8);
 
-// Launches the lookahead init + main kernels. Host-only: the call site must sit inside an
-// NV_IF_TARGET(NV_IS_HOST) region so the device pass never instantiates this function
-// (set_max_dynamic_smem_size_for is host-only); the kernels are passed in because their
+// Launches the lookahead init + main kernels. Callable from host and device: the host arm queries the
+// device's opt-in shared memory and picks the tuned staged configuration when it fits, else the unstaged
+// floor; device-side (CDP) callers cannot raise the dynamic shared memory limit, so they always launch
+// the floor, which fits the default limit on every device. The kernels are passed in because their
 // instantiation must stay in device-pass-visible text at the call site.
 template <class KernelT,
           class InitKernelT,
@@ -96,7 +131,7 @@ template <class KernelT,
           class NumRunsOutputIteratorT,
           class OffsetT,
           class LauncherFactory>
-_CCCL_HOST_API cudaError_t invoke_lookahead(
+CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   KernelT kernel,
   InitKernelT init_kernel,
   const RleLookaheadPolicy& lookahead_policy,
@@ -136,11 +171,41 @@ _CCCL_HOST_API cudaError_t invoke_lookahead(
   auto* tile_partial_states =
     static_cast<TilePartialStateT*>(::cuda::align_up(d_temp_storage, alignof(TilePartialStateT)));
 
-  const size_t dyn_smem_bytes = lookahead_policy.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
-  if (const auto error =
-        CubDebug(launcher_factory.set_max_dynamic_smem_size_for(kernel, static_cast<int>(dyn_smem_bytes))))
+  int key_ring_stages   = lookahead_policy.key_ring_stages;
+  int pos_ring_stages   = lookahead_policy.pos_ring_stages;
+  bool keys_staged      = true;
+  size_t dyn_smem_bytes = lookahead_policy.dyn_smem_bytes(int{sizeof(key_t)}, int{alignof(key_t)});
+  NV_IF_TARGET(NV_IS_HOST,
+               ({
+                 int device = 0, max_optin_smem = 0;
+                 if (const auto error = CubDebug(cudaGetDevice(&device)))
+                 {
+                   return error;
+                 }
+                 if (const auto error = CubDebug(
+                       cudaDeviceGetAttribute(&max_optin_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, device)))
+                 {
+                   return error;
+                 }
+                 if (dyn_smem_bytes + RleLookaheadPolicy::static_smem_budget <= static_cast<size_t>(max_optin_smem))
+                 {
+                   if (const auto error = CubDebug(
+                         launcher_factory.set_max_dynamic_smem_size_for(kernel, static_cast<int>(dyn_smem_bytes))))
+                   {
+                     return error;
+                   }
+                 }
+                 else
+                 {
+                   keys_staged = false;
+                 }
+               }),
+               ({ keys_staged = false; }))
+  if (!keys_staged)
   {
-    return error;
+    key_ring_stages = lookahead_policy.floor_key_ring_stages();
+    pos_ring_stages = lookahead_policy.floor_pos_ring_stages();
+    dyn_smem_bytes  = lookahead_policy.floor_dyn_smem_bytes();
   }
 
   {
@@ -153,7 +218,7 @@ _CCCL_HOST_API cudaError_t invoke_lookahead(
       (long long) stream);
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
-            .doit(init_kernel, tile_partial_states, static_cast<long long>(num_tiles))))
+            .doit(init_kernel, tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
     {
       return error;
     }
@@ -188,9 +253,9 @@ _CCCL_HOST_API cudaError_t invoke_lookahead(
                   tile_partial_states,
                   num_items,
                   num_tiles,
-                  lookahead_policy.key_ring_stages,
-                  lookahead_policy.pos_ring_stages,
-                  /* keys_staged */ true)))
+                  key_ring_stages,
+                  pos_ring_stages,
+                  keys_staged)))
     {
       return error;
     }
@@ -244,49 +309,41 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     [[maybe_unused]] auto kernel = DeviceRleEncodeLookaheadKernel<PolicySelector, key_t, length_t, num_runs_t, OffsetT>;
     [[maybe_unused]] auto init_kernel = DeviceRleEncodeLookaheadInitKernel<TilePartialStateT>;
 
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::cuda::compute_capability cc{};
-                   if (const auto error = CubDebug(ptx_compute_cap(cc)))
-                   {
-                     return error;
-                   }
-                   const RleEncodePolicy policy = policy_selector(cc);
-                   if (policy.algorithm == RleAlgorithm::lookahead)
-                   {
-                     return invoke_lookahead(
-                       kernel,
-                       init_kernel,
-                       policy.lookahead,
-                       d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       d_unique_out,
-                       d_counts_out,
-                       d_num_runs_out,
-                       num_items,
-                       stream,
-                       launcher_factory);
-                   }
-                 }))
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
+    return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+      if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
+      {
+        return invoke_lookahead(
+          kernel,
+          init_kernel,
+          policy_getter().lookahead,
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_unique_out,
+          d_counts_out,
+          d_num_runs_out,
+          num_items,
+          stream,
+          launcher_factory);
+      }
+      else
+      {
+        return invoke_streaming<PolicySelector>(
+          d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
+      }
+    });
   }
+  else
 #endif // __cccl_ptx_isa >= 920
-
-  // the streaming reduce-by-key implementation: the lookback path, and the only path for device-side callers
-  using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
-  using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, OffsetT>;
-  return detail::reduce_by_key::dispatch_streaming(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in,
-    d_unique_out,
-    lengths_input_iterator_t(length_t{1}),
-    d_counts_out,
-    d_num_runs_out,
-    ::cuda::std::equal_to<>{},
-    ::cuda::std::plus<>{},
-    num_items,
-    stream,
-    policy_selector_adapter<PolicySelector>{});
+  {
+    return invoke_streaming<PolicySelector>(
+      d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
+  }
 }
 } // namespace detail::rle::encode
 

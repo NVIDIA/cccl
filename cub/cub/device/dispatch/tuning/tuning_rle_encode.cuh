@@ -156,6 +156,24 @@ struct RleLookaheadPolicy
          + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(short);
   }
 
+  static constexpr ::cuda::std::size_t static_smem_budget     = 8 * 1024;
+  static constexpr ::cuda::std::size_t default_smem_per_block = 48 * 1024;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_key_ring_stages() const noexcept
+  {
+    return key_ring_stages < 4 ? key_ring_stages : 4;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int floor_pos_ring_stages() const noexcept
+  {
+    return (floor_key_ring_stages() + 1) / 2;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t floor_dyn_smem_bytes() const noexcept
+  {
+    return static_cast<::cuda::std::size_t>(floor_pos_ring_stages()) * tile_size() * sizeof(short);
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleLookaheadPolicy& lhs, const RleLookaheadPolicy& rhs) noexcept
   {
@@ -729,11 +747,6 @@ struct policy_selector
       return false;
     }
     if (16 % key_size != 0 || key_align != key_size)
-    {
-      return false;
-    }
-    if (lookahead_policy.dyn_smem_bytes(key_size, key_align)
-        > ::cuda::arch_traits_for(cc).max_shared_memory_per_block_optin)
     {
       return false;
     }

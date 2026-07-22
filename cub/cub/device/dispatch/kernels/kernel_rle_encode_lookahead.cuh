@@ -622,6 +622,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(policy.key_ring_stages >= 1, "at least one pipeline stage");
   static_assert(policy.pos_ring_stages >= 1 && 2 * policy.pos_ring_stages >= policy.key_ring_stages,
                 "pos ring parity wait aliases unless 2*pos_ring_stages >= key_ring_stages");
+  static_assert(policy.floor_pos_ring_stages() <= policy.pos_ring_stages
+                  && 2 * policy.floor_pos_ring_stages() >= policy.floor_key_ring_stages(),
+                "the unstaged floor configuration must satisfy the pos ring parity bound");
+  static_assert(policy.floor_dyn_smem_bytes() + RleLookaheadPolicy::static_smem_budget
+                  <= RleLookaheadPolicy::default_smem_per_block,
+                "the unstaged floor configuration must launch within the default shared memory limit on every device");
   static_assert(policy.tile_size() <= 0xffff && policy.tile_size() <= 32768,
                 "tile_size must fit the 16-bit state words and signed 16-bit staged positions");
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
@@ -672,6 +678,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
   __shared__ __align__(16) uint4 clc_resp;
   __shared__ cuda::std::uint64_t clc_bar;
+  static_assert(
+    sizeof(tile_id_buf) + sizeof(warp_run_counts) + sizeof(head_flag_buf) + sizeof(warp_first_heads)
+        + sizeof(warp_last_heads) + sizeof(prefix_packed) + sizeof(pos_buf_free) + sizeof(full) + sizeof(computed)
+        + sizeof(prefixed) + sizeof(empty) + sizeof(staged_warp_tile) + sizeof(clc_resp) + sizeof(clc_bar)
+      <= RleLookaheadPolicy::static_smem_budget,
+    "static shared memory exceeds the budget assumed by the floor launch guarantee");
 
   const int thr_id         = threadIdx.x;
   const int lane_id        = thr_id & 31;
@@ -1174,9 +1186,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
 }
 
 template <class StateT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, long long n_states)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, cuda::std::int64_t n_states)
 {
-  const long long i = (long long) blockIdx.x * blockDim.x + threadIdx.x;
+  const cuda::std::int64_t i = (cuda::std::int64_t) blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n_states)
   {
     states[i] = StateT{};
