@@ -168,10 +168,9 @@ struct policy_selector_from_types
     {
       // Baseline can cover: use the cluster backend only where it is measured to win. The size crossover is a fixed
       // selector constant (not read from the tunable cluster policy), so tuning the cluster policy never shifts the
-      // backend choice.
-      const bool beneficial = cc >= ::cuda::compute_capability{cluster_beneficial_min_cc_major, 0}
-                           && StaticMaxSegSize >= cluster_beneficial_min_segment_size;
-      backend = (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
+      // backend choice. The threshold is applied on every cluster-capable architecture, not gated to a minimum CC.
+      const bool beneficial = StaticMaxSegSize >= cluster_beneficial_min_segment_size;
+      backend               = (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
     }
     return topk_policy{backend, make_baseline_policy(), make_cluster_policy()};
   }

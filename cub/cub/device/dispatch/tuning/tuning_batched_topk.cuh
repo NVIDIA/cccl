@@ -416,8 +416,6 @@ struct topk_policy
 // Crossover knobs (TODO: tune via SM100 benchmarks).
 //! Clusters require SM 9.0+.
 inline constexpr int cluster_min_cc_major = 9;
-//! The cluster backend only consistently wins at/above SM 10.0 (measured on B200), and only for large segments.
-inline constexpr int cluster_beneficial_min_cc_major = 10;
 //! Smallest statically-known maximum segment size at which the cluster backend starts to win (measured on B200). This
 //! is the backend crossover threshold and is intentionally part of the selector -- not a tunable policy field -- so
 //! that tuning the cluster policy (e.g. its single-CTA threshold) does not silently shift which backend is chosen.
