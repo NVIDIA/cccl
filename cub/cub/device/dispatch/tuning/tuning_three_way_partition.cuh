@@ -94,8 +94,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, ThreeWayPartitionAlgorithm
 //! The tuning policy for the three-way partition algorithms in @ref DevicePartition.
 struct ThreeWayPartitionPolicy
 {
-  ThreeWayPartitionAlgorithm algorithm = ThreeWayPartitionAlgorithm::lookback; //!< The three-way partition algorithm to
-                                                                               //!< use
+  ThreeWayPartitionAlgorithm algorithm; //!< The three-way partition algorithm to use
   ThreeWayPartitionLookbackPolicy lookback; //!< The policy for the three-way partition algorithm based on
                                             //!< decoupled-lookback. Only used when @p algorithm is @lookback.
 
