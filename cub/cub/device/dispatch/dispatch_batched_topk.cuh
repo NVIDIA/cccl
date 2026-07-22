@@ -886,7 +886,7 @@ _CCCL_HOST_API cudaError_t dispatch(
   NumSegmentsParameterT num_segments,
   [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream,
-  TuningEnvT tuning_env                  = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
   // Both arms resolve `num_segments` on the host via detail::params::get_param (allocation sizing, grid extent,
