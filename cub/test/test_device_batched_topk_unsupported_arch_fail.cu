@@ -43,7 +43,7 @@ int main()
   // A deterministic result set routes to the cluster backend, which is unsupported on the pinned pre-SM90 target.
   auto requirements =
     ex::require(ex::determinism::gpu_to_gpu, ex::tie_break::prefer_smaller_index, ex::output_ordering::unsorted);
-  // expected-error {{"is not supported on at least one architecture"}}
+  // expected-error {{"cannot be served on at least one architecture"}}
 
   auto env                             = cuda::std::execution::env{requirements};
   cuda::std::size_t temp_storage_bytes = 0;
