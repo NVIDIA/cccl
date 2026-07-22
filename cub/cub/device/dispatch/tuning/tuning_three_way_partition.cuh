@@ -29,8 +29,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for the three-way partition algorithms in @ref DevicePartition.
-struct ThreeWayPartitionPolicy
+//! The lookback tuning policy for the three-way partition algorithms in @ref DevicePartition.
+struct ThreeWayPartitionLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int items_per_thread; //!< Number of items processed per thread
@@ -40,7 +40,7 @@ struct ThreeWayPartitionPolicy
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy configuring the delay used in decoupled lookback
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
+  operator==(const ThreeWayPartitionLookbackPolicy& lhs, const ThreeWayPartitionLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -48,19 +48,73 @@ struct ThreeWayPartitionPolicy
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ThreeWayPartitionLookbackPolicy& lhs, const ThreeWayPartitionLookbackPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionLookbackPolicy& policy)
+  {
+    return os
+        << "ThreeWayPartitionLookbackPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
+        << ", .load_modifier = " << policy.load_modifier << ", .scan_algorithm = " << policy.scan_algorithm
+        << ", .lookback_delay = " << policy.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The algorithm used by the three-way partition policy.
+enum class ThreeWayPartitionAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(ThreeWayPartitionAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case ThreeWayPartitionAlgorithm::lookback:
+      return "ThreeWayPartitionAlgorithm::lookback";
+  }
+  return "<unknown ThreeWayPartitionAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, ThreeWayPartitionAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for the three-way partition algorithms in @ref DevicePartition.
+struct ThreeWayPartitionPolicy
+{
+  ThreeWayPartitionAlgorithm algorithm = ThreeWayPartitionAlgorithm::lookback; //!< The three-way partition algorithm to
+                                                                               //!< use
+  ThreeWayPartitionLookbackPolicy lookback; //!< The policy for the three-way partition algorithm based on
+                                            //!< decoupled-lookback. Only used when @p algorithm is @lookback.
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionPolicy& policy)
+  friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionPolicy& p)
   {
-    return os
-        << "ThreeWayPartitionPolicy { .threads_per_block = " << policy.threads_per_block
-        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
-        << ", .load_modifier = " << policy.load_modifier << ", .scan_algorithm = " << policy.scan_algorithm
-        << ", .lookback_delay = " << policy.lookback_delay << " }";
+    return os << "ThreeWayPartitionPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -463,10 +517,11 @@ struct policy_selector
   int input_size;
   int offset_size;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> ThreeWayPartitionPolicy
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> ThreeWayPartitionLookbackPolicy
   {
-    const auto default_policy = ThreeWayPartitionPolicy{
+    const auto default_policy = ThreeWayPartitionLookbackPolicy{
       256,
       nominal_4B_items_to_items(9, input_size),
       BLOCK_LOAD_DIRECT,
@@ -486,7 +541,7 @@ struct policy_selector
 
       if (offset_size == 4 && input_size == 4)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           512,
           11,
           BLOCK_LOAD_DIRECT,
@@ -496,7 +551,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 8)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           10,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -510,7 +565,7 @@ struct policy_selector
       if (offset_size == 8 && input_size == 2)
       {
         // trp_1.ipt_20.tpb_768.ns_544.dcid_5.l2w_500 1.064438  1.000000  1.069149  1.200658
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           768,
           20,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -522,7 +577,7 @@ struct policy_selector
       if (offset_size == 8 && input_size == 4)
       {
         // trp_1.ipt_15.tpb_768.ns_144.dcid_6.l2w_280 1.099504  1.002083  1.095122  1.352941
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           768,
           15,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -534,7 +589,7 @@ struct policy_selector
       if (offset_size == 8 && input_size == 8)
       {
         // trp_1.ipt_14.tpb_320.ns_872.dcid_7.l2w_620 1.083194  1.000000  1.078944  1.315789
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           320,
           14,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -552,7 +607,7 @@ struct policy_selector
     {
       if (offset_size == 4 && input_size == 1)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           12,
           BLOCK_LOAD_DIRECT,
@@ -562,7 +617,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 2)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           12,
           BLOCK_LOAD_DIRECT,
@@ -572,7 +627,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 4)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           320,
           12,
           BLOCK_LOAD_DIRECT,
@@ -582,7 +637,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 8)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           384,
           7,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -592,7 +647,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 16)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           128,
           7,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -602,7 +657,7 @@ struct policy_selector
       }
       if (offset_size == 8 && input_size == 1)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           24,
           BLOCK_LOAD_DIRECT,
@@ -612,7 +667,7 @@ struct policy_selector
       }
       if (offset_size == 8 && input_size == 2)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           640,
           24,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -622,7 +677,7 @@ struct policy_selector
       }
       if (offset_size == 8 && input_size == 4)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           23,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -632,7 +687,7 @@ struct policy_selector
       }
       if (offset_size == 8 && input_size == 8)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           18,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -642,7 +697,7 @@ struct policy_selector
       }
       if (offset_size == 8 && input_size == 16)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           11,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -662,7 +717,7 @@ struct policy_selector
     {
       if (offset_size == 4 && input_size == 2)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           12,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -672,7 +727,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 4)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           256,
           11,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -682,7 +737,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 8)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           224,
           11,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -692,7 +747,7 @@ struct policy_selector
       }
       if (offset_size == 4 && input_size == 16)
       {
-        return ThreeWayPartitionPolicy{
+        return ThreeWayPartitionLookbackPolicy{
           128,
           10,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -705,6 +760,13 @@ struct policy_selector
 
     // from SM50
     return default_policy;
+  }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> ThreeWayPartitionPolicy
+  {
+    return ThreeWayPartitionPolicy{ThreeWayPartitionAlgorithm::lookback, get_lookback_policy(cc)};
   }
 };
 
