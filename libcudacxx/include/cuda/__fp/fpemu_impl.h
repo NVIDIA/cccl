@@ -975,7 +975,7 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __
     bool __sticky   = (__man64 & __mask) != 0;
     if constexpr (_Rm == __fpemu_rounding::rn)
     {
-      __res.x[0] |= __sticky;
+      __res.x[0] |= static_cast<uint32_t>(__sticky);
     }
     else if constexpr (_Rm == __fpemu_rounding::rz)
     {
