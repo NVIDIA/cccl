@@ -49,11 +49,14 @@ foreach (test_path IN LISTS warp_codegen_tests)
     set(check_target_name "${target_name}_check")
 
     add_library(${target_name} STATIC "${test_path}")
-    set_target_properties(
+    set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES OFF)
+    target_compile_options(
       ${target_name}
-      PROPERTIES CUDA_ARCHITECTURES "${arch}-real"
+      PRIVATE
+        "-dc"
+        "-Wno-comment"
+        "--generate-code=arch=compute_${arch},code=sm_${arch}"
     )
-    target_compile_options(${target_name} PRIVATE "-dc" "-Wno-comment")
     target_include_directories(
       ${target_name}
       PRIVATE "${libcudacxx_SOURCE_DIR}/include"
