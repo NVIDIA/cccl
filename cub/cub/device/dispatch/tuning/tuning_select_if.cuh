@@ -69,7 +69,7 @@ struct SelectLookbackPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The selection algorithm used by @ref DeviceSelect
+//! The selection algorithm used by @ref cub::DeviceSelect "DeviceSelect"
 enum class SelectAlgorithm
 {
   lookback
