@@ -34,6 +34,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__host_stdlib/sstream>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
