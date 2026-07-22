@@ -718,6 +718,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         }
 
         // Log select_if_kernel configuration
+        if (detail::logging_enabled())
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
@@ -995,6 +996,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
       return cudaSuccess;
     }
 
+    if (logging_enabled())
     {
       int range_select_sm_occupancy;
       if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
