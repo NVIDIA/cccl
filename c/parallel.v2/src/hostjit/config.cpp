@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <string>
+#include <system_error>
 
 #include <cuda.h>
 
@@ -306,5 +307,48 @@ bool validateConfig(const CompilerConfig& config, std::string* error_message)
   }
 
   return true;
+}
+
+std::string findCudaRuntimeLibrary(const CompilerConfig& config)
+{
+  namespace fs = std::filesystem;
+  // Non-throwing overloads throughout: a missing/unreadable directory just means "not here".
+  std::error_code ec;
+#ifdef _WIN32
+  for (const auto& subdir : {"bin/x64", "bin"})
+  {
+    fs::path dir = fs::path(config.cuda_toolkit_path) / subdir;
+    if (!fs::exists(dir, ec))
+    {
+      continue;
+    }
+    for (fs::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec))
+    {
+      auto name = it->path().filename().string();
+      if (name.starts_with("cudart64_") && name.ends_with(".dll"))
+      {
+        return name;
+      }
+    }
+  }
+  return {};
+#else
+  for (const auto& lib_path : config.library_paths)
+  {
+    if (!fs::exists(lib_path, ec))
+    {
+      continue;
+    }
+    for (fs::directory_iterator it(lib_path, ec), end; !ec && it != end; it.increment(ec))
+    {
+      auto fname = it->path().filename().string();
+      if (fname.starts_with("libcudart.so"))
+      {
+        return it->path().string();
+      }
+    }
+  }
+  return {};
+#endif
 }
 } // namespace hostjit
