@@ -35,9 +35,13 @@ namespace detail::params
 // Deferred handle requirements
 // =====================================================================
 
+// Rejecting range/container arguments (span, array, ...) is a deliberate narrowing of CUB's API surface, not a
+// limitation of the cuda::args annotation framework (which accepts ranges by design): no CUB device API takes a range
+// today, and annotating one would be unclear to users (does a bound constrain the element values or the range's
+// size?). A revisitable decision -- the traits below accept only dereferenceable handles / random-access iterators.
+
 // A `deferred` is read by dereferencing its handle (`*handle`, see the get_param overload below), so the handle must
-// be indirectly readable (a pointer or other dereferenceable handle). Ranges/containers (span, array, ...) are
-// rejected -- their bounds are ambiguous (values vs. size); use `deferred_sequence` for per-segment values.
+// be indirectly readable (a pointer or other dereferenceable handle); use `deferred_sequence` for per-segment values.
 template <class _Handle>
 inline constexpr bool __is_valid_deferred_handle_v = ::cuda::std::indirectly_readable<_Handle>;
 

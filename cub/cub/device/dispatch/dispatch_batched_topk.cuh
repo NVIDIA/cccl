@@ -454,6 +454,7 @@ template <class PolicySelector,
           class LargeSegmentTileOffsetT,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
+          bool SelectorGatesClusterCapability,
           class PolicyGetter,
           class KeyInputItItT,
           class KeyOutputItItT,
@@ -491,14 +492,23 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
     return cudaSuccess;
   }
 
-  // The automatic selector gates this arm on `cluster_capable(cc)` (SM 9.0+), so no runtime re-check is needed on the
-  // hot path; assert it anyway since a trusted `tune`d override could force the `cluster` backend here. `cc` is the
-  // running code's capability (never above the hardware SM), so this also rejects an SM 9.0+ build on older hardware.
-  _CCCL_ASSERT(([&] {
-                 ::cuda::compute_capability cc{};
-                 return launcher_factory.PtxComputeCap(cc) == cudaSuccess && cc >= ::cuda::compute_capability{9, 0};
-               }()),
-               "cub::DeviceBatchedTopK cluster backend requires a device of compute capability 9.0 or higher");
+  // A `tune`d override can force the cluster backend on a device that cannot run it: return cudaErrorNotSupported
+  // rather than launch a cluster kernel the device lacks (the deferred-mode runtime behavior tests and benchmarks rely
+  // on). The automatic selector never routes here below SM 9.0, so its instantiation drops this check. `PtxComputeCap`
+  // is the running code's capability (never above the hardware SM), so it also rejects an SM 9.0+ build on older
+  // hardware.
+  if constexpr (!SelectorGatesClusterCapability)
+  {
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
+    if (cc < ::cuda::compute_capability{9, 0})
+    {
+      return cudaErrorNotSupported;
+    }
+  }
 
   // Single kernel symbol; its cluster vs baseline arm is selected device-side via `current_policy<PolicySelector>()`.
   // Taking its address here ODR-uses the `__global__` template, which is what drives its emission and registration.
@@ -1134,7 +1144,14 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return cudaSuccess;
       }
-      return launch_cluster_arm<policy_selector_t, LargeSegmentTileOffsetT, Determinism, TieBreak>(
+      // `SelectorGatesClusterCapability`: true only for the automatic selector, which returns `cluster` solely for a
+      // `cluster_capable(cc)` and so needs no runtime re-check; a `tune`d override is a different type and keeps it.
+      // Inlined as a type trait rather than a function-scope constexpr, which MSVC rejects inside this lambda.
+      return launch_cluster_arm<policy_selector_t,
+                                LargeSegmentTileOffsetT,
+                                Determinism,
+                                TieBreak,
+                                ::cuda::std::is_same_v<policy_selector_t, default_policy_selector_t>>(
         policy_getter,
         d_temp_storage,
         temp_storage_bytes,

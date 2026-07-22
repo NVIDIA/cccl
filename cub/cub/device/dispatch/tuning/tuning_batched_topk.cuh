@@ -201,9 +201,6 @@ baseline_max_covered_segment_size(const baseline_topk_policy& policy)
 //! that runtime choice.
 struct cluster_topk_policy
 {
-  // Fields grouped by kind and, across and within groups, ordered by kernel use: launch config, then load, then
-  // process, then output.
-
   int threads_per_block; //!< Number of threads in a CUDA block.
   int min_blocks_per_sm; //!< Minimum resident blocks per SM, forwarded as the kernel launch-bounds occupancy hint.
 
