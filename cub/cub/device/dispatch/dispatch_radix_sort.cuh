@@ -271,6 +271,17 @@ private:
     }
 
     // Log single_tile_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
+            "%d, bit_grain %d\n",
+            1,
+            policy.threads_per_block,
+            (long long) stream,
+            policy.items_per_thread,
+            1,
+            begin_bit,
+            policy.radix_bits);
+#else // CUB_DEBUG_LOG
     detail::log(
       "Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
       "%d, bit_grain %d\n",
@@ -281,6 +292,7 @@ private:
       1,
       begin_bit,
       policy.radix_bits);
+#endif // CUB_DEBUG_LOG
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
     launcher_factory(1, policy.threads_per_block, 0, stream)
@@ -336,6 +348,17 @@ public:
     int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
+            "bit_grain %d\n",
+            pass_config.even_share.grid_size,
+            pass_config.upsweep_config.threads_per_block,
+            (long long) stream,
+            pass_config.upsweep_config.items_per_thread,
+            pass_config.upsweep_config.sm_occupancy,
+            current_bit,
+            pass_bits);
+#else // CUB_DEBUG_LOG
     detail::log(
       "Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
       "bit_grain %d\n",
@@ -346,6 +369,7 @@ public:
       pass_config.upsweep_config.sm_occupancy,
       current_bit,
       pass_bits);
+#endif // CUB_DEBUG_LOG
 
     // Spine length written by the upsweep kernel in the current pass.
     int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
@@ -374,11 +398,19 @@ public:
     }
 
     // Log scan_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
+            1,
+            pass_config.scan_config.threads_per_block,
+            (long long) stream,
+            pass_config.scan_config.items_per_thread);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
                 1,
                 pass_config.scan_config.threads_per_block,
                 (long long) stream,
                 pass_config.scan_config.items_per_thread);
+#endif // CUB_DEBUG_LOG
 
     // Invoke scan_kernel
     launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
@@ -397,12 +429,21 @@ public:
     }
 
     // Log downsweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+            pass_config.even_share.grid_size,
+            pass_config.downsweep_config.threads_per_block,
+            (long long) stream,
+            pass_config.downsweep_config.items_per_thread,
+            pass_config.downsweep_config.sm_occupancy);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                 pass_config.even_share.grid_size,
                 pass_config.downsweep_config.threads_per_block,
                 (long long) stream,
                 pass_config.downsweep_config.items_per_thread,
                 pass_config.downsweep_config.sm_occupancy);
+#endif // CUB_DEBUG_LOG
 
     // Invoke downsweep_kernel
     launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
@@ -623,6 +664,16 @@ private:
     }
 
     // log histogram_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
+            "%d SM occupancy, bit_grain %d\n",
+            histo_blocks_per_sm * num_sms,
+            HISTO_BLOCK_THREADS,
+            reinterpret_cast<long long>(stream),
+            policy.histogram.items_per_thread,
+            histo_blocks_per_sm,
+            policy.histogram.radix_bits);
+#else // CUB_DEBUG_LOG
     detail::log(
       "Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
       "%d SM occupancy, bit_grain %d\n",
@@ -632,16 +683,25 @@ private:
       policy.histogram.items_per_thread,
       histo_blocks_per_sm,
       policy.histogram.radix_bits);
+#endif // CUB_DEBUG_LOG
 
     // exclusive sums to determine starts
     const int SCAN_BLOCK_THREADS = policy.exclusive_sum.threads_per_block;
 
     // log exclusive_sum_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
+            num_passes,
+            SCAN_BLOCK_THREADS,
+            reinterpret_cast<long long>(stream),
+            policy.exclusive_sum.radix_bits);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
                 num_passes,
                 SCAN_BLOCK_THREADS,
                 reinterpret_cast<long long>(stream),
                 policy.exclusive_sum.radix_bits);
+#endif // CUB_DEBUG_LOG
 
     // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
@@ -651,10 +711,17 @@ private:
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
+              init_startup_blocks,
+              init_startup_threads,
+              reinterpret_cast<long long>(stream));
+#else // CUB_DEBUG_LOG
       detail::log("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
                   init_startup_blocks,
                   init_startup_threads,
                   reinterpret_cast<long long>(stream));
+#endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
@@ -727,6 +794,18 @@ private:
         }
 
         // log onesweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+        _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
+                "current bit %d, bit_grain %d, portion %d/%d\n",
+                num_blocks,
+                ONESWEEP_BLOCK_THREADS,
+                reinterpret_cast<long long>(stream),
+                policy.onesweep.items_per_thread,
+                current_bit,
+                num_bits,
+                static_cast<int>(portion),
+                static_cast<int>(num_portions));
+#else // CUB_DEBUG_LOG
         detail::log(
           "Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
           "current bit %d, bit_grain %d, portion %d/%d\n",
@@ -738,6 +817,7 @@ private:
           num_bits,
           static_cast<int>(portion),
           static_cast<int>(num_portions));
+#endif // CUB_DEBUG_LOG
 
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
@@ -1003,7 +1083,11 @@ public:
     }
 
     // Copy keys
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
     {
@@ -1019,7 +1103,11 @@ public:
     // Copy values if necessary
     if constexpr (!KEYS_ONLY)
     {
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#else // CUB_DEBUG_LOG
       detail::log("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
       {
@@ -1297,6 +1385,17 @@ struct dispatch_impl
     }
 
     // Log single_tile_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
+            "%d, bit_grain %d\n",
+            1,
+            policy.threads_per_block,
+            (long long) stream,
+            policy.items_per_thread,
+            1,
+            begin_bit,
+            policy.radix_bits);
+#else // CUB_DEBUG_LOG
     detail::log(
       "Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
       "%d, bit_grain %d\n",
@@ -1307,6 +1406,7 @@ struct dispatch_impl
       1,
       begin_bit,
       policy.radix_bits);
+#endif // CUB_DEBUG_LOG
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
     if (const auto error = CubDebug(
@@ -1354,7 +1454,11 @@ struct dispatch_impl
     }
 
     // Copy keys
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
     {
@@ -1370,7 +1474,11 @@ struct dispatch_impl
     // Copy values if necessary
     if constexpr (!keys_only)
     {
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#else // CUB_DEBUG_LOG
       detail::log("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+#endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
       {
@@ -1401,6 +1509,17 @@ struct dispatch_impl
     int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
+            "bit_grain %d\n",
+            pass_config.even_share.grid_size,
+            pass_config.upsweep_config.threads_per_block,
+            (long long) stream,
+            pass_config.upsweep_config.items_per_thread,
+            pass_config.upsweep_config.sm_occupancy,
+            current_bit,
+            pass_bits);
+#else // CUB_DEBUG_LOG
     detail::log(
       "Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
       "bit_grain %d\n",
@@ -1411,6 +1530,7 @@ struct dispatch_impl
       pass_config.upsweep_config.sm_occupancy,
       current_bit,
       pass_bits);
+#endif // CUB_DEBUG_LOG
 
     // Spine length written by the upsweep kernel in the current pass.
     int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
@@ -1443,11 +1563,19 @@ struct dispatch_impl
     }
 
     // Log scan_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
+            1,
+            pass_config.scan_config.threads_per_block,
+            (long long) stream,
+            pass_config.scan_config.items_per_thread);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
                 1,
                 pass_config.scan_config.threads_per_block,
                 (long long) stream,
                 pass_config.scan_config.items_per_thread);
+#endif // CUB_DEBUG_LOG
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
@@ -1469,12 +1597,21 @@ struct dispatch_impl
     }
 
     // Log downsweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+            pass_config.even_share.grid_size,
+            pass_config.downsweep_config.threads_per_block,
+            (long long) stream,
+            pass_config.downsweep_config.items_per_thread,
+            pass_config.downsweep_config.sm_occupancy);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                 pass_config.even_share.grid_size,
                 pass_config.downsweep_config.threads_per_block,
                 (long long) stream,
                 pass_config.downsweep_config.items_per_thread,
                 pass_config.downsweep_config.sm_occupancy);
+#endif // CUB_DEBUG_LOG
 
     // Invoke downsweep_kernel
     if (const auto error = CubDebug(
@@ -1755,6 +1892,16 @@ struct dispatch_impl
     }
 
     // log histogram_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
+            "%d SM occupancy, bit_grain %d\n",
+            histo_blocks_per_sm * num_sms,
+            histo_block_threads,
+            reinterpret_cast<long long>(stream),
+            policy.histogram.items_per_thread,
+            histo_blocks_per_sm,
+            policy.histogram.radix_bits);
+#else // CUB_DEBUG_LOG
     detail::log(
       "Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
       "%d SM occupancy, bit_grain %d\n",
@@ -1764,16 +1911,25 @@ struct dispatch_impl
       policy.histogram.items_per_thread,
       histo_blocks_per_sm,
       policy.histogram.radix_bits);
+#endif // CUB_DEBUG_LOG
 
     // exclusive sums to determine starts
     const int scan_block_threads = policy.exclusive_sum.threads_per_block;
 
     // log exclusive_sum_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
+            num_passes,
+            scan_block_threads,
+            reinterpret_cast<long long>(stream),
+            policy.exclusive_sum.radix_bits);
+#else // CUB_DEBUG_LOG
     detail::log("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
                 num_passes,
                 scan_block_threads,
                 reinterpret_cast<long long>(stream),
                 policy.exclusive_sum.radix_bits);
+#endif // CUB_DEBUG_LOG
 
     // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
@@ -1783,10 +1939,17 @@ struct dispatch_impl
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
+              init_startup_blocks,
+              init_startup_threads,
+              reinterpret_cast<long long>(stream));
+#else // CUB_DEBUG_LOG
       detail::log("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
                   init_startup_blocks,
                   init_startup_threads,
                   reinterpret_cast<long long>(stream));
+#endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
@@ -1859,6 +2022,18 @@ struct dispatch_impl
         }
 
         // log onesweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+        _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
+                "current bit %d, bit_grain %d, portion %d/%d\n",
+                num_blocks,
+                onesweep_block_threads,
+                reinterpret_cast<long long>(stream),
+                policy.onesweep.items_per_thread,
+                current_bit,
+                num_bits,
+                static_cast<int>(portion),
+                static_cast<int>(num_portions));
+#else // CUB_DEBUG_LOG
         detail::log(
           "Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
           "current bit %d, bit_grain %d, portion %d/%d\n",
@@ -1870,6 +2045,7 @@ struct dispatch_impl
           num_bits,
           static_cast<int>(portion),
           static_cast<int>(num_portions));
+#endif // CUB_DEBUG_LOG
 
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
@@ -2001,7 +2177,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceRadixSort to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,
