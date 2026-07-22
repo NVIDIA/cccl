@@ -2120,10 +2120,10 @@ private:
 
     // The terminal region (see `terminal_region`): the last one carrying work in sweep order (ascending
     // head->resident->overflow->tail, reversed tail->resident->overflow->head).
-    const bool has_head      = layout.head_edge_len_items > 0;
-    const bool has_resident  = front_count > 0;
-    const bool has_overflow  = layout.overflow_chunks > offset_t{0};
-    const bool has_tail_edge = layout.tail_edge_len_items > 0;
+    [[maybe_unused]] const bool has_head      = layout.head_edge_len_items > 0;
+    const bool has_resident                   = front_count > 0;
+    const bool has_overflow                   = layout.overflow_chunks > offset_t{0};
+    [[maybe_unused]] const bool has_tail_edge = layout.tail_edge_len_items > 0;
     terminal_region terminal;
     if constexpr (is_tie_reversed)
     {
