@@ -99,7 +99,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
 //! The tuning policy for all ByKey algorithms in @ref DeviceScan.
 struct ScanByKeyPolicy
 {
-  ScanByKeyAlgorithm algorithm = ScanByKeyAlgorithm::lookback; //!< The scan-by-key algorithm to use
+  ScanByKeyAlgorithm algorithm; //!< The scan-by-key algorithm to use
   ScanByKeyLookbackPolicy lookback; //!< The policy for the scan-by-key algorithm based on decoupled-lookback. Only used
                                     //!< when @p algorithm is @lookback.
 
