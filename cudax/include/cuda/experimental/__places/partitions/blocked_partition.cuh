@@ -114,8 +114,14 @@ public:
 
     size_t extent = data_dims.get(target_dim);
 
-    size_t nplaces   = grid_dims.x;
+    size_t nplaces = grid_dims.x;
+    _CCCL_ASSERT(nplaces > 0, "blocked partition requires a non-empty grid");
+
     size_t part_size = (extent + nplaces - 1) / nplaces;
+    // A zero part_size (empty extent, or extent + nplaces - 1 wrapping) would
+    // make the division below SIGFPE; allocate_nd() rejects such geometries
+    // before the mapper runs
+    _CCCL_ASSERT(part_size > 0, "blocked partition applied to an empty or wrapping extent");
 
     // Get the coordinate in the selected dimension
     size_t c = data_coords.get(target_dim);
@@ -130,6 +136,12 @@ public:
 //! across execution places. By default, partitioning occurs along the last dimension, but a
 //! specific dimension can be selected using the template parameter. This approach ensures
 //! good spatial locality and is particularly effective for regular data access patterns.
+//!
+//! When mapping element coordinates (get_executor), the selected dimension is
+//! clamped to the highest axis whose extent is greater than one: -1 always
+//! selects that axis, and a larger explicit dimension is clamped down to it
+//! (e.g. blocked_partition_custom<2> on extents {n, 1, 1, 1} partitions along
+//! axis 0).
 using blocked_partition = blocked_partition_custom<>;
 
 #ifdef UNITTESTED_FILE
