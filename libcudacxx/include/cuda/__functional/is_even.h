@@ -21,9 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -31,12 +28,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief `__is_even` is a function object that checks if an integral value is even.
 struct __is_even
 {
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::is_integral_v<::cuda::std::remove_cvref_t<_Tp>>)
+  template <class _Tp>
   [[nodiscard]] _CCCL_API _CCCL_HOST_DEVICE constexpr bool operator()(const _Tp& __value) const noexcept
   {
-    using _Up = ::cuda::std::remove_cvref_t<_Tp>;
-    return (static_cast<_Up>(__value) & 1) == 0;
+    return (static_cast<long long>(__value) & 1) == 0;
   }
 };
 
