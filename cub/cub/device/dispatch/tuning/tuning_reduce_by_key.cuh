@@ -1050,7 +1050,7 @@ struct policy_selector
   bool op_is_primitive;
 
 private:
-  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
     -> ReduceByKeyLookbackPolicy
   {
     constexpr int nominal_4B_items_per_thread = 6;
