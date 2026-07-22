@@ -21,9 +21,11 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl, plus cuda-bench for the benchmark smoke test below.
+# Install cuda_cccl. (cuda-bench, for the benchmark smoke test below, is
+# installed best-effort further down since it does not always ship a wheel for
+# the newest Python.)
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cuda-bench[cu${cuda_major_version}]"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
 
 # Run tests for coop module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
@@ -31,7 +33,12 @@ python -m pytest -n auto -v coop/_experimental/
 
 # Smoke-test the coop benchmark: --profile runs each configuration once (no
 # sampling) so a benchmark that stops building/running fails CI here instead of
-# rotting until someone runs the perf suite. set -euo pipefail fails the job on a
-# non-zero exit.
-cd "/home/coder/cccl/python/cuda_cccl/benchmarks/coop/_experimental/"
-python bench_warp_reduce.py --profile
+# rotting until someone runs the perf suite. cuda-bench does not always ship a
+# wheel for the newest Python, so install it best-effort and skip (with a
+# warning) rather than failing the lane when it is unavailable.
+if python -m pip install "cuda-bench[cu${cuda_major_version}]"; then
+  cd "/home/coder/cccl/python/cuda_cccl/benchmarks/coop/_experimental/"
+  python bench_warp_reduce.py --profile
+else
+  echo "::warning::cuda-bench has no wheel for Python ${py_version}; skipping the coop benchmark smoke test."
+fi
