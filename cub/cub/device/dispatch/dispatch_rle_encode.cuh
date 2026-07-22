@@ -91,6 +91,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_streaming(
     policy_selector_adapter<PolicySelector>{});
 }
 
+template <typename PolicySelector, typename KeyT, typename LengthT, typename NumRunsT, typename OffsetT>
+struct DeviceRleEncodeKernelSource
+{
+#if __cccl_ptx_isa >= 920
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceRleEncodeLookaheadInitKernel<TilePartialStateT>)
+
+  CUB_DEFINE_KERNEL_GETTER(LookaheadKernel,
+                           DeviceRleEncodeLookaheadKernel<PolicySelector, KeyT, LengthT, NumRunsT, OffsetT>)
+#endif // __cccl_ptx_isa >= 920
+};
+
 // a preprocessor directive inside the NV_IF_TARGET argument list is undefined behavior (MSVC C5101),
 // so the CUB_DEBUG_LOG guard has to live in this macro instead of around the _CubLog calls
 #ifdef CUB_DEBUG_LOG
@@ -121,10 +132,9 @@ inline constexpr bool lookahead_instantiable =
 // Launches the lookahead init + main kernels. Callable from host and device: the host arm queries the
 // device's opt-in shared memory and picks the tuned staged configuration when it fits, else the unstaged
 // floor; device-side (CDP) callers cannot raise the dynamic shared memory limit, so they always launch
-// the floor, which fits the default limit on every device. The kernels are passed in because their
-// instantiation must stay in device-pass-visible text at the call site.
-template <class KernelT,
-          class InitKernelT,
+// the floor, which fits the default limit on every device. Kernels come from the kernel_source so this
+// helper stays independent of the kernel instantiation (same shape as scan).
+template <class KernelSource,
           class InputIteratorT,
           class UniqueOutputIteratorT,
           class LengthsOutputIteratorT,
@@ -132,8 +142,7 @@ template <class KernelT,
           class OffsetT,
           class LauncherFactory>
 CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
-  KernelT kernel,
-  InitKernelT init_kernel,
+  KernelSource kernel_source,
   const RleLookaheadPolicy& lookahead_policy,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -189,8 +198,8 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
                  }
                  if (dyn_smem_bytes + RleLookaheadPolicy::static_smem_budget <= static_cast<size_t>(max_optin_smem))
                  {
-                   if (const auto error = CubDebug(
-                         launcher_factory.set_max_dynamic_smem_size_for(kernel, static_cast<int>(dyn_smem_bytes))))
+                   if (const auto error = CubDebug(launcher_factory.set_max_dynamic_smem_size_for(
+                         kernel_source.LookaheadKernel(), static_cast<int>(dyn_smem_bytes))))
                    {
                      return error;
                    }
@@ -203,9 +212,11 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
                ({ keys_staged = false; }))
   if (!keys_staged)
   {
+    // vvv regressed case: CDP callers always land here. Fits under 48KB SMEM vvv
     key_ring_stages = lookahead_policy.floor_key_ring_stages();
     pos_ring_stages = lookahead_policy.floor_pos_ring_stages();
     dyn_smem_bytes  = lookahead_policy.floor_dyn_smem_bytes();
+    // ^^^ regressed case ^^^
   }
 
   {
@@ -218,7 +229,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
       (long long) stream);
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
-            .doit(init_kernel, tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
+            .doit(kernel_source.InitKernel(), tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
     {
       return error;
     }
@@ -245,7 +256,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
                            static_cast<int>(dyn_smem_bytes),
                            stream,
                            /* dependent_launch */ false)
-            .doit(kernel,
+            .doit(kernel_source.LookaheadKernel(),
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_unique_out),
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_counts_out),
@@ -281,6 +292,11 @@ template <class PolicySelector,
           class LengthsOutputIteratorT,
           class NumRunsOutputIteratorT,
           class OffsetT,
+          class KernelSource    = DeviceRleEncodeKernelSource<PolicySelector,
+                                                              it_value_t<InputIteratorT>,
+                                                              it_value_t<LengthsOutputIteratorT>,
+                                                              it_value_t<NumRunsOutputIteratorT>,
+                                                              OffsetT>,
           class LauncherFactory = detail::TripleChevronFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
@@ -292,6 +308,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   OffsetT num_items,
   cudaStream_t stream,
   [[maybe_unused]] PolicySelector policy_selector   = {},
+  [[maybe_unused]] KernelSource kernel_source       = {},
   [[maybe_unused]] LauncherFactory launcher_factory = {})
 {
 #if __cccl_ptx_isa >= 920
@@ -301,13 +318,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                                        NumRunsOutputIteratorT,
                                        OffsetT>)
   {
-    using key_t      = it_value_t<InputIteratorT>;
-    using length_t   = it_value_t<LengthsOutputIteratorT>;
-    using num_runs_t = it_value_t<NumRunsOutputIteratorT>;
 
-    // the kernel must be named OUTSIDE the host-only region
-    [[maybe_unused]] auto kernel = DeviceRleEncodeLookaheadKernel<PolicySelector, key_t, length_t, num_runs_t, OffsetT>;
-    [[maybe_unused]] auto init_kernel = DeviceRleEncodeLookaheadInitKernel<TilePartialStateT>;
+    [[maybe_unused]] auto kernel      = kernel_source.LookaheadKernel();
+    [[maybe_unused]] auto init_kernel = kernel_source.InitKernel();
 
     ::cuda::compute_capability cc{};
     if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -318,8 +331,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {
         return invoke_lookahead(
-          kernel,
-          init_kernel,
+          kernel_source,
           policy_getter().lookahead,
           d_temp_storage,
           temp_storage_bytes,
