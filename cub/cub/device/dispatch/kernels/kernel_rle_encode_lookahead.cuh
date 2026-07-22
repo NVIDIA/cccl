@@ -254,23 +254,31 @@ __device__ __forceinline__ void load_tile_keys(
   bool last_tile,
   unsigned base_skip,
   cuda::std::uint64_t* full_bar,
-  int lane_id)
+  int lane_id,
+  bool keys_staged)
 {
   if (lane_id == 0)
   {
-    // if it is not first tile, we overcopy 16B to the left to get last key from last tile
-    const unsigned nbytes     = (unsigned) (((size_t) tile_len + (first_tile ? 0 : slot_pad)) * sizeof(KeyT));
-    const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
-    ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
-    ptx::cp_async_bulk_ignore_oob(
-      ptx::space_shared,
-      ptx::space_global,
-      slot + (first_tile ? slot_pad : 0),
-      (const KeyT*) ((const char*) (d_keys + (size_t) tile_id * tile_size - (first_tile ? 0 : slot_pad)) - base_skip),
-      span_bytes,
-      first_tile ? base_skip : 0u,
-      last_tile ? (span_bytes - base_skip - nbytes) : 0u,
-      full_bar);
+    if (!keys_staged)
+    {
+      ptx::mbarrier_arrive(full_bar);
+    }
+    else
+    {
+      // if it is not first tile, we overcopy 16B to the left to get last key from last tile
+      const unsigned nbytes     = (unsigned) (((size_t) tile_len + (first_tile ? 0 : slot_pad)) * sizeof(KeyT));
+      const unsigned span_bytes = (nbytes + base_skip + 15u) & ~15u;
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
+      ptx::cp_async_bulk_ignore_oob(
+        ptx::space_shared,
+        ptx::space_global,
+        slot + (first_tile ? slot_pad : 0),
+        (const KeyT*) ((const char*) (d_keys + (size_t) tile_id * tile_size - (first_tile ? 0 : slot_pad)) - base_skip),
+        span_bytes,
+        first_tile ? base_skip : 0u,
+        last_tile ? (span_bytes - base_skip - nbytes) : 0u,
+        full_bar);
+    }
   }
   __syncwarp();
 }
@@ -299,7 +307,7 @@ clc_next_tile_id(uint4& clc_resp, cuda::std::uint64_t& clc_bar, int pipeline_gen
 
 // calculate head_flags: each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
 // head = (key != predecessor)
-template <int items_per_thread, class KeyT>
+template <int items_per_thread, bool clamp_tail, class KeyT>
 __device__ __forceinline__ unsigned
 compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int tile_id, int lane_id, int skip_elems)
 {
@@ -308,9 +316,16 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
 #  pragma unroll
   for (int iter = 0; iter < items_per_thread; ++iter)
   {
-    const int loc             = warp_tile_offset + iter * 32 + lane_id;
-    const KeyT key            = key_buf[loc + skip_elems];
-    const KeyT pred           = key_buf[loc + skip_elems - 1]; // loc==0 reads the over fetched slot[slot_pad-1]
+    const int loc = warp_tile_offset + iter * 32 + lane_id;
+    int key_idx   = loc + skip_elems;
+    int pred_idx  = loc + skip_elems - 1; // loc==0 reads the over fetched slot[slot_pad-1]
+    if constexpr (clamp_tail)
+    {
+      key_idx  = min(key_idx, tile_len - 1);
+      pred_idx = (tile_id == 0) ? max(key_idx - 1, 0) : key_idx - 1;
+    }
+    const KeyT key            = key_buf[key_idx];
+    const KeyT pred           = key_buf[pred_idx];
     const int is_global_first = (tile_id == 0 && loc == 0);
     const int head            = (loc < tile_len) ? (is_global_first ? 1 : !(key == pred)) : 0;
     const unsigned flags      = __ballot_sync(full_mask, head);
@@ -596,7 +611,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   OffT num_items,
   int num_tiles,
   int key_ring_stages,
-  int pos_ring_stages)
+  int pos_ring_stages,
+  bool keys_staged)
 {
   static constexpr RleLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
   static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
@@ -628,7 +644,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   // [key_ring_stages][tile_size] int16 staged head positions
   extern __shared__ char smem_raw[];
   KeyT* const tile_buf = (KeyT*) smem_raw;
-  short* const pos_buf = (short*) (tile_buf + (size_t) key_ring_stages * slot_stride);
+  short* const pos_buf = (short*) (tile_buf + (keys_staged ? (size_t) key_ring_stages * slot_stride : 0));
   __shared__ int tile_id_buf[max_key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with
                                                    // try_cancel)
   __shared__ int warp_run_counts[max_key_ring_stages][compute_warps]; // per compute warp run counts
@@ -743,7 +759,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             tile_id == num_tiles - 1,
             base_skip,
             &full[slot_id],
-            lane_id);
+            lane_id,
+            keys_staged);
           // consume the prefetched cancel, this is ok since it should be fast to get next cancelled id
           tile_id = clc_next_tile_id(clc_resp, clc_bar, pipeline_gen, num_tiles, lane_id);
         }
@@ -772,12 +789,22 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             break;
           }
           // slot is ready!
-          const KeyT* key_buf = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
           const int tile_len  = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
           int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
           short* const pos_dst = pos_buf + (size_t) (pos_ring.slot) * tile_size;
-          const unsigned my_flags =
-            compute_head_flags<items_per_thread>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, skip_elems);
+          unsigned my_flags;
+          if (keys_staged)
+          {
+            const KeyT* key_buf = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+            my_flags            = compute_head_flags<items_per_thread, false>(
+              key_buf, warp_tile_offset, tile_len, tile_id, lane_id, skip_elems);
+          }
+          else
+          {
+            const KeyT* key_buf = d_keys + (size_t) tile_id * tile_size;
+            my_flags =
+              compute_head_flags<items_per_thread, true>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
+          }
           local_run_count = __reduce_add_sync(full_mask, __popc(my_flags));
           // each lane in a warp now has a mask that tells which chunk is non empty
           const unsigned nonempty_chunk_mask = __ballot_sync(full_mask, my_flags != 0u);
@@ -921,7 +948,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // we do this BEFORE the wait on prefixed so they overlap
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
-          const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+          const int tile_len = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
           // staged positions
           const short* run_positions      = pos_buf + (size_t) (pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
@@ -939,18 +966,38 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
             const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
-#  pragma unroll
-            for (int it = 0; it < buf_per_lane; ++it)
+            if (keys_staged)
             {
-              if (it >= num_rounds)
+              const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+#  pragma unroll
+              for (int it = 0; it < buf_per_lane; ++it)
               {
-                break;
+                if (it >= num_rounds)
+                {
+                  break;
+                }
+                const int run_idx  = it * 32 + lane_id;
+                const RunSpanT run = dec.decode_run(run_idx);
+                buf_key[it]        = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
+                // note: this is garbage for the last run head
+                buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
               }
-              const int run_idx  = it * 32 + lane_id;
-              const RunSpanT run = dec.decode_run(run_idx);
-              buf_key[it]        = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
-              // note: this is garbage for the last run head
-              buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
+            }
+            else
+            {
+              const KeyT* tile_keys = d_keys + (size_t) tile_id * tile_size;
+#  pragma unroll
+              for (int it = 0; it < buf_per_lane; ++it)
+              {
+                if (it >= num_rounds)
+                {
+                  break;
+                }
+                const int run_idx  = it * 32 + lane_id;
+                const RunSpanT run = dec.decode_run(run_idx);
+                buf_key[it]        = tile_keys[min(warp_tile_offset + run.head_pos_in_warp_tile, tile_len - 1)];
+                buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
+              }
             }
             __syncwarp();
             if (lane_id == 0)
@@ -1000,18 +1047,39 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
           const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
           const int warp_tile_offset              = warp_tile_id * warp_tile_size;
-#  pragma unroll 2
-          for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
+          if (keys_staged)
           {
-            const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
-            const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
-            d_unique[global_run_idx]  = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
-            if (run_idx + 1 < warp_tile_run_count)
+            const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+#  pragma unroll 2
+            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
             {
-              // within-warp delta (next head - this head); the last run is fixed separately
-              const int run_length =
-                (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
-              d_counts[global_run_idx] = run_length;
+              const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+              const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
+              d_unique[global_run_idx]  = tile_keys[head_pos + skip_elems]; // gather the run's key at its head position
+              if (run_idx + 1 < warp_tile_run_count)
+              {
+                // within-warp delta (next head - this head); the last run is fixed separately
+                const int run_length =
+                  (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+                d_counts[global_run_idx] = run_length;
+              }
+            }
+          }
+          else
+          {
+            const KeyT* tile_keys = d_keys + (size_t) tile_id * tile_size;
+#  pragma unroll 2
+            for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
+            {
+              const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+              const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
+              d_unique[global_run_idx]  = tile_keys[head_pos];
+              if (run_idx + 1 < warp_tile_run_count)
+              {
+                const int run_length =
+                  (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+                d_counts[global_run_idx] = run_length;
+              }
             }
           }
           __syncwarp();
@@ -1138,7 +1206,8 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
     OffT num_items,
     int num_tiles,
     int key_ring_stages,
-    int pos_ring_stages)
+    int pos_ring_stages,
+    bool keys_staged)
 {
   static constexpr RleEncodePolicy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == RleAlgorithm::lookahead)
@@ -1154,7 +1223,8 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
          num_items,
          num_tiles,
          key_ring_stages,
-         pos_ring_stages);))
+         pos_ring_stages,
+         keys_staged);))
   }
   // for a lookback policy this kernel compiles to an empty stub: the fatbin carries this symbol for every
   // target architecture, and targets whose policy resolves to lookback must still compile (the host dispatch
