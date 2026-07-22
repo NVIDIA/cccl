@@ -17,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/logging.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
@@ -536,17 +535,9 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
 #  ifdef CUB_DEBUG_SYNC
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST,
-    ({
-      // we log unconditionally when CUB_DEBUG_SYNC is enabled
-      detail::log_always("Synchronizing...\n");
-      return SyncStream(stream);
-    }),
-    ({
-      _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code");
-      return cudaSuccess;
-    }));
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+                    (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
 #  endif // ^^^ !CUB_DEBUG_SYNC ^^^

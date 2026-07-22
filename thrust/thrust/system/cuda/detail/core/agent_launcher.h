@@ -14,8 +14,6 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
-#  include <cub/detail/logging.cuh>
-
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
@@ -175,7 +173,7 @@ struct AgentLauncher : Agent
     const int ptx_version  = get_ptx_version();
     if (count > 0)
     {
-      CUB_NS_QUALIFIER::detail::log(
+      _CubLog(
         "Invoking %s<<<%u, %d, %d, %lld>>>(), %llu items total, %d items per thread, %d SM occupancy, %d vshmem size, "
         "%d ptx_version \n",
         name,
@@ -191,7 +189,7 @@ struct AgentLauncher : Agent
     }
     else
     {
-      CUB_NS_QUALIFIER::detail::log(
+      _CubLog(
         "Invoking %s<<<%u, %d, %d, %lld>>>(), %d items per thread, %d SM occupancy, %d vshmem size, %d ptx_version\n",
         name,
         grid,

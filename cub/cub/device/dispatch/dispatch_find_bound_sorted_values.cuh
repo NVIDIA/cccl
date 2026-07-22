@@ -29,8 +29,11 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/limits>
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#  include <sstream>
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 
