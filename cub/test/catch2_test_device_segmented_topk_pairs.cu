@@ -1352,9 +1352,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr auto direction   = c2h::get<0, TestType>::value;
-  constexpr auto determinism = c2h::get<1, TestType>::value;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  static constexpr auto direction   = c2h::get<0, TestType>::value;
+  static constexpr auto determinism = c2h::get<1, TestType>::value;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
 
   // Tiny footprint: config B (cap 1, 4 resident slots = 512 keys) overflows this 2048-key segment and streams, while
   // config A (cap 2, unrestricted slots) keeps it resident across a 2-CTA cluster -- the streaming-vs-resident contrast
