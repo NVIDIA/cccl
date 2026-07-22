@@ -398,6 +398,9 @@ workflows:
     - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
     # cudax doesn't support C++17 on msvc:
     - {project: 'cudax', std: 17, cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
+    # cuda.coop fails on CTK 12.0 due to a cuda.core issue:
+    # https://github.com/NVIDIA/cuda-python/issues/2408
+    - {project: 'python', jobs: ['test_py_coop'], ctk: '12.0'}
 
 
 #############################################################################################
