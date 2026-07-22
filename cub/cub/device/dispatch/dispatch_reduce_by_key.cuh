@@ -465,13 +465,16 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         break;
       }
 
-      // Get SM occupancy for reduce_by_key_kernel
-      int reduce_by_key_sm_occupancy;
-      error = CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
-
-      if (cudaSuccess != error)
+      // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
+      int reduce_by_key_sm_occupancy = 0;
+      if (detail::logging_enabled())
       {
-        break;
+        error = CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
+
+        if (cudaSuccess != error)
+        {
+          break;
+        }
       }
 
       // Get max x-dimension of grid
@@ -780,11 +783,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
       AccumT,
       streaming_context_t>;
 
+    // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
     int reduce_by_key_sm_occupancy{};
-    if (const auto error =
-          CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block)))
+    if (logging_enabled())
     {
-      return error;
+      if (const auto error =
+            CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block)))
+      {
+        return error;
+      }
     }
 
     int device_ordinal{};

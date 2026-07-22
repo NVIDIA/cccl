@@ -314,6 +314,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
     // Log select_if_kernel configuration
+    if (detail::logging_enabled())
     {
       // Get SM occupancy for unique_by_key_kernel
       int sweep_sm_occupancy;
@@ -325,7 +326,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
         return error;
       }
 
-      detail::log(
+      detail::log_always(
         "Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
         "%lld>>>(), %d items per thread, %d SM occupancy\n",
         scan_grid_size.x,

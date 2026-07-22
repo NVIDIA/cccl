@@ -410,12 +410,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       return error;
     }
 
-    // Get SM occupancy for scan_kernel
-    int scan_sm_occupancy;
-    if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().ThreadsPerBlock())))
+    // Get SM occupancy for scan_kernel (only needed for logging)
+    int scan_sm_occupancy = 0;
+    if (detail::logging_enabled())
     {
-      return error;
+      if (const auto error =
+            CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().ThreadsPerBlock())))
+      {
+        return error;
+      }
     }
 
     // Get max x-dimension of grid
@@ -732,12 +735,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       return error;
     }
 
-    // Get SM occupancy for scan_kernel
-    int scan_sm_occupancy;
-    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-          scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+    // Get SM occupancy for scan_kernel (only needed for logging)
+    int scan_sm_occupancy = 0;
+    if (detail::logging_enabled())
     {
-      return error;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+      {
+        return error;
+      }
     }
 
     // Get max x-dimension of grid
@@ -997,12 +1003,15 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
     return error;
   }
 
-  // Get SM occupancy for scan_kernel
-  int scan_sm_occupancy;
-  if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+  // Get SM occupancy for scan_kernel (only needed for logging)
+  int scan_sm_occupancy = 0;
+  if (logging_enabled())
   {
-    return error;
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+    {
+      return error;
+    }
   }
 
   // Get max x-dimension of grid
