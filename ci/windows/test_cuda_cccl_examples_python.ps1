@@ -51,5 +51,8 @@ finally { Pop-Location }
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/benchmarks/compute/host")
 try {
     & $python -m pytest -v --benchmark-disable .
+    if ($LASTEXITCODE -ne 0) {
+        throw "host benchmark smoke test failed"
+    }
 }
 finally { Pop-Location }
