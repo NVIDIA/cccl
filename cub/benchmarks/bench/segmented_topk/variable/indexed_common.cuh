@@ -50,6 +50,17 @@
 #  error "indexed_common.cuh: TUNE_REQUIREMENT must be 0 (non-det), 1 (det+smaller), or 2 (det+larger)"
 #endif
 
+// The tuning harness builds one architecture per GPU (and the cluster backend needs SM90+); base builds are exempt
+// and rely on the runtime unsupported-arch fallback above.
+#if !TUNE_BASE
+#  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
+#    error "When tuning, the top-k benchmarks must be compiled for a single architecture"
+#  endif
+#  if TUNE_BACKEND == 1 && (__CUDA_ARCH_LIST__) < 900
+#    error "Cannot tune the cluster backend below sm90"
+#  endif
+#endif // !TUNE_BASE
+
 enum class topk_backend
 {
   baseline,
@@ -57,12 +68,13 @@ enum class topk_backend
   automatic,
 };
 
-// Which backend this build benchmarks. `automatic` (the default) issues no `tune` override, leaving the choice to the
-// library's arch/size selector -- convenient here since variable segment sizes can exceed the baseline backend's
-// coverage (forcing baseline is only valid for coverable sizes). A tuning variant forces one concrete backend so its
-// sub-policy knobs (below) take effect.
+// Which backend this build benchmarks. A base build forces nothing (`automatic`, no `tune` override): the speedup
+// reference, and it lets the library pick cluster for variable segments that exceed baseline coverage. A tuning build
+// forces `TUNE_BACKEND` so that backend's sub-policy knobs (below) take effect.
 inline constexpr topk_backend selected_backend =
-#if TUNE_BACKEND == 0
+#if TUNE_BASE
+  topk_backend::automatic;
+#elif TUNE_BACKEND == 0
   topk_backend::baseline;
 #elif TUNE_BACKEND == 1
   topk_backend::cluster;
@@ -93,10 +105,9 @@ inline constexpr auto selected_tie_break =
 // The baseline backend's determinism/tie-break requirement is enforced inside `topk_backend_selector` (instantiated
 // only for a forced baseline/cluster backend); there is no device backend here to guard at file scope.
 
-// Policy selector threaded through the public API's tuning environment when a concrete backend is forced (not
-// `automatic`). Its `.backend` pins the backend for this build. In a base build both sub-policies are the defaults;
-// in a tuning variant only the forced backend's sub-policy is driven by this build's TUNE_* macros (the other stays
-// default), so each backend's benchmark sweeps only its own knobs.
+// Policy selector passed to the tuning environment; instantiated only for a forced baseline/cluster backend (base and
+// `automatic` builds never construct it). The struct is still compiled everywhere, so each knob-driven branch stays
+// gated on `!TUNE_BASE && TUNE_BACKEND == <that backend>` -- a base build defines no TUNE_* knobs.
 template <class KeyT, class ValueT, class OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {

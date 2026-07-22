@@ -42,6 +42,11 @@
 //   * num_segments (variants 18-20): must be a single, host-known integral value -- a pointer-valued single wrapper
 //     (not integral), a per-segment sequence (not a single value), and a single deferred device-resident value (a
 //     single value, but not host-known, so caught by a separate check) are each rejected
+//
+// Rejecting range/container arguments (span, variants 11/12/15/16) is a deliberate narrowing of CUB's API surface,
+// not a framework limitation -- the argument-annotation framework accepts ranges by design. No CUB device API takes a
+// range today, and annotating one would be unclear to users (does a bound constrain the element values or the range's
+// size?). Kept as fail variants so this stays a revisitable decision.
 
 int main()
 {

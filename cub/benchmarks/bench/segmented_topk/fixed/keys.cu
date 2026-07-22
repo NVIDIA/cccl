@@ -39,27 +39,34 @@ enum class topk_backend
   automatic,
 };
 
-// Which backend this build benchmarks. `automatic` (the default) issues no `tune` override, leaving the choice to the
-// library's arch/size selector. `baseline`/`cluster` force one of the two DeviceBatchedTopK backends via the `tune`d
-// selector below; `device` is a reference that issues one `cub::DeviceTopK` call per segment. Autotuning sweeps the
-// baseline and cluster backends (the `%RANGE% ... 0:1:1` above); only baseline knobs are exposed here, so the cluster
-// backend uses its default sub-policy and `device` has no knobs. Override with -DTUNE_BACKEND=0/1 (force a backend),
-// =2 (device reference), or =3 (automatic).
+// Which backend this build benchmarks. A base build forces nothing (`automatic`, no `tune` override): the speedup
+// reference. A tuning build forces `TUNE_BACKEND`; the `%RANGE%` sweep covers baseline and cluster, but only baseline
+// knobs are exposed, so the cluster backend uses its default sub-policy. `device` (-DTUNE_BACKEND=2, one
+// `cub::DeviceTopK` call per segment) is checked before TUNE_BASE so it stays reachable on the base target.
 #ifndef TUNE_BACKEND
-#  if TUNE_BASE
-#    define TUNE_BACKEND 3 // automatic: the library's production selector, for base/benchmark builds
-#  else
-#    define TUNE_BACKEND 0 // force baseline when an actively-tuned variant does not sweep the backend
-#  endif
+#  define TUNE_BACKEND 0 // baseline: the swept default (a base build ignores this and measures `automatic`)
 #endif
 
+// The tuning harness builds one architecture per GPU (and the cluster backend needs SM90+); base builds are exempt
+// and rely on the runtime unsupported-arch fallback above.
+#if !TUNE_BASE
+#  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
+#    error "When tuning, the top-k benchmarks must be compiled for a single architecture"
+#  endif
+#  if TUNE_BACKEND == 1 && (__CUDA_ARCH_LIST__) < 900
+#    error "Cannot tune the cluster backend below sm90"
+#  endif
+#endif // !TUNE_BASE
+
 inline constexpr topk_backend selected_backend =
-#if TUNE_BACKEND == 0
+#if TUNE_BACKEND == 2
+  topk_backend::device;
+#elif TUNE_BASE
+  topk_backend::automatic;
+#elif TUNE_BACKEND == 0
   topk_backend::baseline;
 #elif TUNE_BACKEND == 1
   topk_backend::cluster;
-#elif TUNE_BACKEND == 2
-  topk_backend::device;
 #else
   topk_backend::automatic;
 #endif
@@ -77,10 +84,10 @@ static_assert(selected_backend != topk_backend::device
               "The device backend does not honor determinism/tie-break requirements; keep selected_determinism and "
               "selected_tie_break at their defaults for it.");
 
-// Policy selector threaded through the public API's tuning environment when a concrete backend is forced (not
-// `automatic`). Its `.backend` pins the backend for this build. In a TUNE_BASE build the forced backend uses the
-// default sub-policies; otherwise the baseline knobs come from the TUNE_* macros. The cluster sub-policy is always the
-// default (no cluster knobs are exposed here).
+// Policy selector passed to the tuning environment; instantiated only for a forced baseline/cluster backend (base,
+// `automatic`, and `device` builds never construct it). The struct is still compiled everywhere, so the baseline knob
+// branch stays gated on `!TUNE_BASE && (TUNE_BACKEND == 0 || 1)` -- a base/device/automatic build defines no TUNE_*
+// knobs. The cluster sub-policy is always the default (no cluster knobs are exposed here).
 template <class KeyT, class ValueT, class OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {
@@ -97,9 +104,7 @@ struct topk_backend_selector
         || sizeof(KeyT) == 0,
       "The baseline backend cannot honor a deterministic result set or a concrete tie-break preference; "
       "force the cluster backend or request the non-deterministic defaults.");
-#if TUNE_BASE
-    const auto baseline = cub::detail::batched_topk::make_baseline_policy();
-#else
+#if !TUNE_BASE && (TUNE_BACKEND == 0 || TUNE_BACKEND == 1)
     constexpr auto store_alg = cub::BLOCK_STORE_WARP_TRANSPOSE;
 #  if TUNE_BLOCK_LOAD_ALGORITHM == 0
     constexpr auto load_alg = cub::BLOCK_LOAD_DIRECT;
@@ -116,7 +121,9 @@ struct topk_backend_selector
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
     }}};
-#endif // TUNE_BASE
+#else
+    const auto baseline = cub::detail::batched_topk::make_baseline_policy();
+#endif
     const auto cluster = cub::detail::batched_topk::make_cluster_policy();
     constexpr auto backend =
       (selected_backend == topk_backend::cluster)

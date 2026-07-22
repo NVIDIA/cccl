@@ -18,11 +18,7 @@
 // %RANGE% TUNE_CLUSTER_COPY_IPT cipt 1:24:1
 
 #ifndef TUNE_BACKEND
-#  if TUNE_BASE
-#    define TUNE_BACKEND 3 // automatic: the library's production selector, for base/benchmark builds
-#  else
-#    define TUNE_BACKEND 1 // cluster: the backend this file tunes
-#  endif
+#  define TUNE_BACKEND 1 // cluster: the backend this file tunes (a base build ignores this and measures `automatic`)
 #endif
 
 #ifndef TUNE_REQUIREMENT
