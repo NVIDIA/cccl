@@ -69,7 +69,7 @@ struct SelectLookbackPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The algorithm used by the select policy.
+//! The selection algorithm used by @ref DeviceSelect
 enum class SelectAlgorithm
 {
   lookback
@@ -98,8 +98,9 @@ inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
 //! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect
 struct SelectPolicy
 {
-  SelectAlgorithm algorithm = SelectAlgorithm::lookback; //!< The select algorithm to use
-  SelectLookbackPolicy lookback; //!< The lookback policy
+  SelectAlgorithm algorithm; //!< The select algorithm to use
+  SelectLookbackPolicy lookback; //!< The policy for the selection algorithm based on decoupled-lookback. Only used when
+                                 //!< @p algorithm is @lookback.
 
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
@@ -186,7 +187,8 @@ struct PartitionLookbackPolicy
 struct PartitionPolicy
 {
   PartitionAlgorithm algorithm = PartitionAlgorithm::lookback; //!< The partition algorithm to use
-  PartitionLookbackPolicy lookback; //!< The lookback policy
+  PartitionLookbackPolicy lookback; //!< The policy for the partition algorithm based on decoupled-lookback. Only used
+                                    //!< when algorithm is @lookback.
 
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
