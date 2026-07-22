@@ -504,7 +504,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   constexpr MergeSortPolicy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceMergeSort to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     log_dispatch("DeviceMergeSort", cc, active_policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     _CCCL_ASSERT(1 <= active_policy.threads_per_block && active_policy.threads_per_block <= 1024,
                  "Number of threads per block need to be inside [1;1024]");

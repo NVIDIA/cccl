@@ -302,6 +302,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
           ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
         // Log device_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
+                "%d items per thread, %d SM occupancy\n",
+                (long long) num_current_segments,
+                policy.SegmentedReduce().ThreadsPerBlock(),
+                (long long) stream,
+                policy.SegmentedReduce().ItemsPerThread(),
+                segmented_reduce_config.sm_occupancy);
+#else // CUB_DEBUG_LOG
         detail::log(
           "Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
           "%d items per thread, %d SM occupancy\n",
@@ -310,6 +319,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
           (long long) stream,
           policy.SegmentedReduce().ItemsPerThread(),
           segmented_reduce_config.sm_occupancy);
+#endif // CUB_DEBUG_LOG
 
         // Invoke DeviceSegmentedReduceKernel
         launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
@@ -543,7 +553,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceSegmentedReduce (variable size) to compute capability %d.%d with tuning: %s"
+                         "\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   log_dispatch("DeviceSegmentedReduce (variable size)", cc, active_policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   // Compute segments_per_block based on max_segment_size hint
   int segments_per_block = 1;
@@ -569,7 +591,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // Get SM occupancy for the segmented reduce kernel (only needed for logging)
   [[maybe_unused]] int sm_occupancy{};
+#ifndef CUB_DEBUG_LOG
   if (logging_enabled())
+#endif // CUB_DEBUG_LOG
   {
     if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
           sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.large_reduce.threads_per_block)))
@@ -588,6 +612,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     const auto num_current_segments = ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
     // Log device_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
+            "%d items per thread, %d SM occupancy\n",
+            (long long) num_current_segments,
+            active_policy.large_reduce.threads_per_block,
+            (long long) stream,
+            active_policy.large_reduce.items_per_thread,
+            sm_occupancy);
+#else // CUB_DEBUG_LOG
     log("Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
         "%d items per thread, %d SM occupancy\n",
         (long long) num_current_segments,
@@ -595,6 +628,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         (long long) stream,
         active_policy.large_reduce.items_per_thread,
         sm_occupancy);
+#endif // CUB_DEBUG_LOG
 
     // Invoke DeviceSegmentedReduceKernel
     const auto num_blocks =
@@ -744,7 +778,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceSegmentedReduce (fixed size) to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   log_dispatch("DeviceSegmentedReduce (fixed size)", cc, active_policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const auto tile_size = active_policy.large_reduce.threads_per_block * active_policy.large_reduce.items_per_thread;
 

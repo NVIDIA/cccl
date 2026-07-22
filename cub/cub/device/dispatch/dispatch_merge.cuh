@@ -224,7 +224,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << policy_getter();
+                   _CubLog("Dispatching DeviceMerge to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     log_dispatch("DeviceMerge", cc, policy_getter());
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
     using AgentT = typename choose_merge_agent<
