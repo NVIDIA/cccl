@@ -567,12 +567,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  // Init kernel configuration (computes kernel occupancy)
+  // Get SM occupancy for the segmented reduce kernel (only needed for logging)
   [[maybe_unused]] int sm_occupancy{};
-  if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.large_reduce.threads_per_block)))
+  if (logging_enabled())
   {
-    return error;
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.large_reduce.threads_per_block)))
+    {
+      return error;
+    }
   }
 
   const auto num_segments_per_invocation =

@@ -260,6 +260,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Log select_if_kernel configuration
+      if (detail::logging_enabled())
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
@@ -592,7 +593,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Log select_if_kernel configuration
-    if (detail::logging_enabled())
+    if (logging_enabled())
     {
       // Get SM occupancy for three_way_partition_kernel
       int range_select_sm_occupancy;
@@ -604,14 +605,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return error;
       }
 
-      detail::log_always(
-        "Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
-        "items per thread, %d SM occupancy\n",
-        current_num_tiles,
-        threads_per_block,
-        reinterpret_cast<long long>(stream),
-        items_per_thread,
-        range_select_sm_occupancy);
+      log_always("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
+                 "items per thread, %d SM occupancy\n",
+                 current_num_tiles,
+                 threads_per_block,
+                 reinterpret_cast<long long>(stream),
+                 items_per_thread,
+                 range_select_sm_occupancy);
     }
 
     // Invoke three_way_partition_kernel
