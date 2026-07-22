@@ -44,6 +44,6 @@ conda install -c conda-forge cccl-python
 
 For complete documentation, examples, and API reference, visit:
 
-- **Full Documentation**: [nvidia.github.io/cccl/python](https://nvidia.github.io/cccl/python)
+- **Full Documentation**: [nvidia.github.io/cccl/python](https://nvidia.github.io/cccl/unstable/python)
 - **Repository**: [github.com/NVIDIA/cccl](https://github.com/NVIDIA/cccl)
 - **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples) and [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/_experimental/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/_experimental/examples)

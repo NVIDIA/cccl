@@ -4,6 +4,7 @@
 
 import functools
 import random
+from unittest.mock import call, patch
 
 import numpy as np
 import pytest
@@ -619,15 +620,22 @@ def test_reduce_with_stream(cuda_stream):
     d_in = DeviceArray.from_numpy(h_in, stream=cuda_stream)
     d_out = DeviceArray.empty(1, np.int32, stream=cuda_stream)
 
-    cuda.compute.reduce_into(
-        d_in=d_in,
-        d_out=d_out,
-        num_items=h_in.size,
-        op=add_op,
-        h_init=h_init,
-        stream=cuda_stream,
-    )
-    np.testing.assert_allclose(h_in.sum(), d_out.copy_to_host(stream=cuda_stream))
+    with patch.object(
+        cuda.compute.algorithms._reduce, "validate_and_get_stream", autospec=True
+    ) as mock:
+        cuda.compute.reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            num_items=h_in.size,
+            op=add_op,
+            h_init=h_init,
+            stream=cuda_stream,
+        )
+        assert mock.call_args_list == [
+            call(cuda_stream),  # From 'get_temp_storage_bytes' call
+            call(cuda_stream),  # From 'compute' call
+        ]
+        np.testing.assert_allclose(h_in.sum(), d_out.copy_to_host(stream=cuda_stream))
 
 
 def test_reduce_invalid_stream():
@@ -1167,3 +1175,74 @@ def test_serialize_deserialize_preserves_determinism():
 def test_deserialize_garbage_raises():
     with pytest.raises((ValueError, RuntimeError)):
         deserialize(b"not a real serialization blob" + b"\0" * 64)
+
+
+class TestReduceAPI:
+    def test_mem_compute_api(self, array_2d):
+        def binary_op(x, y):
+            return x + y
+
+        d_in = DeviceArray.from_numpy(array_2d)
+        d_out = DeviceArray.empty(1, dtype=array_2d.dtype)
+        h_init = np.asarray([0], dtype=array_2d.dtype)
+        reducer = cuda.compute.make_reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            num_items=array_2d.size,
+            op=binary_op,
+            h_init=h_init,
+        )
+        temp_storage_size = reducer.get_temp_storage_bytes(
+            d_in=d_in,
+            d_out=d_out,
+            num_items=array_2d.size,
+            op=binary_op,
+            h_init=h_init,
+        )
+        d_temp_storage = DeviceArray.empty(temp_storage_size, dtype=np.uint8)
+        reducer.compute(
+            temp_storage=d_temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=array_2d.size,
+            op=binary_op,
+            h_init=h_init,
+        )
+        np.testing.assert_allclose(array_2d.sum(), d_out.copy_to_host())
+
+    def test__call__dunder_deprecation(self, array_2d):
+        def binary_op(x, y):
+            return x + y
+
+        d_in = DeviceArray.from_numpy(array_2d)
+        d_out = DeviceArray.empty(1, dtype=array_2d.dtype)
+        h_init = np.asarray([0], dtype=array_2d.dtype)
+        reducer = cuda.compute.make_reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            num_items=array_2d.size,
+            op=binary_op,
+            h_init=h_init,
+        )
+        with pytest.warns(
+            DeprecationWarning, match="as callable to generate temporary storage"
+        ):
+            temp_storage_size = reducer(
+                temp_storage=None,
+                d_in=d_in,
+                d_out=d_out,
+                num_items=array_2d.size,
+                op=binary_op,
+                h_init=h_init,
+            )
+        d_temp_storage = DeviceArray.empty(temp_storage_size, dtype=np.uint8)
+        with pytest.warns(DeprecationWarning, match="as callable to execute algorithm"):
+            reducer(
+                temp_storage=d_temp_storage,
+                d_in=d_in,
+                d_out=d_out,
+                num_items=array_2d.size,
+                op=binary_op,
+                h_init=h_init,
+            )
+        np.testing.assert_allclose(array_2d.sum(), d_out.copy_to_host())
