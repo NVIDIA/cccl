@@ -267,9 +267,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Log select_if_kernel configuration
-#ifndef CUB_DEBUG_LOG
-      if (detail::logging_enabled())
-#endif // CUB_DEBUG_LOG
+#ifdef CUB_DEBUG_LOG
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
@@ -281,7 +279,6 @@ struct dispatch_three_way_partition_if
           return error;
         }
 
-#ifdef CUB_DEBUG_LOG
         _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
                 "items per thread, %d SM occupancy\n",
                 current_num_tiles,
@@ -289,7 +286,20 @@ struct dispatch_three_way_partition_if
                 reinterpret_cast<long long>(stream),
                 items_per_thread,
                 range_select_sm_occupancy);
+      }
 #else // CUB_DEBUG_LOG
+      if (detail::logging_enabled())
+      {
+        // Get SM occupancy for select_if_kernel
+        int range_select_sm_occupancy;
+        if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+              range_select_sm_occupancy, // out
+              three_way_partition_kernel,
+              threads_per_block)))
+        {
+          return error;
+        }
+
         detail::log(
           "Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
           "items per thread, %d SM occupancy\n",
@@ -298,8 +308,8 @@ struct dispatch_three_way_partition_if
           reinterpret_cast<long long>(stream),
           items_per_thread,
           range_select_sm_occupancy);
-#endif // CUB_DEBUG_LOG
       }
+#endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
       if (const auto error = CubDebug(
@@ -503,9 +513,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
+                 ::std::stringstream ss;
                  ss << active_policy;
-                 _CubLog("Dispatching DevicePartition (three way) to compute capability %d.%d with tuning: %s\n",
+                 _CubLog("Dispatching DeviceThreeWayPartition to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
                          cc.minor_cap(),
                          ss.str().c_str());
@@ -630,9 +640,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Log select_if_kernel configuration
-#ifndef CUB_DEBUG_LOG
-    if (logging_enabled())
-#endif // CUB_DEBUG_LOG
+#ifdef CUB_DEBUG_LOG
     {
       // Get SM occupancy for three_way_partition_kernel
       int range_select_sm_occupancy;
@@ -644,7 +652,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return error;
       }
 
-#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
               "items per thread, %d SM occupancy\n",
               current_num_tiles,
@@ -652,7 +659,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
               reinterpret_cast<long long>(stream),
               items_per_thread,
               range_select_sm_occupancy);
+    }
 #else // CUB_DEBUG_LOG
+    if (logging_enabled())
+    {
+      // Get SM occupancy for three_way_partition_kernel
+      int range_select_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            range_select_sm_occupancy, // out
+            three_way_partition_kernel,
+            threads_per_block)))
+      {
+        return error;
+      }
+
       log_always("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
                  "items per thread, %d SM occupancy\n",
                  current_num_tiles,
@@ -660,8 +680,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                  reinterpret_cast<long long>(stream),
                  items_per_thread,
                  range_select_sm_occupancy);
-#endif // CUB_DEBUG_LOG
     }
+#endif // CUB_DEBUG_LOG
 
     // Invoke three_way_partition_kernel
     if (const auto error = CubDebug(

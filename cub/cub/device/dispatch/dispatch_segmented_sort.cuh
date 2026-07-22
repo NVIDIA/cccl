@@ -1344,7 +1344,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
-                   std::stringstream ss;
+                   ::std::stringstream ss;
                    ss << active_policy;
                    _CubLog("Dispatching DeviceSegmentedSort to compute capability %d.%d with tuning: %s\n",
                            cc.major_cap(),

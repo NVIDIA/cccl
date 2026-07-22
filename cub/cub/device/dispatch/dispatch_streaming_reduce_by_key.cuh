@@ -74,9 +74,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
+                 ::std::stringstream ss;
                  ss << policy;
-                 _CubLog("Dispatching DeviceReduce (by key, streaming) to compute capability %d.%d with tuning: %s\n",
+                 _CubLog("Dispatching streaming reduce by key to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
                          cc.minor_cap(),
                          ss.str().c_str());

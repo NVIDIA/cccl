@@ -368,7 +368,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const AdjacentDifferencePolicy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
+                 ::std::stringstream ss;
                  ss << active_policy;
                  _CubLog("Dispatching DeviceAdjacentDifference to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
