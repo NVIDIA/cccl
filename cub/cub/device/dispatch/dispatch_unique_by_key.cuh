@@ -318,9 +318,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
     // Log select_if_kernel configuration
-#ifndef CUB_DEBUG_LOG
-    if (detail::logging_enabled())
-#endif // CUB_DEBUG_LOG
+#ifdef CUB_DEBUG_LOG
     {
       // Get SM occupancy for unique_by_key_kernel
       int sweep_sm_occupancy;
@@ -332,7 +330,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
         return error;
       }
 
-#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
               scan_grid_size.x,
@@ -342,7 +339,20 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
               (long long) stream,
               items_per_thread,
               sweep_sm_occupancy);
+    }
 #else // CUB_DEBUG_LOG
+    if (detail::logging_enabled())
+    {
+      // Get SM occupancy for unique_by_key_kernel
+      int sweep_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            sweep_sm_occupancy, // out
+            kernel_source.UniqueByKeySweepKernel(),
+            threads_per_block)))
+      {
+        return error;
+      }
+
       detail::log_always(
         "Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
         "%lld>>>(), %d items per thread, %d SM occupancy\n",
@@ -353,8 +363,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
         (long long) stream,
         items_per_thread,
         sweep_sm_occupancy);
-#endif // CUB_DEBUG_LOG
     }
+#endif // CUB_DEBUG_LOG
 
     // Invoke select_if_kernel
     if (const auto error = CubDebug(
@@ -550,9 +560,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
-                   std::stringstream ss;
+                   ::std::stringstream ss;
                    ss << active_policy;
-                   _CubLog("Dispatching DeviceSelect (unique by key) to compute capability %d.%d with tuning: %s\n",
+                   _CubLog("Dispatching DeviceSelect::UniqueByKey to compute capability %d.%d with tuning: %s\n",
                            cc.major_cap(),
                            cc.minor_cap(),
                            ss.str().c_str());
@@ -640,9 +650,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
     scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
-#ifndef CUB_DEBUG_LOG
-    if (detail::logging_enabled())
-#endif // CUB_DEBUG_LOG
+#ifdef CUB_DEBUG_LOG
     {
       // Get SM occupancy for unique_by_key_kernel
       int sweep_sm_occupancy;
@@ -651,7 +659,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         return error;
       }
-#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
               scan_grid_size.x,
@@ -661,7 +668,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
               (long long) stream,
               items_per_thread,
               sweep_sm_occupancy);
+    }
 #else // CUB_DEBUG_LOG
+    if (detail::logging_enabled())
+    {
+      // Get SM occupancy for unique_by_key_kernel
+      int sweep_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            sweep_sm_occupancy, kernel_source.UniqueByKeySweepKernel(), threads_per_block)))
+      {
+        return error;
+      }
       detail::log_always(
         "Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
         "%lld>>>(), %d items per thread, %d SM occupancy\n",
@@ -672,8 +689,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         (long long) stream,
         items_per_thread,
         sweep_sm_occupancy);
-#endif // CUB_DEBUG_LOG
     }
+#endif // CUB_DEBUG_LOG
 
     // Invoke select_if_kernel
     if (const auto error = CubDebug(
