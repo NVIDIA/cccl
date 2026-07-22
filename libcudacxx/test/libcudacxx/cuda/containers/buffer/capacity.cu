@@ -44,8 +44,8 @@ C2H_CCCLRT_TEST("cuda::buffer capacity", "[container][buffer]", test_types)
 
     { // Works without allocation
       Buffer buf{stream, resource, 0, cuda::no_init};
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(cuda::std::as_const(buf).empty());
+      CHECK(buf.empty());
+      CHECK(cuda::std::as_const(buf).empty());
     }
   }
 
@@ -58,8 +58,8 @@ C2H_CCCLRT_TEST("cuda::buffer capacity", "[container][buffer]", test_types)
 
     { // Works without allocation
       Buffer buf{stream, resource, 0, cuda::no_init};
-      CCCLRT_CHECK(buf.size() == 0);
-      CCCLRT_CHECK(cuda::std::as_const(buf).size() == 0);
+      CHECK(buf.size() == 0);
+      CHECK(cuda::std::as_const(buf).size() == 0);
     }
   }
 }

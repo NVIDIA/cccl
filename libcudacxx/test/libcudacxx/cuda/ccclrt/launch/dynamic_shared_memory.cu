@@ -36,7 +36,7 @@ struct TestKernel
   TEST_DEVICE_FUNC void write_smem(T& view)
   {
     view = T{};
-    CCCLRT_REQUIRE_DEVICE(view == T{});
+    REQUIRE_DEVICE(view == T{});
   }
 
   template <cuda::std::size_t N>
@@ -45,7 +45,7 @@ struct TestKernel
     for (cuda::std::size_t i = 0; i < view.size(); ++i)
     {
       view[i] = T{};
-      CCCLRT_REQUIRE_DEVICE(view[i] == T{});
+      REQUIRE_DEVICE(view[i] == T{});
     }
   }
 };
