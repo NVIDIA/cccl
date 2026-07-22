@@ -376,10 +376,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower t
   using segment_index_t = cuda::std::int64_t;
   using key_t           = cuda::std::uint8_t; // key type is immaterial to this index-arithmetic regression
 
-  using combo                = c2h::get<1, TestType>;
-  constexpr auto determinism = combo::determinism;
-  constexpr auto tie_break   = combo::tie_break;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  using combo                       = c2h::get<1, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction          = cub::detail::topk::select::max;
   // Sizes fit both 8-bit types but sit far below the 512 threads a block launches; `127` probes the signed type's max.
   const seg_size_t segment_size = static_cast<seg_size_t>(GENERATE(values({3, 100, 127})));
   const seg_size_t k            = static_cast<seg_size_t>(
@@ -657,9 +657,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   // 2048 floats = 16 chunks; a 2-CTA cluster holds 8 chunks each -> fully resident, no streaming.
   constexpr segment_size_t static_max_segment_size = 2048;
@@ -722,11 +722,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr int cluster_cap  = c2h::get<0, TestType>::value;
-  constexpr int stages       = c2h::get<1, TestType>::value;
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  constexpr int cluster_cap         = c2h::get<0, TestType>::value;
+  constexpr int stages              = c2h::get<1, TestType>::value;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   constexpr segment_size_t static_max_segment_size = 1536;
   constexpr segment_size_t static_max_k            = 512;
@@ -786,9 +786,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment with a
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   // Bounds match the schedule sweep (same kernel); the runtime segment is sized to 5 chunks (640 floats) so, at 4 slots
   // minus 1 reserved stream slot, only 3 resident chunks remain -> a misaligned reload tail (`3 % prologue(2) == 1`).
@@ -841,9 +841,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment throug
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   constexpr segment_size_t static_max_segment_size = 1536;
   constexpr segment_size_t static_max_k            = 512;
@@ -900,9 +900,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  using combo                = c2h::get<0, TestType>;
-  constexpr auto determinism = combo::determinism;
-  constexpr auto tie_break   = combo::tie_break;
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
   // 1 Mi segments overflow the resident cluster and stream (one unaligned `- 31` tail; `- 4095` makes the global-last
   // chunk a single item -> pure-suffix tail with empty aligned bulk once `pad == 0`). The requirement is swept because
   // the deterministic (blocked-load) path has distinct large-offset arithmetic.
@@ -956,10 +956,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
   using seg_size_t      = int; // signed 32-bit
   using segment_index_t = cuda::std::int64_t;
 
-  using combo                = c2h::get<0, TestType>;
-  constexpr auto determinism = combo::determinism;
-  constexpr auto tie_break   = combo::tie_break;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   constexpr seg_size_t static_max_segment_size = 1024 * 1024;
   constexpr seg_size_t static_max_k            = 4 * 1024;
@@ -1012,8 +1012,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   using segment_index_t = cuda::std::int64_t;
 
   using combo                                      = c2h::get<0, TestType>;
-  constexpr auto determinism                       = combo::determinism;
-  constexpr auto tie_break                         = combo::tie_break;
+  static constexpr auto determinism                = combo::determinism;
+  static constexpr auto tie_break                  = combo::tie_break;
   constexpr segment_size_t static_max_segment_size = 1100 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
 
@@ -1091,10 +1091,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  using combo                = c2h::get<0, TestType>;
-  constexpr auto determinism = combo::determinism;
-  constexpr auto tie_break   = combo::tie_break;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
@@ -1246,9 +1246,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys leave surplus cluster CTAs idle on sm
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
-  constexpr auto direction   = cub::detail::topk::select::max;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction          = cub::detail::topk::select::max;
 
   constexpr segment_size_t static_max_segment_size = 4096; // loose bound -> 4-CTA physical cluster (128 floats/chunk)
   constexpr segment_size_t static_max_k            = 512;
@@ -1528,11 +1528,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
 
   // Requirement under test. The key multiset is invariant to the preference, so every combination matches the same
   // reference; tie-rich data makes the deterministic scan do real work, so a boundary miscount would surface here.
-  using combo                = c2h::get<1, TestType>;
-  constexpr auto determinism = combo::determinism;
-  constexpr auto tie_break   = combo::tie_break;
-  using segment_size_t       = cuda::std::int64_t;
-  using segment_index_t      = cuda::std::int64_t;
+  using combo                       = c2h::get<1, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+  using segment_size_t              = cuda::std::int64_t;
+  using segment_index_t             = cuda::std::int64_t;
 
   constexpr segment_size_t static_max_segment_size = 64 * 1024;
   constexpr segment_size_t static_max_k            = 64 * 1024;
@@ -1832,13 +1832,13 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
 C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (deterministic requirement)",
          "[keys][segmented][topk][device][cluster][determinism]")
 {
-  using seg_size_t           = cuda::std::int16_t;
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
-  constexpr int num_segments = 2;
-  constexpr int k            = 3;
-  constexpr int stride       = 8;
-  constexpr int sentinel     = -12345;
+  using seg_size_t                  = cuda::std::int16_t;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int num_segments        = 2;
+  constexpr int k                   = 3;
+  constexpr int stride              = 8;
+  constexpr int sentinel            = -12345;
   constexpr cuda::std::int64_t static_max_segment_size = 100;
 
   // Segment 0: declared size -1 -> clamped to 0 -> skipped. Segment 1: 8 real keys, top-3 max = {9, 8, 7}.
@@ -1940,14 +1940,14 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (no det
 C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (deterministic requirement)",
          "[keys][segmented][topk][device][cluster][determinism]")
 {
-  using k_t                  = cuda::std::int16_t;
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
-  constexpr int num_segments = 2;
-  constexpr int stride       = 8; // segment size (also the input stride between segments)
-  constexpr int k            = 3; // segment 1's requested top-k
-  constexpr int sentinel     = -12345;
-  constexpr int out_stride   = stride; // full-segment-sized region (see baseline test above)
+  using k_t                         = cuda::std::int16_t;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int num_segments        = 2;
+  constexpr int stride              = 8; // segment size (also the input stride between segments)
+  constexpr int k                   = 3; // segment 1's requested top-k
+  constexpr int sentinel            = -12345;
+  constexpr int out_stride          = stride; // full-segment-sized region (see baseline test above)
   constexpr cuda::std::int64_t static_max_segment_size = 100;
 
   // Segment 0: requests k = -1 -> clamped to 0 -> selects nothing. Segment 1: top-3 max of 8 keys = {9, 8, 7}.
@@ -1987,13 +1987,13 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (determ
 C2H_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as no work (deterministic requirement)",
          "[keys][segmented][topk][device][cluster][determinism]")
 {
-  using seg_size_t           = cuda::std::int16_t;
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
-  constexpr int num_segments = 2;
-  constexpr int k            = 3;
-  constexpr int stride       = 8;
-  constexpr int sentinel     = -12345;
+  using seg_size_t                  = cuda::std::int16_t;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int num_segments        = 2;
+  constexpr int k                   = 3;
+  constexpr int stride              = 8;
+  constexpr int sentinel            = -12345;
   constexpr cuda::std::int64_t static_max_segment_size = 100;
 
   auto keys_in  = thrust::device_vector<int>{0, 9, 3, 2, 1, 8, 7, 4, /**/ 5, 6, 1, 0, 3, 2, 8, 7};
@@ -2073,11 +2073,11 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (no determi
 C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (deterministic requirement)",
          "[keys][segmented][topk][device][cluster][determinism]")
 {
-  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
-  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
-  constexpr int k            = 3;
-  constexpr int stride       = 8;
-  constexpr int sentinel     = -12345;
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int k                   = 3;
+  constexpr int stride              = 8;
+  constexpr int sentinel            = -12345;
   constexpr cuda::std::int64_t static_max_segment_size = 100;
 
   auto keys_in = thrust::device_vector<int>{};
