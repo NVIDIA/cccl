@@ -36,6 +36,7 @@
 #include <cuda/std/__ranges/enable_view.h>
 #include <cuda/std/__ranges/filter_view.h>
 #include <cuda/std/__ranges/iota_view.h>
+#include <cuda/std/__ranges/join_view.h>
 #include <cuda/std/__ranges/owning_view.h>
 #include <cuda/std/__ranges/rbegin.h>
 #include <cuda/std/__ranges/ref_view.h>
