@@ -8,6 +8,7 @@ Bit
    :maxdepth: 1
 
    bit/bitmask
+   bit/bit_ffs
    bit/bit_reverse
    bit/bitfield_insert
    bit/bitfield_extract
@@ -25,6 +26,11 @@ Bit
      - Generate a bitmask
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>`
+     - Find the first (least significant) set bit
+     - CCCL 3.5.0
+     - CUDA 13.5
 
    * - :ref:`bit_reverse <libcudacxx-extended-api-bit-bit_reverse>`
      - Reverse the order of bits
