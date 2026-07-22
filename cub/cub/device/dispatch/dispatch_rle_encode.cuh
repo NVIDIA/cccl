@@ -189,7 +189,8 @@ _CCCL_HOST_API cudaError_t invoke_lookahead(
                   num_items,
                   num_tiles,
                   lookahead_policy.key_ring_stages,
-                  lookahead_policy.pos_ring_stages)))
+                  lookahead_policy.pos_ring_stages,
+                  /* keys_staged */ true)))
     {
       return error;
     }
