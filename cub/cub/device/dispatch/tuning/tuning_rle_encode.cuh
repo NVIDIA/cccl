@@ -717,8 +717,6 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookahead_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<RleLookaheadPolicy>
   {
-    // every knob below is a B200 measurement; consumer Blackwell (sm_120) has neither the smem opt-in headroom nor
-    // measurements, so only the sm_10x family selects lookahead
     if (cc < ::cuda::compute_capability{10, 0} || cc >= ::cuda::compute_capability{11, 0})
     {
       return ::cuda::std::nullopt;
@@ -734,8 +732,7 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr bool can_use_lookahead(
     [[maybe_unused]] ::cuda::compute_capability cc, [[maybe_unused]] const RleLookaheadPolicy& lookahead_policy) const
   {
-    // We need PTX ISA 9.2 (CUDA 13.2) for the cp.async.bulk .ignore_oob qualifier used by the load warp
-    // (clusterlaunchcontrol only needs 8.6). The kernel and the dispatch arm are compiled out below this ISA.
+    // We need PTX ISA 9.2 (CUDA 13.2) for the cp.async.bulk .ignore_oob qualifier
     // The macro `CCCL_DISABLE_WARPSPEED_RLE` will be left in as a kill-switch for users in case they find any bugs
     // after we shipped the implementation. TODO(nanan): remove CCCL_DISABLE_WARPSPEED_RLE in CCCL 4.0
 #if __cccl_ptx_isa < 920 || defined(CCCL_DISABLE_WARPSPEED_RLE)
