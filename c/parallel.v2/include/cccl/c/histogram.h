@@ -76,6 +76,50 @@ CCCL_C_API CUresult cccl_device_histogram_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+// Compiles and links the build result, without loading it. build->jit_compiler
+// and build->histogram_fn remain null until cccl_device_histogram_load is called.
+CCCL_C_API CUresult cccl_device_histogram_compile(
+  cccl_device_histogram_build_result_t* build,
+  int num_channels,
+  int num_active_channels,
+  cccl_iterator_t d_samples,
+  int num_output_levels_val,
+  cccl_iterator_t d_output_histograms,
+  cccl_type_info level_type,
+  int64_t num_rows,
+  int64_t row_stride_samples,
+  bool is_evenly_segmented,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+// Loads a build_result populated by cccl_device_histogram_compile or
+// cccl_device_histogram_deserialize, populating build->jit_compiler and
+// build->histogram_fn. ctk_path locates the CUDA Toolkit on this machine;
+// pass NULL to auto-detect. Call at most once per build_result.
+CCCL_C_API CUresult cccl_device_histogram_load(cccl_device_histogram_build_result_t* build, const char* ctk_path);
+
+// Serializes a populated build_result into a self-describing byte buffer.
+// On success *out_buf points to a heap allocation the caller must free
+// with cccl_serialization_v2_buffer_free, and *out_size holds its length.
+// Requires build->payload to be populated.
+CCCL_C_API CUresult
+cccl_device_histogram_serialize(const cccl_device_histogram_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by
+// cccl_device_histogram_serialize. On success, build->jit_compiler and
+// build->histogram_fn remain null until cccl_device_histogram_load is
+// called; on failure build is left unchanged. Rejects a blob built for a
+// different OS/architecture than this machine; does not check compute
+// capability against a live device (a mismatch instead surfaces later, at
+// cccl_device_histogram_even).
+CCCL_C_API CUresult
+cccl_device_histogram_deserialize(cccl_device_histogram_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_histogram_even(
   cccl_device_histogram_build_result_t build,
   void* d_temp_storage,

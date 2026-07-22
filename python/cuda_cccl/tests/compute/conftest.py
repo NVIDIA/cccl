@@ -128,9 +128,16 @@ def raise_on_numba_import(monkeypatch):
 
 
 def pytest_collection_modifyitems(config, items):
-    serialization_skip = pytest.mark.skip(
-        reason="serialization not supported on v2 (HostJIT) backend"
-    )
+    # NOTE: serialization (AoT compile/load/serialize/deserialize) is
+    # supported on v2 (HostJIT) for all 12 algorithms, so tests marked
+    # @pytest.mark.serialization are no longer blanket-skipped here under
+    # USING_V2. If a specific serialization test relies on v1-only behavior
+    # (e.g. the validate_blob-based diagnostics in
+    # test_serialization_diagnostics.py, or the multi-cc container in
+    # test_multi_cc_serialization.py, neither of which v2 implements),
+    # mark THAT test with a targeted xfail/skipif(USING_V2, ...) rather
+    # than reintroducing a blanket marker-based skip here.
+    #
     # Under the pytest-run-parallel sweep (--parallel-threads > 1) skip the
     # blanket raise_on_numba_import injection: it monkeypatches
     # builtins.__import__, which pytest-run-parallel treats as thread-unsafe and
@@ -148,5 +155,3 @@ def pytest_collection_modifyitems(config, items):
         if item.get_closest_marker("no_numba") and not running_parallel:
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
-        if USING_V2 and item.get_closest_marker("serialization"):
-            item.add_marker(serialization_skip)

@@ -67,6 +67,51 @@ CCCL_C_API CUresult cccl_device_three_way_partition_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+// Compiles and links the build result, without loading it. build->jit_compiler
+// and build->three_way_partition_fn remain null until
+// cccl_device_three_way_partition_load is called.
+CCCL_C_API CUresult cccl_device_three_way_partition_compile(
+  cccl_device_three_way_partition_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_first_part_out,
+  cccl_iterator_t d_second_part_out,
+  cccl_iterator_t d_unselected_out,
+  cccl_iterator_t d_num_selected_out,
+  cccl_op_t select_first_part_op,
+  cccl_op_t select_second_part_op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+// Loads a build_result populated by cccl_device_three_way_partition_compile
+// or cccl_device_three_way_partition_deserialize, populating
+// build->jit_compiler and build->three_way_partition_fn. ctk_path locates
+// the CUDA Toolkit on this machine; pass NULL to auto-detect. Call at most
+// once per build_result.
+CCCL_C_API CUresult
+cccl_device_three_way_partition_load(cccl_device_three_way_partition_build_result_t* build, const char* ctk_path);
+
+// Serializes a populated build_result into a self-describing byte buffer.
+// On success *out_buf points to a heap allocation the caller must free
+// with cccl_serialization_v2_buffer_free, and *out_size holds its length.
+// Requires build->payload to be populated.
+CCCL_C_API CUresult cccl_device_three_way_partition_serialize(
+  const cccl_device_three_way_partition_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by
+// cccl_device_three_way_partition_serialize. On success, build->jit_compiler
+// and build->three_way_partition_fn remain null until
+// cccl_device_three_way_partition_load is called; on failure build is left
+// unchanged. Rejects a blob built for a different OS/architecture than this
+// machine; does not check compute capability against a live device (a
+// mismatch instead surfaces later, at cccl_device_three_way_partition).
+CCCL_C_API CUresult cccl_device_three_way_partition_deserialize(
+  cccl_device_three_way_partition_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_three_way_partition(
   cccl_device_three_way_partition_build_result_t build,
   void* d_temp_storage,

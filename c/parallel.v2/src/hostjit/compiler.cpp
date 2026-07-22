@@ -146,29 +146,6 @@ static bool generateImportLib(
   return true;
 }
 
-// Find the actual DLL filename for cudart (e.g. "cudart64_13.dll") by
-// scanning the CUDA toolkit bin directory.
-static std::string findCudartDllName(const std::string& cuda_toolkit_path)
-{
-  namespace fs = std::filesystem;
-  for (const auto& subdir : {"bin/x64", "bin"})
-  {
-    fs::path dir = fs::path(cuda_toolkit_path) / subdir;
-    if (!fs::exists(dir))
-    {
-      continue;
-    }
-    for (const auto& entry : fs::directory_iterator(dir))
-    {
-      auto name = entry.path().filename().string();
-      if (name.starts_with("cudart64_") && name.ends_with(".dll"))
-      {
-        return name;
-      }
-    }
-  }
-  return "cudart64_12.dll"; // fallback
-}
 #endif
 
 // Headers precompiled into the PCH cache.  Covers the algorithms exposed
@@ -1470,7 +1447,11 @@ public:
     // so we don't require the Windows SDK or MSVC .lib files.
     std::string implib_dir = std::filesystem::path(output_path).parent_path().string();
 
-    std::string cudart_dll = findCudartDllName(config.cuda_toolkit_path);
+    std::string cudart_dll = findCudaRuntimeLibrary(config);
+    if (cudart_dll.empty())
+    {
+      cudart_dll = "cudart64_12.dll"; // fallback, matches prior behavior
+    }
     generateImportLib(
       cudart_dll,
       {"cudaMalloc",
@@ -1618,30 +1599,12 @@ public:
     // pip packages ship libcudart.so.XX without an unversioned symlink,
     // so -lcudart won't work.  Find the actual .so by scanning library_paths.
     {
-      bool found_cudart = false;
-      for (const auto& lib_path : config.library_paths)
+      std::string cudart_path = findCudaRuntimeLibrary(config);
+      if (!cudart_path.empty())
       {
-        namespace fs = std::filesystem;
-        if (!fs::exists(lib_path))
-        {
-          continue;
-        }
-        for (const auto& entry : fs::directory_iterator(lib_path))
-        {
-          auto fname = entry.path().filename().string();
-          if (fname.starts_with("libcudart.so"))
-          {
-            arg_strings.push_back(entry.path().string());
-            found_cudart = true;
-            break;
-          }
-        }
-        if (found_cudart)
-        {
-          break;
-        }
+        arg_strings.push_back(cudart_path);
       }
-      if (!found_cudart)
+      else
       {
         arg_strings.push_back("-lcudart");
       }
