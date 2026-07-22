@@ -172,4 +172,45 @@ bool validateConfig(const CompilerConfig& config, std::string* error_message)
 
   return true;
 }
+
+std::string findCudaRuntimeLibrary(const CompilerConfig& config)
+{
+  namespace fs = std::filesystem;
+#ifdef _WIN32
+  for (const auto& subdir : {"bin/x64", "bin"})
+  {
+    fs::path dir = fs::path(config.cuda_toolkit_path) / subdir;
+    if (!fs::exists(dir))
+    {
+      continue;
+    }
+    for (const auto& entry : fs::directory_iterator(dir))
+    {
+      auto name = entry.path().filename().string();
+      if (name.starts_with("cudart64_") && name.ends_with(".dll"))
+      {
+        return name;
+      }
+    }
+  }
+  return {};
+#else
+  for (const auto& lib_path : config.library_paths)
+  {
+    if (!fs::exists(lib_path))
+    {
+      continue;
+    }
+    for (const auto& entry : fs::directory_iterator(lib_path))
+    {
+      auto fname = entry.path().filename().string();
+      if (fname.starts_with("libcudart.so"))
+      {
+        return entry.path().string();
+      }
+    }
+  }
+  return {};
+#endif
+}
 } // namespace hostjit

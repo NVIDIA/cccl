@@ -12,6 +12,8 @@
 
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -153,22 +155,76 @@ private:
   std::vector<const char*> ptrs_;
 };
 
-// Copy cubin data into a heap-allocated buffer the caller owns. Plain `new[]`
+// Copy byte data into a heap-allocated buffer the caller owns. Plain `new[]`
 // — memcpy is noexcept so there's no exception path between the allocation
-// and the assignment to out_cubin. The caller eventually frees via
-// release_jit_artifacts() (or delete[] on out_cubin).
-inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t& out_size)
+// and the assignment to out_bytes. The caller eventually frees via
+// release_jit_artifacts() (or delete[] on out_bytes). Used to populate
+// build_result_t::payload, which holds the full compiled .so/.dll bytes
+// (not just the raw device cubin — the host wrapper code needs to travel
+// with it too, since a v2 build_result is a native shared library, not a
+// driver-loadable device blob).
+inline void copy_bytes(const std::vector<char>& bytes, void*& out_bytes, size_t& out_size)
 {
-  if (cubin.empty())
+  if (bytes.empty())
   {
-    out_cubin = nullptr;
+    out_bytes = nullptr;
     out_size  = 0;
     return;
   }
-  auto* buf = new char[cubin.size()];
-  std::memcpy(buf, cubin.data(), cubin.size());
-  out_cubin = buf;
-  out_size  = cubin.size();
+  auto* buf = new char[bytes.size()];
+  std::memcpy(buf, bytes.data(), bytes.size());
+  out_bytes = buf;
+  out_size  = bytes.size();
+}
+
+// Build a hostjit::CompilerConfig suitable for JITCompiler::loadFromBytes(),
+// honoring an optional caller-supplied ctk_path override (NULL = auto-detect
+// via detectDefaultConfig()). This is the load-time counterpart of
+// CubCall's own ctk_path handling at build time — needed because a
+// deserialized/persisted artifact's baked RPATH may point at a different
+// (build) machine's CUDA Toolkit; the loader must locate ITS OWN CUDA
+// Toolkit to preload libcudart before dlopen (see
+// hostjit::JITCompiler::loadFromBytes for why).
+inline hostjit::CompilerConfig make_load_jit_config(const char* ctk_path)
+{
+  hostjit::CompilerConfig config = hostjit::detectDefaultConfig();
+  std::string ctk_root_str       = parse_ctk_root(ctk_path);
+  if (!ctk_root_str.empty())
+  {
+    config.cuda_toolkit_path = ctk_root_str;
+    config.library_paths.clear();
+    for (const char* subdir : {"lib64", "lib"})
+    {
+      auto candidate = std::filesystem::path(ctk_root_str) / subdir;
+      if (std::filesystem::exists(candidate))
+      {
+        config.library_paths.push_back(candidate.string());
+      }
+    }
+  }
+  return config;
+}
+
+// Read the compiled shared library bytes for a live (already compile()'d)
+// JITCompiler. Used by *_build_ex (the fused compile+load path) to ALSO
+// populate build->payload with the AoT-serializable artifact, so
+// *_serialize() works uniformly regardless of whether a build_result came
+// from _build_ex (fused) or _compile()+_load() (split). Returns an empty
+// vector (not an error) if the artifact can't be read — callers treat a
+// resulting null/empty payload as "not serializable", not a build failure.
+inline std::vector<char> read_compiled_library_bytes(hostjit::JITCompiler* compiler)
+{
+#ifdef _WIN32
+  std::string lib_path = compiler->getArtifactsPath() + "\\cuda_code.dll";
+#else
+  std::string lib_path = compiler->getArtifactsPath() + "/libcuda_code.so";
+#endif
+  std::ifstream lib_file(lib_path, std::ios::binary);
+  if (!lib_file)
+  {
+    return {};
+  }
+  return std::vector<char>((std::istreambuf_iterator<char>(lib_file)), std::istreambuf_iterator<char>());
 }
 
 // Free the JIT compiler and cubin buffer common to every build_result_t in

@@ -6,11 +6,6 @@ import pytest
 
 from cuda.core import Device, Stream
 
-try:
-    from cuda.compute._build_info import USING_V2
-except ImportError:
-    USING_V2 = False
-
 check_ldl_stl_in_sass = False
 
 
@@ -129,12 +124,17 @@ def raise_on_numba_import(monkeypatch):
 
 def pytest_collection_modifyitems(config, items):
     """Runs after pytest collects the tests. Makes a test marked no_numba fail
-    if it imports numba, and skips a test marked serialization when running on
-    the v2 (HostJIT) backend."""
-    serialization_skip = pytest.mark.skip(
-        reason="serialization not supported on v2 (HostJIT) backend"
-    )
-
+    if it imports numba."""
+    # NOTE: serialization (AoT compile/load/serialize/deserialize) is
+    # supported on v2 (HostJIT) for all 12 algorithms, so tests marked
+    # @pytest.mark.serialization are no longer blanket-skipped here under
+    # USING_V2. If a specific serialization test relies on v1-only behavior
+    # (e.g. the validate_blob-based diagnostics in
+    # test_serialization_diagnostics.py, or the multi-cc container in
+    # test_multi_cc_serialization.py, neither of which v2 implements),
+    # mark THAT test with a targeted xfail/skipif(USING_V2, ...) rather
+    # than reintroducing a blanket marker-based skip here.
+    #
     # Tests marked no_numba must not import numba. We enforce that by attaching
     # the raise_on_numba_import fixture defined above to each one; it raises if
     # numba is imported.
@@ -164,6 +164,3 @@ def pytest_collection_modifyitems(config, items):
         if item.get_closest_marker("no_numba") and not running_parallel:
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
-        # serialization is unsupported on v2 (HostJIT); skip those tests there
-        if USING_V2 and item.get_closest_marker("serialization"):
-            item.add_marker(serialization_skip)

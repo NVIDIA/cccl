@@ -66,6 +66,48 @@ CCCL_C_API CUresult cccl_device_binary_search_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+// Compiles and links the build result, without loading it. build->jit_compiler
+// and build->binary_search_fn remain null until cccl_device_binary_search_load
+// is called.
+CCCL_C_API CUresult cccl_device_binary_search_compile(
+  cccl_device_binary_search_build_result_t* build,
+  cccl_binary_search_mode_t mode,
+  cccl_iterator_t d_data,
+  cccl_iterator_t d_values,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+// Loads a build_result populated by cccl_device_binary_search_compile or
+// cccl_device_binary_search_deserialize, populating build->jit_compiler and
+// build->binary_search_fn. ctk_path locates the CUDA Toolkit on this
+// machine; pass NULL to auto-detect. Call at most once per build_result.
+CCCL_C_API CUresult
+cccl_device_binary_search_load(cccl_device_binary_search_build_result_t* build, const char* ctk_path);
+
+// Serializes a populated build_result into a self-describing byte buffer.
+// On success *out_buf points to a heap allocation the caller must free
+// with cccl_serialization_v2_buffer_free, and *out_size holds its length.
+// Requires build->payload to be populated.
+CCCL_C_API CUresult cccl_device_binary_search_serialize(
+  const cccl_device_binary_search_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by
+// cccl_device_binary_search_serialize. On success, build->jit_compiler and
+// build->binary_search_fn remain null until cccl_device_binary_search_load
+// is called; on failure build is left unchanged. Rejects a blob built for a
+// different OS/architecture than this machine; does not check compute
+// capability against a live device (a mismatch instead surfaces later, at
+// cccl_device_binary_search).
+CCCL_C_API CUresult
+cccl_device_binary_search_deserialize(cccl_device_binary_search_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_binary_search(
   cccl_device_binary_search_build_result_t build,
   cccl_iterator_t d_data,
