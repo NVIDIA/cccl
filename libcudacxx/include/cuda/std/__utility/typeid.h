@@ -40,8 +40,6 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__cccl/preprocessor.h>
-#include <cuda/std/__string/string_view.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_function.h>
@@ -50,6 +48,7 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/string_view>
 
 #if !defined(_CCCL_NO_TYPEID)
 #  include <typeinfo>
@@ -122,18 +121,17 @@ _CCCL_API constexpr __sstring<_Np> __make_pretty_name_impl(char const (&__s)[_Mp
 }
 
 template <class _Tp, size_t _Np>
-_CCCL_API constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
-  -> enable_if_t<_Np == size_t(-1), __string_view>
+[[nodiscard]] _CCCL_API constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept
 {
-  using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
-  return __string_view(_TpName::value.__str_, _TpName::value.__len_);
-}
-
-template <class _Tp, size_t _Np>
-_CCCL_API constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
-  -> enable_if_t<_Np != size_t(-1), __sstring<_Np>>
-{
-  return ::cuda::std::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
+  if constexpr (_Np == size_t(-1))
+  {
+    using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
+    return string_view{_TpName::value.__str_, _TpName::value.__len_};
+  }
+  else
+  {
+    return ::cuda::std::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
+  }
 }
 
 // TODO: class statics cannot be accessed from device code, so we need to use
@@ -155,32 +153,28 @@ struct __pretty_name_begin
   struct __pretty_name_end;
 };
 
-// If a position is -1, it is an invalid position. Return it unchanged.
-[[nodiscard]] _CCCL_API constexpr ptrdiff_t __add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
-{
-  return __pos == -1 ? -1 : __pos + __diff;
-}
-
 // Get the type name from the pretty name by trimming the front and back.
-[[nodiscard]] _CCCL_API constexpr __string_view __find_pretty_name(__string_view __sv) noexcept
+[[nodiscard]] _CCCL_API constexpr string_view __find_pretty_name(string_view __sv) noexcept
 {
-  return __sv.substr(::cuda::std::__add_string_view_position(
-                       __sv.find("__pretty_name_begin<"), static_cast<ptrdiff_t>(sizeof("__pretty_name_begin<")) - 1),
-                     __sv.find_end(">::__pretty_name_end"));
+  constexpr string_view __prefix = "__pretty_name_begin<";
+  constexpr string_view __suffix = ">::__pretty_name_end";
+  __sv.remove_prefix(__sv.find(__prefix) + __prefix.size());
+  __sv.remove_suffix(__sv.size() - __sv.rfind(__suffix));
+  return __sv;
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof_helper() noexcept
+[[nodiscard]] _CCCL_API constexpr string_view __pretty_nameof_helper() noexcept
 {
 #if _CCCL_COMPILER(GCC, <, 9) && !defined(__CUDA_ARCH__)
   return ::cuda::std::__find_pretty_name(::cuda::std::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
 #else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
-  return ::cuda::std::__find_pretty_name(::cuda::std::__string_view(_CCCL_BUILTIN_PRETTY_FUNCTION()));
+  return ::cuda::std::__find_pretty_name(_CCCL_BUILTIN_PRETTY_FUNCTION());
 #endif // not gcc < 9
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof() noexcept
+[[nodiscard]] _CCCL_API constexpr string_view __pretty_nameof() noexcept
 {
   return ::cuda::std::__pretty_nameof_helper<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
 }
@@ -193,7 +187,7 @@ template <class _Tp>
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG) \
   && defined(_CCCL_ENABLE_DEBUG_MODE)
 // A quick smoke test to ensure that the pretty name extraction is working.
-static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"));
+static_assert(::cuda::std::__pretty_nameof<int>() == "int");
 static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>());
 #endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
 
@@ -211,16 +205,16 @@ static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_name
 // such as `42` are spelled identically everywhere.
 
 template <auto _Vp>
-struct __stringof_wrapper
-{};
+struct __stringof_wrapper;
 
 // Extract the value's spelling from the pretty name of __stringof_wrapper<_Vp>.
-[[nodiscard]] _CCCL_API constexpr __string_view __find_stringof(__string_view __sv) noexcept
+[[nodiscard]] _CCCL_API constexpr string_view __find_stringof(string_view __sv) noexcept
 {
   // Trim the surrounding "__stringof_wrapper<" ... ">".
-  return __sv.substr(::cuda::std::__add_string_view_position(
-                       __sv.find("__stringof_wrapper<"), static_cast<ptrdiff_t>(sizeof("__stringof_wrapper<")) - 1),
-                     __sv.find_end(">"));
+  constexpr string_view __prefix = "__stringof_wrapper<";
+  __sv.remove_prefix(__sv.find(__prefix) + __prefix.size());
+  __sv.remove_suffix(__sv.size() - __sv.rfind('>'));
+  return __sv;
 }
 
 //! @brief Returns the compiler's spelling of a value passed as a non-type
@@ -240,10 +234,9 @@ struct __stringof_wrapper
 //! of other values is whatever the compiler emits and is not guaranteed to be
 //! identical across compilers.
 template <auto _Vp>
-[[nodiscard]] _CCCL_API constexpr __string_view __stringof() noexcept
+[[nodiscard]] _CCCL_API constexpr string_view __stringof() noexcept
 {
-  __string_view __sv =
-    ::cuda::std::__find_stringof(::cuda::std::__pretty_nameof<::cuda::std::__stringof_wrapper<_Vp>>());
+  string_view __sv = ::cuda::std::__find_stringof(::cuda::std::__pretty_nameof<::cuda::std::__stringof_wrapper<_Vp>>());
   // For a function argument, clang and cudafe prepend a '&' (e.g. "&fn"); drop
   // it so the result is just the function's name.
   if constexpr (is_function_v<remove_pointer_t<decltype(_Vp)>> || is_member_function_pointer_v<decltype(_Vp)>)
@@ -260,15 +253,14 @@ template <auto _Vp>
   && defined(_CCCL_ENABLE_DEBUG_MODE)
 // A quick smoke test to ensure that the value spelling extraction is working.
 // An integer literal is spelled identically on every supported compiler.
-static_assert(::cuda::std::__stringof<42>() == __string_view("42"));
+static_assert(::cuda::std::__stringof<42>() == "42");
 static_assert(::cuda::std::__stringof<42>() != ::cuda::std::__stringof<43>());
 // And that function arguments work (including the leading-'&' trim). We use a
 // host/device function defined above so this works in both compilation passes
 // without depending on any external symbols. The function lives in an inline
 // namespace, whose spelling varies between compilers, so we only check that the
 // unqualified name is present rather than matching it exactly.
-static_assert(::cuda::std::__stringof<&::cuda::std::__add_string_view_position>().find("__add_string_view_position")
-              != -1);
+static_assert(::cuda::std::__stringof<&::cuda::std::__find_stringof>().find("__find_stringof") != -1);
 #endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
 
 // There are many complications with defining a unique constexpr global object
@@ -282,7 +274,7 @@ struct __type_info_ref_;
 
 struct __type_info_impl
 {
-  __string_view __name_;
+  string_view __name_;
 };
 
 struct __type_info_ptr_
@@ -329,7 +321,7 @@ struct __type_info
     return __pfn_().__name_.begin();
   }
 
-  [[nodiscard]] _CCCL_API constexpr __string_view __name_view() const noexcept
+  [[nodiscard]] _CCCL_API constexpr string_view __name_view() const noexcept
   {
     return __pfn_().__name_;
   }
@@ -417,7 +409,7 @@ struct __type_info
   __type_info(__type_info const&)            = delete;
   __type_info& operator=(__type_info const&) = delete;
 
-  _CCCL_HOST_API constexpr __type_info(__string_view __name) noexcept
+  _CCCL_HOST_API constexpr __type_info(string_view __name) noexcept
       : __name_(__name)
   {}
 
@@ -426,7 +418,7 @@ struct __type_info
     return __name_.begin();
   }
 
-  [[nodiscard]] _CCCL_HOST_API constexpr __string_view __name_view() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr string_view __name_view() const noexcept
   {
     return __name_;
   }
@@ -457,7 +449,7 @@ struct __type_info
 #  endif // _CCCL_STD_VER <= 2017
 
 private:
-  __string_view __name_;
+  string_view __name_;
 };
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
