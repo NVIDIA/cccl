@@ -53,9 +53,9 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-#if _CCCL_CTK_BELOW(12, 9)
-#  include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
-#endif // CUDA 12.8-
+// #if _CCCL_CTK_BELOW(12, 9)
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
+// #endif // CUDA 12.8-
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/bracket.h>
@@ -159,15 +159,59 @@ struct __finalize_splitters_fn
   }
 };
 
+// Per-bucket count functor shared by __local_histogram and __data_exchange. Both phases walk a
+// sorted key range against a monotonically increasing bucket index, and for bucket b emit the
+// number of keys landing in [split[b - 1], split[b]) (the boundary buckets are half-open at
+// the range ends). Because CUB drives the Transform with a monotonically increasing bucket
+// index and a fixed stride, we cache the previous upper bound in __lo: the next bucket's lower
+// bound can never precede it, so each call only needs to search forward from __lo. This is why
+// operator() is mutable -- it advances the __lo cursor across calls.
+template <class _KeyIt, class _SplitIt, class _Cmp>
+struct __bucket_count_fn
+{
+  _KeyIt __lo; // mutable cursor: last computed upper bound, reused as the next lower bound
+  _KeyIt __keys_last;
+  _SplitIt __split_it;
+  ::cuda::std::uint64_t __num_splitters;
+  _Cmp __cmp;
+
+  // operator() is intentionally non-const: it advances the __lo cursor across successive
+  // monotonic bucket invocations.
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::uint64_t operator()(::cuda::std::uint64_t __bucket)
+  {
+    auto __hi = __keys_last;
+    // This reordering takes advantage of the fact that we cached __lo previously. In
+    // that case, __lo will already have raised the lower bound of the search. We now
+    // just need to raise the *upper* bound of the search. We cannot do that generally by
+    // caching (because the operators are called from left to right), but we *can* bound
+    // the search for __lo.
+    if (__bucket != __num_splitters)
+    {
+      __hi = ::cuda::std::lower_bound(__lo, __keys_last, __split_it[__bucket], __cmp);
+    }
+
+    if (__bucket != 0)
+    {
+      __lo = ::cuda::std::lower_bound(__lo, __hi, __split_it[__bucket - 1], __cmp);
+    }
+
+    const auto __ret = static_cast<::cuda::std::uint64_t>(__hi - __lo);
+    // This caching of __lo relies on the fact that CUB calls these operators with
+    // monotonically increasing bucket count (i.e. the stride is always adding blockIdx.x). If
+    // that doesn't happen, then this caching is wrong.
+    __lo = __hi;
+    return __ret;
+  }
+};
+
 template <class _Tp, class _Env, class _BinaryOp>
 struct _Sorter
 {
   using __resource_type = __resource_type_for<_Env>;
 
-  // Alias the de-nested infrastructure types back into _Sorter so the phase
-  // methods below can keep referring to them by their short, resource-free
-  // names. These will be replaced by fully-qualified uses as the phases are
-  // pulled out into their own headers.
+  // Alias the de-nested infrastructure types back into _Sorter so the phase methods below can
+  // keep referring to them by their short, resource-free names. These will be replaced by
+  // fully-qualified uses as the phases are pulled out into their own headers.
   template <class _Up>
   using __buffer = ::cuda::experimental::__detail::__buffer<_Up, __resource_type>;
 
@@ -175,26 +219,6 @@ struct _Sorter
 
   static constexpr double __EPS     = 0.02; // 2% tolerance
   static constexpr auto __ROOT_RANK = 0;
-
-  template <class _InputRange>
-  _CCCL_HOST_API static void __sample_probes(
-    ::cuda::stream_ref __stream,
-    _InputRange&& __input,
-    const __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>& __I_j,
-    double __sampling_probability,
-    _BinaryOp __cmp,
-    __buffer<_Tp>* __samples,
-    __buffer<::cuda::std::size_t>* __samples_size_bytes)
-  {
-    ::cuda::experimental::__detail::__sort_sample_probes<_Tp, _Env, _BinaryOp>(
-      __stream,
-      ::cuda::std::forward<_InputRange>(__input),
-      __I_j,
-      __sampling_probability,
-      ::cuda::std::move(__cmp),
-      __samples,
-      __samples_size_bytes);
-  }
 
   // TODO(jfaibussowit):
   //
@@ -204,23 +228,23 @@ struct _Sorter
     const _Comm& __comm,
     const _Env& __env,
     const __buffer<_Tp>& __data,
-    const ::std::vector<::cuda::std::size_t>& __counts_bytes,
-    const ::std::vector<::cuda::std::size_t>& __displs_bytes,
+    const ::std::vector<::cuda::std::size_t>& __counts,
+    const ::std::vector<::cuda::std::size_t>& __displs,
     _BinaryOp __cmp,
     __buffer<_Tp>* __ret)
   {
-    if (__counts_bytes.size() < 2)
+    if (__counts.size() < 2)
     {
       // TODO(jfaibussowit):
       //
       // Handle properly
-      _CCCL_VERIFY(__displs_bytes.empty() || __displs_bytes.front() == 0, "Nonzero displacement for first entry");
+      _CCCL_VERIFY(__displs.empty() || __displs.front() == 0, "Nonzero displacement for first entry");
       // 0 or 1 inputs, we just copy directly, nothing to merge
       *__ret = __data;
       return;
     }
 
-    const auto __total = (__counts_bytes.back() + __displs_bytes.back()) / sizeof(_Tp);
+    const auto __total = __counts.back() + __displs.back();
 
     __resize_for_overwrite(*__ret, __total);
 
@@ -230,10 +254,10 @@ struct _Sorter
     ::cuda::std::size_t __merged_size = 0;
 
     {
-      const auto __num_keys1 = __counts_bytes[0] / sizeof(_Tp);
-      const auto __num_keys2 = __counts_bytes[1] / sizeof(_Tp);
-      const auto __off1      = __displs_bytes[0] / sizeof(_Tp);
-      const auto __off2      = __displs_bytes[1] / sizeof(_Tp);
+      const auto __num_keys1 = __counts[0];
+      const auto __num_keys2 = __counts[1];
+      const auto __off1      = __displs[0];
+      const auto __off2      = __displs[1];
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
@@ -249,11 +273,11 @@ struct _Sorter
       __merged_size = __num_keys1 + __num_keys2;
     }
 
-    for (::cuda::std::size_t __i = 2; __i < __displs_bytes.size(); ++__i)
+    for (::cuda::std::size_t __i = 2; __i < __displs.size(); ++__i)
     {
       const auto __num_keys1 = __merged_size;
-      const auto __num_keys2 = __counts_bytes[__i] / sizeof(_Tp);
-      const auto __off       = __displs_bytes[__i] / sizeof(_Tp);
+      const auto __num_keys2 = __counts[__i];
+      const auto __off       = __displs[__i];
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
@@ -278,74 +302,74 @@ struct _Sorter
     const ::std::vector<::cuda::stream_ref>& __streams,
     const ::std::vector<__buffer<_Tp>>& __local_samples,
     _BinaryOp __cmp,
-    ::std::vector<__buffer<::cuda::std::size_t>>* __local_samples_size_bytes,
-    ::std::vector<::cuda::std::size_t>* __local_sendcounts_bytes,
+    ::std::vector<__buffer<::cuda::std::size_t>>* __local_samples_size,
+    ::std::vector<::cuda::std::size_t>* __local_sendcounts,
     ::std::vector<__buffer<_Tp>>* __local_probes,
-    ::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible>* __probe_count)
+    ::std::vector<::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible>>*
+      __local_probe_counts)
   {
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-      for (auto&& [__comm, __stream, __samples_size_bytes] :
-           ::cuda::std::ranges::views::zip(__comms, __streams, *__local_samples_size_bytes))
+      for (auto&& [__comm, __stream, __samples_size] :
+           ::cuda::std::ranges::views::zip(__comms, __streams, *__local_samples_size))
       {
-        auto* const __ptr = __samples_size_bytes.__get().data();
+        auto* const __ptr = __samples_size.__get().data();
 
         __comm.gather(__guard, __ptr, __ptr, 1, __ROOT_RANK, __stream);
       }
     }
 
-    ::std::vector<::cuda::std::size_t> __root_recvcounts_bytes;
-    ::std::vector<::cuda::std::size_t> __root_displs_bytes;
+    ::std::vector<::cuda::std::size_t> __root_recvcounts;
+    ::std::vector<::cuda::std::size_t> __root_displs;
     ::cuda::std::optional<__buffer<_Tp>> __root_all_samples;
 
-    for (auto&& [__comm, __stream, __env, __samples_size_bytes, __sendcount] : ::cuda::std::ranges::views::zip(
-           __comms, __streams, __envs, *__local_samples_size_bytes, *__local_sendcounts_bytes))
+    for (auto&& [__comm, __stream, __env, __samples_size, __sendcount] :
+         ::cuda::std::ranges::views::zip(__comms, __streams, __envs, *__local_samples_size, *__local_sendcounts))
     {
       if (__comm.rank() == __ROOT_RANK)
       {
-        __root_recvcounts_bytes.resize(__samples_size_bytes.size());
+        __root_recvcounts.resize(__samples_size.size());
 
         ::cuda::copy_bytes(
           __stream,
-          __samples_size_bytes.__get(),
-          __root_recvcounts_bytes,
+          __samples_size.__get(),
+          __root_recvcounts,
           ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                      ::cuda::host_memory_location,
                                      ::cuda::source_access_order::stream});
 
-        __root_displs_bytes.reserve(__root_recvcounts_bytes.size() + 1);
+        __root_displs.reserve(__root_recvcounts.size() + 1);
 
         // Defer until the last possible moment
         __stream.sync();
 
         // __root_recv_counts[__ROOT_RANK] is exactly the root's send counts as
         // well
-        __sendcount = __root_recvcounts_bytes[__ROOT_RANK];
+        __sendcount = __root_recvcounts[__ROOT_RANK];
 
         // recvcounts is likely relatively small (it is on the order of
         // O(ranks)). It may be faster to just do the exclusive scan on the host
         // than to copy to device, scan, and copy back
         ::cuda::std::exclusive_scan(
-          __root_recvcounts_bytes.begin(),
-          __root_recvcounts_bytes.end(),
-          ::cuda::std::back_inserter(__root_displs_bytes),
+          __root_recvcounts.begin(),
+          __root_recvcounts.end(),
+          ::cuda::std::back_inserter(__root_displs),
           ::cuda::std::size_t{0});
-        // displs.back() is the LAST rank's offset (exclusive scan), so total
-        // bytes = displs.back() + __root_local_samples_size.back(). all_samples
-        // is vector<T>, so size it in ELEMENTS, not bytes.
-        const auto __all_recv = (__root_displs_bytes.back() + __root_recvcounts_bytes.back()) / sizeof(_Tp);
+        // displs.back() is the LAST rank's offset (exclusive scan), so the total
+        // element count = displs.back() + __root_recvcounts.back(). all_samples
+        // is vector<T>, sized in ELEMENTS.
+        const auto __all_recv = __root_displs.back() + __root_recvcounts.back();
 
         __root_all_samples.emplace(
-          __stream, __samples_size_bytes.__get().memory_resource(), __all_recv, ::cuda::no_init, __env);
+          __stream, __samples_size.__get().memory_resource(), __all_recv, ::cuda::no_init, __env);
       }
       else
       {
-        // Non-root, __samples_size_bytes.size() should be == 1, but just pass
-        // sizeof(dest) to be safe
+        // Non-root, __samples_size.size() should be == 1
         ::cuda::copy_bytes(
           __stream,
-          __samples_size_bytes.__get(),
+          __samples_size.__get(),
           ::cuda::std::span{&__sendcount, ::cuda::std::size_t{1}},
           ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                      ::cuda::host_memory_location,
@@ -358,23 +382,24 @@ struct _Sorter
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-      for (auto&& [__comm, __stream, __samples, __sendcount_bytes] :
-           ::cuda::std::ranges::views::zip(__comms, __streams, __local_samples, *__local_sendcounts_bytes))
+      for (auto&& [__comm, __stream, __samples, __sendcount] :
+           ::cuda::std::ranges::views::zip(__comms, __streams, __local_samples, *__local_sendcounts))
       {
         __comm.gather_v(
           __guard,
-          static_cast<const void*>(__samples.__get().data()),
-          __sendcount_bytes,
-          __comm.rank() == __ROOT_RANK ? static_cast<void*>(__root_all_samples.value().__get().data()) : nullptr,
-          __root_recvcounts_bytes.data(),
-          __root_displs_bytes.data(),
+          __samples.__get().data(),
+          __sendcount,
+          __comm.rank() == __ROOT_RANK ? __root_all_samples.value().__get().data() : nullptr,
+          __root_recvcounts.data(),
+          __root_displs.data(),
           __ROOT_RANK,
           __stream);
       }
     }
 
     // ---- 4. Root merges the p sorted runs into one sorted probe set ----
-    for (auto&& [__comm, __env, __probes] : ::cuda::std::ranges::views::zip(__comms, __envs, *__local_probes))
+    for (auto&& [__comm, __env, __probes, __probe_count] :
+         ::cuda::std::ranges::views::zip(__comms, __envs, *__local_probes, *__local_probe_counts))
     {
       if (__comm.rank() == __ROOT_RANK)
       {
@@ -382,12 +407,12 @@ struct _Sorter
           __comm,
           __env,
           __root_all_samples.value(),
-          __root_recvcounts_bytes,
-          __root_displs_bytes,
+          __root_recvcounts,
+          __root_displs,
           ::cuda::std::move(__cmp),
           &__probes);
 
-        __probe_count->front() = __probes.size();
+        __probe_count.front() = __probes.size();
         break;
       }
     }
@@ -398,32 +423,35 @@ struct _Sorter
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-      for (auto&& [__comm, __stream] : ::cuda::std::ranges::views::zip(__comms, __streams))
+      for (auto&& [__comm, __stream, __probe_count] :
+           ::cuda::std::ranges::views::zip(__comms, __streams, *__local_probe_counts))
       {
-        auto* const __ptr = __probe_count->data();
+        auto* const __ptr = __probe_count.data();
 
         __comm.broadcast(__guard, __ptr, __ptr, 1, __ROOT_RANK, __stream);
       }
     }
 
-    for (auto&& [__comm, __stream, __probes] : ::cuda::std::ranges::views::zip(__comms, __streams, *__local_probes))
+    for (auto&& [__comm, __stream, __probes, __probe_count] :
+         ::cuda::std::ranges::views::zip(__comms, __streams, *__local_probes, *__local_probe_counts))
     {
       if (__comm.rank() != __ROOT_RANK)
       {
         // wait for comm
         __stream.sync();
-        __resize_for_overwrite(__probes, __probe_count->front());
+        __resize_for_overwrite(__probes, __probe_count.front());
       }
     }
 
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-      for (auto&& [__comm, __stream, __probes] : ::cuda::std::ranges::views::zip(__comms, __streams, *__local_probes))
+      for (auto&& [__comm, __stream, __probes, __probe_count] :
+           ::cuda::std::ranges::views::zip(__comms, __streams, *__local_probes, *__local_probe_counts))
       {
         auto* const __ptr = __probes.__get().data();
 
-        __comm.broadcast(__guard, __ptr, __ptr, __probe_count->front(), __ROOT_RANK, __stream);
+        __comm.broadcast(__guard, __ptr, __ptr, __probe_count.front(), __ROOT_RANK, __stream);
       }
     }
   }
@@ -440,46 +468,22 @@ struct _Sorter
     for (auto&& [__comm, __env, __keys, __probes, __hist] :
          ::cuda::std::ranges::views::zip(__comms, __envs, __range_of_local_keys, __local_probes, *__local_hist))
     {
-      const auto __num_probes  = __probes.size();
-      const auto __num_buckets = __num_probes + 1;
-
-      const auto __keys_first    = ::cuda::std::ranges::begin(__keys);
-      const auto __keys_last     = ::cuda::std::ranges::end(__keys);
-      const auto* __probes_first = __probes.__get().data();
+      const auto __num_probes   = __probes.size();
+      const auto __num_buckets  = __num_probes + 1;
+      const auto __keys_first   = ::cuda::std::ranges::begin(__keys);
+      const auto __probes_first = __probes.begin();
 
       __resize_for_overwrite(__hist, __num_buckets);
 
-      constexpr auto __in = ::cuda::counting_iterator<::cuda::std::uint64_t>{};
-      auto __op           = [__lo = __keys_first, __keys_last, __probes_first, __cmp, __num_probes]
-        _CCCL_HOST_DEVICE(::cuda::std::uint64_t __bucket) mutable {
-          auto __hi = __keys_last;
-          // This reordering takes advantage of the fact that we cached __lo previously. In
-          // that case, __lo will already have raised the lower bound of the search. We now
-          // just need to raise the *upper* bound of the search. We cannot do that generally by
-          // caching (because the operators are called from left to right), but we *can* bound
-          // the search for __lo.
-          if (__bucket != __num_probes)
-          {
-            __hi = ::cuda::std::lower_bound(__lo, __keys_last, __probes_first[__bucket], __cmp);
-          }
-
-          if (__bucket != 0)
-          {
-            __lo = ::cuda::std::lower_bound(__lo, __hi, __probes_first[__bucket - 1], __cmp);
-          }
-
-          const auto __ret = __hi - __lo;
-          // This caching of __lo relies on the fact that CUB calls these operators with
-          // monotonically increasing bucket count (i.e. the stride is always adding
-          // blockIdx.x). If that doesn't happen, then this caching is wrong.
-          __lo = __hi;
-          return __ret;
-        };
+      auto __op = ::cuda::experimental::__detail::__bucket_count_fn<
+        ::cuda::std::remove_cvref_t<decltype(__keys_first)>,
+        ::cuda::std::remove_cvref_t<decltype(__probes_first)>,
+        _BinaryOp>{__keys_first, ::cuda::std::ranges::end(__keys), __probes_first, __num_probes, __cmp};
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
         ::cub::DeviceTransform::Transform,
-        __in,
+        ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         __hist.begin(),
         __num_buckets,
         ::cuda::std::move(__op),
@@ -540,30 +544,27 @@ struct _Sorter
     _BinaryOp __cmp,
     _InputRange&& __local_inputs)
   {
-    ::std::vector<__buffer<::cuda::std::size_t>> __local_send_counts_bytes;
-    ::std::vector<__buffer<::cuda::std::size_t>> __local_recv_counts_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts_bytes;
+    ::std::vector<__buffer<::cuda::std::size_t>> __local_send_counts;
+    ::std::vector<__buffer<::cuda::std::size_t>> __local_recv_counts;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
 
     ::std::vector<__buffer<_Tp>> __local_recvd;
 
     const auto __comm_size        = ::cuda::std::ranges::begin(__comms)->size();
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-    __local_send_counts_bytes.reserve(__num_local_inputs);
-    __local_recv_counts_bytes.reserve(__num_local_inputs);
-    __local_h_send_counts_bytes.reserve(__num_local_inputs);
-    __local_h_recv_counts_bytes.reserve(__num_local_inputs);
+    __local_send_counts.reserve(__num_local_inputs);
+    __local_recv_counts.reserve(__num_local_inputs);
+    __local_h_send_counts.reserve(__num_local_inputs);
+    __local_h_recv_counts.reserve(__num_local_inputs);
 
     __local_recvd.reserve(__num_local_inputs);
 
     for (auto&& [__comm, __env, __stream, __resource, __input, __Ls, __Us, __probes] : ::cuda::std::ranges::views::zip(
            __comms, __envs, __streams, __resources, __local_inputs, __local_Ls, __local_Us, __local_probes))
     {
-      auto& __send_counts_bytes =
-        __local_send_counts_bytes.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env);
-
-      auto __out = __send_counts_bytes.begin();
+      auto& __send_counts = __local_send_counts.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env);
 
       const auto __input_begin = ::cuda::std::ranges::begin(__input);
 
@@ -584,43 +585,22 @@ struct _Sorter
         __finalize_splitters_fn<_Tp, ::cuda::std::remove_cvref_t<decltype(__probes.begin())>>{
           __probes.begin(), __probes.end() - 1});
 
-      auto __op =
-        [__input_begin,
-         __input_end = ::cuda::std::ranges::end(__input),
-         __splitter_it,
-         __num_splitters = __Ls.size(),
-         __lo            = __input_begin,
-         __cmp] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __d) mutable {
-          // Route this rank's local keys to destination ranks via the splitter keys: the Data
-          // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
-          // processor i". HSS reuses this phase unchanged (Section 3.3), so bucket d receives
-          // the keys in [S(d - 1), S(d)) and its count becomes the send metadata. The send
-          // displacements are the exclusive prefix-sum of these counts (buckets are contiguous
-          // and non-overlapping), so we recompute them on the host below instead of emitting a
-          // second device column here.
-          auto __hi = __input_end;
-
-          if (__d != __num_splitters)
-          {
-            __hi = ::cuda::std::lower_bound(__lo, __input_end, __splitter_it[__d], __cmp);
-          }
-
-          if (__d != 0)
-          {
-            __lo = ::cuda::std::lower_bound(__lo, __hi, __splitter_it[__d - 1], __cmp);
-          }
-
-          const auto __count_bytes = (__hi - __lo) * sizeof(_Tp);
-
-          __lo = __hi;
-          return __count_bytes;
-        };
+      // Route this rank's local keys to destination ranks via the splitter keys: the Data
+      // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
+      // processor i". HSS reuses this phase unchanged (Section 3.3), so bucket d receives the keys
+      // in [S(d - 1), S(d)) and its count becomes the send metadata. The send displacements are the
+      // exclusive prefix-sum of these counts (buckets are contiguous and non-overlapping), so we
+      // recompute them on the host below instead of emitting a second device column here.
+      auto __op = ::cuda::experimental::__detail::__bucket_count_fn<
+        ::cuda::std::remove_cvref_t<decltype(__input_begin)>,
+        ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
+        _BinaryOp>{__input_begin, ::cuda::std::ranges::end(__input), __splitter_it, __Ls.size(), __cmp};
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
         ::cub::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-        ::cuda::std::move(__out),
+        __send_counts.begin(),
         __comm_size,
         ::cuda::std::move(__op),
         __env);
@@ -629,50 +609,49 @@ struct _Sorter
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-      for (auto&& [__comm, __stream, __send_counts_bytes] :
-           ::cuda::std::ranges::views::zip(__comms, __streams, __local_send_counts_bytes))
+      for (auto&& [__comm, __stream, __send_counts] :
+           ::cuda::std::ranges::views::zip(__comms, __streams, __local_send_counts))
       {
-        auto& __recv_counts_bytes = __local_recv_counts_bytes.emplace_back(__send_counts_bytes.__make_empty_like());
-        auto* const __send_ptr    = __send_counts_bytes.__get().data();
-        auto* const __recv_ptr    = __recv_counts_bytes.__get().data();
+        auto& __recv_counts    = __local_recv_counts.emplace_back(__send_counts.__make_empty_like());
+        auto* const __send_ptr = __send_counts.__get().data();
+        auto* const __recv_ptr = __recv_counts.__get().data();
 
-        __comm.all_to_all(__guard, __send_ptr, __recv_ptr, 1, __stream);
+        __comm.all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __stream);
       }
     }
 
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs_bytes;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
 
-    __local_h_send_displs_bytes.reserve(__num_local_inputs);
-    __local_h_recv_displs_bytes.reserve(__num_local_inputs);
-    for (auto&& [__comm, __stream, __resource, __env, __send_counts_bytes, __recv_counts_bytes] :
-         ::cuda::std::ranges::views::zip(
-           __comms, __streams, __resources, __envs, __local_send_counts_bytes, __local_recv_counts_bytes))
+    __local_h_send_displs.reserve(__num_local_inputs);
+    __local_h_recv_displs.reserve(__num_local_inputs);
+    for (auto&& [__comm, __stream, __resource, __env, __send_counts, __recv_counts] : ::cuda::std::ranges::views::zip(
+           __comms, __streams, __resources, __envs, __local_send_counts, __local_recv_counts))
     {
-      auto& __h_send_counts_bytes = __local_h_send_counts_bytes.emplace_back(__send_counts_bytes.size());
-      auto& __h_recv_counts_bytes = __local_h_recv_counts_bytes.emplace_back(__recv_counts_bytes.size());
+      auto& __h_send_counts = __local_h_send_counts.emplace_back(__send_counts.size());
+      auto& __h_recv_counts = __local_h_recv_counts.emplace_back(__recv_counts.size());
 
-      auto& __h_send_displs_bytes = __local_h_send_displs_bytes.emplace_back();
-      auto& __h_recv_displs_bytes = __local_h_recv_displs_bytes.emplace_back();
+      auto& __h_send_displs = __local_h_send_displs.emplace_back();
+      auto& __h_recv_displs = __local_h_recv_displs.emplace_back();
 
       // The send/recv displacements are just the exclusive prefix-sums of the
       // corresponding counts, and both are consumed only on the host (below and in the
       // all_to_all_v). counts is small (O(ranks)), so we scan on the host after the
       // sync instead of paying a device scan plus a D2H copy of the result.
-      __h_send_displs_bytes.reserve(__send_counts_bytes.size());
-      __h_recv_displs_bytes.reserve(__recv_counts_bytes.size());
+      __h_send_displs.reserve(__send_counts.size());
+      __h_recv_displs.reserve(__recv_counts.size());
 
       ::cuda::copy_bytes(
         __stream,
-        __send_counts_bytes.__get(),
-        __h_send_counts_bytes,
+        __send_counts.__get(),
+        __h_send_counts,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
         __stream,
-        __recv_counts_bytes.__get(),
-        __h_recv_counts_bytes,
+        __recv_counts.__get(),
+        __h_recv_counts,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
@@ -681,17 +660,17 @@ struct _Sorter
 
       // Host counts are only valid post-sync, so scan the displacements here.
       ::cuda::std::exclusive_scan(
-        __h_send_counts_bytes.begin(),
-        __h_send_counts_bytes.end(),
-        ::cuda::std::back_inserter(__h_send_displs_bytes),
+        __h_send_counts.begin(),
+        __h_send_counts.end(),
+        ::cuda::std::back_inserter(__h_send_displs),
         ::cuda::std::size_t{0});
       ::cuda::std::exclusive_scan(
-        __h_recv_counts_bytes.begin(),
-        __h_recv_counts_bytes.end(),
-        ::cuda::std::back_inserter(__h_recv_displs_bytes),
+        __h_recv_counts.begin(),
+        __h_recv_counts.end(),
+        ::cuda::std::back_inserter(__h_recv_displs),
         ::cuda::std::size_t{0});
 
-      const auto __total_recv = (__h_recv_displs_bytes.back() + __h_recv_counts_bytes.back()) / sizeof(_Tp);
+      const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
 
       __local_recvd.emplace_back(__stream, __resource, __total_recv, ::cuda::no_init, __env);
     }
@@ -703,50 +682,44 @@ struct _Sorter
                    __stream,
                    __input,
                    __recvd,
-                   __h_send_counts_bytes,
-                   __h_send_displs_bytes,
-                   __h_recv_counts_bytes,
-                   __h_recv_displs_bytes] :
+                   __h_send_counts,
+                   __h_send_displs,
+                   __h_recv_counts,
+                   __h_recv_displs] :
            ::cuda::std::ranges::views::zip(
              __comms,
              __streams,
              __local_inputs,
              __local_recvd,
-             __local_h_send_counts_bytes,
-             __local_h_send_displs_bytes,
-             __local_h_recv_counts_bytes,
-             __local_h_recv_displs_bytes))
+             __local_h_send_counts,
+             __local_h_send_displs,
+             __local_h_recv_counts,
+             __local_h_recv_displs))
       {
         __comm.all_to_all_v(
           __guard,
-          static_cast<const void*>(::cuda::std::to_address(::cuda::std::ranges::begin(__input))),
-          __h_send_counts_bytes.data(),
-          __h_send_displs_bytes.data(),
-          static_cast<void*>(__recvd.__get().data()),
-          __h_recv_counts_bytes.data(),
-          __h_recv_displs_bytes.data(),
+          ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
+          __h_send_counts.data(),
+          __h_send_displs.data(),
+          __recvd.__get().data(),
+          __h_recv_counts.data(),
+          __h_recv_displs.data(),
           __stream);
       }
     }
 
     // --- Phase C: merge the p received sorted runs into the final local output
     // ---
-    for (auto&& [__comm, __env, __stream, __recvd, __h_recv_counts_bytes, __h_recv_displs_bytes, __inputs] :
+    for (auto&& [__comm, __env, __stream, __recvd, __h_recv_counts, __h_recv_displs, __inputs] :
          ::cuda::std::ranges::views::zip(
-           __comms,
-           __envs,
-           __streams,
-           __local_recvd,
-           __local_h_recv_counts_bytes,
-           __local_h_recv_displs_bytes,
-           __local_inputs))
+           __comms, __envs, __streams, __local_recvd, __local_h_recv_counts, __local_h_recv_displs, __local_inputs))
     {
       // TODO(jfaibussowit):
       //
       // Don't use __tmp and instead write directly to __inputs
       auto __tmp = __buffer<_Tp>{__recvd.__make_empty_like(0)};
 
-      __merge_k_way(__comm, __env, __recvd, __h_recv_counts_bytes, __h_recv_displs_bytes, __cmp, &__tmp);
+      __merge_k_way(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
 
       __resize_for_overwrite(__inputs, __tmp.size());
 
@@ -782,19 +755,19 @@ struct _Sorter
     // the splitter positions.)
     const auto __comm_size = ::cuda::std::ranges::begin(__comms)->size();
 
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts_bytes;
-    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs_bytes;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
+    ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
 
     ::std::vector<__buffer<_Tp>> __local_rebalanced;
 
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-    __local_h_send_counts_bytes.reserve(__num_local_inputs);
-    __local_h_send_displs_bytes.reserve(__num_local_inputs);
-    __local_h_recv_counts_bytes.reserve(__num_local_inputs);
-    __local_h_recv_displs_bytes.reserve(__num_local_inputs);
+    __local_h_send_counts.reserve(__num_local_inputs);
+    __local_h_send_displs.reserve(__num_local_inputs);
+    __local_h_recv_counts.reserve(__num_local_inputs);
+    __local_h_recv_displs.reserve(__num_local_inputs);
     __local_rebalanced.reserve(__num_local_inputs);
 
     // ---- Measure the realized post-exchange distribution: all-gather each
@@ -855,25 +828,25 @@ struct _Sorter
            __local_desired_offsets,
            __local_original_sizes))
     {
-      auto __send_counts_bytes = ::cuda::make_buffer<::cuda::std::size_t>(
+      auto __send_counts = ::cuda::make_buffer<::cuda::std::size_t>(
         __stream,
         __resource,
         __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
-      auto __send_displs_bytes = ::cuda::make_buffer<::cuda::std::size_t>(
+      auto __send_displs = ::cuda::make_buffer<::cuda::std::size_t>(
         __stream,
         __resource,
         __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
-      auto __recv_counts_bytes = ::cuda::make_buffer<::cuda::std::size_t>(
+      auto __recv_counts = ::cuda::make_buffer<::cuda::std::size_t>(
         __stream,
         __resource,
         __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
-      auto __recv_displs_bytes = ::cuda::make_buffer<::cuda::std::size_t>(
+      auto __recv_displs = ::cuda::make_buffer<::cuda::std::size_t>(
         __stream,
         __resource,
         __comm_size,
@@ -881,56 +854,51 @@ struct _Sorter
         ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
 
       auto __out = ::cuda::make_zip_iterator(
-        __send_counts_bytes.begin(),
-        __send_displs_bytes.begin(),
-        __recv_counts_bytes.begin(),
-        __recv_displs_bytes.begin());
+        __send_counts.begin(), __send_displs.begin(), __recv_counts.begin(), __recv_displs.begin());
 
-      auto __op =
-        [__rank = __comm.rank(),
-         __comm_size,
-         __N,
-         __current_offsets = __current_offsets.__get().data(),
-         __desired_offsets = __desired_offsets.__get().data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
-          // current_offsets[i] is the start of rank i's current
-          // (post-exchange) bucket; desired offsets are the original final
-          // buckets. Intersect the two global element intervals to derive
-          // both send and receive metadata directly.
-          const auto __my_src_begin = __current_offsets[__rank];
-          const auto __my_src_end   = __rank + 1 == __comm_size ? __N : __current_offsets[__rank + 1];
+      auto __op = [__rank = __comm.rank(),
+                   __comm_size,
+                   __N,
+                   __current_offsets = __current_offsets.__get().data(),
+                   __desired_offsets =
+                     __desired_offsets.__get().data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
+        // current_offsets[i] is the start of rank i's current
+        // (post-exchange) bucket; desired offsets are the original final
+        // buckets. Intersect the two global element intervals to derive
+        // both send and receive metadata directly.
+        const auto __my_src_begin = __current_offsets[__rank];
+        const auto __my_src_end   = __rank + 1 == __comm_size ? __N : __current_offsets[__rank + 1];
 
-          const auto __peer_dst_begin = __desired_offsets[__peer];
-          const auto __peer_dst_end   = __peer + 1 == __comm_size ? __N : __desired_offsets[__peer + 1];
+        const auto __peer_dst_begin = __desired_offsets[__peer];
+        const auto __peer_dst_end   = __peer + 1 == __comm_size ? __N : __desired_offsets[__peer + 1];
 
-          const auto __send_begin = ::cuda::std::max(__my_src_begin, __peer_dst_begin);
-          const auto __send_end   = ::cuda::std::min(__my_src_end, __peer_dst_end);
+        const auto __send_begin = ::cuda::std::max(__my_src_begin, __peer_dst_begin);
+        const auto __send_end   = ::cuda::std::min(__my_src_end, __peer_dst_end);
 
-          const auto __my_dst_begin = __desired_offsets[__rank];
-          const auto __my_dst_end   = __rank + 1 == __comm_size ? __N : __desired_offsets[__rank + 1];
+        const auto __my_dst_begin = __desired_offsets[__rank];
+        const auto __my_dst_end   = __rank + 1 == __comm_size ? __N : __desired_offsets[__rank + 1];
 
-          const auto __peer_src_begin = __current_offsets[__peer];
-          const auto __peer_src_end   = __peer + 1 == __comm_size ? __N : __current_offsets[__peer + 1];
+        const auto __peer_src_begin = __current_offsets[__peer];
+        const auto __peer_src_end   = __peer + 1 == __comm_size ? __N : __current_offsets[__peer + 1];
 
-          const auto __recv_begin = ::cuda::std::max(__peer_src_begin, __my_dst_begin);
-          const auto __recv_end   = ::cuda::std::min(__peer_src_end, __my_dst_end);
+        const auto __recv_begin = ::cuda::std::max(__peer_src_begin, __my_dst_begin);
+        const auto __recv_end   = ::cuda::std::min(__peer_src_end, __my_dst_end);
 
-          const auto __send_count =
-            __send_begin < __send_end
-              ? static_cast<::cuda::std::size_t>((__send_end - __send_begin) * sizeof(_Tp))
-              : ::cuda::std::size_t{0};
-          const auto __recv_count =
-            __recv_begin < __recv_end
-              ? static_cast<::cuda::std::size_t>((__recv_end - __recv_begin) * sizeof(_Tp))
-              : ::cuda::std::size_t{0};
+        const auto __send_count =
+          __send_begin < __send_end
+            ? static_cast<::cuda::std::size_t>(__send_end - __send_begin)
+            : ::cuda::std::size_t{0};
+        const auto __recv_count =
+          __recv_begin < __recv_end
+            ? static_cast<::cuda::std::size_t>(__recv_end - __recv_begin)
+            : ::cuda::std::size_t{0};
 
-          return ::cuda::std::tuple{
-            __send_count,
-            __send_count == 0 ? ::cuda::std::size_t{0}
-                              : static_cast<::cuda::std::size_t>((__send_begin - __my_src_begin) * sizeof(_Tp)),
-            __recv_count,
-            __recv_count == 0 ? ::cuda::std::size_t{0}
-                              : static_cast<::cuda::std::size_t>((__recv_begin - __my_dst_begin) * sizeof(_Tp))};
-        };
+        return ::cuda::std::tuple{
+          __send_count,
+          __send_count == 0 ? ::cuda::std::size_t{0} : static_cast<::cuda::std::size_t>(__send_begin - __my_src_begin),
+          __recv_count,
+          __recv_count == 0 ? ::cuda::std::size_t{0} : static_cast<::cuda::std::size_t>(__recv_begin - __my_dst_begin)};
+      };
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
@@ -940,36 +908,36 @@ struct _Sorter
         __comm_size,
         ::cuda::std::move(__op),
         __env);
-      auto& __h_send_counts_bytes = __local_h_send_counts_bytes.emplace_back(__send_counts_bytes.size());
-      auto& __h_send_displs_bytes = __local_h_send_displs_bytes.emplace_back(__send_displs_bytes.size());
-      auto& __h_recv_counts_bytes = __local_h_recv_counts_bytes.emplace_back(__recv_counts_bytes.size());
-      auto& __h_recv_displs_bytes = __local_h_recv_displs_bytes.emplace_back(__recv_displs_bytes.size());
+      auto& __h_send_counts = __local_h_send_counts.emplace_back(__send_counts.size());
+      auto& __h_send_displs = __local_h_send_displs.emplace_back(__send_displs.size());
+      auto& __h_recv_counts = __local_h_recv_counts.emplace_back(__recv_counts.size());
+      auto& __h_recv_displs = __local_h_recv_displs.emplace_back(__recv_displs.size());
 
       ::cuda::copy_bytes(
         __stream,
-        __send_counts_bytes,
-        __h_send_counts_bytes,
+        __send_counts,
+        __h_send_counts,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
         __stream,
-        __send_displs_bytes,
-        __h_send_displs_bytes,
+        __send_displs,
+        __h_send_displs,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
         __stream,
-        __recv_counts_bytes,
-        __h_recv_counts_bytes,
+        __recv_counts,
+        __h_recv_counts,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
         __stream,
-        __recv_displs_bytes,
-        __h_recv_displs_bytes,
+        __recv_displs,
+        __h_recv_displs,
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
@@ -989,32 +957,25 @@ struct _Sorter
       // The rebalance exchange is the only communication in this phase. It
       // moves already globally sorted contiguous rank intervals into the exact
       // original per-rank sizes.
-      for (auto&& [__comm,
-                   __stream,
-                   __input,
-                   __out,
-                   __h_send_counts_bytes,
-                   __h_send_displs_bytes,
-                   __h_recv_counts_bytes,
-                   __h_recv_displs_bytes] :
+      for (auto&& [__comm, __stream, __input, __out, __h_send_counts, __h_send_displs, __h_recv_counts, __h_recv_displs] :
            ::cuda::std::ranges::views::zip(
              __comms,
              __streams,
              __local_inputs,
              __local_rebalanced,
-             __local_h_send_counts_bytes,
-             __local_h_send_displs_bytes,
-             __local_h_recv_counts_bytes,
-             __local_h_recv_displs_bytes))
+             __local_h_send_counts,
+             __local_h_send_displs,
+             __local_h_recv_counts,
+             __local_h_recv_displs))
       {
         __comm.all_to_all_v(
           __guard,
-          static_cast<const void*>(::cuda::std::to_address(::cuda::std::ranges::begin(__input))),
-          __h_send_counts_bytes.data(),
-          __h_send_displs_bytes.data(),
-          static_cast<void*>(__out.__get().data()),
-          __h_recv_counts_bytes.data(),
-          __h_recv_displs_bytes.data(),
+          ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
+          __h_send_counts.data(),
+          __h_send_displs.data(),
+          __out.__get().data(),
+          __h_recv_counts.data(),
+          __h_recv_displs.data(),
           __stream);
       }
     }
@@ -1127,7 +1088,7 @@ struct _Sorter
           ::cub::DeviceScan::ExclusiveSum,
           __sizes.begin(),
           __offsets.begin(),
-          __comm_size,
+          __sizes.size(),
           __env);
 
         if (!__N_computed)
@@ -1183,15 +1144,24 @@ struct _Sorter
 
       {
         ::std::vector<__buffer<_Tp>> __local_samples;
-        ::std::vector<__buffer<::cuda::std::size_t>> __local_samples_sizes_bytes;
+        ::std::vector<__buffer<::cuda::std::size_t>> __local_samples_sizes;
         ::std::vector<__buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>> __local_I_js;
         ::std::vector<__buffer<::cuda::std::uint64_t>> __local_hist;
-        ::std::vector<::cuda::std::size_t> __local_sample_sendcounts_bytes(__num_local_inputs);
+        ::std::vector<::cuda::std::size_t> __local_sample_sendcounts(__num_local_inputs);
 
         __local_samples.reserve(__num_local_inputs);
-        __local_samples_sizes_bytes.reserve(__num_local_inputs);
+        __local_samples_sizes.reserve(__num_local_inputs);
         __local_I_js.reserve(__num_local_inputs);
         __local_hist.reserve(__num_local_inputs);
+
+        // Allocated once and reused across sampling rounds. It is fully overwritten each round
+        // (root writes it before the broadcast), so storage-only reuse is safe. Pinned
+        // allocation is expensive and serializes the stream, so we avoid re-allocating it K
+        // times.
+        ::std::vector<::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible>>
+          __local_probe_counts;
+
+        __local_probe_counts.reserve(__num_local_inputs);
 
         for (auto&& [__comm, __stream, __resource, __env] :
              ::cuda::std::ranges::views::zip(__comms, __streams, __resources, __envs))
@@ -1210,29 +1180,24 @@ struct _Sorter
           __local_probes.emplace_back(__stream, __resource, __env);
           __local_samples.emplace_back(__stream, __resource, __env);
           // differing sizes for NCCL inplace
-          __local_samples_sizes_bytes.emplace_back(
+          __local_samples_sizes.emplace_back(
             __stream,
             __resource,
             /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1,
             ::cuda::no_init,
             __env);
           __local_hist.emplace_back(__stream, __resource, __env);
-        }
-
-        // Allocated once and reused across sampling rounds. It is fully
-        // overwritten each round (root writes it before the broadcast), so
-        // storage-only reuse is safe. Pinned allocation is expensive and
-        // serializes the stream, so we avoid re-allocating it K times.
 #if _CCCL_CTK_AT_LEAST(12, 9)
-        auto __probe_count = ::cuda::make_pinned_buffer<::cuda::std::uint64_t>(
-          ::cuda::stream_ref{::cudaStream_t{}}, /*__size=*/::cuda::std::size_t{1}, ::cuda::no_init);
+          __local_probe_counts.emplace_back(::cuda::make_pinned_buffer<::cuda::std::uint64_t>(
+            __streams.front(), /*__size=*/::cuda::std::size_t{1}, ::cuda::no_init));
 #else // ^^^ CUDA 12.9+ ^^^ / vvv CUDA 12.8- vvv
-        auto __probe_count = ::cuda::make_buffer<::cuda::std::uint64_t>(
-          ::cuda::stream_ref{::cudaStream_t{}},
-          ::cuda::mr::legacy_pinned_memory_resource{},
-          /*__size=*/::cuda::std::size_t{1},
-          ::cuda::no_init);
+          __local_probe_counts.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
+            __streams.front(),
+            ::cuda::mr::legacy_pinned_memory_resource{},
+            /*__size=*/::cuda::std::size_t{1},
+            ::cuda::no_init));
 #endif // ^^^ CUDA 12.8- ^^^
+        }
 
         // Note: K is small, on the order of ~1-10
         const auto __K = ::cuda::std::max(
@@ -1241,23 +1206,23 @@ struct _Sorter
           1);
         const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
 
-        for (int __j = 1; __j <= __K; ++__j)
+        for (::cuda::std::int32_t __j = 1; __j <= __K; ++__j)
         {
           const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
           const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
 
-          for (auto&& [__stream, __input, __I_j, __samples, __sample_sizes_bytes, __n_local, __previous_sendcount_bytes] :
+          for (auto&& [__stream, __input, __I_j, __samples, __sample_size, __n_local, __previous_sendcount] :
                ::cuda::std::ranges::views::zip(
                  __streams,
                  __local_inputs,
                  __local_I_js,
                  __local_samples,
-                 __local_samples_sizes_bytes,
+                 __local_samples_sizes,
                  __local_original_sizes,
-                 __local_sample_sendcounts_bytes))
+                 __local_sample_sendcounts))
           {
             // Each iteration we sample the union of splitter intervals, \gamma_j with a
-            // probability of __prob. For the first iteration, \gamm_j is the entire array, but for
+            // probability of __prob. For the first iteration, \gamma_j is the entire array, but for
             // previous iterations it's impossible for us to tell (on the host), because:
             //
             // 1. We can't inspect the updated intervals __I_j, and
@@ -1268,12 +1233,12 @@ struct _Sorter
             // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
             // the high-water mark for the samples is the previous round's sample vector size.
             const auto __estimate = ::cuda::std::max(
-              __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
-                       : __previous_sendcount_bytes / sizeof(_Tp),
+              __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob)) : __previous_sendcount,
               ::cuda::std::size_t{1});
 
             __resize_for_overwrite(__samples, __estimate);
-            __sample_probes(__stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_sizes_bytes);
+            ::cuda::experimental::__detail::__sort_sample_probes(
+              __stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_size);
           }
 
           __gather_merge_broadcast(
@@ -1282,10 +1247,10 @@ struct _Sorter
             __streams,
             __local_samples,
             __cmp,
-            &__local_samples_sizes_bytes,
-            &__local_sample_sendcounts_bytes,
+            &__local_samples_sizes,
+            &__local_sample_sendcounts,
             &__local_probes,
-            &__probe_count);
+            &__local_probe_counts);
 
           __local_histogram(__comms, __envs, __local_inputs, __local_probes, __cmp, &__local_hist);
 
