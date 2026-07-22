@@ -55,6 +55,8 @@ __device__ __forceinline__ void wait_parity(cuda::std::uint64_t* bar, unsigned p
   }
 }
 
+// stages is a runtime value now (we pick the ring depths at launch). now a runtime divide is super expensive
+// and costs ~3-6% BWUtil, so now we have to maintain a "cursor" that is far more cheaper.
 struct RingCursorT
 {
   int slot        = 0;
@@ -261,7 +263,9 @@ __device__ __forceinline__ void load_tile_keys(
   {
     if (!keys_staged)
     {
+      // vvv regressed case: no TMA; full now only mrans  "tile_id_buf[slot] is valid" vvv
       ptx::mbarrier_arrive(full_bar);
+      // ^^^ regressed case ^^^
     }
     else
     {
@@ -321,8 +325,11 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
     int pred_idx  = loc + skip_elems - 1; // loc==0 reads the over fetched slot[slot_pad-1]
     if constexpr (clamp_tail)
     {
+      // vvv regressed case: plain global loads have no ignore_oob, so clamp the tail reads into the input.
+      // the clamped values are garbage, but (loc < tile_len) below already zeroes those heads vvv
       key_idx  = min(key_idx, tile_len - 1);
       pred_idx = (tile_id == 0) ? max(key_idx - 1, 0) : key_idx - 1;
+      // ^^^ regressed case ^^^
     }
     const KeyT key            = key_buf[key_idx];
     const KeyT pred           = key_buf[pred_idx];
@@ -641,15 +648,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   constexpr int max_key_ring_stages    = policy.key_ring_stages;
   constexpr int max_pos_ring_stages    = policy.pos_ring_stages;
   constexpr int flag_staging_threshold = policy.flag_staging_threshold;
-  constexpr int warp_tile_size         = policy.warp_tile_size();
-  constexpr int tile_size              = policy.tile_size();
-  constexpr int slot_pad               = policy.slot_pad((int) sizeof(KeyT));
-  constexpr int slot_stride            = policy.slot_stride((int) sizeof(KeyT), (int) alignof(KeyT));
-  using PrefixT                        = rle::encode::PrefixT<OffT>;
+  // in the regressed case: always stage positions, so the store warps never run the flag-decode drain vvv
+  const int staging_threshold = keys_staged ? flag_staging_threshold : 0;
+  constexpr int warp_tile_size = policy.warp_tile_size();
+  constexpr int tile_size      = policy.tile_size();
+  constexpr int slot_pad       = policy.slot_pad((int) sizeof(KeyT));
+  constexpr int slot_stride    = policy.slot_stride((int) sizeof(KeyT), (int) alignof(KeyT));
+  using PrefixT                = rle::encode::PrefixT<OffT>;
   // [key_ring_stages][tile_size] input keys
   // [key_ring_stages][tile_size] int16 staged head positions
   extern __shared__ char smem_raw[];
   KeyT* const tile_buf = (KeyT*) smem_raw;
+  // when keys are not staged, the positions ring sits at the base
   short* const pos_buf = (short*) (tile_buf + (keys_staged ? (size_t) key_ring_stages * slot_stride : 0));
   __shared__ int tile_id_buf[max_key_ring_stages]; // which global tile each ring slot holds (LOAD gets it with
                                                    // try_cancel)
@@ -813,9 +823,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           }
           else
           {
+            // vvv regressed case: we load compute flags straight from global vvv
             const KeyT* key_buf = d_keys + (size_t) tile_id * tile_size;
             my_flags =
               compute_head_flags<items_per_thread, true>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
+            // ^^^ regressed case ^^^
           }
           local_run_count = __reduce_add_sync(full_mask, __popc(my_flags));
           // each lane in a warp now has a mask that tells which chunk is non empty
@@ -849,7 +861,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // now we start to stage head positions per warp tile, if a warptile has enough runs
           // (it is only worth it when we have more runs by a certain threshold per warp tile)
           // (otherwise, it is cheaper to recalculate positions from head_flags directly)
-          const bool stage_flags = (local_run_count < flag_staging_threshold);
+          const bool stage_flags = (local_run_count < staging_threshold);
           if (stage_flags)
           {
             head_flag_buf[slot_id][compute_warp_id * 32 + lane_id] = my_flags;
@@ -960,7 +972,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // we do this BEFORE the wait on prefixed so they overlap
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
             scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
-          const int tile_len = (int) min((OffT) tile_size, num_items - (OffT) tile_id * tile_size);
           // staged positions
           const short* run_positions      = pos_buf + (size_t) (pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
@@ -968,7 +979,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const int runs_before_warp_tile = __shfl_sync(full_mask, lane_runs_before_warp_tile, warp_tile_id);
           // if the compute warp decided to skip staging for this warp tile, the positions were never staged:
           // decode them from the head flags and buffer intermediate results in register
-          if (warp_tile_run_count >= 1 && warp_tile_run_count < flag_staging_threshold)
+          if (warp_tile_run_count >= 1 && warp_tile_run_count < staging_threshold)
           {
             // wait for staged_warp_tile (2/3)
             wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
@@ -978,38 +989,19 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             const int warp_tile_offset = warp_tile_id * warp_tile_size;
             const int num_rounds       = (warp_tile_run_count + 31) >> 5;
             const HeadFlagDecodeT dec(head_flag_buf[slot_id], warp_tile_id, lane_id);
-            if (keys_staged)
-            {
-              const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
+            const KeyT* tile_keys = tile_buf + (size_t) slot_id * slot_stride + slot_pad;
 #  pragma unroll
-              for (int it = 0; it < buf_per_lane; ++it)
-              {
-                if (it >= num_rounds)
-                {
-                  break;
-                }
-                const int run_idx  = it * 32 + lane_id;
-                const RunSpanT run = dec.decode_run(run_idx);
-                buf_key[it]        = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
-                // note: this is garbage for the last run head
-                buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
-              }
-            }
-            else
+            for (int it = 0; it < buf_per_lane; ++it)
             {
-              const KeyT* tile_keys = d_keys + (size_t) tile_id * tile_size;
-#  pragma unroll
-              for (int it = 0; it < buf_per_lane; ++it)
+              if (it >= num_rounds)
               {
-                if (it >= num_rounds)
-                {
-                  break;
-                }
-                const int run_idx  = it * 32 + lane_id;
-                const RunSpanT run = dec.decode_run(run_idx);
-                buf_key[it]        = tile_keys[min(warp_tile_offset + run.head_pos_in_warp_tile, tile_len - 1)];
-                buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
+                break;
               }
+              const int run_idx  = it * 32 + lane_id;
+              const RunSpanT run = dec.decode_run(run_idx);
+              buf_key[it]        = tile_keys[warp_tile_offset + run.head_pos_in_warp_tile + skip_elems];
+              // note: this is garbage for the last run head
+              buf_run_length[it] = run.next_head_pos - run.head_pos_in_warp_tile;
             }
             __syncwarp();
             if (lane_id == 0)
@@ -1079,6 +1071,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           }
           else
           {
+            // vvv regressed case vvv
             const KeyT* tile_keys = d_keys + (size_t) tile_id * tile_size;
 #  pragma unroll 2
             for (int run_idx = lane_id; run_idx < warp_tile_run_count; run_idx += 32)
@@ -1093,6 +1086,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 d_counts[global_run_idx] = run_length;
               }
             }
+            // ^^^ regressed case ^^^
           }
           __syncwarp();
           if (lane_id == 0)
@@ -1238,9 +1232,6 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
          pos_ring_stages,
          keys_staged);))
   }
-  // for a lookback policy this kernel compiles to an empty stub: the fatbin carries this symbol for every
-  // target architecture, and targets whose policy resolves to lookback must still compile (the host dispatch
-  // never launches the kernel on such devices)
 }
 #endif // __cccl_ptx_isa >= 920
 } // namespace detail::rle::encode
