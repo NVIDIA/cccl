@@ -312,6 +312,7 @@ public:
    *  \p x The first \p device_vector of interest.
    *  \p y The second \p device_vector of interest.
    */
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   friend void swap(device_vector& a, device_vector& b) noexcept(noexcept(a.swap(b)))
   {
     a.swap(b);

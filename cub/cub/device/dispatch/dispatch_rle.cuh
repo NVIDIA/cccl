@@ -173,27 +173,29 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const OffsetsOutputIteratorT d_offsets_out,
-    _CCCL_GRID_CONSTANT const LengthsOutputIteratorT d_lengths_out,
-    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
+    const InputIteratorT d_in,
+    const OffsetsOutputIteratorT d_offsets_out,
+    const LengthsOutputIteratorT d_lengths_out,
+    const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_status,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
   static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
-  using AgentRlePolicyT                           = agent_rle_policy<
-                              policy.threads_per_block,
-                              policy.items_per_thread,
-                              policy.load_algorithm,
-                              policy.load_modifier,
-                              policy.store_with_time_slicing,
-                              policy.scan_algorithm,
-                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+  using AgentRlePolicyT =
+    agent_rle_policy<policy.lookback.threads_per_block,
+                     policy.lookback.items_per_thread,
+                     policy.lookback.load_algorithm,
+                     policy.lookback.load_modifier,
+                     policy.lookback.store_with_time_slicing,
+                     policy.lookback.scan_algorithm,
+                     delay_constructor_t<policy.lookback.lookback_delay.kind,
+                                         policy.lookback.lookback_delay.delay,
+                                         policy.lookback.lookback_delay.l2_write_latency>>;
 
   using AgentRleT =
     AgentRle<AgentRlePolicyT,
@@ -222,13 +224,16 @@ struct policy_selector_from_hub
   {
     using RleSweepPolicyT = typename PolicyHub::MaxPolicy::RleSweepPolicyT;
     return RleNonTrivialRunsPolicy{
-      RleSweepPolicyT::BLOCK_THREADS,
-      RleSweepPolicyT::ITEMS_PER_THREAD,
-      RleSweepPolicyT::LOAD_ALGORITHM,
-      RleSweepPolicyT::LOAD_MODIFIER,
-      RleSweepPolicyT::STORE_WARP_TIME_SLICING,
-      RleSweepPolicyT::SCAN_ALGORITHM,
-      lookback_delay_policy_from_type<typename RleSweepPolicyT::detail::delay_constructor_t>,
+      RleNonTrivialRunsAlgorithm::lookback,
+      {
+        RleSweepPolicyT::BLOCK_THREADS,
+        RleSweepPolicyT::ITEMS_PER_THREAD,
+        RleSweepPolicyT::LOAD_ALGORITHM,
+        RleSweepPolicyT::LOAD_MODIFIER,
+        RleSweepPolicyT::STORE_WARP_TIME_SLICING,
+        RleSweepPolicyT::SCAN_ALGORITHM,
+        lookback_delay_policy_from_type<typename RleSweepPolicyT::detail::delay_constructor_t>,
+      },
     };
   }
 };
@@ -686,8 +691,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const int threads_per_block = active_policy.threads_per_block;
-  const int items_per_thread  = active_policy.items_per_thread;
+  const int threads_per_block = active_policy.lookback.threads_per_block;
+  const int items_per_thread  = active_policy.lookback.items_per_thread;
   const auto tile_size =
     static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 

@@ -141,7 +141,7 @@ public:
   //! @throws std::runtime_error If the device reported by NCCL does not match `__device`.
   _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm, logical_device __device)
       : __comm_{[&] {
-        if (__comm == nullptr)
+        if (__comm == ::cuda::experimental::__nccl::__NCCL_COMM_NULL)
         {
           _CCCL_THROW(::std::invalid_argument, "Invalid NCCL communicator: NCCL_COMM_NULL");
         }
@@ -722,6 +722,19 @@ public:
   }
 
 private:
+  friend class nccl_communicator;
+
+  _CCCL_HOST_API nccl_communicator_ref(
+    native_handle_type __comm,
+    ::cuda::experimental::logical_device __device,
+    ::cuda::std::int32_t __rank,
+    ::cuda::std::int32_t __size) noexcept
+      : __comm_{__comm}
+      , __device_{::cuda::std::move(__device)}
+      , __rank_{__rank}
+      , __size_{__size}
+  {}
+
   native_handle_type __comm_{};
   ::cuda::experimental::logical_device __device_;
   // Cache these so we can make the accessors noexcept

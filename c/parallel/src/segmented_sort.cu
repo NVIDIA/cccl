@@ -177,7 +177,6 @@ struct selector_state_t
 };
 
 cccl_op_t make_segments_selector_op(
-  OffsetT offset,
   cccl_iterator_t begin_offset_iterator,
   cccl_iterator_t end_offset_iterator,
   const char* selector_op_name,
@@ -188,7 +187,6 @@ cccl_op_t make_segments_selector_op(
   size_t num_lto_opts)
 {
   cccl_op_t selector_op{};
-  auto selector_op_state = std::make_unique<selector_state_t>();
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
@@ -241,15 +239,8 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
   selector_op.code_type = CCCL_OP_LTOIR;
   selector_op.size      = sizeof(selector_state_t);
   selector_op.alignment = alignof(selector_state_t);
-
-  selector_op_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
-  auto* state_copy = static_cast<selector_state_t*>(std::malloc(sizeof(selector_state_t)));
-  if (!state_copy)
-  {
-    throw std::bad_alloc();
-  }
-  std::memcpy(state_copy, selector_op_state.get(), sizeof(selector_state_t));
-  selector_op.state = state_copy;
+  // No state in the build result: it is per-call (see segmented_sort_kernel_source).
+  selector_op.state = nullptr;
 
   return selector_op;
 }
@@ -263,7 +254,6 @@ struct owned_selector_op
   {}
   ~owned_selector_op()
   {
-    std::free(op.state);
     std::free(const_cast<char*>(op.code));
   }
   owned_selector_op(const owned_selector_op&)            = delete;
@@ -279,6 +269,8 @@ struct owned_selector_op
 struct segmented_sort_kernel_source
 {
   cccl_device_segmented_sort_build_result_t& build;
+  selector_state_t* large_state;
+  selector_state_t* small_state;
 
   CUkernel SegmentedSortFallbackKernel() const
   {
@@ -304,17 +296,20 @@ struct segmented_sort_kernel_source
   indirect_arg_t LargeSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    static_cast<selector_state_t*>(build.large_segments_selector_op.state)
-      ->initialize(offset, begin_offset_iterator, end_offset_iterator);
-    return indirect_arg_t(build.large_segments_selector_op);
+    large_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
+    // Same compiled op, pointed at this call's state instead of the shared one.
+    cccl_op_t op = build.large_segments_selector_op;
+    op.state     = large_state;
+    return indirect_arg_t(op);
   }
 
   indirect_arg_t SmallSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    static_cast<selector_state_t*>(build.small_segments_selector_op.state)
-      ->initialize(offset, begin_offset_iterator, end_offset_iterator);
-    return indirect_arg_t(build.small_segments_selector_op);
+    small_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
+    cccl_op_t op = build.small_segments_selector_op;
+    op.state     = small_state;
+    return indirect_arg_t(op);
   }
 
   void SetSegmentOffset(indirect_arg_t& selector, long long base_segment_offset) const
@@ -487,7 +482,6 @@ try
   // DispatchThreeWayPartition eventually. This causes increased compilation
   // times, which might be avoidable.
   segmented_sort::owned_selector_op large_selector_op{segmented_sort::make_segments_selector_op(
-    0,
     start_offset_it,
     end_offset_it,
     "cccl_large_segments_selector_op",
@@ -497,7 +491,6 @@ try
     lopts,
     num_lto_args)};
   segmented_sort::owned_selector_op small_selector_op{segmented_sort::make_segments_selector_op(
-    0,
     start_offset_it,
     end_offset_it,
     "cccl_small_segments_selector_op",
@@ -908,6 +901,11 @@ CUresult cccl_device_segmented_sort_impl(
     cub::DoubleBuffer<indirect_arg_t> d_values_double_buffer(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
+    // Per-call state, stack-local so concurrent launches stay independent. Safe under
+    // async: copied by value into kernel params at each launch within this dispatch.
+    segmented_sort::selector_state_t large_selector_state{};
+    segmented_sort::selector_state_t small_selector_state{};
+
     auto exec_status = cub::detail::segmented_sort::dispatch<Order, OffsetT>(
       d_temp_storage,
       *temp_storage_bytes,
@@ -923,7 +921,8 @@ CUresult cccl_device_segmented_sort_impl(
       *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
       /* partition_policy_selector */
       *static_cast<cub::detail::three_way_partition::policy_selector*>(build.partition_runtime_policy),
-      /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
+      /* kernel_source */
+      segmented_sort::segmented_sort_kernel_source{build, &large_selector_state, &small_selector_state},
       /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
       /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
@@ -995,9 +994,7 @@ try
 
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
 
-  // Clean up the selector op states and code buffers (malloc-allocated, so use std::free)
-  std::free(build_ptr->large_segments_selector_op.state);
-  std::free(build_ptr->small_segments_selector_op.state);
+  // Clean up the selector op code buffers (malloc-allocated, so use std::free)
   std::free(const_cast<char*>(build_ptr->large_segments_selector_op.code));
   std::free(const_cast<char*>(build_ptr->small_segments_selector_op.code));
 
@@ -1119,23 +1116,16 @@ inline cccl_op_t deserialize_selector_op(cccl::serialization::buffer_reader& r, 
     r.read_bytes(code_owner.get(), static_cast<size_t>(code_n));
   }
 
-  // The selector state is runtime-specific (device pointers, segment offsets) and is
-  // fully overwritten by selector_state_t::initialize() before each launch, so it is
-  // not part of the blob. Reconstruct a fresh, zero-initialized state of the correct
-  // size/alignment here; a malformed blob can no longer dictate the state size.
+  // No selector state to reconstruct (it is per-call). op.size stays hardcoded so a
+  // malformed blob cannot dictate it.
   using segmented_sort::selector_state_t;
-  std::unique_ptr<void, decltype(&std::free)> state_owner(std::calloc(1, sizeof(selector_state_t)), std::free);
-  if (!state_owner)
-  {
-    throw std::bad_alloc{};
-  }
 
   // commit — no throws past this point
   op.size      = sizeof(selector_state_t);
   op.alignment = alignof(selector_state_t);
   op.code      = static_cast<const char*>(code_owner.release());
   op.code_size = static_cast<size_t>(code_n);
-  op.state     = state_owner.release();
+  op.state     = nullptr;
   // op.name is not freed by cleanup; safe to point at a string literal.
   op.name = fixed_name;
   // Selector ops never carry extra ltoirs in this codepath.
@@ -1211,9 +1201,8 @@ try
     throw std::runtime_error(std::format("serialization blob: invalid sort order ({})", static_cast<uint32_t>(order)));
   }
 
-  // selector ops are partial-cleanup-friendly: code+state are malloc'd. If a
-  // later step throws, segmented_sort_cleanup will std::free both; the unique
-  // ownership cleanup happens via memset+full_cleanup in the catch handler.
+  // selector ops own a malloc'd code buffer (state is per-call now, so nullptr
+  // here). If a later step throws, the catch handlers below std::free the code.
   cccl_op_t large_op =
     segmented_sort_serialization::deserialize_selector_op(r, segmented_sort_serialization::kLargeSegmentsName);
   cccl_op_t small_op{};
@@ -1224,7 +1213,6 @@ try
   }
   catch (...)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
     throw;
   }
@@ -1239,17 +1227,13 @@ try
   }
   catch (...)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
-    std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
     throw;
   }
   if (payload_size == 0)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
-    std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
     throw std::runtime_error("serialization blob: empty payload");
   }
@@ -1286,9 +1270,7 @@ try
   }
   catch (...)
   {
-    std::free(large_op.state);
     std::free(const_cast<char*>(large_op.code));
-    std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
     throw;
   }

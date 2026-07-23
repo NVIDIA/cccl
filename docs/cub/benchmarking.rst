@@ -1,4 +1,4 @@
-CUB Benchmarks
+Benchmarks
 *************************************
 
 .. TODO(bgruber): this guide applies to Thrust as well. We should rename it to "CCCL Benchmarks" and move it out of CUB
