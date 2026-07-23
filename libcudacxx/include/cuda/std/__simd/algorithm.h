@@ -22,8 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__cstddef/types.h>
@@ -38,36 +36,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
 // [simd.alg], algorithms
-
-template <typename _Vec>
-struct __min_generator
-{
-  using __result_t = typename _Vec::value_type;
-
-  const _Vec& __a;
-  const _Vec& __b;
-
-  template <typename _Ip>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept
-  {
-    return ::cuda::std::min(__a[_Ip::value], __b[_Ip::value]);
-  }
-};
-
-template <typename _Vec>
-struct __max_generator
-{
-  using __result_t = typename _Vec::value_type;
-
-  const _Vec& __a;
-  const _Vec& __b;
-
-  template <typename _Ip>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept
-  {
-    return ::cuda::std::max(__a[_Ip::value], __b[_Ip::value]);
-  }
-};
 
 template <typename _Vec>
 struct __clamp_generator
@@ -90,8 +58,7 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 min(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
 {
-  using __vec_t = basic_vec<_Tp, _Abi>;
-  return __vec_t{__min_generator<__vec_t>{__a, __b}};
+  return __simd_min_impl(__a, __b); // ADL
 }
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
@@ -99,8 +66,7 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 max(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
 {
-  using __vec_t = basic_vec<_Tp, _Abi>;
-  return __vec_t{__max_generator<__vec_t>{__a, __b}};
+  return __simd_max_impl(__a, __b); // ADL
 }
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
