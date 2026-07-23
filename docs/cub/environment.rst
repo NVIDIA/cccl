@@ -5,25 +5,17 @@ Execution Environments
 
 Most CUB device-wide algorithms accept an optional *execution environment* as their last
 argument. The environment is a single object that bundles everything CUB needs to know
-about *how* to run the algorithm: which stream to use, where to get temporary memory, what
-reproducibility guarantees to apply, which tuning policy to select etc.
+about *how* to run the algorithm.
 
-This page explains what the CUB environment APIs are, and how to use them. The main
-properties an environment carries, each optional and freely composable with the others,
-are:
+Part of what it carries is familiar: the CUDA stream, which CUB algorithms have always
+accepted, now simply travels inside the environment. The rest are controls that had no
+place in the classic API and are enabled by environments:
+:ref:`determinism requirements <cub-env-determinism>`,
+:ref:`custom tuning policies <cub-env-tuning>`, and
+:ref:`memory resources <cub-env-memory-resource>`. All properties are optional and freely
+composable with each other.
 
-1. :ref:`Streams <cub-env-building>` — select the stream the algorithm runs on.
-2. :ref:`Determinism requirements <cub-env-determinism>` — request a reproducibility
-   guarantee for the algorithm's results.
-3. :ref:`Custom tuning policy <cub-env-tuning>` — override CUB's built-in kernel tuning
-   for the current device.
-4. :ref:`Memory resources <cub-env-memory-resource>` — control where temporary storage
-   is allocated from.
-
-This list is not exhaustive: a few algorithms accept additional, algorithm-specific
-requirements — e.g. tie-breaking and output-ordering controls for
-:ref:`cub::DeviceTopK <cub-topk-requirements>` — and the set of properties an environment
-can carry keeps growing.
+This page explains what the CUB environment APIs are, and how to use them.
 
 .. contents::
    :local:
@@ -38,8 +30,10 @@ then execute. That is fine for one-off calls, but it becomes repetitive once you
 attach a custom stream or a memory pool.
 
 The environment-based single-phase API collapses all of that into one call. The algorithm
-queries the environment for a stream, allocates temporary storage from the memory resource
-found there, enforces the requested determinism guarantee, and then executes:
+queries the environment for the properties it needs — for example, the stream to run on,
+or a memory resource to allocate temporary storage from — and then executes. Properties
+an algorithm does not use are simply ignored, which is what makes one environment safe to
+pass to many different algorithms:
 
 .. code-block:: c++
 
@@ -56,14 +50,13 @@ found there, enforces the requested determinism guarantee, and then executes:
 
       cub::DeviceReduce::Sum(d_input, d_output, num_items);
 
-The rest of this page shows how to build the ``env`` object.
-
 
 .. _cub-env-building:
 
 Building an environment
 -----------------------
 
+.. list explicitly what types are valid environments
 Some types are already valid environments on their own and can be passed directly to an
 algorithm. The most common case is a stream: ``cuda::stream_ref`` (or a raw
 ``cudaStream_t``) passed as the last argument is treated as an environment containing
@@ -97,10 +90,13 @@ The same ``env`` object can be passed to multiple algorithm calls without rebuil
 time, see :ref:`cub-environment-reuse`.
 
 
-Environment features
---------------------
+How to use environments
+-----------------------
 
-Each of the controls outlined at the top of this page is detailed below.
+The controls below are what environments enable beyond the classic API. A few algorithms
+additionally accept algorithm-specific controls — e.g. tie-breaking and output-ordering
+for :ref:`cub::DeviceTopK <cub-topk-requirements>`. The set of supported properties
+keeps growing.
 
 .. _cub-env-determinism:
 
@@ -129,8 +125,10 @@ Custom tuning policy
 ~~~~~~~~~~~~~~~~~~~~
 
 Pass a custom policy selector through the environment to override CUB's built-in tuning.
-A policy selector is a stateless callable mapping a ``cuda::compute_capability`` to the
-algorithm's public policy struct:
+A policy selector answers the question "which tuning parameters should this algorithm use
+on this GPU?": it is a function object that CUB calls with the GPU's compute capability,
+and that returns the tuning parameters — threads per block, items per thread, and so on —
+packed in the algorithm's policy struct (here ``cub::MergePolicy``):
 
 .. literalinclude:: ../../cub/test/catch2_test_device_merge_env_api.cu
    :language: c++
@@ -147,8 +145,10 @@ environment:
    :start-after: example-begin merge-keys-tuning
    :end-before: example-end merge-keys-tuning
 
-The policy selector must be stateless (``std::is_empty_v<T> == true``). CUB passes only its
-*type* to device kernels, so any captured state would be silently lost.
+.. warning::
+
+   The policy selector must be stateless (``std::is_empty_v<T> == true``). CUB passes only
+   its *type* to device kernels, so any captured state would be silently lost.
 
 .. seealso:: :ref:`cub-policy-selectors` - full guide on defining and composing policy
    selectors.
@@ -178,11 +178,12 @@ execution and released on the same stream afterwards. When no memory resource is
 in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync`` allocator
 (see :ref:`Fallback behavior <cub-environment-fallback>`).
 
+.. TODO: Add Guarantees sub-section after #9278 is merged.
 
 .. _cub-environment-reuse:
 
 Reusing an environment across multiple calls
----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 An ``env`` object is copyable and movable. Build it once and pass it to as many algorithm
 calls as you like:
@@ -209,10 +210,13 @@ released from the pool independently for each call.
    tunings, build separate environments or use separate ``cuda::execution::tune`` properties.
 
 
+Reference
+---------
+
 .. _cub-environment-fallback:
 
 Fallback behavior
------------------
+~~~~~~~~~~~~~~~~~
 
 The environment argument is optional on every algorithm that supports it. CUB applies the
 following defaults when a property is absent from the environment (or when no environment
@@ -240,7 +244,7 @@ that property.
 
 
 Environment building blocks
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are the utilities a user needs to construct environments:
 
