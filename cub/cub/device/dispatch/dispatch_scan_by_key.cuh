@@ -837,9 +837,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             "per thread\n",
             start_tile,
             scan_grid_size,
-            active_policy.threads_per_block,
+            active_policy.lookback.threads_per_block,
             (long long) stream,
-            active_policy.items_per_thread);
+            active_policy.lookback.items_per_thread);
 #else // CUB_DEBUG_LOG
     detail::log(
       "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
