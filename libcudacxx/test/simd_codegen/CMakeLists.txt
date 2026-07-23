@@ -271,6 +271,10 @@ endfunction()
 
 set(simd_codegen_sass_tests)
 file(GLOB simd_codegen_sass_tests "floating_point/*.cu" "integer/*.cu")
+if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.2)
+  file(GLOB simd_codegen_saturating_add_tests "saturating_add/*.cu")
+  list(APPEND simd_codegen_sass_tests ${simd_codegen_saturating_add_tests})
+endif()
 
 add_subdirectory(load_store)
 
