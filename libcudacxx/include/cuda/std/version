@@ -145,6 +145,10 @@
 
 #define __cccl_lib_saturation_arithmetic 202603L
 
+// P0493R5 atomic minimum/maximum. The members and free functions are provided unconditionally
+// as an extension (not gated on _CCCL_STD_VER), so the feature-test macro is too.
+#define __cccl_lib_atomic_min_max 202403L
+
 #if _CCCL_STD_VER >= 2020
 #  undef __cccl_lib_array_constexpr
 #  define __cccl_lib_array_constexpr 201811L
