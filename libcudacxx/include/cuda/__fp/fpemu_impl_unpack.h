@@ -140,8 +140,8 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) no
 #endif
   if (__shift > 0)
   {
-    const uint64_t __mask = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
-    const bool __inexact  = (__x.mantissa & __mask) != 0;
+    const uint64_t __mask                 = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
+    [[maybe_unused]] const bool __inexact = (__x.mantissa & __mask) != 0;
     __x.mantissa >>= __shift;
     if constexpr (_Rm == __fpemu_rounding::rn)
     {

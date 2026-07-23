@@ -121,34 +121,39 @@ _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_div_propagate_nan(uint64_t __ui64_
   {
     return __ui64_a | __ui64_b;
   }
+  else
+  {
+    // NB: this block lives in the `else` (not after an early `return`) so that
+    // non-high instantiations discard it entirely; otherwise MSVC flags every
+    // line below as unreachable code (C4702, promoted to an error under /WX).
+    bool __is_sig_nan_a =
+      ((__ui64_a & _CCCL_FPEMU_QNAN_64) == _CCCL_FPEMU_EXP_64) && (__ui64_a & _CCCL_FPEMU_SNAN_PAYLOAD_64);
+    bool __is_sig_nan_b =
+      ((__ui64_b & _CCCL_FPEMU_QNAN_64) == _CCCL_FPEMU_EXP_64) && (__ui64_b & _CCCL_FPEMU_SNAN_PAYLOAD_64);
+    uint64_t __nonsig64_a = __ui64_a | _CCCL_FPEMU_QNAN_BIT_64;
+    uint64_t __nonsig64_b = __ui64_b | _CCCL_FPEMU_QNAN_BIT_64;
 
-  bool __is_sig_nan_a =
-    ((__ui64_a & _CCCL_FPEMU_QNAN_64) == _CCCL_FPEMU_EXP_64) && (__ui64_a & _CCCL_FPEMU_SNAN_PAYLOAD_64);
-  bool __is_sig_nan_b =
-    ((__ui64_b & _CCCL_FPEMU_QNAN_64) == _CCCL_FPEMU_EXP_64) && (__ui64_b & _CCCL_FPEMU_SNAN_PAYLOAD_64);
-  uint64_t __nonsig64_a = __ui64_a | _CCCL_FPEMU_QNAN_BIT_64;
-  uint64_t __nonsig64_b = __ui64_b | _CCCL_FPEMU_QNAN_BIT_64;
-
-  if (__is_sig_nan_a && !__is_sig_nan_b)
-  {
-    return __internal_fp64emu_div_is_nan(__ui64_b) ? __nonsig64_b : __nonsig64_a;
+    if (__is_sig_nan_a && !__is_sig_nan_b)
+    {
+      return __internal_fp64emu_div_is_nan(__ui64_b) ? __nonsig64_b : __nonsig64_a;
+    }
+    if (__is_sig_nan_b && !__is_sig_nan_a)
+    {
+      return __internal_fp64emu_div_is_nan(__ui64_a) ? __nonsig64_a : __nonsig64_b;
+    }
+    // Both signaling or neither signaling: return the larger-magnitude NaN.
+    uint64_t __mag64_a = __ui64_a & _CCCL_FPEMU_ABS_64;
+    uint64_t __mag64_b = __ui64_b & _CCCL_FPEMU_ABS_64;
+    if (__mag64_a < __mag64_b)
+    {
+      return __nonsig64_b;
+    }
+    if (__mag64_b < __mag64_a)
+    {
+      return __nonsig64_a;
+    }
+    return (__nonsig64_a < __nonsig64_b) ? __nonsig64_a : __nonsig64_b;
   }
-  if (__is_sig_nan_b && !__is_sig_nan_a)
-  {
-    return __internal_fp64emu_div_is_nan(__ui64_a) ? __nonsig64_a : __nonsig64_b;
-  }
-  // Both signaling or neither signaling: return the larger-magnitude NaN.
-  uint64_t __mag64_a = __ui64_a & _CCCL_FPEMU_ABS_64;
-  uint64_t __mag64_b = __ui64_b & _CCCL_FPEMU_ABS_64;
-  if (__mag64_a < __mag64_b)
-  {
-    return __nonsig64_b;
-  }
-  if (__mag64_b < __mag64_a)
-  {
-    return __nonsig64_a;
-  }
-  return (__nonsig64_a < __nonsig64_b) ? __nonsig64_a : __nonsig64_b;
 } // __internal_fp64emu_div_propagate_nan
 
 // Forward declaration: the unpacked divide core is defined below, but the

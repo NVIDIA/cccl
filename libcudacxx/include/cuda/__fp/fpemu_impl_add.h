@@ -574,8 +574,8 @@ __internal_fp64emu_dadd_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
   constexpr fpemu_accuracy __acc_used   = (__acc_forced != fpemu_accuracy::unset) ? __acc_forced : _Acc;
 
   // Inf/Nan exponent magics produced by the universal unpack.
-  constexpr uint32_t __inf_exp = 0x00007ff0u;
-  constexpr int32_t __nan_exp  = 0x0007ff00;
+  [[maybe_unused]] constexpr uint32_t __inf_exp = 0x00007ff0u;
+  [[maybe_unused]] constexpr int32_t __nan_exp  = 0x0007ff00;
 
   if constexpr (__acc_used == fpemu_accuracy::high || __acc_used == fpemu_accuracy::mid)
   {

@@ -858,8 +858,8 @@ _CCCL_TRIVIAL_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __shift, bool __
     return __man;
   }
 
-  const uint64_t __discard_mask = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
-  const bool __inexact          = (__man64 & __discard_mask) != 0;
+  const uint64_t __discard_mask         = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
+  [[maybe_unused]] const bool __inexact = (__man64 & __discard_mask) != 0;
   __man64 >>= __shift;
 
   if constexpr (_Rm == __fpemu_rounding::ru)
@@ -971,8 +971,8 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __
   __uint32x2 __res    = ::cuda::std::bit_cast<__uint32x2>(__man64_res);
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    uint64_t __mask = (1LLU << __shift) - 1;
-    bool __sticky   = (__man64 & __mask) != 0;
+    uint64_t __mask                = (1LLU << __shift) - 1;
+    [[maybe_unused]] bool __sticky = (__man64 & __mask) != 0;
     if constexpr (_Rm == __fpemu_rounding::rn)
     {
       __res.x[0] |= static_cast<uint32_t>(__sticky);
@@ -1302,11 +1302,11 @@ _CCCL_TRIVIAL_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 __b) noexcept
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool __sign = false) noexcept
 {
-  uint64_t __man64             = ::cuda::std::bit_cast<uint64_t>(__man);
-  const int __rshift           = static_cast<int>(__fpemu_extra_bits) + __shift;
-  const uint64_t __round_bit   = 1ULL << (__rshift - 1);
-  const uint64_t __sticky_mask = (__round_bit << 1) - 1;
-  const uint64_t __tie_mask    = (__round_bit << 2) - 1;
+  uint64_t __man64                              = ::cuda::std::bit_cast<uint64_t>(__man);
+  const int __rshift                            = static_cast<int>(__fpemu_extra_bits) + __shift;
+  const uint64_t __round_bit                    = 1ULL << (__rshift - 1);
+  [[maybe_unused]] const uint64_t __sticky_mask = (__round_bit << 1) - 1;
+  [[maybe_unused]] const uint64_t __tie_mask    = (__round_bit << 2) - 1;
 
   if constexpr (_Rm == __fpemu_rounding::rz)
   {

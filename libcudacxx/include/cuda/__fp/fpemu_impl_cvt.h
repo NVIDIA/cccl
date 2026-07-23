@@ -74,7 +74,7 @@ _CCCL_TRIVIAL_API int32_t __internal_fp64emu_round_to_i32(bool __sign, uint64_t 
       __round_increment = 0xFFF;
     }
   }
-  uint32_t __round_bits = (uint32_t) (__sig & 0xFFF);
+  [[maybe_unused]] uint32_t __round_bits = (uint32_t) (__sig & 0xFFF);
   __sig += __round_increment;
   if (__sig & 0xFFFFF00000000000ULL)
   {
@@ -108,7 +108,7 @@ _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_round_to_ui32(bool __sign, uint64_
   }
 
   uint32_t __round_increment = (_Rm == __fpemu_rounding::rn) ? 0x800 : (_Rm == __fpemu_rounding::ru) ? 0xFFF : 0;
-  uint32_t __round_bits      = (uint32_t) (__sig & 0xFFF);
+  [[maybe_unused]] uint32_t __round_bits = (uint32_t) (__sig & 0xFFF);
   __sig += __round_increment;
   if (__sig & 0xFFFFF00000000000ULL)
   {
