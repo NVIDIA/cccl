@@ -151,6 +151,8 @@ private:
     {
       const auto gmem_ptr = ::__cvta_generic_to_global(src_ptr + offset);
       // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
+      // clang-tidy ignores the differing asm strings: https://github.com/llvm/llvm-project/issues/198616
+      // NOLINTBEGIN(bugprone-branch-clone)
       if constexpr (Level == LoadPrefetch::l1)
       {
         asm volatile("prefetch.global.L1 [%0];" : : "l"(gmem_ptr) : "memory");
@@ -159,6 +161,7 @@ private:
       {
         asm volatile("prefetch.global.L2 [%0];" : : "l"(gmem_ptr) : "memory");
       }
+      // NOLINTEND(bugprone-branch-clone)
     }
   }
 };
