@@ -5,6 +5,8 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/functional.h>
+
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -19,22 +21,13 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_redu
 
 using types = c2h::type_list<std::uint32_t, std::uint64_t>;
 
-template <class T>
-struct square_t
-{
-  __host__ __device__ T operator()(const T& x) const
-  {
-    return x * x;
-  }
-};
-
 C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", types)
 {
   using item_t         = c2h::get<0, TestType>;
   using init_value_t   = item_t;
   using offset_t       = std::int32_t;
   using reduction_op_t = cuda::std::plus<>;
-  using transform_op_t = square_t<item_t>;
+  using transform_op_t = thrust::square<item_t>;
 
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
@@ -81,7 +74,7 @@ C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", typ
   using init_value_t   = item_t;
   using offset_t       = std::int32_t;
   using reduction_op_t = cuda::std::plus<>;
-  using transform_op_t = square_t<item_t>;
+  using transform_op_t = thrust::square<item_t>;
 
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
