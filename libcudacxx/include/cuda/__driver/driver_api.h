@@ -804,10 +804,19 @@ __eventQueryNoThrow(::CUevent __evnt) noexcept // NOLINT(bugprone-exception-esca
   return static_cast<::cudaError_t>(__driver_fn(__evnt));
 }
 
-_CCCL_HOST_API inline void __eventRecord(::CUevent __evnt, ::CUstream __stream)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __eventRecordNoThrow(::CUevent __evnt, ::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventRecord);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to record an event", __evnt, __stream);
+  return static_cast<::cudaError_t>(__driver_fn(__evnt, __stream));
+}
+
+_CCCL_HOST_API inline void __eventRecord(::CUevent __evnt, ::CUstream __stream)
+{
+  auto __status = __eventRecordNoThrow(__evnt, __stream);
+  if (__status != cudaSuccess)
+  {
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to record an event");
+  }
 }
 
 _CCCL_HOST_API inline void __eventSynchronize(::CUevent __evnt)

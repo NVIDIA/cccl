@@ -21,14 +21,19 @@
 #endif // no system header
 
 #include <cuda/__device/all_devices.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__event/timed_event.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/array>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <vector>
 
 #include <cuda_runtime_api.h>
 
@@ -36,6 +41,21 @@
 
 namespace cuda::experimental
 {
+struct stream;
+struct stream_ref;
+
+template <class _ToRange, class _FromRange>
+_CCCL_HOST_API void __all_wait_all_impl(const _ToRange& __to_streams, const _FromRange& __from_streams);
+
+template <::cuda::std::size_t _Count>
+[[nodiscard]] _CCCL_HOST_API auto __replicate_streams(stream_ref __source) -> ::cuda::std::array<stream, _Count>;
+
+[[nodiscard]] _CCCL_HOST_API auto __replicate_streams(stream_ref __source, ::cuda::std::size_t __count)
+  -> ::std::vector<stream>;
+
+template <class _Container>
+_CCCL_HOST_API void __replicate_streams_into(stream_ref __source, _Container& __out, ::cuda::std::size_t __count);
+
 //! @brief A non-owning wrapper for cudaStream_t.
 //!
 //! @note It is undefined behavior to use a `stream_ref` object beyond the lifetime of the stream it was created from,
@@ -129,6 +149,34 @@ struct stream_ref : ::cuda::stream_ref
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
     -> __call_result_t<execution::get_domain_t, const _Env&>;
+
+  //! @brief Make this stream wait on all streams in `__from_streams`.
+  template <class _FromRange>
+  _CCCL_HOST_API void wait_all(const _FromRange& __from_streams) const
+  {
+    stream_ref __self = *this;
+    __all_wait_all_impl(::cuda::std::span<stream_ref>(&__self, 1), __from_streams);
+  }
+
+  //! @brief Create a fixed-size group of streams on the same logical device as this stream.
+  //!
+  //! @note This function only creates streams; it does not add synchronization dependencies.
+  //! @note The streams are created with the default priority, which can be changed by the user.
+  template <::cuda::std::size_t _Count>
+  [[nodiscard]] _CCCL_HOST_API auto replicate() const -> ::cuda::std::array<stream, _Count>;
+
+  //! @brief Create a runtime-sized group of streams on the same logical device as this stream.
+  //!
+  //! @note This function only creates streams; it does not add synchronization dependencies.
+  //! @note The streams are created with the default priority, which can be changed by the user.
+  [[nodiscard]] _CCCL_HOST_API auto replicate(::cuda::std::size_t __count) const -> ::std::vector<stream>;
+
+  //! @brief Append a runtime-sized group of streams on the same logical device as this stream to `__out`.
+  //!
+  //! @note This function only creates streams; it does not add synchronization dependencies.
+  //! @note The appended streams are created with the default priority, which can be changed by the user.
+  template <class _Container>
+  _CCCL_HOST_API void replicate_into(_Container& __out, ::cuda::std::size_t __count) const;
 };
 } // namespace cuda::experimental
 
