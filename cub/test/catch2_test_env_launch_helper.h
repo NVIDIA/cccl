@@ -238,7 +238,7 @@ struct kernel_scope
 };
 
 template <size_t... Is, class TplT, class EnvT>
-auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, EnvT env)
+auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const EnvT& env)
 {
   return cuda::std::make_tuple(cuda::std::get<Is>(tpl)..., env);
 }

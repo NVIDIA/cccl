@@ -24,7 +24,7 @@ Here is a generic example:
 
       // environment API
       template <typename ..., typename Env = cuda::std::execution::env<>>
-      static cudaError_t Algorithm(..., Env env = {}) {
+      static cudaError_t Algorithm(..., const Env& env = {}) {
         // optional: minimal argument checking or setup to call dispatch layer
         using default_policy_selector = detail::algorithm::policy_selector_from_types<...>;
         return dispatch_with_env_and_tuning<default_policy_selector>(
