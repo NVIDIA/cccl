@@ -42,10 +42,19 @@
 namespace cuda::experimental
 {
 #if !(defined(__CUDA_ARCH__))
-// Host seed: the libm symbol. Declared noexcept to match the standard <math.h>
-// prototype (glibc marks it __THROW); otherwise the extern-"C" redeclaration
-// conflicts with ::fma when <cmath> is also in the TU (-Werror).
+// Host seed: the libm symbol. The exception spec must match the platform's
+// <math.h> prototype exactly, otherwise this extern-"C" redeclaration conflicts
+// with ::fma when <cmath> is also in the TU (in C++17+ the exception spec is
+// part of the type, so a mismatch is an error, not just a warning):
+//   - glibc marks fma __THROW (noexcept), so the redeclaration must be noexcept.
+//   - MSVC's CRT/CUDA prototype carries no exception specification, so a
+//     noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
+//     under C++20); declare it without noexcept to match.
+#  if defined(_MSC_VER)
+extern "C" double fma(double __x, double __y, double __z);
+#  else
 extern "C" double fma(double __x, double __y, double __z) noexcept;
+#  endif
 #endif
 
 //! @brief Pure FMA core operating on the unpacked representation.
