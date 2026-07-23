@@ -328,6 +328,7 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
+* `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.

@@ -248,6 +248,7 @@ ignore_regexes:
   - '\.github/problem-matchers/problem-matcher\.json'
   - '\.github/workflows/backport-prs\.yml'
   - '\.github/workflows/bench.*\.yml'
+  - '\.github/workflows/compile-time-bench\.yml'
   - '\.github/workflows/build-docs\.yml'
   - '\.github/workflows/build-matx\.yml'
   - '\.github/workflows/build-pytorch\.yml'
