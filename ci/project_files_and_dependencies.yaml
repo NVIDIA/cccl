@@ -203,6 +203,17 @@ projects:
     full_dependencies: []
     include_regexes: ["nvrtcc/"]
 
+  samples:
+    name: "CCCL Samples"
+    matrix_project: "samples"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - "^samples/"
+      - "^ci/build_samples\\.sh$"
+      - "^ci/test_samples\\.sh$"
+      - "^ci/windows/build_samples\\.ps1$"
+
   # This is a dummy project, and only really serves to encode dependencies. Any time any
   # of the C/C++ projects are modified, we want to launch one (and only one) clang-tidy
   # job for the whole of CCCL.
