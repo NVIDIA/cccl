@@ -63,7 +63,7 @@ TEST_FUNC constexpr bool test_type()
 
   [[maybe_unused]] constexpr auto lhs_min = cuda::std::numeric_limits<L>::min();
   [[maybe_unused]] constexpr auto lhs_max = cuda::std::numeric_limits<L>::max();
-  [[maybe_unused]] constexpr auto rhs_min = cuda::std::numeric_limits<L>::min();
+  [[maybe_unused]] constexpr auto rhs_min = cuda::std::numeric_limits<R>::min();
   [[maybe_unused]] constexpr auto rhs_max = cuda::std::numeric_limits<R>::max();
 
   // 1. Multiplying zeros should always result in zero
