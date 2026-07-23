@@ -11,6 +11,7 @@
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
@@ -264,7 +265,7 @@ struct non_default_constructible
 static_assert(!cuda::std::is_trivially_default_constructible_v<non_default_constructible>);
 static_assert(!cuda::std::is_default_constructible_v<non_default_constructible>);
 static_assert(cuda::std::is_trivially_copyable_v<non_default_constructible>); // as required by the standard
-static_assert(thrust::is_trivially_relocatable_v<non_default_constructible>); // CUB uses this check internally
+static_assert(::cuda::is_trivially_copyable_v<non_default_constructible>); // CUB uses this check internally
 
 C2H_TEST("DeviceTransform::Transform non-default constructible types", "[device][transform]")
 {
@@ -544,7 +545,7 @@ struct non_trivial
   }
 };
 static_assert(!cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the standard
-static_assert(!thrust::is_trivially_relocatable_v<non_trivial>); // CUB uses this check internally
+static_assert(!::cuda::is_trivially_copyable_v<non_trivial>); // CUB uses this check internally
 
 // Note(bgruber): I gave up on writing a test that checks whether the copy ctor/assignment operator is actually called
 // (e.g. by tracking/counting invocations of those), since C++ allows (but not guarantees) elision of these operations.

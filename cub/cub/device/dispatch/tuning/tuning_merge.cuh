@@ -20,9 +20,9 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
@@ -163,12 +163,12 @@ struct policy_selector_from_types
     return policy_selector{
       int{sizeof(key_t)},
       int{alignof(key_t)},
-      THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t>,
+      ::cuda::is_trivially_copyable_v<key_t>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt1> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt2>,
       ::cuda::std::is_same_v<key_t, it_value_t<KeysIt2>>,
       ::cuda::std::is_same_v<item_t, NullType> ? 0 : int{sizeof(item_t)},
       int{alignof(item_t)},
-      THRUST_NS_QUALIFIER::is_trivially_relocatable_v<item_t>,
+      ::cuda::is_trivially_copyable_v<item_t>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt1>
         && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt2>,
       ::cuda::std::is_same_v<item_t, it_value_t<ItemsIt2>>,

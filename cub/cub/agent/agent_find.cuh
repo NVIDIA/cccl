@@ -10,9 +10,9 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
 #endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
@@ -41,7 +41,7 @@ struct agent_t
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
     (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (::cuda::std::contiguous_iterator<InputIteratorT>)
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>;
+    && ::cuda::is_trivially_copyable_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 
