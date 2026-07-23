@@ -16,6 +16,7 @@
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
@@ -26,6 +27,7 @@
 #include <testing.cuh>
 
 #include <c2h/catch2_test_helper.h>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 namespace cudax = cuda::experimental;
 
@@ -49,6 +51,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
       estimator.add(*(in + i));
     }
     block.sync();
+    static_assert(cuda::std::is_same_v<decltype(estimator.estimate(block)), double>);
     const auto estimate = estimator.estimate(block);
     if (block.thread_rank() == 0)
     {
@@ -92,23 +95,25 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 
   // Initialize the estimator
   estimator_type estimator{stream, mr, sketch_size_kb};
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(estimator.estimate(stream)), double>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(estimator.ref().estimate(stream)), double>);
 
   // Add all items to the estimator
   estimator.add(stream, items.begin(), items.end());
 
   const auto host_estimate = estimator.estimate(stream);
 
-  auto device_estimate = ::cuda::make_buffer<std::size_t>(stream, mr, 1, ::cuda::no_init);
+  auto device_estimate = ::cuda::make_buffer<double>(stream, mr, 1, ::cuda::no_init);
   estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
     <<<1, 512, estimator.sketch_bytes(), stream.get()>>>(
       sketch_size_kb, items.begin(), num_items, device_estimate.begin());
   REQUIRE(cudaGetLastError() == cudaSuccess);
 
-  std::size_t device_estimate_value{};
+  double device_estimate_value{};
   REQUIRE_CUDART(cudaMemcpyAsync(
-    &device_estimate_value, device_estimate.data(), sizeof(std::size_t), cudaMemcpyDeviceToHost, stream.get()));
+    &device_estimate_value, device_estimate.data(), sizeof(double), cudaMemcpyDeviceToHost, stream.get()));
   stream.sync();
-  REQUIRE(device_estimate_value == host_estimate);
+  REQUIRE_THAT(device_estimate_value, Catch::Matchers::WithinRel(host_estimate, 1e-10));
 }
 
 C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
@@ -238,6 +243,22 @@ C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
 
   REQUIRE(estimator.sketch_bytes() == expected_sketch_bytes);
   REQUIRE(estimator.estimate(stream) == 0);
+}
+
+C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]")
+{
+  using estimator_type = cudax::cuco::hyperloglog<int32_t>;
+
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  estimator_type estimator{stream, mr, estimator_type::precision{8}};
+  const auto item = ::cuda::counting_iterator<int32_t>{0};
+  estimator.add(stream, item, item + 1);
+
+  const auto estimate = estimator.estimate(stream);
+  REQUIRE(estimate > 1.0);
+  REQUIRE(estimate < 2.0);
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 9) // Pinned memory resource is only supported with CTK 12.9 and later
