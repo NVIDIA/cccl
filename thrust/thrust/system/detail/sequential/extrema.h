@@ -32,9 +32,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ForwardIterator min_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
-  return ::cuda::std::min_element(first, last, wrapped_comp);
+  return ::cuda::std::min_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -42,9 +40,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ForwardIterator max_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
-  return ::cuda::std::max_element(first, last, wrapped_comp);
+  return ::cuda::std::max_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -52,9 +48,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
-  return ::cuda::std::minmax_element(first, last, wrapped_comp);
+  return ::cuda::std::minmax_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
