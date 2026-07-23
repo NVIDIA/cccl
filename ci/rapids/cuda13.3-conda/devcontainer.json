@@ -35,7 +35,7 @@
     "RAPIDS_cuvs_GIT_REPO": "${localEnv:RAPIDS_cuvs_GIT_REPO}",
     "RAPIDS_kvikio_GIT_REPO": "${localEnv:RAPIDS_kvikio_GIT_REPO}",
     "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
-    "RAPIDS_nvforest_GIT_REPO": "${localEnv:RAPIDS_cuopt_GIT_REPO}",
+    "RAPIDS_nvforest_GIT_REPO": "${localEnv:RAPIDS_nvforest_GIT_REPO}",
     "RAPIDS_raft_GIT_REPO": "${localEnv:RAPIDS_raft_GIT_REPO}",
     "RAPIDS_rmm_GIT_REPO": "${localEnv:RAPIDS_rmm_GIT_REPO}",
     "RAPIDS_ucxx_GIT_REPO": "${localEnv:RAPIDS_ucxx_GIT_REPO}",
