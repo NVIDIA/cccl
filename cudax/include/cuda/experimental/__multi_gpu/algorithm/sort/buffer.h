@@ -201,6 +201,16 @@ struct __buffer
     return __buf_;
   }
 
+  [[nodiscard]] _CCCL_HOST_API auto* data() noexcept
+  {
+    return __buf_.data();
+  }
+
+  [[nodiscard]] _CCCL_HOST_API const auto* data() const noexcept
+  {
+    return __buf_.data();
+  }
+
   [[nodiscard]] _CCCL_HOST_API auto begin() noexcept
   {
     return __buf_.begin();

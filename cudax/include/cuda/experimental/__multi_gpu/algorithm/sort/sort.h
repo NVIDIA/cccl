@@ -42,7 +42,6 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__execution/env.h>
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -53,9 +52,9 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-// #if _CCCL_CTK_BELOW(12, 9)
-#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
-// #endif // CUDA 12.8-
+#if _CCCL_CTK_BELOW(12, 9)
+#  include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
+#endif // CUDA 12.8-
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/bracket.h>
@@ -147,10 +146,10 @@ struct __finalize_splitters_fn
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp operator()(const _Tup& __tup) const noexcept
   {
     const auto [__target_rank, __L_i, __U_i] = __tup;
-
     // Pick the bracket endpoint closest to the target rank. The chosen key becomes the
     // splitter used by data exchange.
     const bool __use_L = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
+
     if (__use_L)
     {
       return __L_i.__key.has_value() ? *__L_i.__key : *__first_probe;
@@ -169,7 +168,7 @@ struct __finalize_splitters_fn
 template <class _KeyIt, class _SplitIt, class _Cmp>
 struct __bucket_count_fn
 {
-  _KeyIt __lo; // mutable cursor: last computed upper bound, reused as the next lower bound
+  mutable _KeyIt __lo; // mutable cursor: last computed upper bound, reused as the next lower bound
   _KeyIt __keys_last;
   _SplitIt __split_it;
   ::cuda::std::uint64_t __num_splitters;
@@ -177,7 +176,8 @@ struct __bucket_count_fn
 
   // operator() is intentionally non-const: it advances the __lo cursor across successive
   // monotonic bucket invocations.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::uint64_t operator()(::cuda::std::uint64_t __bucket)
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::uint64_t
+  operator()(::cuda::std::uint64_t __bucket) const noexcept
   {
     auto __hi = __keys_last;
     // This reordering takes advantage of the fact that we cached __lo previously. In
@@ -230,7 +230,7 @@ struct _Sorter
     const __buffer<_Tp>& __data,
     const ::std::vector<::cuda::std::size_t>& __counts,
     const ::std::vector<::cuda::std::size_t>& __displs,
-    _BinaryOp __cmp,
+    const _BinaryOp& __cmp,
     __buffer<_Tp>* __ret)
   {
     if (__counts.size() < 2)
@@ -246,52 +246,38 @@ struct _Sorter
 
     const auto __total = __counts.back() + __displs.back();
 
-    __resize_for_overwrite(*__ret, __total);
+    ::cuda::experimental::__detail::__resize_for_overwrite(*__ret, __total);
 
-    auto __tmp_buf                    = __ret->__make_empty_like(__total);
-    auto& __ret_buf                   = __ret->__get();
-    auto& __data_buf                  = __data.__get();
-    ::cuda::std::size_t __merged_size = 0;
+    auto __tmp_buf = __ret->__make_empty_like(__total);
 
-    {
-      const auto __num_keys1 = __counts[0];
-      const auto __num_keys2 = __counts[1];
-      const auto __off1      = __displs[0];
-      const auto __off2      = __displs[1];
+    __CUDAX_MULTI_GPU_DISPATCH(
+      __comm.logical_device(),
+      CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
+      __data.begin() + __displs[0],
+      __counts[0],
+      __data.begin() + __displs[1],
+      __counts[1],
+      __ret->begin(),
+      __cmp,
+      __env);
 
-      __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
-        ::cub::DeviceMerge::MergeKeys,
-        __data_buf.begin() + __off1,
-        __num_keys1,
-        __data_buf.begin() + __off2,
-        __num_keys2,
-        __ret_buf.begin(),
-        __cmp,
-        __env);
-
-      __merged_size = __num_keys1 + __num_keys2;
-    }
+    ::cuda::std::size_t __merged_size = __counts[0] + __counts[1];
 
     for (::cuda::std::size_t __i = 2; __i < __displs.size(); ++__i)
     {
-      const auto __num_keys1 = __merged_size;
-      const auto __num_keys2 = __counts[__i];
-      const auto __off       = __displs[__i];
-
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        ::cub::DeviceMerge::MergeKeys,
-        __ret_buf.begin(),
-        __num_keys1,
-        __data_buf.begin() + __off,
-        __num_keys2,
+        CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
+        __ret->begin(),
+        __merged_size,
+        __data.begin() + __displs[__i],
+        __counts[__i],
         __tmp_buf.begin(),
         __cmp,
         __env);
 
-      __ret_buf.swap(__tmp_buf);
-      __merged_size = __num_keys1 + __num_keys2;
+      __ret->__get().swap(__tmp_buf);
+      __merged_size += __counts[__i];
     }
   }
 
@@ -301,12 +287,15 @@ struct _Sorter
     _EnvRange&& __envs,
     const ::std::vector<::cuda::stream_ref>& __streams,
     const ::std::vector<__buffer<_Tp>>& __local_samples,
-    _BinaryOp __cmp,
+    const _BinaryOp& __cmp,
     ::std::vector<__buffer<::cuda::std::size_t>>* __local_samples_size,
     ::std::vector<::cuda::std::size_t>* __local_sendcounts,
     ::std::vector<__buffer<_Tp>>* __local_probes,
     ::std::vector<::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible>>*
-      __local_probe_counts)
+      __local_probe_counts,
+    ::std::vector<::cuda::std::size_t>* __root_recvcounts,
+    ::std::vector<::cuda::std::size_t>* __root_displs,
+    ::cuda::std::optional<__buffer<_Tp>>* __root_all_samples)
   {
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
@@ -314,55 +303,67 @@ struct _Sorter
       for (auto&& [__comm, __stream, __samples_size] :
            ::cuda::std::ranges::views::zip(__comms, __streams, *__local_samples_size))
       {
-        auto* const __ptr = __samples_size.__get().data();
+        auto* const __ptr = __samples_size.data();
 
-        __comm.gather(__guard, __ptr, __ptr, 1, __ROOT_RANK, __stream);
+        __comm.gather(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __stream);
       }
     }
-
-    ::std::vector<::cuda::std::size_t> __root_recvcounts;
-    ::std::vector<::cuda::std::size_t> __root_displs;
-    ::cuda::std::optional<__buffer<_Tp>> __root_all_samples;
 
     for (auto&& [__comm, __stream, __env, __samples_size, __sendcount] :
          ::cuda::std::ranges::views::zip(__comms, __streams, __envs, *__local_samples_size, *__local_sendcounts))
     {
       if (__comm.rank() == __ROOT_RANK)
       {
-        __root_recvcounts.resize(__samples_size.size());
+        // __root_recvcounts, __root_displs, and __root_all_samples are hoisted out of the
+        // sampling loop and passed in by pointer so their allocations are paid once per sort
+        // rather than once per round. __root_displs is filled via back_inserter, so it must
+        // start each round empty; the recvcounts resize and the all_samples resize below reuse
+        // the existing storage (sizes are invariant / monotonically shrinking across rounds,
+        // so neither reallocates after round one).
+        __root_recvcounts->resize(__samples_size.size());
 
         ::cuda::copy_bytes(
           __stream,
           __samples_size.__get(),
-          __root_recvcounts,
+          *__root_recvcounts,
           ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                      ::cuda::host_memory_location,
                                      ::cuda::source_access_order::stream});
 
-        __root_displs.reserve(__root_recvcounts.size() + 1);
+        __root_displs->clear();
+        __root_displs->reserve(__root_recvcounts->size() + 1);
 
         // Defer until the last possible moment
         __stream.sync();
 
         // __root_recv_counts[__ROOT_RANK] is exactly the root's send counts as
         // well
-        __sendcount = __root_recvcounts[__ROOT_RANK];
+        __sendcount = (*__root_recvcounts)[__ROOT_RANK];
 
         // recvcounts is likely relatively small (it is on the order of
         // O(ranks)). It may be faster to just do the exclusive scan on the host
         // than to copy to device, scan, and copy back
         ::cuda::std::exclusive_scan(
-          __root_recvcounts.begin(),
-          __root_recvcounts.end(),
-          ::cuda::std::back_inserter(__root_displs),
+          __root_recvcounts->begin(),
+          __root_recvcounts->end(),
+          ::cuda::std::back_inserter(*__root_displs),
           ::cuda::std::size_t{0});
         // displs.back() is the LAST rank's offset (exclusive scan), so the total
         // element count = displs.back() + __root_recvcounts.back(). all_samples
         // is vector<T>, sized in ELEMENTS.
-        const auto __all_recv = __root_displs.back() + __root_recvcounts.back();
+        const auto __all_recv = __root_displs->back() + __root_recvcounts->back();
 
-        __root_all_samples.emplace(
-          __stream, __samples_size.__get().memory_resource(), __all_recv, ::cuda::no_init, __env);
+        // First round engages the optional; later rounds reuse the allocation via resize
+        // (samples shrink monotonically, so this never grows after round one).
+        if (__root_all_samples->has_value())
+        {
+          ::cuda::experimental::__detail::__resize_for_overwrite(**__root_all_samples, __all_recv);
+        }
+        else
+        {
+          __root_all_samples->emplace(
+            __stream, __samples_size.__get().memory_resource(), __all_recv, ::cuda::no_init, __env);
+        }
       }
       else
       {
@@ -387,11 +388,11 @@ struct _Sorter
       {
         __comm.gather_v(
           __guard,
-          __samples.__get().data(),
+          __samples.data(),
           __sendcount,
-          __comm.rank() == __ROOT_RANK ? __root_all_samples.value().__get().data() : nullptr,
-          __root_recvcounts.data(),
-          __root_displs.data(),
+          __comm.rank() == __ROOT_RANK ? __root_all_samples->value().data() : nullptr,
+          __root_recvcounts->data(),
+          __root_displs->data(),
           __ROOT_RANK,
           __stream);
       }
@@ -403,14 +404,7 @@ struct _Sorter
     {
       if (__comm.rank() == __ROOT_RANK)
       {
-        __merge_k_way(
-          __comm,
-          __env,
-          __root_all_samples.value(),
-          __root_recvcounts,
-          __root_displs,
-          ::cuda::std::move(__cmp),
-          &__probes);
+        __merge_k_way(__comm, __env, __root_all_samples->value(), *__root_recvcounts, *__root_displs, __cmp, &__probes);
 
         __probe_count.front() = __probes.size();
         break;
@@ -439,7 +433,7 @@ struct _Sorter
       {
         // wait for comm
         __stream.sync();
-        __resize_for_overwrite(__probes, __probe_count.front());
+        ::cuda::experimental::__detail::__resize_for_overwrite(__probes, __probe_count.front());
       }
     }
 
@@ -449,7 +443,7 @@ struct _Sorter
       for (auto&& [__comm, __stream, __probes, __probe_count] :
            ::cuda::std::ranges::views::zip(__comms, __streams, *__local_probes, *__local_probe_counts))
       {
-        auto* const __ptr = __probes.__get().data();
+        auto* const __ptr = __probes.data();
 
         __comm.broadcast(__guard, __ptr, __ptr, __probe_count.front(), __ROOT_RANK, __stream);
       }
@@ -473,7 +467,7 @@ struct _Sorter
       const auto __keys_first   = ::cuda::std::ranges::begin(__keys);
       const auto __probes_first = __probes.begin();
 
-      __resize_for_overwrite(__hist, __num_buckets);
+      ::cuda::experimental::__detail::__resize_for_overwrite(__hist, __num_buckets);
 
       auto __op = ::cuda::experimental::__detail::__bucket_count_fn<
         ::cuda::std::remove_cvref_t<decltype(__keys_first)>,
@@ -482,7 +476,7 @@ struct _Sorter
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        ::cub::DeviceTransform::Transform,
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         __hist.begin(),
         __num_buckets,
@@ -517,12 +511,11 @@ struct _Sorter
         __Ls_begin,
         __Us_begin);
       auto __out = ::cuda::make_zip_iterator(__I_j_begin, __Ls_begin, __Us_begin);
-      auto __op =
-        __update_intervals_fn<_Tp, _Bracket>{__probes.__get().data(), __histogram.__get().data(), __probes.size()};
+      auto __op  = __update_intervals_fn<_Tp, _Bracket>{__probes.data(), __histogram.data(), __probes.size()};
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        ::cub::DeviceTransform::Transform,
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::std::move(__in),
         ::cuda::std::move(__out),
         __num_splitters,
@@ -598,7 +591,7 @@ struct _Sorter
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        ::cub::DeviceTransform::Transform,
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         __send_counts.begin(),
         __comm_size,
@@ -613,8 +606,8 @@ struct _Sorter
            ::cuda::std::ranges::views::zip(__comms, __streams, __local_send_counts))
       {
         auto& __recv_counts    = __local_recv_counts.emplace_back(__send_counts.__make_empty_like());
-        auto* const __send_ptr = __send_counts.__get().data();
-        auto* const __recv_ptr = __recv_counts.__get().data();
+        auto* const __send_ptr = __send_counts.data();
+        auto* const __recv_ptr = __recv_counts.data();
 
         __comm.all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __stream);
       }
@@ -701,7 +694,7 @@ struct _Sorter
           ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
           __h_send_counts.data(),
           __h_send_displs.data(),
-          __recvd.__get().data(),
+          __recvd.data(),
           __h_recv_counts.data(),
           __h_recv_displs.data(),
           __stream);
@@ -721,7 +714,7 @@ struct _Sorter
 
       __merge_k_way(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
 
-      __resize_for_overwrite(__inputs, __tmp.size());
+      ::cuda::experimental::__detail::__resize_for_overwrite(__inputs, __tmp.size());
 
       ::cuda::copy_bytes(
         __stream,
@@ -798,7 +791,7 @@ struct _Sorter
       for (auto&& [__comm, __stream, __sizes] :
            ::cuda::std::ranges::views::zip(__comms, __streams, __local_current_sizes))
       {
-        auto* const __ptr = __sizes.__get().data();
+        auto* const __ptr = __sizes.data();
 
         __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, 1, __stream);
       }
@@ -811,7 +804,7 @@ struct _Sorter
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        ::cub::DeviceScan::ExclusiveSum,
+        CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
         __sizes.begin(),
         __offsets.begin(),
         __comm_size,
@@ -859,9 +852,8 @@ struct _Sorter
       auto __op = [__rank = __comm.rank(),
                    __comm_size,
                    __N,
-                   __current_offsets = __current_offsets.__get().data(),
-                   __desired_offsets =
-                     __desired_offsets.__get().data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
+                   __current_offsets = __current_offsets.data(),
+                   __desired_offsets = __desired_offsets.data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
         // current_offsets[i] is the start of rank i's current
         // (post-exchange) bucket; desired offsets are the original final
         // buckets. Intersect the two global element intervals to derive
@@ -902,7 +894,7 @@ struct _Sorter
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __comm.logical_device(),
-        ::cub::DeviceTransform::Transform,
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         ::cuda::std::move(__out),
         __comm_size,
@@ -973,7 +965,7 @@ struct _Sorter
           ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
           __h_send_counts.data(),
           __h_send_displs.data(),
-          __out.__get().data(),
+          __out.data(),
           __h_recv_counts.data(),
           __h_recv_displs.data(),
           __stream);
@@ -985,7 +977,7 @@ struct _Sorter
     {
       // This resize is safe only so long as the user promises to free their allocation on the
       // stream that they passed us. For thrust/cuda containers, this is vacuously true
-      __resize_for_overwrite(__input, __out.size());
+      ::cuda::experimental::__detail::__resize_for_overwrite(__input, __out.size());
 
       ::cuda::copy_bytes(
         __stream,
@@ -1070,7 +1062,7 @@ struct _Sorter
         for (auto&& [__comm, __stream, __sizes] :
              ::cuda::std::ranges::views::zip(__comms, __streams, __all_local_sizes))
         {
-          auto* const __ptr = __sizes.__get().data();
+          auto* const __ptr = __sizes.data();
 
           __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, 1, __stream);
         }
@@ -1085,7 +1077,7 @@ struct _Sorter
 
         __CUDAX_MULTI_GPU_DISPATCH(
           __comm.logical_device(),
-          ::cub::DeviceScan::ExclusiveSum,
+          CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
           __sizes.begin(),
           __offsets.begin(),
           __sizes.size(),
@@ -1120,7 +1112,7 @@ struct _Sorter
 
         __CUDAX_MULTI_GPU_DISPATCH(
           __comm.logical_device(),
-          ::cub::DeviceMergeSort::SortKeys,
+          CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
           ::cuda::std::ranges::begin(__input),
           ::cuda::std::ranges::size(__input),
           __cmp,
@@ -1162,6 +1154,15 @@ struct _Sorter
           __local_probe_counts;
 
         __local_probe_counts.reserve(__num_local_inputs);
+
+        // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so their
+        // allocations are paid once per sort instead of once per round. recvcounts/displs are
+        // O(comm_size) host vectors of invariant size; all_samples is the device buffer holding the
+        // gathered sample keys, which shrinks monotonically across rounds. __gather_merge_broadcast
+        // reuses their storage each round (see the reuse handling there).
+        ::std::vector<::cuda::std::size_t> __root_recvcounts;
+        ::std::vector<::cuda::std::size_t> __root_displs;
+        ::cuda::std::optional<__buffer<_Tp>> __root_all_samples;
 
         for (auto&& [__comm, __stream, __resource, __env] :
              ::cuda::std::ranges::views::zip(__comms, __streams, __resources, __envs))
@@ -1236,7 +1237,7 @@ struct _Sorter
               __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob)) : __previous_sendcount,
               ::cuda::std::size_t{1});
 
-            __resize_for_overwrite(__samples, __estimate);
+            ::cuda::experimental::__detail::__resize_for_overwrite(__samples, __estimate);
             ::cuda::experimental::__detail::__sort_sample_probes(
               __stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_size);
           }
@@ -1250,7 +1251,10 @@ struct _Sorter
             &__local_samples_sizes,
             &__local_sample_sendcounts,
             &__local_probes,
-            &__local_probe_counts);
+            &__local_probe_counts,
+            &__root_recvcounts,
+            &__root_displs,
+            &__root_all_samples);
 
           __local_histogram(__comms, __envs, __local_inputs, __local_probes, __cmp, &__local_hist);
 
@@ -1259,7 +1263,7 @@ struct _Sorter
 
             for (auto&& [__comm, __stream, __hist] : ::cuda::std::ranges::views::zip(__comms, __streams, __local_hist))
             {
-              auto* const __ptr = __hist.__get().data();
+              auto* const __ptr = __hist.data();
 
               __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __stream);
             }
