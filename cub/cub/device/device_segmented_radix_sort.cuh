@@ -557,9 +557,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -710,9 +710,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1213,9 +1213,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1366,9 +1366,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1833,9 +1833,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1973,9 +1973,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2437,9 +2437,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2577,9 +2577,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

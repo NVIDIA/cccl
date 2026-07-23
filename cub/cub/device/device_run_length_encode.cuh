@@ -335,7 +335,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_counts_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::Encode");
 
@@ -583,7 +583,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::NonTrivialRuns");
 

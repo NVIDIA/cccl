@@ -270,7 +270,12 @@ function(simd_codegen_add_sass_test test_path)
 endfunction()
 
 set(simd_codegen_sass_tests)
-file(GLOB simd_codegen_sass_tests "floating_point/*.cu" "integer/*.cu")
+file(
+  GLOB simd_codegen_sass_tests
+  "floating_point/*.cu"
+  "integer/*.cu"
+  "min_max/*.cu"
+)
 
 add_subdirectory(load_store)
 
