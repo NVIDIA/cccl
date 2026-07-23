@@ -78,8 +78,12 @@ TEST_FUNC constexpr bool test_type()
   // 3. Test T(-1) * T_MIN case
   if constexpr (is_signed_v<L> && is_signed_v<R>)
   {
+    // nvcc 12.0 seems to have some issues during constant evaluation of this test. Works fine with later versions, so
+    // let's just disable this test.
+#if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     test_mul_overflow<Res, L, R>(lhs_min, -1, cuda::uabs(lhs_min));
     test_mul_overflow<Res, L, R>(-1, rhs_min, cuda::uabs(rhs_min));
+#endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   }
 
   // 4. Test other numbers
