@@ -66,7 +66,7 @@ class view_interface
 
   _CCCL_API constexpr _Derived const& __derived() const noexcept
   {
-    static_assert(sizeof(_Derived) && derived_from<_Derived, view_interface> && view<_Derived>);
+    static_assert(sizeof(_Derived) && derived_from<_Derived, view_interface>);
     return static_cast<_Derived const&>(*this);
   }
 
