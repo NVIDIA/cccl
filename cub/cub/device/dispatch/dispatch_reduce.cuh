@@ -529,6 +529,11 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
       return error;
     }
 
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     // Create dispatch functor
     DispatchReduce dispatch(
       d_temp_storage,

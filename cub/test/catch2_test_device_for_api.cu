@@ -10,8 +10,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/tuple>
+#include <cuda/stream>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -419,6 +421,25 @@ C2H_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][devic
   int* d_last               = nullptr;
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_t{}));
+}
+
+C2H_TEST("Device for each n fails when using stream from another device", "[for_each][device]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    SUCCEED("Test requires at least 2 CUDA devices to run.");
+    return;
+  }
+
+  cuda::stream stream_on_device_1(cuda::devices[1]);
+
+  // example-begin for-each-n-wo-temp-storage
+  c2h::device_vector<int> vec = {1, 2, 3, 4};
+  square_ref_t op{};
+
+  auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op, cuda::stream_ref{stream_on_device_1});
+  REQUIRE(result == cudaErrorInvalidDevice);
+  // example-end for-each-n-wo-temp-storage
 }
 
 // todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up
