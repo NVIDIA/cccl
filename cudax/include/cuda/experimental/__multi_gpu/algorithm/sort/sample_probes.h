@@ -41,7 +41,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail
+namespace cuda::experimental::__detail::__sort
 {
 // TODO(jfaibussowit):
 //
@@ -92,7 +92,7 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
 }
 
 template <class _Tp, class _Resource, class _BinaryOp, class _InputRange>
-_CCCL_HOST_API void __sort_sample_probes(
+_CCCL_HOST_API void __sample_probes(
   _InputRange&& __input,
   const __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Resource>& __I_j,
   double __sampling_probability,
@@ -119,7 +119,7 @@ _CCCL_HOST_API void __sort_sample_probes(
     ::cuda::std::span<_Tp>{*__samples},
     __sample_size->__get().data());
 }
-} // namespace cuda::experimental::__detail
+} // namespace cuda::experimental::__detail::__sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

@@ -93,7 +93,7 @@ struct __update_intervals_fn
   ::cuda::std::size_t __num_probes;
 
   template <class _Tup>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::
+  [[nodiscard]] _CCCL_DEVICE constexpr ::cuda::std::
     tuple<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Bracket, _Bracket>
     operator()(const _Tup& __tup) const noexcept
   {
@@ -144,7 +144,7 @@ struct __finalize_splitters_fn
   _Probe __last_probe;
 
   template <class _Tup>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp operator()(const _Tup& __tup) const noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr _Tp operator()(const _Tup& __tup) const noexcept
   {
     const auto [__target_rank, __L_i, __U_i] = __tup;
     // Pick the bracket endpoint closest to the target rank. The chosen key becomes the
@@ -177,8 +177,7 @@ struct __bucket_count_fn
 
   // operator() is intentionally non-const: it advances the __lo cursor across successive
   // monotonic bucket invocations.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::uint64_t
-  operator()(::cuda::std::uint64_t __bucket) const noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr ::cuda::std::uint64_t operator()(::cuda::std::uint64_t __bucket) const noexcept
   {
     auto __hi = __keys_last;
     // This reordering takes advantage of the fact that we cached __lo previously. In
@@ -1271,7 +1270,7 @@ struct _Sorter
           ::cuda::std::size_t{1});
 
         ::cuda::experimental::__detail::__resize_for_overwrite(__scratch.__samples, __estimate);
-        ::cuda::experimental::__detail::__sort_sample_probes(
+        ::cuda::experimental::__detail::__sort::__sample_probes(
           __input, __scratch.__I_j, __prob, __cmp, &__scratch.__samples, &__scratch.__samples_size);
       }
 
