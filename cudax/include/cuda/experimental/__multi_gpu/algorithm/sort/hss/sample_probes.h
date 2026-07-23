@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_SAMPLE_PROBES_H
-#define _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_SAMPLE_PROBES_H
+#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_HSS_SAMPLE_PROBES_H
+#define _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_HSS_SAMPLE_PROBES_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,13 +35,11 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/sort/buffer.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort
+namespace cuda::experimental::__detail::__sort::__hss
 {
 // TODO(jfaibussowit):
 //
@@ -91,14 +89,15 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
   *__samples_size = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin());
 }
 
-template <class _Tp, class _Resource, class _BinaryOp, class _InputRange>
+template <class _Traits, class _Tp, class _BinaryOp, class _InputRange>
 _CCCL_HOST_API void __sample_probes(
   _InputRange&& __input,
-  const __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Resource>& __I_j,
+  const typename _Traits::template __buffer_type<
+    ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>& __I_j,
   double __sampling_probability,
   _BinaryOp __cmp,
-  __buffer<_Tp, _Resource>* __samples,
-  __buffer<::cuda::std::size_t, _Resource>* __sample_size)
+  typename _Traits::template __buffer_type<_Tp>* __samples,
+  typename _Traits::template __buffer_type<::cuda::std::size_t>* __sample_size)
 {
   constexpr auto __config =
     ::cuda::make_config(::cuda::make_hierarchy(::cuda::block_dims<1>(), ::cuda::grid_dims<1>()));
@@ -119,10 +118,10 @@ _CCCL_HOST_API void __sample_probes(
     ::cuda::std::span<_Tp>{*__samples},
     __sample_size->__get().data());
 }
-} // namespace cuda::experimental::__detail::__sort
+} // namespace cuda::experimental::__detail::__sort::__hss
 
 // NOLINTEND(bugprone-reserved-identifier)
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_SAMPLE_PROBES_H
+#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_HSS_SAMPLE_PROBES_H

@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_BUFFER_H
-#define _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_BUFFER_H
+#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_HSS_BUFFER_H
+#define _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_HSS_BUFFER_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,17 +25,11 @@
 #include <thrust/detail/vector_base.h>
 
 #include <cuda/__container/buffer.h>
-#include <cuda/__device/device_ref.h>
-#include <cuda/__functional/lazy_call_or.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__utility/no_init.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
@@ -44,16 +38,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail
+namespace cuda::experimental::__detail::__sort::__hss
 {
-// Maps an _Env to the memory resource type produced by __resource_from_env.
-template <class _Env>
-using __pool_type_for = decltype(::cuda::device_default_memory_pool(::cuda::std::declval<::cuda::device_ref>()));
-
-template <class _Env>
-using __resource_type_for = ::cuda::std::remove_cvref_t<
-  ::cuda::__lazy_call_result_or_t<::cuda::mr::get_memory_resource_t, __pool_type_for<_Env>(void), _Env>>;
-
 // cuda::buffer has no concept of size vs capacity. We need both below because
 // we want to be able to shrink a buffer without reallocating a new one.
 template <class _Up, class _Resource>
@@ -272,10 +258,10 @@ _CCCL_HOST_API void __resize_for_overwrite(_Range& __range, ::cuda::std::size_t 
     __range.resize(__size);
   }
 }
-} // namespace cuda::experimental::__detail
+} // namespace cuda::experimental::__detail::__sort::__hss
 
 // NOLINTEND(bugprone-reserved-identifier)
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_BUFFER_H
+#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_SORT_HSS_BUFFER_H
