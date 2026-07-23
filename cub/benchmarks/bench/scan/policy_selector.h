@@ -10,6 +10,20 @@
 #if !TUNE_BASE
 #  if !USES_LOOKAHEAD()
 #    include <look_back_helper.cuh>
+
+#    if TUNE_TRANSPOSE == 0
+#      define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
+#      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
+#    else // TUNE_TRANSPOSE == 1
+#      define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
+#      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
+#    endif // TUNE_TRANSPOSE
+
+#    if TUNE_LOAD == 0
+#      define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#    else // TUNE_LOAD == 1
+#      define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#    endif // TUNE_LOAD
 #  endif // !USES_LOOKAHEAD()
 
 template <typename AccumT>
