@@ -14,7 +14,7 @@ function Get-Python {
         [string]$Version
     )
 
-    # Install uv if not present. uv downloads pre-built CPython binaries —
+    # Install uv if not present. uv downloads pre-built CPython binaries --
     # no compilation, no build dependencies, no pyenv-win required.
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "Installing uv..."
@@ -71,6 +71,26 @@ function Get-CudaMajor {
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
     return '13'
+}
+
+function Get-CudaVersion {
+    <#
+    .SYNOPSIS
+        Gets the CUDA major.minor version for this container instance (e.g.
+        '12.9' or '13.0').  Defaults to '13.0' if no match can be found.
+    #>
+    if ($env:CUDA_PATH) {
+        $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
+        if (Test-Path $nvcc) {
+            $out = & $nvcc --version 2>&1
+            $text = ($out -join "`n")
+            if ($text -match 'release\s+(\d+\.\d+)') { return $Matches[1] }
+        }
+        # Fallback: parse major.minor from CUDA_PATH like ...\v13.0
+        $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+\.\d+)')
+        if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
+    }
+    return '13.0'
 }
 
 function Convert-ToUnixPath {
@@ -172,4 +192,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

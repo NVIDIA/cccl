@@ -136,10 +136,27 @@ def run_example_module(module_name, display_name):
         return False
 
 
+def _nvjitlink_version_available():
+    """Whether cuda.bindings can query the nvJitLink version.
+
+    cuda.coop examples generate LTO-IR via cuda.core, which probes
+    nvJitLinkVersion -- a function that does not exist in CTK 12.0-12.2. See
+    https://github.com/NVIDIA/cuda-python/issues/2408
+    """
+    try:
+        from cuda.bindings import nvjitlink
+
+        nvjitlink.version()
+        return True
+    except Exception:
+        return False
+
+
 # Create pytest-compatible test functions dynamically
 def create_test_functions():
     """Create pytest-compatible test functions for each discovered example."""
     examples = discover_examples()
+    nvjitlink_available = _nvjitlink_version_available()
 
     for display_name, module_name in examples:
         # Create a test function name from the module name
@@ -160,6 +177,15 @@ def create_test_functions():
             globals()[test_name] = pytest.mark.skipif(
                 importlib.util.find_spec("cupy") is None,
                 reason="cuda.compute examples require the optional CuPy dependency",
+            )(globals()[test_name])
+        elif module_name.startswith("coop."):
+            globals()[test_name] = pytest.mark.skipif(
+                not nvjitlink_available,
+                reason=(
+                    "cuda.coop examples generate LTO-IR via cuda.core, which needs "
+                    "nvJitLinkVersion (absent in CTK 12.0-12.2): "
+                    "https://github.com/NVIDIA/cuda-python/issues/2408"
+                ),
             )(globals()[test_name])
 
 

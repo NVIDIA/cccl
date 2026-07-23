@@ -14,6 +14,17 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
 
+# Pin cuda-toolkit wheels to the container's CTK minor. A lane can set
+# CCCL_PYTHON_TEST_LATEST_CTK=1 to skip the pin and test the latest minor.
+if ($env:CCCL_PYTHON_TEST_LATEST_CTK -ne "1") {
+    $cudaVersion = Get-CudaVersion
+    $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
+    "cuda-toolkit==$cudaVersion.*" | Out-File -FilePath $env:PIP_CONSTRAINT -Encoding ascii
+} else {
+    # Clear any inherited constraint so this lane truly tests the latest minor.
+    Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
+}
+
 $repoRoot = Get-RepoRoot
 
 $wheelPath = Get-CudaCcclWheel
