@@ -43,13 +43,15 @@ struct SelectLookbackPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
+  detail::LoadPrefetch load_prefetch = detail::LoadPrefetch::none; //!< The cache level used to prefetch input items
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SelectLookbackPolicy& lhs, const SelectLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay
+        && lhs.load_prefetch == rhs.load_prefetch;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -64,7 +66,8 @@ struct SelectLookbackPolicy
     return os
         << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay
+        << ", .load_prefetch = " << p.load_prefetch << " }";
   }
 #endif // _CCCL_HOSTED()
 };
