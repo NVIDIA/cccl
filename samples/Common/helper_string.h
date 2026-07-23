@@ -288,11 +288,12 @@ inline bool getCmdLineArgumentString(const int argc, const char** argv, const ch
   {
     for (int i = 1; i < argc; i++)
     {
-      int string_start  = stringRemoveDelimiter('-', argv[i]);
-      char* string_argv = const_cast<char*>(&argv[i][string_start]);
-      int length        = static_cast<int>(strlen(string_ref));
+      const int string_start       = stringRemoveDelimiter('-', argv[i]);
+      char* const string_argv      = const_cast<char*>(&argv[i][string_start]);
+      const int length             = static_cast<int>(strlen(string_ref));
+      const int string_argv_length = static_cast<int>(strlen(string_argv));
 
-      if (!STRNCASECMP(string_argv, string_ref, length))
+      if (string_argv_length > length && string_argv[length] == '=' && !STRNCASECMP(string_argv, string_ref, length))
       {
         *string_retval = &string_argv[length + 1];
         bFound         = true;

@@ -87,8 +87,9 @@ def find_executables(root_dir):
 
         # Check if file is executable
         if os.access(path, os.X_OK):
-            # Skip if it's a library file
-            if path.suffix.lower() in (".dll", ".so", ".dylib"):
+            # Skip shared libraries, including versioned names like libfoo.so.1.
+            suffixes = {suffix.lower() for suffix in path.suffixes}
+            if suffixes & {".dll", ".so", ".dylib"}:
                 continue
             executables.append(path)
 
