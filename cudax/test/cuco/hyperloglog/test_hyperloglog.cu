@@ -57,6 +57,13 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
   }
 }
 
+template <typename Ref>
+__global__ void merge_kernel(Ref destination, const Ref source)
+{
+  const auto block = cooperative_groups::this_thread_block();
+  destination.merge(block, source);
+}
+
 using test_types = c2h::type_list<int32_t, int64_t>;
 
 // Maps index i to i / repeats, yielding `repeats` duplicates of each value
@@ -109,6 +116,30 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
     &device_estimate_value, device_estimate.data(), sizeof(std::size_t), cudaMemcpyDeviceToHost, stream.get()));
   stream.sync();
   REQUIRE(device_estimate_value == host_estimate);
+}
+
+C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
+{
+  using T              = int32_t;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  constexpr std::size_t num_items = 1 << 20;
+  const estimator_type::precision precision{8};
+
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  estimator_type source{stream, mr, precision};
+  const auto first = ::cuda::counting_iterator<T>{0};
+  source.add(stream, first, first + num_items);
+  const auto source_estimate = source.estimate(stream);
+
+  estimator_type destination{stream, mr, precision};
+  merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+
+  REQUIRE(destination.estimate(stream) == source_estimate);
+  REQUIRE(source.estimate(stream) == source_estimate);
 }
 
 C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
