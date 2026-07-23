@@ -8,23 +8,23 @@
 
 set -eo pipefail
 
-ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly ci_dir
+SAMPLES_CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SAMPLES_CI_DIR
 
 # shellcheck source=ci/build_common.sh
-source "${ci_dir}/build_common.sh"
+source "${SAMPLES_CI_DIR}/build_common.sh"
 
 print_environment_details
 
 fail_if_no_gpu
 
-SAMPLES_SRC_DIR="$(cd "${ci_dir}/../samples" && pwd)"
+SAMPLES_SRC_DIR="$(cd "${SAMPLES_CI_DIR}/../samples" && pwd)"
 SAMPLES_BUILD_DIR="${BUILD_DIR}/samples"
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-    producer_id="$("${ci_dir}/util/workflow/get_producer_id.sh")"
+    producer_id="$("${SAMPLES_CI_DIR}/util/workflow/get_producer_id.sh")"
     run_command "Unpack sample test artifacts" \
-        "${ci_dir}/util/artifacts/download_packed.sh" \
+        "${SAMPLES_CI_DIR}/util/artifacts/download_packed.sh" \
         "z_samples-test-artifacts-${DEVCONTAINER_NAME:?}-${producer_id}" \
         "${SAMPLES_SRC_DIR}/.."
 fi

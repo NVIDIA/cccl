@@ -9,15 +9,15 @@
 
 set -eo pipefail
 
-ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly ci_dir
+SAMPLES_CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SAMPLES_CI_DIR
 
 # shellcheck source=ci/build_common.sh
-source "${ci_dir}/build_common.sh"
+source "${SAMPLES_CI_DIR}/build_common.sh"
 
 print_environment_details
 
-SAMPLES_SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../samples" && pwd)"
+SAMPLES_SRC_DIR="$(cd "${SAMPLES_CI_DIR}/../samples" && pwd)"
 SAMPLES_BUILD_DIR="${BUILD_DIR}/samples"
 
 CMAKE_OPTIONS=(
@@ -45,14 +45,14 @@ run_command "Build samples" \
 run_command "Install samples" \
     cmake --install "${SAMPLES_BUILD_DIR}"
 
-if [[ -n "${GITHUB_ACTIONS:-}" ]] && "${ci_dir}/util/workflow/has_consumers.sh"; then
+if [[ -n "${GITHUB_ACTIONS:-}" ]] && "${SAMPLES_CI_DIR}/util/workflow/has_consumers.sh"; then
     artifact_name="z_samples-test-artifacts-${DEVCONTAINER_NAME:?}-${JOB_ID:?}"
     build_dir_regex="build${CCCL_BUILD_INFIX:+/${CCCL_BUILD_INFIX}}/samples/bin/.*"
 
     cd "${SAMPLES_SRC_DIR}/.."
-    "${ci_dir}/util/artifacts/stage.sh" "${artifact_name}" "${build_dir_regex}" > /dev/null
+    "${SAMPLES_CI_DIR}/util/artifacts/stage.sh" "${artifact_name}" "${build_dir_regex}" > /dev/null
     run_command "Package sample test artifacts" \
-        "${ci_dir}/util/artifacts/upload_stage_packed.sh" "${artifact_name}"
+        "${SAMPLES_CI_DIR}/util/artifacts/upload_stage_packed.sh" "${artifact_name}"
 fi
 
 print_time_summary
