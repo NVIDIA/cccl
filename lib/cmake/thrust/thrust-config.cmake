@@ -39,16 +39,18 @@
 #   [GLOBAL]                         # Optionally mark the target as GLOBAL
 # )
 #
-# # Use a custom TBB, CUB, and/or OMP
+# # Use a custom TBB, CUB, HPX, and/or OMP
 # # (Note that once set, these cannot be changed. This includes COMPONENT
 # # preloading and lazy lookups in thrust_create_target)
 # find_package(Thrust REQUIRED)
 # thrust_set_CUB_target(MyCUBTarget)  # MyXXXTarget contains an existing
 # thrust_set_TBB_target(MyTBBTarget)  # interface to XXX for Thrust to use.
 # thrust_set_OMP_target(MyOMPTarget)
+# thrust_set_HPX_target(MyHPXTarget)
 # thrust_create_target(ThrustWithMyCUB DEVICE CUDA)
 # thrust_create_target(ThrustWithMyTBB DEVICE TBB)
 # thrust_create_target(ThrustWithMyOMP DEVICE OMP)
+# thrust_create_target(ThrustWithMyHPX DEVICE HPX)
 #
 # # Create target with HOST=CPP DEVICE=CUDA and some advanced flags set
 # thrust_create_target(TargetName
@@ -71,6 +73,7 @@
 # thrust_is_cuda_system_found(<var_name>)
 # thrust_is_tbb_system_found(<var_name>)
 # thrust_is_omp_system_found(<var_name>)
+# thrust_is_hpx_system_found(<var_name>)
 # thrust_is_cpp_system_found(<var_name>)
 #
 # # Define / update THRUST_${system}_FOUND flags in current scope
@@ -98,6 +101,7 @@ set(
   CPP
   OMP
   TBB
+  HPX
   CACHE INTERNAL
   "Valid Thrust host systems."
   FORCE
@@ -108,6 +112,7 @@ set(
   CPP
   OMP
   TBB
+  HPX
   CACHE INTERNAL
   "Valid Thrust device systems"
   FORCE
@@ -409,6 +414,11 @@ function(thrust_is_omp_system_found var_name)
   set(${var_name} ${${var_name}} PARENT_SCOPE)
 endfunction()
 
+function(thrust_is_hpx_system_found var_name)
+  thrust_is_system_found(HPX ${var_name})
+  set(${var_name} ${${var_name}} PARENT_SCOPE)
+endfunction()
+
 # Since components are loaded lazily, this will refresh the
 # THRUST_${component}_FOUND flags in the current scope.
 # Alternatively, check system states individually using the
@@ -419,6 +429,7 @@ macro(thrust_update_system_found_flags)
   thrust_is_system_found(CUDA THRUST_CUDA_FOUND)
   thrust_is_system_found(TBB THRUST_TBB_FOUND)
   thrust_is_system_found(OMP THRUST_OMP_FOUND)
+  thrust_is_system_found(HPX THRUST_HPX_FOUND)
 endmacro()
 
 function(thrust_debug msg)
@@ -499,6 +510,9 @@ function(thrust_debug_internal_targets)
 
   _thrust_debug_backend_targets(TBB "${THRUST_TBB_VERSION}")
   thrust_debug_target(TBB::tbb "${THRUST_TBB_VERSION}")
+
+  _thrust_debug_backend_targets(HPX "${THRUST_HPX_VERSION}")
+  thrust_debug_target(HPX::hpx "${THRUST_HPX_VERSION}")
 
   _thrust_debug_backend_targets(CUDA "CUB ${THRUST_CUB_VERSION}")
   thrust_debug_target(CUB::CUB "${THRUST_CUB_VERSION}")
@@ -736,6 +750,24 @@ function(thrust_set_OMP_target omp_target)
   endif()
 endfunction()
 
+# Use the provided hpx_target for the HPX backend. If Thrust::HPX already
+# exists, this call has no effect.
+function(thrust_set_HPX_target hpx_target)
+  if (NOT TARGET Thrust::HPX)
+    thrust_debug("Setting HPX target to ${hpx_target}" internal)
+    # Workaround cmake issue #20670 https://gitlab.kitware.com/cmake/cmake/-/issues/20670
+    set(THRUST_HPX_VERSION ${HPX_VERSION} CACHE INTERNAL
+      "HPX version used by Thrust"
+      FORCE
+    )
+    _thrust_declare_interface_alias(Thrust::HPX _Thrust_HPX)
+    target_link_libraries(_Thrust_HPX INTERFACE Thrust::Thrust ${hpx_target})
+    thrust_debug_target(${hpx_target} "${THRUST_HPX_VERSION}" internal)
+    thrust_debug_target(Thrust::HPX "${THRUST_HPX_VERSION}" internal)
+    _thrust_setup_system(HPX)
+  endif()
+endfunction()
+
 function(_thrust_find_CPP required)
   if (NOT TARGET Thrust::CPP)
     thrust_debug("Generating CPP targets." internal)
@@ -869,6 +901,28 @@ endmacro()
 # This must be a macro instead of a function to ensure that backends passed to
 # find_package(Thrust COMPONENTS [...]) have their full configuration loaded
 # into the current scope. This provides at least some remedy for CMake issue
+# #20670 -- otherwise variables like HPX_VERSION, etc won't be in the caller's
+# scope
+macro(_thrust_find_HPX required)
+  if(NOT TARGET Thrust::HPX)
+    thrust_debug("Searching for HPX ${required}" internal)
+
+    # Try to find the CMake package that newer versions of HPX install themselves:
+    if (NOT TARGET HPX::hpx)
+      find_package(HPX CONFIG ${_THRUST_QUIET_FLAG})
+    endif()
+
+    if (TARGET HPX::hpx)
+      thrust_set_HPX_target(HPX::hpx)
+    else()
+      thrust_debug("HPX not found!" internal)
+    endif()
+  endif()
+endmacro()
+
+# This must be a macro instead of a function to ensure that backends passed to
+# find_package(Thrust COMPONENTS [...]) have their full configuration loaded
+# into the current scope. This provides at least some remedy for CMake issue
 # #20670 -- otherwise variables like CUB_VERSION, etc won't be in the caller's
 # scope.
 macro(_thrust_find_backend backend required)
@@ -882,6 +936,8 @@ macro(_thrust_find_backend backend required)
     _thrust_find_TBB("${required}")
   elseif ("${backend}" STREQUAL "OMP")
     _thrust_find_OMP("${required}")
+  elseif ("${backend}" STREQUAL "HPX")
+    _thrust_find_HPX("${required}")
   else()
     message(FATAL_ERROR "_thrust_find_backend: Invalid system: ${backend}")
   endif()
