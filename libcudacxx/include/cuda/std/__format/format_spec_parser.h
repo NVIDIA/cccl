@@ -227,6 +227,13 @@ struct __fmt_spec_fields
   __ret.__consume_all_  = true;
   return __ret;
 }
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_tuple() noexcept
+{
+  __fmt_spec_fields __ret{};
+  __ret.__use_range_fill_ = true;
+  __ret.__clear_brackets_ = true;
+  return __ret;
+}
 
 enum class __fmt_spec_alignment : uint8_t
 {
