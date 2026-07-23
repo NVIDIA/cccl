@@ -254,7 +254,8 @@ struct device_rle_policy_selector
 
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::RleNonTrivialRunsPolicy
   {
-    return {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS};
+    return {cub::RleNonTrivialRunsAlgorithm::lookback,
+            {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS}};
   }
 };
 

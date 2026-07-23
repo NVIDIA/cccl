@@ -135,7 +135,7 @@ public:
 
   /*! Destructor. Releases all held memory to upstream.
    */
-  ~unsynchronized_pool_resource() override
+  ~unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
   {
     release();
   }

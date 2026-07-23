@@ -95,12 +95,12 @@ struct DeviceRunLengthEncode
     {
       const RleEncodePolicy policy = PolicySelector{}(cc);
       return ReduceByKeyPolicy{
-        policy.threads_per_block,
-        policy.items_per_thread,
-        policy.load_algorithm,
-        policy.load_modifier,
-        policy.scan_algorithm,
-        policy.lookback_delay};
+        policy.lookback.threads_per_block,
+        policy.lookback.items_per_thread,
+        policy.lookback.load_algorithm,
+        policy.lookback.load_modifier,
+        policy.lookback.scan_algorithm,
+        policy.lookback.lookback_delay};
     }
   };
 #endif // _CCCL_DOXYGEN_INVOKED
