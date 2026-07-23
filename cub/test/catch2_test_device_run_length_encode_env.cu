@@ -36,7 +36,8 @@ struct rle_encode_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
   {
     return {cub::RleAlgorithm::lookback,
-            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}},
+            {}};
   }
 };
 
@@ -319,20 +320,30 @@ C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
      cub::BLOCK_LOAD_DIRECT,
      cub::LOAD_DEFAULT,
      cub::BLOCK_SCAN_WARP_SCANS,
-     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}}};
+     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
+    {32, 8, 5, 3, 5, 32}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::RleEncodePolicy{
     .algorithm = cub::RleAlgorithm::lookback,
-    .lookback  = cub::RleLookbackPolicy{
-       .threads_per_block = 128,
-       .items_per_thread  = 7,
-       .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-       .load_modifier     = cub::LOAD_DEFAULT,
-       .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+    .lookback =
+      cub::RleLookbackPolicy{
+        .threads_per_block = 128,
+        .items_per_thread  = 7,
+        .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .lookback_delay =
+          cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}},
+    .lookahead = cub::RleLookaheadPolicy{
+      .items_per_thread       = 32,
+      .compute_warps          = 8,
+      .key_ring_stages        = 5,
+      .pos_ring_stages        = 3,
+      .poll_loads_per_lane    = 5,
+      .flag_staging_threshold = 32}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -346,13 +357,17 @@ C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
-             ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 832, .l2_write_latency = 1165 } } }");
+  REQUIRE(
+    to_string(p1)
+    == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
+       ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 832, .l2_write_latency = 1165 } }"
+       ", .lookahead = RleLookaheadPolicy { .items_per_thread = 32, .compute_warps = 8"
+       ", .key_ring_stages = 5, .pos_ring_stages = 3"
+       ", .poll_loads_per_lane = 5, .flag_staging_threshold = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
