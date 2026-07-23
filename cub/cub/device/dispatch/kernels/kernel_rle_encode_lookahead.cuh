@@ -17,6 +17,7 @@
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
+#include <cub/warp/warp_scan.cuh>
 
 #include <cuda/atomic>
 #include <cuda/ptx>
@@ -211,26 +212,6 @@ __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
   return bit_position;
 }
 
-// width = how many low lanes participate, i.e. lanes [0, width): lane i returns lane_value(0) + ... + lane_value(i).
-// lanes in [width, 32) must still call this, but their return values are unspecified.
-// (TODO) Nan: swapping this with cub::WarpScan caused perf regression (-3% in worst cases). This needs investigation.
-// The primary suspect is cub::WarpScan uses asm VOLATILE and it could change codegen
-template <int width>
-__device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
-{
-  static_assert(1 <= width && width <= 32, "the scan operates within a single warp");
-#  pragma unroll
-  for (int offset = 1; offset < width; offset <<= 1)
-  {
-    const int predecessor_partial = __shfl_up_sync(full_mask, lane_value, offset);
-    if (lane_id >= offset)
-    {
-      lane_value += predecessor_partial;
-    }
-  }
-  return lane_value;
-}
-
 struct WarpTileRunScanT
 {
   int lane_run_count;
@@ -242,7 +223,9 @@ template <int compute_warps>
 __device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
 {
   const int lane_run_count = (lane_id < compute_warps) ? slot_warp_run_counts[lane_id] : 0;
-  const int lane_scan      = warp_inclusive_scan_add<compute_warps>(lane_run_count, lane_id);
+  typename WarpScan<int>::TempStorage warp_scan_storage;
+  int lane_scan;
+  WarpScan<int>(warp_scan_storage).InclusiveSum(lane_run_count, lane_scan);
   return {lane_run_count, lane_scan - lane_run_count};
 }
 
@@ -383,7 +366,8 @@ stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, in
   // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
   // (CRITICAL for MaxSeg=1,2,4)
   int head_scan = __popc(my_flags); // start: this word's head count
-  head_scan     = warp_inclusive_scan_add<32>(head_scan, lane_id);
+  typename WarpScan<int>::TempStorage warp_scan_storage;
+  WarpScan<int>(warp_scan_storage).InclusiveSum(head_scan, head_scan);
   // head_scan is a running sum of run_count, so each lane know each chunk's base
   const int runs_before_word = head_scan - __popc(my_flags);
   if (lane_id < items_per_thread)
@@ -419,9 +403,11 @@ struct HeadFlagDecodeT
 
   __device__ __forceinline__ HeadFlagDecodeT(const unsigned* slot_head_flags, int warp_tile_id, int lane_id)
   {
-    lane_head_flag_word                = slot_head_flags[warp_tile_id * 32 + lane_id];
-    const int lane_word_run_count      = __popc(lane_head_flag_word);
-    const int lane_word_run_count_scan = warp_inclusive_scan_add<32>(lane_word_run_count, lane_id);
+    lane_head_flag_word           = slot_head_flags[warp_tile_id * 32 + lane_id];
+    const int lane_word_run_count = __popc(lane_head_flag_word);
+    typename WarpScan<int>::TempStorage warp_scan_storage;
+    int lane_word_run_count_scan;
+    WarpScan<int>(warp_scan_storage).InclusiveSum(lane_word_run_count, lane_word_run_count_scan);
     // lane i: # of runs starting in head_flag words [0, i), i.e. in elements [0, i*32)
     lane_runs_before_word = lane_word_run_count_scan - lane_word_run_count;
     // lane i -> first head position in head flag words [i, 32)
