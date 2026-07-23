@@ -204,7 +204,7 @@ struct __bucket_count_fn
   }
 };
 
-template <class _Tp, class _Env, class _BinaryOp>
+template <class _Tp, class _Env>
 struct _Sorter
 {
   template <class _Up>
@@ -229,13 +229,13 @@ struct _Sorter
     ::cuda::std::size_t __sample_sendcount{};
   };
 
-  // Outputs of the HSS local-sorting phase (paper Section 6, "local sorting of input data").
+  // Outputs of the HSS local setup phase (paper Section 6, "local sorting of input data").
   //
   // Besides the sorted local runs (produced in-place on the input), resources reused by every
   // later phase, the exclusive-scan of the original per-rank sizes (__all_local_offsets, the
   // desired final offsets consumed by rebalance), the original per-rank sizes, and the derived
   // global key count __N.
-  struct __local_sort_result
+  struct __local_setup_result
   {
     ::std::vector<__resource_type_for<_Env>> __resources{};
     ::std::vector<__buffer<::cuda::std::uint64_t>> __all_local_offsets{};
@@ -250,7 +250,7 @@ struct _Sorter
   // TODO(jfaibussowit):
   //
   // Horrifically inefficient!
-  template <class _Comm>
+  template <class _Comm, class _BinaryOp>
   _CCCL_HOST_API static void __merge_k_way(
     const _Comm& __comm,
     const _Env& __env,
@@ -308,7 +308,7 @@ struct _Sorter
     }
   }
 
-  template <class _CommRange, class _EnvRange>
+  template <class _CommRange, class _EnvRange, class _BinaryOp>
   _CCCL_HOST_API static void __gather_merge_broadcast(
     _CommRange&& __comms,
     _EnvRange&& __envs,
@@ -472,7 +472,7 @@ struct _Sorter
     }
   }
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
   _CCCL_HOST_API static void __compute_histogram(
     _CommRange&& __comms,
     _EnvRange&& __envs,
@@ -562,9 +562,9 @@ struct _Sorter
     }
   }
 
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
   _CCCL_HOST_API static void __data_exchange(
-    const __local_sort_result& __setup,
+    const __local_setup_result& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
     _InputRange&& __local_inputs,
@@ -760,7 +760,7 @@ struct _Sorter
 
   template <class _CommRange, class _EnvRange, class _InputRange>
   _CCCL_HOST_API static void __rebalance_to_original_counts(
-    const __local_sort_result& __setup, _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs)
+    const __local_setup_result& __setup, _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs)
   {
     const auto __comm_size = __setup.__comm_size;
     const auto __N         = __setup.__N;
@@ -1015,15 +1015,13 @@ struct _Sorter
   // HSS local-sorting phase (paper Section 6, "local sorting of input data"; the first of the
   // three implementation phases).
   //
-  // Alongside the in-place local DeviceMergeSort::SortKeys, this all-gathers each rank's local
-  // size, exclusive-scans it to global offsets (the desired final per-rank offsets used later
-  // by rebalance), derives the total key count N = offset[p - 1] + size[p - 1], and captures
-  // the per-comm resources reused by every later phase.
+  // This all-gathers each rank's local size, exclusive-scans it to global offsets (the desired
+  // final per-rank offsets used later by rebalance), derives the total key count N = offset[p
+  // - 1] + size[p - 1], and captures the per-comm resources reused by every later phase.
   template <class _CommRange, class _EnvRange, class _InputRange>
-  [[nodiscard]] _CCCL_HOST_API static __local_sort_result
-  __local_sort(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, const _BinaryOp& __cmp)
+  [[nodiscard]] _CCCL_HOST_API static __local_setup_result __local_setup(
+    _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, ::cuda::std::int32_t __comm_size)
   {
-    const auto __comm_size        = ::cuda::std::ranges::begin(__comms)->size();
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
     ::std::vector<__resource_type_for<_Env>> __resources;
@@ -1113,18 +1111,10 @@ struct _Sorter
           __N          = __last_offset + __last_size;
           __N_computed = true;
         }
-
-        __CUDAX_MULTI_GPU_DISPATCH(
-          __comm.logical_device(),
-          CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
-          ::cuda::std::ranges::begin(__input),
-          ::cuda::std::ranges::size(__input),
-          __cmp,
-          __env);
       }
     }
 
-    return __local_sort_result{
+    return __local_setup_result{
       ::cuda::std::move(__resources),
       ::cuda::std::move(__all_local_offsets),
       ::cuda::std::move(__local_original_sizes),
@@ -1147,7 +1137,7 @@ struct _Sorter
   template <class _CommRange, class _EnvRange>
   [[nodiscard]]
   _CCCL_HOST_API static ::cuda::std::pair<::std::vector<__per_comm_splitters>, ::std::vector<__per_comm_sampling_scratch>>
-  __allocate_histogramming_buffers(const __local_sort_result& __setup, _CommRange&& __comms, _EnvRange&& __envs)
+  __allocate_histogramming_buffers(const __local_setup_result& __setup, _CommRange&& __comms, _EnvRange&& __envs)
   {
     const auto __comm_size        = __setup.__comm_size;
     const auto __N                = __setup.__N;
@@ -1216,9 +1206,9 @@ struct _Sorter
   // The number of rounds K = ceil(log10(log10(p)/eps)) realizes the Theorem 4.8 count of
   // O(log(log p / eps)) rounds; the per-round sampling ratio s_j = s_j_interior^(j/K) is the
   // Section 4.2.2 schedule s_j = (2 ln p / eps)^(j/k).
-  template <class _CommRange, class _EnvRange, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
   [[nodiscard]] _CCCL_HOST_API static ::std::vector<__per_comm_splitters> __histogramming_phase(
-    const __local_sort_result& __setup,
+    const __local_setup_result& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
     _InputRange&& __local_inputs,
@@ -1293,7 +1283,7 @@ struct _Sorter
     return __local_splitters;
   }
 
-  template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
+  template <class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
   _CCCL_HOST_API static void __execute(
     const __result_policy_base<_Policy>&,
     _CommRange&& __comms,
@@ -1312,15 +1302,35 @@ struct _Sorter
                   "Only distributed results are currently supported. Please open an issue at "
                   "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
-    if (const auto __num_local_inputs = ::cuda::std::ranges::size(__comms); __num_local_inputs == 0)
+    if (::cuda::std::ranges::size(__comms) == 0)
     {
       // We have no inputs, so... nothing to do
       return;
     }
 
-    auto __setup = __local_sort(__comms, __envs, __local_inputs, __cmp);
+    // First and foremost, kick off the local sorts
+    for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
+    {
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm.logical_device(),
+        CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
+        ::cuda::std::ranges::begin(__input),
+        ::cuda::std::ranges::size(__input),
+        __cmp,
+        __env);
+    }
 
-    if (__setup.__comm_size == 1 || __setup.__N == 0)
+    const auto __comm_size = ::cuda::std::ranges::begin(__comms)->size();
+
+    if (__comm_size == 1)
+    {
+      // Single communicator, nothing to do we have already sorted
+      return;
+    }
+
+    const auto __setup = __local_setup(__comms, __envs, __local_inputs, __comm_size);
+
+    if (__setup.__N == 0)
     {
       return;
     }
@@ -1353,7 +1363,7 @@ void sort(const __result_policy_base<_Policy>& __policy,
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::sort");
 
-  __detail::_Sorter<__result_type, __env_type, _BinaryOp>{}.__execute(
+  ::cuda::experimental::__detail::_Sorter<__result_type, __env_type>::__execute(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
