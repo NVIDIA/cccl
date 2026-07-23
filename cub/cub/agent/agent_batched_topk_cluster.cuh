@@ -777,9 +777,7 @@ struct agent_batched_topk_cluster
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void reset_hist()
   {
-    // The `num_buckets / threads_per_block` full strided rounds are in range for every thread, so they unroll with no
-    // bounds check; the `< threads_per_block` leftover is at most one more guarded write per thread, compiled out when
-    // `num_buckets` is a multiple of `threads_per_block`.
+    // The `num_buckets / threads_per_block` full strided rounds are in range for every thread. The `< threads_per_block` leftover is compiled out when `num_buckets` is a multiple of `threads_per_block`.
     constexpr int full_rounds = num_buckets / threads_per_block;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int r = 0; r < full_rounds; ++r)
@@ -3075,9 +3073,7 @@ private:
     // straggler.
   }
 
-  // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`). Runs before
-  // the effective-cluster collapse, so it takes the raw hardware rank/size (the `cluster_*` members are not set yet)
-  // and reads the `segment_id`/`segment_size` members `process_impl` filled in.
+  // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`).
   _CCCL_DEVICE _CCCL_FORCEINLINE void copy_segment_select_all(unsigned hw_cluster_rank, unsigned hw_cluster_blocks)
   {
     constexpr int copy_items       = copy_items_per_thread_clamped;
@@ -3211,11 +3207,6 @@ private:
     const unsigned hw_cluster_blocks = ::cuda::ptx::get_sreg_cluster_nctarank();
     _CCCL_ASSERT(hw_cluster_blocks > 0u && hw_cluster_rank < hw_cluster_blocks,
                  "hardware cluster rank must lie within a non-empty cluster");
-    // Segment id is the cluster's grid coordinate read straight from `%clusterid`, not derived as
-    // `blockIdx.x / hw_cluster_blocks`: the hardware value needs no division and stays correct even if a launch ever
-    // used non-uniform cluster sizes (the derived form assumes every cluster holds `hw_cluster_blocks` CTAs). The
-    // dispatch launches one cluster per segment (`gridDim.x = num_segments * clusterDim.x`), so `clusterid.x` is
-    // exactly the segment id.
     segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
     if (segment_id >= detail::params::get_param(num_segments, num_segments_val_t{0}))
@@ -3228,9 +3219,7 @@ private:
     // Precondition: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
     _CCCL_ASSERT(static_cast<::cuda::std::uint64_t>(segment_size) <= ::cuda::std::uint64_t{0xffffffffu},
                  "segment size must be non-negative and fit the 32-bit cluster offset type");
-    // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands, *before*
-    // narrowing to `out_offset_t`. Clamping in a narrower type first would let a large "select all" `k` wrap to a small
-    // value and silently truncate the output (or wrap to 0 and skip the segment).
+    // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands.
     const auto k_clamped =
       (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
                             detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
@@ -3241,16 +3230,12 @@ private:
       return;
     }
 
-    // Segments larger than the resident cluster_tile capacity are still handled -- the overflow chunks are re-streamed
-    // from gmem (see the "Overflow streaming" section).
+    // Segments larger than the resident cluster_tile capacity are still handled : the overflow chunks are re-streamed from gmem
 
     // `k_clamped <= segment_size`, which now fits `out_offset_t`, so this narrowing is safe.
     k = static_cast<out_offset_t>(k_clamped);
 
-    // Select-all fast path: when `k` reaches the full segment, every element wins, so we skip the radix passes,
-    // histogram, and output-ordering and just copy. Runs on the full launched cluster (before the effective-cluster
-    // collapse), so it uses the raw hardware rank/size; the decision is per-segment uniform, so the branch is
-    // cluster-uniform.
+    // Select-all fast path: when `k` reaches the full segment
     if (static_cast<segment_size_val_t>(k) == segment_size)
     {
       copy_segment_select_all(hw_cluster_rank, hw_cluster_blocks);
