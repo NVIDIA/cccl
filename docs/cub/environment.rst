@@ -26,7 +26,7 @@ Why environments?
 -----------------
 
 The classic two-phase CUB API requires three steps: query temporary-storage size, allocate,
-then execute. That is fine for situations where precise control over the temporary storage 
+then execute. That is fine for situations where precise control over the temporary storage
 allocation is required, or when the temporary storage size needs to be queried independently
 of allocating it. For example, when the temporary storage is combined with other storage, e.g.
 for an output, into a single allocation. But in many cases this is not needed and the two-step
@@ -47,7 +47,7 @@ pass to many different algorithms:
    The environment argument is entirely
    optional: since it is defaulted, an algorithm can be invoked with no temporary-storage
    arguments and no environment at all, and every property falls back to its default
-   (see :ref:`Fallback behavior <cub-environment-fallback>`):
+   (see :ref:`Default behavior <cub-environment-fallback>`):
 
    .. code-block:: c++
 
@@ -103,7 +103,7 @@ keeps growing.
 
 .. _cub-env-determinism:
 
-Determinism requirements
+Determinism Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``cuda::execution::require`` to request a guarantee, like a reproducible/deterministic execution:
@@ -114,9 +114,8 @@ Use ``cuda::execution::require`` to request a guarantee, like a reproducible/det
    :start-after: example-begin reduce-env-determinism
    :end-before: example-end reduce-env-determinism
 
-Three levels are available, in increasing strictness: ``not_guaranteed``, ``run_to_run``,
-and ``gpu_to_gpu``. The meaning of each guarantee is described in the
-:ref:`CCCL determinism overview <cccl-determinism>`; which algorithms support which levels,
+Multiple determinism levels are available. The meaning of each is described in the
+:ref:`CCCL determinism overview <cccl-determinism>`. Which algorithms support which levels,
 and each algorithm's default, are listed in the :ref:`CUB determinism support matrix
 <cub-determinism>`. Requesting a level an algorithm does not support is rejected at
 compile time.
@@ -153,7 +152,7 @@ environment:
 
 .. _cub-env-memory-resource:
 
-Memory resources
+Memory Resources
 ~~~~~~~~~~~~~~~~
 
 The memory resource controls where an algorithm's temporary storage is allocated from.
@@ -174,7 +173,7 @@ or composed with other properties:
 Temporary storage is allocated from the memory resource on the algorithm's stream before
 execution and released on the same stream afterwards. When no memory resource is present
 in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFree``  allocator
-(see :ref:`Fallback behavior <cub-environment-fallback>`).
+(see :ref:`Default behavior <cub-environment-fallback>`).
 
 .. TODO: Add Guarantees sub-section after #9278 is merged.
 
@@ -190,7 +189,7 @@ calls as you like:
 
    auto stream = cuda::stream{cuda::devices[0]};
    auto pool   = cuda::device_default_memory_pool(cuda::devices[0]);
-   auto env    = cuda::std::execution::env{std::move(stream), pool};
+   auto env    = cuda::std::execution::env{cuda::stream_ref{stream}, pool};
 
    cub::DeviceScan::ExclusiveSum(d_a, d_out_a, n, env);
    cub::DeviceReduce::Sum(d_b, d_out_b, n, env);
@@ -210,13 +209,10 @@ released from the pool independently for each call.
    tunings, build separate environments.
 
 
-Reference
----------
-
 .. _cub-environment-fallback:
 
-Fallback behavior
-~~~~~~~~~~~~~~~~~
+Default behavior
+----------------
 
 The environment argument is optional on every algorithm that supports it. CUB applies the
 following defaults when a property is absent from the environment (or when no environment
@@ -229,8 +225,7 @@ is passed at all):
    * - Property
      - Default when absent
    * - Stream
-     - The CUDA null stream (``cudaStreamDefault``), which synchronizes with all other streams
-       on the current device.
+     - The default CUDA stream (``cudaStream_t{}``).
    * - Memory resource
      - A stream-ordered allocator based on ``cudaMallocAsync``. Temporary storage is
        allocated on the stream the algorithm runs on.
@@ -242,26 +237,6 @@ is passed at all):
 
 Missing properties never cause an error. The algorithm simply falls back to its default for
 that property.
-
-
-Environment building blocks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These are the utilities a user needs to construct environments:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 40 60
-
-   * - Utility
-     - Purpose
-   * - ``cuda::std::execution::env{props...}``
-     - Compose multiple properties into one environment object.
-   * - ``cuda::execution::require(property)``
-     - Wrap a requirement (e.g. a determinism level) so that an algorithm enforces rather
-       than hints it.
-   * - ``cuda::execution::tune(selector)``
-     - Embed a custom policy selector into an environment.
 
 ..
    TODO(gonidelis): link to the developer-facing environments page (queries, CPOs, prop,
