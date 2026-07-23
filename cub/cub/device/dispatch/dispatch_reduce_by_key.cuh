@@ -188,7 +188,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -205,12 +205,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 {
   static constexpr ReduceByKeyPolicy policy = current_policy<PolicySelector>();
   using AgentReduceByKeyPolicyT             = agent_reduce_by_key_policy<
-                policy.threads_per_block,
-                policy.items_per_thread,
-                policy.load_algorithm,
-                policy.load_modifier,
-                policy.scan_algorithm,
-                delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+                policy.lookback.threads_per_block,
+                policy.lookback.items_per_thread,
+                policy.lookback.load_algorithm,
+                policy.lookback.load_modifier,
+                policy.lookback.scan_algorithm,
+                delay_constructor_t<policy.lookback.lookback_delay.kind,
+                                    policy.lookback.lookback_delay.delay,
+                                    policy.lookback.lookback_delay.l2_write_latency>>;
 
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
     AgentReduceByKeyPolicyT,
@@ -651,12 +653,14 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
   // TODO(bgruber): refactor this in the future
   constexpr ReduceByKeyPolicy policy = policy_getter();
   using Policy                       = agent_reduce_by_key_policy<
-                          policy.threads_per_block,
-                          policy.items_per_thread,
-                          policy.load_algorithm,
-                          policy.load_modifier,
-                          policy.scan_algorithm,
-                          delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+                          policy.lookback.threads_per_block,
+                          policy.lookback.items_per_thread,
+                          policy.lookback.load_algorithm,
+                          policy.lookback.load_modifier,
+                          policy.lookback.scan_algorithm,
+                          delay_constructor_t<policy.lookback.lookback_delay.kind,
+                                              policy.lookback.lookback_delay.delay,
+                                              policy.lookback.lookback_delay.l2_write_latency>>;
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
