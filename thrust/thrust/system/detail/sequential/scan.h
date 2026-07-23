@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/function.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__numeric/exclusive_scan.h>
@@ -34,8 +35,11 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   OutputIterator result,
   BinaryFunction binary_op)
 {
+  // Use the input iterator's value type per https://wg21.link/P0571
+  using ValueType = thrust::detail::it_value_t<InputIterator>;
+
   // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
   return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op);
 }
 
@@ -53,8 +57,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op)
 {
+  using ValueType = InitialValueType;
+
   // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
   return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op, init);
 }
 
@@ -72,8 +78,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op)
 {
+  using ValueType = InitialValueType;
+
   // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
   return ::cuda::std::exclusive_scan(first, last, result, init, wrapped_binary_op);
 }
 } // namespace system::detail::sequential
