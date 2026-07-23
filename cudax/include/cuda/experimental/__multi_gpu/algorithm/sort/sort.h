@@ -34,7 +34,6 @@
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
-#include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/no_init.h>
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/max.h>
@@ -47,8 +46,10 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/zip_view.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -229,6 +230,21 @@ struct _Sorter
     ::cuda::std::size_t __sample_sendcount{};
   };
 
+  // Outputs of the HSS local-sorting phase (paper Section 6, "local sorting of input data").
+  //
+  // Besides the sorted local runs (produced in-place on the input), resources reused by every
+  // later phase, the exclusive-scan of the original per-rank sizes (__all_local_offsets, the
+  // desired final offsets consumed by rebalance), the original per-rank sizes, and the derived
+  // global key count __N.
+  struct __local_sort_result
+  {
+    ::std::vector<__resource_type_for<_Env>> __resources{};
+    ::std::vector<__buffer<::cuda::std::uint64_t>> __all_local_offsets{};
+    ::std::vector<::cuda::std::size_t> __local_original_sizes{};
+    ::cuda::std::uint64_t __N{};
+    ::cuda::std::int32_t __comm_size{};
+  };
+
   static constexpr double __EPS     = 0.02; // 2% tolerance
   static constexpr auto __ROOT_RANK = 0;
 
@@ -348,17 +364,15 @@ struct _Sorter
         // well
         __sendcount = (*__root_recvcounts)[__ROOT_RANK];
 
-        // recvcounts is likely relatively small (it is on the order of
-        // O(ranks)). It may be faster to just do the exclusive scan on the host
-        // than to copy to device, scan, and copy back
+        // recvcounts is likely relatively small (it is on the order of O(ranks)).
         ::cuda::std::exclusive_scan(
           __root_recvcounts->begin(),
           __root_recvcounts->end(),
           ::cuda::std::back_inserter(*__root_displs),
           ::cuda::std::size_t{0});
-        // displs.back() is the LAST rank's offset (exclusive scan), so the total
-        // element count = displs.back() + __root_recvcounts.back(). all_samples
-        // is vector<T>, sized in ELEMENTS.
+        // displs.back() is the LAST rank's offset (exclusive scan), so the total element count
+        // = displs.back() + __root_recvcounts.back(). all_samples is vector<T>, sized in
+        // ELEMENTS.
         const auto __all_recv = __root_displs->back() + __root_recvcounts->back();
 
         // First round engages the optional; later rounds reuse the allocation via resize
@@ -388,7 +402,7 @@ struct _Sorter
       }
     }
 
-    // ---- 3. Variable-count gather of the actual sample keys ----
+    // Gather all samples to the root so it can build the global sampling vector
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
@@ -406,7 +420,7 @@ struct _Sorter
       }
     }
 
-    // ---- 4. Root merges the p sorted runs into one sorted probe set ----
+    // Root merges the p sorted runs into one sorted probe set
     for (auto&& [__comm, __env, __splitters, __scratch] :
          ::cuda::std::ranges::views::zip(__comms, __envs, *__local_splitters, *__local_scratch))
     {
@@ -420,9 +434,9 @@ struct _Sorter
       }
     }
 
-    // Extremely painful stuff here. We need to send the probe count, but we can
-    // only use NCCL, and NCCL only provides device transport (even though they
-    // definitely have host-host transport available internally).
+    // Extremely painful stuff here. We need to send the probe count, but we can only use NCCL,
+    // and NCCL only provides device transport (even though they definitely have host-host
+    // transport available internally).
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
@@ -430,7 +444,7 @@ struct _Sorter
       {
         auto* const __ptr = __scratch.__probe_counts.data();
 
-        __comm.broadcast(__guard, __ptr, __ptr, 1, __ROOT_RANK, __scratch.__probe_counts.stream());
+        __comm.broadcast(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__probe_counts.stream());
       }
     }
 
@@ -439,7 +453,7 @@ struct _Sorter
     {
       if (__comm.rank() != __ROOT_RANK)
       {
-        // wait for comm
+        // Wait for comm so we can access probe_counts.front()
         __scratch.__probe_counts.stream().sync();
         ::cuda::experimental::__detail::__resize_for_overwrite(__splitters.__probes, __scratch.__probe_counts.front());
       }
@@ -549,16 +563,18 @@ struct _Sorter
     }
   }
 
-  template <class _CommRange, class _EnvRange, class _Resource, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputRange>
   _CCCL_HOST_API static void __data_exchange(
+    const __local_sort_result& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
-    const ::std::vector<_Resource>& __resources,
-    const ::std::vector<__per_comm_splitters>& __local_splitters,
-    ::cuda::std::uint64_t __N,
-    _BinaryOp __cmp,
-    _InputRange&& __local_inputs)
+    _InputRange&& __local_inputs,
+    const _BinaryOp& __cmp,
+    const ::std::vector<__per_comm_splitters>& __local_splitters)
   {
+    const auto __comm_size = __setup.__comm_size;
+    const auto __N         = __setup.__N;
+
     ::std::vector<__buffer<::cuda::std::size_t>> __local_send_counts;
     ::std::vector<__buffer<::cuda::std::size_t>> __local_recv_counts;
     ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
@@ -566,7 +582,6 @@ struct _Sorter
 
     ::std::vector<__buffer<_Tp>> __local_recvd;
 
-    const auto __comm_size        = ::cuda::std::ranges::begin(__comms)->size();
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
     __local_send_counts.reserve(__num_local_inputs);
@@ -577,7 +592,7 @@ struct _Sorter
     __local_recvd.reserve(__num_local_inputs);
 
     for (auto&& [__comm, __env, __resource, __input, __splitters] :
-         ::cuda::std::ranges::views::zip(__comms, __envs, __resources, __local_inputs, __local_splitters))
+         ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs, __local_splitters))
     {
       const auto& __Ls     = __splitters.__Ls;
       const auto& __Us     = __splitters.__Us;
@@ -644,8 +659,8 @@ struct _Sorter
 
     __local_h_send_displs.reserve(__num_local_inputs);
     __local_h_recv_displs.reserve(__num_local_inputs);
-    for (auto&& [__comm, __resource, __env, __send_counts, __recv_counts] :
-         ::cuda::std::ranges::views::zip(__comms, __resources, __envs, __local_send_counts, __local_recv_counts))
+    for (auto&& [__comm, __resource, __env, __send_counts, __recv_counts] : ::cuda::std::ranges::views::zip(
+           __comms, __setup.__resources, __envs, __local_send_counts, __local_recv_counts))
     {
       auto& __h_send_counts = __local_h_send_counts.emplace_back(__send_counts.size());
       auto& __h_recv_counts = __local_h_recv_counts.emplace_back(__recv_counts.size());
@@ -744,28 +759,20 @@ struct _Sorter
     }
   }
 
-  template <class _CommRange, class _EnvRange, class _Resource, class _InputRange>
+  template <class _CommRange, class _EnvRange, class _InputRange>
   _CCCL_HOST_API static void __rebalance_to_original_counts(
-    _CommRange&& __comms,
-    _EnvRange&& __envs,
-    const ::std::vector<::cuda::stream_ref>& __streams,
-    const ::std::vector<_Resource>& __resources,
-    const ::std::vector<::cuda::std::size_t>& __local_original_sizes,
-    const ::std::vector<__buffer<::cuda::std::uint64_t>>& __local_desired_offsets,
-    ::cuda::std::uint64_t __N,
-    _InputRange&& __local_inputs)
+    const __local_sort_result& __setup, _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs)
   {
-    // The splitter exchange already produced a globally sorted, approximately
-    // balanced distribution. Rebalance only corrects the rank ranges from that
-    // current distribution back to the original per-rank sizes. Desired offsets
-    // are the exclusive scan of the original sizes; the CURRENT offsets are
-    // measured here -- the actual post-exchange per-rank sizes, all-gathered
-    // and exclusive-scanned -- exactly as the reference does. (Duplicate
-    // splitter keys can route an unpredictable share of records to a single
-    // rank, so the current distribution must be measured, not predicted from
-    // the splitter positions.)
-    const auto __comm_size = ::cuda::std::ranges::begin(__comms)->size();
-
+    const auto __comm_size = __setup.__comm_size;
+    const auto __N         = __setup.__N;
+    // The splitter exchange already produced a globally sorted, approximately balanced
+    // distribution. Rebalance only corrects the rank ranges from that current distribution
+    // back to the original per-rank sizes. Desired offsets are the exclusive scan of the
+    // original sizes; the CURRENT offsets are measured here -- the actual post-exchange
+    // per-rank sizes, all-gathered and exclusive-scanned -- exactly as the reference
+    // does. (Duplicate splitter keys can route an unpredictable share of records to a single
+    // rank, so the current distribution must be measured, not predicted from the splitter
+    // positions.)
     ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
     ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
     ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
@@ -782,19 +789,20 @@ struct _Sorter
     __local_rebalanced.reserve(__num_local_inputs);
 
     // ---- Measure the realized post-exchange distribution: all-gather each
-    // rank's current __input size, then exclusive-scan into current offsets
-    // (length __comm_size, current_offsets[0] == 0).
+    // rank's current __input size, then exclusive-scan into current offsets (length
+    // __comm_size, current_offsets[0] == 0).
     ::std::vector<__buffer<::cuda::std::uint64_t>> __local_current_sizes;
     ::std::vector<__buffer<::cuda::std::uint64_t>> __local_current_offsets;
 
     __local_current_sizes.reserve(__num_local_inputs);
     __local_current_offsets.reserve(__num_local_inputs);
 
-    for (auto&& [__comm, __env, __stream, __resource, __input] :
-         ::cuda::std::ranges::views::zip(__comms, __envs, __streams, __resources, __local_inputs))
+    for (auto&& [__comm, __env, __resource, __input] :
+         ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs))
     {
       const auto __n_current = static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(__input));
-      auto& __sizes = __local_current_sizes.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env);
+      auto& __sizes =
+        __local_current_sizes.emplace_back(::cuda::get_stream(__env), __resource, __comm_size, ::cuda::no_init, __env);
 
       ::cuda::copy_bytes(
         __sizes.__get().stream(),
@@ -817,7 +825,7 @@ struct _Sorter
     }
 
     for (auto&& [__comm, __env, __resource, __sizes] :
-         ::cuda::std::ranges::views::zip(__comms, __envs, __resources, __local_current_sizes))
+         ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_current_sizes))
     {
       auto& __offsets =
         __local_current_offsets.emplace_back(__sizes.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
@@ -833,7 +841,12 @@ struct _Sorter
 
     for (auto&& [__comm, __env, __resource, __current_offsets, __desired_offsets, __original_size] :
          ::cuda::std::ranges::views::zip(
-           __comms, __envs, __resources, __local_current_offsets, __local_desired_offsets, __local_original_sizes))
+           __comms,
+           __envs,
+           __setup.__resources,
+           __local_current_offsets,
+           __setup.__all_local_offsets,
+           __setup.__local_original_sizes))
     {
       auto __send_counts = ::cuda::make_buffer<::cuda::std::size_t>(
         __current_offsets.__get().stream(),
@@ -868,10 +881,9 @@ struct _Sorter
                    __N,
                    __current_offsets = __current_offsets.data(),
                    __desired_offsets = __desired_offsets.data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
-        // current_offsets[i] is the start of rank i's current
-        // (post-exchange) bucket; desired offsets are the original final
-        // buckets. Intersect the two global element intervals to derive
-        // both send and receive metadata directly.
+        // current_offsets[i] is the start of rank i's current (post-exchange) bucket; desired
+        // offsets are the original final buckets. Intersect the two global element intervals
+        // to derive both send and receive metadata directly.
         const auto __my_src_begin = __current_offsets[__rank];
         const auto __my_src_end   = __rank + 1 == __comm_size ? __N : __current_offsets[__rank + 1];
 
@@ -953,17 +965,16 @@ struct _Sorter
     }
 
     // Sync for HtoD transfers
-    for (auto __stream : __streams)
+    for (auto&& __local : __local_rebalanced)
     {
-      __stream.sync();
+      __local.__get().stream().sync();
     }
 
     {
       auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-      // The rebalance exchange is the only communication in this phase. It
-      // moves already globally sorted contiguous rank intervals into the exact
-      // original per-rank sizes.
+      // The rebalance exchange is the only communication in this phase. It moves already
+      // globally sorted contiguous rank intervals into the exact original per-rank sizes.
       for (auto&& [__comm, __input, __out, __h_send_counts, __h_send_displs, __h_recv_counts, __h_recv_displs] :
            ::cuda::std::ranges::views::zip(
              __comms,
@@ -1002,48 +1013,29 @@ struct _Sorter
     }
   }
 
-  template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
-  _CCCL_HOST_API static void __execute(
-    const __result_policy_base<_Policy>&,
-    _CommRange&& __comms,
-    _EnvRange&& __envs,
-    _InputRange&& __local_inputs,
-    _BinaryOp __cmp)
+  // HSS local-sorting phase (paper Section 6, "local sorting of input data"; the first of the
+  // three implementation phases).
+  //
+  // Alongside the in-place local DeviceMergeSort::SortKeys, this all-gathers each rank's local
+  // size, exclusive-scans it to global offsets (the desired final per-rank offsets used later
+  // by rebalance), derives the total key count N = offset[p - 1] + size[p - 1], and captures
+  // the per-comm resources reused by every later phase.
+  template <class _CommRange, class _EnvRange, class _InputRange>
+  [[nodiscard]] _CCCL_HOST_API static __local_sort_result
+  __local_sort(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, const _BinaryOp& __cmp)
   {
-    static_assert(::cuda::std::ranges::sized_range<_CommRange>);
-
-    // Could use ::cuda::std::invocable here, but it is overkill (compile-time wise). We know
-    // that get_stream_t is a normal CPO and normally callable.
-    static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, ::cuda::std::ranges::range_value_t<_EnvRange>>,
-                  "Environment must contain a stream");
-
-    static_assert(::cuda::std::same_as<_Policy, distributed_t>,
-                  "Only distributed results are currently supported. Please open an issue at "
-                  "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
-
-    // We take number of comms to be the local input
+    const auto __comm_size        = ::cuda::std::ranges::begin(__comms)->size();
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-    if (!__num_local_inputs)
-    {
-      // We have no inputs, so... nothing to do
-      return;
-    }
-
-    const auto __comm_size = static_cast<::cuda::std::size_t>(::cuda::std::ranges::begin(__comms)->size());
-
-    ::std::vector<::cuda::stream_ref> __streams;
     ::std::vector<__resource_type_for<_Env>> __resources;
     ::std::vector<__buffer<::cuda::std::uint64_t>> __all_local_offsets;
     ::std::vector<::cuda::std::size_t> __local_original_sizes;
+    ::cuda::std::uint64_t __N = 0;
 
     // TODO (jfaibussowit): maybe can combine some of these
-    __streams.reserve(__num_local_inputs);
     __resources.reserve(__num_local_inputs);
     __all_local_offsets.reserve(__num_local_inputs);
     __local_original_sizes.reserve(__num_local_inputs);
-
-    ::cuda::std::uint64_t __N = 0;
 
     {
       ::std::vector<__buffer<::cuda::std::uint64_t>> __all_local_sizes;
@@ -1053,15 +1045,15 @@ struct _Sorter
       for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
       {
         const auto __n_local = static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(__input));
-        const auto __stream  = __streams.emplace_back(::cuda::get_stream(__env));
         auto& __resource     = __resources.emplace_back(
           ::cuda::experimental::__detail::__resource_from_env(__env, __comm.logical_device().underlying_device()));
         auto& __sizes =
-          __all_local_sizes.emplace_back(__stream, __resource, __comm_size, ::cuda::no_init, __env).__get();
+          __all_local_sizes.emplace_back(::cuda::get_stream(__env), __resource, __comm_size, ::cuda::no_init, __env)
+            .__get();
 
         __local_original_sizes.push_back(__n_local);
         ::cuda::copy_bytes(
-          __stream,
+          __sizes.stream(),
           ::cuda::std::span{&__n_local, ::cuda::std::size_t{1}},
           __sizes.subspan(__comm.rank(), 1),
           ::cuda::copy_configuration{::cuda::host_memory_location,
@@ -1082,8 +1074,8 @@ struct _Sorter
 
       bool __N_computed = false;
 
-      for (auto&& [__comm, __stream, __resource, __env, __input, __sizes] :
-           ::cuda::std::ranges::views::zip(__comms, __streams, __resources, __envs, __local_inputs, __all_local_sizes))
+      for (auto&& [__comm, __resource, __env, __input, __sizes] :
+           ::cuda::std::ranges::views::zip(__comms, __resources, __envs, __local_inputs, __all_local_sizes))
       {
         auto& __offsets =
           __all_local_offsets.emplace_back(__sizes.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
@@ -1133,131 +1125,215 @@ struct _Sorter
       }
     }
 
-    if (__comm_size == 1 || __N == 0)
+    return __local_sort_result{
+      ::cuda::std::move(__resources),
+      ::cuda::std::move(__all_local_offsets),
+      ::cuda::std::move(__local_original_sizes),
+      __N,
+      __comm_size};
+  }
+
+  // Allocate the per-comm buffers consumed by the HSS histogramming phase (paper Section 6,
+  // "Histogramming Phase").
+  //
+  // __local_splitters holds the persistent bracket state that survives the whole phase: the
+  // Section 4.2.2 lower/upper rank bounds L_j(i) / U_j(i) (Table 1) whose realized keys bound
+  // each splitter interval I_j(i), plus the current-round probe keys.
+  //
+  // __local_scratch holds the per-round working buffers (sample intervals, samples, histogram,
+  // and the pinned probe-count handoff).
+  //
+  // __local_splitters is returned by value so the caller can keep it alive for
+  // __data_exchange
+  template <class _CommRange, class _EnvRange>
+  [[nodiscard]]
+  _CCCL_HOST_API static ::cuda::std::pair<::std::vector<__per_comm_splitters>, ::std::vector<__per_comm_sampling_scratch>>
+  __allocate_histogramming_buffers(const __local_sort_result& __setup, _CommRange&& __comms, _EnvRange&& __envs)
+  {
+    const auto __comm_size        = __setup.__comm_size;
+    const auto __N                = __setup.__N;
+    const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+    // __per_comm_splitters (Ls/Us/probes) must survive the inner scratch block in __execute because
+    // __data_exchange consumes them after the sampling K-loop finishes.
+    ::std::vector<__per_comm_splitters> __local_splitters;
+    ::std::vector<__per_comm_sampling_scratch> __local_scratch;
+
+    __local_splitters.reserve(__num_local_inputs);
+    __local_scratch.reserve(__num_local_inputs);
+
+    for (auto&& [__comm, __env, __resource] : ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources))
+    {
+      const auto __stream  = ::cuda::get_stream(__env);
+      const auto __n_split = __comm_size - 1;
+
+      __local_splitters.emplace_back(__per_comm_splitters{
+        /*__Ls=*/__buffer<_Bracket>{__stream, __resource, __n_split, _Bracket{0, ::cuda::std::nullopt}, __env},
+        /*__Us=*/__buffer<_Bracket>{__stream, __resource, __n_split, _Bracket{__N, ::cuda::std::nullopt}, __env},
+        /*__probes=*/__buffer<_Tp>{__stream, __resource, __env}});
+
+      {
+#if _CCCL_CTK_AT_LEAST(12, 9)
+        auto __probe_counts = ::cuda::make_pinned_buffer<::cuda::std::uint64_t>(
+          __stream, /*__size=*/::cuda::std::size_t{1}, ::cuda::no_init);
+#else // ^^^ CUDA 12.9+ ^^^ / vvv CUDA 12.8- vvv
+        auto __probe_counts = ::cuda::make_buffer<::cuda::std::uint64_t>(
+          __stream,
+          ::cuda::mr::legacy_pinned_memory_resource{},
+          /*__size=*/::cuda::std::size_t{1},
+          ::cuda::no_init);
+#endif // ^^^ CUDA 12.8- ^^^
+
+        __local_scratch.emplace_back(__per_comm_sampling_scratch{
+          /*__I_j=*/
+          __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>{
+            __stream,
+            __resource,
+            __n_split,
+            ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
+            __env},
+          /*__samples=*/__buffer<_Tp>{__stream, __resource, __env},
+          /*__samples_size=*/
+          __buffer<::cuda::std::size_t>{
+            __stream, __resource, /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1, ::cuda::no_init, __env},
+          /*__hist=*/__buffer<::cuda::std::uint64_t>{__stream, __resource, __env},
+          ::cuda::std::move(__probe_counts)});
+      }
+    }
+
+    return ::cuda::std::make_pair(::cuda::std::move(__local_splitters), ::cuda::std::move(__local_scratch));
+  }
+
+  // HSS histogramming phase (paper Section 6, "Histogramming Phase"; the k histogramming rounds of
+  // Section 4.2.2).
+  //
+  // Each round runs the Section 4.2.2 loop over steps (1)-(4):
+  //
+  // 1. Sample the union of splitter intervals (the "sampling phase before every histogramming
+  //    round", Section 4.1),
+  // 2. Gather/merge/broadcast the probes
+  // 3. Compute and all-reduce the local histograms, then
+  // 4. Tighten the per-splitter [L, U] brackets.
+  //
+  // The number of rounds K = ceil(log10(log10(p)/eps)) realizes the Theorem 4.8 count of
+  // O(log(log p / eps)) rounds; the per-round sampling ratio s_j = s_j_interior^(j/K) is the
+  // Section 4.2.2 schedule s_j = (2 ln p / eps)^(j/k).
+  template <class _CommRange, class _EnvRange, class _InputRange>
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__per_comm_splitters> __histogramming_phase(
+    const __local_sort_result& __setup,
+    _CommRange&& __comms,
+    _EnvRange&& __envs,
+    _InputRange&& __local_inputs,
+    const _BinaryOp& __cmp)
+  {
+    const auto __comm_size                    = __setup.__comm_size;
+    const auto __N                            = __setup.__N;
+    auto [__local_splitters, __local_scratch] = __allocate_histogramming_buffers(__setup, __comms, __envs);
+
+    // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so
+    // their allocations are paid once per sort instead of once per round.
+    //
+    // recvcounts/displs are O(comm_size) host vectors of invariant size; all_samples is the
+    // device buffer holding the gathered sample keys, which shrinks monotonically across
+    // rounds. __gather_merge_broadcast reuses their storage each round (see the reuse handling
+    // there).
+    ::std::vector<::cuda::std::size_t> __root_recvcounts;
+    ::std::vector<::cuda::std::size_t> __root_displs;
+    ::cuda::std::optional<__buffer<_Tp>> __root_all_samples;
+
+    // Note: K is small, on the order of ~1-10
+    const auto __K = ::cuda::std::max(
+      static_cast<::cuda::std::int32_t>(::cuda::std::ceil(::cuda::std::log10(::cuda::std::log10(__comm_size) / __EPS))),
+      1);
+    const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
+
+    for (::cuda::std::int32_t __j = 1; __j <= __K; ++__j)
+    {
+      const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
+      const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
+
+      for (auto&& [__input, __scratch, __n_local] :
+           ::cuda::std::ranges::views::zip(__local_inputs, __local_scratch, __setup.__local_original_sizes))
+      {
+        // Each iteration we sample the union of splitter intervals, \gamma_j with a
+        // probability of __prob. For the first iteration, \gamma_j is the entire array, but for
+        // previous iterations it's impossible for us to tell (on the host), because:
+        //
+        // 1. We can't inspect the updated intervals __I_j, and
+        // 2. We can't count how many of our elements actually lie within those updated
+        //    intervals.
+        //
+        // So instead we use the fact that each round the number of samples must decrease,
+        // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
+        // the high-water mark for the samples is the previous round's sample vector size.
+        const auto __estimate = ::cuda::std::max(
+          __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
+                   : __scratch.__sample_sendcount,
+          ::cuda::std::size_t{1});
+
+        ::cuda::experimental::__detail::__resize_for_overwrite(__scratch.__samples, __estimate);
+        ::cuda::experimental::__detail::__sort_sample_probes(
+          __input, __scratch.__I_j, __prob, __cmp, &__scratch.__samples, &__scratch.__samples_size);
+      }
+
+      __gather_merge_broadcast(
+        __comms,
+        __envs,
+        __cmp,
+        &__local_scratch,
+        &__local_splitters,
+        &__root_recvcounts,
+        &__root_displs,
+        &__root_all_samples);
+
+      __compute_histogram(__comms, __envs, __local_inputs, __local_splitters, __cmp, &__local_scratch);
+
+      // Tighten brackets and rebuild intervals
+      __update_intervals(__comms, __envs, __N, &__local_splitters, &__local_scratch);
+    }
+
+    return __local_splitters;
+  }
+
+  template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
+  _CCCL_HOST_API static void __execute(
+    const __result_policy_base<_Policy>&,
+    _CommRange&& __comms,
+    _EnvRange&& __envs,
+    _InputRange&& __local_inputs,
+    _BinaryOp __cmp)
+  {
+    static_assert(::cuda::std::ranges::sized_range<_CommRange>);
+
+    // Could use ::cuda::std::invocable here, but it is overkill (compile-time wise). We know
+    // that get_stream_t is a normal CPO and normally callable.
+    static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, ::cuda::std::ranges::range_value_t<_EnvRange>>,
+                  "Environment must contain a stream");
+
+    static_assert(::cuda::std::same_as<_Policy, distributed_t>,
+                  "Only distributed results are currently supported. Please open an issue at "
+                  "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
+
+    if (const auto __num_local_inputs = ::cuda::std::ranges::size(__comms); __num_local_inputs == 0)
+    {
+      // We have no inputs, so... nothing to do
+      return;
+    }
+
+    auto __setup = __local_sort(__comms, __envs, __local_inputs, __cmp);
+
+    if (__setup.__comm_size == 1 || __setup.__N == 0)
     {
       return;
     }
 
     {
-      // __per_comm_splitters (Ls/Us/probes) must survive the inner scratch block below because
-      // __data_exchange consumes them after the sampling K-loop finishes.
-      ::std::vector<__per_comm_splitters> __local_splitters;
+      const ::std::vector<__per_comm_splitters> __local_splitters =
+        __histogramming_phase(__setup, __comms, __envs, __local_inputs, __cmp);
 
-      __local_splitters.reserve(__num_local_inputs);
-
-      {
-        // __per_comm_sampling_scratch is confined to this inner block so it is destroyed before
-        // __data_exchange runs.
-        ::std::vector<__per_comm_sampling_scratch> __local_scratch;
-
-        __local_scratch.reserve(__num_local_inputs);
-
-        // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so their
-        // allocations are paid once per sort instead of once per round. recvcounts/displs are
-        // O(comm_size) host vectors of invariant size; all_samples is the device buffer holding the
-        // gathered sample keys, which shrinks monotonically across rounds. __gather_merge_broadcast
-        // reuses their storage each round (see the reuse handling there).
-        ::std::vector<::cuda::std::size_t> __root_recvcounts;
-        ::std::vector<::cuda::std::size_t> __root_displs;
-        ::cuda::std::optional<__buffer<_Tp>> __root_all_samples;
-
-        for (auto&& [__comm, __stream, __resource, __env] :
-             ::cuda::std::ranges::views::zip(__comms, __streams, __resources, __envs))
-        {
-          const auto __n_split = __comm_size - 1;
-
-          __local_splitters.emplace_back(__per_comm_splitters{
-            /*__Ls=*/__buffer<_Bracket>{__stream, __resource, __n_split, _Bracket{0, ::cuda::std::nullopt}, __env},
-            /*__Us=*/__buffer<_Bracket>{__stream, __resource, __n_split, _Bracket{__N, ::cuda::std::nullopt}, __env},
-            /*__probes=*/__buffer<_Tp>{__stream, __resource, __env}});
-
-          {
-#if _CCCL_CTK_AT_LEAST(12, 9)
-            auto __probe_counts = ::cuda::make_pinned_buffer<::cuda::std::uint64_t>(
-              __stream, /*__size=*/::cuda::std::size_t{1}, ::cuda::no_init);
-#else // ^^^ CUDA 12.9+ ^^^ / vvv CUDA 12.8- vvv
-            auto __probe_counts = ::cuda::make_buffer<::cuda::std::uint64_t>(
-              __stream,
-              ::cuda::mr::legacy_pinned_memory_resource{},
-              /*__size=*/::cuda::std::size_t{1},
-              ::cuda::no_init);
-#endif // ^^^ CUDA 12.8- ^^^
-
-            __local_scratch.emplace_back(__per_comm_sampling_scratch{
-              /*__I_j=*/
-              __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>{
-                __stream,
-                __resource,
-                __n_split,
-                ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
-                __env},
-              /*__samples=*/__buffer<_Tp>{__stream, __resource, __env},
-              /*__samples_size=*/
-              __buffer<::cuda::std::size_t>{
-                __stream, __resource, /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1, ::cuda::no_init, __env},
-              /*__hist=*/__buffer<::cuda::std::uint64_t>{__stream, __resource, __env},
-              ::cuda::std::move(__probe_counts)});
-          }
-        }
-
-        // Note: K is small, on the order of ~1-10
-        const auto __K = ::cuda::std::max(
-          static_cast<::cuda::std::int32_t>(
-            ::cuda::std::ceil(::cuda::std::log10(::cuda::std::log10(__comm_size) / __EPS))),
-          1);
-        const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
-
-        for (::cuda::std::int32_t __j = 1; __j <= __K; ++__j)
-        {
-          const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
-          const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
-
-          for (auto&& [__input, __scratch, __n_local] :
-               ::cuda::std::ranges::views::zip(__local_inputs, __local_scratch, __local_original_sizes))
-          {
-            // Each iteration we sample the union of splitter intervals, \gamma_j with a
-            // probability of __prob. For the first iteration, \gamma_j is the entire array, but for
-            // previous iterations it's impossible for us to tell (on the host), because:
-            //
-            // 1. We can't inspect the updated intervals __I_j, and
-            // 2. We can't count how many of our elements actually lie within those updated
-            //    intervals.
-            //
-            // So instead we use the fact that each round the number of samples must decrease,
-            // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
-            // the high-water mark for the samples is the previous round's sample vector size.
-            const auto __estimate = ::cuda::std::max(
-              __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
-                       : __scratch.__sample_sendcount,
-              ::cuda::std::size_t{1});
-
-            ::cuda::experimental::__detail::__resize_for_overwrite(__scratch.__samples, __estimate);
-            ::cuda::experimental::__detail::__sort_sample_probes(
-              __input, __scratch.__I_j, __prob, __cmp, &__scratch.__samples, &__scratch.__samples_size);
-          }
-
-          __gather_merge_broadcast(
-            __comms,
-            __envs,
-            __cmp,
-            &__local_scratch,
-            &__local_splitters,
-            &__root_recvcounts,
-            &__root_displs,
-            &__root_all_samples);
-
-          __compute_histogram(__comms, __envs, __local_inputs, __local_splitters, __cmp, &__local_scratch);
-
-          // ---- STEP 3: tighten brackets and rebuild intervals ----
-          __update_intervals(__comms, __envs, __N, &__local_splitters, &__local_scratch);
-        }
-      }
-
-      __data_exchange(__comms, __envs, __resources, __local_splitters, __N, __cmp, __local_inputs);
+      __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
     }
 
-    __rebalance_to_original_counts(
-      __comms, __envs, __streams, __resources, __local_original_sizes, __all_local_offsets, __N, __local_inputs);
+    __rebalance_to_original_counts(__setup, __comms, __envs, __local_inputs);
   }
 };
 } // namespace __detail
