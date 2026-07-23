@@ -14,14 +14,14 @@ THRUST_NAMESPACE_BEGIN
 /* --- Constructors --- */
 
 template <typename T>
-_CCCL_HOST_DEVICE complex<T>::complex(const T& re)
+_CCCL_HOST_DEVICE constexpr complex<T>::complex(const T& re)
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     : data{re, T()}
 {}
 
 template <typename T>
-_CCCL_HOST_DEVICE complex<T>::complex(const T& re, const T& im)
+_CCCL_HOST_DEVICE constexpr complex<T>::complex(const T& re, const T& im)
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     : data{re, im}
@@ -29,7 +29,7 @@ _CCCL_HOST_DEVICE complex<T>::complex(const T& re, const T& im)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>::complex(const complex<U>& z)
+_CCCL_HOST_DEVICE constexpr complex<T>::complex(const complex<U>& z)
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     // We do a functional-style cast here to suppress conversion warnings.
@@ -57,7 +57,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const ::std::complex<U>
 /* --- Assignment Operators --- */
 
 template <typename T>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const T& re)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator=(const T& re)
 {
   real(re);
   imag(T());
@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const T& re)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const complex<U>& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator=(const complex<U>& z)
 {
   real(T(z.real()));
   imag(T(z.imag()));
@@ -96,7 +96,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const ::s
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator+=(const complex<U>& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator+=(const complex<U>& z)
 {
   *this = *this + z;
   return *this;
@@ -104,7 +104,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator+=(const complex<U>& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator-=(const complex<U>& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator-=(const complex<U>& z)
 {
   *this = *this - z;
   return *this;
@@ -112,7 +112,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator-=(const complex<U>& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator*=(const complex<U>& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator*=(const complex<U>& z)
 {
   *this = *this * z;
   return *this;
@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator*=(const complex<U>& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator/=(const complex<U>& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator/=(const complex<U>& z)
 {
   *this = *this / z;
   return *this;
@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator/=(const complex<U>& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator+=(const U& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator+=(const U& z)
 {
   *this = *this + z;
   return *this;
@@ -136,7 +136,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator+=(const U& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator-=(const U& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator-=(const U& z)
 {
   *this = *this - z;
   return *this;
@@ -144,7 +144,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator-=(const U& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator*=(const U& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator*=(const U& z)
 {
   *this = *this * z;
   return *this;
@@ -152,7 +152,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator*=(const U& z)
 
 template <typename T>
 template <typename U>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator/=(const U& z)
+_CCCL_HOST_DEVICE constexpr complex<T>& complex<T>::operator/=(const U& z)
 {
   *this = *this / z;
   return *this;
@@ -161,7 +161,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator/=(const U& z)
 /* --- Equality Operators --- */
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr bool operator==(const complex<T0>& x, const complex<T1>& y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
@@ -181,19 +181,19 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x
 #endif // _CCCL_HOSTED()
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr bool operator==(const T0& x, const complex<T1>& y)
 {
   return x == y.real() && y.imag() == T1();
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE constexpr bool operator==(const complex<T0>& x, const T1& y)
 {
   return x.real() == y && x.imag() == T1();
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr bool operator!=(const complex<T0>& x, const complex<T1>& y)
 {
   return !(x == y);
 }
@@ -213,13 +213,13 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x
 #endif // _CCCL_HOSTED()
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE constexpr bool operator!=(const T0& x, const complex<T1>& y)
 {
   return !(x == y);
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE constexpr bool operator!=(const complex<T0>& x, const T1& y)
 {
   return !(x == y);
 }
