@@ -14,6 +14,7 @@
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
+#include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -211,7 +212,8 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
   // Add all items to the estimator
   estimator.add(stream, items_begin, items_begin + num_items);
 
-  const auto estimate = estimator.estimate(stream);
+  // Spark rounds the floating-point estimate to the nearest integer with Math.round.
+  const auto estimate = cuda::std::round(estimator.estimate(stream));
 
   const double expected_count = static_cast<double>(num_items) / static_cast<double>(repeats);
   const double relative_error = std::abs((static_cast<double>(estimate) / expected_count) - 1.0);
