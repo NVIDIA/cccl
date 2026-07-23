@@ -44,7 +44,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 template <class _Traits, class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
 _CCCL_HOST_API void __execute(
@@ -92,7 +92,7 @@ _CCCL_HOST_API void __execute(
   }
 
   const auto __setup =
-    ::cuda::experimental::__detail::__sort::__hss::__local_setup<_Traits>(__comms, __envs, __local_inputs, __comm_size);
+    ::cuda::experimental::__detail::__hss_sort::__local_setup<_Traits>(__comms, __envs, __local_inputs, __comm_size);
 
   if (__setup.__N == 0)
   {
@@ -101,17 +101,17 @@ _CCCL_HOST_API void __execute(
 
   {
     const ::std::vector<typename _Traits::__per_comm_splitters_type> __local_splitters =
-      ::cuda::experimental::__detail::__sort::__hss::__histogramming_phase<_Traits>(
+      ::cuda::experimental::__detail::__hss_sort::__histogramming_phase<_Traits>(
         __setup, __comms, __envs, __local_inputs, __cmp);
 
-    ::cuda::experimental::__detail::__sort::__hss::__data_exchange<_Traits>(
+    ::cuda::experimental::__detail::__hss_sort::__data_exchange<_Traits>(
       __setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
   }
 
-  ::cuda::experimental::__detail::__sort::__hss::__rebalance_to_original_counts<_Traits>(
+  ::cuda::experimental::__detail::__hss_sort::__rebalance_to_original_counts<_Traits>(
     __setup, __comms, __envs, __local_inputs);
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

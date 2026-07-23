@@ -33,6 +33,7 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
 
 #include <vector>
 
@@ -40,7 +41,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange>
 [[nodiscard]] _CCCL_HOST_API typename _Traits::__local_setup_result_type
@@ -49,7 +50,7 @@ __local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_in
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   ::std::vector<typename _Traits::__resource_type> __resources;
-  ::std::vector<typename _Traits::template __buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
+  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __all_local_offsets;
   ::std::vector<::cuda::std::size_t> __local_original_sizes;
   ::cuda::std::uint64_t __N = 0;
 
@@ -59,7 +60,7 @@ __local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_in
   __local_original_sizes.reserve(__num_local_inputs);
 
   {
-    ::std::vector<typename _Traits::template __buffer_type<::cuda::std::uint64_t>> __all_local_sizes;
+    ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __all_local_sizes;
 
     __all_local_sizes.reserve(__num_local_inputs);
 
@@ -145,7 +146,7 @@ __local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_in
     __N,
     __comm_size};
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

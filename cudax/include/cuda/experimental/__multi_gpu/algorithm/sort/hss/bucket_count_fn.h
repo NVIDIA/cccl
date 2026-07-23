@@ -29,7 +29,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 // Per-bucket count functor shared by __local_histogram and __data_exchange. Both phases walk a
 // sorted key range against a monotonically increasing bucket index, and for bucket b emit the
@@ -75,7 +75,7 @@ struct __bucket_count_fn
     return __ret;
   }
 };
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

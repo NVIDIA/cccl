@@ -59,7 +59,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 // Interval-narrowing functor for __update_intervals. Given (target_rank, L, U),
 // walks the local probe histogram and tightens the [L, U] bracket, returning
@@ -135,12 +135,10 @@ __allocate_histogramming_buffers(
     const auto __n_split = __comm_size - 1;
 
     __local_splitters.emplace_back(typename _Traits::__per_comm_splitters_type{
-      /*__Ls=*/typename _Traits::template __buffer_type<_Bracket>{
-        __stream, __resource, __n_split, _Bracket{0, ::cuda::std::nullopt}, __env},
+      /*__Ls=*/__buffer_of<_Traits, _Bracket>{__stream, __resource, __n_split, _Bracket{0, ::cuda::std::nullopt}, __env},
       /*__Us=*/
-      typename _Traits::template __buffer_type<_Bracket>{
-        __stream, __resource, __n_split, _Bracket{__N, ::cuda::std::nullopt}, __env},
-      /*__probes=*/typename _Traits::template __buffer_type<_Tp>{__stream, __resource, __env}});
+      __buffer_of<_Traits, _Bracket>{__stream, __resource, __n_split, _Bracket{__N, ::cuda::std::nullopt}, __env},
+      /*__probes=*/__buffer_of<_Traits, _Tp>{__stream, __resource, __env}});
 
     {
 #if _CCCL_CTK_AT_LEAST(12, 9)
@@ -156,18 +154,17 @@ __allocate_histogramming_buffers(
 
       __local_scratch.emplace_back(typename _Traits::__per_comm_sampling_scratch_type{
         /*__I_j=*/
-        typename _Traits::template __buffer_type<
-          ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>{
+        __buffer_of<_Traits, ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>{
           __stream,
           __resource,
           __n_split,
           ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
           __env},
-        /*__samples=*/typename _Traits::template __buffer_type<_Tp>{__stream, __resource, __env},
+        /*__samples=*/__buffer_of<_Traits, _Tp>{__stream, __resource, __env},
         /*__samples_size=*/
-        typename _Traits::template __buffer_type<::cuda::std::size_t>{
+        __buffer_of<_Traits, ::cuda::std::size_t>{
           __stream, __resource, /*__size=*/__comm.rank() == __root_rank ? __comm_size : 1, ::cuda::no_init, __env},
-        /*__hist=*/typename _Traits::template __buffer_type<::cuda::std::uint64_t>{__stream, __resource, __env},
+        /*__hist=*/__buffer_of<_Traits, ::cuda::std::uint64_t>{__stream, __resource, __env},
         ::cuda::std::move(__probe_counts)});
     }
   }
@@ -184,7 +181,7 @@ _CCCL_HOST_API void __gather_merge_broadcast(
   ::std::vector<typename _Traits::__per_comm_splitters_type>* __local_splitters,
   ::std::vector<::cuda::std::size_t>* __root_recvcounts,
   ::std::vector<::cuda::std::size_t>* __root_displs,
-  ::cuda::std::optional<typename _Traits::template __buffer_type<typename _Traits::__value_type>>* __root_all_samples)
+  ::cuda::std::optional<__buffer_of<_Traits, typename _Traits::__value_type>>* __root_all_samples)
 {
   using _Tp = typename _Traits::__value_type;
 
@@ -247,7 +244,7 @@ _CCCL_HOST_API void __gather_merge_broadcast(
       // (samples shrink monotonically, so this never grows after round one).
       if (__root_all_samples->has_value())
       {
-        ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(**__root_all_samples, __all_recv);
+        ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(**__root_all_samples, __all_recv);
       }
       else
       {
@@ -323,7 +320,7 @@ _CCCL_HOST_API void __gather_merge_broadcast(
     {
       // Wait for comm so we can access probe_counts.front()
       __scratch.__probe_counts.stream().sync();
-      ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(
+      ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(
         __splitters.__probes, __scratch.__probe_counts.front());
     }
   }
@@ -361,7 +358,7 @@ _CCCL_HOST_API void __compute_histogram(
     const auto __keys_first   = ::cuda::std::ranges::begin(__keys);
     const auto __probes_first = __probes.begin();
 
-    ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(__hist, __num_buckets);
+    ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__hist, __num_buckets);
 
     auto __op =
       __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__keys_first)>,
@@ -446,7 +443,7 @@ template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, c
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
   auto [__local_splitters, __local_scratch] =
-    ::cuda::experimental::__detail::__sort::__hss::__allocate_histogramming_buffers<_Traits>(__setup, __comms, __envs);
+    ::cuda::experimental::__detail::__hss_sort::__allocate_histogramming_buffers<_Traits>(__setup, __comms, __envs);
 
   // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so
   // their allocations are paid once per sort instead of once per round.
@@ -457,7 +454,7 @@ template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, c
   // there).
   ::std::vector<::cuda::std::size_t> __root_recvcounts;
   ::std::vector<::cuda::std::size_t> __root_displs;
-  ::cuda::std::optional<typename _Traits::template __buffer_type<typename _Traits::__value_type>> __root_all_samples;
+  ::cuda::std::optional<__buffer_of<_Traits, typename _Traits::__value_type>> __root_all_samples;
 
   // Note: K is small, on the order of ~1-10
   const auto __K = ::cuda::std::max(
@@ -489,12 +486,12 @@ template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, c
                  : __scratch.__sample_sendcount,
         ::cuda::std::size_t{1});
 
-      ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(__scratch.__samples, __estimate);
-      ::cuda::experimental::__detail::__sort::__hss::__sample_probes<_Traits>(
+      ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__scratch.__samples, __estimate);
+      ::cuda::experimental::__detail::__hss_sort::__sample_probes<_Traits>(
         __input, __scratch.__I_j, __prob, __cmp, &__scratch.__samples, &__scratch.__samples_size);
     }
 
-    ::cuda::experimental::__detail::__sort::__hss::__gather_merge_broadcast<_Traits>(
+    ::cuda::experimental::__detail::__hss_sort::__gather_merge_broadcast<_Traits>(
       __comms,
       __envs,
       __cmp,
@@ -504,17 +501,17 @@ template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, c
       &__root_displs,
       &__root_all_samples);
 
-    ::cuda::experimental::__detail::__sort::__hss::__compute_histogram<_Traits>(
+    ::cuda::experimental::__detail::__hss_sort::__compute_histogram<_Traits>(
       __comms, __envs, __local_inputs, __local_splitters, __cmp, &__local_scratch);
 
     // Tighten brackets and rebuild intervals
-    ::cuda::experimental::__detail::__sort::__hss::__update_intervals<_Traits>(
+    ::cuda::experimental::__detail::__hss_sort::__update_intervals<_Traits>(
       __comms, __envs, __N, &__local_splitters, &__local_scratch);
   }
 
   return __local_splitters;
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

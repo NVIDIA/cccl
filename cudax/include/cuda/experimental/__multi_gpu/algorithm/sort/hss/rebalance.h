@@ -38,6 +38,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
 
 #include <vector>
 
@@ -45,7 +46,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void __rebalance_to_original_counts(
@@ -71,7 +72,7 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
 
-  ::std::vector<typename _Traits::template __buffer_type<_Tp>> __local_rebalanced;
+  ::std::vector<__buffer_of<_Traits, _Tp>> __local_rebalanced;
 
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -84,8 +85,8 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
   // ---- Measure the realized post-exchange distribution: all-gather each
   // rank's current __input size, then exclusive-scan into current offsets (length
   // __comm_size, current_offsets[0] == 0).
-  ::std::vector<typename _Traits::template __buffer_type<::cuda::std::uint64_t>> __local_current_sizes;
-  ::std::vector<typename _Traits::template __buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
+  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __local_current_sizes;
+  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __local_current_offsets;
 
   __local_current_sizes.reserve(__num_local_inputs);
   __local_current_offsets.reserve(__num_local_inputs);
@@ -286,7 +287,7 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
   {
     // This resize is safe only so long as the user promises to free their allocation on the
     // stream that they passed us. For thrust/cuda containers, this is vacuously true
-    ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(__input, __out.size());
+    ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__input, __out.size());
 
     ::cuda::copy_bytes(
       __out.__get().stream(),
@@ -297,7 +298,7 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
                                  ::cuda::source_access_order::stream});
   }
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 
