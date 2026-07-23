@@ -135,6 +135,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.key_sentinel ${cudax_t
     cuco/fixed_capacity_map/test_key_sentinel.cu
 )
 
+cudax_add_catch2_test(test_target cuco.utility.atomic
+    cuco/utility/test_atomic.cu
+)
+
 cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
     cuco/utility/test_capacity.cu
 )
