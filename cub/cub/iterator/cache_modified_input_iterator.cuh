@@ -22,9 +22,9 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -230,8 +230,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterat
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iterator>)
   {
     return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
-      // FIXME(bgruber): this should be THRUST_NS_QUALIFIER::unwrap_contiguous_iterator
-      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(it)};
   }
   else
   {
