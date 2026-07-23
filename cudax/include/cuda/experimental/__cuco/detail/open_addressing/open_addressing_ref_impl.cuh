@@ -537,7 +537,7 @@ public:
         }
       }
       ++__probing_iter;
-      if (*__probing_iter == __init_idx)
+      if (_CCCL_BUILTIN_EXPECT(*__probing_iter == __init_idx, 0))
       {
         return end();
       }
@@ -593,7 +593,7 @@ public:
         return end();
       }
       ++__probing_iter;
-      if (*__probing_iter == __init_idx)
+      if (_CCCL_BUILTIN_EXPECT(*__probing_iter == __init_idx, 0))
       {
         return end();
       }

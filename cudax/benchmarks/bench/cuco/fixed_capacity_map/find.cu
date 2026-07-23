@@ -47,8 +47,6 @@ void fixed_capacity_map_find(nvbench::state& state, nvbench::type_list<Key, Valu
     const auto occupancy     = state.get_float64("Occupancy");
     const auto matching_rate = state.get_float64("MatchingRate");
 
-    const auto size = static_cast<cuda::std::size_t>(static_cast<double>(num_keys) / occupancy);
-
     const auto device = cuda::device_ref{0};
     cuda::stream stream{device};
     const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
@@ -64,7 +62,7 @@ void fixed_capacity_map_find(nvbench::state& state, nvbench::type_list<Key, Valu
       return pair_type{key, Value{}};
     });
 
-    map_type map{stream, mr, size, cudax::cuco::empty_key(Key{-1}), cudax::cuco::empty_value(Value{-1})};
+    map_type map{stream, mr, num_keys, occupancy, cudax::cuco::empty_key(Key{-1}), cudax::cuco::empty_value(Value{-1})};
     map.insert(stream, pairs.begin(), pairs.end());
 
     gen.dropout(keys.begin(), keys.end(), matching_rate, exec_policy);
