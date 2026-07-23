@@ -95,7 +95,7 @@ template <typename PolicySelector, typename KeyT, typename LengthT, typename Num
 struct DeviceRleEncodeKernelSource
 {
 #if __cccl_ptx_isa >= 920
-  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceRleEncodeLookaheadInitKernel<TilePartialStateT>)
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceRleEncodeLookaheadInitKernel<PolicySelector, TilePartialStateT>)
 
   CUB_DEFINE_KERNEL_GETTER(LookaheadKernel,
                            DeviceRleEncodeLookaheadKernel<PolicySelector, KeyT, LengthT, NumRunsT, OffsetT>)
@@ -318,10 +318,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                                        NumRunsOutputIteratorT,
                                        OffsetT>)
   {
-
-    [[maybe_unused]] auto kernel      = kernel_source.LookaheadKernel();
-    [[maybe_unused]] auto init_kernel = kernel_source.InitKernel();
-
     ::cuda::compute_capability cc{};
     if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {

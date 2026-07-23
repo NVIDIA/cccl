@@ -649,7 +649,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   constexpr int max_pos_ring_stages    = policy.pos_ring_stages;
   constexpr int flag_staging_threshold = policy.flag_staging_threshold;
   // in the regressed case: always stage positions, so the store warps never run the flag-decode drain vvv
-  const int staging_threshold = keys_staged ? flag_staging_threshold : 0;
+  const int staging_threshold  = keys_staged ? flag_staging_threshold : 0;
   constexpr int warp_tile_size = policy.warp_tile_size();
   constexpr int tile_size      = policy.tile_size();
   constexpr int slot_pad       = policy.slot_pad((int) sizeof(KeyT));
@@ -1179,7 +1179,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
     });
 }
 
-template <class StateT>
+template <class PolicySelector, class StateT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, cuda::std::int64_t n_states)
 {
   const cuda::std::int64_t i = (cuda::std::int64_t) blockIdx.x * blockDim.x + threadIdx.x;
