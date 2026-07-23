@@ -35,11 +35,13 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 // TODO(jfaibussowit):
 //
@@ -92,12 +94,11 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
 template <class _Traits, class _Tp, class _BinaryOp, class _InputRange>
 _CCCL_HOST_API void __sample_probes(
   _InputRange&& __input,
-  const typename _Traits::template __buffer_type<
-    ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>& __I_j,
+  const __buffer_of<_Traits, ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>& __I_j,
   double __sampling_probability,
   _BinaryOp __cmp,
-  typename _Traits::template __buffer_type<_Tp>* __samples,
-  typename _Traits::template __buffer_type<::cuda::std::size_t>* __sample_size)
+  __buffer_of<_Traits, _Tp>* __samples,
+  __buffer_of<_Traits, ::cuda::std::size_t>* __sample_size)
 {
   constexpr auto __config =
     ::cuda::make_config(::cuda::make_hierarchy(::cuda::block_dims<1>(), ::cuda::grid_dims<1>()));
@@ -118,7 +119,7 @@ _CCCL_HOST_API void __sample_probes(
     ::cuda::std::span<_Tp>{*__samples},
     __sample_size->__get().data());
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

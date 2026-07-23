@@ -38,7 +38,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 // cuda::buffer has no concept of size vs capacity. We need both below because
 // we want to be able to shrink a buffer without reallocating a new one.
@@ -258,7 +258,7 @@ _CCCL_HOST_API void __resize_for_overwrite(_Range& __range, ::cuda::std::size_t 
     __range.resize(__size);
   }
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

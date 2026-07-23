@@ -28,6 +28,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
 
 #include <vector>
 
@@ -35,7 +36,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 // TODO(jfaibussowit):
 //
@@ -44,11 +45,11 @@ template <class _Traits, class _Comm, class _Env>
 _CCCL_HOST_API void __merge_k_way(
   const _Comm& __comm,
   const _Env& __env,
-  const typename _Traits::template __buffer_type<typename _Traits::__value_type>& __data,
+  const __buffer_of<_Traits, typename _Traits::__value_type>& __data,
   const ::std::vector<::cuda::std::size_t>& __counts,
   const ::std::vector<::cuda::std::size_t>& __displs,
   const typename _Traits::__binary_op_type& __cmp,
-  typename _Traits::template __buffer_type<typename _Traits::__value_type>* __ret)
+  __buffer_of<_Traits, typename _Traits::__value_type>* __ret)
 {
   using _Tp = typename _Traits::__value_type;
   if (__counts.size() < 2)
@@ -64,7 +65,7 @@ _CCCL_HOST_API void __merge_k_way(
 
   const auto __total = __counts.back() + __displs.back();
 
-  ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(*__ret, __total);
+  ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(*__ret, __total);
 
   auto __tmp_buf = __ret->__make_empty_like(__total);
 
@@ -98,7 +99,7 @@ _CCCL_HOST_API void __merge_k_way(
     __merged_size += __counts[__i];
   }
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

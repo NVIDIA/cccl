@@ -53,11 +53,11 @@ void sort(const __result_policy_base<_Policy>& __policy,
   using __result_type =
     ::cuda::std::ranges::range_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
   using __env_type = ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_EnvRange>>;
-  using __traits   = __detail::__sort::__hss::__hss_traits<__result_type, __env_type, _BinaryOp>;
+  using __traits   = ::cuda::experimental::__detail::__hss_sort::__hss_traits<__result_type, __env_type, _BinaryOp>;
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::sort");
 
-  ::cuda::experimental::__detail::__sort::__hss::__execute<__traits>(
+  ::cuda::experimental::__detail::__hss_sort::__execute<__traits>(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),

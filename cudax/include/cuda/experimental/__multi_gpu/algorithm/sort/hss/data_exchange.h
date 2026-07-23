@@ -40,6 +40,7 @@
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/merge_k_way.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
 
 #include <vector>
 
@@ -47,7 +48,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 // Splitter-selection functor used by __data_exchange (via the lazy __splitter_it
 // transform_iterator). Given (target_rank, L, U), returns the bracket endpoint key closest to
@@ -93,12 +94,12 @@ _CCCL_HOST_API void __data_exchange(
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
 
-  ::std::vector<typename _Traits::template __buffer_type<::cuda::std::size_t>> __local_send_counts;
-  ::std::vector<typename _Traits::template __buffer_type<::cuda::std::size_t>> __local_recv_counts;
+  ::std::vector<__buffer_of<_Traits, ::cuda::std::size_t>> __local_send_counts;
+  ::std::vector<__buffer_of<_Traits, ::cuda::std::size_t>> __local_recv_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
 
-  ::std::vector<typename _Traits::template __buffer_type<_Tp>> __local_recvd;
+  ::std::vector<__buffer_of<_Traits, _Tp>> __local_recvd;
 
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -144,7 +145,7 @@ _CCCL_HOST_API void __data_exchange(
     // in [S(d - 1), S(d)) and its count becomes the send metadata. The send displacements are the
     // exclusive prefix-sum of these counts (buckets are contiguous and non-overlapping), so we
     // recompute them on the host below instead of emitting a second device column here.
-    auto __op = ::cuda::experimental::__detail::__sort::__hss::__bucket_count_fn<
+    auto __op = ::cuda::experimental::__detail::__hss_sort::__bucket_count_fn<
       ::cuda::std::remove_cvref_t<decltype(__input_begin)>,
       ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
       _BinaryOp>{__input_begin, ::cuda::std::ranges::end(__input), __splitter_it, __Ls.size(), __cmp};
@@ -259,11 +260,11 @@ _CCCL_HOST_API void __data_exchange(
     // TODO(jfaibussowit):
     //
     // Don't use __tmp and instead write directly to __inputs
-    auto __tmp = typename _Traits::template __buffer_type<_Tp>{__recvd.__make_empty_like(0)};
+    auto __tmp = __buffer_of<_Traits, _Tp>{__recvd.__make_empty_like(0)};
 
     __merge_k_way<_Traits>(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
 
-    ::cuda::experimental::__detail::__sort::__hss::__resize_for_overwrite(__inputs, __tmp.size());
+    ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__inputs, __tmp.size());
 
     ::cuda::copy_bytes(
       __tmp.__get().stream(),
@@ -274,7 +275,7 @@ _CCCL_HOST_API void __data_exchange(
                                  ::cuda::source_access_order::stream});
   }
 }
-} // namespace cuda::experimental::__detail::__sort::__hss
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 

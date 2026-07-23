@@ -36,7 +36,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__sort::__hss
+namespace cuda::experimental::__detail::__hss_sort
 {
 inline constexpr double __eps                     = 0.02; // 2% tolerance
 inline constexpr ::cuda::std::int32_t __root_rank = 0;
@@ -54,7 +54,7 @@ struct __hss_traits
   using __binary_op_type _CCCL_NODEBUG = _BinaryOp;
 
   template <class _Up>
-  using __buffer_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__sort::__hss::__buffer<_Up, __resource_type>;
+  using __buffer_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__hss_sort::__buffer<_Up, __resource_type>;
 
   // Persistent per-splitter bracket. rank = global rank of `key`.
   //
@@ -98,7 +98,12 @@ struct __hss_traits
     ::cuda::std::int32_t __comm_size{};
   };
 };
-} // namespace cuda::experimental::__detail::__sort::__hss
+
+// Convenience alias for the per-comm buffer type carried by a traits instantiation. Spells
+// `typename _Traits::template __buffer_type<_Up>` without the `typename ... ::template` noise.
+template <class _Traits, class _Up>
+using __buffer_of = typename _Traits::template __buffer_type<_Up>;
+} // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)
 
