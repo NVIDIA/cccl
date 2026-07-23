@@ -44,19 +44,19 @@ struct bfloat16_t
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit bfloat16_t(int a)
   {
-    *this = bfloat16_t(float(a));
+    *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Constructor from std::size_t
   __host__ __device__ __forceinline__ explicit bfloat16_t(std::size_t a)
   {
-    *this = bfloat16_t(float(a));
+    *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Constructor from double
   __host__ __device__ __forceinline__ explicit bfloat16_t(double a)
   {
-    *this = bfloat16_t(float(a));
+    *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Constructor from unsigned long long int
@@ -66,7 +66,7 @@ struct bfloat16_t
               && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
   __host__ __device__ __forceinline__ explicit bfloat16_t(T a)
   {
-    *this = bfloat16_t(float(a));
+    *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Default constructor
@@ -108,7 +108,7 @@ struct bfloat16_t
   {
     float f     = 0;
     uint32_t* p = reinterpret_cast<uint32_t*>(&f);
-    *p          = uint32_t(__x) << 16;
+    *p          = static_cast<uint32_t>(__x) << 16;
     return f;
   }
 
@@ -133,50 +133,50 @@ struct bfloat16_t
   /// Assignment by sum
   __host__ __device__ __forceinline__ bfloat16_t& operator+=(const bfloat16_t& rhs)
   {
-    *this = bfloat16_t(float(*this) + float(rhs));
+    *this = bfloat16_t(static_cast<float>(*this) + static_cast<float>(rhs));
     return *this;
   }
 
   /// Multiply
   __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other) const
   {
-    return bfloat16_t(float(*this) * float(other));
+    return bfloat16_t(static_cast<float>(*this) * static_cast<float>(other));
   }
 
   /// Add
   __host__ __device__ __forceinline__ bfloat16_t operator+(const bfloat16_t& other) const
   {
-    return bfloat16_t(float(*this) + float(other));
+    return bfloat16_t(static_cast<float>(*this) + static_cast<float>(other));
   }
 
   /// Sub
   __host__ __device__ __forceinline__ bfloat16_t operator-(const bfloat16_t& other) const
   {
-    return bfloat16_t(float(*this) - float(other));
+    return bfloat16_t(static_cast<float>(*this) - static_cast<float>(other));
   }
 
   /// Less-than
   __host__ __device__ __forceinline__ bool operator<(const bfloat16_t& other) const
   {
-    return float(*this) < float(other);
+    return static_cast<float>(*this) < static_cast<float>(other);
   }
 
   /// Less-than-equal
   __host__ __device__ __forceinline__ bool operator<=(const bfloat16_t& other) const
   {
-    return float(*this) <= float(other);
+    return static_cast<float>(*this) <= static_cast<float>(other);
   }
 
   /// Greater-than
   __host__ __device__ __forceinline__ bool operator>(const bfloat16_t& other) const
   {
-    return float(*this) > float(other);
+    return static_cast<float>(*this) > static_cast<float>(other);
   }
 
   /// Greater-than-equal
   __host__ __device__ __forceinline__ bool operator>=(const bfloat16_t& other) const
   {
-    return float(*this) >= float(other);
+    return static_cast<float>(*this) >= static_cast<float>(other);
   }
 
   /// numeric_traits<bfloat16_t>::max
@@ -201,7 +201,7 @@ struct bfloat16_t
 /// Insert formatted \p bfloat16_t into the output stream
 inline std::ostream& operator<<(std::ostream& out, const bfloat16_t& x)
 {
-  out << (float) x;
+  out << static_cast<float>(x);
   return out;
 }
 
