@@ -93,7 +93,6 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
 
 template <class _Tp, class _Resource, class _BinaryOp, class _InputRange>
 _CCCL_HOST_API void __sort_sample_probes(
-  ::cuda::stream_ref __stream,
   _InputRange&& __input,
   const __buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Resource>& __I_j,
   double __sampling_probability,
@@ -107,7 +106,8 @@ _CCCL_HOST_API void __sort_sample_probes(
   _CCCL_VERIFY(__sampling_probability > 0, "Cannot have 0 probably of picking elements");
 
   ::cuda::launch(
-    __stream,
+    // All inputs should be on the same stream here
+    __I_j.__get().stream(),
     __config,
     __sample_probes_kernel<::cuda::std::remove_cvref_t<decltype(__config)>, _Tp, _BinaryOp>,
     ::cuda::std::philox4x64{static_cast<::cuda::std::uint32_t>(__sampling_probability)},
