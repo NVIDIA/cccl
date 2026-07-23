@@ -28,6 +28,7 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -59,7 +60,9 @@ _CCCL_API constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>> __s
     }
   }
   return ::cuda::std::__copy<_AlgPolicy>(
-    ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__result));
+    ::cuda::std::forward<_InIter1>(__first1),
+    ::cuda::std::forward<_Sent1>(__last1),
+    ::cuda::std::forward<_OutIter>(__result));
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
