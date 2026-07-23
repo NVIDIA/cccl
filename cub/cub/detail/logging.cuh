@@ -42,9 +42,9 @@ namespace detail
                  return enabled;
                }),
                ({ return false; }));
-#else // _CCCL_HOSTED()
+#else // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   return false;
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
 //! Logs the message when called from host code, independently of whether logging is enabled
@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE_API inline void log_always([[maybe_unused]] const char* fmt, .
                  ::vprintf(fmt, args);
                  va_end(args);
                }));
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
 //! Logs the message when called from host code and logging is enabled
@@ -76,7 +76,7 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
                  }
                }));
 
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
 template <typename Policy>
@@ -84,7 +84,7 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                                         [[maybe_unused]] ::cuda::compute_capability cc,
                                         [[maybe_unused]] const Policy& active_policy) noexcept
 {
-#if _CCCL_HOSTED() // guard needed for stringstream. TODO(bgruber): drop when we can use cuda::std::format
+#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
                  if (logging_enabled())
                  {
@@ -97,7 +97,7 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                               ss.str().c_str());
                  }
                }))
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 } // namespace detail
 CUB_NAMESPACE_END
