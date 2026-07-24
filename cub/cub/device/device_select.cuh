@@ -201,10 +201,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
@@ -216,7 +214,7 @@ struct DeviceSelect
           NullType{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -299,23 +297,10 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
-          storage,
-          bytes,
-          d_in,
-          d_flags,
-          d_out,
-          d_num_selected_out,
-          NullType{},
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::Select>(
+        storage, bytes, d_in, d_flags, d_out, d_num_selected_out, NullType{}, NullType{}, num_items, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -389,27 +374,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-          storage,
-          bytes,
-          d_data,
-          d_flags,
-          d_data,
-          d_num_selected_out,
-          NullType{},
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        d_flags,
+        d_data,
+        d_num_selected_out,
+        NullType{},
+        NullType{},
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -493,23 +471,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
-          storage,
-          bytes,
-          d_in,
-          static_cast<NullType*>(nullptr),
-          d_out,
-          d_num_selected_out,
-          select_op,
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::Select>(
+        storage,
+        bytes,
+        d_in,
+        static_cast<NullType*>(nullptr),
+        d_out,
+        d_num_selected_out,
+        select_op,
+        NullType{},
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -582,27 +557,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      NullType*,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-          storage,
-          bytes,
-          d_data,
-          static_cast<NullType*>(nullptr),
-          d_data,
-          d_num_selected_out,
-          select_op,
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        static_cast<NullType*>(nullptr),
+        d_data,
+        d_num_selected_out,
+        select_op,
+        NullType{},
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -702,14 +670,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
@@ -721,7 +683,7 @@ struct DeviceSelect
           NullType{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -847,10 +809,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
@@ -862,7 +822,7 @@ struct DeviceSelect
           NullType{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -976,14 +936,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      NullType*,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
@@ -995,7 +949,7 @@ struct DeviceSelect
           NullType{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -1098,22 +1052,10 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Select>(
-          storage,
-          bytes,
-          d_in,
-          d_flags,
-          d_out,
-          d_num_selected_out,
-          select_op,
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
+          storage, bytes, d_in, d_flags, d_out, d_num_selected_out, select_op, NullType{}, num_items, stream, tuning_env);
       });
   }
 
@@ -1206,14 +1148,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
@@ -1225,7 +1161,7 @@ struct DeviceSelect
           NullType{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -1321,23 +1257,10 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
-          storage,
-          bytes,
-          d_in,
-          d_flags,
-          d_out,
-          d_num_selected_out,
-          select_op,
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::Select>(
+        storage, bytes, d_in, d_flags, d_out, d_num_selected_out, select_op, NullType{}, num_items, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -1422,27 +1345,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      FlagIterator,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-          storage,
-          bytes,
-          d_data,
-          d_flags,
-          d_data,
-          d_num_selected_out,
-          select_op,
-          NullType{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        d_flags,
+        d_data,
+        d_num_selected_out,
+        select_op,
+        NullType{},
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1520,23 +1436,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
-          storage,
-          bytes,
-          d_in,
-          static_cast<NullType*>(nullptr),
-          d_out,
-          d_num_selected_out,
-          NullType{},
-          ::cuda::std::equal_to<>{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::Select>(
+        storage,
+        bytes,
+        d_in,
+        static_cast<NullType*>(nullptr),
+        d_out,
+        d_num_selected_out,
+        NullType{},
+        ::cuda::std::equal_to<>{},
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1621,23 +1534,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
-          storage,
-          bytes,
-          d_in,
-          static_cast<NullType*>(nullptr),
-          d_out,
-          d_num_selected_out,
-          NullType{},
-          equality_op,
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::Select>(
+        storage,
+        bytes,
+        d_in,
+        static_cast<NullType*>(nullptr),
+        d_out,
+        d_num_selected_out,
+        NullType{},
+        equality_op,
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1700,27 +1610,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      NullType*,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-          storage,
-          bytes,
-          d_data,
-          static_cast<NullType*>(nullptr),
-          d_data,
-          d_num_selected_out,
-          NullType{},
-          ::cuda::std::equal_to<>{},
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        static_cast<NullType*>(nullptr),
+        d_data,
+        d_num_selected_out,
+        NullType{},
+        ::cuda::std::equal_to<>{},
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1794,27 +1697,20 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      NullType*,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-          storage,
-          bytes,
-          d_data,
-          static_cast<NullType*>(nullptr),
-          d_data,
-          d_num_selected_out,
-          NullType{},
-          equality_op,
-          num_items,
-          stream,
-          policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        static_cast<NullType*>(nullptr),
+        d_data,
+        d_num_selected_out,
+        NullType{},
+        equality_op,
+        num_items,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -2152,10 +2048,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
@@ -2167,7 +2061,7 @@ struct DeviceSelect
           equality_op,
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -2272,10 +2166,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
@@ -2287,7 +2179,7 @@ struct DeviceSelect
           ::cuda::std::equal_to<>{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -2356,14 +2248,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      NullType*,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
@@ -2375,7 +2261,7 @@ struct DeviceSelect
           ::cuda::std::equal_to<>{},
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -2458,14 +2344,8 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using default_policy_selector = detail::select::policy_selector_from_types<
-      IteratorT,
-      NullType*,
-      IteratorT,
-      ::cuda::std::int64_t,
-      SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
@@ -2477,7 +2357,7 @@ struct DeviceSelect
           equality_op,
           num_items,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
