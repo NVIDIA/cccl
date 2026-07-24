@@ -85,6 +85,17 @@ struct __dimensions_handler<::cuda::std::integral_constant<_Dims, _Val>>
     return ::cuda::std::extents<dimensions_index_type, static_cast<::cuda::std::size_t>(__dims), 1, 1>();
   }
 };
+
+template <class _Tp, ::cuda::std::size_t... _Ns>
+struct __dimensions_handler<::cuda::std::extents<_Tp, _Ns...>>
+{
+  static constexpr bool __is_type_supported = ::cuda::std::__cccl_is_integer_v<_Tp>;
+
+  [[nodiscard]] _CCCL_API static constexpr auto __translate(const ::cuda::std::extents<_Tp, _Ns...>& __exts) noexcept
+  {
+    return __exts;
+  }
+};
 } // namespace __detail
 
 /**

@@ -34,6 +34,7 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__coop/any_of.cuh>
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
@@ -505,6 +506,50 @@ public:
   }
 
   //!
+  //! @brief Indicates whether the probe __key `__key` was inserted into the container.
+  //!
+  //! @note If the probe __key `__key` was inserted into the container, returns true. Otherwise, returns
+  //! false.
+  //!
+  //! @tparam _Group Group type
+  //! @tparam _ProbeKey Probe __key type
+  //!
+  //! @param __group The Cooperative Group used to perform group contains
+  //! @param __key The __key to search for
+  //!
+  //! @return A boolean indicating whether the probe __key is present
+  _CCCL_TEMPLATE(class _Group, class _ProbeKey)
+  _CCCL_REQUIRES(is_group<_Group>)
+  [[nodiscard]] _CCCL_DEVICE_API bool contains(const _Group& __group, _ProbeKey __key) const noexcept
+  {
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
+    const auto __init_idx = *__probing_iter;
+
+    while (true)
+    {
+      const auto __bucket_slots = __storage_ref[*__probing_iter];
+
+      const auto __state = __probe_bucket(__key, __bucket_slots);
+
+      if (::cuda::experimental::coop::any_of(broadcasted, __group, (__state == detail::__equal_result::__equal)))
+      {
+        return true;
+      }
+      if (::cuda::experimental::coop::any_of(broadcasted, __group, (__state == detail::__equal_result::__empty)))
+      {
+        return false;
+      }
+
+      ++__probing_iter;
+      if (*__probing_iter == __init_idx)
+      {
+        return false;
+      }
+    }
+  }
+
+  //!
   //! @brief Scans a bucket for the first slot available for inserting @p __key.
   //!
   //! Returns the intra-bucket index of the first empty slot, or of a slot already holding an equal
@@ -841,11 +886,9 @@ public:
     }
     else
     {
-#  if (__CUDA_ARCH__ < 700)
-      return cas_dependent_write(__address, __expected, __desired);
-#  else
-      return back_to_back_cas(__address, __expected, __desired);
-#  endif
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, ({ return cas_dependent_write(__address, __expected, __desired); }), ({
+                          return back_to_back_cas(__address, __expected, __desired);
+                        }))
     }
   }
 
