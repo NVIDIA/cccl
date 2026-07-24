@@ -55,17 +55,22 @@ python -m pytest -v --benchmark-disable .
 # axes (one dtype, smallest size) so every benchmark harness still imports,
 # registers, launches, and completes. cuda-bench does not always ship a wheel for
 # the newest Python, so skip the throughput smoke ONLY for that known no-wheel
-# case; any other pip failure (index outage, dependency conflict, bad metadata)
-# fails the lane rather than silently passing.
-if install_log=$(python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml 2>&1); then
-  echo "${install_log}"
+# case. Note pip prints "No matching distribution"/"Could not find a version"
+# even when the index is unreachable, so check for fetch/network failures first
+# and fail on those; any other install error fails the lane too rather than
+# silently passing. tee streams pip's output live while capturing it for the
+# grep checks below (pipefail keeps pip's exit status, not tee's).
+install_log="$(mktemp)"
+if python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml 2>&1 | tee "${install_log}"; then
   cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/"
   python run_benchmarks.py --py --profile --quick
-elif grep -qiE "No matching distribution found for cuda-bench|Could not find a version that satisfies the requirement cuda-bench" <<<"${install_log}"; then
-  echo "${install_log}"
+elif grep -qiE "Could not fetch URL|Retrying \(Retry|connection broken|Failed to establish a new connection|Name or service not known|timed out|SSLError|certificate verify failed|ProxyError" "${install_log}"; then
+  echo "::error::cuda-bench install failed because pip could not reach the package index (network/DNS/TLS/auth); not skipping." >&2
+  exit 1
+elif grep -qiE "No matching distribution found for cuda-bench|Could not find a version that satisfies the requirement cuda-bench" "${install_log}"; then
   echo "::warning::cuda-bench has no wheel for Python ${py_version}; skipping the throughput benchmark smoke test."
 else
-  echo "${install_log}" >&2
-  echo "::error::cuda-bench install failed for a reason other than a missing wheel." >&2
+  echo "::error::cuda-bench install failed for an unrecognized reason." >&2
   exit 1
 fi
+rm -f "${install_log}"
