@@ -110,6 +110,27 @@ macro(cccl_get_nvtx)
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
 endmacro()
 
+set(
+  CCCL_RAPIDS_CMAKE_SHA
+  "6d7c911330acc35ec547c42943e1fc8f4b21c27a"
+  CACHE STRING
+  "SHA/tag to use for CCCL's rapids-cmake test utilities."
+)
+mark_as_advanced(CCCL_RAPIDS_CMAKE_SHA)
+# Download the rapids-cmake CTest GPU resource helpers. Nothing from the
+# package is configured or built; only the included CMake files are used.
+macro(cccl_get_rapids_test)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage(
+    NAME rapids-cmake
+    GITHUB_REPOSITORY rapidsai/rapids-cmake
+    GIT_TAG ${CCCL_RAPIDS_CMAKE_SHA}
+    DOWNLOAD_ONLY ON
+  )
+  include("${rapids-cmake_SOURCE_DIR}/rapids-cmake/test/init.cmake")
+  include("${rapids-cmake_SOURCE_DIR}/rapids-cmake/test/gpu_requirements.cmake")
+endmacro()
+
 macro(cccl_get_thrust)
   find_package(
     Thrust

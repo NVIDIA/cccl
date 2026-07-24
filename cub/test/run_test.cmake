@@ -13,6 +13,10 @@ function(usage)
   message("")
   message("  - CCCL_SOURCE_DIR: Required.  Path to the CCCL source directory.")
   message("  - TEST: Required.  Path to the test executable.")
+  message("  - GPU_TEST_RUNNER: Optional.")
+  message("    - Path to rapids-cmake's run_gpu_test.cmake.")
+  message("    - Used to bind the test to its CTest-allocated GPU when CTest")
+  message("      supplies resource groups (GPU resource scheduling).")
   message("  - ARGS: Optional.  Arguments to pass to the test executable.")
   message("  - TYPE: Optional.")
   message("    - The test framework used by the test executable.")
@@ -76,7 +80,8 @@ elseif (NOT MODE)
 endif()
 
 if (MODE STREQUAL "none")
-  run_command(${TEST} ${ARGS})
+  set(command_to_run ${TEST})
+  set(command_args ${ARGS})
 elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
   set(tool ${CMAKE_MATCH_1})
 
@@ -154,12 +159,23 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     set(cs_tool_args)
   endif()
 
-  run_command(compute-sanitizer
+  set(command_to_run compute-sanitizer)
+  # gersemi: off
+  set(command_args
     ${cs_general_args}
     ${cs_tool_args}
     ${TEST} ${ARGS}
   )
+  # gersemi: on
 else()
   usage()
   message(FATAL_ERROR "Invalid MODE: ${MODE}")
+endif()
+
+if (DEFINED ENV{CTEST_RESOURCE_GROUP_COUNT} AND DEFINED GPU_TEST_RUNNER)
+  # CTest assigned a GPU resource to this test. Let the rapids-cmake runner
+  # set CUDA_VISIBLE_DEVICES before launching the command.
+  include("${GPU_TEST_RUNNER}")
+else()
+  run_command(${command_to_run} ${command_args})
 endif()
