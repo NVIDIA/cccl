@@ -42,11 +42,18 @@ python -m pytest -v --benchmark-disable .
 # each configuration once (no sampling); --quick uses the reduced quick_configs
 # axes (one dtype, smallest size) so every benchmark harness still imports,
 # registers, launches, and completes. cuda-bench does not always ship a wheel for
-# the newest Python, so install it best-effort and skip (with a warning) rather
-# than failing the lane when it is unavailable.
-if python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml; then
+# the newest Python, so skip the throughput smoke ONLY for that known no-wheel
+# case; any other pip failure (index outage, dependency conflict, bad metadata)
+# fails the lane rather than silently passing.
+if install_log=$(python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml 2>&1); then
+  echo "${install_log}"
   cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/"
   python run_benchmarks.py --py --profile --quick
-else
+elif grep -qiE "No matching distribution found for cuda-bench|Could not find a version that satisfies the requirement cuda-bench" <<<"${install_log}"; then
+  echo "${install_log}"
   echo "::warning::cuda-bench has no wheel for Python ${py_version}; skipping the throughput benchmark smoke test."
+else
+  echo "${install_log}" >&2
+  echo "::error::cuda-bench install failed for a reason other than a missing wheel." >&2
+  exit 1
 fi
