@@ -244,7 +244,6 @@ public:
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   // Horrible hack to make tuple_of_iterator_references work
-  // We intentionally rely on the conversion operator of the tuple_of_iterator_references
   template <class _TupleOfIteratorReferences,
             // clang-tidy has fallen off its rocker and claims we can use the non-existent
             // __tuple_of_iterato_references_v here.
@@ -253,8 +252,7 @@ public:
             // NOLINTEND(modernize-type-traits)
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
-      : __base_(__tuple_like_constructor_tag{},
-                static_cast<tuple>(::cuda::std::forward<_TupleOfIteratorReferences>(__t)))
+      : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_TupleOfIteratorReferences>(__t))
   {}
 
   template <class _UTuple>
