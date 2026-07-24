@@ -1,0 +1,35 @@
+[features]
+network_proxy = true
+
+[permissions.ci_triage.filesystem]
+":minimal" = "read"
+":slash_tmp" = "write"
+":tmpdir" = "write"
+# codex-action installs the CLI under the hosted Node toolcache.
+"/opt/hostedtoolcache/node" = "read"
+
+[permissions.ci_triage.filesystem.":workspace_roots"]
+"." = "read"
+
+[permissions.ci_triage.network]
+enabled = true
+# Limited-mode interception cannot follow GitHub's signed cross-host log redirect.
+mode = "full"
+
+[permissions.ci_triage.network.domains]
+"api.github.com" = "allow"
+# GitHub's job-log endpoint redirects to short-lived blobs hosted on Azure.
+"*.blob.core.windows.net" = "allow"
+
+[shell_environment_policy]
+inherit = "all"
+ignore_default_excludes = true
+include_only = [
+  "HOME",
+  "PATH",
+  "GITHUB_REPOSITORY",
+  "GITHUB_RUN_ID",
+  "GITHUB_WORKSPACE",
+  "GH_TOKEN",
+  "PR_BASE_SHA",
+]

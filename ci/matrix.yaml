@@ -22,6 +22,8 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - { jobs: ['run_cpu'], project: 'target', ctk: '13.X', cxx: 'gcc',
+        args: '--configure-override "echo \"-- Build files have been written to: /tmp\"" --custom-test-cmd true' }
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
