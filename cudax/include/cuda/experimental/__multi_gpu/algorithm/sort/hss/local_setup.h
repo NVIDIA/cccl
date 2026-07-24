@@ -43,6 +43,25 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
+//! @brief Measure the per-rank sizes, desired offsets, and global key count for the sort.
+//!
+//! Runs after the local per-rank sorts (which happen in `__execute`) to gather the metadata every
+//! later phase depends on. For each communicator it records this rank's local input size and
+//! stages it into a per-comm sizes buffer, then all-gathers the sizes across ranks via one
+//! `all_gather` per communicator. It exclusive-scans each rank's gathered sizes with CUB
+//!`DeviceScan::ExclusiveSum` to produce `__all_local_offsets` (the desired final per-rank offsets consumed by
+//! rebalance), and derives the global key count `N`.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the resource, buffer, and result
+//!                 types.
+//!
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in] __local_inputs The range of per-rank local input key ranges.
+//! @param[in] __comm_size The number of ranks in each communicator.
+//!
+//! @return The setup result carrying the resources, desired offsets, original sizes, global key
+//!         count `N`, and communicator size.
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange>
 [[nodiscard]] _CCCL_HOST_API typename _Traits::__local_setup_result_type
 __local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, ::cuda::std::int32_t __comm_size)

@@ -38,28 +38,26 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
-inline constexpr double __eps                     = 0.02; // 2% tolerance
-inline constexpr ::cuda::std::int32_t __root_rank = 0;
+//! @brief Load-balance tolerance for the HSS sampling loop (2%).
+//!
+//! Bounds the acceptable deviation of each rank's final key count from the ideal `N/p`. It
+//! feeds the paper's sample-count schedule in `__histogramming_phase`: both the number of
+//! sampling rounds `K` and the per-round sample budget `s_j` scale with `1 / __eps`.
+inline constexpr double __eps = 0.02; // 2% tolerance
 
-// Shared type aliases and per-comm state for the HSS (histogram-sort-with-sampling) phases.
-// Replaces the type-carrying role of the former _Sorter<_Tp, _Env> class: every free function
-// below takes __hss_traits as its first (non-deduced) template argument and recovers the local
-// aliases it needs from it.
 template <class _Tp, class _Env, class _BinaryOp>
 struct __hss_traits
 {
+  // The key (value) type being sorted.
   using __value_type _CCCL_NODEBUG     = _Tp;
   using __env_type _CCCL_NODEBUG       = _Env;
   using __resource_type _CCCL_NODEBUG  = ::cuda::experimental::__detail::__resource_type_for<_Env>;
   using __binary_op_type _CCCL_NODEBUG = _BinaryOp;
 
+  // The size/capacity-aware device buffer type for element type `_Up`.
   template <class _Up>
   using __buffer_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__hss_sort::__buffer<_Up, __resource_type>;
 
-  // Persistent per-splitter bracket. rank = global rank of `key`.
-  //
-  // L: largest key proven to sit BELOW the ideal rank Ni/p.
-  // U: smallest key proven to sit ABOVE  the ideal rank Ni/p.
   struct __bracket_type
   {
     ::cuda::std::uint64_t __rank; // < global rank of the key
@@ -83,12 +81,6 @@ struct __hss_traits
     ::cuda::std::size_t __sample_sendcount{};
   };
 
-  // Outputs of the HSS local setup phase (paper Section 6, "local sorting of input data").
-  //
-  // Besides the sorted local runs (produced in-place on the input), resources reused by every
-  // later phase, the exclusive-scan of the original per-rank sizes (__all_local_offsets, the
-  // desired final offsets consumed by rebalance), the original per-rank sizes, and the derived
-  // global key count __N.
   struct __local_setup_result_type
   {
     ::std::vector<__resource_type> __resources{};
@@ -99,8 +91,13 @@ struct __hss_traits
   };
 };
 
-// Convenience alias for the per-comm buffer type carried by a traits instantiation. Spells
-// `typename _Traits::template __buffer_type<_Up>` without the `typename ... ::template` noise.
+//! @brief Convenience alias for the per-comm buffer type carried by a traits instantiation.
+//!
+//! Spells `typename _Traits::template __buffer_type<_Up>` without the `typename ... ::template`
+//! disambiguation noise at every phase-function call site.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the buffer type.
+//! @tparam _Up The element type stored in the buffer.
 template <class _Traits, class _Up>
 using __buffer_of = typename _Traits::template __buffer_type<_Up>;
 } // namespace cuda::experimental::__detail::__hss_sort

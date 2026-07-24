@@ -48,6 +48,26 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
+//! @brief Redistribute the globally sorted keys back to each rank's original per-rank size.
+//!
+//! Final HSS phase. The data-exchange phase leaves a globally sorted but only approximately
+//! balanced distribution; this phase corrects the rank ranges back to the exact original per-rank
+//! sizes. Because duplicate splitter keys can route an unpredictable share of records to one
+//! rank, the current distribution is measured rather than predicted: each rank's current input
+//! size is all-gathered and exclusive-scanned into current offsets.
+//!
+//! The desired offsets are the setup's exclusive scan of the original sizes. One CUB
+//! `DeviceTransform` intersects each rank's current global interval with each peer's desired
+//! interval to derive the send/recv counts and displacements directly.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
+//!
+//! @param[in] __setup The local-setup result supplying resources, desired offsets, original
+//!            sizes, `N`, and comm size.
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in,out] __local_inputs The range of per-rank local key ranges, rewritten at their
+//!                original per-rank sizes.
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void __rebalance_to_original_counts(
   const typename _Traits::__local_setup_result_type& __setup,
@@ -60,13 +80,12 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
   // The splitter exchange already produced a globally sorted, approximately balanced
-  // distribution. Rebalance only corrects the rank ranges from that current distribution
-  // back to the original per-rank sizes. Desired offsets are the exclusive scan of the
-  // original sizes; the CURRENT offsets are measured here -- the actual post-exchange
-  // per-rank sizes, all-gathered and exclusive-scanned -- exactly as the reference
-  // does. (Duplicate splitter keys can route an unpredictable share of records to a single
-  // rank, so the current distribution must be measured, not predicted from the splitter
-  // positions.)
+  // distribution. Rebalance only corrects the rank ranges from that current distribution back
+  // to the original per-rank sizes. Desired offsets are the exclusive scan of the original
+  // sizes; the CURRENT offsets are measured here -- the actual post-exchange per-rank sizes,
+  // all-gathered and exclusive-scanned -- exactly as the reference does. (Duplicate splitter
+  // keys can route an unpredictable share of records to a single rank, so the current
+  // distribution must be measured, not predicted from the splitter positions.)
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
@@ -176,8 +195,8 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
                  __current_offsets = __current_offsets.data(),
                  __desired_offsets = __desired_offsets.data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
       // current_offsets[i] is the start of rank i's current (post-exchange) bucket; desired
-      // offsets are the original final buckets. Intersect the two global element intervals
-      // to derive both send and receive metadata directly.
+      // offsets are the original final buckets. Intersect the two global element intervals to
+      // derive both send and receive metadata directly.
       const auto __my_src_begin = __current_offsets[__rank];
       const auto __my_src_end   = __rank + 1 == __comm_size ? __N : __current_offsets[__rank + 1];
 

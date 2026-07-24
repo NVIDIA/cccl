@@ -30,9 +30,10 @@
 
 namespace cuda::experimental::__detail
 {
-// Maps a splitter index to its ideal global rank Ni/p. Used as the source of a
-// transform_iterator. Shared between __sort_update_intervals and
-// __sort_finalize_splitters.
+//! @brief Maps a splitter index to its ideal global rank `Ni/p`.
+//!
+//! The `i`-th of the `p - 1` splitters should sit at global rank `(i + 1) * N / p`, the ideal
+//! rank `Ni/p` from HSS Section 2 / Table 1 that centers the target range `Ti`.
 struct __ideal_rank_fn
 {
   ::cuda::std::uint64_t __N;
