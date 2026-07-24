@@ -14,6 +14,10 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
 
+# Pin cuda-toolkit to the container's CTK minor (CCCL_PYTHON_TEST_LATEST_CTK=1
+# opts out). See build_common_python.psm1.
+Set-CtkPin
+
 $repoRoot = Get-RepoRoot
 
 ${wheelPath} = Get-CudaCcclWheel

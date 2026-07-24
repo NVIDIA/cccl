@@ -8,7 +8,9 @@ source "$ci_dir/pyenv_helper.sh"
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+# Pin cuda-toolkit to the container's CTK minor and set cuda_version /
+# cuda_major_version (CCCL_PYTHON_TEST_LATEST_CTK=1 opts out). See pyenv_helper.sh.
+pin_cuda_toolkit
 
 # Setup Python environment
 setup_python_env "${py_version}"
@@ -42,11 +44,23 @@ python -m pytest -v --benchmark-disable .
 # each configuration once (no sampling); --quick uses the reduced quick_configs
 # axes (one dtype, smallest size) so every benchmark harness still imports,
 # registers, launches, and completes. cuda-bench does not always ship a wheel for
-# the newest Python, so install it best-effort and skip (with a warning) rather
-# than failing the lane when it is unavailable.
-if python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml; then
+# the newest Python, so skip the throughput smoke ONLY for that known no-wheel
+# case. Note pip prints "No matching distribution"/"Could not find a version"
+# even when the index is unreachable, so check for fetch/network failures first
+# and fail on those; any other install error fails the lane too rather than
+# silently passing. tee streams pip's output live while capturing it for the
+# grep checks below (pipefail keeps pip's exit status, not tee's).
+install_log="$(mktemp)"
+if python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml 2>&1 | tee "${install_log}"; then
   cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/"
   python run_benchmarks.py --py --profile --quick
-else
+elif grep -qiE "Could not fetch URL|Retrying \(Retry|connection broken|Failed to establish a new connection|Name or service not known|timed out|SSLError|certificate verify failed|ProxyError" "${install_log}"; then
+  echo "::error::cuda-bench install failed because pip could not reach the package index (network/DNS/TLS/auth); not skipping." >&2
+  exit 1
+elif grep -qiE "No matching distribution found for cuda-bench|Could not find a version that satisfies the requirement cuda-bench" "${install_log}"; then
   echo "::warning::cuda-bench has no wheel for Python ${py_version}; skipping the throughput benchmark smoke test."
+else
+  echo "::error::cuda-bench install failed for an unrecognized reason." >&2
+  exit 1
 fi
+rm -f "${install_log}"
