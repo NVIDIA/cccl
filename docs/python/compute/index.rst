@@ -310,8 +310,8 @@ Free-threaded Python
 
       pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
 
-   The full ``cu12`` and ``cu13`` extras, ``cuda.coop._experimental``, and
-   Python-callable operators that require Numba CUDA are not currently
+   The full ``cu12`` and ``cu13`` extras and Python-callable operators that
+   require Numba CUDA are not currently
    supported in free-threaded Python. Use built-in
    :class:`OpKind <cuda.compute.op.OpKind>` operations or externally compiled
    :class:`RawOp <cuda.compute.op.RawOp>` operations with the minimal

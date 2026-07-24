@@ -1,7 +1,6 @@
 <#
 .SYNOPSIS
-    Build Python cuda-cccl wheels for the cuda.compute and cuda.coop._experimental packages
-    on Windows.
+    Build Python cuda-cccl wheels on Windows.
 
 .DESCRIPTION
     This script is the Windows analog to the Linux ../build_cuda_cccl_python.sh

@@ -550,9 +550,9 @@ The current free-threading support boundary is Linux with the
 ``minimal-cu12`` and ``minimal-cu13`` extras. These extras omit Numba and Numba
 CUDA. Consequently, free-threaded support currently covers built-in ``OpKind``
 operations and externally compiled ``RawOp`` operations, but not Python-callable
-operators or ``cuda.coop._experimental``. The full ``cu12`` and ``cu13`` extras
-remain outside the support claim until the Numba CUDA dependency is replaced by
-a free-threading-compatible implementation.
+operators. The full ``cu12`` and ``cu13`` extras remain outside the support claim
+until the Numba CUDA dependency is replaced by a free-threading-compatible
+implementation.
 
 CI runs ``test_free_threading_stress.py`` directly from the minimal test job.
 The v1 backend is covered across the supported CUDA 12 and 13 lanes, and a
