@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""
+Test runner for CUDASTF examples.
+
+This module automatically discovers and runs all example scripts from the STF
+examples directory to ensure they execute without errors.
+"""
+
+import importlib
+import inspect
+import sys
+import traceback
+from pathlib import Path
+
+
+def discover_examples():
+    """Automatically discover all example files and their functions."""
+    tests_dir = Path(__file__).parent
+    examples = []
+
+    example_directories = [
+        ("STF", "stf/examples"),
+    ]
+
+    for framework, example_dir in example_directories:
+        example_path = tests_dir / example_dir
+        if not example_path.exists():
+            continue
+
+        # Find all Python files in subdirectories
+        for python_file in example_path.rglob("*.py"):
+            if (
+                python_file.name == "__init__.py"
+                or python_file.name == "test_examples.py"
+            ):
+                continue
+
+            # Calculate the relative path from the tests directory
+            rel_path = python_file.relative_to(tests_dir)
+
+            # Convert path to module name (OS-agnostic)
+            # Example: stf/examples/cg.py -> stf.examples.cg
+            module_name = ".".join(rel_path.with_suffix("").parts)
+
+            # Extract category info for display
+            parts = python_file.relative_to(example_path).parts
+            if len(parts) >= 2:
+                category = parts[0].title()
+                filename = parts[1].replace(".py", "").replace("_", " ").title()
+                display_name = f"{framework} - {category} - {filename}"
+            elif len(parts) == 1:
+                filename = parts[-1].replace(".py", "").replace("_", " ").title()
+                display_name = f"{framework} - {filename}"
+            else:
+                display_name = rel_path.stem.replace("_", " ").title()
+
+            examples.append((display_name, module_name))
+
+    return sorted(examples)
+
+
+def run_example_module(module_name, display_name):
+    """Run all example functions from a module."""
+    try:
+        print(f"Testing {display_name}...")
+
+        # Import the module. Examples may sys.exit(0) at module load to skip
+        # when their preconditions aren't met on this build.
+        try:
+            module = importlib.import_module(module_name)
+        except SystemExit as exit_exc:
+            if exit_exc.code in (None, 0):
+                print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
+                return True
+            raise
+        except ImportError as import_exc:
+            # Some STF examples require optional nvmath-python dependencies that
+            # are not installed in all CI example test environments.
+            if module_name in {
+                "stf.examples.cholesky",
+                "stf.examples.potri",
+            } and "requires nvmath-python" in str(import_exc):
+                print(f"  {display_name} skipped ({import_exc})")
+                return True
+            raise
+
+        # Check if module has a main function - if so, run it
+        if hasattr(module, "main") or hasattr(module, "__main__"):
+            # Call main if it exists, otherwise the module's __main__ entry.
+            entry = getattr(module, "main", None) or getattr(module, "__main__")
+            entry()
+        else:
+            # Find and run all example functions (those ending with _example)
+            example_functions = []
+            for name, obj in inspect.getmembers(module):
+                if (
+                    inspect.isfunction(obj)
+                    and name.endswith("_example")
+                    and not name.startswith("_")
+                ):
+                    example_functions.append((name, obj))
+
+            if example_functions:
+                for func_name, func in sorted(example_functions):
+                    print(f"  Running {func_name}...")
+                    func()
+            else:
+                # If no example functions found, try to run the module directly
+                # by checking if it has a __name__ == "__main__" block
+                print(f"  Running {module_name} as script...")
+                import os
+                import subprocess
+
+                module_file = module.__file__
+                if module_file:
+                    # Run the module as a script
+                    result = subprocess.run(
+                        [sys.executable, module_file],
+                        capture_output=True,
+                        text=True,
+                        cwd=os.path.dirname(module_file),
+                    )
+                    if result.returncode != 0:
+                        raise Exception(f"Module execution failed: {result.stderr}")
+                    print(f"  Output: {result.stdout.strip()}")
+
+        print(f"✓ {display_name} examples passed")
+        return True
+
+    except Exception as e:
+        print(f"✗ {display_name} examples failed: {e}")
+        traceback.print_exc()
+        return False
+
+
+# Create pytest-compatible test functions dynamically
+def create_test_functions():
+    """Create pytest-compatible test functions for each discovered example."""
+    examples = discover_examples()
+
+    for display_name, module_name in examples:
+        # Create a test function name from the module name
+        test_name = f"test_{module_name.replace('.', '_')}"
+
+        # Create the test function
+        def make_test_func(mod_name, disp_name):
+            def test_func():
+                assert run_example_module(mod_name, disp_name)
+
+            return test_func
+
+        # Add the test function to the global namespace
+        globals()[test_name] = make_test_func(module_name, display_name)
+        globals()[test_name].__name__ = test_name
+        globals()[test_name].__doc__ = f"Test {display_name} examples"
+
+
+# Create test functions for pytest
+create_test_functions()

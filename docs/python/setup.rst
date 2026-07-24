@@ -55,6 +55,56 @@ Free-threaded Python support is currently validated on Linux with the
 extras depend on Numba CUDA and are not currently supported in free-threaded
 Python.
 
+Optional: Sequential Task Flow (``cuda-stf``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:ref:`cuda.stf._experimental <cccl-python-stf>` (CUDASTF) ships as a separate,
+Linux-only package. Install it explicitly when you need it:
+
+.. code-block:: bash
+
+   pip install 'cuda-stf[cu13]'  # or 'cuda-stf[cu12]'
+
+The ``cu12`` / ``cu13`` extras pull in a pip-installed CUDA toolkit plus Numba CUDA.
+As with ``cuda-cccl``, ``cuda-stf`` also offers:
+
+* ``sysctk12`` / ``sysctk13`` -- same as ``cu12`` / ``cu13`` but **without** the
+  ``cuda-toolkit`` pip packages; you provide a compatible CUDA toolkit on ``PATH`` /
+  ``LD_LIBRARY_PATH`` yourself.
+* ``minimal-cu12`` / ``minimal-cu13`` -- CUDA bindings and toolkit only, **without**
+  Numba (useful when you drive kernels through ``cuda.core`` / ``cuda.compute`` or your
+  own launches).
+* ``minimal-sysctk12`` / ``minimal-sysctk13`` -- minimal plus system-provided toolkit.
+
+.. code-block:: bash
+
+   pip install 'cuda-stf[sysctk13]'        # system CUDA toolkit, with Numba
+   pip install 'cuda-stf[minimal-cu13]'    # pip CUDA toolkit, no Numba
+
+Install ``cuda-cccl`` as well when using ``cuda.compute`` with STF or compiling
+external C++ code that needs the libcudacxx, CUB, or Thrust headers.
+
+Feature dependencies (installed separately as needed):
+
+* ``cuda-cccl`` -- ``cuda.compute`` algorithms and C++ header discovery.
+* ``numba`` / ``numba-cuda`` -- the Numba interop adapters (bundled by the non-minimal
+  extras above).
+* ``cupy`` -- some ``cuda.compute`` / interop examples.
+* ``torch`` (PyTorch) -- the PyTorch interop adapter and its examples.
+* ``warp-lang`` (NVIDIA Warp) -- the Warp interop examples.
+* ``nvmath-python`` -- examples that call cuBLAS/cuSOLVER via nvmath.
+
+Install ``cuda-stf`` from source (Linux only)::
+
+   git clone https://github.com/NVIDIA/cccl.git
+   cd cccl/python/cuda_stf
+   pip install -e '.[test-cu13]'  # or '.[test-cu12]', '.[test-sysctk13]', '.[test-sysctk12]'
+
+The ``test-*`` extras add ``cuda-cccl``, ``pytest``, ``pytest-xdist``, and CuPy so the
+STF test suite (``pytest tests/``) can run. Building from source compiles the native
+``cccl.c.experimental.stf`` / ``cudax`` extension, so a C++ toolchain and CMake
+(``>=3.30``) with Ninja are required in addition to the CUDA toolkit.
+
 Install from conda-forge
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -106,3 +156,4 @@ Now that you have ``cuda-cccl`` installed, check out:
 
 * :doc:`compute/index` - Parallel computing primitives for operations on arrays or data ranges
 * :doc:`coop` - Block and warp-level cooperative algorithms for building custom CUDA kernels with Numba
+* :doc:`stf` - Sequential Task Flow for CUDA (installed separately via ``cuda-stf``)

@@ -148,11 +148,13 @@ projects:
   python:
     name: "Python"
     matrix_project: "python"
-    lite_dependencies: [cccl_c_parallel_public]
+    lite_dependencies: [cccl_c_parallel_public, cccl_c_stf]
     full_dependencies: []
     include_regexes:
-    - "python/"
+    - "python/cuda_cccl/"
+    - "python/cuda_stf/"
     - "pyproject.toml"
+    exclude_regexes: []
 
   packaging:
     name: "CCCL Packaging"
