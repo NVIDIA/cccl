@@ -244,6 +244,7 @@ public:
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   // Horrible hack to make tuple_of_iterator_references work
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _TupleOfIteratorReferences,
             // clang-tidy has fallen off its rocker and claims we can use the non-existent
             // __tuple_of_iterato_references_v here.
@@ -254,6 +255,7 @@ public:
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_TupleOfIteratorReferences>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _UTuple>
   using _TupleLikeConstraints = integral_constant<
