@@ -125,6 +125,12 @@ public:
 private:
   __buffer_t __buf_;
 
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  _CCCL_HOST_API explicit buffer(__buffer_t&& __buf) noexcept
+      : __buf_(::cuda::std::move(__buf))
+  {}
+#  endif // _CCCL_DOXYGEN_INVOKED
+
   //! @brief Helper to check container is compatible with this buffer
   template <class _Range>
   static constexpr bool __compatible_range = (::cuda::std::ranges::__container_compatible_range<_Range, _Tp>);
@@ -764,6 +770,23 @@ public:
     __buf_.destroy();
   }
 
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    __buf_.__destroy_with_capacity(__stream, __capacity);
+  }
+
+  _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size) noexcept
+  {
+    __buf_.__set_size(__size);
+  }
+
+  _CCCL_HOST_API buffer __replace_allocation(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    return buffer{__buf_.__replace_allocation(__stream, __capacity)};
+  }
+#  endif // _CCCL_DOXYGEN_INVOKED
+
   //! @brief Causes the buffer to be treated as a span when passed to
   //! cuda::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
@@ -803,15 +826,22 @@ template <class _Tp, class _PropsList>
 using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
-void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+void __copy_cross_buffers(
+  stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from, typename _BufferFrom::size_type __count)
 {
   ::cuda::__ensure_current_context __guard(__stream);
   __stream.wait(__from.stream());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),
-    sizeof(typename _BufferTo::value_type) * __from.size(),
+    sizeof(typename _BufferTo::value_type) * __count,
     __stream.get());
+}
+
+template <typename _BufferTo, typename _BufferFrom>
+void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+{
+  ::cuda::__copy_cross_buffers(__stream, __to, __from, __from.size());
 }
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
