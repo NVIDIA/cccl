@@ -20,6 +20,16 @@ if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
 endif()
 
+# CUB tests run serially by default so `ctest -j` is safe on memory-limited GPUs.
+# CCCL_CUB_PARALLEL_SMALL_TESTS opts into parallel execution for tests not marked memory-heavy.
+# Tests marked `[large-mem]` remain RUN_SERIAL, while tests marked `[medium-mem]`
+# share a CTest RESOURCE_LOCK to avoid running multiple medium-memory tests together.
+option(
+  CCCL_CUB_PARALLEL_SMALL_TESTS
+  "Run small CUB tests in parallel under ctest -j (opt-in; default is serial for all tests)"
+  OFF
+)
+
 file(
   GLOB_RECURSE test_srcs
   RELATIVE "${CUB_SOURCE_DIR}/test"
@@ -61,6 +71,8 @@ function(_cub_is_fail_test result_var test_src)
     set(${result_var} TRUE PARENT_SCOPE)
   endif()
 endfunction()
+
+set(_cub_medium_device_memory_resource_lock "cub_medium_device_memory")
 
 ## _cub_launcher_requires_rdc
 #
@@ -290,6 +302,26 @@ function(
 
   # Disable build caching for compile tests
   set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_CACHE=1)
+
+  # When parallel CUB testing is enabled, keep large-memory tests serial and
+  # serialize medium-memory tests against each other with a shared resource lock.
+  if (NOT CCCL_CUB_PARALLEL_SMALL_TESTS)
+    set_tests_properties(${test_target} PROPERTIES RUN_SERIAL TRUE)
+  else()
+    file(READ "${test_src}" _cub_test_src_text)
+    if (_cub_test_src_text MATCHES "\\[large-mem\\]")
+      set_tests_properties(
+        ${test_target}
+        PROPERTIES RUN_SERIAL TRUE LABELS "large-mem"
+      )
+    endif()
+    if (_cub_test_src_text MATCHES "\\[medium-mem\\]")
+      set_tests_properties(
+        ${test_target}
+        PROPERTIES RESOURCE_LOCK ${_cub_medium_device_memory_resource_lock}
+      )
+    endif()
+  endif()
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
