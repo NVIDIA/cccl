@@ -169,6 +169,9 @@ resource_cast
 ``cuda::mr::resource_cast<T>(&resource)`` returns a pointer to the concrete resource stored in a type-erased wrapper
 when the stored resource has type ``T``. It returns ``nullptr`` when the stored type does not match.
 
+This is similar to pointer-form ``dynamic_cast<T*>`` in that callers must check for ``nullptr`` before using the
+result. Unlike ``dynamic_cast``, ``resource_cast`` matches the exact type stored in the wrapper.
+
 ``resource_cast`` works with ``any_resource``, ``any_synchronous_resource``, ``resource_ref``, and
 ``synchronous_resource_ref``. The requested type must satisfy the wrapper's resource concept and property constraints,
 unless ``T`` is ``void``.
