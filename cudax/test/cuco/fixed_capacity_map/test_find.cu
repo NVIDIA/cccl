@@ -31,70 +31,70 @@
 
 namespace cudax = cuda::experimental;
 
-template <int _N>
-using _int_c = ::cuda::std::integral_constant<int, _N>;
+template <int N>
+using int_c = ::cuda::std::integral_constant<int, N>;
 
 using key_types     = c2h::type_list<::cuda::std::int32_t, ::cuda::std::int64_t>;
-using cg_sizes      = c2h::type_list<_int_c<1>, _int_c<2>>;
-using bucket_sizes  = c2h::type_list<_int_c<1>, _int_c<2>>;
-using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probing, 1 = double hashing
+using cg_sizes      = c2h::type_list<int_c<1>, int_c<2>>;
+using bucket_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
+using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing, 1 = double hashing
 
 // Payloads are offset from their key so a bug that returns the key instead of the mapped value is caught.
 constexpr int payload_offset = 7;
 
-template <class _Pair>
+template <class Pair>
 struct iota_pair
 {
-  __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
+  __host__ __device__ Pair operator()(typename Pair::first_type i) const noexcept
   {
-    return _Pair{__i, static_cast<typename _Pair::second_type>(__i + payload_offset)};
+    return Pair{i, static_cast<typename Pair::second_type>(i + payload_offset)};
   }
 };
 
 // Present keys [0, num_keys) find their payload (key + payload_offset) and absent keys
 // [num_keys, ...) find the empty value sentinel.
-template <class _Key>
+template <class Key>
 struct match_found
 {
-  const _Key* found;
+  const Key* found;
   int num_keys;
-  _Key sentinel;
+  Key sentinel;
 
-  __device__ bool operator()(int __i) const noexcept
+  __device__ bool operator()(int i) const noexcept
   {
-    return (__i < num_keys) ? (found[__i] == static_cast<_Key>(__i) + payload_offset) : (found[__i] == sentinel);
+    return (i < num_keys) ? (found[i] == static_cast<Key>(i) + payload_offset) : (found[i] == sentinel);
   }
 };
 
-template <class _Key>
+template <class Key>
 struct is_not_sentinel
 {
-  _Key sentinel;
+  Key sentinel;
 
-  __device__ bool operator()(_Key __v) const noexcept
+  __device__ bool operator()(Key value) const noexcept
   {
-    return __v != sentinel;
+    return value != sentinel;
   }
 };
 
 struct is_even
 {
-  __device__ bool operator()(int __i) const noexcept
+  __device__ bool operator()(int i) const noexcept
   {
-    return (__i % 2) == 0;
+    return (i % 2) == 0;
   }
 };
 
 // find_if queries only even keys; odd positions resolve to the empty value sentinel
-template <class _Key>
+template <class Key>
 struct match_find_if
 {
-  const _Key* found;
-  _Key sentinel;
+  const Key* found;
+  Key sentinel;
 
-  __device__ bool operator()(int __i) const noexcept
+  __device__ bool operator()(int i) const noexcept
   {
-    return ((__i % 2) == 0) ? (found[__i] == static_cast<_Key>(__i) + payload_offset) : (found[__i] == sentinel);
+    return ((i % 2) == 0) ? (found[i] == static_cast<Key>(i) + payload_offset) : (found[i] == sentinel);
   }
 };
 
@@ -132,8 +132,8 @@ C2H_TEST("fixed_capacity_map find", "[container]", key_types, cg_sizes, bucket_s
                cudax::cuco::empty_key{sentinel},
                cudax::cuco::empty_value{sentinel}};
 
-  auto __pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
-  map.insert(stream, __pairs, __pairs + num_keys);
+  auto pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
+  map.insert(stream, pairs, pairs + num_keys);
 
   // Find present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
   auto found = ::cuda::make_buffer<key_type>(stream, mr, 2 * num_keys, key_type{0});

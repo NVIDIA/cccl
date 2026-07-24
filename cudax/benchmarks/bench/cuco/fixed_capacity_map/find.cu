@@ -43,7 +43,7 @@ void fixed_capacity_map_find(nvbench::state& state, nvbench::type_list<Key, Valu
     using pair_type = cuda::std::pair<Key, Value>;
     using map_type  = cudax::cuco::fixed_capacity_map<Key, Value>;
 
-    const auto num_keys      = state.get_int64("NumInputs");
+    const auto num_keys      = static_cast<::cuda::std::size_t>(state.get_int64("NumInputs"));
     const auto occupancy     = state.get_float64("Occupancy");
     const auto matching_rate = state.get_float64("MatchingRate");
 
