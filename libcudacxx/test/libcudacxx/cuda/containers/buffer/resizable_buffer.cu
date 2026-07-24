@@ -28,27 +28,21 @@
 using buffer_t = cuda::__resizable_buffer<int, cuda::mr::device_accessible>;
 using base_t   = cuda::buffer<int, cuda::mr::device_accessible>;
 
-template <typename _Iter>
-__global__ void check_prefix_kernel(_Iter ptr, cuda::std::size_t size)
-{
-  for (cuda::std::size_t i = 0; i != size; ++i)
-  {
-    if (ptr[i] != device_data[i])
-    {
-      __trap();
-    }
-  }
-}
-
 template <cuda::std::size_t _Size>
-void check_prefix(const buffer_t& buf, const cuda::std::array<int, _Size>&)
+void check_prefix(const buffer_t& buf, const cuda::std::array<int, _Size>& expected)
 {
   REQUIRE(buf.size() >= _Size);
 
+  cuda::std::array<int, _Size> actual{};
   cuda::__ensure_current_context guard{buf.stream()};
-  check_prefix_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), _Size);
-  REQUIRE(::cudaGetLastError() == ::cudaSuccess);
+  REQUIRE(::cudaMemcpyAsync(actual.data(), buf.data(), _Size * sizeof(int), cudaMemcpyDeviceToHost, buf.stream().get())
+          == cudaSuccess);
   buf.stream().sync();
+
+  for (cuda::std::size_t i = 0; i != _Size; ++i)
+  {
+    REQUIRE(actual[i] == expected[i]);
+  }
 }
 
 C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buffer]")
@@ -101,13 +95,13 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     check_prefix(buf, values);
   }
 
-  SECTION("resize without reallocation")
+  SECTION("resize_unsynchronized without reallocation")
   {
     cuda::std::array<int, 6> values{1, 42, 1337, 0, 12, -1};
     buffer_t buf{stream, resource, values.begin(), values.end()};
     const auto* const allocation = buf.data();
 
-    buf.resize(3, cuda::no_init);
+    buf.resize_unsynchronized(3, cuda::no_init);
     REQUIRE(buf.size() == 3);
     REQUIRE(buf.capacity() == values.size());
     REQUIRE(buf.data() == allocation);
@@ -115,7 +109,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     REQUIRE(static_cast<const base_t&>(buf).size() == buf.size());
     check_prefix(buf, cuda::std::array<int, 3>{1, 42, 1337});
 
-    buf.resize(5, cuda::no_init);
+    buf.resize_unsynchronized(5, cuda::no_init);
     REQUIRE(buf.size() == 5);
     REQUIRE(buf.capacity() == values.size());
     REQUIRE(buf.data() == allocation);
@@ -126,13 +120,13 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     bool caught = false;
     try
     {
-      buf.resize(7, cuda::no_init);
+      buf.resize_unsynchronized(7, cuda::no_init);
     }
     catch (const std::invalid_argument& error)
     {
       caught = true;
       REQUIRE(cuda::std::string_view{error.what()}
-              == "cuda::__resizable_buffer::resize requires an explicit stream to grow beyond capacity");
+              == "cuda::__resizable_buffer::resize_unsynchronized cannot grow beyond capacity");
     }
     REQUIRE(caught);
   }

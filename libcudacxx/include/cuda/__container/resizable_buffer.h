@@ -57,7 +57,8 @@ private:
   {
     const auto __old_size     = this->size();
     const auto __old_capacity = __capacity_;
-    _CCCL_ASSERT(__old_size <= __new_capacity, "cuda::__resizable_buffer cannot reallocate below size");
+    _CCCL_ASSERT(__old_size <= __new_capacity,
+                 "cuda::__resizable_buffer reallocation capacity must be at least the current size");
 
     auto __old_buffer = __base_t::__replace_allocation(__stream, __new_capacity);
     __capacity_       = __new_capacity;
@@ -79,9 +80,7 @@ private:
 
   _CCCL_HOST_API void __replace_allocation_discard(::cuda::stream_ref __stream, size_type __new_capacity)
   {
-    const auto __old_capacity = __capacity_;
-
-    __capacity_ = 0;
+    const auto __old_capacity = ::cuda::std::exchange(__capacity_, 0);
     __base_t::__replace_allocation_discard(__stream, __new_capacity, __old_capacity);
     __capacity_ = __new_capacity;
   }
@@ -134,16 +133,16 @@ public:
     return __capacity_ * sizeof(_Tp);
   }
 
-  //! @brief Changes the logical size without reallocating.
+  //! @brief Changes the logical size without stream ordering or reallocating.
   //!
-  //! This overload can shrink or grow within `capacity()`. Growing beyond
-  //! capacity requires an explicit stream.
-  _CCCL_HOST_API void resize(size_type __new_size, ::cuda::no_init_t)
+  //! This member only updates the host-side logical size. It can shrink or grow
+  //! within `capacity()`, and throws if growth would require reallocation.
+  _CCCL_HOST_API void resize_unsynchronized(size_type __new_size, ::cuda::no_init_t)
   {
     if (__new_size > __capacity_)
     {
       _CCCL_THROW(::std::invalid_argument,
-                  "cuda::__resizable_buffer::resize requires an explicit stream to grow beyond capacity");
+                  "cuda::__resizable_buffer::resize_unsynchronized cannot grow beyond capacity");
     }
     __base_t::__set_size_unsynchronized(__new_size);
   }
