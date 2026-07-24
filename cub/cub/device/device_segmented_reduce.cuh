@@ -158,7 +158,7 @@ private:
 
   template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT, typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_impl_env(
-    InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env)
+    InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, const EnvT& env)
   {
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -194,7 +194,7 @@ private:
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     InitValueT initial_value,
-    EnvT env)
+    const EnvT& env)
   {
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -276,7 +276,7 @@ private:
     OffsetT segment_size,
     ReductionOpT reduction_op,
     InitValueT initial_value,
-    EnvT env)
+    const EnvT& env)
   {
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -561,7 +561,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     T initial_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Reduce");
 
@@ -733,7 +733,7 @@ public:
     int segment_size,
     ReductionOpT reduction_op,
     T initial_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Reduce");
 
@@ -960,7 +960,7 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      EnvT env = {})
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
 
@@ -1098,7 +1098,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Sum(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  Sum(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
 
@@ -1330,7 +1334,7 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      EnvT env = {})
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Min");
 
@@ -1477,7 +1481,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Min(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  Min(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Min");
 
@@ -1752,7 +1760,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMin");
 
@@ -1907,7 +1915,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMin(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  ArgMin(InputIteratorT d_in,
+         OutputIteratorT d_out,
+         ::cuda::std::int64_t num_segments,
+         int segment_size,
+         const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMin");
     return fixed_size_arg_impl_env<cub::detail::arg_min>(d_in, d_out, num_segments, segment_size, env);
@@ -2120,7 +2132,7 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      EnvT env = {})
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Max");
 
@@ -2267,7 +2279,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Max(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  Max(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Max");
 
@@ -2542,7 +2558,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMax");
 
@@ -2699,7 +2715,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMax(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  ArgMax(InputIteratorT d_in,
+         OutputIteratorT d_out,
+         ::cuda::std::int64_t num_segments,
+         int segment_size,
+         const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMax");
     return fixed_size_arg_impl_env<cub::detail::arg_max>(d_in, d_out, num_segments, segment_size, env);
