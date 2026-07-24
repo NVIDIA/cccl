@@ -313,7 +313,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
-  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_API constexpr double
   estimate(::cuda::stream_ref __stream, _HostMemoryResource __host_mr = {}) const
   {
     return __ref.estimate(__stream, __host_mr);
