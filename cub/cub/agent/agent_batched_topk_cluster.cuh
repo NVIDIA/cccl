@@ -79,6 +79,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/span>
 
 #include <nv/target>
@@ -126,24 +127,25 @@ struct smem_block_tile_layout
 // -----------------------------------------------------------------------------
 // Whether a segment takes the barrier-free single-CTA path: resident in one CTA (`<= block_tile_capacity`) and at/below
 // the single-CTA tuning threshold. Occupancy- and head-alignment-independent, so the host fast path and the device
-// collapse decision agree exactly. 64-bit math for wide segment-size types / loose bounds.
+// collapse decision agree exactly. 32-bit: the public entry caps the segment size at 2^21, so every operand fits
+// `uint32_t`.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr bool is_single_cta_eligible(
-  ::cuda::std::uint64_t segment_size, ::cuda::std::uint64_t block_tile_capacity, int single_block_max_seg_size) noexcept
+  ::cuda::std::uint32_t segment_size, ::cuda::std::uint32_t block_tile_capacity, int single_block_max_seg_size) noexcept
 {
   return segment_size <= block_tile_capacity
-      && segment_size <= static_cast<::cuda::std::uint64_t>(single_block_max_seg_size);
+      && segment_size <= static_cast<::cuda::std::uint32_t>(single_block_max_seg_size);
 }
 
 // Effective cluster blocks implied by a chunk count: a CTA joins the effective cluster iff it would own at least
 // `min_chunks_per_block` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only
 // the cap differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_block` is
-// `static_assert`ed positive, so the divide is well-defined. 64-bit math.
+// `static_assert`ed positive, so the divide is well-defined. 32-bit: a segment holds at most 2^21 chunks.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr unsigned effective_cluster_blocks_from_chunks(
-  ::cuda::std::uint64_t chunks, int min_chunks_per_block, unsigned cluster_blocks_cap) noexcept
+  ::cuda::std::uint32_t chunks, int min_chunks_per_block, unsigned cluster_blocks_cap) noexcept
 {
-  const auto blocks = chunks / static_cast<::cuda::std::uint64_t>(min_chunks_per_block);
+  const auto blocks = chunks / static_cast<::cuda::std::uint32_t>(min_chunks_per_block);
   return static_cast<unsigned>(
-    ::cuda::std::clamp(blocks, ::cuda::std::uint64_t{1}, static_cast<::cuda::std::uint64_t>(cluster_blocks_cap)));
+    ::cuda::std::clamp(blocks, ::cuda::std::uint32_t{1}, static_cast<::cuda::std::uint32_t>(cluster_blocks_cap)));
 }
 
 // Cluster top-k agent
@@ -190,12 +192,16 @@ struct agent_batched_topk_cluster
   // iterators are then never dereferenced and the final filter's value writes are compiled out.
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
 
-  using segment_size_val_t = typename ::cuda::args::__traits<SegmentSizeParameterT>::element_type;
-  using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
+  // Segment-size type: the smallest unsigned offset type (>= 32-bit) covering the parameter's declared upper bound. The
+  // public entry caps that bound at 2^21, so this is always 32-bit.
+  using segment_size_val_t = detail::params::bounded_offset_t<SegmentSizeParameterT>;
 
-  // 32-bit covers every supported segment: the public entry caps the statically-known maximum segment size at 2^21, so
-  // a runtime value exceeding its declared bound is a caller precondition violation (undefined behavior). Unsigned
-  // because all offsets, ranks, and block counts are non-negative (segment sizes are clamped to >= 0 upstream).
+  // Fixed 32-bit: the segment (grid) index is a CUDA cluster id, and dispatch rejects `num_segments` > INT_MAX before
+  // launch. Not derived from the caller's `num_segments` type, so a wide type does not widen the grid math.
+  using num_segments_val_t = ::cuda::std::uint32_t;
+
+  // Unsigned because all offsets, ranks, and block counts are non-negative (segment sizes are clamped to >= 0
+  // upstream).
   using offset_t     = ::cuda::std::uint32_t;
   using out_offset_t = ::cuda::std::uint32_t;
   using key_prefix_t = detail::topk::key_prefix_storage_t<key_t>;
@@ -285,23 +291,19 @@ struct agent_batched_topk_cluster
   static constexpr bool first_wave_is_forward =
     !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
 
-  // Static upper bound on segment size: exact for constant/immediate sizes, the type maximum for runtime sizes.
-  static constexpr ::cuda::std::int64_t static_max_segment_size =
-    ::cuda::args::__traits<SegmentSizeParameterT>::highest;
+  // Static upper bound on segment size: exact for constant/immediate sizes, the type maximum for runtime sizes. The
+  // public entry caps this at 2^21, so it fits `int`.
+  static constexpr int static_max_segment_size = ::cuda::args::__traits<SegmentSizeParameterT>::highest;
 
   // Segments small enough to always be single-CTA resident (one contiguous SMEM span, see `run`) need at most
   // `ceil(static_max_segment_size / threads_per_block)` sweep rounds. We clamp each per-thread unroll down to that
-  // bound to trim predication/registers on sub-tile segments. Larger/unbounded types keep the full unroll (codegen
-  // unchanged); the guard also keeps the rounds arithmetic in `int` range.
+  // bound to trim predication/registers on sub-tile segments. Larger segments keep the full unroll (codegen unchanged).
   static constexpr bool should_clamp_items_to_segment =
     static_max_segment_size > 0 && static_max_segment_size < single_block_max_seg_size;
   static constexpr int segment_rounds_ceil =
-    should_clamp_items_to_segment
-      ? static_cast<int>(
-          ::cuda::ceil_div(static_max_segment_size, static_cast<::cuda::std::int64_t>(threads_per_block)))
-      : 0;
+    should_clamp_items_to_segment ? ::cuda::ceil_div(static_max_segment_size, threads_per_block) : 0;
   static constexpr int segment_rounds_floor =
-    should_clamp_items_to_segment ? static_cast<int>(static_max_segment_size / threads_per_block) : 0;
+    should_clamp_items_to_segment ? static_max_segment_size / threads_per_block : 0;
 
   // Clamp a per-thread unroll down to the segment's bounded round count (only when `should_clamp_items_to_segment`);
   // larger/unbounded segments keep the full tuning width, and the guard keeps the rounds arithmetic in `int`.
@@ -2668,8 +2670,8 @@ private:
     {
       if (!is_single_cta)
       {
-        layout.eff_cta_count_in_cluster = effective_cluster_blocks_from_chunks(
-          static_cast<::cuda::std::uint64_t>(layout.chunks), min_chunks_per_block, cta_count_in_cluster);
+        layout.eff_cta_count_in_cluster =
+          effective_cluster_blocks_from_chunks(layout.chunks, min_chunks_per_block, cta_count_in_cluster);
       }
     }
     _CCCL_ASSERT(layout.eff_cta_count_in_cluster >= 1u && layout.eff_cta_count_in_cluster <= cta_count_in_cluster,
@@ -3175,10 +3177,7 @@ private:
     cta_count_in_cluster = hw_cta_count_in_cluster;
     if constexpr (enable_runtime_single_cta)
     {
-      const bool fits_single_cta = is_single_cta_eligible(
-        static_cast<::cuda::std::uint64_t>(segment_size),
-        static_cast<::cuda::std::uint64_t>(block_tile_capacity),
-        single_block_max_seg_size);
+      const bool fits_single_cta = is_single_cta_eligible(segment_size, block_tile_capacity, single_block_max_seg_size);
       if (fits_single_cta)
       {
         if (hw_cta_rank_in_cluster != 0u)
@@ -3206,16 +3205,18 @@ private:
                  "hardware cluster rank must lie within a non-empty cluster");
     segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
-    if (segment_id >= detail::params::get_param(num_segments, num_segments_val_t{0}))
+    if (segment_id >= static_cast<num_segments_val_t>(detail::params::get_param(num_segments, num_segments_val_t{0})))
     {
       return;
     }
 
-    segment_size =
-      static_cast<segment_size_val_t>(detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id));
-    // Precondition: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
-    _CCCL_ASSERT(static_cast<::cuda::std::uint64_t>(segment_size) <= ::cuda::std::uint64_t{0xffffffffu},
-                 "segment size must be non-negative and fit the 32-bit cluster offset type");
+    // Read the clamped-to-nonnegative size before narrowing to `segment_size_val_t`, so the assert sees the caller's
+    // value: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
+    const auto segment_size_raw = detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+    _CCCL_ASSERT(
+      static_cast<::cuda::std::uint64_t>(segment_size_raw) <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
+      "segment size must be non-negative and fit the 32-bit cluster offset type");
+    segment_size = static_cast<segment_size_val_t>(segment_size_raw);
     // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands.
     const auto k_clamped =
       (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(

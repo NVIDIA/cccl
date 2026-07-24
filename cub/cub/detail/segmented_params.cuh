@@ -13,6 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
+
 #include <cuda/argument>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__iterator/concepts.h> // indirectly_readable, random_access_iterator
@@ -26,6 +28,7 @@
 #include <cuda/std/__utility/cmp.h> // cmp_greater_equal, cmp_less_equal
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -254,6 +257,13 @@ __get_and_clamp_param_to_nonnegative(const _Arg& __arg, _SegmentIndexT __index) 
     return __value;
   }
 }
+
+//! Smallest unsigned CUB offset type (>= 32-bit) covering @p _ParamT's declared static upper bound (from
+//! @c cuda::args), via @c detail::choose_offset_for_max_t. The bound is taken as given, never clamped: a bound the
+//! algorithm cannot support is a caller contract violation for its own static/runtime checks to surface.
+template <class _ParamT>
+using bounded_offset_t =
+  detail::choose_offset_for_max_t<static_cast<::cuda::std::uint64_t>(::cuda::args::__traits<_ParamT>::highest)>;
 
 // =====================================================================
 // Discrete parameter support

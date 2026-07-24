@@ -290,16 +290,18 @@ _CCCL_HOST_API cudaError_t select_cluster_launch_shape(
     return layout_t::base_padding_bytes + static_cast<int>(slots) * layout_t::chunk_bytes;
   };
 
-  // `C_lo`: at the largest SMEM each CTA holds `max_block_tile_capacity`, the smallest resident `C`. Computed in
-  // 64-bit because `seg` may be a loose bound (e.g. `numeric_limits<T>::max()` for an unbounded deferred sequence);
-  // narrowing such a `C_lo` to `int` could wrap and wrongly enter the resident branch below.
+  // `C_lo`: at the largest SMEM each CTA holds `max_block_tile_capacity`, the smallest resident `C`. `seg` is the
+  // statically-bounded max segment size (<= 2^21), so `C_lo` is small; it stays 64-bit to match the launch-shape
+  // arithmetic below.
   const auto c_lo = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
 
   cluster_blocks   = 0;
   dynamic_smem_sel = 0;
 
   if (batched_topk_cluster::is_single_cta_eligible(
-        seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity), single_block_max_seg_size))
+        static_cast<::cuda::std::uint32_t>(seg),
+        static_cast<::cuda::std::uint32_t>(max_block_tile_capacity),
+        single_block_max_seg_size))
   {
     // Single-CTA fast path: the segment fits resident in one CTA and is small enough that the agent's
     // cluster-barrier-free path beats spreading it across more CTAs. `S_res(seg)` is within budget and one CTA is
@@ -349,7 +351,9 @@ _CCCL_HOST_API cudaError_t select_cluster_launch_shape(
     // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
     // necessary). At `min_chunks_per_block == 1` this equals `c_full`; a larger knob shrinks it.
     const int desired_cluster_blocks = ::cuda::narrow<int>(batched_topk_cluster::effective_cluster_blocks_from_chunks(
-      ::cuda::ceil_div(seg, chunk_items_u64), min_chunks_per_block, ::cuda::narrow<unsigned int>(cluster_cap)));
+      static_cast<::cuda::std::uint32_t>(::cuda::ceil_div(seg, chunk_items_u64)),
+      min_chunks_per_block,
+      ::cuda::narrow<unsigned int>(cluster_cap)));
 
     if (c_lo <= static_cast<::cuda::std::uint64_t>(cluster_cap))
     {
