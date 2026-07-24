@@ -12,8 +12,8 @@ shared_resource
 .. _cccl-runtime-memory-resource-shared-resource:
 
 ``cuda::mr::shared_resource`` holds a reference-counted instance of a memory resource, allowing resources to be passed
-around with shared ownership semantics while avoiding lifetime issues. This is useful when multiple objects, like `cuda::buffer <libcudacxx-runtime-buffer-buffer>` must share the same
-resource instance.
+around with shared ownership semantics while avoiding lifetime issues. This is useful when multiple objects, like
+:ref:`cuda::buffer <cccl-runtime-buffer-buffer>`, must share the same resource instance.
 
 ``cuda::mr::make_shared_resource<Resource>(args...)`` constructs a ``shared_resource<Resource>`` that owns a newly
 constructed ``Resource``. ``Resource`` must satisfy ``cuda::mr::synchronous_resource``.
