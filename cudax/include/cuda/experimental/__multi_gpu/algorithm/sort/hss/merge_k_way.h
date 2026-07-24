@@ -28,7 +28,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <vector>
 
@@ -41,17 +41,17 @@ namespace cuda::experimental::__detail::__hss_sort
 // TODO(jfaibussowit):
 //
 // Horrifically inefficient, needs to be replaced by a proper CUB primitive!
-template <class _Traits, class _Comm, class _Env>
-_CCCL_HOST_API void __merge_k_way(
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _Comm>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   const _Comm& __comm,
   const _Env& __env,
-  const __buffer_of<_Traits, typename _Traits::__value_type>& __data,
+  const __buffer_type<_Tp>& __data,
   const ::std::vector<::cuda::std::size_t>& __counts,
   const ::std::vector<::cuda::std::size_t>& __displs,
-  const typename _Traits::__binary_op_type& __cmp,
-  __buffer_of<_Traits, typename _Traits::__value_type>* __ret)
+  const _BinaryOp& __cmp,
+  __buffer_type<_Tp>* __ret)
 {
-  using _Tp = typename _Traits::__value_type;
   if (__counts.size() < 2)
   {
     // TODO(jfaibussowit):

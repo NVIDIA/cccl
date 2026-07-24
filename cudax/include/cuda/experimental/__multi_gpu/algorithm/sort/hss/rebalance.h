@@ -38,7 +38,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <vector>
 
@@ -48,6 +48,59 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
+//! @brief Derive per-peer send/recv counts and displacements for the rebalance exchange.
+//!
+//! Invoked once per peer via `DeviceTransform`. `__current_offsets[i]` is the start of rank
+//! `i`'s current (post-exchange) bucket and `__desired_offsets[i]` the start of its original
+//! final bucket. Intersecting this rank's current global interval with the peer's desired
+//! interval yields the send metadata; intersecting the peer's current interval with this rank's
+//! desired interval yields the receive metadata.
+struct __rebalance_counts_fn
+{
+  ::cuda::std::uint64_t __rank;
+  ::cuda::std::uint64_t __comm_size;
+  ::cuda::std::uint64_t __N;
+  const ::cuda::std::uint64_t* __current_offsets;
+  const ::cuda::std::uint64_t* __desired_offsets;
+
+  [[nodiscard]] _CCCL_DEVICE constexpr ::cuda::std::
+    tuple<::cuda::std::size_t, ::cuda::std::size_t, ::cuda::std::size_t, ::cuda::std::size_t>
+    operator()(::cuda::std::uint64_t __peer) const noexcept
+  {
+    // current_offsets[i] is the start of rank i's current (post-exchange) bucket; desired
+    // offsets are the original final buckets. Intersect the two global element intervals to
+    // derive both send and receive metadata directly.
+    const auto __my_src_begin = __current_offsets[__rank];
+    const auto __my_src_end   = __rank + 1 == __comm_size ? __N : __current_offsets[__rank + 1];
+
+    const auto __peer_dst_begin = __desired_offsets[__peer];
+    const auto __peer_dst_end   = __peer + 1 == __comm_size ? __N : __desired_offsets[__peer + 1];
+
+    const auto __send_begin = ::cuda::std::max(__my_src_begin, __peer_dst_begin);
+    const auto __send_end   = ::cuda::std::min(__my_src_end, __peer_dst_end);
+
+    const auto __my_dst_begin = __desired_offsets[__rank];
+    const auto __my_dst_end   = __rank + 1 == __comm_size ? __N : __desired_offsets[__rank + 1];
+
+    const auto __peer_src_begin = __current_offsets[__peer];
+    const auto __peer_src_end   = __peer + 1 == __comm_size ? __N : __current_offsets[__peer + 1];
+
+    const auto __recv_begin = ::cuda::std::max(__peer_src_begin, __my_dst_begin);
+    const auto __recv_end   = ::cuda::std::min(__peer_src_end, __my_dst_end);
+
+    const auto __send_count =
+      __send_begin < __send_end ? static_cast<::cuda::std::size_t>(__send_end - __send_begin) : ::cuda::std::size_t{0};
+    const auto __recv_count =
+      __recv_begin < __recv_end ? static_cast<::cuda::std::size_t>(__recv_end - __recv_begin) : ::cuda::std::size_t{0};
+
+    return ::cuda::std::tuple{
+      __send_count,
+      __send_count == 0 ? ::cuda::std::size_t{0} : static_cast<::cuda::std::size_t>(__send_begin - __my_src_begin),
+      __recv_count,
+      __recv_count == 0 ? ::cuda::std::size_t{0} : static_cast<::cuda::std::size_t>(__recv_begin - __my_dst_begin)};
+  }
+};
+
 //! @brief Redistribute the globally sorted keys back to each rank's original per-rank size.
 //!
 //! Final HSS phase. The data-exchange phase leaves a globally sorted but only approximately
@@ -68,17 +121,15 @@ namespace cuda::experimental::__detail::__hss_sort
 //! @param[in] __envs The range of per-rank execution environments (one stream each).
 //! @param[in,out] __local_inputs The range of per-rank local key ranges, rewritten at their
 //!                original per-rank sizes.
-template <class _Traits, class _CommRange, class _EnvRange, class _InputRange>
-_CCCL_HOST_API void __rebalance_to_original_counts(
-  const typename _Traits::__local_setup_result_type& __setup,
-  _CommRange&& __comms,
-  _EnvRange&& __envs,
-  _InputRange&& __local_inputs)
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _CommRange, class _EnvRange, class _InputRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_counts(
+  const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs)
 {
-  using _Tp = typename _Traits::__value_type;
+  const auto __comm_size        = __setup.__comm_size;
+  const auto __N                = __setup.__N;
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  const auto __comm_size = __setup.__comm_size;
-  const auto __N         = __setup.__N;
   // The splitter exchange already produced a globally sorted, approximately balanced
   // distribution. Rebalance only corrects the rank ranges from that current distribution back
   // to the original per-rank sizes. Desired offsets are the exclusive scan of the original
@@ -86,26 +137,8 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
   // all-gathered and exclusive-scanned -- exactly as the reference does. (Duplicate splitter
   // keys can route an unpredictable share of records to a single rank, so the current
   // distribution must be measured, not predicted from the splitter positions.)
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
-
-  ::std::vector<__buffer_of<_Traits, _Tp>> __local_rebalanced;
-
-  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
-
-  __local_h_send_counts.reserve(__num_local_inputs);
-  __local_h_send_displs.reserve(__num_local_inputs);
-  __local_h_recv_counts.reserve(__num_local_inputs);
-  __local_h_recv_displs.reserve(__num_local_inputs);
-  __local_rebalanced.reserve(__num_local_inputs);
-
-  // ---- Measure the realized post-exchange distribution: all-gather each
-  // rank's current __input size, then exclusive-scan into current offsets (length
-  // __comm_size, current_offsets[0] == 0).
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __local_current_sizes;
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __local_current_offsets;
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_sizes;
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
 
   __local_current_sizes.reserve(__num_local_inputs);
   __local_current_offsets.reserve(__num_local_inputs);
@@ -152,6 +185,17 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
       __env);
   }
 
+  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
+  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
+  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
+  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
+  ::std::vector<__buffer_type<_Tp>> __local_rebalanced;
+
+  __local_h_send_counts.reserve(__num_local_inputs);
+  __local_h_send_displs.reserve(__num_local_inputs);
+  __local_h_recv_counts.reserve(__num_local_inputs);
+  __local_h_recv_displs.reserve(__num_local_inputs);
+  __local_rebalanced.reserve(__num_local_inputs);
   for (auto&& [__comm, __env, __resource, __current_offsets, __desired_offsets, __original_size] :
        ::cuda::std::ranges::views::zip(
          __comms,
@@ -189,43 +233,12 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
     auto __out = ::cuda::make_zip_iterator(
       __send_counts.begin(), __send_displs.begin(), __recv_counts.begin(), __recv_displs.begin());
 
-    auto __op = [__rank = __comm.rank(),
-                 __comm_size,
-                 __N,
-                 __current_offsets = __current_offsets.data(),
-                 __desired_offsets = __desired_offsets.data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
-      // current_offsets[i] is the start of rank i's current (post-exchange) bucket; desired
-      // offsets are the original final buckets. Intersect the two global element intervals to
-      // derive both send and receive metadata directly.
-      const auto __my_src_begin = __current_offsets[__rank];
-      const auto __my_src_end   = __rank + 1 == __comm_size ? __N : __current_offsets[__rank + 1];
-
-      const auto __peer_dst_begin = __desired_offsets[__peer];
-      const auto __peer_dst_end   = __peer + 1 == __comm_size ? __N : __desired_offsets[__peer + 1];
-
-      const auto __send_begin = ::cuda::std::max(__my_src_begin, __peer_dst_begin);
-      const auto __send_end   = ::cuda::std::min(__my_src_end, __peer_dst_end);
-
-      const auto __my_dst_begin = __desired_offsets[__rank];
-      const auto __my_dst_end   = __rank + 1 == __comm_size ? __N : __desired_offsets[__rank + 1];
-
-      const auto __peer_src_begin = __current_offsets[__peer];
-      const auto __peer_src_end   = __peer + 1 == __comm_size ? __N : __current_offsets[__peer + 1];
-
-      const auto __recv_begin = ::cuda::std::max(__peer_src_begin, __my_dst_begin);
-      const auto __recv_end   = ::cuda::std::min(__peer_src_end, __my_dst_end);
-
-      const auto __send_count = __send_begin < __send_end ? static_cast<::cuda::std::size_t>(__send_end - __send_begin)
-                                                          : ::cuda::std::size_t{0};
-      const auto __recv_count = __recv_begin < __recv_end ? static_cast<::cuda::std::size_t>(__recv_end - __recv_begin)
-                                                          : ::cuda::std::size_t{0};
-
-      return ::cuda::std::tuple{
-        __send_count,
-        __send_count == 0 ? ::cuda::std::size_t{0} : static_cast<::cuda::std::size_t>(__send_begin - __my_src_begin),
-        __recv_count,
-        __recv_count == 0 ? ::cuda::std::size_t{0} : static_cast<::cuda::std::size_t>(__recv_begin - __my_dst_begin)};
-    };
+    auto __op = __rebalance_counts_fn{
+      static_cast<::cuda::std::uint64_t>(__comm.rank()),
+      static_cast<::cuda::std::uint64_t>(__comm_size),
+      __N,
+      __current_offsets.data(),
+      __desired_offsets.data()};
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
@@ -233,7 +246,7 @@ _CCCL_HOST_API void __rebalance_to_original_counts(
       ::cuda::counting_iterator<::cuda::std::uint64_t>{},
       ::cuda::std::move(__out),
       __comm_size,
-      ::cuda::std::move(__op),
+      __op,
       __env);
 
     auto& __h_send_counts = __local_h_send_counts.emplace_back(__send_counts.size());

@@ -29,15 +29,13 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/zip_view.h>
-#include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/data_exchange.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/histogramming.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/local_setup.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/rebalance.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 #include <cuda/experimental/__utility/result_policy.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -62,33 +60,32 @@ namespace cuda::experimental::__detail::__hss_sort
 //! @param[in] __envs The range of per-rank execution environments (one stream each).
 //! @param[in,out] __local_inputs The range of per-rank local key ranges, sorted in place.
 //! @param[in] __cmp The comparator defining the sorted order.
-template <class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
-_CCCL_HOST_API void __execute(
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
   const __result_policy_base<_Policy>&,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRange&& __local_inputs,
   _BinaryOp __cmp)
 {
-  static_assert(::cuda::std::ranges::sized_range<_CommRange>);
-
-  // Could use ::cuda::std::invocable here, but it is overkill (compile-time wise). We know
-  // that get_stream_t is a normal CPO and normally callable.
-  static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, ::cuda::std::ranges::range_value_t<_EnvRange>>,
-                "Environment must contain a stream");
-
   static_assert(::cuda::std::same_as<_Policy, distributed_t>,
                 "Only distributed results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
+  static_assert(::cuda::std::ranges::sized_range<_CommRange>);
 
-  if (::cuda::std::ranges::size(__comms) == 0)
-  {
-    // We have no inputs, so... nothing to do
-    return;
-  }
+  // TODO(jfaibussowit):
+  //
+  // We should consider supporting random-access ranges too, but then we need temp buffers for
+  // the various comms calls.
+  //
+  // We cannot assert the following because thrust iterators don't play nice with it.
+#if 0
+  using __base_iter =
+    ::cuda::std::ranges::iterator_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
 
-  using _Tp =
-    ::cuda::std::ranges::range_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
+  static_assert(::cuda::std::__has_contiguous_traversal<__base_iter>);
+#endif
 
   // First and foremost, kick off the local sorts...
   for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
@@ -110,11 +107,7 @@ _CCCL_HOST_API void __execute(
     return;
   }
 
-  using _Env    = ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_EnvRange>>;
-  using _Traits = ::cuda::experimental::__detail::__hss_sort::__hss_traits<_Tp, _Env, _BinaryOp>;
-
-  const auto __setup =
-    ::cuda::experimental::__detail::__hss_sort::__local_setup<_Traits>(__comms, __envs, __local_inputs, __comm_size);
+  const auto __setup = __local_setup(__comms, __envs, __local_inputs, __comm_size);
 
   if (__setup.__N == 0)
   {
@@ -122,15 +115,12 @@ _CCCL_HOST_API void __execute(
   }
 
   {
-    const auto __local_splitters = ::cuda::experimental::__detail::__hss_sort::__histogramming_phase<_Traits>(
-      __setup, __comms, __envs, __local_inputs, __cmp);
+    const auto __local_splitters = __histogramming_phase(__setup, __comms, __envs, __local_inputs, __cmp);
 
-    ::cuda::experimental::__detail::__hss_sort::__data_exchange<_Traits>(
-      __setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
+    __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
   }
 
-  ::cuda::experimental::__detail::__hss_sort::__rebalance_to_original_counts<_Traits>(
-    __setup, __comms, __envs, __local_inputs);
+  __rebalance_to_original_counts(__setup, __comms, __envs, __local_inputs);
 }
 } // namespace cuda::experimental::__detail::__hss_sort
 

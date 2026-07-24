@@ -39,7 +39,7 @@ struct __ideal_rank_fn
   ::cuda::std::uint64_t __N;
   ::cuda::std::uint64_t __comm_size;
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint64_t operator()(::cuda::std::uint64_t __i) const noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr ::cuda::std::uint64_t operator()(::cuda::std::uint64_t __i) const noexcept
   {
     return ((__i + 1) * __N) / __comm_size;
   }

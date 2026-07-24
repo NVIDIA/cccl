@@ -40,7 +40,7 @@
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/merge_k_way.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <vector>
 
@@ -107,22 +107,21 @@ struct __finalize_splitters_fn
 //! @param[in] __cmp The comparator defining the sorted order.
 //! @param[in] __local_splitters The per-comm splitter state supplying the finalized brackets and
 //!            probes.
-template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
-_CCCL_HOST_API void __data_exchange(
-  const typename _Traits::__local_setup_result_type& __setup,
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _CommRange, class _EnvRange, class _InputRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
+  const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRange&& __local_inputs,
   const _BinaryOp& __cmp,
-  const ::std::vector<typename _Traits::__per_comm_splitters_type>& __local_splitters)
+  const ::std::vector<__per_comm_splitters_type>& __local_splitters)
 {
-  using _Tp = typename _Traits::__value_type;
-
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
 
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::size_t>> __local_send_counts;
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::size_t>> __local_recv_counts;
+  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_send_counts;
+  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_recv_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
 
@@ -143,7 +142,7 @@ _CCCL_HOST_API void __data_exchange(
     auto& __send_counts =
       __local_send_counts.emplace_back(__Ls.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
 
-    const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
+    const auto __input_begin = ::cuda::std::ranges::begin(__input);
 
     // Lazily reconstruct the finalized splitters (HSS Section 4.2.2 step (5), "the key
     // ranked closest to Ni/p ... is set as the ith splitter") on the fly instead of
@@ -171,14 +170,13 @@ _CCCL_HOST_API void __data_exchange(
     auto __op = ::cuda::experimental::__detail::__hss_sort::__bucket_count_fn<
       ::cuda::std::remove_cvref_t<decltype(__input_begin)>,
       ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
-      _BinaryOp>{
-      __input_begin, ::cuda::std::to_address(::cuda::std::ranges::end(__input)), __splitter_it, __Ls.size(), __cmp};
+      _BinaryOp>{__input_begin, ::cuda::std::ranges::end(__input), __splitter_it, __Ls.size(), __cmp};
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      __send_counts.data(),
+      __send_counts.begin(),
       __comm_size,
       ::cuda::std::move(__op),
       __env);
@@ -199,7 +197,7 @@ _CCCL_HOST_API void __data_exchange(
 
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
-  ::std::vector<__buffer_of<_Traits, _Tp>> __local_recvd;
+  ::std::vector<__buffer_type<_Tp>> __local_recvd;
 
   __local_recvd.reserve(__num_local_inputs);
   __local_h_send_displs.reserve(__num_local_inputs);
@@ -286,10 +284,9 @@ _CCCL_HOST_API void __data_exchange(
     // TODO(jfaibussowit):
     //
     // Don't use __tmp and instead write directly to __inputs
-    auto __tmp = __buffer_of<_Traits, _Tp>{__recvd.__make_empty_like(0)};
+    auto __tmp = __buffer_type<_Tp>{__recvd.__make_empty_like(0)};
 
-    ::cuda::experimental::__detail::__hss_sort::__merge_k_way<_Traits>(
-      __comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
+    __merge_k_way(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
 
     ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__inputs, __tmp.size());
 

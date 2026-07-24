@@ -25,10 +25,13 @@
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/size.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/execute.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 #include <cuda/experimental/__multi_gpu/concepts.h>
 #include <cuda/experimental/__utility/result_policy.cuh>
 
@@ -48,9 +51,24 @@ void sort(const __result_policy_base<_Policy>& __policy,
           _InputRange&& __range_of_input_ranges,
           _BinaryOp __cmp = {})
 {
+  using _Env = ::cuda::std::ranges::range_value_t<_EnvRange>;
+
+  // Could use ::cuda::std::invocable here, but it is overkill (compile-time wise). We know
+  // that get_stream_t is a normal CPO and normally callable.
+  static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, _Env>, "Environment must contain a stream");
+
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::sort");
 
-  ::cuda::experimental::__detail::__hss_sort::__execute(
+  using _Tp =
+    ::cuda::std::ranges::range_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
+
+  if (::cuda::std::ranges::size(__comms) == 0)
+  {
+    // We have no inputs, so... nothing to do
+    return;
+  }
+
+  ::cuda::experimental::__detail::__hss_sort::_HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
