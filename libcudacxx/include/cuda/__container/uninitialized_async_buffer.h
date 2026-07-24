@@ -277,7 +277,7 @@ public:
   //! @warning destroy does not destroy any objects that may or may not reside
   //! within the buffer. It is the user's responsibility to ensure that all
   //! objects within the buffer have been properly destroyed.
-  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream)
+  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
     if (__buf_)
     {
@@ -297,13 +297,13 @@ public:
   //! @warning destroy does not destroy any objects that may or may not reside
   //! within the buffer. It is the user's responsibility to ensure that all
   //! objects within the buffer have been properly destroyed.
-  _CCCL_HOST_API void destroy()
+  _CCCL_HOST_API void destroy() noexcept
   {
     destroy(__stream_);
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, const size_t __capacity)
+  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, const size_t __capacity) noexcept
   {
     if (__buf_)
     {
@@ -457,6 +457,24 @@ public:
   _CCCL_HOST_API __uninitialized_async_buffer __replace_allocation(const size_t __count)
   {
     return __replace_allocation(__stream_, __count);
+  }
+
+  _CCCL_HOST_API void
+  __replace_allocation_discard(::cuda::stream_ref __stream, const size_t __count, const size_t __old_capacity)
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+
+    __stream_ = __stream;
+    if (__count != 0)
+    {
+      __buf_ = __mr_.allocate(__stream_, __get_allocation_size(__count), __alignment_);
+    }
+    __count_ = __count;
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 };

@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__container/buffer.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
@@ -81,10 +80,9 @@ private:
   {
     const auto __old_capacity = __capacity_;
 
-    auto __old_buffer = __base_t::__replace_allocation(__stream, __new_capacity);
-    __capacity_       = __new_capacity;
-    __old_buffer.__set_size_unsynchronized(__old_capacity);
-    __old_buffer.destroy();
+    __capacity_ = 0;
+    __base_t::__replace_allocation_discard(__stream, __new_capacity, __old_capacity);
+    __capacity_ = __new_capacity;
   }
 
 public:
@@ -117,7 +115,7 @@ public:
     return *this;
   }
 
-  _CCCL_HOST_API ~__resizable_buffer()
+  _CCCL_HOST_API ~__resizable_buffer() noexcept
   {
     destroy();
   }
@@ -133,33 +131,6 @@ public:
   [[nodiscard]] _CCCL_HOST_API size_type capacity_bytes() const noexcept
   {
     return __capacity_ * sizeof(_Tp);
-  }
-
-  //! @brief Changes the logical size without initializing any new elements.
-  //!
-  //! This overload can only shrink. Growing requires `cuda::no_init` to make
-  //! the lack of initialization explicit.
-  _CCCL_HOST_API void resize(size_type __new_size)
-  {
-    if (__new_size > this->size())
-    {
-      _CCCL_THROW(::std::invalid_argument, "cuda::__resizable_buffer::resize requires cuda::no_init to grow");
-    }
-    __base_t::__set_size_unsynchronized(__new_size);
-  }
-
-  //! @brief Changes the logical size without reallocating.
-  //!
-  //! This overload can shrink or grow within `capacity()`. Growing beyond
-  //! capacity requires an explicit stream.
-  _CCCL_HOST_API void resize(size_type __new_size, ::cuda::no_init_t)
-  {
-    if (__new_size > __capacity_)
-    {
-      _CCCL_THROW(::std::invalid_argument,
-                  "cuda::__resizable_buffer::resize requires an explicit stream to grow beyond capacity");
-    }
-    __base_t::__set_size_unsynchronized(__new_size);
   }
 
   //! @brief Changes the logical size, reallocating on \p __stream if needed.
@@ -202,13 +173,13 @@ public:
   }
 
   //! @brief Destroys the allocation using capacity rather than logical size.
-  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream)
+  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
     __base_t::__destroy_with_capacity(__stream, __capacity_);
     __capacity_ = 0;
   }
 
-  _CCCL_HOST_API void destroy()
+  _CCCL_HOST_API void destroy() noexcept
   {
     destroy(this->stream());
   }
