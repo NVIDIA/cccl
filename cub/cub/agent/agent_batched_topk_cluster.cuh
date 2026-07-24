@@ -3249,11 +3249,10 @@ private:
       return;
     }
 
-    // Every block's elected leader initializes its local `state`. Only the
-    // leader block's copy is semantically read (non-leaders reach the leader's
-    // `state` over DSMEM via `leader_state32`), but mirroring the write in every
-    // block keeps every block's unconditional `state.size` load safe under
-    // compute-sanitizer.
+    // Each block's elected leader thread initializes its block-local `state`. Only the leader block's copy is read (its
+    // own scan directly, other blocks over DSMEM via `leader_state32`), but the leader's rank is unknown here
+    // (`compute_segment_layout` derives it later from the runtime effective cluster size), so every block initializes
+    // unconditionally to guarantee the eventual leader's `state` is valid before the first read.
     if (is_block_leader)
     {
       temp_storage.state.size   = size_state_t{static_cast<offset_t>(segment_size), k};
