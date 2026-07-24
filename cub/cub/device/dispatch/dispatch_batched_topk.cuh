@@ -340,7 +340,7 @@ template <typename KeyInputItItT,
   SelectDirectionParameterT select_directions,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
-  EnvT env = {})
+  const EnvT& env = {})
 {
   using default_policy_selector =
     policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,

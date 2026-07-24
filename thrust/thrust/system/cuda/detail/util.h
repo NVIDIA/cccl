@@ -17,13 +17,14 @@
 
 #include <cub/util_device.cuh>
 
+#include <cuda/std/__host_stdlib/cstdio>
+
 #include <nv/target>
 
 #if _CCCL_HOSTED()
 #  include <thrust/system/cuda/error.h>
 #  include <thrust/system_error.h>
 
-#  include <cstdio>
 #endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN

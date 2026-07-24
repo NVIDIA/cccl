@@ -103,7 +103,11 @@ extern "C" __device__ void no_numba_negate_i16(void* x, void* result) {
     return _raw_op(source, "no_numba_negate_i16")
 
 
-def test_import_numba_raises():
+def test_import_numba_raises(raise_on_numba_import):
+    # Request the guard explicitly rather than relying on the no_numba
+    # auto-injection (skipped under the parallel sweep, see conftest
+    # pytest_collection_modifyitems): this test exercises the guard directly, and
+    # the monkeypatch it depends on keeps it single-threaded under the sweep.
     with pytest.raises(
         ImportError, match="This test is marked 'no_numba' but attempted to import it"
     ):
@@ -205,9 +209,8 @@ def test_binary_search_explicit_opkind_less(search, side):
     np.testing.assert_array_equal(d_out.copy_to_host(), expected)
 
 
-def test_segmented_reduce_well_known_plus(monkeypatch):
-    monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
-
+@pytest.mark.no_verify_sass
+def test_segmented_reduce_well_known_plus():
     h_input = np.asarray([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.uint32)
     h_starts = np.asarray([0, 3, 5], dtype=np.int32)
     h_ends = np.asarray([3, 5, 8], dtype=np.int32)
@@ -288,11 +291,8 @@ def test_segmented_sort_keys():
     np.testing.assert_array_equal(d_output.copy_to_host(), expected)
 
 
-def test_unique_by_key_well_known_equal_to(monkeypatch):
-    cc_major, _ = cuda.compute._cccl_interop.CudaDevice().compute_capability
-    if cc_major >= 9:
-        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
-
+@pytest.mark.no_verify_sass
+def test_unique_by_key_well_known_equal_to():
     h_keys = np.asarray([1, 1, 2, 2, 2, 3, 4, 4], dtype=np.int16)
     h_values = np.asarray([10, 11, 20, 21, 22, 30, 40, 41], dtype=np.int8)
     d_keys = DeviceArray.from_numpy(h_keys)

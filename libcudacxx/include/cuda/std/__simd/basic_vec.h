@@ -35,6 +35,7 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
 #include <cuda/std/__simd/specializations/fixed_size_float_vec.h>
+#include <cuda/std/__simd/specializations/fixed_size_integral_vec.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
@@ -131,6 +132,18 @@ private:
   _CCCL_HOST_DEVICE_API constexpr void __set(const __simd_size_type __i, const value_type __v) noexcept
   {
     __s_.__set(__i, __v);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  __simd_min_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  {
+    return basic_vec{_Impl::__min_simd(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  __simd_max_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  {
+    return basic_vec{_Impl::__max_simd(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
 public:
@@ -723,6 +736,12 @@ public:
   operator<(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__less(__lhs.__s_, __rhs.__s_));
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend basic_vec
+  __simd_fma_impl(const basic_vec& __x, const basic_vec& __y, const basic_vec& __z) noexcept
+  {
+    return basic_vec{_Impl::__fma(__x.__s_, __y.__s_, __z.__s_), __storage_tag};
   }
 
   // [simd.cond], basic_vec exposition-only conditional operators

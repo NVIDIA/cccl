@@ -82,6 +82,13 @@ parse_options() {
 
     local -a DOCKER_RUN_ARGS=();
 
+    if command -v code > /dev/null 2>&1 ; then
+      docker_mode=false
+    else
+      # no vscode, default to docker
+      docker_mode=true
+    fi
+
     while true; do
         case "$1" in
             -c|--cuda)
@@ -140,6 +147,12 @@ parse_options() {
 launch_docker() {
     local -;
     set -euo pipefail
+
+    if ! docker --version > /dev/null 2>&1 ; then
+      echo "Docker launch requires a working installation of docker."
+      echo "Ensure that 'docker' is reachable on PATH."
+      exit 127
+    fi
 
     ###
     # Read relevant values from devcontainer.json
@@ -284,6 +297,13 @@ launch_docker() {
 launch_vscode() {
     local -;
     set -euo pipefail;
+
+    if ! code --version > /dev/null 2>&1 ; then
+      echo "VSCode launch requires a working installation of vscode."
+      echo "Ensure that 'code' is reachable on PATH."
+      exit 127
+    fi
+
     # Since Visual Studio Code allows only one instance per `devcontainer.json`,
     # this code prepares a unique temporary directory structure for each launch of a devcontainer.
     # By doing so, it ensures that multiple instances of the same environment can be run
@@ -328,6 +348,16 @@ main() {
     if [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
         path=".devcontainer"
     else
+        if [[ -z ${cuda_version:-} ]]; then
+          echo "Must also provide a CUDA version when specifying the host compiler" >&2
+          exit 2
+        fi
+
+        if [[ -z ${host_compiler:-} ]]; then
+          echo "Must also provide a host compiler when specifying the cuda version" >&2
+          exit 2
+        fi
+
         if ${cuda_ext:-false}; then
           cuda_suffix="ext"
         fi

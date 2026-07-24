@@ -39,4 +39,4 @@ Availability
 -------------
 
 Due to its experimental nature and the lack of stability guarantees, ``cudax`` is not shipped with the CUDA toolkit but
-is solely available through github.
+is solely available through GitHub.
