@@ -142,11 +142,16 @@ projects:
     matrix_project: "python_tsan"
     # Same v1 sources as `python`, rebuilt with ThreadSanitizer. Must be listed
     # here or the per-PR python_tsan job is pruned as never-dirty and never runs.
+    # cccl_c_parallel_public covers c/parallel/{src,include}; c/parallel/CMakeLists.txt
+    # is listed directly because the TSan build config (the -fsanitize=thread option)
+    # lives there and is owned by cccl_c_parallel_internal, which this lane otherwise
+    # does not depend on -- without it a change to the TSan flags would skip this lane.
     lite_dependencies: [cccl_c_parallel_public]
     full_dependencies: []
     include_regexes:
       - "python/cuda_cccl/"
       - "pyproject\\.toml"
+      - "c/parallel/CMakeLists\\.txt"
 
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
