@@ -137,6 +137,17 @@ projects:
       - "python/cuda_cccl/"
       - "pyproject\\.toml"
 
+  python_tsan:
+    name: "Python (cuda.compute free-threaded ThreadSanitizer)"
+    matrix_project: "python_tsan"
+    # Same v1 sources as `python`, rebuilt with ThreadSanitizer. Must be listed
+    # here or the per-PR python_tsan job is pruned as never-dirty and never runs.
+    lite_dependencies: [cccl_c_parallel_public]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "pyproject\\.toml"
+
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
     matrix_project: "cccl_c_stf"
