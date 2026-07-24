@@ -60,8 +60,10 @@ _CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz, double dw)
   };
 
   // Unpacked C++ API (explicit conversion to disambiguate from the packed type).
-  fp64emu_unpacked ux = (fp64emu_unpacked) dx, uy = (fp64emu_unpacked) dy, uz = (fp64emu_unpacked) dz,
-                   uw      = (fp64emu_unpacked) dw;
+  fp64emu_unpacked ux      = (fp64emu_unpacked) dx;
+  fp64emu_unpacked uy      = (fp64emu_unpacked) dy;
+  fp64emu_unpacked uz      = (fp64emu_unpacked) dz;
+  fp64emu_unpacked uw      = (fp64emu_unpacked) dw;
   const double unpacked[5] = {
     (double) (__dmul_rn(ex, ey) * ez * ew),
     (double) (__dadd_rn(ux, uy) + uz + uw),

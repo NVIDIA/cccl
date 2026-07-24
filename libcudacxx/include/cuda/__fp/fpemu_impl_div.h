@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -347,9 +347,12 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
   const bool __sign_z       = ((__x.sign != 0) ^ (__y.sign != 0));
   const uint64_t __sign_bit = (uint64_t) __sign_z << 63;
 
-  const bool __nan_x = (__exp_x == __nan_exp), __nan_y = (__exp_y == __nan_exp);
-  const bool __inf_x = (__exp_x == __inf_exp), __inf_y = (__exp_y == __inf_exp);
-  const bool __zero_x = (__x.mantissa == 0), __zero_y = (__y.mantissa == 0);
+  const bool __nan_x  = (__exp_x == __nan_exp);
+  const bool __nan_y  = (__exp_y == __nan_exp);
+  const bool __inf_x  = (__exp_x == __inf_exp);
+  const bool __inf_y  = (__exp_y == __inf_exp);
+  const bool __zero_x = (__x.mantissa == 0);
+  const bool __zero_y = (__y.mantissa == 0);
 
   // Special operands: build the canonical packed result and unpack it (rare,
   // off the hot path -- no arithmetic round trip).

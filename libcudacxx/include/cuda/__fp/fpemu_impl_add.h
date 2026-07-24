@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -72,9 +72,21 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_high_dadd(__fpbits64 __x, __fpbi
   __uint32x2 __a_32x2 = ::cuda::std::bit_cast<__uint32x2>(__a);
   __uint32x2 __b_32x2 = ::cuda::std::bit_cast<__uint32x2>(__b);
 
-  __uint32x2 __man_a_32x2, __man_b_32x2, __man_c_32x2;
-  int32_t __exp_a, __exp_b, __exp_c, __shift, __delta_a, __delta_b, __nzeros;
-  bool __is_sign_a, __is_sign_b, __is_sign_c, __is_a_exp_zero, __is_b_exp_zero;
+  __uint32x2 __man_a_32x2;
+  __uint32x2 __man_b_32x2;
+  __uint32x2 __man_c_32x2;
+  int32_t __exp_a;
+  int32_t __exp_b;
+  int32_t __exp_c;
+  int32_t __shift;
+  int32_t __delta_a;
+  int32_t __delta_b;
+  int32_t __nzeros;
+  bool __is_sign_a;
+  bool __is_sign_b;
+  bool __is_sign_c;
+  bool __is_a_exp_zero;
+  bool __is_b_exp_zero;
   __fpbits64 __result;
 
   // Extract exponent for input A. a_den_zero true if denorm or zero

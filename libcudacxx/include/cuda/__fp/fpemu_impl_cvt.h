@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -269,7 +269,8 @@ _CCCL_TRIVIAL_API int64_t __internal_fp64emu_fpbits64_to_ll(__fpbits64 __x) noex
     __sig |= _CCCL_FPEMU_HIDDEN_64;
   }
   int32_t __shift_dist = 0x433 - __exp;
-  uint64_t __sig_int, __sig_extra;
+  uint64_t __sig_int;
+  uint64_t __sig_extra;
   if (__shift_dist <= 0)
   {
     if (__shift_dist < -11)
@@ -310,7 +311,8 @@ _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_fpbits64_to_ull(__fpbits64 __x) no
     __sig |= _CCCL_FPEMU_HIDDEN_64;
   }
   int32_t __shift_dist = 0x433 - __exp;
-  uint64_t __sig_int, __sig_extra;
+  uint64_t __sig_int;
+  uint64_t __sig_extra;
   if (__shift_dist <= 0)
   {
     // Negative saturates to 0; positive out-of-range to UINT64_MAX.
@@ -696,7 +698,8 @@ _CCCL_TRIVIAL_API int64_t __internal_fp64emu_fpbits64_unpacked_to_ll(__fpbits64_
   }
   uint64_t __sig       = __x.mantissa >> EXTRA_BITS;
   int32_t __shift_dist = 0x433 - __exp;
-  uint64_t __sig_int, __sig_extra;
+  uint64_t __sig_int;
+  uint64_t __sig_extra;
   if (__shift_dist <= 0)
   {
     if (__shift_dist < -11)
@@ -734,7 +737,8 @@ _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_fpbits64_unpacked_to_ull(__fpbits6
   }
   uint64_t __sig       = __x.mantissa >> EXTRA_BITS;
   int32_t __shift_dist = 0x433 - __exp;
-  uint64_t __sig_int, __sig_extra;
+  uint64_t __sig_int;
+  uint64_t __sig_extra;
   if (__shift_dist <= 0)
   {
     if (__shift_dist < -11)

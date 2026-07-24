@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -154,7 +154,7 @@ public:
   // Defaulted copy constructor (trivially copyable)
   // Note: NVCC implicitly makes defaulted special members __host__ __device__
   */
-  fpemu(const fpemu& __other) = default;
+  _CCCL_HIDE_FROM_ABI fpemu(const fpemu& __other) = default;
 
   /*
   // Copy constructor from volatile fpemu
@@ -170,7 +170,7 @@ public:
   {}
 
   // Defaulted copy assignment operator (trivially copyable)
-  fpemu& operator=(const fpemu& __other) = default;
+  _CCCL_HIDE_FROM_ABI fpemu& operator=(const fpemu& __other) = default;
 
   /*
   // Assignment operator to volatile fpemu
@@ -276,10 +276,10 @@ public:
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_API void __set_from_int32(int32_t __i) noexcept;
-  _CCCL_API void __set_from_int32(uint32_t __i) noexcept;
-  _CCCL_API void __set_from_int64(int64_t __i) noexcept;
-  _CCCL_API void __set_from_int64(uint64_t __i) noexcept;
+  _CCCL_API void __set_from_int32(int32_t) noexcept;
+  _CCCL_API void __set_from_int32(uint32_t) noexcept;
+  _CCCL_API void __set_from_int64(int64_t) noexcept;
+  _CCCL_API void __set_from_int64(uint64_t) noexcept;
   _CCCL_API int32_t __to_integer(int32_t) const noexcept;
   _CCCL_API uint32_t __to_integer(uint32_t) const noexcept;
   _CCCL_API int64_t __to_integer(int64_t) const noexcept;
@@ -294,6 +294,7 @@ public:
   template <fpemu_accuracy _Acc>
   _CCCL_API friend fpemu<double, _Acc>
   operator*(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
+  // (*) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
@@ -307,6 +308,7 @@ public:
   template <fpemu_accuracy _Acc>
   _CCCL_API friend fpemu<double, _Acc>
   operator/(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
+  // (/) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
@@ -320,6 +322,7 @@ public:
   template <fpemu_accuracy _Acc>
   _CCCL_API friend fpemu<double, _Acc>
   operator+(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
+  // (+) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
@@ -333,6 +336,7 @@ public:
   template <fpemu_accuracy _Acc>
   _CCCL_API friend fpemu<double, _Acc>
   operator-(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept;
+  // (-) mixed-type
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
@@ -400,7 +404,8 @@ public:
   {
     return fpemu(__x) == fpemu(__y);
   }
-  // inequality (!=)
+#if _CCCL_STD_VER <= 2017
+  // inequality (!=) — in C++20 this is synthesized from operator==
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
@@ -408,6 +413,7 @@ public:
   {
     return fpemu(__x) != fpemu(__y);
   }
+#endif // _CCCL_STD_VER <= 2017
   // less than (<)
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpemu> || ::cuda::std::is_same_v<_T2, fpemu>)
@@ -496,7 +502,7 @@ public:
   // Defaulted copy constructor (trivially copyable)
   // Note: NVCC implicitly makes defaulted special members __host__ __device__
   */
-  fpemu_unpacked(const fpemu_unpacked& __other) = default;
+  _CCCL_HIDE_FROM_ABI fpemu_unpacked(const fpemu_unpacked& __other) = default;
 
   /*
   // Copy constructor from volatile fpemu_unpacked
@@ -515,7 +521,7 @@ public:
   }
 
   // Defaulted copy assignment operator (trivially copyable)
-  fpemu_unpacked& operator=(const fpemu_unpacked& __other) = default;
+  _CCCL_HIDE_FROM_ABI fpemu_unpacked& operator=(const fpemu_unpacked& __other) = default;
 
   /*
   // Assignment operator to volatile fpemu_unpacked
@@ -546,27 +552,23 @@ public:
   // Conversion operators
   */
   // ==== Conversions from other types to fpemu_unpacked:
-#if defined __CUDACC__
-  // Implicit conversions from floating-point types
-  _CCCL_API fpemu_unpacked(float f) noexcept;
-  _CCCL_API fpemu_unpacked(double d) noexcept;
-#  define _CCCL_FPEMU_UNP_NARROW_EXPLICIT
-#else
-  // Explicit conversions from floating-point types (to avoid ambiguity with packed type)
+  // Explicit conversions from floating-point types. Unlike the packed fpemu (which is
+  // implicitly constructible from float/double, like a built-in number), the unpacked
+  // representation always requires an explicit conversion. This keeps float/double
+  // construction unambiguous between the packed and unpacked classes and, crucially,
+  // gives fpemu_unpacked the same public API regardless of whether the translation unit
+  // is compiled by nvcc or a host-only compiler.
   _CCCL_API explicit fpemu_unpacked(float __f) noexcept;
   _CCCL_API explicit fpemu_unpacked(double __d) noexcept;
-#  define _CCCL_FPEMU_UNP_NARROW_EXPLICIT explicit
-#endif
   // Construction from any standard integer type (int / long / long long + unsigned).
   // The value is canonicalized to the accuracy-correct 32- or 64-bit builtin: the target
   // width comes from __num_bits_v and the signedness-correct fixed-width type from
   // __make_nbit_int_t, so the static_cast selects the matching overloaded setter (signed
-  // vs unsigned) below. Explicitness follows the surrounding float/double ctors (implicit
-  // on device, explicit on host) to avoid ambiguity with the packed type; 64-bit values
+  // vs unsigned) below. Explicit, matching the float/double ctors above; 64-bit values
   // may lose precision. bool / character types are excluded by __cccl_is_integer_v.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  _CCCL_API _CCCL_FPEMU_UNP_NARROW_EXPLICIT fpemu_unpacked(_Tp __i) noexcept
+  _CCCL_API explicit fpemu_unpacked(_Tp __i) noexcept
   {
     if constexpr (::cuda::std::__num_bits_v<_Tp> <= 32)
     {
@@ -582,24 +584,21 @@ public:
   // int32 and reuse the int32 constructor path (no dedicated char/bool handling).
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
-  _CCCL_API _CCCL_FPEMU_UNP_NARROW_EXPLICIT fpemu_unpacked(_Tp __i) noexcept
+  _CCCL_API explicit fpemu_unpacked(_Tp __i) noexcept
       : fpemu_unpacked(static_cast<int32_t>(__i))
   {}
 #if _CCCL_HAS_INT128()
   // 128-bit integers would silently truncate to 64 bits, so they are deleted until
   // real 128-bit support is added (tracking issue: extended-precision fp <-> __int128).
-  // Mirror the integer ctor's explicitness so copy-init overload sets are unchanged.
-  _CCCL_API _CCCL_FPEMU_UNP_NARROW_EXPLICIT fpemu_unpacked(__int128_t)  = delete;
-  _CCCL_API _CCCL_FPEMU_UNP_NARROW_EXPLICIT fpemu_unpacked(__uint128_t) = delete;
+  _CCCL_API explicit fpemu_unpacked(__int128_t)  = delete;
+  _CCCL_API explicit fpemu_unpacked(__uint128_t) = delete;
 #endif // _CCCL_HAS_INT128()
 #if _CCCL_HAS_FLOAT128()
   // __float128 -> double would silently lose precision (and today makes construction
   // ambiguous with the float/double ctors), so it is deleted for parity with the
   // 128-bit integer ctors until real extended-precision support exists.
-  // Mirror the integer ctor's explicitness so copy-init overload sets are unchanged.
-  _CCCL_API _CCCL_FPEMU_UNP_NARROW_EXPLICIT fpemu_unpacked(__float128) = delete;
+  _CCCL_API explicit fpemu_unpacked(__float128) = delete;
 #endif // _CCCL_HAS_FLOAT128()
-#undef _CCCL_FPEMU_UNP_NARROW_EXPLICIT
   // Converting constructor from another accuracy (same unpacked representation, so a
   // pure reinterpretation). Explicit for the same reason as the packed class.
   template <fpemu_accuracy _Acc2>
@@ -634,13 +633,13 @@ public:
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_API void __set_from_int32(int32_t __i) noexcept;
-  _CCCL_API void __set_from_int32(uint32_t __i) noexcept;
-  _CCCL_API void __set_from_int64(int64_t __i) noexcept;
-  _CCCL_API void __set_from_int64(uint64_t __i) noexcept;
-  _CCCL_API int32_t __to_integer(int32_t) const noexcept;
+  _CCCL_API void     __set_from_int32(int32_t)  noexcept;
+  _CCCL_API void     __set_from_int32(uint32_t) noexcept;
+  _CCCL_API void     __set_from_int64(int64_t)  noexcept;
+  _CCCL_API void     __set_from_int64(uint64_t) noexcept;
+  _CCCL_API int32_t  __to_integer(int32_t)  const noexcept;
   _CCCL_API uint32_t __to_integer(uint32_t) const noexcept;
-  _CCCL_API int64_t __to_integer(int64_t) const noexcept;
+  _CCCL_API int64_t  __to_integer(int64_t)  const noexcept;
   _CCCL_API uint64_t __to_integer(uint64_t) const noexcept;
 
 public:

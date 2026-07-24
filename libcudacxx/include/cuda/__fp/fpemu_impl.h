@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -189,13 +189,13 @@ enum struct __fpemu_rounding
 };
 
 /*
- * Packed-via-unpacked TEST mode (_CCCL_FPEMU_PACKED_VIA_UNPACKED) is configured in
- * fpemu_common.h and set by the Makefile's PACKED_VIA_UNPACKED=y. When ON, the
- * packed (__fpbits64) builtins are routed through the combined unpack ->
- * *_unpacked core -> pack pipeline so the packed test harness exercises the
- * unpacked cores. When OFF (default), the legacy fused packed kernels are used
- * unchanged (byte-for-byte). The unpacked __fpbits64_unpacked ABI builtins
- * always co-exist with the packed API regardless of this flag.
+ * Packed-via-unpacked TEST mode (_CCCL_FPEMU_PACKED_VIA_UNPACKED, defined above and
+ * set by the Makefile's PACKED_VIA_UNPACKED=y): when ON, the packed (__fpbits64)
+ * builtins are routed through the combined unpack -> *_unpacked core -> pack pipeline
+ * so the packed test harness exercises the unpacked cores. When OFF (default), the
+ * legacy fused packed kernels are used unchanged (byte-for-byte). The unpacked
+ * __fpbits64_unpacked ABI builtins always co-exist with the packed API regardless of
+ * this flag.
  */
 
 #if defined(__CUDA_LIBDEVICE__)
@@ -312,13 +312,12 @@ enum struct __fpemu_rounding
 // constexpr uint64_t bitwidth = (MANTISSA_WIDTH + EXTRA_BITS);
 /* Exponent bias is 2^(11-1) -1 */
 /* fp64 mantissa is 52 */
-constexpr uint64_t __fpemu_mantissa_width = 52;
-constexpr uint64_t __fpemu_exponent_mask  = _CCCL_FPEMU_EXP_64;
-constexpr uint64_t __fpemu_mantissa_mask  = _CCCL_FPEMU_MANT_64;
-constexpr uint32_t __fpemu_extra_bits     = 9;
-constexpr uint32_t __fpemu_bias           = 1023;
-constexpr uint32_t __fpemu_inf_zero       = 0x00007ff0 - __fpemu_bias - 2048 - 1 + 0xC;
-; // - 128
+inline constexpr uint64_t __fpemu_mantissa_width = 52;
+inline constexpr uint64_t __fpemu_exponent_mask  = _CCCL_FPEMU_EXP_64;
+inline constexpr uint64_t __fpemu_mantissa_mask  = _CCCL_FPEMU_MANT_64;
+inline constexpr uint32_t __fpemu_extra_bits     = 9;
+inline constexpr uint32_t __fpemu_bias           = 1023;
+inline constexpr uint32_t __fpemu_inf_zero       = 0x00007ff0 - __fpemu_bias - 2048 - 1 + 0xC; // - 128
 
 //! @brief Enumeration for classifying floating point numbers
 //!
@@ -378,11 +377,11 @@ struct __uint32x2
   uint32_t x[2];
 };
 
-//! @brief Structure representing a 64-bit integer split into two 32-bit parts
+//! @brief Structure representing a 128-bit integer split into two 64-bit parts
 //!
-//! This structure is used to store a 64-bit integer as two 32-bit parts,
-//! which is useful for certain operations that require 64-bit arithmetic
-//! but can be performed by 32-bit operations.
+//! This structure is used to store a 128-bit integer as two 64-bit parts,
+//! which is useful for certain operations that require 128-bit arithmetic
+//! but can be performed by 64-bit operations.
 struct __uint64x2
 {
   uint64_t x[2];
@@ -653,8 +652,10 @@ _CCCL_TRIVIAL_API __uint32x2 __mul_64(__uint32x2 __a, __uint32x2 __b) noexcept
   __res = ::cuda::std::bit_cast<__uint32x2>(__res64);
 #else
   // Split inputs into 32-bit parts
-  uint32_t __alo = __a.x[0], __ahi = __a.x[1];
-  uint32_t __blo = __b.x[0], __bhi = __b.x[1];
+  uint32_t __alo = __a.x[0];
+  uint32_t __ahi = __a.x[1];
+  uint32_t __blo = __b.x[0];
+  uint32_t __bhi = __b.x[1];
 
   // Compute partial products that contribute to high 64 bits
   uint64_t __lo_hi = uint64_t(__alo) * __bhi; // (a.lo * b.hi)
@@ -702,8 +703,10 @@ _CCCL_TRIVIAL_API __uint32x4 __mul_128(__uint32x2 __a, __uint32x2 __b) noexcept
   __uint32x4 __res;
 
   // Split inputs into 32-bit parts
-  uint32_t __alo = __a.x[0], __ahi = __a.x[1];
-  uint32_t __blo = __b.x[0], __bhi = __b.x[1];
+  uint32_t __alo = __a.x[0];
+  uint32_t __ahi = __a.x[1];
+  uint32_t __blo = __b.x[0];
+  uint32_t __bhi = __b.x[1];
 
   // Compute partial products
   uint64_t __lo_lo = uint64_t(__alo) * __blo; // (a.lo * b.lo)
