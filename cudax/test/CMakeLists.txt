@@ -143,6 +143,35 @@ cudax_add_catch2_test(test_target cuco.hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )
 
+# cudax_add_cuco_fail_test
+function(cudax_add_cuco_fail_test target_name_var test_name source)
+  set(test_target cudax.test.${test_name})
+
+  cccl_add_executable(
+    ${test_target}
+    SOURCES ${source}
+    NO_METATARGETS
+    NO_CLANG_TIDY
+  )
+  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
+  cccl_add_xfail_compile_target_test(
+    ${test_target}
+    SOURCE_FILE "${source}"
+    ERROR_REGEX_LABEL "expected-error"
+  )
+
+  set(${target_name_var} ${test_target} PARENT_SCOPE)
+endfunction()
+
+# Expected-failure compile tests (_fail.cu convention)
+cudax_add_cuco_fail_test(test_target cuco.fixed_capacity_map.key_size_fail
+  cuco/fixed_capacity_map/test_key_size_fail.cu
+)
+
+cudax_add_cuco_fail_test(test_target cuco.fixed_capacity_map.slot_size_fail
+  cuco/fixed_capacity_map/test_slot_size_fail.cu
+)
+
 cudax_add_catch2_test(test_target green_context
     green_context/green_ctx_smoke.cu
 )
