@@ -426,7 +426,7 @@ _CCCL_HOST_API void __compute_histogram(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      __hist.begin(),
+      __hist.data(),
       __num_buckets,
       ::cuda::std::move(__op),
       __env);

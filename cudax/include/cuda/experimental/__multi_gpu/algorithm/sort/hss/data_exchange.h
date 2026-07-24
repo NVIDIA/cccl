@@ -61,16 +61,11 @@ namespace cuda::experimental::__detail::__hss_sort
 //! closest to `Ni/p` among the keys seen so far is set as the `i`-th splitter." The `(L, U)`
 //! bracket is Table 1's `L(i)` / `U(i)` (ranks of the largest sample key below / smallest
 //! sample key above `Ni/p`), whose realized keys delimit the splitter interval `I(i)`.
-//!
-//! Reads the functor's probe extrema and the input brackets; holds no mutable state.
-//!
-//! @tparam _Tp The key (value) type returned as the splitter.
-//! @tparam _Probe The probe iterator type from which unbounded endpoints are realized.
-template <class _Tp, class _ProbeIt>
+template <class _Tp>
 struct __finalize_splitters_fn
 {
-  _ProbeIt __first_probe;
-  _ProbeIt __last_probe;
+  const _Tp* __first_probe;
+  const _Tp* __last_probe;
 
   template <class _Tup>
   [[nodiscard]] _CCCL_DEVICE constexpr _Tp operator()(const _Tup& __tup) const noexcept
@@ -131,16 +126,12 @@ _CCCL_HOST_API void __data_exchange(
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
 
-  ::std::vector<__buffer_of<_Traits, _Tp>> __local_recvd;
-
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   __local_send_counts.reserve(__num_local_inputs);
   __local_recv_counts.reserve(__num_local_inputs);
   __local_h_send_counts.reserve(__num_local_inputs);
   __local_h_recv_counts.reserve(__num_local_inputs);
-
-  __local_recvd.reserve(__num_local_inputs);
 
   for (auto&& [__comm, __env, __resource, __input, __splitters] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs, __local_splitters))
@@ -152,7 +143,7 @@ _CCCL_HOST_API void __data_exchange(
     auto& __send_counts =
       __local_send_counts.emplace_back(__Ls.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
 
-    const auto __input_begin = ::cuda::std::ranges::begin(__input);
+    const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
 
     // Lazily reconstruct the finalized splitters (HSS Section 4.2.2 step (5), "the key
     // ranked closest to Ni/p ... is set as the ith splitter") on the fly instead of
@@ -165,11 +156,11 @@ _CCCL_HOST_API void __data_exchange(
     auto __splitter_it = ::cuda::make_transform_iterator(
       ::cuda::make_zip_iterator(
         ::cuda::make_transform_iterator(
-          ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm.size()}),
+          ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm_size}),
         __Ls.begin(),
         __Us.begin()),
-      __finalize_splitters_fn<_Tp, ::cuda::std::remove_cvref_t<decltype(__probes.begin())>>{
-        __probes.begin(), __probes.end() - 1});
+      __finalize_splitters_fn<_Tp>{
+        ::cuda::std::to_address(__probes.data()), ::cuda::std::to_address(__probes.end() - 1)});
 
     // Route this rank's local keys to destination ranks via the splitter keys: the Data
     // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
@@ -180,13 +171,14 @@ _CCCL_HOST_API void __data_exchange(
     auto __op = ::cuda::experimental::__detail::__hss_sort::__bucket_count_fn<
       ::cuda::std::remove_cvref_t<decltype(__input_begin)>,
       ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
-      _BinaryOp>{__input_begin, ::cuda::std::ranges::end(__input), __splitter_it, __Ls.size(), __cmp};
+      _BinaryOp>{
+      __input_begin, ::cuda::std::to_address(::cuda::std::ranges::end(__input)), __splitter_it, __Ls.size(), __cmp};
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      __send_counts.begin(),
+      __send_counts.data(),
       __comm_size,
       ::cuda::std::move(__op),
       __env);
@@ -207,7 +199,9 @@ _CCCL_HOST_API void __data_exchange(
 
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
+  ::std::vector<__buffer_of<_Traits, _Tp>> __local_recvd;
 
+  __local_recvd.reserve(__num_local_inputs);
   __local_h_send_displs.reserve(__num_local_inputs);
   __local_h_recv_displs.reserve(__num_local_inputs);
   for (auto&& [__comm, __resource, __env, __send_counts, __recv_counts] :
@@ -294,7 +288,8 @@ _CCCL_HOST_API void __data_exchange(
     // Don't use __tmp and instead write directly to __inputs
     auto __tmp = __buffer_of<_Traits, _Tp>{__recvd.__make_empty_like(0)};
 
-    __merge_k_way<_Traits>(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
+    ::cuda::experimental::__detail::__hss_sort::__merge_k_way<_Traits>(
+      __comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
 
     ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__inputs, __tmp.size());
 

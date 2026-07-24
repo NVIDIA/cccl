@@ -30,15 +30,15 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/zip_view.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/data_exchange.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/histogramming.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/local_setup.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/rebalance.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
 #include <cuda/experimental/__utility/result_policy.cuh>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -62,7 +62,7 @@ namespace cuda::experimental::__detail::__hss_sort
 //! @param[in] __envs The range of per-rank execution environments (one stream each).
 //! @param[in,out] __local_inputs The range of per-rank local key ranges, sorted in place.
 //! @param[in] __cmp The comparator defining the sorted order.
-template <class _Traits, class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
+template <class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
 _CCCL_HOST_API void __execute(
   const __result_policy_base<_Policy>&,
   _CommRange&& __comms,
@@ -87,6 +87,9 @@ _CCCL_HOST_API void __execute(
     return;
   }
 
+  using _Tp =
+    ::cuda::std::ranges::range_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
+
   // First and foremost, kick off the local sorts...
   for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
   {
@@ -107,6 +110,9 @@ _CCCL_HOST_API void __execute(
     return;
   }
 
+  using _Env    = ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_EnvRange>>;
+  using _Traits = ::cuda::experimental::__detail::__hss_sort::__hss_traits<_Tp, _Env, _BinaryOp>;
+
   const auto __setup =
     ::cuda::experimental::__detail::__hss_sort::__local_setup<_Traits>(__comms, __envs, __local_inputs, __comm_size);
 
@@ -116,9 +122,8 @@ _CCCL_HOST_API void __execute(
   }
 
   {
-    const ::std::vector<typename _Traits::__per_comm_splitters_type> __local_splitters =
-      ::cuda::experimental::__detail::__hss_sort::__histogramming_phase<_Traits>(
-        __setup, __comms, __envs, __local_inputs, __cmp);
+    const auto __local_splitters = ::cuda::experimental::__detail::__hss_sort::__histogramming_phase<_Traits>(
+      __setup, __comms, __envs, __local_inputs, __cmp);
 
     ::cuda::experimental::__detail::__hss_sort::__data_exchange<_Traits>(
       __setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
