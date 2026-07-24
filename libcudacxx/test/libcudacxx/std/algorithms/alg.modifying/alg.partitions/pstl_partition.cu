@@ -19,6 +19,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
@@ -34,15 +35,6 @@
 
 inline constexpr int size = 1000;
 
-template <class T>
-struct is_even
-{
-  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T value) const noexcept
-  {
-    return value % 2 == 0;
-  }
-};
-
 template <class Policy, class T>
 void test_partition(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -50,13 +42,13 @@ void test_partition(const Policy& policy, c2h::device_vector<T>& input)
   const auto mid = size / 2;
 
   { // Empty does not access anything
-    auto res = cuda::std::partition(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), is_even<T>{});
+    auto res = cuda::std::partition(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), cuda::__is_even{});
     CHECK(res == nullptr);
   }
 
   thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
   { // contiguous
-    auto res = cuda::std::partition(policy, input.begin(), input.end(), is_even<T>{});
+    auto res = cuda::std::partition(policy, input.begin(), input.end(), cuda::__is_even{});
     CHECK(res == cuda::std::next(input.begin(), mid));
     CHECK(cuda::std::equal(
       policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(0)}, 2}));
@@ -68,7 +60,7 @@ void test_partition(const Policy& policy, c2h::device_vector<T>& input)
   thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
   { // random access
     auto res =
-      cuda::std::partition(policy, random_access_iterator{raw}, random_access_iterator{raw + size}, is_even<T>{});
+      cuda::std::partition(policy, random_access_iterator{raw}, random_access_iterator{raw + size}, cuda::__is_even{});
     CHECK(res == random_access_iterator{raw + mid});
     CHECK(cuda::std::equal(policy,
                            input.begin(),
@@ -83,7 +75,7 @@ void test_partition(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
   { // converting predicate
-    auto res = cuda::std::partition(policy, input.begin(), input.end(), is_even<long>{});
+    auto res = cuda::std::partition(policy, input.begin(), input.end(), cuda::__is_even{});
     CHECK(res == cuda::std::next(input.begin(), mid));
     CHECK(cuda::std::equal(
       policy, input.begin(), res, cuda::strided_iterator{cuda::counting_iterator{static_cast<T>(0)}, 2}));

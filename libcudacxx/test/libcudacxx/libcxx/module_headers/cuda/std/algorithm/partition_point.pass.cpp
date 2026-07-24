@@ -8,23 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/functional>
 #include <cuda/std/algorithm.partition_point.h>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-struct partition_point_is_even
-{
-  TEST_FUNC constexpr bool operator()(int x) const
-  {
-    return x % 2 == 0;
-  }
-};
-
 TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 5, 7};
-  auto p            = cuda::std::partition_point(a, a + 4, partition_point_is_even{});
+  auto p            = cuda::std::partition_point(a, a + 4, cuda::__is_even{});
   assert(p == a + 2);
 
   return true;

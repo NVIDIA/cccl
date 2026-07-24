@@ -10,6 +10,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
@@ -54,21 +55,14 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, select_flagged_if);
 
 using custom_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 
-template <typename T>
-struct is_even_t
+struct is_even_t : cuda::__is_even
 {
-  __host__ __device__ bool operator()(T const& elem) const
-  {
-    return !(elem % 2);
-  }
-};
+  using __is_even::operator();
 
-template <>
-struct is_even_t<custom_t>
-{
-  __host__ __device__ bool operator()(custom_t elem) const
+  template <template <typename> class... Policies>
+  __host__ __device__ bool operator()(c2h::custom_type_t<Policies...> elem) const
   {
-    return !(elem.key % 2);
+    return cuda::__is_even{}(elem.key);
   }
 };
 
@@ -176,7 +170,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -217,7 +211,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
   c2h::device_vector<input_type> out(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), flags);
@@ -328,7 +322,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
   c2h::device_vector<input_type> in(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), flags);
@@ -436,7 +430,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -464,7 +458,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
