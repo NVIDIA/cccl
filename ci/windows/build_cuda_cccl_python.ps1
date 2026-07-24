@@ -224,10 +224,7 @@ function Invoke-Cuda13NestedBuild {
     )
 
     Write-Host ("About to invoke: docker " + ($dockerArgs -join ' '))
-    & docker @dockerArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Nested CUDA 13 wheel build failed'
-    }
+    Invoke-Checked { & docker @dockerArgs } 'Nested CUDA 13 wheel build failed'
 }
 
 function Build-CudaCcclWheel {
@@ -285,10 +282,7 @@ function Build-CudaCcclWheel {
     ) + $pipConfigArgs
 
     Write-Host ("python " + ($pythonArgs -join ' '))
-    & $PythonExe @pythonArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "Wheel build failed for CUDA $Major"
-    }
+    Invoke-Checked { & $PythonExe @pythonArgs } "Wheel build failed for CUDA $Major"
 
     # Normalise the wheel filename (append .cu12/.cu13) and prune duplicates.
     $builtWheel = Get-OnePathMatch -Path $outDir `
@@ -363,19 +357,13 @@ if ($DoMerge) {
     Write-Host "Found CUDA 13 wheel: $Cu13Wheel"
 
     Write-Host 'Merging CUDA wheels...'
-    & $PythonExe -m pip install wheel | Write-Host
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Failed to install wheel for merging'
-    }
+    Invoke-Checked { & $PythonExe -m pip install wheel | Write-Host } 'Failed to install wheel for merging'
 
     $WheelhouseMerged = Join-Path $RepoRoot 'wheelhouse_merged'
     ${null} = New-Item -ItemType Directory -Path $WheelhouseMerged -Force
 
     $mergePy = Join-Path $RepoRoot 'python/cuda_cccl/merge_cuda_wheels.py'
-    & $PythonExe $mergePy $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Merging wheels failed'
-    }
+    Invoke-Checked { & $PythonExe $mergePy $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged } 'Merging wheels failed'
 
     # Clean up the per‑major directories and move the merged wheel into the
     # final location.
@@ -426,10 +414,7 @@ if ($env:GITHUB_ACTIONS -and -not $SkipUpload) {
         Write-Host "Wheel artifact name: $wheelArtifactName"
 
         $uploadCmd = "ci/util/artifacts/upload.sh $wheelArtifactName 'wheelhouse/.*'"
-        & bash -lc $uploadCmd
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Wheel artifact upload failed'
-        }
+        Invoke-Checked { & bash -lc $uploadCmd } 'Wheel artifact upload failed'
     }
     finally {
         Pop-Location
