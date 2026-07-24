@@ -46,6 +46,22 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
+//! @brief Drive the complete multi-GPU HSS sort across all communicators.
+//!
+//! Top-level entry point that sequences the histogram-sort-with-sampling phases. Implements
+//! the algorithm defined in "Histogram Sort with Sampling" by Harsh
+//! et. al. (arxiv.org/abs/1803.01237, alternatively
+//! dl.acm.org/doi/10.1145/3323165.3323184)
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value, environment, and
+//!                 comparator types.
+//!
+//! @param[in] __result_policy_base The result-policy tag (must be `distributed_t`); its value is
+//!            unused.
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in,out] __local_inputs The range of per-rank local key ranges, sorted in place.
+//! @param[in] __cmp The comparator defining the sorted order.
 template <class _Traits, class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
 _CCCL_HOST_API void __execute(
   const __result_policy_base<_Policy>&,
@@ -71,7 +87,7 @@ _CCCL_HOST_API void __execute(
     return;
   }
 
-  // First and foremost, kick off the local sorts
+  // First and foremost, kick off the local sorts...
   for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
@@ -85,9 +101,9 @@ _CCCL_HOST_API void __execute(
 
   const auto __comm_size = ::cuda::std::ranges::begin(__comms)->size();
 
+  // ...so we can exit as early as possible in the single GPU case
   if (__comm_size == 1)
   {
-    // Single communicator, nothing to do we have already sorted
     return;
   }
 

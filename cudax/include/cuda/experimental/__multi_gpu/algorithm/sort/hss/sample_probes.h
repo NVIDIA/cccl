@@ -43,6 +43,24 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
+//! @brief Single-thread kernel that draws sample keys from the union of splitter intervals.
+//!
+//! Runs on exactly one grid thread (all others return immediately). It walks the per-splitter
+//! sampling intervals `__I_j`, and for each interval `[lo, hi)` locates the corresponding sorted
+//! sub-range of the local keys. Implements the per-round sampling of the paper's
+//! histogram-sort-with-sampling loop.
+//!
+//!
+//! @param[in] __config The launch configuration used to compute the thread's grid rank.
+//! @param[in] __gen The Philox random engine used for sampling.
+//! @param[in] __prob The per-key sampling probability.
+//! @param[in] __begin Pointer to the first local key; advanced internally across intervals.
+//! @param[in] __end Pointer one past the last local key.
+//! @param[in] __I_j The span of per-splitter `[lo, hi]` sampling intervals.
+//! @param[in] __cmp The comparator defining the sorted order.
+//! @param[out] __samples The span the drawn sample keys are written into.
+//! @param[out] __samples_size Receives the number of keys actually drawn.
+//
 // TODO(jfaibussowit):
 //
 // Parallelize with multiple threads (but not too many!). __I_j is O(p-1), so in
@@ -71,9 +89,8 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
   // By value so that load from global memory happens only once
   for (const auto [__lo, __hi] : __I_j)
   {
-    // Sample from the union of splitter intervals. Splitter intervals are
-    // disjoint or identical; lo_it skips an identical interval already covered
-    // by an earlier splitter.
+    // Sample from the union of splitter intervals. Splitter intervals are disjoint or
+    // identical; lo_it skips an identical interval already covered by an earlier splitter.
     const auto __last  = __hi.has_value() ? ::cuda::std::lower_bound(__begin, __end, *__hi, __cmp) : __end;
     const auto __first = __lo.has_value() ? ::cuda::std::lower_bound(__begin, __last, *__lo, __cmp) : __begin;
 
@@ -91,6 +108,16 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
   *__samples_size = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin());
 }
 
+//! @brief Launch the sampling kernel to draw sample keys from a rank's local input.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
+//!
+//! @param[in] __input The rank's sorted local key range.
+//! @param[in] __I_j The per-splitter `[lo, hi]` sampling intervals.
+//! @param[in] __sampling_probability The per-key sampling probability.
+//! @param[in] __cmp The comparator defining the sorted order.
+//! @param[out] __samples The buffer the drawn sample keys are written into.
+//! @param[out] __sample_size The buffer receiving the number of keys drawn.
 template <class _Traits, class _Tp, class _BinaryOp, class _InputRange>
 _CCCL_HOST_API void __sample_probes(
   _InputRange&& __input,

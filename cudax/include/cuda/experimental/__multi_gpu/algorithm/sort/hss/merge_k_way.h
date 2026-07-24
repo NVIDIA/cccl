@@ -40,7 +40,7 @@ namespace cuda::experimental::__detail::__hss_sort
 {
 // TODO(jfaibussowit):
 //
-// Horrifically inefficient!
+// Horrifically inefficient, needs to be replaced by a proper CUB primitive!
 template <class _Traits, class _Comm, class _Env>
 _CCCL_HOST_API void __merge_k_way(
   const _Comm& __comm,
@@ -56,7 +56,7 @@ _CCCL_HOST_API void __merge_k_way(
   {
     // TODO(jfaibussowit):
     //
-    // Handle properly
+    // Handle properly, currently we assume we can assume
     _CCCL_VERIFY(__displs.empty() || __displs.front() == 0, "Nonzero displacement for first entry");
     // 0 or 1 inputs, we just copy directly, nothing to merge
     *__ret = __data;

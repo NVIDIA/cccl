@@ -40,19 +40,28 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
-// cuda::buffer has no concept of size vs capacity. We need both below because
-// we want to be able to shrink a buffer without reallocating a new one.
+//! @brief Size/capacity-aware wrapper over `cuda::buffer` for the HSS sort phases.
+//!
+//! `cuda::buffer` conflates size with capacity, so shrinking it forces a reallocation. This
+//! wrapper adds a separate logical `size()` (`__actual_size_`) on top of the underlying
+//! buffer's physical `capacity()`, letting the HSS phases shrink a buffer in place and only
+//! reallocate on growth past the current capacity. All accessors report the logical size while
+//! the allocation itself is left intact on shrinkage.
+//!
+//! @tparam _Up The element type stored in the buffer.
+//! @tparam _Resource The memory resource type backing the underlying `cuda::buffer`.
 template <class _Up, class _Resource>
 struct __buffer
 {
+  //! @brief The underlying `cuda::buffer` type for element type `_Up2` under `_Resource`.
+  //!
+  //! @tparam _Up2 The element type of the underlying buffer.
   template <class _Up2>
   using __buffer_type_for = typename ::cuda::__buffer_type_for_props<_Up2, typename _Resource::default_queries>;
 
+  //! @brief The underlying `cuda::buffer` type for this wrapper's element type `_Up`.
   using __buff_type = __buffer_type_for<_Up>;
 
-  // The move operations reset the moved-from __actual_size_ to 0 so that a
-  // moved-from buffer reports size() == 0, matching the emptied underlying
-  // allocation.
   _CCCL_HOST_API __buffer(__buffer&& __other) noexcept
       : __buf_{::cuda::std::move(__other.__buf_)}
       , __actual_size_{::cuda::std::exchange(__other.__actual_size_, 0)}
@@ -75,8 +84,6 @@ struct __buffer
     return *this;
   }
 
-  // Recreate the most common constructors for buffer that we use below to
-  // avoid needing to call make_buffer() over and over again.
   template <class _Resource2, class _EnvT>
   _CCCL_HOST_API explicit __buffer(::cuda::stream_ref __stream, _Resource2&& __resource, const _EnvT& __env)
       : __buffer{__buff_type{__stream,
@@ -127,19 +134,23 @@ struct __buffer
     resize(__new_size, ::cuda::no_init);
   }
 
-  // Grow or shrink the buffer to __new_size. This is effectively
-  // std::vector::resize() except that it never touches original values. On
-  // growth it will allocate a new buffer with uninitialized values, while on
-  // shrinkage it will leave the original values as-is.
+  //! @brief Grow or shrink the buffer to `__new_size` without touching existing values.
+  //!
+  //! Behaves like `std::vector::resize` except it never initializes or preserves element
+  //! contents. On growth past `capacity()` it returns the current allocation to the memory
+  //! resource and allocates a fresh uninitialized one (preserving the stream and alignment);
+  //! on shrinkage it only lowers the logical size and leaves the existing allocation and its
+  //! values in place. Sets `__actual_size_` to `__new_size`.
+  //!
+  //! @param[in] __new_size The new logical element count.
   _CCCL_HOST_API void resize(::cuda::std::size_t __new_size, ::cuda::no_init_t)
   {
     if (__new_size > capacity())
     {
-      // Don't use __make_empty_like() here. Even if the current buffer
-      // doesn't say it can hold the new size, it's possible that the
-      // underlying allocation actually *is* big enough. The only thing that
-      // knows this is the memory resource, so we first return the existing
-      // buffer to the memory resource before creating the new one.
+      // Don't use __make_empty_like() here. Even if the current buffer doesn't say it can hold
+      // the new size, it's possible that the underlying allocation actually *is* big
+      // enough. The only thing that knows this is the memory resource, so we first return the
+      // existing buffer to the memory resource before creating the new one.
       const auto __stream = __get().stream();
       auto __mr           = __get().memory_resource();
       const auto __align  = __get().alignment();
@@ -156,13 +167,24 @@ struct __buffer
     __actual_size_ = __new_size;
   }
 
+  //! @brief Allocate a fresh uninitialized underlying buffer of `__new_size` elements.
+  //!
+  //! Produces a new `cuda::buffer` matching this buffer's stream, memory resource, and
+  //! alignment but holding `__new_size` uninitialized elements of type `_Up2`. Does not modify
+  //! `*this`; returns the raw underlying buffer type rather than a wrapped `__buffer`.
+  //!
+  //! @tparam _Up2 The element type of the returned buffer (defaults to `_Up`).
+  //!
+  //! @param[in] __new_size The number of elements to allocate.
+  //!
+  //! @return A new uninitialized underlying buffer of `__new_size` elements.
   template <class _Up2 = _Up>
   [[nodiscard]] _CCCL_HOST_API __buffer_type_for<_Up2> __make_empty_like(::cuda::std::size_t __new_size) const
   {
     // TODO(jfaibussowit):
     //
-    // buffer ideally should have a make_buffer_like(source_buffer) helper
-    // that does this for us, similar to e.g. numpy.empty_like()
+    // buffer ideally should have a make_buffer_like(source_buffer) helper that does this for
+    // us, similar to e.g. numpy.empty_like()
     return __buffer_type_for<_Up2>{
       __get().stream(),
       __get().memory_resource(),
@@ -202,6 +224,7 @@ struct __buffer
     return __buf_.begin();
   }
 
+  // Note: honors *our* size, not the underlying buffer's
   [[nodiscard]] _CCCL_HOST_API auto end() noexcept
   {
     return begin() + size();
@@ -212,16 +235,28 @@ struct __buffer
     return __buf_.begin();
   }
 
+  // Note: honors *our* size, not the underlying buffer's
   [[nodiscard]] _CCCL_HOST_API auto end() const noexcept
   {
     return begin() + size();
   }
 
+  //! @brief The logical element count.
+  //!
+  //! Returns `__actual_size_`, which may be smaller than `capacity()` after a shrink.
+  //!
+  //! @return The number of logically valid elements.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
   {
     return __actual_size_;
   }
 
+  //! @brief The physical capacity of the allocation.
+  //!
+  //! Returns the size of the underlying `cuda::buffer`, the largest logical size representable
+  //! without reallocating.
+  //!
+  //! @return The number of elements the current allocation can hold.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t capacity() const noexcept
   {
     return __get().size();

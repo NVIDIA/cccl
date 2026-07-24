@@ -61,9 +61,21 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
-// Interval-narrowing functor for __update_intervals. Given (target_rank, L, U),
-// walks the local probe histogram and tightens the [L, U] bracket, returning
-// the updated interval and brackets.
+//! @brief Interval-narrowing functor that tightens one splitter's `[L, U]` rank bracket.
+//!
+//! Drives the CUB `DeviceTransform` in `__update_intervals`. For a single splitter it receives
+//! its target rank `Ni/p` (from `__ideal_rank_fn`) and its current `L` / `U` brackets, then walks
+//! the all-reduced probe histogram accumulating the global rank (the prefix sum of per-bucket
+//! counts). On an exact hit it collapses both brackets onto the found probe; otherwise it raises
+//! `L` toward the target and lowers `U` toward the target on an overshoot. It returns the
+//! tightened `(interval, L, U)`, where the interval is the pair of the two brackets' realized
+//! keys and delimits the next round's sampling range.
+//!
+//! `__hist_begin` holds the globally reduced per-probe counts and `__probes_begin` the
+//! matching probe keys.
+//!
+//! @tparam _Tp The key (value) type.
+//! @tparam _Bracket The `__bracket_type` (rank plus optional key) used for the `L` / `U` ends.
 template <class _Tp, class _Bracket>
 struct __update_intervals_fn
 {
@@ -107,6 +119,9 @@ struct __update_intervals_fn
     return ::cuda::std::make_tuple(::cuda::std::pair{__L_i.__key, __U_i.__key}, __L_i, __U_i);
   }
 };
+
+// Rank designated as the collective root for the HSS sampling phase.
+inline constexpr ::cuda::std::int32_t __ROOT_RANK = 0;
 
 template <class _Traits, class _CommRange, class _EnvRange>
 [[nodiscard]]
@@ -163,7 +178,7 @@ __allocate_histogramming_buffers(
         /*__samples=*/__buffer_of<_Traits, _Tp>{__stream, __resource, __env},
         /*__samples_size=*/
         __buffer_of<_Traits, ::cuda::std::size_t>{
-          __stream, __resource, /*__size=*/__comm.rank() == __root_rank ? __comm_size : 1, ::cuda::no_init, __env},
+          __stream, __resource, /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1, ::cuda::no_init, __env},
         /*__hist=*/__buffer_of<_Traits, ::cuda::std::uint64_t>{__stream, __resource, __env},
         ::cuda::std::move(__probe_counts)});
     }
@@ -172,6 +187,30 @@ __allocate_histogramming_buffers(
   return ::cuda::std::make_pair(::cuda::std::move(__local_splitters), ::cuda::std::move(__local_scratch));
 }
 
+//! @brief Gather each rank's samples to the root, merge them, and broadcast the shared probes.
+//!
+//! Collective heart of one sampling round. The root-only scratch pointers are hoisted in by
+//! the caller so their storage is reused across rounds (samples shrink  monotonically, so
+//! nothing reallocates after round one).
+//!
+//! Reads `__comms`, `__envs`, `__cmp`, and each scratch's `__samples` / `__samples_size`; mutates
+//! `*__local_scratch` (`__sample_sendcount`, `__probe_counts`), `*__local_splitters`
+//! (`__probes`), `*__root_recvcounts`, `*__root_displs`, and `*__root_all_samples`.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
+//!
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments.
+//! @param[in] __cmp The comparator defining the sorted order.
+//! @param[in,out] __local_scratch The per-comm sampling scratch; sample send counts and probe
+//!                counts are written.
+//! @param[in,out] __local_splitters The per-comm splitter state whose `__probes` receive the
+//!                merged, broadcast probe set.
+//! @param[in,out] __root_recvcounts The root's per-rank sample recvcounts, resized and refilled.
+//! @param[in,out] __root_displs The root's exclusive-scan sample displacements, cleared and
+//!                rebuilt each round.
+//! @param[in,out] __root_all_samples The root's gathered-sample buffer, engaged on the first
+//!                round and resized thereafter.
 template <class _Traits, class _CommRange, class _EnvRange, class _BinaryOp>
 _CCCL_HOST_API void __gather_merge_broadcast(
   _CommRange&& __comms,
@@ -185,6 +224,8 @@ _CCCL_HOST_API void __gather_merge_broadcast(
 {
   using _Tp = typename _Traits::__value_type;
 
+  // The root needs to know how big everyones sample vectors are so it can build its combined
+  // sample vector
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
@@ -192,7 +233,7 @@ _CCCL_HOST_API void __gather_merge_broadcast(
     {
       auto* const __ptr = __scratch.__samples_size.data();
 
-      __comm.gather(__guard, __ptr, __ptr, /*__count=*/1, __root_rank, __scratch.__samples_size.__get().stream());
+      __comm.gather(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__samples_size.__get().stream());
     }
   }
 
@@ -201,14 +242,14 @@ _CCCL_HOST_API void __gather_merge_broadcast(
     auto& __samples_size               = __scratch.__samples_size.__get();
     ::cuda::std::uint64_t& __sendcount = __scratch.__sample_sendcount;
 
-    if (__comm.rank() == __root_rank)
+    if (__comm.rank() == __ROOT_RANK)
     {
       // __root_recvcounts, __root_displs, and __root_all_samples are hoisted out of the
       // sampling loop and passed in by pointer so their allocations are paid once per sort
       // rather than once per round. __root_displs is filled via back_inserter, so it must
       // start each round empty; the recvcounts resize and the all_samples resize below reuse
-      // the existing storage (sizes are invariant / monotonically shrinking across rounds,
-      // so neither reallocates after round one).
+      // the existing storage (sizes are invariant / monotonically shrinking across rounds, so
+      // neither reallocates after round one).
       __root_recvcounts->resize(__samples_size.size());
 
       ::cuda::copy_bytes(
@@ -225,9 +266,8 @@ _CCCL_HOST_API void __gather_merge_broadcast(
       // Defer until the last possible moment
       __samples_size.stream().sync();
 
-      // __root_recv_counts[__root_rank] is exactly the root's send counts as
-      // well
-      __sendcount = (*__root_recvcounts)[__root_rank];
+      // __root_recv_counts[__root_rank] is exactly the root's send counts as well
+      __sendcount = (*__root_recvcounts)[__ROOT_RANK];
 
       // recvcounts is likely relatively small (it is on the order of O(ranks)).
       ::cuda::std::exclusive_scan(
@@ -277,10 +317,10 @@ _CCCL_HOST_API void __gather_merge_broadcast(
         __guard,
         __scratch.__samples.data(),
         __scratch.__sample_sendcount,
-        __comm.rank() == __root_rank ? __root_all_samples->value().data() : nullptr,
+        __comm.rank() == __ROOT_RANK ? __root_all_samples->value().data() : nullptr,
         __root_recvcounts->data(),
         __root_displs->data(),
-        __root_rank,
+        __ROOT_RANK,
         __scratch.__samples.__get().stream());
     }
   }
@@ -289,9 +329,9 @@ _CCCL_HOST_API void __gather_merge_broadcast(
   for (auto&& [__comm, __env, __splitters, __scratch] :
        ::cuda::std::ranges::views::zip(__comms, __envs, *__local_splitters, *__local_scratch))
   {
-    if (__comm.rank() == __root_rank)
+    if (__comm.rank() == __ROOT_RANK)
     {
-      __merge_k_way<_Traits>(
+      ::cuda::experimental::__detail::__hss_sort::__merge_k_way<_Traits>(
         __comm, __env, __root_all_samples->value(), *__root_recvcounts, *__root_displs, __cmp, &__splitters.__probes);
 
       __scratch.__probe_counts.front() = __splitters.__probes.size();
@@ -309,14 +349,14 @@ _CCCL_HOST_API void __gather_merge_broadcast(
     {
       auto* const __ptr = __scratch.__probe_counts.data();
 
-      __comm.broadcast(__guard, __ptr, __ptr, /*__count=*/1, __root_rank, __scratch.__probe_counts.stream());
+      __comm.broadcast(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__probe_counts.stream());
     }
   }
 
   for (auto&& [__comm, __splitters, __scratch] :
        ::cuda::std::ranges::views::zip(__comms, *__local_splitters, *__local_scratch))
   {
-    if (__comm.rank() != __root_rank)
+    if (__comm.rank() != __ROOT_RANK)
     {
       // Wait for comm so we can access probe_counts.front()
       __scratch.__probe_counts.stream().sync();
@@ -334,11 +374,28 @@ _CCCL_HOST_API void __gather_merge_broadcast(
       auto* const __ptr = __splitters.__probes.data();
 
       __comm.broadcast(
-        __guard, __ptr, __ptr, __scratch.__probe_counts.front(), __root_rank, __splitters.__probes.__get().stream());
+        __guard, __ptr, __ptr, __scratch.__probe_counts.front(), __ROOT_RANK, __splitters.__probes.__get().stream());
     }
   }
 }
 
+//! @brief Compute and globally reduce the per-probe histogram of the local keys.
+//!
+//! For each communicator it resizes `__scratch.__hist` to `num_probes + 1` buckets and runs one
+//! CUB `DeviceTransform` over a counting iterator, driving a `__bucket_count_fn` seeded with the
+//! rank's sorted local keys and the shared probe set, so bucket `b` receives the count of local
+//! keys falling between consecutive probes. It then all-reduces the per-comm histograms
+//! element-wise so every rank ends with the same global per-probe counts, which
+//! `__update_intervals` consumes.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
+//!
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in] __range_of_local_keys The range of per-rank sorted local key ranges.
+//! @param[in] __local_splitters The per-comm splitter state supplying the probe keys.
+//! @param[in] __cmp The comparator defining the sorted order.
+//! @param[in,out] __local_scratch The per-comm scratch whose `__hist` is filled and all-reduced.
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
 _CCCL_HOST_API void __compute_histogram(
   _CommRange&& __comms,
@@ -388,6 +445,24 @@ _CCCL_HOST_API void __compute_histogram(
   }
 }
 
+//! @brief Tighten each per-splitter `[L, U]` rank bracket from the all-reduced probe histogram.
+//!
+//! For every communicator this runs one CUB `DeviceTransform` over the splitter indices. Each
+//! invocation of `__update_intervals_fn` walks the local probe histogram, accumulates the
+//! global rank (the prefix sum of per-bucket counts), and narrows the bracket toward the ideal
+//! rank `Ni/p` supplied by `__ideal_rank_fn`. The realized keys of the updated `__Ls` / `__Us`
+//! brackets delimit the next round's sampling interval `__I_j`.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value, bracket, and buffer
+//!                 types for this sort.
+//!
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in] __N The global key count.
+//! @param[in,out] __local_splitters The per-comm bracket state whose `__Ls` / `__Us` / `__I_j`
+//!                are tightened.
+//! @param[in,out] __local_scratch The per-comm scratch whose `__I_j` interval column is
+//!                rewritten from the updated brackets.
 template <class _Traits, class _CommRange, class _EnvRange>
 _CCCL_HOST_API void __update_intervals(
   _CommRange&& __comms,
@@ -432,6 +507,18 @@ _CCCL_HOST_API void __update_intervals(
   }
 }
 
+//! @brief Run the full HSS histogramming (sampling) phase and return the finalized brackets.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value, bracket, and buffer
+//!                 types.
+//!
+//! @param[in] __setup The local-setup result supplying resources, comm size, and `N`.
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in] __local_inputs The range of per-rank sorted local key ranges.
+//! @param[in] __cmp The comparator defining the sorted order.
+//!
+//! @return The per-comm splitter-state vector with finalized brackets and shared probe sets.
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
 [[nodiscard]] _CCCL_HOST_API ::std::vector<typename _Traits::__per_comm_splitters_type> __histogramming_phase(
   const typename _Traits::__local_setup_result_type& __setup,
@@ -445,8 +532,8 @@ template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, c
   auto [__local_splitters, __local_scratch] =
     ::cuda::experimental::__detail::__hss_sort::__allocate_histogramming_buffers<_Traits>(__setup, __comms, __envs);
 
-  // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so
-  // their allocations are paid once per sort instead of once per round.
+  // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so their
+  // allocations are paid once per sort instead of once per round.
   //
   // recvcounts/displs are O(comm_size) host vectors of invariant size; all_samples is the
   // device buffer holding the gathered sample keys, which shrinks monotonically across
@@ -470,9 +557,9 @@ template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, c
     for (auto&& [__input, __scratch, __n_local] :
          ::cuda::std::ranges::views::zip(__local_inputs, __local_scratch, __setup.__local_original_sizes))
     {
-      // Each iteration we sample the union of splitter intervals, \gamma_j with a
-      // probability of __prob. For the first iteration, \gamma_j is the entire array, but for
-      // previous iterations it's impossible for us to tell (on the host), because:
+      // Each iteration we sample the union of splitter intervals, \gamma_j with a probability
+      // of __prob. For the first iteration, \gamma_j is the entire array, but for previous
+      // iterations it's impossible for us to tell (on the host), because:
       //
       // 1. We can't inspect the updated intervals __I_j, and
       // 2. We can't count how many of our elements actually lie within those updated

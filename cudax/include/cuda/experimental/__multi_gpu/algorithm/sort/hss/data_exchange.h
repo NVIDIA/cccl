@@ -50,36 +50,68 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
-// Splitter-selection functor used by __data_exchange (via the lazy __splitter_it
-// transform_iterator). Given (target_rank, L, U), returns the bracket endpoint key closest to
-// the target rank, realizing an unset (unbounded) endpoint from the probe extrema. This is HSS
-// step (5) of Section 4.2.2: "Once the histogramming phase finishes, the key ranked closest to
-// Ni/p among the keys seen so far is set as the ith splitter." The (L, U) bracket it consumes
-// is the Table 1 notation L(i)/U(i) (ranks of the largest sample key below / smallest sample
-// key above the ideal rank Ni/p), whose realized keys delimit the splitter interval I(i) =
-// [I(L(i)), I(U(i))].
-template <class _Tp, class _Probe>
+//! @brief Splitter-selection functor that realizes the final splitter key from an `[L, U]`
+//!        bracket.
+//!
+//! Given a splitter's target rank `Ni/p` and its `L` / `U` brackets, it returns whichever
+//! bracket endpoint key is closest to the target rank, realizing an unset (unbounded) endpoint
+//! from the probe extrema (`__first_probe` / `__last_probe`).
+//!
+//! This is HSS Section 4.2.2 step (5): "Once the histogramming phase finishes, the key ranked
+//! closest to `Ni/p` among the keys seen so far is set as the `i`-th splitter." The `(L, U)`
+//! bracket is Table 1's `L(i)` / `U(i)` (ranks of the largest sample key below / smallest
+//! sample key above `Ni/p`), whose realized keys delimit the splitter interval `I(i)`.
+//!
+//! Reads the functor's probe extrema and the input brackets; holds no mutable state.
+//!
+//! @tparam _Tp The key (value) type returned as the splitter.
+//! @tparam _Probe The probe iterator type from which unbounded endpoints are realized.
+template <class _Tp, class _ProbeIt>
 struct __finalize_splitters_fn
 {
-  _Probe __first_probe;
-  _Probe __last_probe;
+  _ProbeIt __first_probe;
+  _ProbeIt __last_probe;
 
   template <class _Tup>
   [[nodiscard]] _CCCL_DEVICE constexpr _Tp operator()(const _Tup& __tup) const noexcept
   {
     const auto [__target_rank, __L_i, __U_i] = __tup;
-    // Pick the bracket endpoint closest to the target rank. The chosen key becomes the
-    // splitter used by data exchange.
-    const bool __use_L = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
+    const bool __use_L                       = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
 
+    // Note that L_i and U_i might not have values if we never found any global splitters among
+    // our values. In this case the "closest" is simply our extrema.
     if (__use_L)
     {
+      // Lower bound is closer to target
       return __L_i.__key.has_value() ? *__L_i.__key : *__first_probe;
     }
+    // Upper bound is closer to target
     return __U_i.__key.has_value() ? *__U_i.__key : *__last_probe;
   }
 };
 
+//! @brief Route every rank's local keys to their destination ranks and merge the received runs.
+//!
+//! The HSS Data Exchange phase (Section 3.1 step (3), reused unchanged per Section 3.3): "a key
+//! in range `[S(i), S(i + 1))` goes to processor `i`". For each communicator it counts, per
+//! destination bucket, how many local keys fall between consecutive finalized splitters. The
+//! finalized splitters are reconstructed lazily on the fly by fusing `__finalize_splitters_fn`
+//! into a `transform_iterator` (`__splitter_it`) fed to a `__bucket_count_fn`, so one CUB
+//! `DeviceTransform` produces the send counts without a separate splitter buffer or launch.
+//!
+//! `__local_inputs` must be locally sorted and `__local_splitters` carry finalized brackets
+//! from `__histogramming_phase`.
+//!
+//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
+//!
+//! @param[in] __setup The local-setup result supplying resources, comm size, and `N`.
+//! @param[in] __comms The range of per-rank communicators.
+//! @param[in] __envs The range of per-rank execution environments (one stream each).
+//! @param[in,out] __local_inputs The range of per-rank local key ranges, overwritten with the
+//!                exchanged and merged keys.
+//! @param[in] __cmp The comparator defining the sorted order.
+//! @param[in] __local_splitters The per-comm splitter state supplying the finalized brackets and
+//!            probes.
 template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
 _CCCL_HOST_API void __data_exchange(
   const typename _Traits::__local_setup_result_type& __setup,
