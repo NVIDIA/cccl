@@ -9,6 +9,7 @@
 
 #include <cuda/numeric>
 #include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -48,14 +49,22 @@ TEST_FUNC constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref expected)
 template <class Res, class L, class R>
 TEST_FUNC constexpr bool test_type()
 {
+  using cuda::std::is_same_v;
+  using cuda::std::is_signed_v;
+  using cuda::std::is_unsigned_v;
   static_assert(
-    cuda::std::is_same_v<decltype(cuda::mul_overflow(L{}, R{})), cuda::overflow_result<cuda::std::common_type_t<L, R>>>);
-  static_assert(cuda::std::is_same_v<decltype(cuda::mul_overflow<Res>(L{}, R{})), cuda::overflow_result<Res>>);
-  static_assert(cuda::std::is_same_v<decltype(cuda::mul_overflow(cuda::std::declval<Res&>(), L{}, R{})), bool>);
+    is_same_v<decltype(cuda::mul_overflow(L{}, R{})), cuda::overflow_result<cuda::std::common_type_t<L, R>>>);
+  static_assert(is_same_v<decltype(cuda::mul_overflow<Res>(L{}, R{})), cuda::overflow_result<Res>>);
+  static_assert(is_same_v<decltype(cuda::mul_overflow(cuda::std::declval<Res&>(), L{}, R{})), bool>);
 
   static_assert(noexcept(cuda::mul_overflow(L{}, R{})));
   static_assert(noexcept(cuda::mul_overflow<Res>(L{}, R{})));
   static_assert(noexcept(cuda::mul_overflow(cuda::std::declval<Res&>(), L{}, R{})));
+
+  [[maybe_unused]] constexpr auto lhs_min = cuda::std::numeric_limits<L>::min();
+  [[maybe_unused]] constexpr auto lhs_max = cuda::std::numeric_limits<L>::max();
+  [[maybe_unused]] constexpr auto rhs_min = cuda::std::numeric_limits<R>::min();
+  [[maybe_unused]] constexpr auto rhs_max = cuda::std::numeric_limits<R>::max();
 
   // 1. Multiplying zeros should always result in zero
   test_mul_overflow<Res, L, R>(0, 0, 0);
@@ -67,15 +76,13 @@ TEST_FUNC constexpr bool test_type()
   test_mul_overflow<Res, L, R>(-1, -1, 1);
 
   // 3. Test T(-1) * T_MIN case
-  if constexpr (cuda::std::is_signed_v<L> && cuda::std::is_signed_v<R>)
+  if constexpr (is_signed_v<L> && is_signed_v<R>)
   {
     // nvcc 12.0 seems to have some issues during constant evaluation of this test. Works fine with later versions, so
     // let's just disable this test.
 #if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
-    test_mul_overflow<Res, L, R>(
-      cuda::std::numeric_limits<L>::min(), -1, cuda::uabs(cuda::std::numeric_limits<L>::min()));
-    test_mul_overflow<Res, L, R>(
-      -1, cuda::std::numeric_limits<R>::min(), cuda::uabs(cuda::std::numeric_limits<R>::min()));
+    test_mul_overflow<Res, L, R>(lhs_min, -1, cuda::uabs(lhs_min));
+    test_mul_overflow<Res, L, R>(-1, rhs_min, cuda::uabs(rhs_min));
 #endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   }
 
@@ -83,16 +90,42 @@ TEST_FUNC constexpr bool test_type()
   test_mul_overflow<Res, L, R>(17, 14, 238);
   test_mul_overflow<Res, L, R>(-254, 127, -32258);
   test_mul_overflow<Res, L, R>(1657, -13748, -22780436);
+  test_mul_overflow<Res, L, R>(-50000, -50000, 2500000000);
   test_mul_overflow<Res, L, R>(-2147483647, 4294967295, -9223372030412324865);
-  if constexpr (cuda::std::is_unsigned_v<L> && cuda::std::is_unsigned_v<Res>)
+  if constexpr (is_unsigned_v<L> && is_unsigned_v<Res>)
   {
-    test_mul_overflow<Res, L, R>(
-      cuda::std::numeric_limits<L>::max(),
-      4,
-      static_cast<Res>(cuda::std::numeric_limits<L>::max()) << 2,
-      sizeof(L) >= sizeof(Res));
+    test_mul_overflow<Res, L, R>(lhs_max, 4, static_cast<Res>(lhs_max) << 2, sizeof(L) >= sizeof(Res));
   }
 
+  // 5. Test T_MIN * T_MIN and T_MAX * T_MAX
+  if constexpr (sizeof(L) < sizeof(cuda::std::__cccl_uintmax_t) && sizeof(R) < sizeof(cuda::std::__cccl_uintmax_t))
+  {
+    constexpr auto __max_nbits = cuda::std::max(cuda::std::__num_bits_v<L>, cuda::std::__num_bits_v<R>);
+    using _Up                  = cuda::std::__make_nbit_int_t<2 * __max_nbits, is_signed_v<L> || is_signed_v<R>>;
+    test_mul_overflow<Res, L, R>(lhs_min, rhs_min, _Up{lhs_min} * _Up{rhs_min});
+    test_mul_overflow<Res, L, R>(lhs_max, rhs_max, _Up{lhs_max} * _Up{rhs_max});
+  }
+
+#if _CCCL_HAS_INT128()
+  // 6. Test __uint128_t multiplication and overflow cases
+  if constexpr (is_same_v<Res, __uint128_t> && is_same_v<R, __uint128_t>)
+  {
+    if constexpr (is_same_v<L, __uint128_t>)
+    {
+      test_mul_overflow<Res, L, R>(
+        ~0ull, // 2^64 - 1
+        1ull << 63, // 2^63
+        (__uint128_t{0x7fffffffffffffffULL} << 64) | __uint128_t{0x8000000000000000ULL},
+        false);
+      test_mul_overflow<Res, L, R>(__uint128_t{1} << 100, __uint128_t{1} << 100, 0, true);
+      test_mul_overflow<Res, L, R>(lhs_max, 2, lhs_max - 1, true);
+    }
+    else if constexpr (is_same_v<L, unsigned long long>)
+    {
+      test_mul_overflow<Res, L, R>(~0ull, __uint128_t{5} << 100, __uint128_t{0xffffffb000000000ULL} << 64, true);
+    }
+  }
+#endif // _CCCL_HAS_INT128()
   return true;
 }
 
@@ -102,7 +135,7 @@ using TypeList = cuda::std::tuple<
   short,
   unsigned short,
   int,
-  unsigned long,
+  unsigned int,
   long,
   unsigned long,
   long long,
