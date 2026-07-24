@@ -177,7 +177,7 @@ struct DeviceScan
             typename NumItemsT,
             typename EnvT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
-    InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, EnvT env)
+    InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, const EnvT& env)
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
@@ -456,7 +456,7 @@ struct DeviceScan
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
@@ -605,7 +605,7 @@ struct DeviceScan
             typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ExclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
+  ExclusiveSum(IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
     return ExclusiveSum(d_data, d_data, num_items, env);
   }
@@ -835,7 +835,7 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init_value,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
@@ -1023,7 +1023,7 @@ struct DeviceScan
             typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, EnvT env = {})
+  ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, const EnvT& env = {})
   {
     return ExclusiveScan(d_data, d_data, scan_op, init_value, num_items, env);
   }
@@ -1365,7 +1365,7 @@ struct DeviceScan
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     return ExclusiveScan(d_data, d_data, scan_op, init_value, num_items, env);
   }
@@ -1458,7 +1458,7 @@ struct DeviceScan
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
@@ -1712,7 +1712,7 @@ struct DeviceScan
             typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  InclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
+  InclusiveSum(IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
     return InclusiveSum(d_data, d_data, num_items, env);
   }
@@ -1777,7 +1777,7 @@ struct DeviceScan
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSum");
 
@@ -2161,7 +2161,7 @@ struct DeviceScan
             typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
+  InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
     return InclusiveScan(d_data, d_data, scan_op, num_items, env);
   }
@@ -2233,7 +2233,7 @@ struct DeviceScan
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
+  InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScan");
 
@@ -2323,7 +2323,7 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init_value,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
@@ -2419,7 +2419,7 @@ struct DeviceScan
     ScanOpT scan_op,
     const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
@@ -3225,7 +3225,7 @@ struct DeviceScan
     ValuesOutputIteratorT d_values_out,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    EnvT env                = {})
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
@@ -3353,7 +3353,7 @@ struct DeviceScan
     InitValueT init_value,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    EnvT env                = {})
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
@@ -3451,7 +3451,7 @@ struct DeviceScan
     ValuesOutputIteratorT d_values_out,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    EnvT env                = {})
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
@@ -3567,7 +3567,7 @@ struct DeviceScan
     ScanOpT scan_op,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    EnvT env                = {})
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 

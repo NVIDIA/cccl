@@ -5,6 +5,7 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
+#include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
@@ -257,6 +258,23 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with user provided me
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_subtract_left_copy(policy);
   }
+}
+
+C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy accepts cuda::device_buffer input",
+         "[adjacent_difference][device]")
+{
+  using type = std::int32_t;
+
+  cuda::stream stream{cuda::devices[0]};
+  auto input = cuda::make_device_buffer<type>(stream, cuda::devices[0], {2, 5, 9, 14, 20});
+  c2h::device_vector<type> output(input.size(), thrust::no_init);
+  const auto output_it = thrust::raw_pointer_cast(output.data());
+
+  adjacent_difference_subtract_left_copy(input.begin(), output_it, input.size(), cuda::std::minus<>{}, stream.get());
+  stream.sync();
+
+  const c2h::host_vector<type> expected{2, 3, 4, 5, 6};
+  REQUIRE(output == expected);
 }
 #endif // TEST_LAUNCH == 0
 
