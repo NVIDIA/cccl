@@ -15,6 +15,9 @@ shared_resource
 around with shared ownership semantics while avoiding lifetime issues. This is useful when multiple objects, like `cuda::buffer <libcudacxx-runtime-buffer-buffer>` must share the same
 resource instance.
 
+``cuda::mr::make_shared_resource<Resource>(args...)`` constructs a ``shared_resource<Resource>`` that owns a newly
+constructed ``Resource``. ``Resource`` must satisfy ``cuda::mr::synchronous_resource``.
+
 .. code:: cpp
 
    #include <cuda/devices>
@@ -38,6 +41,32 @@ resource instance.
      shared_mr.deallocate(stream, ptr1, 1024, 16);
      shared_mr2.deallocate(stream, ptr2, 2048, 16);
      // Resources are automatically cleaned up when last reference is destroyed
+   }
+
+get_memory_resource
+~~~~~~~~~~~~~~~~~~~
+.. _libcudacxx-extended-api-memory-resources-get-memory-resource:
+
+``cuda::mr::get_memory_resource`` is a customization point object that retrieves a memory resource from an object or
+execution environment.
+
+``cuda::mr::memory_resource_base<Derived>`` is a CRTP helper that makes a resource queryable by
+``cuda::mr::get_memory_resource`` when the resource is used as part of a composed execution environment.
+
+It supports three cases:
+
+- If the object is itself a synchronous resource, it returns that object.
+- If the object has a ``get_memory_resource()`` member, it calls that member.
+- Otherwise, if an execution environment supports ``query(cuda::mr::get_memory_resource)``, it calls that query.
+
+.. code:: cpp
+
+   #include <cuda/memory_resource>
+
+   template <class Env>
+   void* allocate_from_env(const Env& env, cuda::stream_ref stream, std::size_t size, std::size_t align) {
+     auto& resource = cuda::mr::get_memory_resource(env);
+     return resource.allocate(stream, size, align);
    }
 
 synchronous_resource_adapter
