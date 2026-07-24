@@ -302,7 +302,7 @@ Free-threaded Python
 
 .. important::
 
-   Free-threaded Python support is currently validated on Linux with the
+   Free-threaded Python support is currently validated with the
    ``minimal-cu12`` and ``minimal-cu13`` extras, which do not install Numba or
    Numba CUDA:
 
