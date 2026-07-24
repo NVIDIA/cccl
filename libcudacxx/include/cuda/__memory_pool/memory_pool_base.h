@@ -28,6 +28,7 @@
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -53,7 +54,7 @@ enum class __pool_attr_settable : bool
 {
 };
 
-template <::cudaMemPoolAttr _Attr, typename _Type, __pool_attr_settable _Settable>
+template <::cudaMemPoolAttr _Attr, typename _Type, __pool_attr_settable _Settable, typename _StorageType>
 struct __pool_attr_impl
 {
   using type = _Type;
@@ -65,15 +66,16 @@ struct __pool_attr_impl
 
   [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
   {
-    size_t __value = ::cuda::__driver::__mempoolGetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr));
+    const auto __value =
+      ::cuda::__driver::__mempoolGetAttribute<_StorageType>(__pool, static_cast<::CUmemPool_attribute>(_Attr));
     return static_cast<type>(__value);
   }
 
   static void set(::cudaMemPool_t __pool, type __value)
   {
-    size_t __value_copy = __value;
     if constexpr (_Settable == __pool_attr_settable{true})
     {
+      _StorageType __value_copy = static_cast<_StorageType>(__value);
       ::cuda::__driver::__mempoolSetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value_copy);
     }
     else
@@ -84,35 +86,76 @@ struct __pool_attr_impl
 };
 
 template <::cudaMemPoolAttr _Attr>
-struct __pool_attr : __pool_attr_impl<_Attr, size_t, __pool_attr_settable{true}>
+struct __pool_attr : __pool_attr_impl<_Attr, size_t, __pool_attr_settable{true}, ::cuuint64_t>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseFollowEventDependencies>
-    : __pool_attr_impl<::cudaMemPoolReuseFollowEventDependencies, bool, __pool_attr_settable{true}>
+    : __pool_attr_impl<::cudaMemPoolReuseFollowEventDependencies, bool, __pool_attr_settable{true}, int>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseAllowOpportunistic>
-    : __pool_attr_impl<::cudaMemPoolReuseAllowOpportunistic, bool, __pool_attr_settable{true}>
+    : __pool_attr_impl<::cudaMemPoolReuseAllowOpportunistic, bool, __pool_attr_settable{true}, int>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseAllowInternalDependencies>
-    : __pool_attr_impl<::cudaMemPoolReuseAllowInternalDependencies, bool, __pool_attr_settable{true}>
+    : __pool_attr_impl<::cudaMemPoolReuseAllowInternalDependencies, bool, __pool_attr_settable{true}, int>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemCurrent>
-    : __pool_attr_impl<::cudaMemPoolAttrReservedMemCurrent, size_t, __pool_attr_settable{false}>
+    : __pool_attr_impl<::cudaMemPoolAttrReservedMemCurrent, size_t, __pool_attr_settable{false}, ::cuuint64_t>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrUsedMemCurrent>
-    : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, __pool_attr_settable{false}>
+    : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, __pool_attr_settable{false}, ::cuuint64_t>
 {};
 
-inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, size_t __value)
+#  if _CCCL_CTK_AT_LEAST(13, 3)
+template <>
+struct __pool_attr<::cudaMemPoolAttrAllocationType>
+    : __pool_attr_impl<::cudaMemPoolAttrAllocationType,
+                       ::cudaMemAllocationType,
+                       __pool_attr_settable{false},
+                       ::CUmemAllocationType>
+{};
+
+template <>
+struct __pool_attr<::cudaMemPoolAttrExportHandleTypes>
+    : __pool_attr_impl<::cudaMemPoolAttrExportHandleTypes,
+                       ::cudaMemAllocationHandleType,
+                       __pool_attr_settable{false},
+                       ::CUmemAllocationHandleType>
+{};
+
+template <>
+struct __pool_attr<::cudaMemPoolAttrLocationId>
+    : __pool_attr_impl<::cudaMemPoolAttrLocationId, int, __pool_attr_settable{false}, int>
+{};
+
+template <>
+struct __pool_attr<::cudaMemPoolAttrLocationType>
+    : __pool_attr_impl<::cudaMemPoolAttrLocationType,
+                       ::cudaMemLocationType,
+                       __pool_attr_settable{false},
+                       ::CUmemLocationType>
+{};
+
+template <>
+struct __pool_attr<::cudaMemPoolAttrMaxPoolSize>
+    : __pool_attr_impl<::cudaMemPoolAttrMaxPoolSize, ::cuuint64_t, __pool_attr_settable{false}, ::cuuint64_t>
+{};
+
+template <>
+struct __pool_attr<::cudaMemPoolAttrHwDecompressEnabled>
+    : __pool_attr_impl<::cudaMemPoolAttrHwDecompressEnabled, bool, __pool_attr_settable{false}, int>
+{};
+#  endif // _CCCL_CTK_AT_LEAST(13, 3)
+
+inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, ::cuuint64_t __value)
 {
   if (__value != 0)
   {
@@ -123,7 +166,7 @@ inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_at
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
-    : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable{true}>
+    : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable{true}, ::cuuint64_t>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
@@ -133,7 +176,7 @@ struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
-    : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable{true}>
+    : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable{true}, ::cuuint64_t>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
@@ -177,6 +220,51 @@ static constexpr used_mem_current_t used_mem_current{};
 // The high water mark for the used memory in the pool.
 using used_mem_high_t = __pool_attr<::cudaMemPoolAttrUsedMemHigh>;
 static constexpr used_mem_high_t used_mem_high{};
+
+#  if _CCCL_CTK_AT_LEAST(13, 3)
+// The allocation type of the pool.
+using allocation_type_t = __pool_attr<::cudaMemPoolAttrAllocationType>;
+static constexpr allocation_type_t allocation_type{};
+
+// The export handle types available for the pool.
+using export_handle_types_t = __pool_attr<::cudaMemPoolAttrExportHandleTypes>;
+static constexpr export_handle_types_t export_handle_types{};
+
+// The location id of the pool.
+using location_id_t = __pool_attr<::cudaMemPoolAttrLocationId>;
+static constexpr location_id_t location_id{};
+
+// The location type of the pool.
+using location_type_t = __pool_attr<::cudaMemPoolAttrLocationType>;
+static constexpr location_type_t location_type{};
+
+// The location of the pool.
+struct location_t
+{
+  using type = ::cuda::memory_location;
+
+  [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
+  {
+    return type{static_cast<::cudaMemLocationType>(::cuda::__driver::__mempoolGetAttribute<::CUmemLocationType>(
+                  __pool, ::CU_MEMPOOL_ATTR_LOCATION_TYPE)),
+                ::cuda::__driver::__mempoolGetAttribute<int>(__pool, ::CU_MEMPOOL_ATTR_LOCATION_ID)};
+  }
+
+  _CCCL_HOST_API static void set(::cudaMemPool_t, type)
+  {
+    _CCCL_THROW(::std::invalid_argument, "This attribute can't be set");
+  }
+};
+static constexpr location_t location{};
+
+// The maximum size of the pool.
+using max_pool_size_t = __pool_attr<::cudaMemPoolAttrMaxPoolSize>;
+static constexpr max_pool_size_t max_pool_size{};
+
+// Whether hardware decompression is enabled for the pool.
+using hw_decompress_enabled_t = __pool_attr<::cudaMemPoolAttrHwDecompressEnabled>;
+static constexpr hw_decompress_enabled_t hw_decompress_enabled{};
+#  endif // _CCCL_CTK_AT_LEAST(13, 3)
 }; // namespace memory_pool_attributes
 
 inline bool __is_host_memory_pool_supported()

@@ -68,6 +68,44 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
+#if _CCCL_CTK_AT_LEAST(13, 3)
+template <typename T>
+[[nodiscard]] static T get_raw_attribute(const ::cudaMemPool_t pool, const ::cudaMemPoolAttr attr)
+{
+  T value{};
+  _CCCL_TRY_CUDA_API(::cudaMemPoolGetAttribute, "Failed to call cudaMemPoolGetAttribute", pool, attr, &value);
+  return value;
+}
+
+static inline void check_default_device_pool_attributes(const cuda::device_memory_pool_ref pool, const int device)
+{
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type)
+          == get_raw_attribute<cudaMemAllocationType>(pool.get(), ::cudaMemPoolAttrAllocationType));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type) == ::cudaMemAllocationTypePinned);
+
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types)
+          == get_raw_attribute<cudaMemAllocationHandleType>(pool.get(), ::cudaMemPoolAttrExportHandleTypes));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id)
+          == get_raw_attribute<int>(pool.get(), ::cudaMemPoolAttrLocationId));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == device);
+
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type)
+          == get_raw_attribute<cudaMemLocationType>(pool.get(), ::cudaMemPoolAttrLocationType));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == ::cudaMemLocationTypeDevice);
+
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == get_raw_attribute<int>(pool.get(), ::cudaMemPoolAttrLocationId));
+  REQUIRE(location.id == device);
+  REQUIRE(location.type == get_raw_attribute<cudaMemLocationType>(pool.get(), ::cudaMemPoolAttrLocationType));
+  REQUIRE(location.type == ::cudaMemLocationTypeDevice);
+
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size)
+          == get_raw_attribute<::cuuint64_t>(pool.get(), ::cudaMemPoolAttrMaxPoolSize));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled)
+          == (get_raw_attribute<int>(pool.get(), ::cudaMemPoolAttrHwDecompressEnabled) != 0));
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
+
 C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 {
   test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
@@ -113,6 +151,14 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       ptr,
       ::cudaStream_t{nullptr});
   }
+
+#if _CCCL_CTK_AT_LEAST(13, 3)
+  SECTION("Default pool attributes")
+  {
+    test_resource default_pool = cuda::device_default_memory_pool(cuda::device_ref{current_device});
+    check_default_device_pool_attributes(default_pool, current_device);
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
 
   SECTION("Construct from mempool handle")
   {

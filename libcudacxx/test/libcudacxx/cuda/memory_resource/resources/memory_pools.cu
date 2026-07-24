@@ -58,6 +58,17 @@ static_assert(cuda::std::is_default_constructible<cuda::pinned_memory_pool>::val
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 static_assert(!cuda::std::is_default_constructible<cuda::device_memory_pool>::value);
 
+#if _CCCL_CTK_AT_LEAST(13, 3)
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::allocation_type_t::type, cudaMemAllocationType>);
+static_assert(
+  cuda::std::is_same_v<cuda::memory_pool_attributes::export_handle_types_t::type, cudaMemAllocationHandleType>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_id_t::type, int>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_type_t::type, cudaMemLocationType>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_t::type, cuda::memory_location>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::max_pool_size_t::type, ::cuuint64_t>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::hw_decompress_enabled_t::type, bool>);
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
+
 template <typename PoolType>
 PoolType construct_pool(cuda::memory_pool_properties props = {})
 {
@@ -114,6 +125,76 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
+#if _CCCL_CTK_AT_LEAST(13, 3)
+template <typename PoolType>
+static void
+check_creation_attributes(const PoolType& pool, const cuda::memory_pool_properties props, const int current_device)
+{
+  auto expected_allocation_type = ::cudaMemAllocationTypePinned;
+  auto expected_location_type   = ::cudaMemLocationTypeDevice;
+  auto expected_location_id     = current_device;
+
+#  if _CCCL_CTK_AT_LEAST(12, 9)
+  if constexpr (cuda::std::is_same_v<PoolType, cuda::pinned_memory_pool>)
+  {
+    expected_location_type = ::cudaMemLocationTypeHostNuma;
+    expected_location_id   = 0;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(12, 9)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  if constexpr (cuda::std::is_same_v<PoolType, cuda::managed_memory_pool>)
+  {
+    expected_allocation_type = ::cudaMemAllocationTypeManaged;
+    expected_location_type   = ::cudaMemLocationTypeNone;
+    expected_location_id     = 0;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == expected_location_id);
+  REQUIRE(location.type == expected_location_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
+  REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
+}
+
+#  if _CCCL_HAS_EXCEPTIONS()
+template <typename PoolType, typename Attr>
+static void check_creation_attribute_is_read_only(PoolType& pool, const Attr attr)
+{
+  const auto value = pool.attribute(attr);
+  try
+  {
+    pool.set_attribute(attr, value);
+    CHECK(false);
+  }
+  catch (const ::std::invalid_argument& err)
+  {
+    CHECK(strcmp(err.what(), "This attribute can't be set") == 0);
+  }
+  catch (...)
+  {
+    CHECK(false);
+  }
+}
+
+template <typename PoolType>
+static void check_creation_attributes_are_read_only(PoolType& pool)
+{
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::allocation_type);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::export_handle_types);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location_id);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location_type);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::max_pool_size);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::hw_decompress_enabled);
+}
+#  endif // _CCCL_HAS_EXCEPTIONS()
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
+
 C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TEST_TYPES)
 {
   using memory_pool = TestType;
@@ -152,6 +233,11 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
+
+#if _CCCL_CTK_AT_LEAST(13, 3)
+    cuda::memory_pool_properties expected_props{};
+    check_creation_attributes(from_device, expected_props, current_device);
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
   }
 
   SECTION("Construct with empty properties")
@@ -170,6 +256,10 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
+
+#if _CCCL_CTK_AT_LEAST(13, 3)
+    check_creation_attributes(from_defaulted_properties, props, current_device);
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
   }
 
   SECTION("Construct with initial pool size")
@@ -188,6 +278,10 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
+
+#if _CCCL_CTK_AT_LEAST(13, 3)
+    check_creation_attributes(with_threshold, props, current_device);
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
   }
 
   SECTION("Take ownership of native handle")
@@ -276,6 +370,10 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
 
       // Ensure that we disable export
       CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
+
+#  if _CCCL_CTK_AT_LEAST(13, 3)
+      check_creation_attributes(with_max_pool_size, props, current_device);
+#  endif // _CCCL_CTK_AT_LEAST(13, 3)
 
       void* ptr{nullptr};
 
@@ -510,6 +608,10 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
       // cudaMemPoolAttrUsedMemCurrent cannot be set
     }
 
+#if _CCCL_CTK_AT_LEAST(13, 3) && _CCCL_HAS_EXCEPTIONS()
+    check_creation_attributes_are_read_only(pool);
+#endif // _CCCL_CTK_AT_LEAST(13, 3) && _CCCL_HAS_EXCEPTIONS()
+
     // Free the last allocation
     resource.deallocate(stream, ptr, 2048 * sizeof(int));
     stream.sync();
@@ -653,6 +755,10 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
 
   // Ensure that we disable export
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
+
+#  if _CCCL_CTK_AT_LEAST(13, 3)
+  check_creation_attributes(with_allocation_handle, props, 0);
+#  endif // _CCCL_CTK_AT_LEAST(13, 3)
 }
 
 #  if _CCCL_CTK_AT_LEAST(12, 9)
@@ -679,6 +785,10 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
 
   // Ensure that we disable export
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
+
+#    if _CCCL_CTK_AT_LEAST(13, 3)
+  check_creation_attributes(with_allocation_handle, props, 0);
+#    endif // _CCCL_CTK_AT_LEAST(13, 3)
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 9)
 

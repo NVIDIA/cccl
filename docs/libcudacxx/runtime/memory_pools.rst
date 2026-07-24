@@ -299,6 +299,16 @@ querying and configuration:
 - ``reserved_mem_high`` - Get/set high watermark for reserved memory
 - ``used_mem_high`` - Get/set high watermark for used memory
 
+The following additional read-only creation attributes are available with CUDA 13.3:
+
+- ``allocation_type`` - Query the allocation type of the pool
+- ``export_handle_types`` - Query the export handle types available for the pool
+- ``location`` - Query the location of the pool as a ``cuda::memory_location``
+- ``location_id`` - Query only the location id of the pool
+- ``location_type`` - Query only the location type of the pool
+- ``max_pool_size`` - Query the maximum size of the pool
+- ``hw_decompress_enabled`` - Query whether hardware decompression is enabled for the pool
+
 Availability: CCCL 3.2.0 / CUDA 13.2
 
 Example:
