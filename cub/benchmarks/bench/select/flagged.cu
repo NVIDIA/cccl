@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_select.cuh>
-#include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
 #include <thrust/count.h>
 
 #include <cuda/std/algorithm>
-#include <cuda/std/type_traits>
 
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
@@ -39,25 +37,8 @@ struct bench_policy_selector
 };
 #endif // !TUNE_BASE
 
-#if TUNE_BASE
-template <typename InputT, typename InPlace, cub::detail::LoadPrefetch Prefetch>
-struct explicit_prefetch_policy_selector
-{
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
-  {
-    constexpr auto selection_opt = InPlace::value ? cub::SelectImpl::SelectPotentiallyInPlace : cub::SelectImpl::Select;
-    using input_it_t             = cuda::std::conditional_t<InPlace::value, InputT*, const InputT*>;
-
-    auto policy =
-      cub::detail::select::policy_selector_from_types<input_it_t, const bool*, InputT*, int64_t, selection_opt>{}(cc);
-    policy.lookback.load_prefetch = Prefetch;
-    return policy;
-  }
-};
-#endif // TUNE_BASE
-
-template <typename T, typename InPlace, typename PolicySelector>
-void select_impl(nvbench::state& state)
+template <typename T, typename InPlace>
+void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
 {
   using offset_t = int64_t;
 
@@ -88,7 +69,14 @@ void select_impl(nvbench::state& state)
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    const auto env = cub_bench_env(alloc, launch, cuda::execution::tune(PolicySelector{}));
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_policy_selector<T>{})
+#endif // !TUNE_BASE
+    );
     if constexpr (InPlace::value)
     {
       _CCCL_TRY_CUDA_API(
@@ -115,32 +103,6 @@ void select_impl(nvbench::state& state)
   });
 }
 
-#if TUNE_BASE
-template <typename T, typename InPlace>
-void select_none(nvbench::state& state, nvbench::type_list<T, InPlace>)
-{
-  select_impl<T, InPlace, explicit_prefetch_policy_selector<T, InPlace, cub::detail::LoadPrefetch::none>>(state);
-}
-
-template <typename T, typename InPlace>
-void select_l2(nvbench::state& state, nvbench::type_list<T, InPlace>)
-{
-  select_impl<T, InPlace, explicit_prefetch_policy_selector<T, InPlace, cub::detail::LoadPrefetch::l2>>(state);
-}
-
-template <typename T, typename InPlace>
-void select_bulk_l2(nvbench::state& state, nvbench::type_list<T, InPlace>)
-{
-  select_impl<T, InPlace, explicit_prefetch_policy_selector<T, InPlace, cub::detail::LoadPrefetch::bulk_l2>>(state);
-}
-#else // TUNE_BASE
-template <typename T, typename InPlace>
-void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
-{
-  select_impl<T, InPlace, bench_policy_selector<T>>(state);
-}
-#endif // TUNE_BASE
-
 using ::cuda::std::false_type;
 using ::cuda::std::true_type;
 #ifdef TUNE_InPlace
@@ -149,29 +111,8 @@ using is_in_place = nvbench::type_list<TUNE_InPlace>; // expands to "false_type"
 using is_in_place = nvbench::type_list<false_type, true_type>;
 #endif // TUNE_InPlace
 
-#if TUNE_BASE
-// Keep benchmark names and axes identical so separate JSON runs can be paired by nvbench_compare.py.
-NVBENCH_BENCH_TYPES(select_none, NVBENCH_TYPE_AXES(fundamental_types, is_in_place))
-  .set_name("base")
-  .set_type_axes_names({"T{ct}", "InPlace{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
-
-NVBENCH_BENCH_TYPES(select_l2, NVBENCH_TYPE_AXES(fundamental_types, is_in_place))
-  .set_name("base")
-  .set_type_axes_names({"T{ct}", "InPlace{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
-
-NVBENCH_BENCH_TYPES(select_bulk_l2, NVBENCH_TYPE_AXES(fundamental_types, is_in_place))
-  .set_name("base")
-  .set_type_axes_names({"T{ct}", "InPlace{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
-#else // TUNE_BASE
 NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, is_in_place))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "InPlace{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
-#endif // TUNE_BASE
