@@ -90,6 +90,7 @@ for ctk in 12 13; do
         --env "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" \
         --env "JOB_ID=${JOB_ID:-}" \
         --env "CCCL_PYTHON_USE_V2=${CCCL_PYTHON_USE_V2:-}" \
+        --env "CCCL_C_PARALLEL_SANITIZE_THREAD=${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" \
         --env "CCACHE_DIR=/root/.ccache" \
         --env "CPM_SOURCE_CACHE=/root/.cpm-cache" \
         "$image" \
@@ -133,6 +134,14 @@ echo "Found CUDA 13 wheel: $cu13_wheel"
 # Merge the wheels
 python python/cuda_cccl/merge_cuda_wheels.py "$cu12_wheel" "$cu13_wheel" --output-dir wheelhouse_merged
 
+# A ThreadSanitizer wheel links libtsan; keep it external (excluded) so it is
+# NOT bundled -- the TSan test lane LD_PRELOADs the runner's matching libtsan
+# instead. Harmless for normal builds (the .so has no libtsan dependency).
+tsan_exclude=()
+if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  tsan_exclude=(--exclude 'libtsan.so.2')
+fi
+
 # Install auditwheel and repair the merged wheel
 python -m pip install patchelf auditwheel
 for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
@@ -145,6 +154,7 @@ for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
         --exclude 'libcudart.so.12' \
         --exclude 'libcudart.so.13' \
         --exclude 'libcuda.so.1' \
+        "${tsan_exclude[@]}" \
         "$wheel" \
         --wheel-dir wheelhouse_final
 done
