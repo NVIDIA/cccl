@@ -188,6 +188,8 @@ unless ``T`` is ``void``.
      };
 
      if (auto* pool = cuda::mr::resource_cast<cuda::device_memory_pool_ref>(&resource)) {
+       pool->trim_to(1024 * 1024);
+
        void* ptr = pool->allocate(stream, 1024, 16);
        pool->deallocate(stream, ptr, 1024, 16);
      }
