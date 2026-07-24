@@ -16,7 +16,8 @@ around with shared ownership semantics while avoiding lifetime issues. This is u
 :ref:`cuda::buffer <cccl-runtime-buffer-buffer>`, must share the same resource instance.
 
 ``cuda::mr::make_shared_resource<Resource>(args...)`` constructs a ``shared_resource<Resource>`` that owns a newly
-constructed ``Resource``. ``Resource`` must satisfy ``cuda::mr::synchronous_resource``.
+constructed ``Resource``. ``Resource`` must satisfy ``cuda::mr::synchronous_resource``. The resulting
+``shared_resource`` supports stream-ordered allocation when ``Resource`` also satisfies ``cuda::mr::resource``.
 
 .. code:: cpp
 
@@ -62,11 +63,18 @@ It supports three cases:
 .. code:: cpp
 
    #include <cuda/memory_resource>
+   #include <cuda/stream>
+   #include <cuda/std/type_traits>
 
    template <class Env>
-   void* allocate_from_env(const Env& env, cuda::stream_ref stream, std::size_t size, std::size_t align) {
-     auto& resource = cuda::mr::get_memory_resource(env);
-     return resource.allocate(stream, size, align);
+   void* allocate_from_env(Env& env, cuda::stream_ref stream, std::size_t size, std::size_t align) {
+     auto&& resource = cuda::mr::get_memory_resource(env);
+     using resource_type = cuda::std::remove_reference_t<decltype(resource)>;
+     if constexpr (cuda::mr::resource<resource_type>) {
+       return resource.allocate(stream, size, align);
+     } else {
+       return resource.allocate_sync(size, align);
+     }
    }
 
 synchronous_resource_adapter

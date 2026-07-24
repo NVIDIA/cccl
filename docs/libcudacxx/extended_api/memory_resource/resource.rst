@@ -122,6 +122,8 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
        std::size_t required_alignment;
    };
 
+   constexpr std::size_t my_default_alignment = 16;
+
    template<class MemoryResource>
        requires cuda::mr::synchronous_resource<MemoryResource>
    void* allocate_maybe_sync_check_alignment(MemoryResource& resource, cuda::stream_ref stream, std::size_t size) {

@@ -56,8 +56,8 @@ alignment values used by the CUDA allocation APIs.
 More properties may be added as the library and the hardware capabilities evolve. However, a user library is free to
 define custom properties.
 
-Resources may expose a ``default_queries`` member type to advertise a fixed set of properties that type-erased wrappers
-can query by default. Use ``cuda::mr::properties_list<Properties...>`` to define that list.
+Resources may expose a ``default_queries`` member type to advertise a fixed set of properties for APIs that use default
+property queries, such as ``cuda::make_buffer``. Use ``cuda::mr::properties_list<Properties...>`` to define that list.
 
 .. code:: cpp
 

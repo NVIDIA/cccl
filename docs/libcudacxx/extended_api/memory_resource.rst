@@ -46,7 +46,7 @@ At a high level, the header provides:
    * - :ref:`cuda::mr::resource_cast <libcudacxx-extended-api-memory-resources-resource-cast>` and
        :ref:`cuda::mr::dynamic_resource_cast <libcudacxx-extended-api-memory-resources-dynamic-resource-cast>`
      - Cast helpers for type-erased resource wrappers.
-     - stable CCCL 3.2.0 / CUDA 13.2
+     - stable CCCL 3.3.0 / CUDA 13.3
    * - :ref:`cuda::mr::shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>`
      - Reference-counted wrapper to share a resource instance across objects.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3

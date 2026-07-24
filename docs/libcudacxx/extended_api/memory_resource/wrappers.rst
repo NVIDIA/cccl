@@ -173,8 +173,7 @@ This is similar to pointer-form ``dynamic_cast<T*>`` in that callers must check 
 result. Unlike ``dynamic_cast``, ``resource_cast`` matches the exact type stored in the wrapper.
 
 ``resource_cast`` works with ``any_resource``, ``any_synchronous_resource``, ``resource_ref``, and
-``synchronous_resource_ref``. The requested type must satisfy the wrapper's resource concept and property constraints,
-unless ``T`` is ``void``.
+``synchronous_resource_ref``.
 
 .. code:: cpp
 
@@ -199,15 +198,16 @@ try_get_property
 ~~~~~~~~~~~~~~~~
 .. _libcudacxx-extended-api-memory-resources-try-get-property:
 
-``try_get_property(resource, property)`` queries a type-erased wrapper only if the property was part of the wrapper's
-property set when the concrete resource was erased. For stateless properties, it returns ``bool``. For stateful
-properties, it returns ``cuda::std::optional<Property::value_type>``.
+Type-erased wrapper conversions can discard properties from the wrapper's type. ``try_get_property(resource, property)``
+can query a property that was present before such a conversion, even when it is not listed in the resulting wrapper's
+property set. For stateless properties, it returns ``bool``. For stateful properties, it returns
+``cuda::std::optional<Property::value_type>``.
 
 .. code:: cpp
 
    #include <cuda/memory_resource>
 
-   bool is_device_accessible(cuda::mr::any_synchronous_resource<cuda::mr::device_accessible> resource) {
+   bool is_device_accessible(cuda::mr::any_synchronous_resource<> resource) {
      return try_get_property(resource, cuda::mr::device_accessible{});
    }
 
