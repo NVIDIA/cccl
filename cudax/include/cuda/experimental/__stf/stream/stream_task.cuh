@@ -285,29 +285,33 @@ public:
   template <typename Fun>
   void operator->*(Fun&& fun)
   {
-    // Apply function to the stream (in the first position) and the data tuple
-    nvtx_range nr(get_symbol().c_str());
-    start();
-
-    auto& dot = ctx.get_dot();
-
-    bool record_time = reserved::dot::instance().is_timing();
-
-    cudaEvent_t start_event, end_event;
-
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      cuda_safe_call(cudaEventCreate(&start_event));
-      cuda_safe_call(cudaEventCreate(&end_event));
-      cuda_safe_call(cudaEventRecord(start_event, get_stream()));
-    }
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
     {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    // Apply function to the stream (in the first position) and the data tuple
+    nvtx_range nr(get_symbol().c_str());
+    auto& dot              = ctx.get_dot();
+    const bool record_time = reserved::dot::instance().is_timing();
+
+    start();
+
+    // If things go well, end the task with time measuremments,
+    SCOPE(success)
+    {
       end_uncleared();
 
-      if (record_time)
+      if (start_event && end_event)
       {
         cuda_safe_call(cudaEventRecord(end_event, get_stream()));
         cuda_safe_call(cudaEventSynchronize(end_event));
@@ -323,6 +327,22 @@ public:
 
       clear();
     };
+
+    // And if they don't, just end the task.
+    SCOPE(fail)
+    {
+      end();
+    };
+
+    if (record_time)
+    {
+      // Events must be created here to avoid issues with multi-gpu.
+      // cudaEventCreate is an overload set, so use the non-overloaded
+      // cudaEventCreateWithFlags with the default flags.
+      start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(start_event, get_stream());
+    }
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
@@ -399,45 +419,25 @@ private:
     // record the event, and restore the current device to its original
     // value.
 
-    // TODO leverage dev_id if known ?
+    const int s0_dev = streams[0].dev_id == -1 ? get_device_from_stream(streams[0].stream) : streams[0].dev_id;
 
-    // Find the stream structure in the driver API
-    CUcontext ctx;
-    cuda_safe_call(cuStreamGetCtx(CUstream(streams[0].stream), &ctx));
+    exec_place::device(s0_dev)->*[&] {
+      // Disable timing to avoid implicit barriers.
+      const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+      SCOPE(exit)
+      {
+        // Asynchronously destroy the event to avoid a memory leak.
+        cuda_safe_call(cudaEventDestroy(sync_event));
+      };
 
-    // Query the context associated with a stream by using the underlying driver API
-    cuda_safe_call(cuCtxPushCurrent(ctx));
-    const CUdevice s0_dev = cuda_try<cuCtxGetDevice>();
-    cuda_safe_call(cuCtxPopCurrent(&ctx));
+      cuda_try<cudaEventRecord>(sync_event, streams[0].stream);
 
-    const int current_dev = cuda_try<cudaGetDevice>();
-
-    if (current_dev != s0_dev)
-    {
-      cuda_safe_call(cudaSetDevice(s0_dev));
-    }
-
-    // Create a dependency between the last stream and the current stream
-    cudaEvent_t sync_event;
-    // Disable timing to avoid implicit barriers
-    cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
-
-    cuda_safe_call(cudaEventRecord(sync_event, streams[0].stream));
-
-    // According to documentation "event may be from a different device than stream."
-    for (size_t i = 0; i < streams.size(); i++)
-    {
-      cuda_safe_call(cudaStreamWaitEvent(streams[i].stream, sync_event, 0));
-    }
-
-    // Asynchronously destroy event to avoid a memleak
-    cuda_safe_call(cudaEventDestroy(sync_event));
-
-    if (current_dev != s0_dev)
-    {
-      // Restore current device
-      cuda_safe_call(cudaSetDevice(current_dev));
-    }
+      // According to documentation, the event may be from a different device than the stream.
+      for (const auto& stream : streams)
+      {
+        cuda_try<cudaStreamWaitEvent>(stream.stream, sync_event, 0);
+      }
+    };
   }
 
   bool automatic_stream = true; // `true` if the stream is automatically fetched from the internal pool
@@ -535,35 +535,35 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun)
   {
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
+
+    SCOPE(exit)
+    {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
     // Apply function to the stream (in the first position) and the data tuple
     auto& dot        = ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    cudaEvent_t start_event, end_event;
-
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     nvtx_range nr(get_symbol().c_str());
     start();
 
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      cuda_safe_call(cudaEventCreate(&start_event));
-      cuda_safe_call(cudaEventCreate(&end_event));
-      cuda_safe_call(cudaEventRecord(start_event, get_stream()));
-    }
-
-    SCOPE(exit)
+    // If things go well, end the task with time measurements,
+    SCOPE(success)
     {
       end_uncleared();
 
-      if (record_time)
+      if (start_event && end_event)
       {
         cuda_safe_call(cudaEventRecord(end_event, get_stream()));
         cuda_safe_call(cudaEventSynchronize(end_event));
@@ -584,6 +584,22 @@ public:
 
       clear();
     };
+
+    // And if they don't, just end the task.
+    SCOPE(fail)
+    {
+      end();
+    };
+
+    if (record_time)
+    {
+      // Events must be created here to avoid issues with multi-gpu.
+      // cudaEventCreate is an overload set, so use the non-overloaded
+      // cudaEventCreateWithFlags with the default flags.
+      start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(start_event, get_stream());
+    }
 
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
