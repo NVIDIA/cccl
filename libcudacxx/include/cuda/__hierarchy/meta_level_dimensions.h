@@ -53,12 +53,11 @@ struct __target_count
   ::cuda::std::size_t __count_{};
   bool __ceil_div_{};
 
-  _CCCL_API constexpr __target_count() noexcept {}
+  _CCCL_API constexpr __target_count() noexcept {} // NOLINT(modernize-use-equals-default)
 
   template <class _Cnt>
   _CCCL_API constexpr explicit __target_count(_Cnt __count_) noexcept
       : __count_(static_cast<::cuda::std::size_t>(__count_))
-      , __ceil_div_(false)
   {
     static_assert(::cuda::std::__cccl_is_integer_v<_Cnt>);
   }
