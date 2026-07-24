@@ -49,14 +49,14 @@ struct epilogue_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const epilogue_policy& p)
   {
     return os
         << "epilogue_policy { .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
         << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 //! Per-segment worker sub-policy for the baseline backend: one thread block cooperatively computes the top-k of a
@@ -89,7 +89,7 @@ struct worker_policy
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
               << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 //! Sub-policy for the baseline backend's multiple-blocks-per-segment worker path, used for segments too large for a
@@ -109,7 +109,7 @@ struct multi_worker_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const multi_worker_policy& p)
   {
     return os << "multi_worker_policy { .threads_per_block = " << p.threads_per_block
