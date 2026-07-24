@@ -28,8 +28,8 @@ TEST_DIAG_SUPPRESS_MSVC(4324) // padding was added at the end of a structure bec
 template <class T>
 TEST_FUNC void test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = alignof(T))
 {
-  static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)));
-  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
+  static_assert(noexcept(cuda::std::aligned_alloc(align, n * sizeof(T))));
+  T* ptr = static_cast<T*>(cuda::std::aligned_alloc(align, n * sizeof(T)));
   if (expect_success)
   {
     // check that the memory was allocated

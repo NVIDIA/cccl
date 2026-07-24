@@ -4,7 +4,7 @@
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.08-cuda13.2-conda",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.08-cuda13.3-conda",
     "--ulimit",
     "nofile=500000"
   ],
@@ -14,7 +14,7 @@
   "containerEnv": {
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",
-    "CUDA_VERSION": "13.2",
+    "CUDA_VERSION": "13.3",
     "CUDAARCHS": "75-real",
     "DEFAULT_CONDA_ENV": "rapids",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "true",
@@ -35,7 +35,7 @@
     "RAPIDS_cuvs_GIT_REPO": "${localEnv:RAPIDS_cuvs_GIT_REPO}",
     "RAPIDS_kvikio_GIT_REPO": "${localEnv:RAPIDS_kvikio_GIT_REPO}",
     "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
-    "RAPIDS_nvforest_GIT_REPO": "${localEnv:RAPIDS_cuopt_GIT_REPO}",
+    "RAPIDS_nvforest_GIT_REPO": "${localEnv:RAPIDS_nvforest_GIT_REPO}",
     "RAPIDS_raft_GIT_REPO": "${localEnv:RAPIDS_raft_GIT_REPO}",
     "RAPIDS_rmm_GIT_REPO": "${localEnv:RAPIDS_rmm_GIT_REPO}",
     "RAPIDS_ucxx_GIT_REPO": "${localEnv:RAPIDS_ucxx_GIT_REPO}",

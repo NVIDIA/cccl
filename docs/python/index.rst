@@ -11,9 +11,6 @@ abstractions for CUDA Python developers.
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
-* :doc:`cuda.coop._experimental <coop>` — Cooperative block- and warp-level algorithms for
-  writing highly efficient CUDA kernels with `Numba CUDA <https://nvidia.github.io/numba-cuda/>`_.
-
 These libraries expose the generic, highly-optimized algorithms from the
 `CCCL C++ libraries <https://nvidia.github.io/cccl/cpp.html>`_,
 which have been tuned to provide optimal performance across GPU architectures.
@@ -33,6 +30,5 @@ Who is this for?
 
    setup
    compute/index
-   coop
    resources
    api_reference

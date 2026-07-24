@@ -25,8 +25,6 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/logarithms.h>
-#include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/cstdint>
 
@@ -64,7 +62,7 @@ public:
   //! @param __v Number of 0 registers
   //!
   //! @return Bias-corrected cardinality estimate
-  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::size_t operator()(double __z, ::cuda::std::int32_t __v) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API double operator()(double __z, ::cuda::std::int32_t __v) const noexcept
   {
     double __e = __alpha_mm() / __z;
 
@@ -75,7 +73,7 @@ public:
       // The threshold `2.5 * m` is from the original HLL algorithm.
       if (__e <= 2.5 * __m)
       {
-        return static_cast<::cuda::std::size_t>(::cuda::std::round(__h));
+        return __h;
       }
 
       if (__precision < 19)
@@ -92,7 +90,7 @@ public:
       }
     }
 
-    return static_cast<::cuda::std::size_t>(::cuda::std::round(__e));
+    return __e;
   }
 
 private:

@@ -13,7 +13,7 @@ CCCL is a collection of CUDA C++ libraries and Python packages:
 * **Thrust** — High-level parallel algorithms
 * **cudax** — Experimental features
 * **C Parallel Library** — C bindings for CCCL algorithms
-* **Python CCCL packages** (`cuda-cccl`) — Python bindings for parallel and cooperative primitives
+* **Python CCCL packages** (`cuda-cccl`) — Python APIs for parallel primitives and programmatic access to CCCL headers
 
 The repository uses **CMake** with the **Ninja** generator and provides standardized presets for consistent builds.
 
@@ -206,7 +206,6 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
-* **cuda.coop._experimental** — Block/warp-level primitives for Numba CUDA
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -245,11 +244,6 @@ Requirements:
 import cuda.compute
 result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.coop._experimental as coop
-@cuda.jit
-def kernel(data):
-    coop.block.reduce(data, binary_op)
-
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()
 ```
@@ -259,7 +253,6 @@ include_paths = headers.get_include_paths()
 ```bash
 ./ci/build_cuda_cccl_python.sh -py-version 3.10
 ./ci/test_cuda_compute_python.sh -py-version 3.10
-./ci/test_cuda_coop_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
 ```
@@ -267,9 +260,8 @@ include_paths = headers.get_include_paths()
 Test organization:
 
 * `tests/compute` — Algorithms and iterators
-* `tests/coop` — Cooperative primitives
 * `tests/headers` — Header integration
-* `test_examples.py` — Runs compute/coop examples
+* `test_examples.py` — Runs compute examples
 
 ---
 
@@ -398,10 +390,8 @@ Python package layout:
 python/cuda_cccl/
 ├── cuda/
 │   ├── compute/
-│   ├── coop/
 │   └── cccl/
 │       ├── parallel/
-│       ├── cooperative/
 │       └── headers/
 ├── tests/
 ├── benchmarks/
