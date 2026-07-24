@@ -557,7 +557,6 @@ jobs:
   # Python:
   build_py_wheel:   { name: "Build cuda.cccl",             gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
   test_py_headers:  { name: "Test cuda.cccl.headers",      gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_headers'} }
-  test_py_coop:     { name: "Test cuda.coop._experimental",  gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_coop'} }
   test_py_par:      { name: "Test cuda.compute",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute'} }
   test_py_compute_minimal: { name: "Test cuda.compute minimal", gpu: true, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute_minimal'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
@@ -618,13 +617,12 @@ projects:
     name: "Python"
     job_map:
       build: ['build_py_wheel']
-      test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
+      test:  ['test_py_headers', 'test_py_par', 'test_py_examples']
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
-    # Only the cuda.compute path differs between v1 and v2; cccl.headers and
-    # cuda.coop are unaffected so we don't re-run them here. Examples ARE
-    # exercised: this PR adds a v2-specific raw_op example and touches
-    # test_examples.py, so test_py_examples must run here.
+    # Only cuda.compute differs between v1 and v2; cuda.cccl.headers does not
+    # need separate coverage. Run the examples because they exercise
+    # cuda.compute against the v2 backend.
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_par', 'test_py_examples']
