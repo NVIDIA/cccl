@@ -4,6 +4,7 @@
 #include <nvbench_helper.cuh>
 
 #include "../histogram_common.cuh"
+#include "../histogram_inputs.cuh"
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
@@ -20,24 +21,35 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   constexpr int num_channels        = 4;
   constexpr int num_active_channels = 3;
 
-  const auto entropy     = str_to_entropy(state.get_string("Entropy"));
+  const auto shape       = parse_input_shape(state.get_string("InputShape"));
   const auto elements    = state.get_int64("Elements{io}");
   const auto num_bins    = state.get_int64("Bins");
   const int num_levels_r = static_cast<int>(num_bins) + 1;
   const int num_levels_g = num_levels_r;
   const int num_levels_b = num_levels_g;
 
-  // Skip invalid configurations where LevelT (= SampleT) cannot represent the number of bins
-  if constexpr (cuda::std::is_integral_v<SampleT>)
+  // Skip invalid configurations where the SampleT range can't hold enough
+  // strictly-monotonic levels.
+  if (num_bins > max_representable_bins<SampleT>())
   {
-    if (num_bins > static_cast<int64_t>(cuda::std::numeric_limits<SampleT>::max()))
-    {
-      state.skip("Number of bins exceeds what LevelT (= SampleT) can represent");
-      return;
-    }
+    state.skip("Number of bins exceeds what SampleT can represent");
+    return;
   }
 
-  const SampleT lower_level_r = 0;
+  // Skip configurations whose row stride in samples (= elements * num_channels)
+  // overflows OffsetT. The MultiHistogramEven<NUM_CHANNELS> single-row
+  // overload internally computes `row_stride_samples = elements * num_channels`
+  // and stores it as OffsetT; the rectangular overload does the same. For
+  // OffsetT = int32_t and num_channels = 4 this caps at elements <= INT_MAX/4
+  // (~536M); above that the cast wraps to a negative value and the kernel
+  // produces zero output. Reported by autocuda matrix runs at elements=1G.
+  if (static_cast<int64_t>(elements) * num_channels > static_cast<int64_t>(::cuda::std::numeric_limits<OffsetT>::max()))
+  {
+    state.skip("Row stride samples (elements * num_channels) overflows OffsetT");
+    return;
+  }
+
+  const SampleT lower_level_r = get_lower_level<SampleT>();
   const SampleT upper_level_r = get_upper_level<SampleT>(num_bins, elements);
   const SampleT lower_level_g = lower_level_r;
   const SampleT upper_level_g = upper_level_r;
@@ -47,7 +59,8 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
   thrust::device_vector<CounterT> hist_b(num_bins);
-  thrust::device_vector<SampleT> input = generate(elements * num_channels, entropy, lower_level_r, upper_level_r);
+  thrust::device_vector<SampleT> input = generate_histogram_input_even<SampleT>(
+    shape, elements * num_channels, static_cast<int>(num_bins), lower_level_r, upper_level_r);
 
   SampleT* d_input        = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
@@ -58,27 +71,94 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_reads<SampleT>(elements * num_active_channels);
   state.add_global_memory_writes<CounterT>(num_bins * num_active_channels);
 
-  caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(
-      alloc,
-      launch
-#if !TUNE_BASE
-      ,
-      cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
-#endif // !TUNE_BASE
-    );
-    _CCCL_TRY_CUDA_API(
-      (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>),
-      "MultiHistogramEven failed",
-      d_input,
-      cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
-      cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
-      cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
-      cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
+  // Warmup + correctness check: run MultiHistogramEven once outside
+  // `state.exec`, checking the dispatch return code, then verify each
+  // channel's histogram bin-by-bin against an independent reference.
+  // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
+  if (bench_correctness_checks_enabled())
+  {
+    thrust::fill(hist_r.begin(), hist_r.end(), CounterT{0});
+    thrust::fill(hist_g.begin(), hist_g.end(), CounterT{0});
+    thrust::fill(hist_b.begin(), hist_b.end(), CounterT{0});
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+    bench_check_cuda(
+      (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_input,
+        cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+        cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+        cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
+        cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
+        static_cast<OffsetT>(elements))),
+      "warmup MultiHistogramEven temp-size");
+    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
+    bench_check_cuda(
+      (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_input,
+        cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+        cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+        cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
+        cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
+        static_cast<OffsetT>(elements))),
+      "warmup MultiHistogramEven");
+    bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
+
+    std::vector<thrust::device_vector<CounterT>> opt_hists_d;
+    opt_hists_d.emplace_back(std::move(hist_r));
+    opt_hists_d.emplace_back(std::move(hist_g));
+    opt_hists_d.emplace_back(std::move(hist_b));
+    bench_verify_histogram_even<num_channels, num_active_channels, SampleT, CounterT, OffsetT>(
+      input,
+      opt_hists_d,
       static_cast<OffsetT>(elements),
-      env);
-  });
+      static_cast<int>(num_bins),
+      lower_level_r,
+      upper_level_r,
+      "multi.even");
+    hist_r        = std::move(opt_hists_d[0]);
+    hist_g        = std::move(opt_hists_d[1]);
+    hist_b        = std::move(opt_hists_d[2]);
+    d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
+    d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
+    d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
+  }
+
+  caching_allocator_t alloc;
+  // Force the persisting-L2 reservation back to 0 and demote any persisting
+  // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
+  // bumped cudaLimitPersistingL2CacheSize can carry across iterations. The
+  // default reservation is 0; hardcoding 0 also clears any pollution left by
+  // a prior benchmark in the same nvbench process.
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
+             [&](nvbench::launch& launch, auto& timer) {
+               cudaDeviceSetLimit(cudaLimitPersistingL2CacheSize, 0);
+               cudaCtxResetPersistingL2Cache();
+               timer.start();
+               auto env = cub_bench_env(
+                 alloc,
+                 launch
+#if !TUNE_BASE
+                 ,
+                 cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
+#endif // !TUNE_BASE
+               );
+               _CCCL_TRY_CUDA_API(
+                 (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>),
+                 "MultiHistogramEven failed",
+                 d_input,
+                 cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+                 cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+                 cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
+                 cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
+                 static_cast<OffsetT>(elements),
+                 env);
+               timer.stop();
+             });
 }
 
 using counter_types     = nvbench::type_list<int32_t>;
@@ -93,6 +173,20 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {32, 128, 2048, 2097152})
-  .add_string_axis("Entropy", {"0.201", "1.000"});
+  .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
+  .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
+  // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,
+  // 0.0=constant) plus the multi-hot and cache-adversarial shapes. Each value
+  // may carry an inline knob as "name:value"; see histogram_inputs.cuh.
+  .add_string_axis(
+    "InputShape",
+    {"concentrated:1.0",
+     "concentrated:0.5",
+     "concentrated:0.0",
+     "powerlaw:0.5",
+     "zipf:1.0",
+     "hash_synonym",
+     "capacity_cliff",
+     "stale_resident",
+     "temporal_phases",
+     "strided_sweep"});
