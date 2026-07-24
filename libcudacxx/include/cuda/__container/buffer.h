@@ -125,15 +125,26 @@ public:
 private:
   __buffer_t __buf_;
 
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  _CCCL_HOST_API explicit buffer(__buffer_t&& __buf) noexcept
+      : __buf_(::cuda::std::move(__buf))
+  {}
+#  endif // _CCCL_DOXYGEN_INVOKED
+
   //! @brief Helper to check container is compatible with this buffer
   template <class _Range>
-  static constexpr bool __compatible_range = (::cuda::std::ranges::__container_compatible_range<_Range, _Tp>);
+  [[nodiscard]] static constexpr bool __compatible_range() noexcept
+  {
+    return ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>;
+  }
 
   //! @brief Helper to check whether a different buffer still satisfies all
   //! properties of this one
   template <class... _OtherProperties>
-  static constexpr bool __properties_match =
-    ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
+  [[nodiscard]] static constexpr bool __properties_match() noexcept
+  {
+    return ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
+  }
 
   //! @brief Helper to return an resource_ref to the currently used resource.
   //! Used to grow the buffer
@@ -195,7 +206,7 @@ public:
   //! @brief Copy-constructs from a buffer with matching properties
   //! @param __other The other buffer.
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
+  _CCCL_REQUIRES((__properties_match<_OtherProperties...>()))
   _CCCL_HOST_API explicit buffer(const buffer<_Tp, _OtherProperties...>& __other)
       : __buf_(__other.memory_resource(), __other.stream(), __other.size(), __other.__buf_.alignment())
   {
@@ -207,7 +218,7 @@ public:
   //! @param __other The other buffer. After move construction, the other buffer
   //! can only be assigned to or destroyed.
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
+  _CCCL_REQUIRES((__properties_match<_OtherProperties...>()))
   _CCCL_HOST_API buffer(buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __buf_(::cuda::std::move(__other.__buf_))
   {}
@@ -323,7 +334,7 @@ public:
   //! @note If `__range.size() == 0` then no memory is allocated.
   _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
-    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND(__compatible_range<_Range>())
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
   _CCCL_HOST_API
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
@@ -346,7 +357,7 @@ public:
 #  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
   _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
-    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND(__compatible_range<_Range>())
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
   _CCCL_HOST_API
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
@@ -748,7 +759,7 @@ public:
   //! @param __stream The stream to deallocate the buffer on.
   //! @warning After this explicit destroy call, the buffer can only be assigned
   //! to or destroyed.
-  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream)
+  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
     __buf_.destroy(__stream);
   }
@@ -759,10 +770,33 @@ public:
   //! calling buffer.destroy(buffer.stream())
   //! @warning After this explicit destroy call, the buffer can only be assigned
   //! to or destroyed.
-  _CCCL_HOST_API void destroy()
+  _CCCL_HOST_API void destroy() noexcept
   {
     __buf_.destroy();
   }
+
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, size_type __capacity) noexcept
+  {
+    __buf_.__destroy_with_capacity(__stream, __capacity);
+  }
+
+  _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size) noexcept
+  {
+    __buf_.__set_size(__size);
+  }
+
+  _CCCL_HOST_API buffer __replace_allocation(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    return buffer{__buf_.__replace_allocation(__stream, __capacity)};
+  }
+
+  _CCCL_HOST_API void
+  __replace_allocation_discard(::cuda::stream_ref __stream, size_type __capacity, size_type __old_capacity)
+  {
+    __buf_.__replace_allocation_discard(__stream, __capacity, __old_capacity);
+  }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Causes the buffer to be treated as a span when passed to
   //! cuda::launch.
@@ -803,15 +837,22 @@ template <class _Tp, class _PropsList>
 using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
-void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+_CCCL_HOST_API void __copy_cross_buffers(
+  stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from, typename _BufferFrom::size_type __count)
 {
   ::cuda::__ensure_current_context __guard(__stream);
   __stream.wait(__from.stream());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),
-    sizeof(typename _BufferTo::value_type) * __from.size(),
+    sizeof(typename _BufferTo::value_type) * __count,
     __stream.get());
+}
+
+template <typename _BufferTo, typename _BufferFrom>
+_CCCL_HOST_API void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
+{
+  ::cuda::__copy_cross_buffers(__stream, __to, __from, __from.size());
 }
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT

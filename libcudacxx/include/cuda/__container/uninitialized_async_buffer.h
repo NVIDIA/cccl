@@ -277,7 +277,7 @@ public:
   //! @warning destroy does not destroy any objects that may or may not reside
   //! within the buffer. It is the user's responsibility to ensure that all
   //! objects within the buffer have been properly destroyed.
-  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream)
+  _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
     if (__buf_)
     {
@@ -297,10 +297,28 @@ public:
   //! @warning destroy does not destroy any objects that may or may not reside
   //! within the buffer. It is the user's responsibility to ensure that all
   //! objects within the buffer have been properly destroyed.
-  _CCCL_HOST_API void destroy()
+  _CCCL_HOST_API void destroy() noexcept
   {
     destroy(__stream_);
   }
+
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, const size_t __capacity) noexcept
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__capacity), __alignment_);
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+    auto __tmp_mr = ::cuda::std::move(__mr_);
+  }
+
+  _CCCL_HOST_API constexpr void __set_size(const size_t __count) noexcept
+  {
+    __count_ = __count;
+  }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Destroys an \c __uninitialized_async_buffer and deallocates the
   //! buffer in stream order on the stream that was used to create the buffer.
@@ -413,22 +431,52 @@ public:
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HOST_API friend constexpr void get_property(const __uninitialized_async_buffer&, _Property) noexcept {}
 
+#  ifndef _CCCL_DOXYGEN_INVOKED
   //! @brief Internal method to grow the allocation to a new size \p __count.
+  //! @param __stream The stream to allocate the new allocation on.
   //! @param __count The new size of the allocation.
   //! @return An \c __uninitialized_async_buffer that holds the previous
   //! allocation
   //! @warning This buffer must outlive the returned buffer
-  _CCCL_HOST_API __uninitialized_async_buffer __replace_allocation(const size_t __count)
+  _CCCL_HOST_API __uninitialized_async_buffer __replace_allocation(::cuda::stream_ref __stream, const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and
     // swap allocation information
+    const auto __old_stream = __stream_;
     __uninitialized_async_buffer __ret{
-      __fake_resource_ref{::cuda::std::addressof(__mr_)}, __stream_, __count, __alignment_};
+      __fake_resource_ref{::cuda::std::addressof(__mr_)}, __stream, __count, __alignment_};
     ::cuda::std::swap(__count_, __ret.__count_);
     ::cuda::std::swap(__alignment_, __ret.__alignment_);
     ::cuda::std::swap(__buf_, __ret.__buf_);
+    __stream_       = __stream;
+    __ret.__stream_ = __old_stream;
     return __ret;
   }
+
+  //! @overload
+  _CCCL_HOST_API __uninitialized_async_buffer __replace_allocation(const size_t __count)
+  {
+    return __replace_allocation(__stream_, __count);
+  }
+
+  _CCCL_HOST_API void
+  __replace_allocation_discard(::cuda::stream_ref __stream, const size_t __count, const size_t __old_capacity)
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+
+    __stream_ = __stream;
+    if (__count != 0)
+    {
+      __buf_ = __mr_.allocate(__stream_, __get_allocation_size(__count), __alignment_);
+    }
+    __count_ = __count;
+  }
+#  endif // _CCCL_DOXYGEN_INVOKED
 };
 
 template <class _Tp>
