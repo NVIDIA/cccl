@@ -31,6 +31,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
@@ -394,12 +395,11 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t
-  __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API double __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
     __shared__ ::cuda::atomic<::cuda::std::int32_t, ::cuda::std::thread_scope_block> __block_zeroes;
-    __shared__ ::cuda::std::size_t __estimate;
+    __shared__ __fp_type __estimate;
 
     if (__group.thread_rank() == 0)
     {
@@ -448,8 +448,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource>
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
-  __estimate(_HostMemoryResource __host_mr, ::cuda::stream_ref __stream) const
+  [[nodiscard]] _CCCL_HOST_API double __estimate(_HostMemoryResource __host_mr, ::cuda::stream_ref __stream) const
   {
     const auto __num_regs = __sketch.size();
 
