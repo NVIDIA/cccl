@@ -15,8 +15,11 @@
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
+#include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
+
+#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 
@@ -104,7 +107,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     buffer_t buf{stream, resource, values.begin(), values.end()};
     const auto* const allocation = buf.data();
 
-    buf.resize(stream, 3, cuda::no_init);
+    buf.resize(3, cuda::no_init);
     REQUIRE(buf.size() == 3);
     REQUIRE(buf.capacity() == values.size());
     REQUIRE(buf.data() == allocation);
@@ -112,13 +115,26 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     REQUIRE(static_cast<const base_t&>(buf).size() == buf.size());
     check_prefix(buf, cuda::std::array<int, 3>{1, 42, 1337});
 
-    buf.resize(stream, 5, cuda::no_init);
+    buf.resize(5, cuda::no_init);
     REQUIRE(buf.size() == 5);
     REQUIRE(buf.capacity() == values.size());
     REQUIRE(buf.data() == allocation);
     REQUIRE(buf.end() == buf.begin() + buf.size());
     REQUIRE(static_cast<const base_t&>(buf).size() == buf.size());
     check_prefix(buf, cuda::std::array<int, 3>{1, 42, 1337});
+
+    bool caught = false;
+    try
+    {
+      buf.resize(7, cuda::no_init);
+    }
+    catch (const std::invalid_argument& error)
+    {
+      caught = true;
+      REQUIRE(cuda::std::string_view{error.what()}
+              == "cuda::__resizable_buffer::resize requires an explicit stream to grow beyond capacity");
+    }
+    REQUIRE(caught);
   }
 
   SECTION("resize with reallocation")

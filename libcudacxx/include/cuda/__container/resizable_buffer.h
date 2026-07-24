@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__container/buffer.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
@@ -131,6 +132,20 @@ public:
   [[nodiscard]] _CCCL_HOST_API size_type capacity_bytes() const noexcept
   {
     return __capacity_ * sizeof(_Tp);
+  }
+
+  //! @brief Changes the logical size without reallocating.
+  //!
+  //! This overload can shrink or grow within `capacity()`. Growing beyond
+  //! capacity requires an explicit stream.
+  _CCCL_HOST_API void resize(size_type __new_size, ::cuda::no_init_t)
+  {
+    if (__new_size > __capacity_)
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "cuda::__resizable_buffer::resize requires an explicit stream to grow beyond capacity");
+    }
+    __base_t::__set_size_unsynchronized(__new_size);
   }
 
   //! @brief Changes the logical size, reallocating on \p __stream if needed.
