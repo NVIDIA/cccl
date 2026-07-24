@@ -795,8 +795,11 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     if constexpr (!only_small_segments)
     {
       const auto num_segments_val = params::get_param(num_segments, 0);
-      // TODO(topk): once this large-segment path is live, guard the `num_segments_val * sizeof(...)` byte counts
-      // against size_t overflow (safe today only because the entry bounds num_segments_val to <= INT_MAX).
+      // TODO(topk): the baseline large-segment (multi-CTA) path is WIP. Completing it requires: (1) guarding the
+      // `num_segments_val * sizeof(...)` byte counts below against size_t overflow (safe today only because the entry
+      // bounds num_segments_val to <= INT_MAX); (2) making the baseline tunable by populating its `epilogue` and
+      // `multi_worker_per_segment_policy` sub-policies and adding matching knobs to the segmented_topk benchmarks,
+      // which leave them zero-initialized today so baseline sweeps are not yet meaningful.
       allocation_sizes[0] = num_segments_val * sizeof(large_segment_tile_offset_t);
       if constexpr (any_small_segments)
       {

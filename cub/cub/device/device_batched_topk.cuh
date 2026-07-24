@@ -374,6 +374,13 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //!   supported ``determinism`` / ``tie_break`` requirements depend on the architecture -- see the *Current support*
 //!   note below. ``determinism`` and ``tie_break`` must always be specified together, or both omitted to take the
 //!   default.
+//! - **Dynamic cluster launches may be disabled.** Defining ``CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH`` compiles out the
+//!   thread-block-cluster backend, so on Hopper and newer GPUs (compute capability >= 9.0) the algorithm is restricted
+//!   to the same capability set as pre-Hopper: every segment must fit a single thread block, and only the fully
+//!   non-deterministic request (``determinism::not_guaranteed`` with ``tie_break::unspecified``) is supported. The
+//!   larger segments and the deterministic / tie-break requests otherwise available on compute capability >= 9.0 are
+//!   then rejected at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
+//!   runtime as ``cudaErrorNotSupported``).
 //!
 //! Determinism, tie-breaking, and output ordering
 //! +++++++++++++++++++++++++++++++++++++++++++++++
@@ -401,14 +408,14 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //!
 //!    - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
 //!      ``(determinism::not_guaranteed, tie_break::unspecified)`` is supported, and every segment must fit a single
-//!      thread block. Deterministic / tie-break requests and larger segments require the SM 9.0+ cluster backend and
-//!      are diagnosed at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
-//!      runtime as ``cudaErrorNotSupported``).
+//!      thread block. Deterministic / tie-break requests and larger segments require SM 9.0+ and are diagnosed at
+//!      compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to runtime as
+//!      ``cudaErrorNotSupported``).
 //!    - **Hopper and newer (compute capability >= 9.0):** all five acknowledged ``(determinism, tie_break)`` pairs are
 //!      supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run, unspecified)``, and ``(gpu_to_gpu,
-//!      {unspecified, prefer_smaller_index, prefer_larger_index})`` -- and larger segments are handled by the cluster
-//!      backend. Among non-deterministic requests the baseline vs cluster backend is chosen by an architecture /
-//!      segment-size crossover.
+//!      {unspecified, prefer_smaller_index, prefer_larger_index})`` -- and segments larger than a single thread block
+//!      are also supported. Defining ``CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH`` restricts this to the pre-Hopper set
+//!      above (see *Current constraints*).
 //!
 //!    When ``determinism::not_guaranteed`` is requested the per-segment output may be non-deterministic: if multiple
 //!    items tie at the K-th position, the subset of tied elements returned is not uniquely defined and may vary between

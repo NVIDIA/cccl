@@ -73,16 +73,13 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
 
      - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
        ``(not_guaranteed, unspecified)`` is supported, and every segment must fit a single thread
-       block. Deterministic / tie-break requests and larger segments require the SM 9.0+ cluster
-       backend and are diagnosed at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT``
-       is defined, deferred to runtime as ``cudaErrorNotSupported``).
+       block. Deterministic / tie-break requests and larger segments require SM 9.0+ and are diagnosed
+       at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
+       runtime as ``cudaErrorNotSupported``).
      - **Hopper and newer (compute capability >= 9.0):** every acknowledged ``(determinism,
        tie_break)`` pair is supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run,
        unspecified)``, and ``(gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index})``
-       -- and segments too large for a single thread block are handled by the cluster backend. Among
-       non-deterministic requests the baseline vs cluster backend is chosen by an architecture /
-       segment-size crossover (the cluster backend is preferred for baseline-coverable segments only on
-       the newer architectures where it wins).
+       -- and segments larger than a single thread block are also supported.
 
    * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
      (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break

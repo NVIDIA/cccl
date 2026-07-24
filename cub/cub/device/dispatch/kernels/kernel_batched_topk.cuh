@@ -352,6 +352,12 @@ device_batched_topk_kernel(
          SelectDirectionParameterT,
          NumSegmentsParameterT>;
 
+       // A `tune`d override with an oversized static footprint (e.g. a large `bits_per_pass` histogram) fails here
+       // rather than as an opaque ptxas error. Only the static footprint is checked: the dynamic block-tile slots may
+       // exceed the static shared-memory cap via opt-in.
+       static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
+                     "Static shared memory per block must not exceed 48KB limit.");
+
        __shared__ typename agent_t::TempStorage temp_storage;
        extern __shared__ char topk_cluster_smem[];
        char* key_slots = topk_cluster_smem;
