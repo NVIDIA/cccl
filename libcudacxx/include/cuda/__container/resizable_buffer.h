@@ -51,7 +51,7 @@ public:
   using size_type = typename __base_t::size_type;
 
 private:
-  size_type __capacity_ = this->size();
+  size_type __capacity_ = static_cast<const __base_t&>(*this).size();
 
   _CCCL_HOST_API void __replace_allocation(::cuda::stream_ref __stream, size_type __new_capacity)
   {
