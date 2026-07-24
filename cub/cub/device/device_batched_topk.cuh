@@ -3,7 +3,7 @@
 
 //! @file
 //! cub::DeviceBatchedTopK provides device-wide, parallel operations for finding the K largest (or smallest) items
-//! from many (small) segments of unordered data items residing within device-accessible memory.
+//! from many segments of unordered data items residing within device-accessible memory.
 
 #pragma once
 
@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/segmented_params.cuh> // detail::params::__validate_uniform{,_or_per_segment}_integral_param
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 #include <cub/util_type.cuh>
@@ -31,11 +32,31 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
+
+//! @def CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+//!
+//! Specific to cub::DeviceBatchedTopK (it has no effect on any other CUB algorithm).
+//!
+//! By default, cub::DeviceBatchedTopK fails at compile time (via `static_assert`) when the requested configuration
+//! cannot be served on *every* compute capability the translation unit is being compiled for. Some requests (a
+//! deterministic result, or a segment too large for the single-block backend) require the SM90+ cluster backend, so
+//! they cannot compile when a pre-SM90 compute capability is among the targets.
+//!
+//! Define this macro (before including any CUB header) to suppress that compile-time check and defer the diagnosis to
+//! runtime instead: on a device that cannot serve the request, dispatch returns `cudaErrorNotSupported`. This is
+//! useful when a single translation unit must compile the full configuration space across a mix of compute
+//! capabilities and decide what is runnable at runtime. CUB's own tests and benchmarks define it for this reason.
+#  define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_BEGIN
 
@@ -60,7 +81,7 @@ template <topk::select SelectDirection,
           typename KParameterT,
           typename NumSegmentsParameterT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
+_CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorItT d_keys_in,
@@ -82,7 +103,17 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   //   1. determinism and tie_break must be acknowledged together (both specified, or both omitted default)
   //   2. an explicit tie_break of prefer_smaller_index / prefer_larger_index fully pins the result set across GPUs and
   //      therefore requires determinism::gpu_to_gpu (it cannot be paired with run_to_run or not_guaranteed)
-  //   3. this initial API surface only implements the fully opted-out configuration (non-deterministic, unsorted).
+  //   3. only `output_ordering::unsorted` is implemented. Given rules 1/2, this admits the five implemented
+  //      (determinism, tie_break) combinations -- (not_guaranteed, unspecified), (run_to_run, unspecified),
+  //      (gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index}) -- while `sorted` / `stable_sorted`
+  //      (and therefore the empty-env default, which resolves to `stable_sorted`) remain rejected.
+  //
+  // Backend routing implied by the request (exact rules in `policy_selector_from_types`, dispatch_batched_topk.cuh):
+  // any request beyond fully non-deterministic -- determinism stronger than not_guaranteed (run_to_run/gpu_to_gpu), or
+  // a concrete tie-break -- is served only by the cluster backend (SM 9.0+). A fully non-deterministic request
+  // (not_guaranteed + unspecified tie-break) leaves the backend open, chosen from the target architecture and the
+  // statically-known maximum segment size: a segment too large for the single-block baseline forces the cluster
+  // backend, otherwise the baseline runs unless the cluster is measured to win.
   // ---------------------------------------------------------------------------
   static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                 "Determinism should be used inside cuda::execution::require to have an effect.");
@@ -117,9 +148,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   constexpr bool tie_break_compatible_with_determinism =
     ::cuda::std::is_same_v<requested_tie_break_t, ::cuda::execution::tie_break::unspecified_t>
     || ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-  constexpr bool is_non_deterministic_unsorted =
-    ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>
-    && ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::unsorted_t>;
+  constexpr bool is_unsorted_output =
+    ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::unsorted_t>;
 
   static_assert(determinism_and_tie_break_paired,
                 "cub::DeviceBatchedTopK: determinism and tie_break requirements must be acknowledged together. Either "
@@ -131,66 +161,98 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
                 "prefer_larger_index pins the result set across GPUs and therefore requires "
                 "cuda::execution::determinism::gpu_to_gpu (it cannot be combined with run_to_run or not_guaranteed).");
   static_assert(
-    !determinism_and_tie_break_paired || !tie_break_compatible_with_determinism || is_non_deterministic_unsorted,
-    "cub::DeviceBatchedTopK currently only implements non-deterministic, unsorted output. Request it "
-    "explicitly with cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
+    !determinism_and_tie_break_paired || !tie_break_compatible_with_determinism || is_unsorted_output,
+    "cub::DeviceBatchedTopK currently only implements cuda::execution::output_ordering::unsorted output "
+    "(cuda::execution::output_ordering::sorted and stable_sorted are not yet implemented). Because the default "
+    "output ordering is stable_sorted, an empty (no-requirement) environment is rejected: request unsorted output "
+    "explicitly, e.g. cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
     "cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted).");
-
-  // ---------------------------------------------------------------------------
-  // Resolve the (optionally tuned) policy selector from the environment.
-  // ---------------------------------------------------------------------------
-  using key_t                     = cub::detail::it_value_t<cub::detail::it_value_t<KeyInputIteratorItT>>;
-  using value_t                   = cub::detail::it_value_t<cub::detail::it_value_t<ValueInputIteratorItT>>;
-  using default_policy_selector_t = batched_topk::
-    policy_selector_from_types<key_t, value_t, ::cuda::std::int64_t, ::cuda::args::__traits<KParameterT>::highest>;
-  using tuning_env_t =
-    ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
-  using policy_selector_t = ::cuda::std::execution::
-    __query_result_or_t<tuning_env_t, batched_topk::batched_topk_policy, default_policy_selector_t>;
 
   // ---------------------------------------------------------------------------
   // Argument-annotation constraints surfaced at the call site.
   // ---------------------------------------------------------------------------
-  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
-                "cub::DeviceBatchedTopK currently requires a single (uniform) number of segments resolved on the "
-                "host; pass num_segments as a single-value annotation (e.g. cuda::args::constant or "
-                "cuda::args::immediate), not a per-segment sequence.");
-  static_assert(
-    ::cuda::args::__is_wrapper_v<SegmentSizeParameterT> || ::cuda::std::is_integral_v<SegmentSizeParameterT>,
-    "cub::DeviceBatchedTopK: segment_sizes must be a cuda::args annotation or a plain integral value "
-    "(taken as a uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap "
-    "per-segment sizes in cuda::args::deferred_sequence, or a single device-side value in "
-    "cuda::args::deferred.");
-  static_assert(::cuda::args::__is_wrapper_v<KParameterT> || ::cuda::std::is_integral_v<KParameterT>,
-                "cub::DeviceBatchedTopK: k must be a cuda::args annotation or a plain integral value (taken as a "
-                "uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap a per-segment k "
-                "in cuda::args::deferred_sequence, or a single device-side value in cuda::args::deferred.");
-  static_assert(
-    ::cuda::args::__is_wrapper_v<NumSegmentsParameterT> || ::cuda::std::is_integral_v<NumSegmentsParameterT>,
-    "cub::DeviceBatchedTopK: num_segments must be a cuda::args annotation or a plain integral value. A "
-    "raw pointer or iterator is not accepted.");
+  // segment_sizes and k may be uniform or per-segment; num_segments must be a single value. Instantiating each
+  // validation struct (via the `all_ok` reads below) runs its layered per-argument static_asserts -- one targeted
+  // diagnostic per misuse. Three argument-specific constraints are then applied inline below (segment_sizes' maximum
+  // size, k's element-type width, num_segments host-known).
+  using segment_sizes_validation =
+    detail::params::__validate_uniform_or_per_segment_integral_param<SegmentSizeParameterT>;
+  using k_validation            = detail::params::__validate_uniform_or_per_segment_integral_param<KParameterT>;
+  using num_segments_validation = detail::params::__validate_uniform_integral_param<NumSegmentsParameterT>;
 
-  const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+  // Only the statically-known *maximum* segment size is constrained: it must not exceed 2^21 (about 2 million). Beyond
+  // that the streaming cluster backend is not competitive; larger segments are future work (a WIP multi-CTA baseline
+  // backend). So a segment-size type or bound whose maximum exceeds 2^21 (e.g. an un-annotated int32/uint32, or an
+  // explicit bound above 2^21) must carry a tighter compile-time `cuda::args::bounds`. The minimum is left
+  // unconstrained: a negative statically-known lower bound is accepted, and the kernel clamps any negative runtime size
+  // up to 0 (see detail::params::__get_and_clamp_param_to_nonnegative). k carries no such maximum-value bound (on the
+  // device an over-large k is clamped to the segment size and a negative k to 0), only the 64-bit element-type width
+  // limit checked below.
+  if constexpr (segment_sizes_validation::all_ok)
+  {
+    static_assert(
+      ::cuda::std::cmp_less_equal(segment_sizes_validation::args_traits::highest, ::cuda::std::int64_t{1} << 21),
+      "cub::DeviceBatchedTopK: the statically-known maximum segment size exceeds the maximum currently supported "
+      "segment size (2^21, about 2 million). Give a segment-size type whose maximum fits, or a compile-time upper "
+      "bound (cuda::args::bounds) not exceeding 2^21.");
+  }
 
-  // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
-  // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
-  // conservative 64-bit upper bound here.
-  constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
+  // k's value is clamped to the segment size on the device through a 64-bit intermediate, so a wider element type
+  // (e.g. __int128) could silently wrap. `sizeof` rather than a value comparison keeps character element types
+  // compiling (the `cmp_*` comparators reject them).
+  if constexpr (k_validation::all_ok)
+  {
+    static_assert(sizeof(typename k_validation::args_traits::element_type) <= sizeof(::cuda::std::uint64_t),
+                  "cub::DeviceBatchedTopK: k's element type must be at most 64 bits wide.");
+  }
 
-  return batched_topk::dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    segment_sizes,
-    k,
-    ::cuda::args::constant<SelectDirection>{},
-    num_segments,
-    total_num_items,
-    stream.get(),
-    policy_selector_t{});
+  // num_segments must be known on the host: the launch configuration is computed from it before any kernel runs, so a
+  // device-resident `deferred` value cannot be used (a per-segment sequence is already rejected by the validation
+  // above).
+  if constexpr (num_segments_validation::all_ok)
+  {
+    static_assert(!num_segments_validation::args_traits::is_deferred,
+                  "cub::DeviceBatchedTopK: num_segments must be a host-known value (e.g. cuda::args::constant, "
+                  "cuda::args::immediate, or a plain integral); a device-resident cuda::args::deferred value is not "
+                  "supported because the launch configuration is computed on the host.");
+  }
+
+  // Only instantiate the dispatch once every argument passes its type/element checks above (and num_segments is
+  // host-known).
+  if constexpr (segment_sizes_validation::all_ok && k_validation::all_ok && num_segments_validation::all_ok
+                && !num_segments_validation::args_traits::is_deferred)
+  {
+    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+
+    // A `tune`d policy selector (keyed on `topk_policy`) is forwarded to the dispatch, which queries it from this
+    // tuning env; absent one, the dispatch builds its automatic arch+size selector.
+    using tuning_env_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
+
+    // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
+    // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
+    // conservative 64-bit upper bound here.
+    constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
+
+    return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      segment_sizes,
+      k,
+      ::cuda::args::constant<SelectDirection>{},
+      num_segments,
+      total_num_items,
+      stream.get(),
+      tuning_env_t{});
+  }
+  else
+  {
+    return cudaErrorInvalidValue;
+  }
 }
 //! @endcond
 } // namespace detail
@@ -229,7 +291,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! A plain integral value works too and is taken as a uniform ``immediate`` (no extra bounds). A pointer or iterator,
 //! by contrast, must be wrapped explicitly in ``deferred`` (single value) or ``deferred_sequence`` (per segment).
 //! Passing a raw pointer or iterator is rejected at compile time, because it would otherwise be misread as a single
-//! value rather than a sequence.
+//! value rather than a sequence. A plain integral (no bound) is still subject to each parameter's constraints: for
+//! ``segment_sizes`` in particular, a plain signed integral such as ``int`` is rejected because its maximum exceeds
+//! the supported maximum segment size of ``2^21`` (see *Which form each parameter accepts* and *Current constraints*
+//! below).
 //!
 //! **How it is bounded.** A bound lets the algorithm reason about a value it does not know exactly:
 //!
@@ -241,9 +306,20 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   as narrow, lying within the compile-time range and only tightening it further.
 //!
 //! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. ``num_segments`` must be
-//! a single value (``constant``, ``immediate``, or a plain integral), never a per-segment sequence. ``segment_sizes``
-//! must also carry a small compile-time upper bound (a ``constant<N>`` or ``cuda::args::bounds<lo, hi>()``), and tight
-//! bounds on every parameter are encouraged.
+//! a single, non-negative value known on the host (``constant``, ``immediate``, or a plain integral).
+//! ``segment_sizes``
+//! must have a statically-known *maximum* not exceeding the supported ``2^21`` (about 2 million; see *Current
+//! constraints* below): a type whose maximum already fits (a narrow type such as ``uint8_t``, ``int16_t``, or
+//! ``uint16_t``) is accepted without an explicit bound, while a type whose maximum exceeds ``2^21`` (e.g. ``int32_t``,
+//! ``uint32_t``, or ``int64_t``) must carry a compile-time upper bound (a ``constant<N>`` or
+//! ``cuda::args::bounds<lo, hi>()``). A negative statically-known lower bound is allowed: negative runtime sizes are
+//! clamped to an empty segment (size 0). A non-negative lower bound is trusted -- passing an actual value outside its
+//! declared bound (for instance a negative value under a non-negative bound) is a caller precondition violation
+//! (undefined behavior). ``k`` has no algorithm-imposed maximum: a ``k`` larger than a segment's size selects that
+//! whole segment. Its lower bound follows the same rule as ``segment_sizes`` above -- under a negative statically-known
+//! lower bound a negative runtime ``k`` is clamped to 0 (selecting nothing), while under a non-negative lower bound a
+//! negative value is a caller precondition violation (undefined behavior). Tight bounds on every parameter are
+//! encouraged.
 //!
 //! .. code-block:: c++
 //!
@@ -270,19 +346,41 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! This is an initial, intentionally restricted API surface. The following constraints are enforced at compile time
-//! (a ``static_assert`` fires if violated):
+//! (a compile error is emitted if violated):
 //!
-//! - **Small segments only.** Every segment must be processable by a single thread block (one worker per segment).
-//!   The *statically-known maximum* segment size (the upper bound of the ``segment_sizes`` annotation) must be small
-//!   enough that such a block fits within the shared-memory limit. Both uniform (fixed) and variable segment sizes are
-//!   supported as long as this maximum is honored.
-//! - **Uniform number of segments.** ``num_segments`` must be a single value, never a per-segment sequence.
-//! - **Explicit opt-out required for the output guarantees.** The deterministic, stable-sorted default contract
-//!   described in *Determinism, tie-breaking, and output ordering* below (and in :ref:`cub-topk-requirements`) is not
-//!   yet implemented. The caller must currently request non-deterministic, unsorted output explicitly by passing
-//!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-//!   cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)`` in the environment
-//!   (``determinism`` and ``tie_break`` must always be specified together).
+//! - **Host-only.** Unlike most CUB algorithms, ``DeviceBatchedTopK`` does not support CUDA dynamic parallelism: its
+//!   methods must be invoked from host code, not from device code.
+//! - **Segment size is architecture-dependent.** On pre-Hopper GPUs (compute capability < 9.0) every segment must be
+//!   processable by a single thread block (one worker per segment): the *statically-known maximum* segment size (the
+//!   upper bound of the ``segment_sizes`` annotation) must be small enough that such a block fits within the
+//!   shared-memory limit. On Hopper and newer GPUs (compute capability >= 9.0) the thread-block-cluster backend also
+//!   handles larger segments that exceed this per-block limit. Both uniform (fixed) and variable segment sizes are
+//!   supported. Independent of the architecture -- and independent of the integer type used for the ``segment_sizes``
+//!   argument (a wider type such as ``int64_t`` does not raise it) -- an individual segment is currently limited to a
+//!   maximum of ``2^21`` (about 2 million) items, enforced at compile time from the statically-known maximum segment
+//!   size. Larger segments are future work. A type whose maximum already lies within it (a narrow type such as
+//!   ``uint8_t``, ``int16_t``, or ``uint16_t``) is accepted un-annotated; a type whose maximum exceeds ``2^21`` (e.g.
+//!   ``int32_t``, ``uint32_t``, or ``int64_t``) must carry a compile-time ``cuda::args::bounds`` whose upper end does
+//!   not exceed ``2^21`` (see *Which form each parameter accepts* above for how the lower bound and out-of-bound values
+//!   are handled).
+//! - **k is at most 64 bits wide.** The element type of ``k`` may be no wider than 64 bits. The device clamps ``k`` to
+//!   the segment size through a 64-bit intermediate, so a wider integer type (e.g. ``__int128``) is rejected to avoid a
+//!   silent wrap. ``k`` itself has no algorithm-imposed maximum (see *Which form each parameter accepts* above).
+//! - **Uniform number of segments.** ``num_segments`` must be a single value (``constant``, ``immediate``, or a plain
+//!   integral) resolved on the host. A ``deferred`` (device-resident) count is not supported at this time.
+//! - **Unsorted output required.** Only ``cuda::execution::output_ordering::unsorted`` is implemented; the sorted
+//!   orderings of the default contract described in *Determinism, tie-breaking, and output ordering* below (and hence
+//!   an empty, no-requirement environment, which defaults to ``stable_sorted``) are rejected at compile time. The
+//!   supported ``determinism`` / ``tie_break`` requirements depend on the architecture -- see the *Current support*
+//!   note below. ``determinism`` and ``tie_break`` must always be specified together, or both omitted to take the
+//!   default.
+//! - **Dynamic cluster launches may be disabled.** Defining ``CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH`` compiles out the
+//!   thread-block-cluster backend, so on Hopper and newer GPUs (compute capability >= 9.0) the algorithm is restricted
+//!   to the same capability set as pre-Hopper: every segment must fit a single thread block, and only the fully
+//!   non-deterministic request (``determinism::not_guaranteed`` with ``tie_break::unspecified``) is supported. The
+//!   larger segments and the deterministic / tie-break requests otherwise available on compute capability >= 9.0 are
+//!   then rejected at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
+//!   runtime as ``cudaErrorNotSupported``).
 //!
 //! Determinism, tie-breaking, and output ordering
 //! +++++++++++++++++++++++++++++++++++++++++++++++
@@ -303,17 +401,25 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!
 //! .. note::
 //!
-//!    **Current support.** This release only implements the fully opted-out configuration, which must be requested
-//!    explicitly: ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-//!    cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)``. Any other combination
-//!    (including an empty, no-requirement environment) is rejected at compile time. In this configuration the
-//!    per-segment output is unordered and may be non-deterministic: if multiple items tie at the K-th position, the
-//!    subset of tied elements returned is not uniquely defined and may vary between runs.
+//!    **Current support.** Only the unsorted output ordering is implemented;
+//!    ``cuda::execution::output_ordering::unsorted`` must be requested explicitly (``sorted`` / ``stable_sorted``, and
+//!    thus an empty, no-requirement environment, are rejected at compile time). The supported selection requirements
+//!    and segment sizes differ by architecture:
 //!
-//! Usage Considerations
-//! ++++++++++++++++++++++++++
+//!    - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
+//!      ``(determinism::not_guaranteed, tie_break::unspecified)`` is supported, and every segment must fit a single
+//!      thread block. Deterministic / tie-break requests and larger segments require SM 9.0+ and are diagnosed at
+//!      compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to runtime as
+//!      ``cudaErrorNotSupported``).
+//!    - **Hopper and newer (compute capability >= 9.0):** all five acknowledged ``(determinism, tie_break)`` pairs are
+//!      supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run, unspecified)``, and ``(gpu_to_gpu,
+//!      {unspecified, prefer_smaller_index, prefer_larger_index})`` -- and segments larger than a single thread block
+//!      are also supported. Defining ``CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH`` restricts this to the pre-Hopper set
+//!      above (see *Current constraints*).
 //!
-//! @cdp_class{DeviceBatchedTopK}
+//!    When ``determinism::not_guaranteed`` is requested the per-segment output may be non-deterministic: if multiple
+//!    items tie at the K-th position, the subset of tied elements returned is not uniquely defined and may vary between
+//!    runs.
 //!
 //! @endrst
 struct DeviceBatchedTopK
@@ -375,20 +481,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -396,7 +511,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -417,7 +532,7 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      ::cuda::std::move(env));
+      env);
   }
 
   //! @rst
@@ -468,20 +583,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -489,7 +613,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxKeys(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     SegmentSizeParameterT segment_sizes,
@@ -567,20 +691,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -588,7 +721,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -609,7 +742,7 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      ::cuda::std::move(env));
+      env);
   }
 
   //! @rst
@@ -658,20 +791,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -679,7 +821,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinKeys(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     SegmentSizeParameterT segment_sizes,
@@ -774,20 +916,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -797,7 +948,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -820,7 +971,7 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      ::cuda::std::move(env));
+      env);
   }
 
   //! @rst
@@ -877,20 +1028,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -900,7 +1060,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MaxPairs(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     ValueInputIteratorItT d_values_in,
@@ -985,20 +1145,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -1008,7 +1177,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -1031,7 +1200,7 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      ::cuda::std::move(env));
+      env);
   }
 
   //! @rst
@@ -1088,20 +1257,29 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
-  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
-  //!   *Choosing argument bounds* section).
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Its statically-known maximum must lie within the
+  //!   currently supported range (see the *Current constraints* section for the value and its architecture dependence):
+  //!   narrow types (`int8_t`/`int16_t`/`uint16_t`) qualify unannotated, while wider types (`int32_t`/`uint32_t`/
+  //!   `int64_t`) must carry a compile-time `cuda::args::bounds`. A negative lower bound is allowed; negative runtime
+  //!   sizes clamp to an empty segment. Prefer a sharp (tight) upper bound, since a looser bound may increase
+  //!   temporary-storage usage (see the *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value. It has
+  //!   no algorithm-imposed maximum; a `k` larger than a segment's size selects that whole segment. Like
+  //!   `segment_sizes`, a negative lower bound is allowed and a negative runtime `k` is then clamped to 0 (selecting
+  //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
+  //!   non-negative.
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
-  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `output_ordering::unsorted` (`sorted` / `stable_sorted`, and
+  //!   thus an empty environment, are not yet supported). The selection requirements may be any acknowledged
+  //!   `(determinism, tie_break)` pair: `(not_guaranteed, unspecified)`, `(run_to_run, unspecified)`, or `gpu_to_gpu`
+  //!   with `unspecified` / `prefer_smaller_index` / `prefer_larger_index`. Deterministic requests require SM 9.0+.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
@@ -1111,7 +1289,7 @@ struct DeviceBatchedTopK
             typename KParameterT,
             typename NumSegmentsParameterT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
+  [[nodiscard]] _CCCL_HOST_API static cudaError_t MinPairs(
     KeyInputIteratorItT d_keys_in,
     KeyOutputIteratorItT d_keys_out,
     ValueInputIteratorItT d_values_in,

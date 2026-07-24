@@ -51,6 +51,26 @@ template <typename NumItemsT>
 using choose_offset_t = typename choose_offset<NumItemsT>::type;
 
 /**
+ * choose_offset_for_max selects the smallest unsigned offset type (at least 32 bits) representing the compile-time
+ * upper bound MaxItems. Unlike choose_offset (which keys off sizeof(NumItemsT)), this keys off the bound's value, so a
+ * wide type carrying a small static bound still yields a 32-bit offset.
+ */
+template <::cuda::std::uint64_t MaxItems>
+struct choose_offset_for_max
+{
+  using type = ::cuda::std::_If<(MaxItems <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()),
+                                ::cuda::std::uint32_t,
+                                unsigned long long>;
+};
+
+/**
+ * choose_offset_for_max_t is an alias template selecting the smallest unsigned offset type (at least 32 bits) that can
+ * represent the compile-time upper bound MaxItems.
+ */
+template <::cuda::std::uint64_t MaxItems>
+using choose_offset_for_max_t = typename choose_offset_for_max<MaxItems>::type;
+
+/**
  * promote_small_offset checks NumItemsT, the type of the num_items parameter, and
  * promotes any integral type smaller than 32 bits to a signed 32-bit integer type.
  */

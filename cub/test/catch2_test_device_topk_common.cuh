@@ -6,14 +6,146 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_baseline_policy
+#include <cub/util_device.cuh> // cub::PtxVersion
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/remove.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
+
+// Low-level predicate: true when a request that must use the SM90+ cluster backend has no cluster-capable target in the
+// build. With `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test sources do), such a request
+// degrades to a runtime cudaErrorNotSupported rather than a compile-time error; callers dispatch it, verify that error
+// (via expect_batched_topk_unsupported_and_skip), and skip the result-correctness checks. `needs_cluster` must be true
+// when the caller knows the configuration requires the cluster backend; prefer batched_topk_backend_unavailable(),
+// which derives it from the request.
+//
+// Uses cub::PtxVersion (the compiled compute capability the dispatch resolves via PtxComputeCap), not cub::SmVersion
+// (the physical device): the two diverge when compiling for a virtual architecture below the device (e.g. `89-virtual`
+// on an SM120 GPU), where the cluster arm is never emitted and the dispatch returns cudaErrorNotSupported -- exactly
+// what this must catch.
+inline bool batched_topk_cluster_backend_unavailable(bool needs_cluster)
+{
+  if (!needs_cluster)
+  {
+    return false;
+  }
+  int ptx_version = 0;
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
+  constexpr int cluster_min_ptx_version = 900; // SM 9.0
+  return ptx_version < cluster_min_ptx_version;
+}
+
+// True when the batched top-k configuration cannot run in the current build (see
+// batched_topk_cluster_backend_unavailable). The request needs the cluster backend if it is deterministic / has a
+// concrete tie-break, or if `static_max_segment_size` exceeds the baseline backend's coverage. Deriving the size
+// decision here (rather than a precomputed `oversize` bool) keeps the threshold in one place. Pass the same maximum
+// segment size the test hands to the dispatch: its `cuda::args::bounds<...>` upper bound (or, for an un-annotated
+// narrow type, that type's maximum; a type whose maximum exceeds 2^21 no longer compiles without a bound). Note that
+// `oversize` uses only the tile-size bound `baseline_max_covered_segment_size`; the dispatch's `baseline_can_cover_v`
+// additionally checks the agent's shared-memory fit, so a borderline size the bound deems baseline-coverable could
+// still route to the cluster backend (such a case would fail rather than skip if the cluster backend is unavailable).
+template <cuda::execution::determinism::__determinism_t Determinism =
+            cuda::execution::determinism::__determinism_t::__not_guaranteed,
+          cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified>
+bool batched_topk_backend_unavailable(cuda::std::int64_t static_max_segment_size)
+{
+  constexpr bool deterministic = Determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed
+                              || TieBreak != cuda::execution::tie_break::__tie_break_t::__unspecified;
+  const bool oversize =
+    static_max_segment_size
+    > cub::detail::batched_topk::baseline_max_covered_segment_size(cub::detail::batched_topk::make_baseline_policy());
+  return batched_topk_cluster_backend_unavailable(deterministic || oversize);
+}
+
+// Runs the two-phase direct-API dispatch `dispatch(d_temp_storage, temp_storage_bytes)` (temp-size query, then launch)
+// for a request whose backend is unavailable in this build, and verifies it degraded gracefully at runtime: the query
+// still succeeds (returns a placeholder size), while the launch must return cudaErrorNotSupported
+// (CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT defers the would-be compile-time diagnostic to runtime). Then skips the
+// result-correctness checks, which need a device that can run the request. Callers gate this on
+// batched_topk_backend_unavailable() (or batched_topk_cluster_backend_unavailable() when the request is already known
+// to require the cluster backend); `dispatch` forwards to the direct-API entry point (host-side; the runtime error is
+// backend-selection driven and independent of the launch variant under test).
+template <class DispatchFn>
+void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
+{
+  cuda::std::size_t temp_storage_bytes = 0;
+  REQUIRE(dispatch(nullptr, temp_storage_bytes) == cudaSuccess);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(dispatch(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes) == cudaErrorNotSupported);
+  SKIP("This batched top-k request routes to the SM90+ cluster backend, which the compute capability this dispatch "
+       "resolved to does not provide; the dispatch reported cudaErrorNotSupported at runtime "
+       "(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT) as expected. Skipping the result-correctness checks.");
+}
+
+// Whole-`topk_policy` tuning override that forces the cluster backend and pins otherwise heuristic / hardware-derived
+// launch geometry, so a *small* segment can deterministically reach paths that normally only large segments hit. Shared
+// by the segmented keys and pairs cluster tests (identical there, so it lives here). The levers (a `0`/`-1` sentinel
+// keeps the production default):
+//   * `MaxBlocksPerCluster`   -- cap on the launched cluster width. A cap narrower than a segment needs forces the
+//                                oversize/streaming fallback (cap 1 -> single-CTA streaming; cap 2 -> a fixed 2-CTA
+//                                cluster with a real cross-CTA scan / barriers) instead of the hardware-derived width.
+//   * `MaxChunkSlotsPerBlock` -- cap on resident chunk slots per block. Resident capacity is then `slots * chunk_items`
+//                                (host-known), so a tiny segment above it overflows into streaming -- how a test
+//                                reaches the streaming / stage-schedule paths at a racecheck-tiny footprint. Combined
+//                                with a segment size that overflows to a non-divisor resident-chunk count, it also
+//                                reaches the misaligned-tail (`stage_rot`) prime rotation.
+//   * `SingleBlockMaxSegSize` -- pin the single-CTA-fastpath threshold; `0` disables it so even a small resident
+//                                segment fans out across the cluster (multi-CTA scan / idle-rank paths).
+//   * `ChunkBytes`            -- shrink the chunk (== slot) stride so a small segment still spans several chunks.
+//   * `PipelineStages`        -- vary the streaming pipeline depth relative to the resident chunk count, sweeping the
+//                                `stream_stages` <, ==, > `prologue` stage-schedule trichotomy.
+//   * `MinChunksPerBlock`     -- raise the chunks-per-block divisor to collapse the effective cluster below the
+//                                physical width (idle-rank early-out).
+template <int MaxBlocksPerCluster,
+          int MaxChunkSlotsPerBlock = 0,
+          int SingleBlockMaxSegSize = -1,
+          int ChunkBytes            = 0,
+          int PipelineStages        = 0,
+          int MinChunksPerBlock     = 0>
+struct cluster_tuning_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::batched_topk::topk_policy
+  {
+    auto cluster                   = cub::detail::batched_topk::make_cluster_policy();
+    cluster.max_blocks_per_cluster = MaxBlocksPerCluster;
+    if constexpr (MaxChunkSlotsPerBlock != 0)
+    {
+      cluster.max_chunk_slots_per_block = MaxChunkSlotsPerBlock;
+    }
+    if constexpr (SingleBlockMaxSegSize >= 0)
+    {
+      cluster.single_block_max_seg_size = SingleBlockMaxSegSize;
+    }
+    if constexpr (ChunkBytes != 0)
+    {
+      cluster.chunk_bytes = ChunkBytes;
+    }
+    if constexpr (PipelineStages != 0)
+    {
+      cluster.pipeline_stages = PipelineStages;
+    }
+    if constexpr (MinChunksPerBlock != 0)
+    {
+      cluster.min_chunks_per_block = MinChunksPerBlock;
+    }
+    return cub::detail::batched_topk::topk_policy{
+      cub::detail::batched_topk::topk_algorithm::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
+  }
+};
+
+// 512 B chunk stride -> 128 floats per chunk (== per slot); small enough that a tiny segment spans several chunks.
+inline constexpr int cluster_test_chunk_bytes = 512;
 
 // Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
@@ -314,9 +446,10 @@ c2h::device_vector<KeyT> compact_to_topk_batched(
     cuda::make_counting_iterator(0),
     get_output_size_op{d_offsets.cbegin(), k_it, static_cast<cuda::std::int64_t>(num_segments)});
 
-  // Calculate destination offsets via prefix sum
-  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(copy_sizes_it, copy_sizes_it + num_segments + 1, d_output_offsets.begin());
+  // Calculate destination offsets via prefix sum. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, which stay in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1);
+  thrust::inclusive_scan(copy_sizes_it, copy_sizes_it + num_segments, d_output_offsets.begin() + 1);
 
   OffsetT total_compacted_size = d_output_offsets.back();
   c2h::device_vector<KeyT> d_keys_out(total_compacted_size, thrust::no_init);

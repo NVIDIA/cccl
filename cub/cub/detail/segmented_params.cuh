@@ -13,16 +13,167 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
+
 #include <cuda/argument>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__iterator/concepts.h> // indirectly_readable, random_access_iterator
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integer.h> // __cccl_is_integer_v
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/cmp.h> // cmp_greater_equal, cmp_less_equal
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::params
 {
+// =====================================================================
+// Deferred handle requirements
+// =====================================================================
+
+// Rejecting range/container arguments (span, array, ...) is a deliberate narrowing of CUB's API surface, not a
+// limitation of the cuda::args annotation framework (which accepts ranges by design): no CUB device API takes a range
+// today, and annotating one would be unclear to users (does a bound constrain the element values or the range's
+// size?). A revisitable decision -- the traits below accept only dereferenceable handles / random-access iterators.
+
+// A `deferred` is read by dereferencing its handle (`*handle`, see the get_param overload below), so the handle must
+// be indirectly readable (a pointer or other dereferenceable handle); use `deferred_sequence` for per-segment values.
+template <class _Handle>
+inline constexpr bool __is_valid_deferred_handle_v = ::cuda::std::indirectly_readable<_Handle>;
+
+// A `deferred_sequence` is indexed per segment (`handle[index]`), so its handle must be a random-access iterator.
+template <class _Handle>
+inline constexpr bool __is_valid_deferred_sequence_handle_v = ::cuda::std::random_access_iterator<_Handle>;
+
+// =====================================================================
+// Argument-form validation (compile-time)
+// =====================================================================
+
+// Compile-time validation of an integer argument that may be supplied uniformly or per segment (e.g.
+// segment_sizes, k), matching how get_param reads it: a deferred handle or a sequence is read element-wise, so its
+// `element_type` is the value; a plain value / `constant` / `immediate` is used directly, so its `value_type` is the
+// value (which also rejects a handle wrongly wrapped as a single value, e.g. a pointer in `immediate`). Instantiating
+// the struct runs the layered static_asserts below (each gated on the previous so a single misuse yields one targeted
+// diagnostic); `all_ok` lets the caller gate the downstream dispatch to avoid follow-on cascades. Any argument-specific
+// range/bound check is left to the caller.
+template <class _Param>
+struct __validate_uniform_or_per_segment_integral_param
+{
+  using args_traits = ::cuda::args::__traits<_Param>;
+
+  static constexpr bool is_valid_type = ::cuda::args::__is_wrapper_v<_Param> || ::cuda::std::is_integral_v<_Param>;
+
+  using __value_t = ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
+                                               typename args_traits::element_type,
+                                               typename args_traits::value_type>;
+  static constexpr bool is_integral =
+    ::cuda::std::is_integral_v<__value_t> && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__value_t>, bool>;
+
+  static constexpr bool is_deferred_single = args_traits::is_deferred && args_traits::is_single_value;
+  static constexpr bool is_deferred_seq    = args_traits::is_deferred && !args_traits::is_single_value;
+  static constexpr bool handle_ok =
+    (!is_deferred_single || __is_valid_deferred_handle_v<typename args_traits::value_type>)
+    && (!is_deferred_seq || __is_valid_deferred_sequence_handle_v<typename args_traits::value_type>);
+
+  static constexpr bool all_ok = is_valid_type && is_integral && handle_ok;
+
+  static_assert(is_valid_type,
+                "cub: a uniform-or-per-segment integer argument (e.g. cub::DeviceBatchedTopK segment_sizes or k) must "
+                "be a cuda::args annotation or a plain integral value (taken as a uniform immediate). A raw pointer or "
+                "iterator is not interpreted as a sequence. Wrap per-segment values in cuda::args::deferred_sequence, "
+                "or a single device-side value in cuda::args::deferred.");
+  static_assert(!is_valid_type || is_integral,
+                "cub: a uniform-or-per-segment integer argument (e.g. cub::DeviceBatchedTopK segment_sizes or k) must "
+                "have an integral (non-bool) element type (it is a count of items).");
+  static_assert(
+    !is_valid_type || !is_integral || !is_deferred_single
+      || __is_valid_deferred_handle_v<typename args_traits::value_type>,
+    "cub: a uniform-or-per-segment integer argument passed via cuda::args::deferred must wrap a pointer or "
+    "other dereferenceable handle to a single device-side integral value (it is read via *handle); a range "
+    "or container such as span / array is not accepted -- use cuda::args::deferred_sequence for per-segment "
+    "values.");
+  static_assert(!is_valid_type || !is_integral || !is_deferred_seq
+                  || __is_valid_deferred_sequence_handle_v<typename args_traits::value_type>,
+                "cub: a uniform-or-per-segment integer argument passed via cuda::args::deferred_sequence must wrap a "
+                "random-access iterator (a pointer qualifies) over the per-segment integral values (it is indexed per "
+                "segment).");
+};
+
+// Compile-time validation of an integer argument that must be a single value, uniform across all segments (e.g.
+// num_segments): a per-segment sequence (`deferred_sequence`) is rejected, but a single `deferred` (device-resident)
+// value is allowed here. Read like the single-value forms above: a single deferred via *handle (`element_type`),
+// everything else directly (`value_type`). A caller that additionally needs the value on the host (e.g. num_segments,
+// which sizes the launch) checks `!args_traits::is_deferred` separately. Instantiating the struct runs the layered
+// static_asserts (one diagnostic per misuse).
+template <class _Param>
+struct __validate_uniform_integral_param
+{
+  using args_traits = ::cuda::args::__traits<_Param>;
+
+  static constexpr bool is_valid_type = ::cuda::args::__is_wrapper_v<_Param> || ::cuda::std::is_integral_v<_Param>;
+
+  static constexpr bool is_single_value    = args_traits::is_single_value;
+  static constexpr bool is_deferred_single = args_traits::is_deferred && args_traits::is_single_value;
+
+  using __value_t = ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
+                                               typename args_traits::element_type,
+                                               typename args_traits::value_type>;
+  static constexpr bool is_integral =
+    ::cuda::std::is_integral_v<__value_t> && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__value_t>, bool>;
+
+  static constexpr bool handle_ok =
+    !is_deferred_single || __is_valid_deferred_handle_v<typename args_traits::value_type>;
+
+  static constexpr bool all_ok = is_valid_type && is_single_value && is_integral && handle_ok;
+
+  static_assert(is_valid_type,
+                "cub: a uniform integer argument (e.g. cub::DeviceBatchedTopK num_segments) must be a cuda::args "
+                "annotation or a plain integral value. A raw pointer or iterator is not accepted.");
+  static_assert(!is_valid_type || is_single_value,
+                "cub: a uniform integer argument (e.g. cub::DeviceBatchedTopK num_segments) must be a single value "
+                "(the same for every segment); a per-segment sequence (cuda::args::deferred_sequence) is not "
+                "accepted.");
+  static_assert(!is_valid_type || !is_single_value || is_integral,
+                "cub: a uniform integer argument (e.g. cub::DeviceBatchedTopK num_segments) must have an integral "
+                "(non-bool) type.");
+  static_assert(!is_valid_type || !is_single_value || !is_integral || !is_deferred_single
+                  || __is_valid_deferred_handle_v<typename args_traits::value_type>,
+                "cub: a uniform integer argument passed via cuda::args::deferred must wrap a pointer or other "
+                "dereferenceable handle to a single device-side integral value (it is read via *handle).");
+};
+
+// =====================================================================
+// Argument contract checks (debug-only)
+// =====================================================================
+
+// Shared debug-only contract check for the argument reads the host cannot validate at call time: a value read on the
+// device in stream order from a `deferred`/`deferred_sequence` handle must lie within that argument's *effective*
+// bounds -- the intersection of its static `cuda::args::bounds` and any runtime bounds, as computed by
+// ::cuda::args::__lowest_/__highest_. A value outside them breaks the caller's promise and is otherwise undefined
+// behavior. Compiled out when assertions are disabled (the bounds are not even computed). Gated on the argument's
+// integer element type (not the read value type, which may be a proxy reference): `bool` and character types are
+// excluded, matching the `cmp_*` comparators.
+template <class _Arg, class _Value>
+_CCCL_HOST_DEVICE constexpr void
+__assert_param_in_bounds([[maybe_unused]] const _Arg& __arg, [[maybe_unused]] const _Value& __value) noexcept
+{
+  using __element_t = typename ::cuda::args::__traits<_Arg>::element_type;
+  if constexpr (::cuda::std::__cccl_is_integer_v<__element_t>)
+  {
+    const __element_t __checked = static_cast<__element_t>(__value);
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__checked, ::cuda::args::__lowest_(__arg))
+                   && ::cuda::std::cmp_less_equal(__checked, ::cuda::args::__highest_(__arg)),
+                 "cub argument value is outside its declared bounds");
+  }
+}
+
 // =====================================================================
 // get_param — unified segment parameter access
 // =====================================================================
@@ -64,15 +215,55 @@ template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
-  return ::cuda::args::__unwrap(__arg);
+  // A single `deferred` wraps a handle to a device-side value (a pointer or input iterator), not the value itself;
+  // the value is read on the device by dereferencing the handle.
+  auto __value = *::cuda::args::__unwrap(__arg);
+  __assert_param_in_bounds(__arg, __value);
+  return __value;
 }
 
 template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
 {
-  return ::cuda::args::__unwrap(__arg)[__index];
+  auto __value = ::cuda::args::__unwrap(__arg)[__index];
+  __assert_param_in_bounds(__arg, __value);
+  return __value;
 }
+
+// Reads parameter `__index` and, when the argument's static lower bound is negative (e.g. an un-annotated `int16_t` or
+// an explicit `bounds` with a negative lower end), clamps a negative runtime value up to 0 in the argument's own
+// element type -- before any widening/narrowing cast, so a caller that later widens the result cannot reinterpret a
+// negative value as a huge unsigned one. A negative count thus becomes "no work". Deferred forms are range-checked
+// against their declared bounds by `get_param` in debug builds.
+template <class _Arg, class _SegmentIndexT>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+__get_and_clamp_param_to_nonnegative(const _Arg& __arg, _SegmentIndexT __index) noexcept
+{
+  // Materialize into the scalar element type: get_param yields a proxy reference for fancy iterators, and the clamp
+  // must act on a real value (a `static_cast<proxy>(0)` would form a null proxy that `max` then dereferences).
+  using __element_t         = typename ::cuda::args::__traits<_Arg>::element_type;
+  const __element_t __value = get_param(__arg, __index);
+  constexpr auto __lowest   = ::cuda::args::__traits<_Arg>::lowest;
+  // Use a plain `<` against a same-typed zero, not the integer-only `cmp_*` comparators (which reject character element
+  // types, see `__assert_param_in_bounds`); the `is_signed_v` guard skips the test for unsigned types, whose lower
+  // bound is never negative.
+  if constexpr (::cuda::std::is_signed_v<__element_t> && __lowest < __element_t{0})
+  {
+    return (::cuda::std::max) (__value, __element_t{0});
+  }
+  else
+  {
+    return __value;
+  }
+}
+
+//! Smallest unsigned CUB offset type (>= 32-bit) covering @p _ParamT's declared static upper bound (from
+//! @c cuda::args), via @c detail::choose_offset_for_max_t. The bound is taken as given, never clamped: a bound the
+//! algorithm cannot support is a caller contract violation for its own static/runtime checks to surface.
+template <class _ParamT>
+using bounded_offset_t =
+  detail::choose_offset_for_max_t<static_cast<::cuda::std::uint64_t>(::cuda::args::__traits<_ParamT>::highest)>;
 
 // =====================================================================
 // Discrete parameter support
