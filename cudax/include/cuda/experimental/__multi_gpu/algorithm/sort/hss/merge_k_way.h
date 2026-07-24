@@ -72,11 +72,11 @@ _CCCL_HOST_API void __merge_k_way(
   __CUDAX_MULTI_GPU_DISPATCH(
     __comm.logical_device(),
     CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
-    __data.begin() + __displs[0],
+    __data.data() + __displs[0],
     __counts[0],
-    __data.begin() + __displs[1],
+    __data.data() + __displs[1],
     __counts[1],
-    __ret->begin(),
+    __ret->data(),
     __cmp,
     __env);
 
@@ -87,11 +87,11 @@ _CCCL_HOST_API void __merge_k_way(
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
-      __ret->begin(),
+      __ret->data(),
       __merged_size,
-      __data.begin() + __displs[__i],
+      __data.data() + __displs[__i],
       __counts[__i],
-      __tmp_buf.begin(),
+      __tmp_buf.data(),
       __cmp,
       __env);
 

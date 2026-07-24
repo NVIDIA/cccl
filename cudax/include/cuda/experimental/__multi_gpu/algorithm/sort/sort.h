@@ -25,12 +25,10 @@
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/execute.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
 #include <cuda/experimental/__multi_gpu/concepts.h>
 #include <cuda/experimental/__utility/result_policy.cuh>
 
@@ -42,22 +40,17 @@ namespace cuda::experimental
 {
 _CCCL_TEMPLATE(
   class _Policy, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp = ::cuda::std::less<>)
-_CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::ranges::forward_range<_EnvRange> _CCCL_AND
-                 __detail::__range_of_sized_random_access_ranges<_InputRange>)
+_CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::ranges::forward_range<_EnvRange>
+                 _CCCL_AND ::cuda::experimental::__detail::__range_of_sized_random_access_ranges<_InputRange>)
 void sort(const __result_policy_base<_Policy>& __policy,
           _CommRange&& __comms,
           _EnvRange&& __envs,
           _InputRange&& __range_of_input_ranges,
           _BinaryOp __cmp = {})
 {
-  using __result_type =
-    ::cuda::std::ranges::range_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
-  using __env_type = ::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_EnvRange>>;
-  using __traits   = ::cuda::experimental::__detail::__hss_sort::__hss_traits<__result_type, __env_type, _BinaryOp>;
-
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::sort");
 
-  ::cuda::experimental::__detail::__hss_sort::__execute<__traits>(
+  ::cuda::experimental::__detail::__hss_sort::__execute(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
