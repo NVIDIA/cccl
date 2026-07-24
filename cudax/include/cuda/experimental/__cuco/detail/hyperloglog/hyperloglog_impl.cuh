@@ -107,6 +107,12 @@ public:
       , __sketch{reinterpret_cast<int*>(__sketch_span.data()), __sketch_bytes() / sizeof(__register_type)}
   // MSVC fails with __register_type*, use int* instead
   {
+    constexpr ::cuda::std::size_t __minimum_sketch_bytes = sizeof(__register_type) * (1ull << 4);
+    if (__sketch_span.size() < __minimum_sketch_bytes)
+    {
+      _CCCL_THROW(::std::invalid_argument, "Minimum required sketch size is 0.0625KB or 64B");
+    }
+
     if (!::cuda::is_aligned(__sketch_span.data(), __sketch_alignment()))
     {
       _CCCL_THROW(::std::invalid_argument, "Sketch storage has insufficient alignment");
@@ -329,7 +335,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE_API constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
+  _CCCL_DEVICE_API constexpr void __merge(_CG __group, const __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
   {
     if (__other.__precision != __precision)
     {

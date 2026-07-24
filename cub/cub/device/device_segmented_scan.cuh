@@ -320,7 +320,7 @@ public:
     BeginOffsetIteratorInputT d_in_begin_offsets,
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
@@ -579,7 +579,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
@@ -848,7 +848,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
@@ -1124,7 +1124,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
@@ -1352,7 +1352,7 @@ public:
     BeginOffsetIteratorInputT d_in_begin_offsets,
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
@@ -1609,7 +1609,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
@@ -1841,7 +1841,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
@@ -2110,7 +2110,7 @@ public:
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
@@ -2374,7 +2374,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
@@ -2654,7 +2654,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 

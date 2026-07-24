@@ -6,8 +6,8 @@
 """
 Test runner for CCCL examples.
 
-This module automatically discovers and runs all example scripts from both
-coop and compute directories to ensure they execute without errors.
+This module automatically discovers and runs all example scripts from the
+compute directory to ensure they execute without errors.
 """
 
 import importlib
@@ -26,7 +26,6 @@ def discover_examples():
     examples = []
 
     example_directories = [
-        ("Coop Experimental", "coop/_experimental/examples"),
         ("Compute", "compute/examples"),
     ]
 
@@ -47,8 +46,8 @@ def discover_examples():
             rel_path = python_file.relative_to(tests_dir)
 
             # Convert path to module name (OS-agnostic)
-            # Example: coop/_experimental/examples/block/reduce.py
-            #          -> coop._experimental.examples.block.reduce
+            # Example: compute/examples/reduce/reduce_basic.py
+            #          -> compute.examples.reduce.reduce_basic
             module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display

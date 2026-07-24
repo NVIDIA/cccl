@@ -78,12 +78,13 @@ struct policy_selector_from_hub
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
     return ThreeWayPartitionPolicy{
-      active_policy::BLOCK_THREADS,
-      active_policy::ITEMS_PER_THREAD,
-      active_policy::LOAD_ALGORITHM,
-      active_policy::LOAD_MODIFIER,
-      active_policy::SCAN_ALGORITHM,
-      lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      ThreeWayPartitionAlgorithm::lookback,
+      {active_policy::BLOCK_THREADS,
+       active_policy::ITEMS_PER_THREAD,
+       active_policy::LOAD_ALGORITHM,
+       active_policy::LOAD_MODIFIER,
+       active_policy::SCAN_ALGORITHM,
+       lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>}};
   }
 };
 
@@ -497,8 +498,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr int init_kernel_threads               = 256;
 
-  const int threads_per_block = active_policy.threads_per_block;
-  const int items_per_thread  = active_policy.items_per_thread;
+  const int threads_per_block = active_policy.lookback.threads_per_block;
+  const int items_per_thread  = active_policy.lookback.items_per_thread;
   const int tile_size         = threads_per_block * items_per_thread;
 
   auto three_way_partition_init_kernel = kernel_source.ThreeWayPartitionInitKernel();

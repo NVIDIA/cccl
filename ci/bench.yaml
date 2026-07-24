@@ -38,7 +38,6 @@ benchmarks:
       # Examples:
       # - 'compute/reduce/sum\.py'
       # - 'compute/transform/.*\.py'
-      # - 'coop/_experimental/bench_warp_reduce\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:

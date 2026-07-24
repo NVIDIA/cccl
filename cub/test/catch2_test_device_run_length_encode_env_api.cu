@@ -86,13 +86,14 @@ struct RleNonTrivialRunsPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::RleNonTrivialRunsPolicy
   {
-    return {.threads_per_block       = 128,
-            .items_per_thread        = cc > cuda::compute_capability{9, 0} ? 20 : 15,
-            .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            .load_modifier           = cub::LOAD_DEFAULT,
-            .store_with_time_slicing = false,
-            .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay          = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::RleNonTrivialRunsAlgorithm::lookback,
+            .lookback  = {.threads_per_block       = 128,
+                          .items_per_thread        = cc > cuda::compute_capability{9, 0} ? 20 : 15,
+                          .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                          .load_modifier           = cub::LOAD_DEFAULT,
+                          .store_with_time_slicing = false,
+                          .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay          = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end non-trivial-runs-policy-selector
