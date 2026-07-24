@@ -214,7 +214,7 @@ public:
 private:
   result_type __x_{};
 
-  static constexpr result_type _Mp = static_cast<result_type>(~0);
+  static constexpr result_type _Mp = static_cast<result_type>(~0); // NOLINT(bugprone-misplaced-widening-cast)
 
   static_assert(__M == 0 || __A < __M, "linear_congruential_engine invalid parameters");
   static_assert(__M == 0 || __C < __M, "linear_congruential_engine invalid parameters");

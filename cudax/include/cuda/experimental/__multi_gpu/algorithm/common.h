@@ -66,6 +66,10 @@ _CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, :
     __env);
 }
 
+template <class _Env>
+using __resource_type_for = ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
+  ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+
 template <typename _Env>
 [[nodiscard]] _CCCL_HOST_API constexpr decltype(auto) __sanitize_buffer_env(const _Env& __env)
 {
@@ -103,8 +107,7 @@ struct __in_range_out_it_properties
 
   using __env_type = ::cuda::std::ranges::range_value_t<_EnvRange>;
 
-  using __resource_type = ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
-    ::cuda::std::declval<__env_type>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+  using __resource_type = ::cuda::experimental::__detail::__resource_type_for<__env_type>;
 
   using __buffer_type = ::cuda::__buffer_type_for_props<__output_type, typename __resource_type::default_queries>;
 };
