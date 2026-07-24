@@ -26,6 +26,7 @@
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/array>
 
 #  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
@@ -125,14 +126,15 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   return __result;
 }
 
-//! @brief Conservative check for interleaved stride order in tensor layouts.
+//! @brief Conservative check for non-unique/interleaved layout.
 //!
-//! Sorts modes by ascending absolute stride, then verifies two conditions:
-//! 1. No mode with extent > 1 has stride == 0 (broadcast)
-//! 2. No mode's span (extent * |stride|) exceeds the next mode's |stride|
+//! A layout is non-unique/interleaved if there exists two different indices
+//! that map to the same element (i.e. `dot(idx1, strides) == dot(idx2, strides)`).
 //!
-//! Returns true when the layout fails this non-interleaving rule. This is stronger than a mathematical injectivity
-//! check and may reject some layouts with distinct offsets.
+//! The check is exact for layouts that are dense or are a result of common
+//! tensor layout transformations (transposing, slicing, broadcasting, reshaping,
+//! vectorizing) applied to a dense layout. In general case, it may
+//! incorrectly return true for non-interleaved/unique layouts.
 //!
 //! @param[in] __mdspan Mdspan view to inspect
 //! @return true if the layout has interleaved strides
@@ -145,26 +147,49 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
     namespace cudax       = ::cuda::experimental;
     const auto __tensor   = cudax::__to_raw_tensor(__mdspan);
     const auto __sorted   = cudax::__sort_by_stride(__tensor);
-    using __stride_t      = decltype(__sorted.__strides[0]);
+    using __index_t       = typename _Extents::index_type;
     using __rank_t        = typename _Extents::rank_type;
     const auto& __extents = __sorted.__extents;
     const auto& __strides = __sorted.__strides;
     const auto __rank     = __sorted.__rank;
     for (__rank_t __i = 0; __i < __rank; ++__i)
     {
-      if (__extents[__i] > 1 && __strides[__i] == 0)
+      if (__extents[__i] == 0)
       {
-        return true;
+        // there are no elements in zero-volume layout
+        return false;
       }
     }
-    for (__rank_t __i = 0; __i + 1 < __rank; ++__i)
+    // max_dist is maximal distance between two elements in sub-layout restricted to i - 1 dims with smallest strides:
+    // max_offset = sum((e_j - 1) * s_j for j in range(i) if s_j > 0)
+    // min_offset = sum((e_j - 1) * s_j for j in range(i) if s_j < 0)
+    // max_dist = max_offset - min_offset = sum((e_j - 1) * |s_j| for j in range(i))
+    __index_t __max_dist = 0;
+    for (__rank_t __i = 0; __i < __rank; ++__i)
     {
-      const auto __extent = static_cast<__stride_t>(__extents[__i]);
-      if (__extent * cudax::__abs_integer(__strides[__i]) > cudax::__abs_integer(__strides[__i + 1]))
+      const auto __extent = static_cast<__index_t>(__extents[__i]);
+      if (__extent != 1)
       {
-        return true;
+        const auto __abs_stride = cudax::__abs_integer(__strides[__i]);
+        if (__abs_stride <= __max_dist)
+        {
+          return true;
+        }
+        // note that slicing a layout, while it may increase _abs_stride, cannot increase dimension's contribution
+        // to max_dist
+        __max_dist += (__extent - 1) * __abs_stride;
       }
     }
+    // Assume for contradiction that there exists two different n-dimensional
+    // indices idx1 and idx2 such that `dot(idx1, strides) == dot(idx2, strides)`.
+    // Without loss of generality, assume that `idx1[n-1] != idx2[n-1]`
+    // (we can ignore the suffix where idx1 and idx2 are equal).
+    // We have `dot(idx1, strides) = dot(idx2, strides)`. Rearranging the terms we get:
+    // `(idx1[n-1] - idx2[n-1]) * s[n-1] = dot(idx2[:n-1], strides[:n-1]) - dot(idx1[:n-1], strides[:n-1])`.
+    // |(idx1[n-1] - idx2[n-1]) * s[n-1]| = |dot(idx2[:n-1], strides[:n-1]) - dot(idx1[:n-1], strides[:n-1])|.
+    // Now, |s[n-1]| <= |(idx1[n-1] - idx2[n-1])| * |s[n-1]| = LHS
+    // And RHS is a distance between two elements in sub-layout restricted to n-1 dims
+    // thus RHS <= max_dist, so we must have returned true for i = n - 1.
     return false;
   }
   else
