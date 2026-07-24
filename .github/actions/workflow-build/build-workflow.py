@@ -59,6 +59,7 @@ import copy
 import functools
 import json
 import os
+import random
 import re
 import struct
 import sys
@@ -467,6 +468,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
+    if matrix_job.get("use_sccache_dist", False):
+        extra_info += " (dist)"
+
     return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
@@ -611,6 +615,39 @@ def generate_dispatch_job_json(matrix_job, job_type):
     }
 
 
+def annotate_job_for_build_cluster(matrix_job, job_type, use_build_cluster_if_possible):
+    job_info = get_job_type_info(job_type)
+    project = get_project(matrix_job["project"])
+    job_prefix = job_info["invoke"]["prefix"]
+    matrix_job["environment"] = matrix_job.get("environment") or []
+
+    if (
+        use_build_cluster_if_possible
+        # Only use the build cluster for build jobs
+        and job_prefix == "build"
+        # Only use the build cluster for CPU jobs
+        and not job_info["gpu"]
+        # Only use the build cluster for Linux jobs
+        and not is_windows(matrix_job)
+        # Only use the build cluster for cudax, CUB, Thrust, and libcu++ jobs
+        and project["id"] in ["cudax", "cub", "thrust", "libcudacxx"]
+    ):
+        matrix_job = copy.deepcopy(matrix_job)
+        matrix_job["use_sccache_dist"] = True
+        matrix_job["environment"].append("USE_SCCACHE_DIST=true")
+        # Over-subscribe -j to keep the build cluster busy if *not* ClangCUDA
+        # or Python. ClangCUDA can use the build cluster for C++ files, but not
+        # CUDA, and we'll OOM if we try to compile too many at once.
+        if "clang" not in matrix_job["cudacxx"]:
+            matrix_job["environment"].append("PARALLEL_LEVEL=0")
+    else:
+        matrix_job = copy.deepcopy(matrix_job)
+        matrix_job["use_sccache_dist"] = False
+        matrix_job["environment"].append("USE_SCCACHE_DIST=false")
+
+    return matrix_job
+
+
 # Create a single build producer, and a separate consumer for each test_job_type:
 def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job_types):
     # If any consumer job types have 'force_producer_ctk' set, use that CTK for the producer job.
@@ -647,11 +684,19 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
     else:
         producer_matrix_job = matrix_job
 
-    producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
+    producer_json = generate_dispatch_job_json(
+        annotate_job_for_build_cluster(producer_matrix_job, producer_job_type, True),
+        producer_job_type,
+    )
 
     consumers_json = []
     for consumer_job_type in consumer_job_types:
-        consumers_json.append(generate_dispatch_job_json(matrix_job, consumer_job_type))
+        consumers_json.append(
+            generate_dispatch_job_json(
+                annotate_job_for_build_cluster(matrix_job, consumer_job_type, False),
+                consumer_job_type,
+            )
+        )
 
     return {"producers": [producer_json], "consumers": consumers_json}
 
@@ -680,12 +725,23 @@ def generate_dispatch_group_jobs(matrix_job):
 
     for producer, consumers in two_stage.items():
         dispatch_group_jobs["two_stage"].append(
-            generate_dispatch_two_stage_json(matrix_job, producer, list(consumers))
+            generate_dispatch_two_stage_json(
+                matrix_job, producer, sorted(list(consumers))
+            )
         )
 
     for job_type in standalone:
         dispatch_group_jobs["standalone"].append(
-            generate_dispatch_job_json(matrix_job, job_type)
+            generate_dispatch_job_json(
+                annotate_job_for_build_cluster(
+                    matrix_job,
+                    job_type,
+                    # Use the build cluster for 10% of standalone jobs,
+                    # or all arm64 jobs
+                    random.randint(0, 9) == 0 or matrix_job["cpu"] == "arm64",
+                ),
+                job_type,
+            )
         )
 
     return dispatch_group_jobs
@@ -713,11 +769,24 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 def compare_dispatch_jobs(job1, job2):
     "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
+
+    name1 = job1["name"].replace(" (dist)", "")
+    name2 = job1["name"].replace(" (dist)", "")
+    envs1 = [
+        x
+        for x in json.loads(job1["environment"])
+        if "USE_SCCACHE_DIST" not in x and x != "PARALLEL_LEVEL=0"
+    ]
+    envs2 = [
+        x
+        for x in json.loads(job2["environment"])
+        if "USE_SCCACHE_DIST" not in x and x != "PARALLEL_LEVEL=0"
+    ]
     return (
-        job1["name"] == job2["name"]
+        name1 == name2
         and job1["runner"] == job2["runner"]
         and job1["image"] == job2["image"]
-        and job1["environment"] == job2["environment"]
+        and envs1 == envs2
         and job1["command"] == job2["command"]
     )
 

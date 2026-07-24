@@ -1,10 +1,10 @@
 {
-  "image": "rapidsai/devcontainers:26.08-cpp-mambaforge",
+  "image": "rapidsai/devcontainers:26.10-cpp-mambaforge",
   "runArgs": [
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.08-cuda13.3-conda",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.10-cuda13.3-conda",
     "--ulimit",
     "nofile=500000"
   ],
@@ -41,7 +41,7 @@
     "RAPIDS_ucxx_GIT_REPO": "${localEnv:RAPIDS_ucxx_GIT_REPO}",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
-    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
+    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:2}",
     "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
     "SCCACHE_REGION": "us-east-2",
@@ -87,7 +87,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind"
   ],
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.8": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.10": {}
   },
   "overrideFeatureInstallOrder": [
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"

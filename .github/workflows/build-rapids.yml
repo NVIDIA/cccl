@@ -63,7 +63,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '13.3', libs: 'rmm ucxx kvikio cudf cudf_kafka' }
+          - { cuda: '13.3', libs: 'rmm ucxx kvikio rapidsmpf cudf cudf_kafka' }
           - { cuda: '13.3', libs: 'rmm ucxx raft cuvs nvforest cuml' }
           - { cuda: '13.3', libs: 'rmm ucxx raft cuvs cugraph wholegraph' }
           # cuopt branches change at a different time, so it must be tested on its own to avoid environment conflicts.
@@ -94,6 +94,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PYTHON_VERSION: ${{ matrix.python_version }}
           RAPIDS_LIBS: ${{ matrix.libs }}
+          # Retry 2 times if a build server shuts down while compiling,
+          # otherwise fallback to compiling locally
+          SCCACHE_DIST_MAX_RETRIES: "2"
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
@@ -107,11 +110,6 @@ jobs:
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
-          # Retry intermittent failures
-          SCCACHE_DIST_MAX_RETRIES: "inf"
-          # Never fallback to building locally, fail instead
-          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
-          SCCACHE_IDLE_TIMEOUT: 0
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
@@ -185,6 +183,21 @@ jobs:
           chmod 0600 .aws/credentials
           chmod 0664 .aws/config
 
+          SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
+
+          SCCACHE_DIST_AUTH_TOKEN="$(
+            curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com"  |
+                jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange |
+            jq -r '.token'
+          )"
+
+          echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
+
+          export SCCACHE_DIST_AUTH_TOKEN;
+
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
@@ -199,14 +212,8 @@ jobs:
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-            --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com" \
-            --env "SCCACHE_DIST_AUTH_TOKEN=$(
-              curl -fsSL -H "Authorization: Bearer $(
-                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
-              | jq -r '.value'
-              )" https://token.rapids.nvidia.com/gh/token/exchange \
-            | jq -r '.token')" \
+            --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
+            --env "SCCACHE_DIST_AUTH_TOKEN" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
