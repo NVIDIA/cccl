@@ -33,7 +33,7 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <vector>
 
@@ -43,6 +43,8 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
 //! @brief Measure the per-rank sizes, desired offsets, and global key count for the sort.
 //!
 //! Runs after the local per-rank sorts (which happen in `__execute`) to gather the metadata every
@@ -62,14 +64,16 @@ namespace cuda::experimental::__detail::__hss_sort
 //!
 //! @return The setup result carrying the resources, desired offsets, original sizes, global key
 //!         count `N`, and communicator size.
-template <class _Traits, class _CommRange, class _EnvRange, class _InputRange>
-[[nodiscard]] _CCCL_HOST_API typename _Traits::__local_setup_result_type
-__local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, ::cuda::std::int32_t __comm_size)
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _CommRange, class _EnvRange, class _InputRange>
+[[nodiscard]] _CCCL_HOST_API typename _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup_result_type
+_HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
+  _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs, ::cuda::std::int32_t __comm_size)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<typename _Traits::__resource_type> __resources;
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __all_local_offsets;
+  ::std::vector<__resource_type> __resources;
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
   ::std::vector<::cuda::std::size_t> __local_original_sizes;
   ::cuda::std::uint64_t __N = 0;
 
@@ -78,7 +82,7 @@ __local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_in
   __all_local_offsets.reserve(__num_local_inputs);
   __local_original_sizes.reserve(__num_local_inputs);
 
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::uint64_t>> __all_local_sizes;
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_sizes;
 
   __all_local_sizes.reserve(__num_local_inputs);
 
@@ -156,13 +160,15 @@ __local_setup(_CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_in
     }
   }
 
-  return typename _Traits::__local_setup_result_type{
+  return __local_setup_result_type{
     ::cuda::std::move(__resources),
     ::cuda::std::move(__all_local_offsets),
     ::cuda::std::move(__local_original_sizes),
     __N,
     __comm_size};
 }
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)

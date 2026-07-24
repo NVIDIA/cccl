@@ -27,7 +27,7 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
-#include <cuda/__iterator/zip_iterator.h>
+#include <cuda/__iterator/zip_transform_iterator.h>
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__ranges/zip_view.h>
@@ -40,7 +40,7 @@
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/merge_k_way.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/traits.h>
+#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <vector>
 
@@ -67,11 +67,10 @@ struct __finalize_splitters_fn
   const _Tp* __first_probe;
   const _Tp* __last_probe;
 
-  template <class _Tup>
-  [[nodiscard]] _CCCL_DEVICE constexpr _Tp operator()(const _Tup& __tup) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp
+  operator()(::cuda::std::uint64_t __target_rank, _Bracket<_Tp> __L_i, _Bracket<_Tp> __U_i) const noexcept
   {
-    const auto [__target_rank, __L_i, __U_i] = __tup;
-    const bool __use_L                       = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
+    const bool __use_L = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
 
     // Note that L_i and U_i might not have values if we never found any global splitters among
     // our values. In this case the "closest" is simply our extrema.
@@ -84,6 +83,8 @@ struct __finalize_splitters_fn
     return __U_i.__key.has_value() ? *__U_i.__key : *__last_probe;
   }
 };
+
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Route every rank's local keys to their destination ranks and merge the received runs.
 //!
@@ -107,22 +108,21 @@ struct __finalize_splitters_fn
 //! @param[in] __cmp The comparator defining the sorted order.
 //! @param[in] __local_splitters The per-comm splitter state supplying the finalized brackets and
 //!            probes.
-template <class _Traits, class _CommRange, class _EnvRange, class _InputRange, class _BinaryOp>
-_CCCL_HOST_API void __data_exchange(
-  const typename _Traits::__local_setup_result_type& __setup,
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _CommRange, class _EnvRange, class _InputRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
+  const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRange&& __local_inputs,
   const _BinaryOp& __cmp,
-  const ::std::vector<typename _Traits::__per_comm_splitters_type>& __local_splitters)
+  const ::std::vector<__per_comm_splitters_type>& __local_splitters)
 {
-  using _Tp = typename _Traits::__value_type;
-
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
 
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::size_t>> __local_send_counts;
-  ::std::vector<__buffer_of<_Traits, ::cuda::std::size_t>> __local_recv_counts;
+  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_send_counts;
+  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_recv_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
 
@@ -143,7 +143,7 @@ _CCCL_HOST_API void __data_exchange(
     auto& __send_counts =
       __local_send_counts.emplace_back(__Ls.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
 
-    const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
+    const auto __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
 
     // Lazily reconstruct the finalized splitters (HSS Section 4.2.2 step (5), "the key
     // ranked closest to Ni/p ... is set as the ith splitter") on the fly instead of
@@ -153,14 +153,14 @@ _CCCL_HOST_API void __data_exchange(
     // demand, eliminating one Transform launch and the splitter buffer. The ideal rank Ni/p
     // (the center of the Section 2 / Table 1 target range Ti) is supplied per-splitter by
     // __ideal_rank_fn.
-    auto __splitter_it = ::cuda::make_transform_iterator(
-      ::cuda::make_zip_iterator(
-        ::cuda::make_transform_iterator(
-          ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm_size}),
-        __Ls.begin(),
-        __Us.begin()),
-      __finalize_splitters_fn<_Tp>{
-        ::cuda::std::to_address(__probes.data()), ::cuda::std::to_address(__probes.end() - 1)});
+    _CCCL_VERIFY(!__probes.__get().empty(), "Histogramming phase should have generated at least one probe");
+
+    auto __splitter_it = ::cuda::make_zip_transform_iterator(
+      __finalize_splitters_fn<_Tp>{__probes.data(), ::cuda::std::to_address(__probes.end() - 1)},
+      ::cuda::make_transform_iterator(
+        ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm_size}),
+      __Ls.data(),
+      __Us.data());
 
     // Route this rank's local keys to destination ranks via the splitter keys: the Data
     // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
@@ -168,18 +168,21 @@ _CCCL_HOST_API void __data_exchange(
     // in [S(d - 1), S(d)) and its count becomes the send metadata. The send displacements are the
     // exclusive prefix-sum of these counts (buckets are contiguous and non-overlapping), so we
     // recompute them on the host below instead of emitting a second device column here.
-    auto __op = ::cuda::experimental::__detail::__hss_sort::__bucket_count_fn<
-      ::cuda::std::remove_cvref_t<decltype(__input_begin)>,
-      ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
-      _BinaryOp>{
-      __input_begin, ::cuda::std::to_address(::cuda::std::ranges::end(__input)), __splitter_it, __Ls.size(), __cmp};
+    auto __op = __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__input_begin)>,
+                                  ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
+                                  _BinaryOp>{
+      __input_begin,
+      ::cuda::std::to_address(::cuda::std::ranges::end(__input)),
+      ::cuda::std::move(__splitter_it),
+      __Ls.size(),
+      __cmp};
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::counting_iterator<::cuda::std::uint64_t>{},
       __send_counts.data(),
-      __comm_size,
+      __send_counts.size(),
       ::cuda::std::move(__op),
       __env);
   }
@@ -199,7 +202,7 @@ _CCCL_HOST_API void __data_exchange(
 
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
   ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
-  ::std::vector<__buffer_of<_Traits, _Tp>> __local_recvd;
+  ::std::vector<__buffer_type<_Tp>> __local_recvd;
 
   __local_recvd.reserve(__num_local_inputs);
   __local_h_send_displs.reserve(__num_local_inputs);
@@ -278,18 +281,16 @@ _CCCL_HOST_API void __data_exchange(
     }
   }
 
-  // --- Phase C: merge the p received sorted runs into the final local output
-  // ---
+  // Merge the p received sorted runs into the final local output
   for (auto&& [__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __inputs] : ::cuda::std::ranges::views::zip(
          __comms, __envs, __local_recvd, __local_h_recv_counts, __local_h_recv_displs, __local_inputs))
   {
     // TODO(jfaibussowit):
     //
     // Don't use __tmp and instead write directly to __inputs
-    auto __tmp = __buffer_of<_Traits, _Tp>{__recvd.__make_empty_like(0)};
+    auto __tmp = __buffer_type<_Tp>{__recvd.__make_empty_like(0)};
 
-    ::cuda::experimental::__detail::__hss_sort::__merge_k_way<_Traits>(
-      __comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
+    __merge_k_way(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
 
     ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__inputs, __tmp.size());
 
@@ -302,6 +303,8 @@ _CCCL_HOST_API void __data_exchange(
                                  ::cuda::source_access_order::stream});
   }
 }
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)

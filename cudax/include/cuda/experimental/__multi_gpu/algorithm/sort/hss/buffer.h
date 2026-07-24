@@ -221,7 +221,7 @@ struct __buffer
 
   [[nodiscard]] _CCCL_HOST_API auto begin() noexcept
   {
-    return __buf_.begin();
+    return data();
   }
 
   // Note: honors *our* size, not the underlying buffer's
@@ -232,7 +232,7 @@ struct __buffer
 
   [[nodiscard]] _CCCL_HOST_API auto begin() const noexcept
   {
-    return __buf_.begin();
+    return data();
   }
 
   // Note: honors *our* size, not the underlying buffer's
