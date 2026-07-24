@@ -312,6 +312,35 @@ public:
   {
     return __impl.contains(__group, __key);
   }
+
+  //! @brief Finds the slot associated with a key.
+  //!
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if the key is not found
+  template <class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API iterator find(_ProbeKey __key) const noexcept
+  {
+    return __impl.find(__key);
+  }
+
+  //! @brief Cooperative-group variant of `find`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this lookup
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the slot holding `__key`, or `end()` if the key is not found
+  template <class _ParentCG, class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API iterator
+  find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    return __impl.find(__group, __key);
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco

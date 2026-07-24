@@ -320,6 +320,55 @@ public:
     }
   }
 
+  //! @brief Asynchronously finds payloads for keys in `[first, last)` whose stencil satisfies `pred`.
+  //!
+  //! For each key `first[i]` with `pred(stencil[i]) == true` that is present, the associated payload is
+  //! written to the corresponding output position; otherwise the empty value sentinel is written.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+  _CCCL_HOST_API void find_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin,
+    _Ref __container_ref) const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+
+    __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
+      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
+        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
+  }
+
+  //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
+  //!
+  //! For each key that is present, the associated payload is written to the corresponding output
+  //! position; for each key that is absent, the empty value sentinel is written instead.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _OutputIt, class _Ref>
+  _CCCL_HOST_API void find_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
+  {
+    this->find_if_async(
+      __stream,
+      __first,
+      __last,
+      ::cuda::constant_iterator<bool>{true},
+      ::cuda::std::identity{},
+      __output_begin,
+      __container_ref);
+  }
+
   //! @brief Returns the total number of slots.
   [[nodiscard]] _CCCL_HOST_API constexpr __size_type capacity() const noexcept
   {
