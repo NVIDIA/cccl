@@ -1,0 +1,253 @@
+.. _cub-environment:
+
+Execution Environments
+======================
+
+Most CUB device-wide algorithms accept an optional *execution environment* as their last
+argument. The environment is a single object that bundles everything CUB needs to know
+about *how* to run the algorithm.
+
+Part of what it carries is familiar: the CUDA stream, which CUB algorithms have always
+accepted, now simply travels inside the environment. The rest are controls that had no
+place in the classic API and are enabled by environments:
+:ref:`determinism requirements <cub-env-determinism>`,
+:ref:`custom tuning policy selectors <cub-env-tuning>`, and
+:ref:`memory resources <cub-env-memory-resource>`. All properties are optional and freely
+composable with each other.
+
+This page explains what the CUB environment APIs are, and how to use them.
+
+.. contents::
+   :local:
+   :depth: 2
+
+
+Why environments?
+-----------------
+
+The classic two-phase CUB API requires three steps: query temporary-storage size, allocate,
+then execute. That is fine for situations where precise control over the temporary storage
+allocation is required, or when the temporary storage size needs to be queried independently
+of allocating it. For example, when the temporary storage is combined with other storage, e.g.
+for an output, into a single allocation. But in many cases this is not needed and the two-step
+API is just repetitive boilerplate.
+
+The environment-based single-phase API collapses all of that into one call. The algorithm
+queries the environment for the properties it needs — for example, the stream to run on,
+or a memory resource to allocate temporary storage from — and then executes. Properties
+an algorithm does not use are simply ignored, which is what makes one environment safe to
+pass to many different algorithms:
+
+.. code-block:: c++
+
+   cub::DeviceReduce::Sum(d_input, d_output, num_items, env);
+
+.. note::
+
+   The environment argument is entirely
+   optional: since it is defaulted, an algorithm can be invoked with no temporary-storage
+   arguments and no environment at all, and every property falls back to its default
+   (see :ref:`Default behavior <cub-environment-fallback>`):
+
+   .. code-block:: c++
+
+      cub::DeviceReduce::Sum(d_input, d_output, num_items);
+
+
+.. _cub-env-building:
+
+Building an environment
+-----------------------
+
+.. list explicitly what types are valid environments
+Some types are already valid environments on their own and can be passed directly to an
+algorithm. The most common case is a stream: ``cuda::stream_ref`` (or a raw
+``cudaStream_t``) passed as the last argument is treated as an environment containing
+just that stream.
+
+.. literalinclude:: ../../cub/test/catch2_test_device_reduce_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin reduce-env-stream
+   :end-before: example-end reduce-env-stream
+
+When you need more than one property, combine them with ``cuda::std::execution::env``.
+Properties can be listed in any order. The example below
+composes a stream, a memory pool for temporary storage, and a determinism requirement
+(the required declarations are provided by ``<cuda/execution>``, ``<cuda/stream>``,
+``<cuda/memory_pool>``, and ``<cuda/devices>``):
+
+.. literalinclude:: ../../cub/examples/device/example_device_reduce_env.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-overload-setup
+   :end-before: example-end env-overload-setup
+
+.. literalinclude:: ../../cub/examples/device/example_device_reduce_env.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-overload-run
+   :end-before: example-end env-overload-run
+
+The same ``env`` object can be passed to multiple algorithm calls without rebuilding it each
+time, see :ref:`cub-environment-reuse`.
+
+
+How to use environments
+-----------------------
+
+The controls below are what environments enable beyond the classic API. A few algorithms
+additionally accept algorithm-specific controls — e.g. tie-breaking and output-ordering
+for :ref:`cub::DeviceTopK <cub-topk-requirements>`. The set of supported properties
+keeps growing.
+
+.. _cub-env-determinism:
+
+Determinism Requirements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use ``cuda::execution::require`` to request a guarantee, like a reproducible/deterministic execution:
+
+.. literalinclude:: ../../cub/test/catch2_test_device_reduce_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin reduce-env-determinism
+   :end-before: example-end reduce-env-determinism
+
+Multiple determinism levels are available. The meaning of each is described in the
+:ref:`CCCL determinism overview <cccl-determinism>`. Which algorithms support which levels,
+and each algorithm's default, are listed in the :ref:`CUB determinism support matrix
+<cub-determinism>`. Requesting a level an algorithm does not support is rejected at
+compile time.
+
+
+.. _cub-env-tuning:
+
+Custom Tuning Policy Selectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pass a custom policy selector through the environment to override CUB's built-in tuning.
+A policy selector answers the question "which tuning parameters should this algorithm use
+on this GPU?": it is a function object that CUB calls with the GPU's compute capability,
+and that returns the tuning parameters — threads per block, items per thread, and so on —
+packaged as the algorithm's policy (here ``cub::MergePolicy``):
+
+.. literalinclude:: ../../cub/test/catch2_test_device_merge_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin merge-keys-policy-selector
+   :end-before: example-end merge-keys-policy-selector
+
+The selector is wrapped with ``cuda::execution::tune`` and passed as (part of) the
+environment:
+
+.. literalinclude:: ../../cub/test/catch2_test_device_merge_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin merge-keys-tuning
+   :end-before: example-end merge-keys-tuning
+
+.. seealso:: :ref:`cub-policy-selectors` - full guide on defining and composing policy
+   selectors, including the requirements a policy selector must satisfy.
+
+.. _cub-env-memory-resource:
+
+Memory Resources
+~~~~~~~~~~~~~~~~
+
+The memory resource controls where an algorithm's temporary storage is allocated from.
+Memory resource types are valid environments on their own, so they can be passed directly
+or composed with other properties:
+
+.. code-block:: c++
+
+   auto pool = cuda::device_default_memory_pool(cuda::devices[0]);
+
+   // Pass directly...
+   cub::DeviceReduce::Sum(d_input, d_output, num_items, pool);
+
+   // ...or compose with other properties
+   auto env = cuda::std::execution::env{stream, pool};
+   cub::DeviceReduce::Sum(d_input, d_output, num_items, env);
+
+Temporary storage is allocated from the memory resource on the algorithm's stream before
+execution and released on the same stream afterwards. When no memory resource is present
+in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFree``  allocator
+(see :ref:`Default behavior <cub-environment-fallback>`).
+
+.. TODO: Add Guarantees sub-section after #9278 is merged.
+
+.. _cub-environment-reuse:
+
+Reusing an environment across multiple calls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An ``env`` object can be built once and passed to as many algorithm
+calls as you like:
+
+.. code-block:: c++
+
+   auto stream = cuda::stream{cuda::devices[0]};
+   auto pool   = cuda::device_default_memory_pool(cuda::devices[0]);
+   auto env    = cuda::std::execution::env{cuda::stream_ref{stream}, pool};
+
+   cub::DeviceScan::ExclusiveSum(d_a, d_out_a, n, env);
+   cub::DeviceReduce::Sum(d_b, d_out_b, n, env);
+   cub::DeviceSelect::If(d_c, d_out_c, d_num_selected, n, my_predicate, env);
+
+   stream.sync();
+
+All three calls share the same stream and memory pool. Temporary storage is allocated and
+released from the pool independently for each call.
+
+.. note::
+
+   When a tuning policy selector is embedded in the environment, it applies to *every*
+   algorithm that can be tuned by this selector. For example, a policy selector returning
+   a ``cub::ReducePolicy`` will be used by all calls to ``cub::DeviceReduce::*`` that use
+   the same environment. If two algorithms using the same environment need different
+   tunings, build separate environments.
+
+
+.. _cub-environment-fallback:
+
+Default behavior
+----------------
+
+The environment argument is optional on every algorithm that supports it. CUB applies the
+following defaults when a property is absent from the environment (or when no environment
+is passed at all):
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Property
+     - Default when absent
+   * - Stream
+     - The default CUDA stream (``cudaStream_t{}``).
+   * - Memory resource
+     - A stream-ordered allocator based on ``cudaMallocAsync``. Temporary storage is
+       allocated on the stream the algorithm runs on.
+   * - Determinism
+     - Algorithm-specific. See :ref:`cub-determinism`.
+   * - Policy selector
+     - CUB's built-in selector, returning architecture-tuned defaults for the current
+       device.
+
+Missing properties never cause an error. The algorithm simply falls back to its default for
+that property.
+
+..
+   TODO(gonidelis): link to the developer-facing environments page (queries, CPOs, prop,
+   building custom environment types) once it lands via
+   https://github.com/NVIDIA/cccl/pull/10013
+
+
+See also
+--------
+
+- :ref:`cub-determinism` - per-algorithm determinism support matrix
+- :ref:`cub-policy-selectors` - defining and composing custom policy selectors
+- :ref:`device-module` - overview of the device-wide API and the two-phase alternative
+- :ref:`cccl-determinism` - CCCL-level determinism concepts
