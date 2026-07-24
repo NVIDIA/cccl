@@ -261,6 +261,18 @@ C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]
   const auto estimate = estimator.estimate(stream);
   REQUIRE(estimate > 1.0);
   REQUIRE(estimate < 2.0);
+
+C2H_TEST("HyperLogLog ref validates sketch storage size", "[hyperloglog]")
+{
+  using ref_type = cudax::cuco::hyperloglog_ref<int32_t>;
+
+  alignas(ref_type::sketch_alignment()) cuda::std::byte undersized_storage[32]{};
+  REQUIRE_THROWS_WITH(ref_type{cuda::std::span<cuda::std::byte>{undersized_storage}},
+                      "Minimum required sketch size is 0.0625KB or 64B");
+
+  alignas(ref_type::sketch_alignment()) cuda::std::byte rounded_storage[96]{};
+  const ref_type ref{cuda::std::span<cuda::std::byte>{rounded_storage}};
+  REQUIRE(ref.sketch_bytes() == 64);
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 9) // Pinned memory resource is only supported with CTK 12.9 and later
