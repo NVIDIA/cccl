@@ -206,7 +206,7 @@ public:
   //! @brief Copy-constructs from a buffer with matching properties
   //! @param __other The other buffer.
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES(__properties_match<_OtherProperties...>())
+  _CCCL_REQUIRES((__properties_match<_OtherProperties...>()))
   _CCCL_HOST_API explicit buffer(const buffer<_Tp, _OtherProperties...>& __other)
       : __buf_(__other.memory_resource(), __other.stream(), __other.size(), __other.__buf_.alignment())
   {
@@ -218,7 +218,7 @@ public:
   //! @param __other The other buffer. After move construction, the other buffer
   //! can only be assigned to or destroyed.
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES(__properties_match<_OtherProperties...>())
+  _CCCL_REQUIRES((__properties_match<_OtherProperties...>()))
   _CCCL_HOST_API buffer(buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __buf_(::cuda::std::move(__other.__buf_))
   {}
@@ -334,7 +334,7 @@ public:
   //! @note If `__range.size() == 0` then no memory is allocated.
   _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
-    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>()
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND(__compatible_range<_Range>())
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
   _CCCL_HOST_API
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
@@ -357,7 +357,7 @@ public:
 #  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
   _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
-    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>()
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND(__compatible_range<_Range>())
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
   _CCCL_HOST_API
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
