@@ -48,7 +48,7 @@ For now, libcu++ provides various commonly used properties:
    * - ``cuda::mr::device_accessible``
      - Memory allocated using the resource is accessible from device.
    * - ``cuda::mr::host_accessible``
-      - Memory allocated using the resource is accessible from host.
+     - Memory allocated using the resource is accessible from host.
 
 ``cuda::mr::default_cuda_malloc_alignment`` and ``cuda::mr::default_cuda_malloc_host_alignment`` provide the default
 alignment values used by the CUDA allocation APIs.
