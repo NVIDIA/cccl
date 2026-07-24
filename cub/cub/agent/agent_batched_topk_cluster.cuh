@@ -115,9 +115,9 @@ struct smem_block_tile_layout
 
   template <typename SizeT>
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr SizeT
-  cluster_tile_capacity(int cluster_blocks, ::cuda::std::uint32_t physical_block_tile_capacity) noexcept
+  cluster_tile_capacity(int cta_count_in_cluster, ::cuda::std::uint32_t physical_block_tile_capacity) noexcept
   {
-    return static_cast<SizeT>(cluster_blocks) * static_cast<SizeT>(physical_block_tile_capacity);
+    return static_cast<SizeT>(cta_count_in_cluster) * static_cast<SizeT>(physical_block_tile_capacity);
   }
 };
 
@@ -135,8 +135,8 @@ struct smem_block_tile_layout
 }
 
 // Effective cluster blocks implied by a chunk count: a CTA joins the effective cluster iff it would own at least
-// `min_chunks_per_block` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only the cap
-// differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_block` is
+// `min_chunks_per_block` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only
+// the cap differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_block` is
 // `static_assert`ed positive, so the divide is well-defined. 64-bit math.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr unsigned effective_cluster_blocks_from_chunks(
   ::cuda::std::uint64_t chunks, int min_chunks_per_block, unsigned cluster_blocks_cap) noexcept
@@ -447,7 +447,7 @@ struct agent_batched_topk_cluster
   struct chunk_partition
   {
     offset_t first; // global index of this rank's first owned chunk
-    offset_t stride; // distance between consecutive owned chunks (`cluster_blocks` strided, `1` blocked)
+    offset_t stride; // distance between consecutive owned chunks (`cta_count_in_cluster` strided, `1` blocked)
     offset_t count; // number of chunks owned by this rank
 
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t global_index(offset_t local) const
@@ -462,7 +462,8 @@ struct agent_batched_topk_cluster
   // split, and the streaming ping-pong untouched, because all of those depend only on the global chunk index, not on
   // which rank owns it.
   //
-  //   * Strided (default): chunk `i` goes to rank `i % cluster_blocks`, so each CTA walks `first, first+S, first+2S,
+  //   * Strided (default): chunk `i` goes to rank `i % cta_count_in_cluster`, so each CTA walks `first, first+S,
+  //   first+2S,
   //   ...`.
   //   * Blocked (deterministic path): each CTA owns a contiguous run of `ceil_div(chunks, S)` chunks (the last
   //     non-empty rank gets the short remainder).
@@ -470,33 +471,38 @@ struct agent_batched_topk_cluster
   // The blocked layout is required by the deterministic tie-break (its cross-CTA scan assumes CTA-rank order matches
   // ascending contiguous global-index ranges), so it is selected exactly when `needs_set_determinism` is set.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_partition
-  make_chunk_partition(offset_t chunks, unsigned cluster_rank, unsigned cluster_blocks) const
+  make_chunk_partition(offset_t chunks, unsigned cta_rank_in_cluster, unsigned cta_count_in_cluster) const
   {
     // Idle ranks never reach here -- `compute_segment_layout` gives them an explicit empty partition.
-    _CCCL_ASSERT(cluster_rank < cluster_blocks, "make_chunk_partition assumes a working rank (rank < cluster_blocks)");
-    // TODO(cccl): both branches divide by `cluster_blocks`, the launched cluster dimension (runtime, non-power-of-two).
-    // Critical path: runs at kernel entry and gates the first TMA copy (the partition names which chunks to load), so
-    // it is one-time but has nothing earlier to hide it and cannot be relocated after priming -- only removing the
-    // divide helps. For host-exact (immediate/constant) sizes the effective cluster equals the launch
+    _CCCL_ASSERT(cta_rank_in_cluster < cta_count_in_cluster,
+                 "make_chunk_partition assumes a working rank (rank < cta_count_in_cluster)");
+    // TODO(cccl): both branches divide by `cta_count_in_cluster`, the launched cluster dimension (runtime,
+    // non-power-of-two). Critical path: runs at kernel entry and gates the first TMA copy (the partition names which
+    // chunks to load), so it is one-time but has nothing earlier to hide it and cannot be relocated after priming --
+    // only removing the divide helps. For host-exact (immediate/constant) sizes the effective cluster equals the launch
     // (`enable_runtime_single_cta == false`), so this divisor is host-known: precompute a `cuda::fast_mod_div` on the
     // host and pass it in to turn the divide into a multiply-shift. Highest-priority runtime divide here and likely
     // worth doing (out-of-scope for now); N/A when the effective cluster is device-collapsed (deferred/sequence sizes).
     if constexpr (needs_set_determinism)
     {
-      const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, static_cast<offset_t>(cluster_blocks));
-      const offset_t first          = static_cast<offset_t>(cluster_rank) * chunks_per_cta;
+      const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, static_cast<offset_t>(cta_count_in_cluster));
+      const offset_t first          = static_cast<offset_t>(cta_rank_in_cluster) * chunks_per_cta;
       const offset_t count = (first < chunks) ? (::cuda::std::min) (chunks_per_cta, chunks - first) : offset_t{0};
       return {first, offset_t{1}, count};
     }
     else
     {
-      // Strided count: rank `cluster_rank` owns the global indices `cluster_rank, cluster_rank + cluster_blocks, ...`
-      // that stay `< chunks`, i.e. `ceil((chunks - cluster_rank) / cluster_blocks)`, written as
-      // `(chunks - 1 - cluster_rank) / cluster_blocks + 1` for exact integer arithmetic. The `cluster_rank >= chunks`
-      // guard (rank owns nothing) keeps the subtraction from underflowing the unsigned `offset_t`.
+      // Strided count: rank `cta_rank_in_cluster` owns the global indices `cta_rank_in_cluster, cta_rank_in_cluster +
+      // cta_count_in_cluster, ...` that stay `< chunks`, i.e. `ceil((chunks - cta_rank_in_cluster) /
+      // cta_count_in_cluster)`, written as
+      // `(chunks - 1 - cta_rank_in_cluster) / cta_count_in_cluster + 1` for exact integer arithmetic. The
+      // `cta_rank_in_cluster >= chunks` guard (rank owns nothing) keeps the subtraction from underflowing the unsigned
+      // `offset_t`.
       const offset_t count =
-        (cluster_rank < chunks) ? static_cast<offset_t>((chunks - 1 - cluster_rank) / cluster_blocks + 1) : offset_t{0};
-      return {static_cast<offset_t>(cluster_rank), static_cast<offset_t>(cluster_blocks), count};
+        (cta_rank_in_cluster < chunks)
+          ? static_cast<offset_t>((chunks - 1 - cta_rank_in_cluster) / cta_count_in_cluster + 1)
+          : offset_t{0};
+      return {static_cast<offset_t>(cta_rank_in_cluster), static_cast<offset_t>(cta_count_in_cluster), count};
     }
   }
 
@@ -666,7 +672,7 @@ struct agent_batched_topk_cluster
     const key_t* block_keys_base;
     offset_t head_items;
     offset_t chunks;
-    unsigned eff_cluster_blocks;
+    unsigned eff_cta_count_in_cluster;
     bool is_idle_rank;
     chunk_partition part;
     unsigned leader_rank;
@@ -713,11 +719,11 @@ struct agent_batched_topk_cluster
   // `threadIdx.x` at each site.
   const int tid = static_cast<int>(threadIdx.x);
   // Effective cluster geometry the radix/scan/filter path runs on, set once by `init_effective_cluster`: the launched
-  // cluster, or rank 0 alone (`cluster_blocks == 1`) when a small segment collapsed onto a single resident CTA. The
-  // select-all fast path predates the collapse and uses the raw hardware sregs instead.
-  unsigned cluster_rank   = 0u;
-  unsigned cluster_blocks = 1u;
-  bool is_single_cta      = true;
+  // cluster, or rank 0 alone (`cta_count_in_cluster == 1`) when a small segment collapsed onto a single resident CTA.
+  // The select-all fast path predates the collapse and uses the raw hardware sregs instead.
+  unsigned cta_rank_in_cluster  = 0u;
+  unsigned cta_count_in_cluster = 1u;
+  bool is_single_cta            = true;
   // Per-segment constants for this block, set once and then read directly by the helpers instead of being threaded
   // through their signatures. `segment_id`/`segment_size`/`k` are set in `process_impl`; `layout` is filled by
   // `compute_segment_layout` on the radix path (the select-all fast path and redundant CTAs never touch it).
@@ -1265,22 +1271,23 @@ private:
     if (push_front != offset_t{0} || push_cand != offset_t{0})
     {
       // Only working (non-leader) ranks reach here with a nonzero count; idle ranks / the leader push 0.
-      _CCCL_ASSERT(cluster_rank < layout.eff_cluster_blocks, "a nonzero prefix count must come from a working rank");
+      _CCCL_ASSERT(cta_rank_in_cluster < layout.eff_cta_count_in_cluster,
+                   "a nonzero prefix count must come from a working rank");
       if constexpr (is_scan_descending)
       {
         _CCCL_PRAGMA_NOUNROLL()
-        for (unsigned rank = threadIdx.x; rank < cluster_rank; rank += threads_per_block) // lower ranks follow;
-                                                                                          // leader last
+        for (unsigned rank = threadIdx.x; rank < cta_rank_in_cluster; rank += threads_per_block) // lower ranks follow;
+                                                                                                 // leader last
         {
           add_remote_prefix(rank, push_front, push_cand);
         }
       }
       else
       {
-        // Higher ranks follow. Stops at `eff_cluster_blocks` since idle ranks own nothing; the leader at the last
+        // Higher ranks follow. Stops at `eff_cta_count_in_cluster` since idle ranks own nothing; the leader at the last
         // effective rank is last.
         _CCCL_PRAGMA_NOUNROLL()
-        for (unsigned rank = cluster_rank + 1u + threadIdx.x; rank < layout.eff_cluster_blocks;
+        for (unsigned rank = cta_rank_in_cluster + 1u + threadIdx.x; rank < layout.eff_cta_count_in_cluster;
              rank += threads_per_block)
         {
           add_remote_prefix(rank, push_front, push_cand);
@@ -1985,7 +1992,7 @@ private:
     _CCCL_ASSERT(
       num_tie_winners > out_offset_t{0} && num_tie_winners <= k && static_cast<offset_t>(num_tie_winners) <= size.len,
       "remaining k must fit within the top-k and the candidate count");
-    const bool participates = !layout.is_idle_rank && (cluster_rank != layout.leader_rank);
+    const bool participates = !layout.is_idle_rank && (cta_rank_in_cluster != layout.leader_rank);
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
     // The scan doubles as counter priming: it leaves this CTA's placement counters holding its absolute region bases
@@ -2003,7 +2010,7 @@ private:
     // This CTA's front region size (mirrors `write_deterministic_topk`): the leader is last in scan order and derives
     // it from the total (`num_selected - sel_prefix`) since its merged histogram can't self-count; others place
     // `my_sel`.
-    const offset_t my_front = (cluster_rank == layout.leader_rank) ? (num_selected - sel_prefix) : my_sel;
+    const offset_t my_front = (cta_rank_in_cluster == layout.leader_rank) ? (num_selected - sel_prefix) : my_sel;
 
     nondet_filter_state<IdentifyOp, KeyOutIt> state{
       identify_op, block_keys_out, num_tie_winners, sel_prefix, my_front, resident_keys};
@@ -2073,7 +2080,7 @@ private:
     const out_offset_t num_back = num_tie_winners; // all candidates go to the back; the front holds only selected keys
     const out_offset_t num_selected = k - num_back; // front region
 
-    const bool participates = !layout.is_idle_rank && (cluster_rank != layout.leader_rank);
+    const bool participates = !layout.is_idle_rank && (cta_rank_in_cluster != layout.leader_rank);
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
     // Front count pushed by this block: its strictly-selected count. Candidates always route through the back, so
@@ -2094,7 +2101,8 @@ private:
     // (`cand_prefix + my_cand_count <= num_back`): every one wins, so the back places them with arrival-order SMEM
     // atomics and skips the index-ordered scan. While `is_tie_active`, a non-`is_select_all_cand_cta` CTA is the
     // single boundary-crossing (straddling) CTA cluster-wide.
-    const offset_t my_cand_count = (cluster_rank == layout.leader_rank) ? (total_candidates - cand_prefix) : my_cand;
+    const offset_t my_cand_count =
+      (cta_rank_in_cluster == layout.leader_rank) ? (total_candidates - cand_prefix) : my_cand;
     const bool is_select_all_cand_cta = (cand_prefix + my_cand_count) <= static_cast<offset_t>(num_back);
     // Mirror image: a CTA selects none of its candidates when the tie region is empty (`num_back == 0`) or all of its
     // candidates sort strictly after the K-boundary (`cand_prefix >= num_back`). Such a CTA seeds `is_tie_active`
@@ -2104,7 +2112,7 @@ private:
     // This block's own front size: non-leaders know it directly (`push_front`); the leader is last in scan order, so
     // `sel_prefix` already sums every other block's front and `num_selected - sel_prefix` is the remainder it owns.
     const out_offset_t my_front =
-      (cluster_rank == layout.leader_rank)
+      (cta_rank_in_cluster == layout.leader_rank)
         ? static_cast<out_offset_t>(num_selected - static_cast<out_offset_t>(sel_prefix))
         : static_cast<out_offset_t>(push_front);
     // This CTA's front slots `[sel_prefix, sel_prefix + my_front)` (the range its primed `front_local_cnt` walks) must
@@ -2619,8 +2627,8 @@ private:
     layout.segment_size_off = static_cast<offset_t>(segment_size);
     // A lone CTA (`is_single_cta`) routes barriers to `__syncthreads()` and keeps `state`/atomics block-local (no
     // cross-rank DSMEM reductions); its histogram increments still use the same unconditional shared `atomicAdd`,
-    // identical SASS at cluster size 1. For wider clusters, `eff_cluster_blocks` (below) further excludes ranks that
-    // receive no chunks; they stay resident but idle.
+    // identical SASS at cluster size 1. For wider clusters, `eff_cta_count_in_cluster` (below) further excludes ranks
+    // that receive no chunks; they stay resident but idle.
 
     layout.block_keys_base = nullptr;
     layout.head_items      = 0;
@@ -2649,40 +2657,43 @@ private:
       static_cast<offset_t>(::cuda::ceil_div(layout.segment_size_off - layout.head_items, offset_t{chunk_items}));
 
     // Effective cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_block` each), <= the
-    // launched `cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing, and never lead
+    // launched `cta_count_in_cluster`. Ranks at or beyond it are idle -- they own no chunks, consume nothing, and never
+    // lead
     // -- but stay resident and still arrive at every cluster barrier (a returned CTA would hang the barrier; see the
     // TODOs at the barrier sites). Derived from this CTA's head-aligned `chunks` so it matches the partition exactly.
-    // Stays at `cluster_blocks` for host-exact sizes (the dispatch already matched it) and on the single-CTA path.
-    layout.eff_cluster_blocks = cluster_blocks;
+    // Stays at `cta_count_in_cluster` for host-exact sizes (the dispatch already matched it) and on the single-CTA
+    // path.
+    layout.eff_cta_count_in_cluster = cta_count_in_cluster;
     if constexpr (enable_runtime_single_cta)
     {
       if (!is_single_cta)
       {
-        layout.eff_cluster_blocks = effective_cluster_blocks_from_chunks(
-          static_cast<::cuda::std::uint64_t>(layout.chunks), min_chunks_per_block, cluster_blocks);
+        layout.eff_cta_count_in_cluster = effective_cluster_blocks_from_chunks(
+          static_cast<::cuda::std::uint64_t>(layout.chunks), min_chunks_per_block, cta_count_in_cluster);
       }
     }
-    _CCCL_ASSERT(layout.eff_cluster_blocks >= 1u && layout.eff_cluster_blocks <= cluster_blocks,
+    _CCCL_ASSERT(layout.eff_cta_count_in_cluster >= 1u && layout.eff_cta_count_in_cluster <= cta_count_in_cluster,
                  "effective cluster blocks must stay within [1, launched cluster blocks]");
-    layout.is_idle_rank = cluster_rank >= layout.eff_cluster_blocks;
+    layout.is_idle_rank = cta_rank_in_cluster >= layout.eff_cta_count_in_cluster;
 
     // Idle ranks own no chunks; `make_chunk_partition` assumes `rank < size`, so hand them an explicit empty partition.
-    layout.part      = layout.is_idle_rank ? chunk_partition{offset_t{0}, offset_t{1}, offset_t{0}}
-                                           : make_chunk_partition(layout.chunks, cluster_rank, layout.eff_cluster_blocks);
+    layout.part      = layout.is_idle_rank
+                       ? chunk_partition{offset_t{0}, offset_t{1}, offset_t{0}}
+                       : make_chunk_partition(layout.chunks, cta_rank_in_cluster, layout.eff_cta_count_in_cluster);
     layout.my_chunks = layout.part.count;
 
     // Leader rank. The leader owns the cluster-merged histogram and the shared `state`, and is always a working rank
-    // (`< eff_cluster_blocks`). The deterministic tie-break makes the leader the *last* CTA in scan order so it never
-    // needs its own (merged-away) local candidate count: prefer-smallest scans ascending by rank (leader = last
+    // (`< eff_cta_count_in_cluster`). The deterministic tie-break makes the leader the *last* CTA in scan order so it
+    // never needs its own (merged-away) local candidate count: prefer-smallest scans ascending by rank (leader = last
     // effective rank), prefer-largest scans descending (leader = rank 0). The nondeterministic path keeps rank 0.
-    layout.leader_rank = (needs_set_determinism && !is_tie_reversed) ? (layout.eff_cluster_blocks - 1u) : 0u;
-    _CCCL_ASSERT(layout.leader_rank < layout.eff_cluster_blocks, "leader must be a working rank");
+    layout.leader_rank = (needs_set_determinism && !is_tie_reversed) ? (layout.eff_cta_count_in_cluster - 1u) : 0u;
+    _CCCL_ASSERT(layout.leader_rank < layout.eff_cta_count_in_cluster, "leader must be a working rank");
 
     // `state`, `hist[0]`, and `leader_rank` are all loop-invariant across the radix passes, so the DSMEM remaps the
     // blocks use to reach the leader (its per-pass `state` and the Step 2 histogram reduction target) are hoisted here,
     // once per segment, rather than repeated every pass. `leader_state32` is always mapped -- the single-CTA path runs
     // in a size-1 cluster, so rank 0 maps to itself and the state reads take the same `ld.shared::cluster` path as a
-    // wide cluster. `leader_hist32` is skipped there because the single CTA never reduces (`cluster_rank ==
+    // wide cluster. `leader_hist32` is skipped there because the single CTA never reduces (`cta_rank_in_cluster ==
     // leader_rank`).
     const ::cuda::std::uint32_t state_smem32 =
       static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state));
@@ -2766,7 +2777,7 @@ private:
 
     // Persistent boundary-edge lengths: the head prefix lives on rank 0 (`head_items` is 0 on the generic fallback and
     // for an aligned base); the peeled tail suffix lives on the tail owner whenever it is unaligned.
-    layout.head_edge_len_items = (cluster_rank == 0u) ? static_cast<int>(layout.head_items) : 0;
+    layout.head_edge_len_items = (cta_rank_in_cluster == 0u) ? static_cast<int>(layout.head_items) : 0;
     layout.tail_edge_len_items = static_cast<int>(tail_suffix_items);
   }
 
@@ -2860,9 +2871,9 @@ private:
 
       // Step 2: non-leader blocks reduce their per-bucket raw counts into the leader's `hist` via cluster-scope DSMEM
       // atomics. The leader skips this to avoid double-counting its own contribution; idle ranks
-      // (`>= eff_cluster_blocks`) have an all-zero histogram, so they skip the reduction entirely (the loop would only
-      // read zeros).
-      if (cluster_rank != layout.leader_rank && !layout.is_idle_rank)
+      // (`>= eff_cta_count_in_cluster`) have an all-zero histogram, so they skip the reduction entirely (the loop would
+      // only read zeros).
+      if (cta_rank_in_cluster != layout.leader_rank && !layout.is_idle_rank)
       {
         // Reduce each non-zero bucket into the leader's `hist` through DSMEM: `layout.leader_hist32` is this block's
         // `hist[0]` remapped to the leader's `shared::cluster` window (identical per-CTA layouts, `mapa` hoisted into
@@ -2913,7 +2924,7 @@ private:
       // scan in registers lets `hist` reset on the normal schedule (the regs survive the reset and the next sync).
       offset_t local_prefixes[buckets_per_thread]{};
       offset_t local_hist_vals[buckets_per_thread]{};
-      if (cluster_rank != layout.leader_rank && !layout.is_idle_rank)
+      if (cta_rank_in_cluster != layout.leader_rank && !layout.is_idle_rank)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < buckets_per_thread; ++j)
@@ -2929,7 +2940,7 @@ private:
       // Step 3 (leader half): the leader prefix-scans the merged `hist` (raw counts, all reductions now visible) and
       // updates the cluster-shared `state`. Subsequent reads (end-of-pass fold, last filter) observe these writes after
       // the next cluster sync.
-      if (cluster_rank == layout.leader_rank)
+      if (cta_rank_in_cluster == layout.leader_rank)
       {
         leader_identify_kth_bucket();
       }
@@ -2961,7 +2972,7 @@ private:
         // the scan above. Accumulate the strictly-selected count and overwrite `my_candidates` with this pass's
         // splitter-bucket count (the last pass's value is what the filter reads, however the loop exits). The leader's
         // `hist` is merged, so it derives its own counts from the scan total instead (see the filter).
-        if (cluster_rank != layout.leader_rank)
+        if (cta_rank_in_cluster != layout.leader_rank)
         {
           const int owner = bucket / buckets_per_thread;
           if (tid == owner)
@@ -3078,12 +3089,13 @@ private:
   // values (pairs only) are staged together so both arrays' loads issue before either array's stores, keeping up to
   // `2 * copy_items` loads in flight. A per-array copy would instead order the value loads after the key stores (the
   // compiler cannot reorder across the separate loops) and expose their latency on small segments.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void copy_segment_select_all(unsigned hw_cluster_rank, unsigned hw_cluster_blocks)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  copy_segment_select_all(unsigned hw_cta_rank_in_cluster, unsigned hw_cta_count_in_cluster)
   {
     constexpr int copy_items       = copy_items_per_thread_clamped;
     const offset_t num_items       = static_cast<offset_t>(segment_size);
-    const offset_t cluster_tid     = hw_cluster_rank * static_cast<offset_t>(threads_per_block) + threadIdx.x;
-    const offset_t cluster_threads = hw_cluster_blocks * static_cast<offset_t>(threads_per_block);
+    const offset_t cluster_tid     = hw_cta_rank_in_cluster * static_cast<offset_t>(threads_per_block) + threadIdx.x;
+    const offset_t cluster_threads = hw_cta_count_in_cluster * static_cast<offset_t>(threads_per_block);
     const offset_t step            = cluster_threads * static_cast<offset_t>(copy_items);
     auto keys_in_it                = d_key_segments_it[segment_id];
     auto keys_out_it               = d_key_segments_out_it[segment_id];
@@ -3149,17 +3161,18 @@ private:
     }
   }
 
-  // Set the effective-cluster members (`cluster_rank`/`cluster_blocks`/`is_single_cta`) from the hardware cluster and
-  // this segment's size. For a per-segment (deferred) size argument the launch is sized for the maximum segment, so a
-  // small segment that fits resident in one CTA and is at/below the single-CTA tuning threshold is served by rank 0
-  // alone via the barrier-free path; the cluster's other CTAs are redundant and this returns false so they exit,
-  // freeing their SM slots. The decision is per-segment uniform across the block, so a redundant CTA returns whole.
-  // Compiled out for host-exact sizes, which the dispatch already sized to exact cluster blocks (returns true for all).
+  // Set the effective-cluster members (`cta_rank_in_cluster`/`cta_count_in_cluster`/`is_single_cta`) from the hardware
+  // cluster and this segment's size. For a per-segment (deferred) size argument the launch is sized for the maximum
+  // segment, so a small segment that fits resident in one CTA and is at/below the single-CTA tuning threshold is served
+  // by rank 0 alone via the barrier-free path; the cluster's other CTAs are redundant and this returns false so they
+  // exit, freeing their SM slots. The decision is per-segment uniform across the block, so a redundant CTA returns
+  // whole. Compiled out for host-exact sizes, which the dispatch already sized to exact cluster blocks (returns true
+  // for all).
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  init_effective_cluster(unsigned hw_cluster_rank, unsigned hw_cluster_blocks)
+  init_effective_cluster(unsigned hw_cta_rank_in_cluster, unsigned hw_cta_count_in_cluster)
   {
-    cluster_rank   = hw_cluster_rank;
-    cluster_blocks = hw_cluster_blocks;
+    cta_rank_in_cluster  = hw_cta_rank_in_cluster;
+    cta_count_in_cluster = hw_cta_count_in_cluster;
     if constexpr (enable_runtime_single_cta)
     {
       const bool fits_single_cta = is_single_cta_eligible(
@@ -3168,28 +3181,28 @@ private:
         single_block_max_seg_size);
       if (fits_single_cta)
       {
-        if (hw_cluster_rank != 0u)
+        if (hw_cta_rank_in_cluster != 0u)
         {
           return false;
         }
-        cluster_rank   = 0u;
-        cluster_blocks = 1u;
+        cta_rank_in_cluster  = 0u;
+        cta_count_in_cluster = 1u;
       }
     }
-    is_single_cta = (cluster_blocks == 1u);
+    is_single_cta = (cta_count_in_cluster == 1u);
     return true;
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_impl()
   {
     // Hardware cluster rank/size from the PTX special registers (replaces cooperative_groups' `this_cluster()`). The
-    // radix path runs on the *effective* geometry (the `cluster_rank`/`cluster_blocks` members set by
+    // radix path runs on the *effective* geometry (the `cta_rank_in_cluster`/`cta_count_in_cluster` members set by
     // `init_effective_cluster` below); only the pre-collapse steps here (segment id, select-all fast path) use the raw
     // hardware values. Runtime cluster blocks match the launch attribute the dispatch passed to
     // `cudaLaunchKernelExC`.
-    const unsigned hw_cluster_rank   = ::cuda::ptx::get_sreg_cluster_ctarank();
-    const unsigned hw_cluster_blocks = ::cuda::ptx::get_sreg_cluster_nctarank();
-    _CCCL_ASSERT(hw_cluster_blocks > 0u && hw_cluster_rank < hw_cluster_blocks,
+    const unsigned hw_cta_rank_in_cluster  = ::cuda::ptx::get_sreg_cluster_ctarank();
+    const unsigned hw_cta_count_in_cluster = ::cuda::ptx::get_sreg_cluster_nctarank();
+    _CCCL_ASSERT(hw_cta_count_in_cluster > 0u && hw_cta_rank_in_cluster < hw_cta_count_in_cluster,
                  "hardware cluster rank must lie within a non-empty cluster");
     segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
@@ -3223,14 +3236,14 @@ private:
     // Select-all fast path: when `k` reaches the full segment
     if (static_cast<segment_size_val_t>(k) == segment_size)
     {
-      copy_segment_select_all(hw_cluster_rank, hw_cluster_blocks);
+      copy_segment_select_all(hw_cta_rank_in_cluster, hw_cta_count_in_cluster);
       return;
     }
 
-    // Collapse the launched cluster onto the effective geometry the radix path runs on (sets the `cluster_rank`/
-    // `cluster_blocks`/`is_single_cta` members). Returns false on the CTAs the collapse makes redundant, which exit
-    // here.
-    if (!init_effective_cluster(hw_cluster_rank, hw_cluster_blocks))
+    // Collapse the launched cluster onto the effective geometry the radix path runs on (sets the `cta_rank_in_cluster`/
+    // `cta_count_in_cluster`/`is_single_cta` members). Returns false on the CTAs the collapse makes redundant, which
+    // exit here.
+    if (!init_effective_cluster(hw_cta_rank_in_cluster, hw_cta_count_in_cluster))
     {
       return;
     }
