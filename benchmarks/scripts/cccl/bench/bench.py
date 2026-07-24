@@ -529,8 +529,11 @@ class ProcessRunner:
 
     def __init__(self):
         self.process = None
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        import threading
+
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
 
     def new_process(self, cmd):
         self.process = subprocess.Popen(
@@ -548,6 +551,37 @@ class ProcessRunner:
     def kill_process(self):
         if self.process is not None:
             self.process.kill()
+
+
+def _filter_rt_values(speedups, rt_values):
+    """Filter rt_values to only include axis values present in speedup data.
+
+    The rt_values from JSON metadata may include values for benchmark states
+    that NVBench skips at runtime. If weight normalization includes these
+    missing states, the total weight for iterated states sums to < 1.0,
+    producing incorrect scores. This function filters rt_values to match the
+    actual data, preserving the original value ordering (important for
+    importance-ordered axes).
+    """
+    present = {}
+    for bench in speedups:
+        present[bench] = {}
+        for state in speedups[bench]:
+            for point in state_to_rt_workload(bench, state):
+                axis, value = point.split("=")
+                if axis not in present[bench]:
+                    present[bench][axis] = set()
+                present[bench][axis].add(value)
+
+    result = {}
+    for bench in speedups:
+        result[bench] = {}
+        for axis in rt_values.get(bench, {}):
+            if axis in present.get(bench, {}):
+                result[bench][axis] = [
+                    v for v in rt_values[bench][axis] if v in present[bench][axis]
+                ]
+    return result
 
 
 class Bench:
@@ -792,8 +826,11 @@ class Bench:
         if not speedups:
             return float("-inf")
 
-        rt_axes_ids = compute_axes_ids(rt_values)
-        weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
+        # Filter rt_values to only include axis values present in the speedup data
+        actual_rt_values = _filter_rt_values(speedups, rt_values)
+
+        rt_axes_ids = compute_axes_ids(actual_rt_values)
+        weight_matrices = compute_weight_matrices(actual_rt_values, rt_axes_ids)
 
         score = 0
         for bench in speedups:
@@ -801,10 +838,13 @@ class Bench:
                 rt_workload = state_to_rt_workload(bench, state)
                 weights = weight_matrices[bench]
                 weight = get_workload_weight(
-                    rt_workload, rt_values[bench], rt_axes_ids[bench], weights
+                    rt_workload,
+                    actual_rt_values[bench],
+                    rt_axes_ids[bench],
+                    weights,
                 )
-                speedup = speedups[bench][state]
-                score = score + weight * speedup
+                speedup_val = speedups[bench][state]
+                score = score + weight * speedup_val
 
         return score
 
