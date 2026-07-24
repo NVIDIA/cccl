@@ -19,9 +19,9 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda_runtime_api.h>
-
 #include <stdexcept>
+
+#include <cuda_runtime_api.h>
 
 #include "helper.h"
 
