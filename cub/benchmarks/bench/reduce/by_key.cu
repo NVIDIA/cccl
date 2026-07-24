@@ -3,6 +3,11 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/buffer>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/stream>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -43,19 +48,22 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<OffsetT> num_runs_out(1);
-  thrust::device_vector<ValueT> in_vals(elements);
-  thrust::device_vector<ValueT> out_vals(elements);
-  thrust::device_vector<KeyT> out_keys(elements);
-  thrust::device_vector<KeyT> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
-
-  const KeyT* d_in_keys   = thrust::raw_pointer_cast(in_keys.data());
-  KeyT* d_out_keys        = thrust::raw_pointer_cast(out_keys.data());
-  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
-  ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
-  OffsetT* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
-
+  const auto stream = get_stream_ref(state);
+  const auto device = stream.device();
   caching_allocator_t alloc;
+
+  auto num_runs_out  = cuda::make_buffer<OffsetT>(stream, pinned_memory_resource(), 1, cuda::no_init);
+  const auto in_vals = cuda::make_device_buffer<ValueT>(stream, device, elements, ValueT{});
+  auto out_vals      = cuda::make_device_buffer<ValueT>(stream, device, elements, cuda::no_init);
+  auto out_keys      = cuda::make_device_buffer<KeyT>(stream, device, elements, cuda::no_init);
+  const auto in_keys =
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size).device_buffer<KeyT>(stream, device);
+
+  const KeyT* d_in_keys   = in_keys.data();
+  KeyT* d_out_keys        = out_keys.data();
+  const ValueT* d_in_vals = in_vals.data();
+  ValueT* d_out_vals      = out_vals.data();
+  OffsetT* d_num_runs_out = num_runs_out.data();
 
   // Run once to get the number of runs for reporting
   _CCCL_TRY_CUDA_API(
@@ -68,8 +76,8 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
     d_num_runs_out,
     reduction_op_t{},
     static_cast<OffsetT>(elements),
-    alloc);
-  cudaDeviceSynchronize();
+    cub_bench_env(alloc, stream));
+  stream.sync();
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -82,9 +90,9 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
       alloc,
-      launch
+      get_stream_ref(launch)
 #if !TUNE_BASE
-      ,
+        ,
       cuda::execution::tune(bench_reduce_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );

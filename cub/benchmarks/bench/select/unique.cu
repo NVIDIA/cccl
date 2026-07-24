@@ -3,7 +3,10 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <cuda/std/algorithm>
+#include <cuda/buffer>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/stream>
 
 #include <limits>
 
@@ -43,13 +46,18 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
   const auto elements         = state.get_int64("Elements{io}");
   const auto max_segment_size = state.get_int64("MaxSegSize");
 
-  thrust::device_vector<T> in = generate.uniform.key_segments(elements, /* min_segmented_size */ 1, max_segment_size);
-  thrust::device_vector<T> out(elements, thrust::no_init);
-  thrust::device_vector<offset_t> num_unique_out(1);
+  const auto stream = get_stream_ref(state);
+  const auto device = stream.device();
+  caching_allocator_t alloc;
 
-  T* d_in                = thrust::raw_pointer_cast(in.data());
-  T* d_out               = thrust::raw_pointer_cast(out.data());
-  offset_t* d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
+  auto in = generate.uniform.key_segments(elements, /* min_segmented_size */ 1, max_segment_size)
+              .device_buffer<T>(stream, device);
+  auto out            = cuda::make_device_buffer<T>(stream, device, elements, cuda::no_init);
+  auto num_unique_out = cuda::make_buffer<offset_t>(stream, pinned_memory_resource(), 1, cuda::no_init);
+
+  T* d_in                = in.data();
+  T* d_out               = out.data();
+  offset_t* d_num_unique = num_unique_out.data();
 
   // Get number of unique elements for metrics
   _CCCL_TRY_CUDA_API(
@@ -59,8 +67,9 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     d_out,
     d_num_unique,
     static_cast<offset_t>(elements),
-    ::cuda::std::equal_to<>{});
-  cudaDeviceSynchronize();
+    ::cuda::std::equal_to<>{},
+    cub_bench_env(alloc, stream));
+  stream.sync();
   const offset_t num_unique = num_unique_out[0];
 
   state.add_element_count(elements);
@@ -68,13 +77,12 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
   state.add_global_memory_writes<T>(num_unique);
   state.add_global_memory_writes<offset_t>(1);
 
-  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
       alloc,
-      launch
+      get_stream_ref(launch)
 #if !TUNE_BASE
-      ,
+        ,
       cuda::execution::tune(bench_policy_selector<T>{})
 #endif // !TUNE_BASE
     );
