@@ -8,7 +8,9 @@ source "$ci_dir/pyenv_helper.sh"
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+# Pin cuda-toolkit to the container's CTK minor and set cuda_version /
+# cuda_major_version (CCCL_PYTHON_TEST_LATEST_CTK=1 opts out). See pyenv_helper.sh.
+pin_cuda_toolkit
 
 # Setup Python environment
 setup_python_env "${py_version}"
