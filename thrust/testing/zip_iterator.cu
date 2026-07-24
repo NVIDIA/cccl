@@ -552,3 +552,27 @@ void TestZipIteratorNestedCopy()
   }
 }
 DECLARE_UNITTEST(TestZipIteratorNestedCopy);
+
+// See https://github.com/NVIDIA/cccl/issues/9773
+void TestZipIteratorComparison()
+{
+  using T = int;
+
+  thrust::device_vector<T> a{5, 4, 3, 2, 1, 0};
+  thrust::device_vector<T> b{1, 2, 3, 4, 5, 6};
+
+  {
+    static_assert(
+      cuda::std::is_convertible_v<thrust::detail::tuple_of_iterator_references<int&, int&>, cuda::std::tuple<int, int>>);
+    auto iter = thrust::make_zip_iterator(a.data(), b.data());
+    auto pos  = thrust::find(iter, iter + 6, cuda::std::tuple{4, 2});
+    ASSERT_EQUAL_QUIET(pos, iter + 1);
+  }
+
+  {
+    auto iter = thrust::make_zip_iterator(a.begin(), b.begin());
+    auto pos  = thrust::find(iter, iter + 6, cuda::std::tuple{4, 2});
+    ASSERT_EQUAL_QUIET(pos, iter + 1);
+  }
+}
+DECLARE_UNITTEST(TestZipIteratorComparison);

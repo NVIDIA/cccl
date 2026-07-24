@@ -253,24 +253,10 @@ public:
             // NOLINTEND(modernize-type-traits)
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
-      : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
+      : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_TupleOfIteratorReferences>(__t))
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
-private:
-  // clang-tidy incorrectly reports "'__t' used after it was forwarded".
-  // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
-  // NOLINTBEGIN(bugprone-use-after-move)
-  template <class _TupleOfIteratorReferences,
-            size_t... _Indices,
-            enable_if_t<__is_tuple_of_iterator_references_v<remove_cvref_t<_TupleOfIteratorReferences>>, int> = 0>
-  _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
-      : __base_(__tuple_variadic_constructor_tag{},
-                ::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
-  // NOLINTEND(bugprone-use-after-move)
-  {}
-
-public:
   template <class _UTuple>
   using _TupleLikeConstraints = integral_constant<
     __select_constructor,
