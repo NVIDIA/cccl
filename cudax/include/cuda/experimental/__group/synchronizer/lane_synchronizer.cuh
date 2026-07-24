@@ -54,15 +54,16 @@ public:
       return {};
     }
 
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const lane_synchronizer&) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void
+    do_sync(const _MappingResult& __mapping_result, const lane_synchronizer&, const _Hierarchy&) const noexcept
     {
       ::__syncwarp(__mapping_result.lane_mask().value());
     }
 
-    template <class _MappingResult>
+    template <class _MappingResult, class _Hierarchy>
     _CCCL_DEVICE_API void
-    do_sync_aligned(const _MappingResult& __mapping_result, const lane_synchronizer&) const noexcept
+    do_sync_aligned(const _MappingResult& __mapping_result, const lane_synchronizer&, const _Hierarchy&) const noexcept
     {
       ::__syncwarp(__mapping_result.lane_mask().value());
     }
