@@ -890,6 +890,22 @@ public:
   }
 
   //! @rst
+  //! Transposes data items from **striped** arrangement to **blocked** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(T (&items)[ItemsPerThread])
+  {
+    StripedToBlocked(items, items);
+  }
+
+  //! @rst
   //! Transposes data items from **blocked** arrangement to **striped** arrangement.
   //!
   //! .. versionadded:: 2.2.0
@@ -945,6 +961,22 @@ public:
   }
 
   //! @rst
+  //! Transposes data items from **blocked** arrangement to **striped** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(T (&items)[ItemsPerThread])
+  {
+    BlockedToStriped(items, items);
+  }
+
+  //! @rst
   //! Transposes data items from **warp-striped** arrangement to **blocked** arrangement.
   //!
   //! .. versionadded:: 2.2.0
@@ -997,6 +1029,22 @@ public:
   WarpStripedToBlocked(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Transposes data items from **warp-striped** arrangement to **blocked** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **warp-striped** and **blocked** arrangements.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(T (&items)[ItemsPerThread])
+  {
+    WarpStripedToBlocked(items, items);
   }
 
   //! @rst
@@ -1057,6 +1105,22 @@ public:
     BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
   }
 
+  //! @rst
+  //! Transposes data items from **blocked** arrangement to **warp-striped** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **blocked** and **warp-striped** arrangements.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(T (&items)[ItemsPerThread])
+  {
+    BlockedToWarpStriped(items, items);
+  }
+
   //! @}
   //! @name Scatter exchanges
   //! @{
@@ -1089,6 +1153,29 @@ public:
   }
 
   //! @rst
+  //! Exchanges data items annotated by rank into **blocked** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **blocked** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  template <typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToBlocked(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  {
+    ScatterToBlocked(items, items, ranks);
+  }
+
+  //! @rst
   //! Exchanges data items annotated by rank into **striped** arrangement.
   //!
   //! .. versionadded:: 2.2.0
@@ -1114,6 +1201,29 @@ public:
     const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     ScatterToStriped(input_items, output_items, ranks, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Exchanges data items annotated by rank into **striped** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **striped** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  template <typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  {
+    ScatterToStriped(items, items, ranks);
   }
 
   //! @rst
@@ -1167,6 +1277,31 @@ public:
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
+  }
+
+  //! @rst
+  //! Exchanges data items annotated by rank into **striped** arrangement in-place. Items with rank -1 are not
+  //! exchanged.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **striped** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  template <typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScatterToStripedGuarded(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  {
+    ScatterToStripedGuarded(items, items, ranks);
   }
 
   //! @rst
@@ -1231,76 +1366,29 @@ public:
     }
   }
 
-  //! @}
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(T (&items)[ItemsPerThread])
-  {
-    StripedToBlocked(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(T (&items)[ItemsPerThread])
-  {
-    BlockedToStriped(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(T (&items)[ItemsPerThread])
-  {
-    WarpStripedToBlocked(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(T (&items)[ItemsPerThread])
-  {
-    BlockedToWarpStriped(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  ///
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToBlocked(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
-  {
-    ScatterToBlocked(items, items, ranks);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
-  {
-    ScatterToStriped(items, items, ranks);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStripedGuarded(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
-  {
-    ScatterToStripedGuarded(items, items, ranks);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  /// @param[in] is_valid
-  ///   Corresponding flag denoting item validity
+  //! @rst
+  //! Exchanges valid data items annotated by rank into **striped** arrangement in-place.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @tparam ValidFlag
+  //!   **[inferred]** FlagT type denoting which items are valid
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **striped** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  //!
+  //! @param[in] is_valid
+  //!   Corresponding flag denoting item validity
   template <typename OffsetT, typename ValidFlag>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStripedFlagged(
     T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread], ValidFlag (&is_valid)[ItemsPerThread])
@@ -1308,7 +1396,7 @@ public:
     ScatterToStripedFlagged(items, items, ranks, is_valid);
   }
 
-#endif // _CCCL_DOXYGEN_INVOKED
+  //! @}
 };
 
 CUB_NAMESPACE_END
