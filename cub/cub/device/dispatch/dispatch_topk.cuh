@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_topk.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
@@ -490,6 +491,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceTopK", cc, policy_selector(cc));
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
@@ -607,6 +610,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             (long long) stream,
             items_per_thread,
             main_kernel_blocks_per_sm);
+#else // CUB_DEBUG_LOG
+    log("Invoking topk_kernel<<<%d, %d, 0, "
+        "%lld>>>(), %d items per thread, %d SM occupancy\n",
+        topk_grid_size,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread,
+        main_kernel_blocks_per_sm);
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables
