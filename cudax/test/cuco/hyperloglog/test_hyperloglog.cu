@@ -111,7 +111,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 
   const auto host_estimate = estimator.estimate(stream);
 
-  auto device_estimate = ::cuda::make_buffer<double>(stream, mr, 1, ::cuda::no_init);
+  auto device_estimate = cuda::make_buffer<double>(stream, mr, 1, cuda::no_init);
   estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
     <<<1, 512, estimator.sketch_bytes(), stream.get()>>>(
       sketch_size_kb, items.begin(), num_items, device_estimate.begin());
@@ -282,11 +282,11 @@ C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]
 {
   using estimator_type = cudax::cuco::hyperloglog<int32_t>;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
-  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+  cuda::stream stream{cuda::device_ref{0}};
+  auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   estimator_type estimator{stream, mr, estimator_type::precision{8}};
-  const auto item = ::cuda::counting_iterator<int32_t>{0};
+  const auto item = cuda::counting_iterator<int32_t>{0};
   estimator.add(stream, item, item + 1);
 
   const auto estimate = estimator.estimate(stream);
