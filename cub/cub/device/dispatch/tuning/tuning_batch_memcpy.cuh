@@ -22,7 +22,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The small buffer sub-policy for @ref BatchedCopyPolicy.
+//! The small buffer sub-policy for @ref BatchedCopyLookbackPolicy.
 struct BatchedCopySmallBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
@@ -71,7 +71,7 @@ struct BatchedCopySmallBufferPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The large buffer sub-policy for @ref BatchedCopyPolicy.
+//! The large buffer sub-policy for @ref BatchedCopyLookbackPolicy.
 struct BatchedCopyLargeBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
@@ -98,19 +98,73 @@ struct BatchedCopyLargeBufferPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The tuning policy for all algorithms in @ref DeviceMemcpy.
-struct BatchedCopyPolicy
+//! The lookback tuning policy for all algorithms in @ref DeviceMemcpy.
+struct BatchedCopyLookbackPolicy
 {
   BatchedCopySmallBufferPolicy small_buffer; //!< Sub-policy for small buffers copied by a single thread block
   BatchedCopyLargeBufferPolicy large_buffer; //!< Sub-policy for large buffers requiring multi-block collaboration
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
+  operator==(const BatchedCopyLookbackPolicy& lhs, const BatchedCopyLookbackPolicy& rhs) noexcept
   {
     return lhs.small_buffer == rhs.small_buffer && lhs.large_buffer == rhs.large_buffer;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const BatchedCopyLookbackPolicy& lhs, const BatchedCopyLookbackPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLookbackPolicy& policy)
+  {
+    return os << "BatchedCopyLookbackPolicy { .small_buffer = " << policy.small_buffer
+              << ", .large_buffer = " << policy.large_buffer << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The algorithm used by the batched-copy policy.
+enum class BatchedCopyAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BatchedCopyAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case BatchedCopyAlgorithm::lookback:
+      return "BatchedCopyAlgorithm::lookback";
+  }
+  return "<unknown BatchedCopyAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BatchedCopyAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for all algorithms in @ref DeviceMemcpy.
+struct BatchedCopyPolicy
+{
+  BatchedCopyAlgorithm algorithm; //!< The batched-copy algorithm to use
+  BatchedCopyLookbackPolicy lookback; //!< The policy for the batched-copy algorithm based on decoupled-lookback. Only
+                                      //!< used when @p algorithm is @p lookback.
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -119,8 +173,7 @@ struct BatchedCopyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyPolicy& policy)
   {
-    return os << "BatchedCopyPolicy { .small_buffer = " << policy.small_buffer
-              << ", .large_buffer = " << policy.large_buffer << " }";
+    return os << "BatchedCopyPolicy { .algorithm = " << policy.algorithm << ", .lookback = " << policy.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -134,14 +187,15 @@ concept batch_memcpy_policy_selector = policy_selector<T, BatchedCopyPolicy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> BatchedCopyPolicy
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> BatchedCopyLookbackPolicy
   {
     const auto large = BatchedCopyLargeBufferPolicy{
       256,
       32,
     };
-    return BatchedCopyPolicy{
+    return BatchedCopyLookbackPolicy{
       BatchedCopySmallBufferPolicy{
         /* .threads_per_block = */ 128,
         /* .buffers_per_thread = */ 4,
@@ -155,6 +209,13 @@ struct policy_selector
         /* .block_lookback_delay = */ default_delay_constructor_policy(true)},
       large,
     };
+  }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> BatchedCopyPolicy
+  {
+    return BatchedCopyPolicy{BatchedCopyAlgorithm::lookback, get_lookback_policy(cc)};
   }
 };
 
