@@ -261,6 +261,7 @@ C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]
   const auto estimate = estimator.estimate(stream);
   REQUIRE(estimate > 1.0);
   REQUIRE(estimate < 2.0);
+}
 
 C2H_TEST("HyperLogLog ref validates sketch storage size", "[hyperloglog]")
 {
