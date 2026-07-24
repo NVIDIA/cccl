@@ -633,13 +633,13 @@ public:
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_API void     __set_from_int32(int32_t)  noexcept;
-  _CCCL_API void     __set_from_int32(uint32_t) noexcept;
-  _CCCL_API void     __set_from_int64(int64_t)  noexcept;
-  _CCCL_API void     __set_from_int64(uint64_t) noexcept;
-  _CCCL_API int32_t  __to_integer(int32_t)  const noexcept;
+  _CCCL_API void __set_from_int32(int32_t) noexcept;
+  _CCCL_API void __set_from_int32(uint32_t) noexcept;
+  _CCCL_API void __set_from_int64(int64_t) noexcept;
+  _CCCL_API void __set_from_int64(uint64_t) noexcept;
+  _CCCL_API int32_t __to_integer(int32_t) const noexcept;
   _CCCL_API uint32_t __to_integer(uint32_t) const noexcept;
-  _CCCL_API int64_t  __to_integer(int64_t)  const noexcept;
+  _CCCL_API int64_t __to_integer(int64_t) const noexcept;
   _CCCL_API uint64_t __to_integer(uint64_t) const noexcept;
 
 public:
