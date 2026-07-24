@@ -211,12 +211,34 @@ struct CubCallResult
   std::vector<char> cubin; // for SASS inspection
 };
 
+// Result of a successful compile-only (no dlopen/LoadLibrary) compilation —
+// the AoT compile/load split. library_bytes is the full linked shared
+// library (.so/.dll), ready to be persisted (serialize()) or handed to
+// JITCompiler::loadFromBytes() (possibly in a different process/machine).
+struct CubCallCompileOnlyResult
+{
+  std::vector<char> library_bytes; // the compiled .so/.dll, byte-for-byte
+  std::vector<char> cubin; // for SASS inspection, same as CubCallResult
+};
+
 // Result of a successful multi-function compilation (one TU, N functions).
 struct MultiCubCallResult
 {
   JITCompiler* compiler; // caller takes ownership; one compiler for the whole TU
   std::vector<char> cubin; // single cubin for the whole TU
   std::vector<void*> fn_ptrs; // exported functions in the same order as the input CubCalls
+};
+
+// Result of a successful multi-function compile-only (no dlopen/LoadLibrary)
+// compilation — the AoT compile/load split for multi-function algorithms
+// (radix_sort, segmented_sort). library_bytes is the full linked shared
+// library containing all N functions; symbol names are the input CubCalls'
+// .name(...) values, in the same order, for the caller to persist alongside
+// the bytes and dlsym after reload.
+struct MultiCubCallCompileOnlyResult
+{
+  std::vector<char> library_bytes;
+  std::vector<char> cubin;
 };
 
 class CubCall
@@ -258,6 +280,17 @@ public:
     const char* ctk_path          = nullptr,
     const char* cccl_include_path = nullptr) const;
 
+  // Compile the generated source WITHOUT loading it (no dlopen/LoadLibrary)
+  // — the AoT compile/load split. Shares all codegen/config logic with
+  // compile(); only the final compile-vs-compileOnly JITCompiler call
+  // differs.
+  CubCallCompileOnlyResult compileOnly(
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config     = nullptr,
+    const char* ctk_path          = nullptr,
+    const char* cccl_include_path = nullptr) const;
+
   // Compile multiple CubCalls into a single translation unit. One Clang
   // invocation, one cubin, one JITCompiler; each function is dlsym'd by its
   // .name(...) and returned in the input order. All CubCalls must share the
@@ -265,6 +298,16 @@ public:
   // inside `namespace fn_<i> { ... }` blocks; extern "C" symbols escape the
   // namespace and stay globally dlsym-able.
   static MultiCubCallResult compile(
+    std::initializer_list<CubCall> calls,
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config     = nullptr,
+    const char* ctk_path          = nullptr,
+    const char* cccl_include_path = nullptr);
+
+  // Compile-only variant of the above (no dlopen/LoadLibrary) — the AoT
+  // compile/load split for multi-function algorithms.
+  static MultiCubCallCompileOnlyResult compileOnly(
     std::initializer_list<CubCall> calls,
     int cc_major,
     int cc_minor,

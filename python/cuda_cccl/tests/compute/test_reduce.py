@@ -1167,3 +1167,83 @@ def test_serialize_deserialize_preserves_determinism():
 def test_deserialize_garbage_raises():
     with pytest.raises((ValueError, RuntimeError)):
         deserialize(b"not a real serialization blob" + b"\0" * 64)
+
+
+def _cross_process_deserialize_worker(blob, n, result_queue):
+    # Runs in a freshly-spawned child process (see
+    # test_serialize_deserialize_cross_process below) -- re-imports
+    # everything from scratch, so this exercises a genuine fresh dlopen (v2)
+    # / fresh driver load (v1) in a brand-new address space, not just a new
+    # Python object in the same process. Must be a module-level function so
+    # multiprocessing's spawn context can pickle it by reference.
+    try:
+        import numpy as np
+        from _utils.device_array import DeviceArray
+
+        from cuda.compute import OpKind, deserialize
+
+        d_in = DeviceArray.from_numpy(np.arange(n, dtype=np.int32))
+        d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+        h_init = np.zeros(1, dtype=np.int32)
+
+        # The child process never called make_reduce_into/serialize -- it
+        # only has the blob bytes handed to it over the process boundary.
+        loaded = deserialize(blob)
+        _run_loaded_reducer(
+            loaded,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=n,
+            op=OpKind.PLUS,
+            h_init=h_init,
+        )
+        result_queue.put(("ok", int(d_out.copy_to_host()[0])))
+    except Exception as exc:  # noqa: BLE001 -- report to parent, don't crash silently
+        result_queue.put(("error", f"{type(exc).__name__}: {exc}"))
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_cross_process():
+    # The AoT claim in one sentence: a blob produced by serialize() must be
+    # loadable and runnable in a process that never called make_reduce_into
+    # or serialize() itself. Same-process deserialize() (the tests above)
+    # only proves a *fresh Python object* works; it doesn't prove the
+    # compiled artifact survives a real process boundary. On v2 (HostJIT)
+    # this specifically exercises dlopen()-ing the persisted .so from a
+    # process with no prior JIT/compiler state at all -- mirrors the
+    # cccl.c.parallel.v2.test.aot_reduce C++ ctest
+    # (c/parallel.v2/test/aot/test_aot_reduce.cpp).
+    #
+    # Uses the "spawn" start method deliberately, not "fork": fork() would
+    # inherit the parent's already-initialized CUDA context / already-loaded
+    # libraries, which defeats the point (masking exactly the fresh-process
+    # behavior we're trying to prove).
+    import multiprocessing
+
+    n = 1024
+    h_in = np.arange(n, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+    h_init = np.zeros(1, dtype=np.int32)
+
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init)
+    blob = serialize(reducer)
+    assert len(blob) > 0
+
+    ctx = multiprocessing.get_context("spawn")
+    result_queue = ctx.Queue()
+    proc = ctx.Process(
+        target=_cross_process_deserialize_worker, args=(blob, n, result_queue)
+    )
+    proc.start()
+    try:
+        status, payload = result_queue.get(timeout=120)
+    finally:
+        proc.join(timeout=30)
+        if proc.is_alive():
+            proc.terminate()
+            proc.join()
+
+    assert status == "ok", f"child process failed: {payload}"
+    assert payload == int(h_in.sum())
+    assert proc.exitcode == 0

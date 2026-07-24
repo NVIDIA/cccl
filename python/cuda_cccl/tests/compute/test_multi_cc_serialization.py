@@ -59,7 +59,14 @@ except ImportError:
 # deliberately run on both backends, so the skip is applied per-test here
 # rather than to the whole module.
 requires_serialization = pytest.mark.skipif(
-    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
+    USING_V2,
+    reason="multi-compute-capability build/serialization is not yet supported "
+    "for v2 -- single-cc serialization works (see test_reduce.py etc.). "
+    "Compiling for a cc other than the current device currently fails for "
+    "some targets (e.g. sm_100) because HostJIT's Clang emits PTX ISA 8.5 "
+    "by default, which some CUB codegen needs 8.6+ for; the Python "
+    "orchestration layer itself (call_compile / _PerCCBuildResults) is "
+    "already backend-agnostic, see the pure-logic tests above.",
 )
 
 

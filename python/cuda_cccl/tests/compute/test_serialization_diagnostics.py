@@ -29,7 +29,10 @@ except ImportError:
     USING_V2 = False
 
 pytestmark = pytest.mark.skipif(
-    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
+    USING_V2,
+    reason="this module checks v1's exact C blob byte layout (CCCLSER1 magic, "
+    "field offsets); v2 serialization works (see test_reduce.py etc.) but uses "
+    "a different blob format (CCCLSEV2) with no diagnostics-validation API yet",
 )
 
 _C_MAGIC = b"CCCLSER1"
