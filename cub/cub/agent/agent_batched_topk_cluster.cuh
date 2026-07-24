@@ -777,7 +777,8 @@ struct agent_batched_topk_cluster
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void reset_hist()
   {
-    // The `num_buckets / threads_per_block` full strided rounds are in range for every thread. The `< threads_per_block` leftover is compiled out when `num_buckets` is a multiple of `threads_per_block`.
+    // The `num_buckets / threads_per_block` full strided rounds are in range for every thread. The `<
+    // threads_per_block` leftover is compiled out when `num_buckets` is a multiple of `threads_per_block`.
     constexpr int full_rounds = num_buckets / threads_per_block;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int r = 0; r < full_rounds; ++r)
@@ -3073,7 +3074,10 @@ private:
     // straggler.
   }
 
-  // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`).
+  // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`). Keys and
+  // values (pairs only) are staged together so both arrays' loads issue before either array's stores, keeping up to
+  // `2 * copy_items` loads in flight. A per-array copy would instead order the value loads after the key stores (the
+  // compiler cannot reorder across the separate loops) and expose their latency on small segments.
   _CCCL_DEVICE _CCCL_FORCEINLINE void copy_segment_select_all(unsigned hw_cluster_rank, unsigned hw_cluster_blocks)
   {
     constexpr int copy_items       = copy_items_per_thread_clamped;
@@ -3083,29 +3087,6 @@ private:
     const offset_t step            = cluster_threads * static_cast<offset_t>(copy_items);
     auto keys_in_it                = d_key_segments_it[segment_id];
     auto keys_out_it               = d_key_segments_out_it[segment_id];
-    // Per-segment value iterators (pairs only), hoisted once like the key iterators and reused by both loops. For
-    // keys-only the value iterators-of-iterators are null, so the discarded `if constexpr` branch keeps the indexing
-    // out of those builds (the variables stay unused there).
-    [[maybe_unused]] auto vals_in_it = [&]() -> value_it_t {
-      if constexpr (!is_keys_only)
-      {
-        return d_value_segments_it[segment_id];
-      }
-      else
-      {
-        return value_it_t{};
-      }
-    }();
-    [[maybe_unused]] auto vals_out_it = [&]() -> it_value_t<ValueOutputItItT> {
-      if constexpr (!is_keys_only)
-      {
-        return d_value_segments_out_it[segment_id];
-      }
-      else
-      {
-        return it_value_t<ValueOutputItItT>{};
-      }
-    }();
 
     // Full tiles: advance while a whole `step`-sized tile still fits (a grid-stride bound, not a precomputed count), so
     // `base` ends at `round_down(num_items, step)` with no division. Each tile batches unrolled loads then stores for
@@ -3114,38 +3095,39 @@ private:
     _CCCL_PRAGMA_NOUNROLL()
     for (; base + step <= num_items; base += step)
     {
-      offset_t idx[copy_items];
+      const offset_t thread_base = base + cluster_tid;
       key_t keys[copy_items];
       [[maybe_unused]] value_t vals[copy_items];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < copy_items; ++j)
       {
-        idx[j] = base + static_cast<offset_t>(j) * cluster_threads + cluster_tid;
-      }
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int j = 0; j < copy_items; ++j)
-      {
-        keys[j] = keys_in_it[static_cast<segment_size_val_t>(idx[j])];
+        const auto idx = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * cluster_threads);
+        keys[j]        = keys_in_it[idx];
       }
       if constexpr (!is_keys_only)
       {
+        auto vals_in_it = d_value_segments_it[segment_id];
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < copy_items; ++j)
         {
-          vals[j] = vals_in_it[static_cast<segment_size_val_t>(idx[j])];
+          const auto idx = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * cluster_threads);
+          vals[j]        = vals_in_it[idx];
         }
       }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < copy_items; ++j)
       {
-        keys_out_it[static_cast<segment_size_val_t>(idx[j])] = keys[j];
+        const auto idx   = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * cluster_threads);
+        keys_out_it[idx] = keys[j];
       }
       if constexpr (!is_keys_only)
       {
+        auto vals_out_it = d_value_segments_out_it[segment_id];
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < copy_items; ++j)
         {
-          vals_out_it[static_cast<segment_size_val_t>(idx[j])] = vals[j];
+          const auto idx   = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * cluster_threads);
+          vals_out_it[idx] = vals[j];
         }
       }
     }
@@ -3160,6 +3142,8 @@ private:
       keys_out_it[seg_idx] = keys_in_it[seg_idx];
       if constexpr (!is_keys_only)
       {
+        auto vals_in_it      = d_value_segments_it[segment_id];
+        auto vals_out_it     = d_value_segments_out_it[segment_id];
         vals_out_it[seg_idx] = vals_in_it[seg_idx];
       }
     }
@@ -3230,7 +3214,8 @@ private:
       return;
     }
 
-    // Segments larger than the resident cluster_tile capacity are still handled : the overflow chunks are re-streamed from gmem
+    // Segments larger than the resident cluster_tile capacity are still handled : the overflow chunks are re-streamed
+    // from gmem
 
     // `k_clamped <= segment_size`, which now fits `out_offset_t`, so this narrowing is safe.
     k = static_cast<out_offset_t>(k_clamped);
