@@ -30,7 +30,7 @@
 .PARAMETER Cuda13Image
     Optional. The Docker image name used for a nested build of the CUDA 13
     wheel when the outer container defaults to CUDA 12.9.  The default value
-    matches the RAPIDS dev‑container image that contains the required
+    matches the RAPIDS dev-container image that contains the required
     toolchain: `rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022`.
 
 .PARAMETER SkipUpload
@@ -194,12 +194,12 @@ function Invoke-Cuda13NestedBuild {
     }
     Write-Host "DooD appears to be working, continuing..."
 
-    # Detect outer‑container resources so we can set sensible limits.
+    # Detect outer-container resources so we can set sensible limits.
     $os = Get-WmiObject -Class Win32_OperatingSystem
     $totalGB = [math]::Floor($os.TotalVisibleMemorySize / 1MB) # KB -> GB
     $procCount = [Environment]::ProcessorCount
 
-    # Leave a little head‑room so the outer container doesn't starve
+    # Leave a little head-room so the outer container doesn't starve
     $memLimitGB = [math]::Max(2, [int]([math]::Floor($totalGB * 0.9)))
     $cpuCount = [math]::Max(2, $procCount)
 
@@ -257,7 +257,7 @@ function Build-CudaCcclWheel {
         throw "nvcc not found at $NvccForMajor"
     }
 
-    # Convert Windows paths to Unix‑style for CMake
+    # Convert Windows paths to Unix-style for CMake
     $NvccUnix = Convert-ToUnixPath $NvccForMajor
     $CudaUnix = Convert-ToUnixPath $CudaPathForMajor
 
@@ -338,7 +338,7 @@ finally {
 }
 
 
-# Merge the two major‑version wheels (if both were built).  This will fail if
+# Merge the two major-version wheels (if both were built).  This will fail if
 # either wheel can't be found.  This only runs on the outer (non-nested)
 # container image.
 if ($DoMerge) {
@@ -365,7 +365,7 @@ if ($DoMerge) {
     $mergePy = Join-Path $RepoRoot 'python/cuda_cccl/merge_cuda_wheels.py'
     Invoke-Checked { & $PythonExe $mergePy $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged } 'Merging wheels failed'
 
-    # Clean up the per‑major directories and move the merged wheel into the
+    # Clean up the per-major directories and move the merged wheel into the
     # final location.
     Get-ChildItem $Wheelhouse -Filter '*.whl' |
     ForEach-Object {
