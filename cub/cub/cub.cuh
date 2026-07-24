@@ -76,6 +76,7 @@
 #include <cub/thread/thread_store.cuh>
 
 // Warp
+#include <cub/warp/warp_bitonic_sort.cuh>
 #include <cub/warp/warp_exchange.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
