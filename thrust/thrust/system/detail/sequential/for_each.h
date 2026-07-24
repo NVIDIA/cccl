@@ -30,9 +30,7 @@ template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction
 _CCCL_HOST_DEVICE InputIterator
 for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, UnaryFunction f)
 {
-  // wrap f
-  const thrust::detail::wrapped_function<UnaryFunction> wrapped_f{f};
-  ::cuda::std::for_each(first, last, wrapped_f);
+  ::cuda::std::for_each(first, last, thrust::detail::wrapped_function<UnaryFunction>{f});
   return last;
 } // end for_each()
 
@@ -40,9 +38,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE InputIterator
 for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n, UnaryFunction f)
 {
-  // wrap f
-  const thrust::detail::wrapped_function<UnaryFunction> wrapped_f{f};
-  return ::cuda::std::for_each_n(first, n, wrapped_f);
+  return ::cuda::std::for_each_n(first, n, thrust::detail::wrapped_function<UnaryFunction>{f});
 } // end for_each_n()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -42,9 +42,8 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
-  return ::cuda::std::set_difference(first1, last1, first2, last2, result, wrapped_comp);
+  return ::cuda::std::set_difference(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_difference()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -62,9 +61,8 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
-  return ::cuda::std::set_intersection(first1, last1, first2, last2, result, wrapped_comp);
+  return ::cuda::std::set_intersection(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_intersection()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -82,9 +80,8 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
-  return ::cuda::std::set_symmetric_difference(first1, last1, first2, last2, result, wrapped_comp);
+  return ::cuda::std::set_symmetric_difference(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_symmetric_difference()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -102,9 +99,8 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
-  return ::cuda::std::set_union(first1, last1, first2, last2, result, wrapped_comp);
+  return ::cuda::std::set_union(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end set_union()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

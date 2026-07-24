@@ -50,9 +50,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator
 partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
-  return ::cuda::std::partition(first, last, wrapped_pred);
+  return ::cuda::std::partition(first, last, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -69,8 +67,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
     return first;
   }
 
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (wrapped_pred(*stencil_first))
   {
@@ -111,8 +108,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
     return first;
   }
 
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -153,8 +149,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   InputIterator stencil,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -202,9 +197,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   OutputIterator2 out_false,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
-  return ::cuda::std::partition_copy(first, last, out_true, out_false, wrapped_pred);
+  return ::cuda::std::partition_copy(
+    first, last, out_true, out_false, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -223,8 +217,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   OutputIterator2 out_false,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   for (; first != last; ++first, (void) ++stencil)
   {

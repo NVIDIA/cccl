@@ -30,9 +30,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator
 remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
-  return ::cuda::std::remove_if(first, last, wrapped_pred);
+  return ::cuda::std::remove_if(first, last, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -44,8 +42,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   InputIterator stencil,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   // advance iterators until wrapped_pred(*stencil) is true or we reach the end of input
   while (first != last && !wrapped_pred(*stencil))
@@ -88,9 +85,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
-  return ::cuda::std::remove_copy_if(first, last, result, wrapped_pred);
+  return ::cuda::std::remove_copy_if(first, last, result, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -107,8 +102,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (first != last)
   {

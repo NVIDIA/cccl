@@ -29,9 +29,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator
 find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
-  return ::cuda::std::find_if(first, last, wrapped_pred);
+  return ::cuda::std::find_if(first, last, thrust::detail::wrapped_function<Predicate>{pred});
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

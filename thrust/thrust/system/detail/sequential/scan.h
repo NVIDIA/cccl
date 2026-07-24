@@ -38,9 +38,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   // Use the input iterator's value type per https://wg21.link/P0571
   using ValueType = thrust::detail::it_value_t<InputIterator>;
 
-  // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
-  return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op);
+  return ::cuda::std::inclusive_scan(
+    first, last, result, thrust::detail::wrapped_function<BinaryFunction, ValueType>{binary_op});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -59,9 +58,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 {
   using ValueType = InitialValueType;
 
-  // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
-  return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op, init);
+  return ::cuda::std::inclusive_scan(
+    first, last, result, thrust::detail::wrapped_function<BinaryFunction, ValueType>{binary_op}, init);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -80,9 +78,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
 {
   using ValueType = InitialValueType;
 
-  // wrap binary_op
-  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
-  return ::cuda::std::exclusive_scan(first, last, result, init, wrapped_binary_op);
+  return ::cuda::std::exclusive_scan(
+    first, last, result, init, thrust::detail::wrapped_function<BinaryFunction, ValueType>{binary_op});
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

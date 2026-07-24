@@ -35,9 +35,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   const T& val,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
-  return ::cuda::std::lower_bound(first, last, val, wrapped_comp);
+  return ::cuda::std::lower_bound(first, last, val, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -49,9 +47,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   const T& val,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
-  return ::cuda::std::upper_bound(first, last, val, wrapped_comp);
+  return ::cuda::std::upper_bound(first, last, val, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -65,8 +61,7 @@ _CCCL_HOST_DEVICE bool binary_search(
 {
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);
 
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
+  thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   return iter != last && !wrapped_comp(val, *iter);
 }
