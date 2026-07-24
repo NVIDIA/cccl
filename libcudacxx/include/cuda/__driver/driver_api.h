@@ -952,6 +952,36 @@ __functionLoadNoThrow(::CUfunction __kernel) noexcept // NOLINT(bugprone-excepti
   return static_cast<::cudaError_t>(__driver_fn(__kernel, __attr, __value));
 }
 
+_CCCL_HOST_API inline void __occupancyMaxPotentialBlockSize(
+  int* __min_grid_size, int* __block_size, ::CUfunction __kernel, ::cuda::std::size_t __dynamic_smem_size)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuOccupancyMaxPotentialBlockSize);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to query optimal block size",
+    __min_grid_size,
+    __block_size,
+    __kernel,
+    nullptr,
+    __dynamic_smem_size,
+    0);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline int __occupancyMaxActiveBlocksPerMultiprocessor(
+  ::CUfunction __kernel, int __block_size, ::cuda::std::size_t __dynamic_smem_size)
+{
+  int __result{};
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuOccupancyMaxActiveBlocksPerMultiprocessor);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to query active blocks per multiprocessor",
+    &__result,
+    __kernel,
+    __block_size,
+    __dynamic_smem_size);
+  return __result;
+}
+
 _CCCL_HOST_API inline void __launchHostFunc(::CUstream __stream, ::CUhostFn __fn, void* __data)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLaunchHostFunc);

@@ -19,6 +19,9 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 // test.
 #define _CCCLRT_LAUNCH_CONFIG_TEST
 #include <cuda/launch>
+#include <cuda/std/limits>
+
+#include <stdexcept>
 
 #include <host_device.cuh>
 
@@ -81,6 +84,17 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 }
 
 __global__ void empty_kernel(int i) {}
+
+template <typename Config>
+__global__ void empty_config_kernel(Config, int)
+{}
+
+struct empty_config_functor
+{
+  template <typename Config>
+  __device__ void operator()(Config, int) const
+  {}
+};
 
 template <bool HasCluster>
 auto make_test_dims(const dim3& grid_dims, const dim3& block_dims, const dim3& cluster_dims = dim3())
@@ -212,6 +226,90 @@ C2H_TEST("Hierarchy construction in config", "[launch]")
   [[maybe_unused]] auto config_no_dims = cuda::make_config(cuda::cooperative_launch());
   static_assert(
     cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(config_no_dims.hierarchy())>, cuda::__empty_hierarchy>);
+}
+
+C2H_TEST("Meta hierarchy dimensions in config", "[launch]")
+{
+  auto config    = cuda::make_config(cuda::grid_dims(cuda::at_least{1025}, cuda::gpu_thread), cuda::block_dims<256>());
+  using config_t = decltype(config);
+  using finalized_config_t = cuda::finalized_t<config_t>;
+  static_assert(!cuda::std::is_same_v<config_t, finalized_config_t>);
+  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
+
+  auto finalized = cuda::finalize(config, empty_kernel);
+  CCCLRT_REQUIRE(cuda::block.count(cuda::grid, finalized) == 5);
+  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, finalized) == 1280);
+
+  auto finalized_on_device = cuda::finalize(cuda::device_ref{0}, config, empty_kernel);
+  CCCLRT_REQUIRE(cuda::block.count(cuda::grid, finalized_on_device) == 5);
+
+  auto finalized_functor = cuda::finalize<int>(config, empty_config_functor{});
+  (void) finalized_functor;
+
+  auto finalized_functor_on_device = cuda::finalize<int>(cuda::device_ref{0}, config, empty_config_functor{});
+  (void) finalized_functor_on_device;
+
+  auto exact           = cuda::make_config(cuda::grid_dims(1024, cuda::gpu_thread), cuda::block_dims<256>());
+  auto exact_finalized = cuda::finalize(exact, empty_kernel);
+  CCCLRT_REQUIRE(cuda::block.count(cuda::grid, exact_finalized) == 4);
+
+  auto non_divisible = cuda::make_config(cuda::grid_dims(1025, cuda::gpu_thread), cuda::block_dims<256>());
+  CHECK_THROWS_AS((void) cuda::finalize(non_divisible, empty_kernel), std::invalid_argument);
+
+  auto unrelated_meta =
+    cuda::make_config(cuda::grid_dims<4>(), cuda::block_dims(cuda::at_least{1025}, cuda::gpu_thread));
+  CCCLRT_REQUIRE(cuda::block.dims(cuda::grid, unrelated_meta) == dim3(4));
+  CCCLRT_REQUIRE(cuda::block.count(cuda::grid, unrelated_meta) == 4);
+
+  [[maybe_unused]] auto distributed = cuda::distribute(1025);
+  [[maybe_unused]] auto fill        = cuda::make_config(cuda::fill_device(), cuda::block_dims<256>());
+
+  auto clustered_fill = cuda::make_config(cuda::fill_device(), cuda::cluster_dims<2>(), cuda::block_dims<256>());
+  auto clustered_fill_finalized    = cuda::finalize(clustered_fill, empty_kernel);
+  const auto empty_kernel_function = cuda::__get_cufunction_of(reinterpret_cast<const void*>(empty_kernel));
+  const auto device                = cuda::__driver::__ctxGetDevice();
+  const auto num_sms = cuda::__driver::__deviceGetAttribute(CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device);
+  const auto active_blocks_per_sm =
+    cuda::__driver::__occupancyMaxActiveBlocksPerMultiprocessor(empty_kernel_function, 256, 0);
+  const auto expected_clusters =
+    static_cast<cuda::std::size_t>(num_sms) * static_cast<cuda::std::size_t>(active_blocks_per_sm) / 2;
+  CCCLRT_REQUIRE(cuda::cluster.count(cuda::grid, clustered_fill_finalized) == expected_clusters);
+
+  auto invalid_fill = cuda::make_config(cuda::fill_device(0.0f), cuda::block_dims<256>());
+  CHECK_THROWS_AS((void) cuda::finalize(invalid_fill, empty_kernel), std::invalid_argument);
+
+  auto infinite_fill =
+    cuda::make_config(cuda::fill_device(cuda::std::numeric_limits<float>::infinity()), cuda::block_dims<256>());
+  CHECK_THROWS_AS((void) cuda::finalize(infinite_fill, empty_kernel), std::invalid_argument);
+
+  auto out_of_range_fill =
+    cuda::make_config(cuda::fill_device((cuda::std::numeric_limits<float>::max)()), cuda::block_dims<256>());
+  CHECK_THROWS_AS((void) cuda::finalize(out_of_range_fill, empty_kernel), std::invalid_argument);
+}
+
+C2H_TEST("Meta hierarchy dimensions in launch", "[launch]")
+{
+  cudaStream_t stream;
+  CUDART(cudaStreamCreate(&stream));
+
+  replacementCalled        = false;
+  expectedConfig           = {};
+  expectedConfig.hStream   = stream;
+  expectedConfig.gridDimX  = 5;
+  expectedConfig.gridDimY  = 1;
+  expectedConfig.gridDimZ  = 1;
+  expectedConfig.blockDimX = 256;
+  expectedConfig.blockDimY = 1;
+  expectedConfig.blockDimZ = 1;
+
+  auto config = cuda::make_config(cuda::grid_dims(cuda::at_least{1025}, cuda::gpu_thread), cuda::block_dims<256>());
+  cuda::launch(stream, config, empty_kernel, 0);
+  cuda::launch(stream, config, empty_config_kernel<cuda::finalized_t<decltype(config)>>, 0);
+  cuda::launch(stream, config, empty_config_functor{}, 0);
+
+  CUDART(cudaStreamSynchronize(stream));
+  CUDART(cudaStreamDestroy(stream));
+  CCCLRT_CHECK(replacementCalled);
 }
 
 C2H_TEST("Configuration combine", "[launch]")

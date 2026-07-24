@@ -124,7 +124,10 @@ template <class _Tp, class _Unit, class _Level, class _Hierarchy>
                 "_Hierarchy doesn't contain _Level");
 
   using _NextLevel = __next_hierarchy_level_t<_Unit, _Hierarchy>;
-  using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).extents()));
+  using _NextDesc  = typename _Hierarchy::template level_desc_type<_NextLevel>;
+  static_assert(__is_concrete_hierarchy_level_desc_v<_NextDesc>,
+                "Hierarchy queries that use meta dimensions require a finalized hierarchy");
+  using _CurrExts = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).extents()));
 
   // Remove dependency on runtime storage. This makes the queries work for hierarchy levels with all static extents
   // in constant evaluated context.
@@ -172,6 +175,32 @@ struct __extents_query_native
     return ::cuda::__hierarchy_extents_mul(__curr_exts, __next_exts);
   }
 };
+
+template <class _Level>
+struct __same_level_extents_query_native
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::extents<_Tp, 1, 1, 1> __call() noexcept
+  {
+    return {};
+  }
+};
+
+template <>
+struct __extents_query_native<thread_level, thread_level> : __same_level_extents_query_native<thread_level>
+{};
+
+template <>
+struct __extents_query_native<warp_level, warp_level> : __same_level_extents_query_native<warp_level>
+{};
+
+template <>
+struct __extents_query_native<block_level, block_level> : __same_level_extents_query_native<block_level>
+{};
+
+template <>
+struct __extents_query_native<cluster_level, cluster_level> : __same_level_extents_query_native<cluster_level>
+{};
 
 template <>
 struct __extents_query_native<thread_level, warp_level>
@@ -254,6 +283,36 @@ struct __extents_query
     return ::cuda::__extents_query_generic<_Tp, _Unit, _Level>(__hier);
   }
 };
+
+template <class _Level>
+struct __same_level_extents_query
+{
+  template <class _Tp, class _Hierarchy>
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::extents<_Tp, 1, 1, 1> __call(const _Hierarchy&) noexcept
+  {
+    return {};
+  }
+};
+
+template <>
+struct __extents_query<thread_level, thread_level> : __same_level_extents_query<thread_level>
+{};
+
+template <>
+struct __extents_query<warp_level, warp_level> : __same_level_extents_query<warp_level>
+{};
+
+template <>
+struct __extents_query<block_level, block_level> : __same_level_extents_query<block_level>
+{};
+
+template <>
+struct __extents_query<cluster_level, cluster_level> : __same_level_extents_query<cluster_level>
+{};
+
+template <>
+struct __extents_query<grid_level, grid_level> : __same_level_extents_query<grid_level>
+{};
 
 template <>
 struct __extents_query<thread_level, warp_level>
