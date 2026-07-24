@@ -136,12 +136,13 @@ struct PartitionPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::PartitionPolicy
   {
-    return {.threads_per_block = 128,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,
-            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::PartitionAlgorithm::lookback,
+            .lookback  = {.threads_per_block = 128,
+                          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,
+                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                          .load_modifier     = cub::LOAD_DEFAULT,
+                          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end partition-if-policy-selector

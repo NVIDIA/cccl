@@ -24,12 +24,13 @@ struct bench_policy_selector
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
-    return {TUNE_THREADS_PER_BLOCK,
-            TUNE_ITEMS_PER_THREAD,
-            (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
-            (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
-            cub::BLOCK_SCAN_WARP_SCANS,
-            lookback_delay_policy};
+    return {cub::SelectAlgorithm::lookback,
+            {TUNE_THREADS_PER_BLOCK,
+             TUNE_ITEMS_PER_THREAD,
+             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+             (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE
