@@ -9,15 +9,6 @@
 
 #include "nvbench_helper.cuh"
 
-template <class T>
-struct square_t
-{
-  __device__ void operator()(T& x) const
-  {
-    x = x * x;
-  }
-};
-
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -29,7 +20,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
-  square_t<T> op{};
+  square_inplace_t<T> op{};
 
   caching_allocator_t alloc{};
 

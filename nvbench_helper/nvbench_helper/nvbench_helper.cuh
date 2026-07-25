@@ -118,6 +118,15 @@ using all_types =
 #endif
 
 template <class T>
+struct square_inplace_t
+{
+  __device__ void operator()(T& x) const noexcept
+  {
+    x = x * x;
+  }
+};
+
+template <class T>
 class value_wrapper_t
 {
   T m_val{};
