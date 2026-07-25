@@ -21,20 +21,20 @@ Defined in ``<cuda/numeric>`` header.
    [[nodiscard]] __host__ __device__
    bool isclose(T lhs, T rhs, float relative_tol, T absolute_tol) noexcept;
 
-   template <class Complex>
+   template <class T>
    [[nodiscard]] __host__ __device__
-   bool isclose(const Complex& lhs, const Complex& rhs) noexcept;
+   bool isclose(const /*complex-type*/<T>& lhs, const /*complex-type*/<T>& rhs) noexcept;
 
-   template <class Complex>
+   template <class T>
    [[nodiscard]] __host__ __device__
-   bool isclose(const Complex& lhs, const Complex& rhs, float relative_tol) noexcept;
+   bool isclose(const /*complex-type*/<T>& lhs, const /*complex-type*/<T>& rhs, float relative_tol) noexcept;
 
-   template <class Complex, class AbsTol>
+   template <class T>
    [[nodiscard]] __host__ __device__
-   bool isclose(const Complex& lhs,
-                const Complex& rhs,
+   bool isclose(const /*complex-type*/<T>& lhs,
+                const /*complex-type*/<T>& rhs,
                 float  relative_tol,
-                AbsTol absolute_tol) noexcept;
+                T absolute_tol) noexcept;
 
    } // namespace cuda
 
@@ -68,7 +68,6 @@ Defined in ``<cuda/numeric>`` header.
 
 - Scalar overloads require ``lhs``, ``rhs``, ``absolute_tol`` to have the same arithmetic type (integer or floating point).
 - Complex overloads accept ``cuda::std::complex<T>`` and ``std::complex<T>`` operands.
-- ``AbsTol`` must be the same type as the complex value type.
 
 **Special values**
 

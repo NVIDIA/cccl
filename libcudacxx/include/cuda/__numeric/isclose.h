@@ -89,27 +89,27 @@ __isclose_fp_impl(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, const
   return __diff <= ::cuda::std::fmax(__abs_tol, __rel_value);
 }
 
-template <typename _ComplexType, typename _AbsTol>
+template <class _Tp, template <class> class _ComplexType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool __isclose_complex_impl(
-  const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_tol, const _AbsTol __abs_tol) noexcept
+  const _ComplexType<_Tp>& __lhs, const _ComplexType<_Tp>& __rhs, const float __rel_tol, const _Tp __abs_tol) noexcept
 {
-  using __scalar_t _CCCL_NODEBUG_ALIAS  = typename _ComplexType::value_type;
-  using __compare_t _CCCL_NODEBUG_ALIAS = __isclose_compare_t<__scalar_t>;
-  static_assert(::cuda::is_floating_point_v<__scalar_t>, "cuda::isclose: __scalar_t must be a floating point type");
+  static_assert(::cuda::is_floating_point_v<_Tp>, "cuda::isclose: _Tp must be a floating point type");
 #if _CCCL_HAS_FLOAT128()
   // __float128 is not supported because cuda::std::hypot is not implemented for this type
-  static_assert(!::cuda::std::is_same_v<__scalar_t, __float128>, "cuda::isclose: __float128 is not supported");
+  static_assert(!::cuda::std::is_same_v<_Tp, __float128>, "cuda::isclose: __float128 is not supported");
 #endif // _CCCL_HAS_FLOAT128()
+
   _CCCL_ASSERT(::cuda::in_range(__rel_tol, 0.0f, 1.0f),
                "cuda::isclose: relative tolerance must be in the range [0.0, 1.0]");
-  _CCCL_ASSERT(::cuda::std::isfinite(__abs_tol) && __abs_tol >= __scalar_t{0},
+  _CCCL_ASSERT(::cuda::std::isfinite(__abs_tol) && __abs_tol >= _Tp{0},
                "cuda::isclose: absolute tolerance must be finite and non-negative");
 
-  const auto __lhs_real = static_cast<__compare_t>(::cuda::__get_real(__lhs));
-  const auto __lhs_imag = static_cast<__compare_t>(::cuda::__get_imag(__lhs));
-  const auto __rhs_real = static_cast<__compare_t>(::cuda::__get_real(__rhs));
-  const auto __rhs_imag = static_cast<__compare_t>(::cuda::__get_imag(__rhs));
-  const auto __abs      = static_cast<__compare_t>(__abs_tol);
+  using __compare_t _CCCL_NODEBUG_ALIAS = __isclose_compare_t<_Tp>;
+  const auto __lhs_real                 = static_cast<__compare_t>(::cuda::__get_real(__lhs));
+  const auto __lhs_imag                 = static_cast<__compare_t>(::cuda::__get_imag(__lhs));
+  const auto __rhs_real                 = static_cast<__compare_t>(::cuda::__get_real(__rhs));
+  const auto __rhs_imag                 = static_cast<__compare_t>(::cuda::__get_imag(__rhs));
+  const auto __abs                      = static_cast<__compare_t>(__abs_tol);
 
   if (__lhs_real == __rhs_real && __lhs_imag == __rhs_imag)
   {
@@ -279,13 +279,6 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_poin
 
 // Complex overloads
 
-template <typename _Tp, typename _AbsTol, bool = __is_any_complex_v<_Tp>>
-inline constexpr bool __isclose_complex_comparison_v = false;
-
-template <typename _Tp, typename _AbsTol>
-inline constexpr bool __isclose_complex_comparison_v<_Tp, _AbsTol, true> =
-  ::cuda::std::is_same_v<typename _Tp::value_type, _AbsTol>;
-
 //! @brief Checks whether two complex values are close to each other using a relative and absolute tolerance.
 //!
 //! @param __lhs The first value to compare.
@@ -293,10 +286,11 @@ inline constexpr bool __isclose_complex_comparison_v<_Tp, _AbsTol, true> =
 //! @param __rel_tol The relative tolerance.
 //! @param __abs_tol The absolute tolerance.
 //! @return True if __lhs and __rhs are close to each other, false otherwise.
-_CCCL_TEMPLATE(typename _ComplexType, typename _AbsTol)
-_CCCL_REQUIRES(__isclose_complex_comparison_v<_ComplexType, _AbsTol>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API bool
-isclose(const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_tol, const _AbsTol __abs_tol) noexcept
+_CCCL_TEMPLATE(class _Tp, template <class> class _ComplexType)
+_CCCL_REQUIRES(__is_any_complex_v<_ComplexType<_Tp>> _CCCL_AND(
+  ::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>))
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool isclose(
+  const _ComplexType<_Tp>& __lhs, const _ComplexType<_Tp>& __rhs, const float __rel_tol, const _Tp __abs_tol) noexcept
 {
   return ::cuda::__isclose_complex_impl(__lhs, __rhs, __rel_tol, __abs_tol);
 }
@@ -307,13 +301,13 @@ isclose(const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_
 //! @param __rhs The second value to compare.
 //! @param __rel_tol The relative tolerance.
 //! @return True if __lhs and __rhs are close to each other, false otherwise.
-_CCCL_TEMPLATE(typename _ComplexType)
-_CCCL_REQUIRES(__is_any_complex_v<_ComplexType>)
+_CCCL_TEMPLATE(class _Tp, template <class> class _ComplexType)
+_CCCL_REQUIRES(__is_any_complex_v<_ComplexType<_Tp>> _CCCL_AND(
+  ::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>))
 [[nodiscard]] _CCCL_HOST_DEVICE_API bool
-isclose(const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_tol) noexcept
+isclose(const _ComplexType<_Tp>& __lhs, const _ComplexType<_Tp>& __rhs, const float __rel_tol) noexcept
 {
-  using __scalar_t _CCCL_NODEBUG_ALIAS = typename _ComplexType::value_type;
-  return ::cuda::isclose(__lhs, __rhs, __rel_tol, __scalar_t{0});
+  return ::cuda::isclose(__lhs, __rhs, __rel_tol, _Tp{0});
 }
 
 //! @brief Checks whether two complex values are close to each other using the default relative tolerance.
@@ -321,12 +315,12 @@ isclose(const _ComplexType& __lhs, const _ComplexType& __rhs, const float __rel_
 //! @param __lhs The first value to compare.
 //! @param __rhs The second value to compare.
 //! @return True if __lhs and __rhs are close to each other, false otherwise.
-_CCCL_TEMPLATE(typename _ComplexType)
-_CCCL_REQUIRES(__is_any_complex_v<_ComplexType>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API bool isclose(const _ComplexType& __lhs, const _ComplexType& __rhs) noexcept
+_CCCL_TEMPLATE(class _Tp, template <class> class _ComplexType)
+_CCCL_REQUIRES(__is_any_complex_v<_ComplexType<_Tp>> _CCCL_AND(
+  ::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>))
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool isclose(const _ComplexType<_Tp>& __lhs, const _ComplexType<_Tp>& __rhs) noexcept
 {
-  using __scalar_t _CCCL_NODEBUG_ALIAS = typename _ComplexType::value_type;
-  return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_relative_tolerance<__scalar_t>(), __scalar_t{0});
+  return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_relative_tolerance<_Tp>(), _Tp{0});
 }
 
 _CCCL_END_NAMESPACE_CUDA
