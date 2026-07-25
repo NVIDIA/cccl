@@ -54,7 +54,7 @@ template <int ThreadsPerBlock,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>,
-          LoadPrefetch PrefetchLevel  = LoadPrefetch::none>
+          LoadPrefetch PrefetchLevel = LoadPrefetch::none>
 struct agent_select_if_policy
 {
   static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
@@ -62,7 +62,7 @@ struct agent_select_if_policy
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
-  static constexpr LoadPrefetch LOAD_PREFETCH         = PrefetchLevel;
+  static constexpr LoadPrefetch LOAD_PREFETCH        = PrefetchLevel;
 
   struct detail
   {
@@ -77,17 +77,16 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
-          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>,
+          typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>,
           detail::LoadPrefetch PrefetchLevel = detail::LoadPrefetch::none>
-using AgentSelectIfPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") = detail::
-  agent_select_if_policy<
-    ThreadsPerBlock,
-    ItemsPerThread,
-    LoadAlgorithm,
-    LoadModifier,
-    ScanAlgorithm,
-    DelayConstructorT,
-    PrefetchLevel>;
+using AgentSelectIfPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") =
+  detail::agent_select_if_policy<ThreadsPerBlock,
+                                 ItemsPerThread,
+                                 LoadAlgorithm,
+                                 LoadModifier,
+                                 ScanAlgorithm,
+                                 DelayConstructorT,
+                                 PrefetchLevel>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -257,10 +256,6 @@ struct AgentSelectIf
     : has_select_op     ? USE_SELECT_OP
     : has_flags_it      ? USE_SELECT_FLAGS
                         : USE_DISCONTINUITY;
-  // enable prefetching for device-wide select_flags only
-  static constexpr bool PREFETCH_ITEMS =
-    (SELECT_METHOD == USE_SELECT_FLAGS) && (SelectionOpt != SelectImpl::Partition)
-    && (AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
@@ -424,7 +419,7 @@ struct AgentSelectIf
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD])
   {
-    if constexpr (PREFETCH_ITEMS)
+    if constexpr (AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none)
     {
       BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
         (d_prefetch_in + streaming_context.input_offset()) + tile_offset, num_tile_items);
@@ -523,7 +518,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_SELECT_FLAGS> /*select_method*/)
   {
-    if constexpr (!PREFETCH_ITEMS)
+    if constexpr (AgentSelectIfPolicyT::LOAD_PREFETCH == LoadPrefetch::none)
     {
       // Ensure temporary storage used to load items can be reused to load flags.
       __syncthreads();
