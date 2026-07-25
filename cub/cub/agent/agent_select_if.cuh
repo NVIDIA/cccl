@@ -328,7 +328,6 @@ struct AgentSelectIf
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
   WrappedInputIteratorT d_in; ///< Input items
-  InputIteratorT d_prefetch_in; ///< Input items without cache-modified iterator wrapping
   OutputIteratorWrapperT d_selected_out; ///< Output iterator for the selected items
   WrappedFlagsInputIteratorT d_flags_in; ///< Input selection flags (if applicable)
   EqualityOpT equality_op; ///< T equality operator
@@ -378,7 +377,6 @@ struct AgentSelectIf
     const StreamingContextT& streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
-      , d_prefetch_in(d_in)
       , d_selected_out(d_selected_out)
       , d_flags_in(d_flags_in)
       , equality_op(equality_op)
@@ -390,6 +388,18 @@ struct AgentSelectIf
   //---------------------------------------------------------------------
   // Utility methods for initializing the selections
   //---------------------------------------------------------------------
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE InputIteratorT GetInputIterator() const
+  {
+    if constexpr (::cuda::std::is_pointer_v<InputIteratorT>)
+    {
+      return d_in.ptr;
+    }
+    else
+    {
+      return d_in;
+    }
+  }
 
   /**
    * Load input items for the current tile.
@@ -422,7 +432,7 @@ struct AgentSelectIf
     if constexpr (AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none)
     {
       BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
-        (d_prefetch_in + streaming_context.input_offset()) + tile_offset, num_tile_items);
+        (GetInputIterator() + streaming_context.input_offset()) + tile_offset, num_tile_items);
 
       InitializeSelections<IS_FIRST_TILE, IS_LAST_TILE>(
         tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
