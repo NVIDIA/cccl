@@ -35,6 +35,9 @@ env:
  PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
  ROADMAP_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgC_MXI"
 
+# Workflow token unused: every step authenticates via tibdex/github-app-token.
+permissions: {}
+
 jobs:
   set_roadmap_value:
     if: github.repository == 'NVIDIA/cccl'

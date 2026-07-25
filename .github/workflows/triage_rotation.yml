@@ -27,6 +27,8 @@ jobs:
   assign_issues:
     runs-on: ubuntu-latest
     if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
+    permissions:
+      issues: write # assign user, add label, post comment via gh CLI
     steps:
       - name: Calculate assignee
         id: calculate_assignee
