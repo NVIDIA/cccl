@@ -16,6 +16,7 @@ import event
 import hierarchy
 import inplace_vector
 import memory_resource
+import shared_resource
 import std_array
 import stream
 import tuple
@@ -34,6 +35,7 @@ _FORMATTERS = (
     inplace_vector,
     event,
     hierarchy,
+    shared_resource,
 )
 InternalDict = dict[str, object]
 
