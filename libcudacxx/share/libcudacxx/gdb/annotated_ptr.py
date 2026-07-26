@@ -64,9 +64,7 @@ class AnnotatedPtrPrinter:
                 ptr_display = f"{ptr_value:#x}"
 
             # Construct the full type name with template arguments
-            full_type = (
-                f"{self.type_name}<{pointee_type_name}, {property_type_name}>"
-            )
+            full_type = f"{self.type_name}<{pointee_type_name}, {property_type_name}>"
 
             return f"{full_type} -> {ptr_display}"
         except (gdb.error, ValueError):
