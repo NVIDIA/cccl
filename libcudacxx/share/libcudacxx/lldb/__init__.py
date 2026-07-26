@@ -9,13 +9,14 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
+import annotated_ptr
 import buffer
 import memory_resource
 
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer)
+_FORMATTERS = (memory_resource, buffer, annotated_ptr)
 InternalDict = dict[str, object]
 
 
