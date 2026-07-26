@@ -93,6 +93,24 @@ function Get-CudaVersion {
     return '13.0'
 }
 
+function Set-CtkPin {
+    <#
+    .SYNOPSIS
+        Pins cuda-toolkit wheels to the container's CTK major.minor via
+        PIP_CONSTRAINT, unless CCCL_PYTHON_TEST_LATEST_CTK=1 is set (in which case
+        pip resolves whatever the latest minor is -- what a plain `pip install`
+        with no lockfile would get).
+    #>
+    if ($env:CCCL_PYTHON_TEST_LATEST_CTK -ne "1") {
+        $cudaVersion = Get-CudaVersion
+        $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
+        "cuda-toolkit==$cudaVersion.*" | Out-File -FilePath $env:PIP_CONSTRAINT -Encoding ascii
+    } else {
+        # Clear any inherited constraint so this lane truly tests the latest minor.
+        Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
+    }
+}
+
 function Convert-ToUnixPath {
     Param([Parameter(Mandatory = $true)][string]$p)
     return ($p -replace "\\", "/")
@@ -192,4 +210,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
