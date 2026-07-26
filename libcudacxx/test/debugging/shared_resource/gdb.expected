@@ -1,0 +1,15 @@
+=============== shared_resource.unique begin ===============
+cuda::mr::shared_resource<cuda::mr::legacy_managed_memory_resource> use_count=1, resource=<address>
+=============== shared_resource.unique end ===============
+=============== shared_resource.shared begin ===============
+cuda::mr::shared_resource<cuda::mr::legacy_managed_memory_resource> use_count=2, resource=<address>
+=============== shared_resource.shared end ===============
+=============== shared_resource.alias begin ===============
+cuda::mr::shared_resource<cuda::mr::legacy_managed_memory_resource> use_count=1, resource=<address>
+=============== shared_resource.alias end ===============
+=============== shared_resource.moved_into begin ===============
+cuda::mr::shared_resource<cuda::mr::legacy_managed_memory_resource> use_count=1, resource=<address>
+=============== shared_resource.moved_into end ===============
+=============== shared_resource.moved_from begin ===============
+cuda::mr::shared_resource<cuda::mr::legacy_managed_memory_resource> empty
+=============== shared_resource.moved_from end ===============
