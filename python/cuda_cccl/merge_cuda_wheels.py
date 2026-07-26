@@ -135,12 +135,26 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             ]
         )
 
-        # Find the output wheel
-        output_wheels = list(output_dir.glob("*.whl"))
-        if not output_wheels:
+        # Locate the repacked wheel by its expected name, derived from the
+        # base wheel's dist-info the same way `wheel pack` names its output.
+        # output_dir may already contain other wheels (e.g. from previous
+        # runs), so an unordered glob could return one of those instead.
+        dist_infos = list(base_wheel.glob("*.dist-info"))
+        if len(dist_infos) != 1:
+            raise RuntimeError(
+                f"Expected exactly one dist-info directory in {base_wheel}"
+            )
+        dist_name, dist_version = dist_infos[0].name[: -len(".dist-info")].split("-")
+        wheel_tags = [
+            line.split(":", 1)[1].strip()
+            for line in (dist_infos[0] / "WHEEL").read_text().splitlines()
+            if line.startswith("Tag:")
+        ]
+        if not wheel_tags:
+            raise RuntimeError(f"No Tag found in {dist_infos[0] / 'WHEEL'}")
+        merged_wheel = output_dir / f"{dist_name}-{dist_version}-{wheel_tags[0]}.whl"
+        if not merged_wheel.exists():
             raise RuntimeError("Failed to create merged wheel")
-
-        merged_wheel = output_wheels[0]
         print(f"Successfully merged wheel: {merged_wheel}")
         return merged_wheel
 
