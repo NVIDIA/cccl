@@ -57,15 +57,6 @@ constexpr int MAX_TPSM     = 1;
 #  define CUB_ROTATE_LB(x, y)
 #endif // __CUDA_ARCH__
 
-__device__ constexpr bool hasTMA()
-{
-#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900)
-  return true;
-#else
-  return false;
-#endif
-}
-
 constexpr std::pair<int, int> get_launch_bounds(const int tile_bytes, const int shmem_per_sm, const int max_tpsm)
 {
   const int BLOCKS_PER_SM = shmem_per_sm / (tile_bytes + 1'000); // extra bytes to ensure no spilling
@@ -78,35 +69,43 @@ constexpr std::pair<int, int> get_launch_bounds(const int tile_bytes, const int 
   return {BLOCK_SIZE, BLOCKS_PER_SM};
 }
 
-namespace rotate_short
+struct short_algorithm
 {
-// Short-path tile size.  The test suite also keys its per-case sizes to `rotate_short::TILE_BYTES`.
-constexpr int TILE_BYTES = 18 * 1024;
+  static constexpr int tile_bytes = 18 * 1024;
 
-// How many contiguous tiles a CTA grabs at once.
-constexpr int TILES_PER_GRAB = 6;
+  // How many contiguous tiles a CTA grabs at once.
+  static constexpr int tiles_per_grab = 6;
 
-// Number of shmem tile buffers per block (double-buffer for staging contiguous runs of tiles).
-constexpr int PIPELINE_STAGES = 2;
+  // Number of shared-memory tile buffers per block.
+  static constexpr int pipeline_stages = 2;
 
-// Each block stages PIPELINE_STAGES shmem tile buffers, so its effective per-block shmem footprint
-// is PIPELINE_STAGES * TILE_BYTES.  Feeding that product to get_launch_bounds divides occupancy by
-// the stage count exactly as a bespoke helper would, keeping the register-buffering budget in
-// shared_to_global_through_regs correctly sized -- no separate launch-bounds function needed.
-constexpr auto LAUNCH_BOUNDS        = get_launch_bounds(TILE_BYTES * PIPELINE_STAGES, SHMEM_PER_SM, MAX_TPSM);
-inline constexpr auto BLOCK_SIZE    = LAUNCH_BOUNDS.first;
-inline constexpr auto BLOCKS_PER_SM = LAUNCH_BOUNDS.second;
-// Limit the number of registers per thread when copying from shared to global.
-constexpr int MAX_REGS_PER_THREAD_OVERRIDE = 4;
-} // namespace rotate_short
+  static constexpr auto launch_bounds = get_launch_bounds(tile_bytes * pipeline_stages, SHMEM_PER_SM, MAX_TPSM);
+  static constexpr int block_size     = launch_bounds.first;
+  static constexpr int blocks_per_sm  = launch_bounds.second;
 
-namespace rotate_long
+  // Limit the number of registers per thread when copying from shared to global.
+  static constexpr int max_regs_per_thread_override = 4;
+};
+
+struct long_algorithm
 {
-constexpr int TILE_BYTES            = 32 * 1024;
-constexpr auto LAUNCH_BOUNDS        = get_launch_bounds(TILE_BYTES, SHMEM_PER_SM, MAX_TPSM);
-inline constexpr auto BLOCK_SIZE    = LAUNCH_BOUNDS.first;
-inline constexpr auto BLOCKS_PER_SM = LAUNCH_BOUNDS.second;
-} // namespace rotate_long
+  static constexpr int tile_bytes = 32 * 1024;
+
+  // TODO: ensure multiple tiles per grab works
+  static constexpr int tiles_per_grab = 1;
+
+  static constexpr int pipeline_stages = 2;
+
+  static constexpr auto launch_bounds = get_launch_bounds(tile_bytes * pipeline_stages, SHMEM_PER_SM, MAX_TPSM);
+  static constexpr int block_size     = launch_bounds.first;
+  static constexpr int blocks_per_sm  = launch_bounds.second;
+
+  // Cap the shared->global store register buffer at the BUFFERED_ITERS=1 floor (= min(4, REGS_PER_T)/4)
+  // so the store loop interleaves each per-uint4 shmem load with its write-through gmem store (higher
+  // store-side memory-level parallelism / DRAM utilization) instead of buffering the whole tile in
+  // registers before storing. Swept 4/8/16 under the pipeline -- 4 is the tuned winner.
+  static constexpr int max_regs_per_thread_override = 4;
+};
 } // namespace rotate
 } // namespace detail
 CUB_NAMESPACE_END

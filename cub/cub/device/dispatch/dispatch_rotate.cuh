@@ -127,6 +127,12 @@ struct RotateState_t
   // claimed index to the signed tile coordinate used by the copy helpers.
   std::vector<uint32_t, UninitializedAllocator<uint32_t>> ordering_;
   uint32_t max_distance_ = 0;
+  // Which visit-order algorithm bfs_visit_order chose.  The two small-side orderings are trivial
+  // closed forms of the claim position -- the long kernel recomputes each tile index inline from
+  // its counter ticket, so NO processing_order host->device copy is needed for them (a device-side
+  // memset of the counter+flags is all the init required, removing the pageable H2D->kernel stream
+  // dependency that dominates small long rotations).  Only the circulant order (0) is host-staged.
+  OrderMode order_mode_ = OrderMode::Circulant;
 };
 
 // ============================================================================
@@ -138,11 +144,11 @@ struct RotateState_t
 inline size_t get_max_dependency_distance(cudaStream_t stream)
 {
   int block_size, grid_size;
-  get_launch_config(stream, rotate_long::TILE_BYTES, block_size, grid_size);
+  get_launch_config(stream, long_algorithm::tile_bytes * long_algorithm::pipeline_stages, block_size, grid_size);
   return static_cast<size_t>(grid_size - 50); // TODO: could be a tuning parameter
 }
 
-constexpr int SHORT_TILE_BYTES = rotate_short::TILE_BYTES;
+// TODO add a tuning parameter that figures out from when on it's better to move to naive (K, N)
 
 enum class RotateAlgo
 {
@@ -154,7 +160,7 @@ enum class RotateAlgo
 template <typename T>
 RotateAlgo get_algorithm_to_use(size_t rotate_distance, size_t max_distance, cudaStream_t stream)
 {
-  if (rotate_distance <= SHORT_TILE_BYTES / sizeof(T))
+  if (rotate_distance <= short_algorithm::tile_bytes / sizeof(T))
   {
     return RotateAlgo::Short;
   }
@@ -261,7 +267,7 @@ uint8_t dependency_offsets_at(
   uint32_t const num_negative_tiles,
   uint32_t const num_positive_tiles)
 {
-  constexpr uint32_t TILE_SIZE = rotate_long::TILE_BYTES / sizeof(T);
+  constexpr uint32_t TILE_SIZE = long_algorithm::tile_bytes / sizeof(T);
   uint32_t const num_nodes     = num_negative_tiles + num_positive_tiles;
   uint8_t mask                 = 0;
   int32_t const tile           = tile_detail::arr_ix_to_tile_ix(index, num_negative_tiles);
@@ -362,6 +368,7 @@ RotateState_t small_side_visit_order(
   uint32_t const num_nodes = num_negative_tiles + num_positive_tiles;
 
   RotateState_t state;
+  state.order_mode_ = (Side == SmallSide::Negative) ? OrderMode::Negative : OrderMode::Positive;
   state.ordering_.resize(num_nodes);
   uint32_t* output = state.ordering_.data();
 
@@ -429,7 +436,8 @@ struct VisitInterval
 #if defined(__x86_64__) && defined(__GNUC__)
 __attribute__((target_clones("avx2", "default")))
 #endif
-uint32_t max_position_distance(int32_t const* source, int32_t const* target, uint32_t const count)
+uint32_t
+max_position_distance(int32_t const* source, int32_t const* target, uint32_t const count)
 {
   int32_t result = 0;
 #if defined(__clang__)
@@ -608,7 +616,7 @@ RotateState_t circulant_interval_visit_order(
 template <typename T>
 RotateState_t bfs_visit_order(size_t const arr_size, size_t const rot_dist, uint32_t const head_size)
 {
-  constexpr size_t TILE_SIZE    = rotate_long::TILE_BYTES / sizeof(T);
+  constexpr size_t TILE_SIZE    = long_algorithm::tile_bytes / sizeof(T);
   auto const neg_head_size      = tile_detail::get_neg_head_size<T>(arr_size, rot_dist, head_size);
   const auto num_negative_tiles = tile_detail::get_num_negative_tiles(rot_dist, TILE_SIZE, neg_head_size);
   const auto num_positive_tiles = tile_detail::get_num_positive_tiles(arr_size, rot_dist, TILE_SIZE, head_size);
@@ -642,16 +650,16 @@ void compute_temp_size_and_state(
 {
   assert(rotate_distance > 0 && rotate_distance <= size / 2);
   uint32_t const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
-  if (rotate_distance <= SHORT_TILE_BYTES / sizeof(T))
+  if (rotate_distance <= short_algorithm::tile_bytes / sizeof(T))
   {
     size_t const num_main_tiles =
-      cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
+      cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), short_algorithm::tile_bytes);
     temp_storage_bytes = sizeof(int) + sizeof(device_flag_t) * num_main_tiles;
     state              = RotateState_t{};
     return;
   }
 
-  assert(static_cast<size_t>(head_size) < size - rotate_distance);
+  assert(head_size < size - rotate_distance);
 
   state                       = bfs_visit_order<T>(size, rotate_distance, head_size);
   const auto algorithm_to_use = get_algorithm_to_use<T>(rotate_distance, state.max_distance_, stream);
@@ -659,7 +667,7 @@ void compute_temp_size_and_state(
   if (algorithm_to_use == RotateAlgo::Long)
   {
     auto const num_tiles = state.ordering_.size();
-    // Tile counter + ordering + flags
+    // Tile counter + flags + ordering
     temp_storage_bytes = sizeof(uint32_t) + (sizeof(uint32_t) + sizeof(device_flag_t)) * num_tiles;
   }
   else
@@ -744,38 +752,35 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
 
     if (algo_to_use == RotateAlgo::Short)
     {
-      constexpr size_t TILE_SIZE = SHORT_TILE_BYTES / sizeof(T);
+      constexpr size_t TILE_SIZE = short_algorithm::tile_bytes / sizeof(T);
       bool const is_tiny         = size <= TILE_SIZE;
 
       if (is_tiny)
       {
         const int shmem = static_cast<int>(size * sizeof(T));
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_short::rotate_tiny_kernel<Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
-        rotate_short::rotate_tiny_kernel<Dir, T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
+          rotate_tiny::rotate_tiny_kernel<Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        rotate_tiny::rotate_tiny_kernel<Dir, T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
       else
       {
         auto const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
         size_t const num_main_tiles =
-          cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
+          cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), short_algorithm::tile_bytes);
 
         int block_size, grid_size;
-        // Reuse get_launch_config by scaling the tile footprint by the stage count: each block
-        // stages PIPELINE_STAGES shmem tiles, so its per-block shmem cost is PIPELINE_STAGES *
-        // TILE_BYTES (reproduces the device-side rotate_short::LAUNCH_BOUNDS on the real device).
-        CUB_ROTATE_CHECK(
-          get_launch_config(stream, rotate_short::TILE_BYTES * rotate_short::PIPELINE_STAGES, block_size, grid_size));
+        CUB_ROTATE_CHECK(get_launch_config(
+          stream, short_algorithm::tile_bytes * short_algorithm::pipeline_stages, block_size, grid_size));
 
         CUB_ROTATE_CHECK(cudaMemsetAsync(d_temp_storage, 0, temp_storage_bytes, stream));
 
         // Multi-stage pipeline holds PIPELINE_STAGES tile buffers in dynamic shared memory.
-        constexpr int dynamic_shmem = rotate_short::get_shmem_usage<T>();
+        constexpr int dynamic_shmem = get_shmem_usage<short_algorithm, T>();
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_short::rotate_short_kernel<Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
-        rotate_short::rotate_short_kernel<Dir, T><<<grid_size, block_size, dynamic_shmem, stream>>>(
-          d_array, size, d_temp_storage, rotate_distance, num_main_tiles, head_size);
+          rotate_kernel<short_algorithm, Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
+        rotate_kernel<short_algorithm, Dir, T><<<grid_size, block_size, dynamic_shmem, stream>>>(
+          d_array, size, d_temp_storage, rotate_distance, num_main_tiles, head_size, OrderMode::Circulant);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
     }
@@ -787,23 +792,34 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
         return cudaErrorInvalidValue;
       }
       uint32_t const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
-      int num_sms;
-      CUB_ROTATE_CHECK(get_num_sms(stream, num_sms));
 
-      rotate_long::setup_kernel<<<num_sms, 512, 0, stream>>>(d_temp_storage, num_tiles);
-      CUB_ROTATE_CHECK(cudaGetLastError());
-      CUB_ROTATE_CHECK(cudaMemcpyAsync(
-        reinterpret_cast<uint32_t*>(d_temp_storage) + 1,
-        state.ordering_.data(),
-        num_tiles * sizeof(uint32_t),
-        cudaMemcpyHostToDevice,
-        stream));
+      // The counter and flags are adjacent, so one memset initializes every mutable scratch value.
+      size_t const initialized_bytes = sizeof(uint32_t) + num_tiles * sizeof(device_flag_t);
+      CUB_ROTATE_CHECK(cudaMemsetAsync(d_temp_storage, 0, initialized_bytes, stream));
+      if (state.order_mode_ == OrderMode::Circulant)
+      {
+        CUB_ROTATE_CHECK(cudaMemcpyAsync(
+          get_long_processing_order(d_temp_storage, num_tiles),
+          state.ordering_.data(),
+          num_tiles * sizeof(uint32_t),
+          cudaMemcpyHostToDevice,
+          stream));
+      }
 
-      // Launch rotate_long_kernel using cooperative kernel launch
+      // The long variant requires a cooperative launch to keep every dependency producer resident.
       int block_size, grid_size;
-      CUB_ROTATE_CHECK(get_launch_config(stream, rotate_long::TILE_BYTES, block_size, grid_size));
+      CUB_ROTATE_CHECK(
+        get_launch_config(stream, long_algorithm::tile_bytes * long_algorithm::pipeline_stages, block_size, grid_size));
       dim3 grid_dim(grid_size);
       dim3 block_dim(block_size);
+
+      // Multi-stage pipeline holds PIPELINE_STAGES tile buffers in dynamic shared memory.
+      constexpr int dynamic_shmem = get_shmem_usage<long_algorithm, T>();
+      CUB_ROTATE_CHECK(cudaFuncSetAttribute(
+        rotate_kernel<long_algorithm, Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
+
+      OrderMode const order_mode = state.order_mode_;
+
       //! Make sure the variable types are exactly the same that the kernel takes
       void* kernelArgs[] = {
         (void*) &d_array,
@@ -811,9 +827,10 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
         (void*) &d_temp_storage,
         (void*) &rotate_distance,
         const_cast<void*>(static_cast<const void*>(&num_tiles)),
-        const_cast<void*>(static_cast<const void*>(&head_size))};
+        const_cast<void*>(static_cast<const void*>(&head_size)),
+        const_cast<void*>(static_cast<const void*>(&order_mode))};
       CUB_ROTATE_CHECK(cudaLaunchCooperativeKernel(
-        (void*) rotate_long::rotate_long_kernel<Dir, T>, grid_dim, block_dim, kernelArgs, 0, stream));
+        (void*) rotate_kernel<long_algorithm, Dir, T>, grid_dim, block_dim, kernelArgs, dynamic_shmem, stream));
     }
     else
     {
