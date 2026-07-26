@@ -19,6 +19,7 @@ if _SCRIPT_DIRECTORY not in sys.path:
     sys.path.insert(0, _SCRIPT_DIRECTORY)
 
 import atomic  # noqa: E402
+import annotated_ptr  # noqa: E402
 import buffer  # noqa: E402
 import complex  # noqa: E402
 import event  # noqa: E402
@@ -34,6 +35,7 @@ import tuple  # noqa: E402
 _PRINTERS = (
     memory_resource,
     atomic,
+    annotated_ptr,
     buffer,
     std_array,
     complex,
