@@ -13,8 +13,8 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
-// nvcc 12.0 thinks volatile T is not trivially copyable.
-// UNSUPPORTED: nvcc-12.0
+// When compiling with gcc-7, nvcc thinks volatile T is not trivially copyable.
+// UNSUPPORTED: gcc-7
 
 // <cuda/std/atomic>
 
