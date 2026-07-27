@@ -52,6 +52,8 @@ TEST_FUNC constexpr bool test()
   test_stride<cuda::std::extents<unsigned, 7>>(cuda::std::array<unsigned, 1>{1});
   test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<unsigned, 2>{8, 1});
   test_stride<cuda::std::extents<int64_t, D, 8, D, D>>(cuda::std::array<int64_t, 4>{720, 90, 10, 1}, 7, 9, 10);
+  // slice left(5, 3, 2)[::2, :, :], unique layout that doesn't meet the si * ei <= s_i+1 condition
+  test_stride<cuda::std::extents<int64_t, 3, 3, 2>>(cuda::std::array<int64_t, 3>{2, 5, 15});
   return true;
 }
 
