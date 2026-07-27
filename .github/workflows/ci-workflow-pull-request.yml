@@ -635,7 +635,7 @@ jobs:
 
   publish-failure-analysis:
     name: Add failure analysis to CI results
-    if: ${{ needs.analyze-failures.result == 'success' }}
+    if: ${{ always() && needs.analyze-failures.result == 'success' }}
     needs: analyze-failures
     permissions:
       pull-requests: write
