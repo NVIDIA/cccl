@@ -1009,28 +1009,28 @@ _CCCL_TRIVIAL_API __uint32x2 __sar_64_rnd(__uint32x2 __man, int __shift, bool __
 //! according to IEEE-754 double precision format.
 //!
 //! @tparam _Acc Accuracy level (full-range special handling only for high)
-//! @param input The input number as two 32-bit integers
+//! @param __v The input number as two 32-bit integers
 //! @return The extracted exponent value
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __input) noexcept
+_CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __v) noexcept
 {
   int32_t __exp;
 
   // remove sign bit
-  __input.x[1] &= 0x7fffffff;
+  __v.x[1] &= 0x7fffffff;
 
   // Shift exponent bits to the beginning
-  __exp = static_cast<int32_t>(__input.x[1] >> 20);
+  __exp = static_cast<int32_t>(__v.x[1] >> 20);
 
   // Extract mantissa bits
-  __input.x[1] = __input.x[1] & 0x000fffff;
+  __v.x[1] = __v.x[1] & 0x000fffff;
 
   // Check for NAN and INF
   if constexpr (_Acc == fpemu_accuracy::high)
   {
     if (__exp == 0x7ff)
     {
-      if (__input.x[0] == 0 && __input.x[1] == 0)
+      if (__v.x[0] == 0 && __v.x[1] == 0)
       {
         __exp = 0x000017ff; // Magic value for INF
       }
@@ -1053,20 +1053,20 @@ _CCCL_TRIVIAL_API int32_t __unpack_exp(__uint32x2 __input) noexcept
 //! @tparam twos_comp_flag Whether to use two's complement representation
 //! @tparam _Acc Accuracy level (full-range special handling only for high)
 //! @param sign Pointer to store the sign bit
-//! @param input The input number as two 32-bit integers
+//! @param __v The input number as two 32-bit integers
 //! @param is_zero_exp Whether the exponent is zero (denormal case)
 //! @return The extracted mantissa as two 32-bit integers
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __input, bool __is_zero_exp) noexcept
+_CCCL_TRIVIAL_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 __v, bool __is_zero_exp) noexcept
 {
   __uint32x2 __man32x2;
 
   // Extract sign
-  *__sign = (__input.x[1] & 0x80000000) != 0;
+  *__sign = (__v.x[1] & 0x80000000) != 0;
 
   // Extract mantissa bits
-  __man32x2.x[0] = __input.x[0];
-  __man32x2.x[1] = __input.x[1] & 0x000fffff;
+  __man32x2.x[0] = __v.x[0];
+  __man32x2.x[1] = __v.x[1] & 0x000fffff;
 
   // Set implicit-bit for normal numbers
   if (!__is_zero_exp)
