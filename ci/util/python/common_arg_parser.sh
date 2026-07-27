@@ -21,10 +21,17 @@ parse_python_args() {
                 ;;
             -ctk-mode=*)
                 ctk_mode="${1#*=}"
+                # Reject an explicit-but-empty value (e.g. `-ctk-mode=`): a lane
+                # that wants the default omits the flag entirely, so an empty
+                # value signals a malformed generated argument -- fail loudly.
+                if [[ -z "${ctk_mode}" ]]; then
+                    echo "Error: -ctk-mode requires a value" >&2
+                    return 1
+                fi
                 shift
                 ;;
             -ctk-mode)
-                if [[ $# -lt 2 ]]; then
+                if [[ $# -lt 2 || -z "$2" ]]; then
                     echo "Error: -ctk-mode requires a value" >&2
                     return 1
                 fi
