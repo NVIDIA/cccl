@@ -100,6 +100,11 @@ workflows:
     # resolves the latest minor -- catching breakage a plain `pip install
     # cuda-cccl[cu12]/[cu13]` would hit before the container CTK bumps.
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'latest'}
+    # sysctk: install the sysctk extras (system-provided CTK, no pip cuda-toolkit)
+    # rather than cu*.
+    # Full test on 3.14, minimal (numba-free) on 3.14t; all CTKs, Linux+Windows.
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: 'sysctk'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
     - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
