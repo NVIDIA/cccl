@@ -99,8 +99,16 @@ function Set-CtkPin {
         Pins cuda-toolkit wheels to the container's CTK major.minor via
         PIP_CONSTRAINT, unless CCCL_PYTHON_TEST_LATEST_CTK=1 is set (in which case
         pip resolves whatever the latest minor is -- what a plain `pip install`
-        with no lockfile would get).
+        with no lockfile would get). The sysctk lanes (CCCL_PYTHON_TEST_SYSCTK=1)
+        skip pinning entirely since they use the system-provided toolkit.
     #>
+    if ($env:CCCL_PYTHON_TEST_SYSCTK -eq "1") {
+        # sysctk lanes use the system-provided CUDA toolkit; no cuda-toolkit wheel
+        # is pip-installed, so there is nothing to pin. Clear any inherited
+        # constraint so it cannot affect the sysctk resolve.
+        Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
+        return
+    }
     if ($env:CCCL_PYTHON_TEST_LATEST_CTK -ne "1") {
         $cudaVersion = Get-CudaVersion
         $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
@@ -109,6 +117,18 @@ function Set-CtkPin {
         # Clear any inherited constraint so this lane truly tests the latest minor.
         Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
     }
+}
+
+function Get-CtkExtraFlavor {
+    <#
+    .SYNOPSIS
+        Returns the pip-extra toolkit "flavor" used to build extra names:
+        'sysctk' when CCCL_PYTHON_TEST_SYSCTK=1 (rely on the system-provided CUDA
+        toolkit) or 'cu' otherwise (pip-installed toolkit). Combine with the CUDA
+        major, e.g. "minimal-$(Get-CtkExtraFlavor)$cudaMajor".
+    #>
+    if ($env:CCCL_PYTHON_TEST_SYSCTK -eq "1") { return "sysctk" }
+    return "cu"
 }
 
 function Convert-ToUnixPath {
@@ -210,4 +230,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

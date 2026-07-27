@@ -23,9 +23,11 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl
+# Install cuda_cccl. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
+# (system-provided toolkit) depending on CCCL_PYTHON_TEST_SYSCTK.
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
+ctk_flavor="$(ctk_extra_flavor)"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 
 # Run tests for compute module.
 # On the v2 (HostJIT) backend, abort on first failure — the suite is still

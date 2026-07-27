@@ -29,9 +29,11 @@ else
 fi
 
 # Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
-# full cu* extras because those pull in numba/numba-cuda.
+# full cu*/sysctk* extras because those pull in numba/numba-cuda. The flavor is
+# "cu" (pip toolkit) or "sysctk" (system toolkit) per CCCL_PYTHON_TEST_SYSCTK.
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
+ctk_flavor="$(ctk_extra_flavor)"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
 python -m pip install pytest pytest-xdist
 
 cd "${repo_root}/python/cuda_cccl/tests/"
