@@ -183,6 +183,7 @@ struct EdgeCase
 template <typename T>
 void check_edge_case(RotateTestHarness<T>& harness, EdgeCase const& tc)
 {
+  CAPTURE(tc.arr_size, tc.rot_dist, tc.unaligned_elems);
   harness.prepare(tc.arr_size, tc.rot_dist, tc.unaligned_elems);
   auto const mismatch_left = harness.run_and_verify();
   REQUIRE(mismatch_left == harness.kNoMismatch);

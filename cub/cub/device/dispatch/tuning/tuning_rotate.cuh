@@ -91,8 +91,15 @@ struct long_algorithm
 {
   static constexpr int tile_bytes = 32 * 1024;
 
-  // TODO: ensure multiple tiles per grab works
-  static constexpr int tiles_per_grab = 1;
+  // Keep dependency chains below the cooperative grid size by this many CTAs.
+  static constexpr int cooperative_grid_safety_margin = 50;
+
+  // Use a closed-form processing order while either side fits within this many tiles.
+  static constexpr int max_direct_dependency_distance = 256;
+
+  static constexpr size_t naive_fallback_min_size     = 1'000'000'000;
+  static constexpr double naive_fallback_max_fraction = 0.3;
+  static constexpr size_t naive_fallback_min_distance_bytes = 500'000'000;
 
   static constexpr int pipeline_stages = 2;
 

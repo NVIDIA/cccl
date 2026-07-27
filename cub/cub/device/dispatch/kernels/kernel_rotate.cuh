@@ -240,7 +240,6 @@ _CCCL_DEVICE void shared_to_global_through_regs(T* dst, T* src, uint32_t const b
       }
     }
 
-    // TODO: see if adapting the tile size to remove the tail improves perf
     if constexpr (VEC_TILE_BYTES < TILE_BYTES)
     {
       // The uncovered tail [VEC_TILE_BYTES, TILE_BYTES) is a contiguous src->dst block copy: the
@@ -537,7 +536,6 @@ struct pipeline_context
 
   static constexpr int block_size       = policy::block_size;
   static constexpr int tile_bytes       = policy::tile_bytes;
-  static constexpr int tiles_per_grab   = policy::tiles_per_grab;
   static constexpr int pipeline_stages  = policy::pipeline_stages;
   static constexpr int tile_size        = tile_bytes / sizeof(T);
   static constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
@@ -662,7 +660,7 @@ template <RotDir Dir, typename T>
 _CCCL_DEVICE bool claim_and_load(pipeline_context<short_algorithm, Dir, T>& context, int slot)
 {
   using context_t              = pipeline_context<short_algorithm, Dir, T>;
-  constexpr int tiles_per_grab = context_t::tiles_per_grab;
+  constexpr int tiles_per_grab = short_algorithm::tiles_per_grab;
   auto* tile_counter           = reinterpret_cast<cuda::atomic<int, cuda::thread_scope_device>*>(context.temp_storage);
   auto cta                     = cooperative_groups::this_thread_block();
   auto const tid               = threadIdx.x;
@@ -815,7 +813,7 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T>& conte
 
   if (tid == 0)
   {
-    tile.work_index = counter->fetch_add(context_t::tiles_per_grab, cuda::memory_order_relaxed);
+    tile.work_index = counter->fetch_add(1, cuda::memory_order_relaxed);
     if (tile.work_index < context.num_tiles)
     {
       tile.index =

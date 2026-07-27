@@ -62,7 +62,7 @@ void rotate_benchmark(nvbench::state& state, nvbench::type_list<T>)
 
   auto const normalized_rot_dist = std::min(rot_dist, num_elements - rot_dist);
   const auto algo =
-    cub::detail::rotate::get_algorithm_to_use<T>(normalized_rot_dist, rotate_state.max_distance_, nullptr);
+    cub::detail::rotate::get_algorithm_to_use<T>(num_elements, normalized_rot_dist, rotate_state.max_distance_, nullptr);
   auto& algo_summary = state.add_summary("Algorithm");
   algo_summary.set_string("name", "Algorithm");
   algo_summary.set_string(

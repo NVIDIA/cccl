@@ -48,15 +48,6 @@ namespace rotate
 // Runtime device queries
 // ============================================================================
 
-// Get number of SMs in stream's GPU.
-inline cudaError_t get_num_sms(cudaStream_t stream, int& num_sms)
-{
-  int device;
-  CUB_ROTATE_CHECK(cudaStreamGetDevice(stream, &device));
-  CUB_ROTATE_CHECK(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device));
-  return cudaSuccess;
-}
-
 inline cudaError_t get_launch_config(cudaStream_t stream, const int tile_bytes, int& block_size_out, int& grid_size_out)
 {
   int device;
@@ -141,14 +132,20 @@ struct RotateState_t
 
 // Max dependency distance for which the long algorithm is faster than the naive one.
 // Derived dynamically from the cooperative grid size.
-inline size_t get_max_dependency_distance(cudaStream_t stream)
+inline size_t get_max_supported_dependency_distance(cudaStream_t stream)
 {
   int block_size, grid_size;
   get_launch_config(stream, long_algorithm::tile_bytes * long_algorithm::pipeline_stages, block_size, grid_size);
-  return static_cast<size_t>(grid_size - 50); // TODO: could be a tuning parameter
+  return grid_size > long_algorithm::cooperative_grid_safety_margin
+         ? grid_size - long_algorithm::cooperative_grid_safety_margin
+         : 0;
 }
 
-// TODO add a tuning parameter that figures out from when on it's better to move to naive (K, N)
+template <typename T>
+inline bool fall_back_to_naive(const size_t arr_size, const size_t rotate_distance)
+{
+  return arr_size > long_algorithm::naive_fallback_min_size && static_cast<double>(rotate_distance) / arr_size < long_algorithm::naive_fallback_max_fraction && rotate_distance * sizeof(T) > long_algorithm::naive_fallback_min_distance_bytes;
+}
 
 enum class RotateAlgo
 {
@@ -158,13 +155,13 @@ enum class RotateAlgo
 };
 
 template <typename T>
-RotateAlgo get_algorithm_to_use(size_t rotate_distance, size_t max_distance, cudaStream_t stream)
+RotateAlgo get_algorithm_to_use(size_t arr_size, size_t rotate_distance, size_t max_distance, cudaStream_t stream)
 {
   if (rotate_distance <= short_algorithm::tile_bytes / sizeof(T))
   {
     return RotateAlgo::Short;
   }
-  else if (max_distance < get_max_dependency_distance(stream))
+  else if (max_distance < get_max_supported_dependency_distance(stream) && !fall_back_to_naive<T>(arr_size, rotate_distance))
   {
     return RotateAlgo::Long;
   }
@@ -625,13 +622,12 @@ RotateState_t bfs_visit_order(size_t const arr_size, size_t const rot_dist, uint
 
   // A descending order is both cheap to generate and has a tight dependency
   // bound while the negative side is small.
-  constexpr uint32_t max_direct_dependency_distance = 256;
-  if (num_negative_tiles + 1 <= max_direct_dependency_distance)
+  if (num_negative_tiles + 1 <= long_algorithm::max_direct_dependency_distance)
   {
     return small_side_visit_order<SmallSide::Negative>(num_negative_tiles, num_positive_tiles, dependency_segments);
   }
   // At an exact-half rotation, alignment rounding can make the positive side one tile smaller than the negative side.
-  if (num_positive_tiles + 1 <= max_direct_dependency_distance)
+  if (num_positive_tiles + 1 <= long_algorithm::max_direct_dependency_distance)
   {
     return small_side_visit_order<SmallSide::Positive>(num_negative_tiles, num_positive_tiles, dependency_segments);
   }
@@ -662,7 +658,7 @@ void compute_temp_size_and_state(
   assert(head_size < size - rotate_distance);
 
   state                       = bfs_visit_order<T>(size, rotate_distance, head_size);
-  const auto algorithm_to_use = get_algorithm_to_use<T>(rotate_distance, state.max_distance_, stream);
+  const auto algorithm_to_use = get_algorithm_to_use<T>(size, rotate_distance, state.max_distance_, stream);
 
   if (algorithm_to_use == RotateAlgo::Long)
   {
@@ -748,7 +744,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
     }
 
     // Execution pass: use the precomputed state
-    const auto algo_to_use = get_algorithm_to_use<T>(rotate_distance, state.max_distance_, stream);
+    const auto algo_to_use = get_algorithm_to_use<T>(size, rotate_distance, state.max_distance_, stream);
 
     if (algo_to_use == RotateAlgo::Short)
     {
