@@ -819,7 +819,8 @@ public:
     }
     else
     {
-      return __predicate.__equal_to(__extract_key(__desired), __extract_key(__expected))
+      return __predicate.__equal_to(__extract_key(__desired),
+                                    __extract_key(::cuda::std::bit_cast<__value_type>(__expected_packed)))
               == detail::__equal_result::__equal
              ? __insert_result::__duplicate
              : __insert_result::__continue;
