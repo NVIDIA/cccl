@@ -86,7 +86,10 @@ class RenderCiTriageTest(unittest.TestCase):
         prompt_heading = "Copy this prompt into a coding agent"
         self.assertIn(prompt_heading, report)
         self.assertNotIn("Prompt for an agent", report)
-        self.assertLess(report.index("Suggested next steps"), report.index(prompt_heading))
+        self.assertLess(
+            report.index("Suggested next steps"),
+            report.index(prompt_heading),
+        )
         self.assertLess(report.index(prompt_heading), report.index("**Jobs:**"))
         self.assertIn(
             "https://github.com/NVIDIA/cccl/actions/runs/12345/job/101#step:4:1",
