@@ -630,7 +630,7 @@ jobs:
           {
             echo "markdown<<${delimiter}"
             cat "${RUNNER_TEMP}/agent-summary.md"
-            echo "${delimiter}"
+            printf '\n%s\n' "${delimiter}"
           } >> "${GITHUB_OUTPUT}"
 
   publish-failure-analysis:
