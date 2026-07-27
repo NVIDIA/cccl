@@ -108,9 +108,9 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   {
     _CCCL_THROW(::std::invalid_argument, "destination mdspan must be sufficiently aligned");
   }
-  if (cudax::__has_interleaved_stride_order(__dst))
+  if (!__dst.is_unique())
   {
-    _CCCL_THROW(::std::invalid_argument, "destination mdspan must not have interleaved stride order");
+    _CCCL_THROW(::std::invalid_argument, "destination mdspan must have a unique layout");
   }
   if (cudax::__may_overlap(__src, __dst))
   {
