@@ -289,7 +289,7 @@ public:
     // with all the previous dimensions combined
     index_type __span_size = 1;
     bool __result          = true;
-    for (rank_type __i = 1; __i < __rank_; __i++)
+    for (rank_type __i = 0; __i < __rank_; __i++)
     {
       const auto __extent = extents().extent(__permute[__i]);
       if (__extent == index_type{1})
