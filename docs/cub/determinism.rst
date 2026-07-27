@@ -1,6 +1,6 @@
 .. _cub-determinism:
 
-CUB Determinism
+Determinism
 ===============
 
 Several ``cub`` device algorithms let you request a reproducibility guarantee for a call. The concepts

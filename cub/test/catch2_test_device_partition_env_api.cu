@@ -182,12 +182,13 @@ struct ThreeWayPartitionPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ThreeWayPartitionPolicy
   {
-    return {.threads_per_block = 256,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 9,
-            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::ThreeWayPartitionAlgorithm::lookback,
+            .lookback  = {.threads_per_block = 256,
+                          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 9,
+                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                          .load_modifier     = cub::LOAD_DEFAULT,
+                          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end partition-three-way-policy-selector

@@ -303,12 +303,13 @@ struct three_way_partition_policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ThreeWayPartitionPolicy
   {
-    return {static_cast<int>(BlockThreads),
-            10,
-            cub::BLOCK_LOAD_DIRECT,
-            cub::LOAD_DEFAULT,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {cub::ThreeWayPartitionAlgorithm::lookback,
+            {static_cast<int>(BlockThreads),
+             10,
+             cub::BLOCK_LOAD_DIRECT,
+             cub::LOAD_DEFAULT,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 
@@ -397,23 +398,26 @@ C2H_TEST("Test ThreeWayPartitionPolicy properties", "[partition][device]")
 
   // aggregate init
   constexpr auto p1 = cub::ThreeWayPartitionPolicy{
-    256,
-    9,
-    cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-    cub::CacheLoadModifier::LOAD_DEFAULT,
-    cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    cub::ThreeWayPartitionAlgorithm::lookback,
+    {256,
+     9,
+     cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+     cub::CacheLoadModifier::LOAD_DEFAULT,
+     cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::ThreeWayPartitionPolicy{
-    .threads_per_block = 256,
-    .items_per_thread  = 9,
-    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
-    .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+    .algorithm = cub::ThreeWayPartitionAlgorithm::lookback,
+    .lookback  = cub::ThreeWayPartitionLookbackPolicy{
+       .threads_per_block = 256,
+       .items_per_thread  = 9,
+       .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+       .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+       .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+       .lookback_delay    = cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -428,11 +432,12 @@ C2H_TEST("Test ThreeWayPartitionPolicy properties", "[partition][device]")
     return os.str();
   };
   REQUIRE(to_string(p1)
-          == "ThreeWayPartitionPolicy { .threads_per_block = 256, .items_per_thread = 9"
+          == "ThreeWayPartitionPolicy { .algorithm = ThreeWayPartitionAlgorithm::lookback"
+             ", .lookback = ThreeWayPartitionLookbackPolicy { .threads_per_block = 256, .items_per_thread = 9"
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
              ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 350, .l2_write_latency = 450 } }");
+             ", .delay = 350, .l2_write_latency = 450 } } }");
 }
 
 C2H_TEST("Test PartitionPolicy properties", "[partition][device]")

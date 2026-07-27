@@ -522,6 +522,28 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+stf_get_executor_fn stf_partition_fn_blocked(int dim)
+{
+  switch (dim)
+  {
+    case 0:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<0>::get_executor);
+    case 1:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<1>::get_executor);
+    case 2:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<2>::get_executor);
+    case 3:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<3>::get_executor);
+    default:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition::get_executor);
+  }
+}
+
+stf_get_executor_fn stf_partition_fn_cyclic(void)
+{
+  return reinterpret_cast<stf_get_executor_fn>(&cyclic_partition::get_executor);
+}
+
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
 {
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -584,6 +606,29 @@ void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStrea
   catch (...)
   {
     fprintf(stderr, "stf_data_place_allocate failed: unknown exception\n");
+    return nullptr;
+  }
+}
+
+void* stf_data_place_allocate_nd(
+  stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
+  dim4 dims;
+  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  try
+  {
+    return from_opaque(h)->allocate_nd(dims, elemsize, stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_allocate_nd failed: %s\n", e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_allocate_nd failed: unknown exception\n");
     return nullptr;
   }
 }

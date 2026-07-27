@@ -262,7 +262,7 @@ struct DeviceMemcpy
           OutputBufferIt output_buffer_it,
           BufferSizeIteratorT buffer_sizes,
           ::cuda::std::int64_t num_buffers,
-          EnvT env = {})
+          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,

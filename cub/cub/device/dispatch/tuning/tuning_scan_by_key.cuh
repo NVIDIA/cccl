@@ -32,8 +32,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for all ByKey algorithms in @ref DeviceScan.
-struct ScanByKeyPolicy
+//! The lookback tuning policy for all ByKey algorithms in @ref DeviceScan.
+struct ScanByKeyLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int items_per_thread; //!< Number of items processed per thread
@@ -44,7 +44,7 @@ struct ScanByKeyPolicy
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
+  operator==(const ScanByKeyLookbackPolicy& lhs, const ScanByKeyLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -53,6 +53,63 @@ struct ScanByKeyPolicy
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ScanByKeyLookbackPolicy& lhs, const ScanByKeyLookbackPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyLookbackPolicy& p)
+  {
+    return os
+        << "ScanByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The algorithm used by the @ref cub::ScanByKeyPolicy "ScanByKeyPolicy".
+enum class ScanByKeyAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(ScanByKeyAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case ScanByKeyAlgorithm::lookback:
+      return "ScanByKeyAlgorithm::lookback";
+  }
+  return "<unknown ScanByKeyAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for all ByKey algorithms in @ref DeviceScan.
+struct ScanByKeyPolicy
+{
+  ScanByKeyAlgorithm algorithm; //!< The scan-by-key algorithm to use
+  ScanByKeyLookbackPolicy lookback; //!< The policy for the scan-by-key algorithm based on decoupled-lookback. Only used
+                                    //!< when @p algorithm is @lookback.
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -61,11 +118,7 @@ struct ScanByKeyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyPolicy& p)
   {
-    return os
-        << "ScanByKeyPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+    return os << "ScanByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -1038,13 +1091,14 @@ template <typename ActivePolicyT>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::ScanByKeyPolicyT;
-  return {policy_t::BLOCK_THREADS,
-          policy_t::ITEMS_PER_THREAD,
-          policy_t::LOAD_ALGORITHM,
-          policy_t::LOAD_MODIFIER,
-          policy_t::STORE_ALGORITHM,
-          policy_t::SCAN_ALGORITHM,
-          lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>};
+  return {ScanByKeyAlgorithm::lookback,
+          {policy_t::BLOCK_THREADS,
+           policy_t::ITEMS_PER_THREAD,
+           policy_t::LOAD_ALGORITHM,
+           policy_t::LOAD_MODIFIER,
+           policy_t::STORE_ALGORITHM,
+           policy_t::SCAN_ALGORITHM,
+           lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -1076,7 +1130,9 @@ struct policy_selector
   type_t accum_type;
   op_kind_t operation_t;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> ScanByKeyLookbackPolicy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
     const bool accum_is_primitive_or_trivially_copyable = accum_is_primitive || accum_is_trivially_copyable;
@@ -1088,7 +1144,7 @@ struct policy_selector
     auto default_policy =
       [&](CacheLoadModifier load_modifier,
           int delay_ctor_key_size,
-          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> ScanByKeyPolicy {
+          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> ScanByKeyLookbackPolicy {
       const auto items_per_thread =
         max_input_bytes <= 8
           ? 9
@@ -1915,6 +1971,12 @@ struct policy_selector
             BLOCK_SCAN_WARP_SCANS,
             default_reduce_by_key_delay_constructor_policy(
               accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
+  }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
+  {
+    return ScanByKeyPolicy{ScanByKeyAlgorithm::lookback, get_lookback_policy(cc)};
   }
 };
 
