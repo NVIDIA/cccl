@@ -26,7 +26,6 @@
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/array>
 
 #  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
