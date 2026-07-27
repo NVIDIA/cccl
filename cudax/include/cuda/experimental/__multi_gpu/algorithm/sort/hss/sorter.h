@@ -27,6 +27,7 @@
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
@@ -155,7 +156,7 @@ private:
   // ------------------------------------------------------------------------------------------
 
   template <class _CommRange, class _EnvRange, class _InputRange>
-  _CCCL_HOST_API static void __data_exchange(
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__buffer_type<_Tp>> __data_exchange(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
@@ -170,8 +171,8 @@ private:
     const _Comm& __comm,
     const _Env& __env,
     const __buffer_type<_Tp>& __data,
-    const ::std::vector<::cuda::std::size_t>& __counts,
-    const ::std::vector<::cuda::std::size_t>& __displs,
+    ::cuda::std::span<const ::cuda::std::size_t> __counts,
+    ::cuda::std::span<const ::cuda::std::size_t> __displs,
     const _BinaryOp& __cmp,
     __buffer_type<_Tp>* __ret);
 
@@ -179,7 +180,11 @@ private:
 
   template <class _CommRange, class _EnvRange, class _InputRange>
   _CCCL_HOST_API static void __rebalance_to_original_counts(
-    const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs);
+    const __local_setup_result_type& __setup,
+    _CommRange&& __comms,
+    _EnvRange&& __envs,
+    _InputRange&& __local_inputs,
+    ::std::vector<__buffer_type<_Tp>>& __local_exchanged);
 
 public:
   template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>

@@ -28,7 +28,6 @@
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__iterator/zip_transform_iterator.h>
-#include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__ranges/zip_view.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -103,14 +102,17 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in] __setup The local-setup result supplying resources, comm size, and `N`.
 //! @param[in] __comms The range of per-rank communicators.
 //! @param[in] __envs The range of per-rank execution environments (one stream each).
-//! @param[in,out] __local_inputs The range of per-rank local key ranges, overwritten with the
-//!                exchanged and merged keys.
+//! @param[in] __local_inputs The range of per-rank local key ranges, read as the send buffer of
+//!            the exchange and left unmodified.
 //! @param[in] __cmp The comparator defining the sorted order.
 //! @param[in] __local_splitters The per-comm splitter state supplying the finalized brackets and
 //!            probes.
+//!
+//! @returns The per-rank exchanged-and-merged keys, one buffer per communicator.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
-_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
+_CCCL_HOST_API ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __buffer_type<_Tp>>
+_HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
@@ -121,17 +123,22 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
 
-  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_send_counts;
-  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_recv_counts;
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_counts;
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_counts;
+  // The send and recv counts are the same size, live on the same device, and are used on the
+  // same stream, so they share one allocation per rank instead of two: the send counts occupy
+  // `[0, __comm_size)` and the recv counts `[__comm_size, 2 * __comm_size)`. `__send_span()` /
+  // `__recv_span()` below demarcate the halves.
+  ::std::vector<__buffer_type<::cuda::std::size_t>> __local_counts;
 
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  __local_send_counts.reserve(__num_local_inputs);
-  __local_recv_counts.reserve(__num_local_inputs);
-  __local_h_send_counts.reserve(__num_local_inputs);
-  __local_h_recv_counts.reserve(__num_local_inputs);
+  __local_counts.reserve(__num_local_inputs);
+
+  const auto __send_span = [__comm_size](auto& __counts) {
+    return __counts.__get().subspan(0, __comm_size);
+  };
+  const auto __recv_span = [__comm_size](auto& __counts) {
+    return __counts.__get().subspan(__comm_size, __comm_size);
+  };
 
   for (auto&& [__comm, __env, __resource, __input, __splitters] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs, __local_splitters))
@@ -140,8 +147,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
     const auto& __Us     = __splitters.__Us;
     const auto& __probes = __splitters.__probes;
 
-    auto& __send_counts =
-      __local_send_counts.emplace_back(__Ls.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
+    auto& __counts =
+      __local_counts.emplace_back(__Ls.__get().stream(), __resource, 2 * __comm_size, ::cuda::no_init, __env);
 
     const auto __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
 
@@ -177,6 +184,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
       __Ls.size(),
       __cmp};
 
+    const auto __send_counts = __send_span(__counts);
+
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
@@ -190,118 +199,123 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-    for (auto&& [__comm, __send_counts] : ::cuda::std::ranges::views::zip(__comms, __local_send_counts))
+    for (auto&& [__comm, __counts] : ::cuda::std::ranges::views::zip(__comms, __local_counts))
     {
-      auto& __recv_counts    = __local_recv_counts.emplace_back(__send_counts.__make_empty_like());
-      auto* const __send_ptr = __send_counts.data();
-      auto* const __recv_ptr = __recv_counts.data();
+      auto* const __send_ptr = __send_span(__counts).data();
+      auto* const __recv_ptr = __recv_span(__counts).data();
 
-      __comm.all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __send_counts.__get().stream());
+      __comm.all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __counts.__get().stream());
     }
   }
 
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_send_displs;
-  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_recv_displs;
   ::std::vector<__buffer_type<_Tp>> __local_recvd;
 
+  // The four host count/displacement columns are all `__comm_size` elements of the same type and
+  // have the same lifetime, so each rank gets one flat allocation holding them back to back
+  // instead of four. `__h_column()` demarcates column `__col` within a rank's block.
+  ::std::vector<::std::vector<::cuda::std::size_t>> __local_h_counts;
+
+  // The count columns are adjacent and in the same order as the halves of the device-side
+  // allocation (send then recv), so the two count columns together form one contiguous
+  // destination that mirrors the device buffer exactly. The single D2H copy below relies on
+  // that; the displacement columns follow and are filled on the host.
+  constexpr ::cuda::std::size_t __h_send_counts_column = 0;
+  constexpr ::cuda::std::size_t __h_recv_counts_column = 1;
+  constexpr ::cuda::std::size_t __h_send_displs_column = 2;
+  constexpr ::cuda::std::size_t __h_recv_displs_column = 3;
+  constexpr ::cuda::std::size_t __h_num_columns        = 4;
+
+  static_assert(__h_recv_counts_column == __h_send_counts_column + 1,
+                "The fused counts copy requires the send and recv count columns to be adjacent");
+
+  const auto __h_column = [__comm_size](auto& __h_counts, ::cuda::std::size_t __col) {
+    return ::cuda::std::span<::cuda::std::size_t>{__h_counts}.subspan(__col * __comm_size, __comm_size);
+  };
+
   __local_recvd.reserve(__num_local_inputs);
-  __local_h_send_displs.reserve(__num_local_inputs);
-  __local_h_recv_displs.reserve(__num_local_inputs);
-  for (auto&& [__comm, __resource, __env, __send_counts, __recv_counts] :
-       ::cuda::std::ranges::views::zip(__comms, __setup.__resources, __envs, __local_send_counts, __local_recv_counts))
+  __local_h_counts.reserve(__num_local_inputs);
+  for (auto&& [__comm, __resource, __env, __counts] :
+       ::cuda::std::ranges::views::zip(__comms, __setup.__resources, __envs, __local_counts))
   {
-    auto& __h_send_counts = __local_h_send_counts.emplace_back(__send_counts.size());
-    auto& __h_recv_counts = __local_h_recv_counts.emplace_back(__recv_counts.size());
+    auto& __h_counts = __local_h_counts.emplace_back(__h_num_columns * __comm_size);
 
-    auto& __h_send_displs = __local_h_send_displs.emplace_back();
-    auto& __h_recv_displs = __local_h_recv_displs.emplace_back();
+    const auto __h_send_counts = __h_column(__h_counts, __h_send_counts_column);
+    const auto __h_recv_counts = __h_column(__h_counts, __h_recv_counts_column);
+    const auto __h_send_displs = __h_column(__h_counts, __h_send_displs_column);
+    const auto __h_recv_displs = __h_column(__h_counts, __h_recv_displs_column);
 
-    // The send/recv displacements are just the exclusive prefix-sums of the
-    // corresponding counts, and both are consumed only on the host (below and in the
-    // all_to_all_v). counts is small (O(ranks)), so we scan on the host after the
-    // sync instead of paying a device scan plus a D2H copy of the result.
-    __h_send_displs.reserve(__send_counts.size());
-    __h_recv_displs.reserve(__recv_counts.size());
-
+    // Both count halves come back in one transfer: the device allocation holds them back to back
+    // and the two host count columns mirror that layout, so the send and recv counts are a single
+    // contiguous `2 * __comm_size` range on either side.
     ::cuda::copy_bytes(
-      __send_counts.__get().stream(),
-      __send_counts.__get(),
-      __h_send_counts,
-      ::cuda::copy_configuration{
-        __comm.logical_device().underlying_device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
-    ::cuda::copy_bytes(
-      __recv_counts.__get().stream(),
-      __recv_counts.__get(),
-      __h_recv_counts,
+      __counts.__get().stream(),
+      __counts.__get(),
+      ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * static_cast<::cuda::std::size_t>(__comm_size)},
       ::cuda::copy_configuration{
         __comm.logical_device().underlying_device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
 
     // All streams are the same, so any suffices
-    __recv_counts.__get().stream().sync();
+    __counts.__get().stream().sync();
 
-    // Host counts are only valid post-sync, so scan the displacements here.
+    // The send/recv displacements are just the exclusive prefix-sums of the corresponding
+    // counts, and both are consumed only on the host (below and in the all_to_all_v). counts is
+    // small (O(ranks)), so we scan on the host after the sync instead of paying a device scan
+    // plus a D2H copy of the result. Host counts are only valid post-sync, so scan here.
     ::cuda::std::exclusive_scan(
-      __h_send_counts.begin(),
-      __h_send_counts.end(),
-      ::cuda::std::back_inserter(__h_send_displs),
-      ::cuda::std::size_t{0});
+      __h_send_counts.begin(), __h_send_counts.end(), __h_send_displs.begin(), ::cuda::std::size_t{0});
     ::cuda::std::exclusive_scan(
-      __h_recv_counts.begin(),
-      __h_recv_counts.end(),
-      ::cuda::std::back_inserter(__h_recv_displs),
-      ::cuda::std::size_t{0});
+      __h_recv_counts.begin(), __h_recv_counts.end(), __h_recv_displs.begin(), ::cuda::std::size_t{0});
 
     const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
 
-    __local_recvd.emplace_back(__recv_counts.__get().stream(), __resource, __total_recv, ::cuda::no_init, __env);
+    __local_recvd.emplace_back(__counts.__get().stream(), __resource, __total_recv, ::cuda::no_init, __env);
   }
 
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-    for (auto&& [__comm, __input, __recvd, __h_send_counts, __h_send_displs, __h_recv_counts, __h_recv_displs] :
-         ::cuda::std::ranges::views::zip(
-           __comms,
-           __local_inputs,
-           __local_recvd,
-           __local_h_send_counts,
-           __local_h_send_displs,
-           __local_h_recv_counts,
-           __local_h_recv_displs))
+    for (auto&& [__comm, __input, __recvd, __h_counts] :
+         ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_recvd, __local_h_counts))
     {
       __comm.all_to_all_v(
         __guard,
         ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
-        __h_send_counts.data(),
-        __h_send_displs.data(),
+        __h_column(__h_counts, __h_send_counts_column).data(),
+        __h_column(__h_counts, __h_send_displs_column).data(),
         __recvd.data(),
-        __h_recv_counts.data(),
-        __h_recv_displs.data(),
+        __h_column(__h_counts, __h_recv_counts_column).data(),
+        __h_column(__h_counts, __h_recv_displs_column).data(),
         __recvd.__get().stream());
     }
   }
 
-  // Merge the p received sorted runs into the final local output
-  for (auto&& [__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __inputs] : ::cuda::std::ranges::views::zip(
-         __comms, __envs, __local_recvd, __local_h_recv_counts, __local_h_recv_displs, __local_inputs))
+  // Merge the p received sorted runs into this phase's output.
+  //
+  // The merged keys stay in a stream-ordered buffer rather than being written back into the
+  // caller's range: `__local_inputs` is the send buffer of the `all_to_all_v` enqueued above, and
+  // resizing it here would both alias that in-flight collective and, for a container whose growth
+  // reallocates through a synchronous allocator, block this rank inside a region where its peers
+  // are waiting on a collective it has not yet joined. The caller's range is written exactly once,
+  // at the very end of the rebalance phase, when nothing is in flight.
+  ::std::vector<__buffer_type<_Tp>> __local_merged;
+
+  __local_merged.reserve(__num_local_inputs);
+  for (auto&& [__comm, __env, __recvd, __h_counts] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __local_recvd, __local_h_counts))
   {
-    // TODO(jfaibussowit):
-    //
-    // Don't use __tmp and instead write directly to __inputs
-    auto __tmp = __buffer_type<_Tp>{__recvd.__make_empty_like(0)};
+    auto& __merged = __local_merged.emplace_back(__recvd.__make_empty_like(0));
 
-    __merge_k_way(__comm, __env, __recvd, __h_recv_counts, __h_recv_displs, __cmp, &__tmp);
-
-    ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__inputs, __tmp.size());
-
-    ::cuda::copy_bytes(
-      __tmp.__get().stream(),
-      __tmp.__get(),
-      ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(__inputs)), __tmp.size()},
-      ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                 __comm.logical_device().underlying_device(),
-                                 ::cuda::source_access_order::stream});
+    __merge_k_way(
+      __comm,
+      __env,
+      __recvd,
+      __h_column(__h_counts, __h_recv_counts_column),
+      __h_column(__h_counts, __h_recv_displs_column),
+      __cmp,
+      &__merged);
   }
+
+  return __local_merged;
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT

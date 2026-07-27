@@ -25,12 +25,11 @@
 #include <cub/device/device_merge.cuh>
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -53,8 +52,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   const _Comm& __comm,
   const _Env& __env,
   const __buffer_type<_Tp>& __data,
-  const ::std::vector<::cuda::std::size_t>& __counts,
-  const ::std::vector<::cuda::std::size_t>& __displs,
+  ::cuda::std::span<const ::cuda::std::size_t> __counts,
+  ::cuda::std::span<const ::cuda::std::size_t> __displs,
   const _BinaryOp& __cmp,
   __buffer_type<_Tp>* __ret)
 {

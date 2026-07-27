@@ -120,12 +120,19 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //!            sizes, `N`, and comm size.
 //! @param[in] __comms The range of per-rank communicators.
 //! @param[in] __envs The range of per-rank execution environments (one stream each).
-//! @param[in,out] __local_inputs The range of per-rank local key ranges, rewritten at their
-//!                original per-rank sizes.
+//! @param[out] __local_inputs The range of per-rank local key ranges, rewritten at their
+//!             original per-rank sizes. This is the only point in the algorithm at which the
+//!             caller's ranges are resized, and it happens with no collective in flight.
+//! @param[in] __local_exchanged The per-rank output of the data-exchange phase, used as the send
+//!            buffer of the rebalance exchange.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_counts(
-  const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs, _InputRange&& __local_inputs)
+  const __local_setup_result_type& __setup,
+  _CommRange&& __comms,
+  _EnvRange&& __envs,
+  _InputRange&& __local_inputs,
+  ::std::vector<__buffer_type<_Tp>>& __local_exchanged)
 {
   const auto __comm_size        = __setup.__comm_size;
   const auto __N                = __setup.__N;
@@ -141,10 +148,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_sizes;
 
   __local_current_sizes.reserve(__num_local_inputs);
-  for (auto&& [__comm, __env, __resource, __input] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs))
+  for (auto&& [__comm, __env, __resource, __exchanged] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_exchanged))
   {
-    const auto __n_current = static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(__input));
+    const auto __n_current = static_cast<::cuda::std::uint64_t>(__exchanged.size());
     auto& __sizes =
       __local_current_sizes.emplace_back(::cuda::get_stream(__env), __resource, __comm_size, ::cuda::no_init, __env);
 
@@ -294,10 +301,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
 
     // The rebalance exchange is the only communication in this phase. It moves already
     // globally sorted contiguous rank intervals into the exact original per-rank sizes.
-    for (auto&& [__comm, __input, __out, __h_send_counts, __h_send_displs, __h_recv_counts, __h_recv_displs] :
+    for (auto&& [__comm, __exchanged, __out, __h_send_counts, __h_send_displs, __h_recv_counts, __h_recv_displs] :
          ::cuda::std::ranges::views::zip(
            __comms,
-           __local_inputs,
+           __local_exchanged,
            __local_rebalanced,
            __local_h_send_counts,
            __local_h_send_displs,
@@ -306,7 +313,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     {
       __comm.all_to_all_v(
         __guard,
-        ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
+        __exchanged.data(),
         __h_send_counts.data(),
         __h_send_displs.data(),
         __out.data(),
@@ -316,10 +323,21 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     }
   }
 
+  // Drain every rank's stream before touching the caller's ranges. The rebalance exchange above
+  // is only submitted by closing the group guard, and resizing a caller range may reallocate
+  // through an allocator that is neither stream-ordered nor able to make progress while a
+  // collective is pending. Syncing first means the resize below runs with nothing in flight, so
+  // it can neither alias the exchange's buffers nor block a peer that is waiting to join a
+  // collective this rank has not yet reached.
+  for (auto&& __out : __local_rebalanced)
+  {
+    __out.__get().stream().sync();
+  }
+
   for (auto&& [__comm, __input, __out] : ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_rebalanced))
   {
     // This resize is safe only so long as the user promises to free their allocation on the
-    // stream that they passed us. For thrust/cuda containers, this is vacuously true
+    // stream that they passed us. For thrust/cuda containers, this is vacuously true.
     ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__input, __out.size());
 
     ::cuda::copy_bytes(

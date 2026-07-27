@@ -116,13 +116,15 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
     return;
   }
 
-  {
+  // The exchanged keys stay in scratch buffers until the rebalance phase writes them back, so the
+  // caller's ranges are read as send buffers throughout and resized exactly once, at the end.
+  auto __local_exchanged = [&] {
     const auto __local_splitters = __histogramming_phase(__setup, __comms, __envs, __local_inputs, __cmp);
 
-    __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
-  }
+    return __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __local_splitters);
+  }();
 
-  __rebalance_to_original_counts(__setup, __comms, __envs, __local_inputs);
+  __rebalance_to_original_counts(__setup, __comms, __envs, __local_inputs, __local_exchanged);
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
