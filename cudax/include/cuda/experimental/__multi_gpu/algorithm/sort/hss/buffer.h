@@ -76,7 +76,10 @@ struct __buffer
 
   __buffer(const __buffer& __other) = default;
 
-  __buffer& operator=(const __buffer& __other)
+  // Need to declare otherwise nvcc deduces this as __host__ __device__
+  _CCCL_HOST_API ~__buffer() {}
+
+  _CCCL_HOST_API __buffer& operator=(const __buffer& __other)
   {
     // cuda::buffer has no copy assignment operator
     __buf_         = __buff_type{__other.__buf_};

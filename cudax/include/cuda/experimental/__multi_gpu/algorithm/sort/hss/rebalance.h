@@ -139,11 +139,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   // keys can route an unpredictable share of records to a single rank, so the current
   // distribution must be measured, not predicted from the splitter positions.)
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_sizes;
-  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
 
   __local_current_sizes.reserve(__num_local_inputs);
-  __local_current_offsets.reserve(__num_local_inputs);
-
   for (auto&& [__comm, __env, __resource, __input] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs))
   {
@@ -171,6 +168,9 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     }
   }
 
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
+
+  __local_current_offsets.reserve(__num_local_inputs);
   for (auto&& [__comm, __env, __resource, __sizes] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_current_sizes))
   {
