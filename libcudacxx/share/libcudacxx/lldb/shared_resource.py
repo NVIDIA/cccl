@@ -21,27 +21,44 @@ def is_shared_resource(value_type: lldb.SBType, _internal_dict: InternalDict) ->
     return _SHARED_RESOURCE_PATTERN.fullmatch(type_name) is not None
 
 
+def _display_type_name(value: lldb.SBValue) -> str:
+    type_name = (
+        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
+    )
+    return type_name or "cuda::mr::shared_resource"
+
+
+def _block_pointer(value: lldb.SBValue) -> lldb.SBValue:
+    """Return the control-block pointer, or an invalid value if unavailable."""
+    # shared_resource holds a __shared_block_ptr, and both the wrapper and the
+    # pointer spell their member __block_.
+    return (
+        value.GetNonSyntheticValue()
+        .GetChildMemberWithName("__block_")
+        .GetChildMemberWithName("__block_")
+    )
+
+
+def _payload(value: lldb.SBValue) -> lldb.SBValue:
+    """Return the owned resource, or an invalid value if this handle is empty."""
+    block_pointer = _block_pointer(value)
+    if not block_pointer.IsValid() or block_pointer.GetValueAsUnsigned(0) == 0:
+        return lldb.SBValue()
+    return block_pointer.Dereference().GetChildMemberWithName("__payload")
+
+
 def shared_resource_summary(
     value: lldb.SBValue, _internal_dict: InternalDict
 ) -> str | None:
     """Describe the ownership state of a CUDA shared resource."""
-    type_name = (
-        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
-    )
-    if not type_name:
-        type_name = "cuda::mr::shared_resource"
-
-    # shared_resource holds a __shared_block_ptr, and both the wrapper and the
-    # pointer spell their member __block_.
-    control_block = value.GetChildMemberWithName("__block_").GetChildMemberWithName(
-        "__block_"
-    )
-    if not control_block.IsValid():
+    type_name = _display_type_name(value)
+    block_pointer = _block_pointer(value)
+    if not block_pointer.IsValid():
         return None
-    if control_block.GetValueAsUnsigned(0) == 0:
-        return f"{type_name} empty"
+    if block_pointer.GetValueAsUnsigned(0) == 0:
+        return f"{type_name} use_count=0, resource=nullptr"
 
-    block = control_block.Dereference()
+    block = block_pointer.Dereference()
     payload = block.GetChildMemberWithName("__payload")
     # cuda::std::atomic<int> keeps its value in __a.__a_value.
     reference_count = (
@@ -53,16 +70,59 @@ def shared_resource_summary(
         return None
 
     use_count = reference_count.GetValueAsSigned(0)
+    # A control block reached through a live pointer always has a load address,
+    # so the fallback below guards against an unreadable frame rather than
+    # against any state the scenario can reach.
     address = payload.GetLoadAddress()
-    if address == lldb.LLDB_INVALID_ADDRESS:
-        return f"{type_name} use_count={use_count}"
-    return f"{type_name} use_count={use_count}, resource={address:#x}"
+    location = (
+        "<invalid address>" if address == lldb.LLDB_INVALID_ADDRESS else f"{address:#x}"
+    )
+    return f"{type_name} use_count={use_count}, resource={location}"
+
+
+class SharedResourceSyntheticProvider:
+    """Expose the owned resource as an LLDB synthetic child."""
+
+    def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.value = value.GetNonSyntheticValue()
+        self.resource = lldb.SBValue()
+        self.update()
+
+    def update(self) -> bool:
+        # Present the owned resource the way std::shared_ptr presents its
+        # pointer: one step away, so that expanding a handle does not print the
+        # implementation details of the resource itself.
+        payload = _payload(self.value)
+        pointer = payload.AddressOf() if payload.IsValid() else payload
+        self.resource = pointer.Clone("resource") if pointer.IsValid() else pointer
+        # Report no caching: a copy or a move changes which resource, if any,
+        # this handle owns, and LLDB must ask again after every stop.
+        return False
+
+    def num_children(self) -> int:
+        return 1 if self.resource.IsValid() else 0
+
+    def has_children(self) -> bool:
+        return self.resource.IsValid()
+
+    def get_child_index(self, name: str) -> int:
+        return 0 if name == "resource" else -1
+
+    def get_child_at_index(self, index: int) -> lldb.SBValue | None:
+        if index != 0 or not self.resource.IsValid():
+            return None
+        return self.resource
 
 
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
-    """Register the cuda::mr::shared_resource formatter in an LLDB category."""
+    """Register the cuda::mr::shared_resource formatters in an LLDB category."""
     debugger.HandleCommand(
-        f"type summary add --category {category} --python-function "
+        f"type summary add --category {category} --expand --python-function "
         f"{module}.shared_resource_summary --recognizer-function "
+        f"{module}.is_shared_resource"
+    )
+    debugger.HandleCommand(
+        f"type synthetic add --category {category} --python-class "
+        f"{module}.SharedResourceSyntheticProvider --recognizer-function "
         f"{module}.is_shared_resource"
     )
