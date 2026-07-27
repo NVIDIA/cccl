@@ -62,7 +62,6 @@ private:
 
     auto __old_buffer = __base_t::__replace_allocation(__stream, __new_capacity);
     __capacity_       = __new_capacity;
-    __base_t::__set_size_unsynchronized(__old_size);
     __old_buffer.__set_size_unsynchronized(__old_capacity);
 
     if (__old_size != 0)
@@ -76,6 +75,8 @@ private:
     {
       __old_buffer.destroy();
     }
+
+    __base_t::__set_size_unsynchronized(__old_size);
   }
 
   _CCCL_HOST_API void __replace_allocation_discard(::cuda::stream_ref __stream, size_type __new_capacity)
@@ -108,7 +109,7 @@ public:
   {
     if (this != ::cuda::std::addressof(__other))
     {
-      __base_t::__destroy_with_capacity(this->stream(), __capacity_);
+      __base_t::__set_size_unsynchronized(__capacity_);
       __base_t::operator=(::cuda::std::move(__other));
       __capacity_ = ::cuda::std::exchange(__other.__capacity_, 0);
     }
@@ -117,7 +118,7 @@ public:
 
   _CCCL_HOST_API ~__resizable_buffer() noexcept
   {
-    destroy();
+    __base_t::__set_size_unsynchronized(__capacity_);
   }
 
   //! @brief Returns the number of elements that fit in the current allocation
@@ -189,7 +190,8 @@ public:
   //! @brief Destroys the allocation using capacity rather than logical size.
   _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
-    __base_t::__destroy_with_capacity(__stream, __capacity_);
+    __base_t::__set_size_unsynchronized(__capacity_);
+    __base_t::destroy(__stream);
     __capacity_ = 0;
   }
 

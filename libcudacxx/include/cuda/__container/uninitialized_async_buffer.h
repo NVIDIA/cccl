@@ -303,17 +303,6 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, const size_t __capacity) noexcept
-  {
-    if (__buf_)
-    {
-      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__capacity), __alignment_);
-      __buf_   = nullptr;
-      __count_ = 0;
-    }
-    auto __tmp_mr = ::cuda::std::move(__mr_);
-  }
-
   _CCCL_HOST_API constexpr void __set_size(const size_t __count) noexcept
   {
     __count_ = __count;

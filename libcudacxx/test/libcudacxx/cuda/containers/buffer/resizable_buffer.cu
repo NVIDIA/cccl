@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__container/resizable_buffer.h>
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_pool>
@@ -20,8 +21,7 @@
 #include <cuda/std/utility>
 
 #include <stdexcept>
-
-#include <cuda_runtime_api.h>
+#include <vector>
 
 #include "helper.h"
 
@@ -33,10 +33,8 @@ void check_prefix(const buffer_t& buf, const cuda::std::array<int, _Size>& expec
 {
   REQUIRE(buf.size() >= _Size);
 
-  cuda::std::array<int, _Size> actual{};
-  cuda::__ensure_current_context guard{buf.stream()};
-  REQUIRE(::cudaMemcpyAsync(actual.data(), buf.data(), _Size * sizeof(int), cudaMemcpyDeviceToHost, buf.stream().get())
-          == cudaSuccess);
+  std::vector<int> actual(_Size);
+  cuda::copy_bytes(buf.stream(), buf.first(_Size), actual);
   buf.stream().sync();
 
   for (cuda::std::size_t i = 0; i != _Size; ++i)
@@ -133,11 +131,11 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
   SECTION("resize with reallocation")
   {
+    cuda::stream other_stream{device};
     cuda::std::array<int, 6> values{1, 42, 1337, 0, 12, -1};
     buffer_t buf{stream, resource, values.begin(), values.end()};
     buf.resize(stream, 3, cuda::no_init);
 
-    cuda::stream other_stream{device};
     buf.resize(other_stream, 9, cuda::no_init);
 
     REQUIRE(buf.size() == 9);
@@ -158,10 +156,10 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
   SECTION("resize from empty logical size with reallocation")
   {
+    cuda::stream other_stream{device};
     buffer_t buf{stream, resource, 3, cuda::no_init};
     buf.resize(stream, 0, cuda::no_init);
 
-    cuda::stream other_stream{device};
     buf.resize(other_stream, 9, cuda::no_init);
 
     REQUIRE(buf.size() == 9);
@@ -171,10 +169,10 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
   SECTION("resize_discard")
   {
+    cuda::stream other_stream{device};
     cuda::std::array<int, 6> values{1, 42, 1337, 0, 12, -1};
     buffer_t buf{stream, resource, values.begin(), values.end()};
 
-    cuda::stream other_stream{device};
     buf.resize_discard(other_stream, 9, cuda::no_init);
 
     REQUIRE(buf.size() == 9);

@@ -776,11 +776,6 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API void __destroy_with_capacity(::cuda::stream_ref __stream, size_type __capacity) noexcept
-  {
-    __buf_.__destroy_with_capacity(__stream, __capacity);
-  }
-
   _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size) noexcept
   {
     __buf_.__set_size(__size);
