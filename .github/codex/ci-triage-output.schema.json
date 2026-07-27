@@ -18,6 +18,25 @@
     "start_here": {
       "type": "string"
     },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      }
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -169,6 +188,7 @@
     "error",
     "summary",
     "start_here",
+    "jobs",
     "groups",
     "downstream_failures",
     "cancelled_job_ids",

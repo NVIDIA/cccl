@@ -111,9 +111,6 @@ jobs:
           python3 .github/codex/render_ci_triage.py \
             --analysis "${RUNNER_TEMP}/agent-analysis.json" \
             --schema .github/codex/ci-triage-output.schema.json \
-            --jobs /tmp/ci-triage-job-pages.json \
-            --logs-dir /tmp \
-            --workspace "${GITHUB_WORKSPACE}" \
             --repository "${GITHUB_REPOSITORY}" \
             --run-id "${GITHUB_RUN_ID}" \
             --head-sha "${GITHUB_SHA}" \

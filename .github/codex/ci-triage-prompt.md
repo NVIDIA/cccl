@@ -85,6 +85,8 @@ On success, set `status` to `ok` and `error` to an empty string.
   Do not repeat counts; the renderer computes them.
 - `start_here`: One sentence naming the single highest-value action a developer should
   take first.
+- `jobs`: The exact numeric ID and name of every job referenced by a primary group,
+  downstream failure, cancelled job, or evidence record.
 - `groups`: The primary failure groups in developer-value order. The renderer keeps the
   first group's details open and folds later groups.
 - `title`: A distinguishing failure mechanism in at most 80 characters.
@@ -120,5 +122,6 @@ On success, set `status` to `ok` and `error` to an empty string.
 - `inspected_paths`: Every repository-relative path actually inspected while diagnosing
   the failures. Include at least one path.
 
-Do not emit Markdown, HTML, URLs, job names, counts, or fields outside the schema. Never
-invent evidence, job IDs, step numbers, source locations, commands, or certainty.
+Do not emit Markdown, HTML, URLs, counts, or fields outside the schema. Put job names only
+in `jobs`. Never invent evidence, job IDs, step numbers, source locations, commands, or
+certainty.
