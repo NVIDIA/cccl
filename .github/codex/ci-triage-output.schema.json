@@ -1,0 +1,177 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "log_retrieval_failed"
+      ]
+    },
+    "error": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "start_here": {
+      "type": "string"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "PR-related",
+              "infrastructure",
+              "dependency",
+              "flaky",
+              "unknown"
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "job_id": {
+                  "type": "integer"
+                },
+                "step_number": {
+                  "type": "integer"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "job_id",
+                "step_number",
+                "lines"
+              ]
+            }
+          },
+          "root_cause_status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "likely",
+              "unknown"
+            ]
+          },
+          "root_cause": {
+            "type": "string"
+          },
+          "source_locations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "path",
+                "line"
+              ]
+            }
+          },
+          "next_steps": {
+            "type": "string"
+          },
+          "agent_prompt": {
+            "type": "string"
+          },
+          "job_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "classification",
+          "confidence",
+          "explanation",
+          "evidence",
+          "root_cause_status",
+          "root_cause",
+          "source_locations",
+          "next_steps",
+          "agent_prompt",
+          "job_ids"
+        ]
+      }
+    },
+    "downstream_failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "reason"
+        ]
+      }
+    },
+    "cancelled_job_ids": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "inspected_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "status",
+    "error",
+    "summary",
+    "start_here",
+    "groups",
+    "downstream_failures",
+    "cancelled_job_ids",
+    "inspected_paths"
+  ]
+}
