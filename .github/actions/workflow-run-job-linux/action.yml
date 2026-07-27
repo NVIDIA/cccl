@@ -110,6 +110,7 @@ runs:
         # Retry 2 times if a build server shuts down while compiling,
         # otherwise fallback to compiling locally
         SCCACHE_DIST_MAX_RETRIES: "2"
+        SCCACHE_DIST_REQUEST_TIMEOUT: "1800"
       run: |
         set -eo pipefail
 
