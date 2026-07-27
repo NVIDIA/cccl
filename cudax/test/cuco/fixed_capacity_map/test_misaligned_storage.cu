@@ -16,6 +16,7 @@
 #  pragma nv_diag_suppress 20011
 #endif
 
+#include <cuda/__memory/align_up.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -86,12 +87,11 @@ void run_misaligned_external_storage()
   void* raw                        = nullptr;
   REQUIRE(cudaMalloc(&raw, nbytes) == cudaSuccess);
 
-  auto addr = reinterpret_cast<::cuda::std::uintptr_t>(raw);
-  addr      = (addr + sizeof(value_type) - 1) / sizeof(value_type) * sizeof(value_type);
-  addr += alignof(value_type);
-  REQUIRE(addr % alignof(value_type) == 0);
-  REQUIRE(addr % sizeof(value_type) != 0);
-  auto* slots = reinterpret_cast<value_type*>(addr);
+  auto* const aligned_raw = ::cuda::align_up(static_cast<::cuda::std::byte*>(raw), sizeof(value_type));
+  auto* const slots       = reinterpret_cast<value_type*>(aligned_raw + alignof(value_type));
+  const auto slots_addr   = reinterpret_cast<::cuda::std::uintptr_t>(slots);
+  REQUIRE(slots_addr % alignof(value_type) == 0);
+  REQUIRE(slots_addr % sizeof(value_type) != 0);
 
   constexpr int block = 128;
 
