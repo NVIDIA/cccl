@@ -82,6 +82,7 @@ class RenderCiTriageTest(unittest.TestCase):
         self.assertNotIn("Downstream failures", report)
         self.assertNotIn("Log retrieval:", report)
         self.assertNotIn("Repository inspection:", report)
+        self.assertNotIn("Treat workflow logs", report)
         self.assertIn(
             "https://github.com/NVIDIA/cccl/actions/runs/12345/job/101#step:4:1",
             report,
