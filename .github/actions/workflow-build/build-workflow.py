@@ -457,7 +457,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
         (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
     )
     ctk_mode_str = (
-        (" ctk-" + str(matrix_job["py_ctk_mode"])) if "py_ctk_mode" in matrix_job else ""
+        (" ctk-" + str(matrix_job["py_ctk_mode"]))
+        if "py_ctk_mode" in matrix_job
+        else ""
     )
 
     config_tag = f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}{ctk_mode_str}"

@@ -2,8 +2,7 @@
 parse_python_args() {
     # Initialize variables
     py_version=""
-    # ctk_mode is a plain shell var the calling script forwards to
-    # pin_cuda_toolkit / ctk_extra_flavor. Empty means the default ("pinned").
+    # ctk_mode carries the -ctk-mode value; empty means the default ("pinned").
     ctk_mode=""
 
     while [[ $# -gt 0 ]]; do
@@ -39,8 +38,8 @@ parse_python_args() {
         esac
     done
 
-    # Export for use by calling script
-    export py_version
+    # Export for use by the calling script (py_version and ctk_mode are its inputs).
+    export py_version ctk_mode
 }
 
 require_py_version() {

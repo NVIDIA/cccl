@@ -104,7 +104,7 @@ function Get-CtkTestMode {
     param([string]$Mode = "")
     if ([string]::IsNullOrEmpty($Mode)) { return "pinned" }
     $Mode = $Mode.ToLowerInvariant()
-    if ($Mode -notin @("pinned", "latest", "sysctk")) {
+    if (-not ($Mode -in @("pinned", "latest", "sysctk"))) {
         throw "Invalid ctk mode '$Mode' (expected pinned|latest|sysctk)"
     }
     return $Mode
