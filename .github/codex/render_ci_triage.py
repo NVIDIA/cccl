@@ -198,12 +198,7 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
             root_cause,
             "",
             f"**Suggested next steps:** {sanitize_inline(group['next_steps'])}",
-            "",
-            "**Jobs:**",
         ]
-    )
-    lines.extend(
-        f"- {job_link(job_id, jobs, repository, run_id)}" for job_id in job_ids
     )
 
     prompt_lines = [
@@ -223,11 +218,20 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
         [
             "",
             "<details>",
-            "<summary><strong>Prompt for an agent</strong></summary>",
+            "<summary><strong>Copy this prompt into a coding agent</strong></summary>",
             "",
             code_block("\n".join(prompt_lines)),
             "",
             "</details>",
+            "",
+            "**Jobs:**",
+        ]
+    )
+    lines.extend(
+        f"- {job_link(job_id, jobs, repository, run_id)}" for job_id in job_ids
+    )
+    lines.extend(
+        [
             "",
             "</details>",
         ]
