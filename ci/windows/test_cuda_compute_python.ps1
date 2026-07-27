@@ -2,7 +2,10 @@ Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
     [ValidatePattern("^\d+\.\d+t?$")]
-    [string]$PyVersion
+    [string]$PyVersion,
+
+    [Alias("ctk-mode")]
+    [string]$CtkMode = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,11 +16,11 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
-$ctkFlavor = Get-CtkExtraFlavor
+$ctkFlavor = Get-CtkExtraFlavor $CtkMode
 
-# Pin cuda-toolkit to the container's CTK minor (CCCL_PYTHON_TEST_LATEST_CTK=1
+# Pin cuda-toolkit to the container's CTK minor (-ctk-mode latest
 # opts out). See build_common_python.psm1.
-Set-CtkPin
+Set-CtkPin $CtkMode
 
 $repoRoot = Get-RepoRoot
 

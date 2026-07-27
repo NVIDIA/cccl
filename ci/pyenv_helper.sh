@@ -31,41 +31,55 @@ setup_python_env() {
     end_group "🐍 Setting up Python ${py_version} (uv)"
 }
 
+# Validates and normalizes a CTK test mode passed as $1 (forwarded by the caller
+# from the -ctk-mode arg / the ${ctk_mode} shell var):
+#   pinned  (default; empty means pinned) -- pip-install cuda-toolkit pinned to
+#           the container's CTK minor (reproducible; the usual CI test).
+#   latest  -- pip-install cuda-toolkit at the newest available minor (a canary
+#           for breakage against the latest CTK).
+#   sysctk  -- do NOT pip-install a toolkit; use the system-provided one (the
+#           scenario a CuPy user without cuda-cccl[cuNN] hits).
+# Any other value is a hard error. Echoes the (lowercased) mode.
+ctk_test_mode() {
+    local mode="${1:-pinned}"
+    case "${mode,,}" in
+        pinned | latest | sysctk) echo "${mode,,}" ;;
+        *)
+            echo "ERROR: invalid ctk mode '${mode}' (expected pinned|latest|sysctk)" >&2
+            return 1
+            ;;
+    esac
+}
+
 # Pin the cuda-toolkit wheels to the container's CTK major.minor (read from nvcc)
-# via PIP_CONSTRAINT, unless the lane opts out with CCCL_PYTHON_TEST_LATEST_CTK=1
-# -- in which case pip resolves whatever the latest minor is (what a plain
-# `pip install` with no lockfile would get). The sysctk lanes
-# (CCCL_PYTHON_TEST_SYSCTK=1) skip pinning entirely: they install no cuda-toolkit
-# wheel and rely on the system-provided toolkit instead. Sets and exports
-# cuda_version and cuda_major_version for the caller (e.g. the [test-cuNN] extra).
+# via PIP_CONSTRAINT when the mode ($1) is "pinned" (the default); "latest" and
+# "sysctk" leave it unpinned (see ctk_test_mode). Sets and exports cuda_version
+# and cuda_major_version for the caller (e.g. the [<flavor>-<major>] extra).
 pin_cuda_toolkit() {
     cuda_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1-2 | cut -d 'V' -f 2)
     cuda_major_version=$(echo "$cuda_version" | cut -d '.' -f 1)
     export cuda_version cuda_major_version
 
-    if [[ "${CCCL_PYTHON_TEST_SYSCTK:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
-        # sysctk lanes use the system-provided CUDA toolkit; no cuda-toolkit wheel
-        # is pip-installed, so there is nothing to pin. Clear any inherited
-        # constraint so it cannot affect the sysctk resolve.
-        unset PIP_CONSTRAINT
-        return 0
-    fi
+    local mode
+    mode="$(ctk_test_mode "${1:-}")" || return 1
 
-    if [[ "${CCCL_PYTHON_TEST_LATEST_CTK:-}" != "1" ]]; then
+    if [[ "${mode}" == "pinned" ]]; then
         export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
         echo "cuda-toolkit==${cuda_version}.*" > "${PIP_CONSTRAINT}"
     else
-        # Clear any inherited constraint so this lane truly tests the latest minor.
+        # latest / sysctk: no pin. Clear any inherited constraint so it cannot
+        # affect the resolve (latest tests the newest minor; sysctk installs no
+        # cuda-toolkit wheel at all).
         unset PIP_CONSTRAINT
     fi
 }
 
-# Echoes the pip-extra toolkit "flavor" used to build extra names: "sysctk" when
-# CCCL_PYTHON_TEST_SYSCTK=1 (rely on the system-provided CUDA toolkit) or "cu"
-# otherwise (pip-installed toolkit). Combine with the CUDA major, e.g.
-# "minimal-$(ctk_extra_flavor)${cuda_major_version}" -> minimal-sysctk12 / minimal-cu12.
+# Echoes the pip-extra toolkit "flavor" for the mode ($1): "sysctk" when the mode
+# is sysctk (rely on the system-provided CUDA toolkit) or "cu" otherwise
+# (pip-installed toolkit). Combine with the CUDA major, e.g.
+# "minimal-$(ctk_extra_flavor "${ctk_mode}")${cuda_major_version}" -> minimal-sysctk12.
 ctk_extra_flavor() {
-    if [[ "${CCCL_PYTHON_TEST_SYSCTK:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+    if [[ "$(ctk_test_mode "${1:-}")" == "sysctk" ]]; then
         echo "sysctk"
     else
         echo "cu"

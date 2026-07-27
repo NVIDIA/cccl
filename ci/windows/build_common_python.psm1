@@ -93,28 +93,40 @@ function Get-CudaVersion {
     return '13.0'
 }
 
+function Get-CtkTestMode {
+    <#
+    .SYNOPSIS
+        Validates and normalizes a CTK test mode passed as -Mode (forwarded from
+        the -ctk-mode arg): 'pinned' (default; empty means pinned), 'latest', or
+        'sysctk'. Throws on any other value (fail loud on a typo'd mode). Returns
+        the lowercased mode.
+    #>
+    param([string]$Mode = "")
+    if ([string]::IsNullOrEmpty($Mode)) { return "pinned" }
+    $Mode = $Mode.ToLowerInvariant()
+    if ($Mode -notin @("pinned", "latest", "sysctk")) {
+        throw "Invalid ctk mode '$Mode' (expected pinned|latest|sysctk)"
+    }
+    return $Mode
+}
+
 function Set-CtkPin {
     <#
     .SYNOPSIS
-        Pins cuda-toolkit wheels to the container's CTK major.minor via
-        PIP_CONSTRAINT, unless CCCL_PYTHON_TEST_LATEST_CTK=1 is set (in which case
-        pip resolves whatever the latest minor is -- what a plain `pip install`
-        with no lockfile would get). The sysctk lanes (CCCL_PYTHON_TEST_SYSCTK=1)
-        skip pinning entirely since they use the system-provided toolkit.
+        Configures cuda-toolkit pinning for this lane per the -Mode arg (see
+        Get-CtkTestMode): 'pinned' (default) pins cuda-toolkit to the container's
+        CTK major.minor via PIP_CONSTRAINT; 'latest' and 'sysctk' leave it
+        unpinned ('sysctk' installs no cuda-toolkit wheel at all -- the
+        system-provided toolkit is used).
     #>
-    if ($env:CCCL_PYTHON_TEST_SYSCTK -eq "1") {
-        # sysctk lanes use the system-provided CUDA toolkit; no cuda-toolkit wheel
-        # is pip-installed, so there is nothing to pin. Clear any inherited
-        # constraint so it cannot affect the sysctk resolve.
-        Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
-        return
-    }
-    if ($env:CCCL_PYTHON_TEST_LATEST_CTK -ne "1") {
+    param([string]$Mode = "")
+    if ((Get-CtkTestMode $Mode) -eq "pinned") {
         $cudaVersion = Get-CudaVersion
         $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
         "cuda-toolkit==$cudaVersion.*" | Out-File -FilePath $env:PIP_CONSTRAINT -Encoding ascii
     } else {
-        # Clear any inherited constraint so this lane truly tests the latest minor.
+        # latest / sysctk: no pin. Clear any inherited constraint so it cannot
+        # affect the resolve.
         Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
     }
 }
@@ -122,12 +134,13 @@ function Set-CtkPin {
 function Get-CtkExtraFlavor {
     <#
     .SYNOPSIS
-        Returns the pip-extra toolkit "flavor" used to build extra names:
-        'sysctk' when CCCL_PYTHON_TEST_SYSCTK=1 (rely on the system-provided CUDA
-        toolkit) or 'cu' otherwise (pip-installed toolkit). Combine with the CUDA
-        major, e.g. "minimal-$(Get-CtkExtraFlavor)$cudaMajor".
+        Returns the pip-extra toolkit "flavor" for the given -Mode: 'sysctk' when
+        the mode is sysctk (rely on the system-provided CUDA toolkit) or 'cu'
+        otherwise (pip-installed toolkit). Combine with the CUDA major, e.g.
+        "minimal-$(Get-CtkExtraFlavor $CtkMode)$cudaMajor".
     #>
-    if ($env:CCCL_PYTHON_TEST_SYSCTK -eq "1") { return "sysctk" }
+    param([string]$Mode = "")
+    if ((Get-CtkTestMode $Mode) -eq "sysctk") { return "sysctk" }
     return "cu"
 }
 
@@ -230,4 +243,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
