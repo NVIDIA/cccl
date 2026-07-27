@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Define the public opt-out before any CCCL header so the whole translation unit sees dynamic cluster launches
+// Define the internal opt-out before any CCCL header so the whole translation unit sees dynamic cluster launches
 // disabled.
-#define CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#define _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
 
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
@@ -20,9 +20,9 @@
 
 #include <iostream>
 
-// Verifies the public CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH opt-out. When defined, the automatic selector never picks the
-// cluster backend, so the only way to reach the cluster arm is a `tune`d policy selector that forces it -- which the
-// dispatch must reject at compile time (the kernel would otherwise launch without its runtime cluster extent). The
+// Verifies the internal _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH opt-out. When defined, the automatic selector never picks
+// the cluster backend, so the only way to reach the cluster arm is a `tune`d policy selector that forces it -- which
+// the dispatch must reject at compile time (the kernel would otherwise launch without its runtime cluster extent). The
 // request below is non-deterministic (a configuration the baseline backend serves), so the forced cluster backend comes
 // solely from the override, not from the requirements -- keeping the test valid even if the baseline backend gains
 // deterministic coverage in the future.

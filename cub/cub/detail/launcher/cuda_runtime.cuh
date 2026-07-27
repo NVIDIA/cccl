@@ -150,7 +150,7 @@ struct TripleChevronFactory
 
   // Opt the kernel in to non-portable cluster widths (i.e. >8).
   template <typename Kernel>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_non_portable_cluster_allowed(Kernel kernel_ptr)
+  _CCCL_HOST_API ::cudaError_t set_non_portable_cluster_allowed(Kernel kernel_ptr)
   {
     return CubDebug(::cudaFuncSetAttribute(
       reinterpret_cast<const void*>(kernel_ptr), cudaFuncAttributeNonPortableClusterSizeAllowed, 1));
@@ -159,7 +159,7 @@ struct TripleChevronFactory
   // Query the largest thread-block cluster the hardware can launch for `kernel_ptr` under `config`. The cluster
   // dimension in `config` is ignored by the query.
   template <typename Kernel>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  _CCCL_HOST_API ::cudaError_t
   max_potential_cluster_size(int& cluster_size, Kernel kernel_ptr, const ::cudaLaunchConfig_t* config)
   {
     return CubDebug(
@@ -170,7 +170,7 @@ struct TripleChevronFactory
   // (device-wide clusters per wave). `config` must carry the cluster dimension; the query accounts for the kernel's
   // static shared memory, the requested dynamic shared memory, register pressure, and GPC co-scheduling.
   template <typename Kernel>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  _CCCL_HOST_API ::cudaError_t
   max_active_clusters(int& num_clusters, Kernel kernel_ptr, const ::cudaLaunchConfig_t* config)
   {
     return CubDebug(::cudaOccupancyMaxActiveClusters(&num_clusters, reinterpret_cast<const void*>(kernel_ptr), config));

@@ -35,10 +35,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-// Assert-free search shared by `find_smallest_covering_policy` and the backend coverage predicate. Returns the
+// Assert-free search shared by `find_smallest_covering_policy_device` and the backend coverage predicate. Returns the
 // index of the smallest worker policy whose tile size still covers the upper bound on segment size AND whose
 // instantiated agent's shared memory usage fits within the static shared memory limit (max_smem_per_block), or -1 if
-// none does. Kept separate from `find_smallest_covering_policy` so callers can query coverage as a bool without
+// none does. Kept separate from `find_smallest_covering_policy_device` so callers can query coverage as a bool without
 // tripping that trait's hard `static_assert`.
 template <typename PolicyGetter, typename SegmentSizeParameterT, typename... AgentParamsT>
 struct find_covering_policy_index
@@ -99,30 +99,22 @@ inline constexpr bool baseline_can_cover_v =
   find_covering_policy_index<PolicyGetter, SegmentSizeParameterT, AgentParamsT...>::value >= 0;
 
 // Resolves the agent type the kernel instantiates via the same covering-policy search as `find_covering_policy_index`,
-// adding a hard `static_assert` when no policy covers the segment size within the shared-memory limit.
-template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
-struct find_smallest_covering_policy
+// adding a hard `static_assert` when no policy covers the segment size within the shared-memory limit. `PolicyGetter`
+// is a nullary constant-expression getter returning the resolved `topk_policy` (e.g. the resolved-CC policy from
+// `dispatch_compute_cap`); use this form when you already have the resolved policy. Prefer the
+// `find_smallest_covering_policy_device` alias below when you have a `PolicySelector`.
+template <typename PolicyGetter, typename SegmentSizeParameterT, typename... AgentParamsT>
+struct find_smallest_covering_policy_for_getter
 {
 private:
-#if _CCCL_HAS_CONCEPTS()
-  static_assert(topk_policy_selector<PolicySelector>);
-#endif
-
   struct policy_t
   {
     worker_policy worker_per_segment_policy;
     multi_worker_policy multi_worker_per_segment_policy;
   };
-  static constexpr topk_policy active_policy = current_policy<PolicySelector>();
-  struct active_policy_getter_17 // TODO(bgruber): drop this in C++20 and pass policy directly
-  {
-    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
-    {
-      return active_policy;
-    }
-  };
+  static constexpr topk_policy active_policy = PolicyGetter{}();
   static constexpr int selected_index =
-    find_covering_policy_index<active_policy_getter_17, SegmentSizeParameterT, AgentParamsT...>::value;
+    find_covering_policy_index<PolicyGetter, SegmentSizeParameterT, AgentParamsT...>::value;
 
 public:
   // TODO (elstehle): extend support for variable-size segments
@@ -141,6 +133,33 @@ public:
     }
   };
   using agent_t = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
+};
+
+// `PolicySelector`-based form: resolves the policy for this compilation's CC via `current_policy<PolicySelector>()`
+// (per-`__CUDA_ARCH__` device-side; the host default CC host-side). Device consumers (kernel body, launch-bounds
+// helpers) use this. The host baseline arm instead uses `find_smallest_covering_policy_for_getter` with the
+// resolved-CC getter so its policy choice matches the device kernel per CC.
+template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
+struct find_smallest_covering_policy_device
+{
+private:
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(topk_policy_selector<PolicySelector>);
+#endif
+
+  struct active_policy_getter_17 // TODO(bgruber): drop this in C++20 and pass policy directly
+  {
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+    {
+      return current_policy<PolicySelector>();
+    }
+  };
+  using impl_t =
+    find_smallest_covering_policy_for_getter<active_policy_getter_17, SegmentSizeParameterT, AgentParamsT...>;
+
+public:
+  static constexpr auto policy = impl_t::policy;
+  using agent_t                = typename impl_t::agent_t;
 };
 
 // -----------------------------------------------------------------------------
@@ -164,7 +183,7 @@ struct baseline_kernel_args
 
 struct cluster_kernel_args
 {
-  ::cuda::std::uint32_t block_tile_capacity = 0;
+  ::cuda::std::uint32_t max_resident_items_per_block = 0;
 };
 
 // -----------------------------------------------------------------------------
@@ -172,8 +191,9 @@ struct cluster_kernel_args
 // -----------------------------------------------------------------------------
 // The two backends use different `__launch_bounds__` shapes (baseline: just threads_per_block; cluster: threads plus a
 // min-blocks-per-SM and an optional max-blocks-per-cluster cap). We resolve all three per architecture from the
-// selected policy. `find_smallest_covering_policy` (which carries a hard `static_assert`) is only ever touched inside
-// the `backend == baseline` branch, so an oversize bound routed to the cluster/unsupported backend never trips it.
+// selected policy. `find_smallest_covering_policy_device` (which carries a hard `static_assert`) is only ever touched
+// inside the `backend == baseline` branch, so an oversize bound routed to the cluster/unsupported backend never trips
+// it.
 _CCCL_EXEC_CHECK_DISABLE
 template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_threads_per_block_helper() noexcept
@@ -181,7 +201,7 @@ template <class PolicySelector, class SegmentSizeParameterT, class... AgentParam
   constexpr auto policy = current_policy<PolicySelector>();
   if constexpr (policy.backend == topk_algorithm::baseline)
   {
-    return find_smallest_covering_policy<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::policy
+    return find_smallest_covering_policy_device<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::policy
       .worker_per_segment_policy.threads_per_block;
   }
   else if constexpr (policy.backend == topk_algorithm::cluster)
@@ -290,7 +310,7 @@ device_batched_topk_kernel(
 
   if constexpr (policy.backend == topk_algorithm::baseline)
   {
-    using agent_t = typename find_smallest_covering_policy<
+    using agent_t = typename find_smallest_covering_policy_device<
       PolicySelector,
       SegmentSizeParameterT,
       KeyInputItItT,
@@ -382,7 +402,7 @@ device_batched_topk_kernel(
          select_directions,
          num_segments,
          key_slots,
-         clus_args.block_tile_capacity);
+         clus_args.max_resident_items_per_block);
 
        agent.Process();),
       // Cluster-policy kernels are only ever launched on SM90+, so the sub-SM90 device pass is unreachable at runtime.

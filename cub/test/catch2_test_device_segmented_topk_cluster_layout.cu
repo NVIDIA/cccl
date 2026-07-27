@@ -22,14 +22,12 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
   const int slots = usable_bytes / layout_t::chunk_bytes;
   REQUIRE(slots > 0);
 
-  const auto block_tile_capacity = layout_t::block_tile_capacity(dynamic_smem_bytes);
-  REQUIRE(block_tile_capacity == static_cast<cuda::std::uint32_t>(slots * layout_t::chunk_items));
+  const auto max_resident_items_per_block = layout_t::max_resident_items_per_block(dynamic_smem_bytes);
+  REQUIRE(max_resident_items_per_block == static_cast<cuda::std::uint32_t>(slots * layout_t::chunk_items));
 
-  const auto cluster_tile_capacity =
-    layout_t::template cluster_tile_capacity<cuda::std::int64_t>(cluster_blocks, block_tile_capacity);
-  REQUIRE(cluster_tile_capacity > 0);
-  // The head is an edge (static SMEM), not a reserved chunk, so coverage is the full physical capacity.
-  REQUIRE(cluster_tile_capacity == static_cast<cuda::std::int64_t>(cluster_blocks) * block_tile_capacity);
+  // The head is an edge (static SMEM), not a reserved chunk, so a cluster's coverage is the full physical per-CTA
+  // capacity across its CTAs.
+  const auto cluster_tile_capacity = static_cast<cuda::std::int64_t>(cluster_blocks) * max_resident_items_per_block;
 
   // Worst-case resident chunks on any single rank, mirroring the agent: only the aligned region `[head_items,
   // segment_size)` is chunked (`num_chunks`), then spread across `blocks` ranks (the `ceil_div` max for both the
@@ -50,15 +48,20 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
             dynamic_smem_bytes,
             cluster_blocks,
             slots,
-            block_tile_capacity,
+            max_resident_items_per_block,
             cluster_tile_capacity,
             head_items);
     REQUIRE(max_rank_chunks(cluster_tile_capacity, head_items, cluster_blocks) <= slots);
   }
 
   // Tightness: the full physical capacity fits resident (`slots` chunks per rank), one item beyond overflows.
-  CAPTURE(
-    c2h::type_name<KeyT>(), ChunkBytes, LoadAlignBytes, dynamic_smem_bytes, cluster_blocks, slots, block_tile_capacity);
+  CAPTURE(c2h::type_name<KeyT>(),
+          ChunkBytes,
+          LoadAlignBytes,
+          dynamic_smem_bytes,
+          cluster_blocks,
+          slots,
+          max_resident_items_per_block);
   REQUIRE(max_rank_chunks(cluster_tile_capacity, 0, cluster_blocks) == slots);
   REQUIRE(max_rank_chunks(cluster_tile_capacity + 1, 0, cluster_blocks) == slots + 1);
 }
@@ -86,11 +89,7 @@ TEST_CASE("Segmented TopK cluster SMEM layout exposes the full physical capacity
 
   using default_float_layout =
     cub::detail::batched_topk_cluster::smem_block_tile_layout<float, policy.chunk_bytes, policy.load_align_bytes>;
-  static_assert(default_float_layout::block_tile_capacity(0) == 0);
-  static_assert(default_float_layout::template cluster_tile_capacity<int>(8, 0) == 0);
-  // No head reservation: a one-chunk cluster reports its full chunk as coverage.
-  static_assert(default_float_layout::template cluster_tile_capacity<int>(1, default_float_layout::chunk_items)
-                == default_float_layout::chunk_items);
+  static_assert(default_float_layout::max_resident_items_per_block(0) == 0);
 
   check_layout_matrix<cuda::std::uint8_t, policy.chunk_bytes, policy.load_align_bytes>();
   check_layout_matrix<float, policy.chunk_bytes, policy.load_align_bytes>();

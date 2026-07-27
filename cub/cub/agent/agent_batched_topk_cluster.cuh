@@ -88,9 +88,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk_cluster
 {
-// Dynamic-SMEM layout shared by dispatch and the agent. `block_tile_capacity` is the physical per-CTA resident
-// capacity; `cluster_tile_capacity` is the cluster's total resident coverage. The unaligned head is staged as an edge
-// in static SMEM (`edge_keys`), not a chunk slot, so the full physical capacity is usable (no head reservation).
+// Dynamic-SMEM layout shared by dispatch and the agent. `max_resident_items_per_block` is the physical per-CTA resident
+// capacity. The unaligned head is staged as an edge in static SMEM (`edge_keys`), not a chunk slot, so the full
+// physical capacity is usable (no head reservation).
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
 struct smem_block_tile_layout
 {
@@ -107,32 +107,43 @@ struct smem_block_tile_layout
   static_assert(ChunkBytes % slot_alignment == 0, "ChunkBytes must be a multiple of the load and key alignment");
 
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint32_t
-  block_tile_capacity(int dynamic_smem_bytes) noexcept
+  max_resident_items_per_block(int dynamic_smem_bytes) noexcept
   {
     const int usable_bytes = (::cuda::std::max) (0, dynamic_smem_bytes - base_padding_bytes);
     const int slots        = usable_bytes / ChunkBytes;
     return static_cast<::cuda::std::uint32_t>(slots * chunk_items);
   }
 
-  template <typename SizeT>
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr SizeT
-  cluster_tile_capacity(int cta_count_in_cluster, ::cuda::std::uint32_t physical_block_tile_capacity) noexcept
+  // Smallest chunk-granular dynamic-SMEM byte count whose per-CTA capacity (`max_resident_items_per_block`) reaches
+  // `items` keys: one chunk-sized slot per `chunk_items` keys, plus the base padding. Inverse of
+  // `max_resident_items_per_block`.
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr int min_smem_bytes_for(::cuda::std::uint64_t items) noexcept
   {
-    return static_cast<SizeT>(cta_count_in_cluster) * static_cast<SizeT>(physical_block_tile_capacity);
+    const auto slots = ::cuda::ceil_div(items, static_cast<::cuda::std::uint64_t>(chunk_items));
+    return base_padding_bytes + static_cast<int>(slots) * chunk_bytes;
+  }
+
+  // Minimum number of blocks so each holds at most `per_block_capacity` of `items` keys.
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint64_t
+  min_blocks_for(::cuda::std::uint64_t items, ::cuda::std::uint64_t per_block_capacity) noexcept
+  {
+    return ::cuda::ceil_div(items, per_block_capacity);
   }
 };
 
 // -----------------------------------------------------------------------------
 // Occupancy-free cluster-blocks arithmetic (shared by host dispatch and device agent)
 // -----------------------------------------------------------------------------
-// Whether a segment takes the barrier-free single-CTA path: resident in one CTA (`<= block_tile_capacity`) and at/below
-// the single-CTA tuning threshold. Occupancy- and head-alignment-independent, so the host fast path and the device
-// collapse decision agree exactly. 32-bit: the public entry caps the segment size at 2^21, so every operand fits
+// Whether a segment takes the barrier-free single-CTA path: resident in one CTA (`<= max_resident_items_per_block`) and
+// at/below the single-CTA tuning threshold. Occupancy- and head-alignment-independent, so the host fast path and the
+// device collapse decision agree exactly. 32-bit: the public entry caps the segment size at 2^21, so every operand fits
 // `uint32_t`.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr bool is_single_cta_eligible(
-  ::cuda::std::uint32_t segment_size, ::cuda::std::uint32_t block_tile_capacity, int single_block_max_seg_size) noexcept
+  ::cuda::std::uint32_t segment_size,
+  ::cuda::std::uint32_t max_resident_items_per_block,
+  int single_block_max_seg_size) noexcept
 {
-  return segment_size <= block_tile_capacity
+  return segment_size <= max_resident_items_per_block
       && segment_size <= static_cast<::cuda::std::uint32_t>(single_block_max_seg_size);
 }
 
@@ -708,7 +719,7 @@ struct agent_batched_topk_cluster
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
   char* key_slots;
-  offset_t block_tile_capacity;
+  offset_t max_resident_items_per_block;
   // Per-thread mbarrier phase parity, one bit per pipeline stage (see `wait_stage`); the resident load and the
   // overflow stream keep their per-stage issue/wait calls balanced so each bit tracks its mbarrier's phase.
   ::cuda::std::uint32_t load_phase{};
@@ -758,7 +769,7 @@ struct agent_batched_topk_cluster
     SelectDirectionParameterT select_directions_,
     NumSegmentsParameterT num_segments_,
     char* key_slots_,
-    offset_t block_tile_capacity_)
+    offset_t max_resident_items_per_block_)
       : temp_storage(temp_storage_.Alias())
       , d_key_segments_it(d_key_segments_it_)
       , d_key_segments_out_it(d_key_segments_out_it_)
@@ -769,7 +780,7 @@ struct agent_batched_topk_cluster
       , select_directions(select_directions_)
       , num_segments(num_segments_)
       , key_slots(key_slots_)
-      , block_tile_capacity(block_tile_capacity_)
+      , max_resident_items_per_block(max_resident_items_per_block_)
   {}
 
   // ---------------------------------------------------------------------------
@@ -941,7 +952,7 @@ private:
     // The streaming region is carved from the tile's slots and capped by the pipeline depth.
     _CCCL_ASSERT(stream_slot_base >= 0 && layout.stream_slots <= static_cast<offset_t>(PipelineStages)
                    && static_cast<offset_t>(stream_slot_base) + layout.stream_slots
-                        <= block_tile_capacity / static_cast<offset_t>(chunk_items),
+                        <= max_resident_items_per_block / static_cast<offset_t>(chunk_items),
                  "overflow stream slots escape the block tile or pipeline");
     _CCCL_ASSERT(layout.overflow_chunks == 0 || stream_stages <= static_cast<int>(layout.overflow_chunks),
                  "streaming depth exceeds the overflow chunk count");
@@ -1958,7 +1969,9 @@ private:
     else
     {
       // Generic fallback: each resident chunk is staged in its own `key_slots` slot (indexed by `local_chunk`); no
-      // edges are peeled (boundary items are read as ordinary chunks).
+      // edges are peeled (boundary items are read as ordinary chunks). Indexing is `global_index(local_chunk)` with no
+      // `resident_base` offset, unlike the sibling loops -- valid only because this path never reverses residency.
+      static_assert(!is_residency_reversed, "non-deterministic path never uses reversed residency");
       _CCCL_PRAGMA_NOUNROLL()
       for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
       {
@@ -2618,7 +2631,7 @@ private:
     }
 
     const int resident_count = static_cast<int>(resident_keys.size());
-    _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
+    _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= max_resident_items_per_block,
                  "Dynamic shared memory block_tile is too small");
   }
 
@@ -2726,10 +2739,10 @@ private:
     // `PipelineStages` depth. The generic fallback has no async pipeline (it re-reads overflow from gmem each pass and
     // peels nothing), so it reserves no streaming slots.
     // Dispatch guarantees >= 1 whole chunk slot of capacity, so the streaming clamp below is well-defined.
-    _CCCL_ASSERT(block_tile_capacity >= static_cast<offset_t>(chunk_items)
-                   && block_tile_capacity % static_cast<offset_t>(chunk_items) == offset_t{0},
+    _CCCL_ASSERT(max_resident_items_per_block >= static_cast<offset_t>(chunk_items)
+                   && max_resident_items_per_block % static_cast<offset_t>(chunk_items) == offset_t{0},
                  "block tile capacity must be a positive whole number of chunk slots");
-    const offset_t full_slots                   = block_tile_capacity / static_cast<offset_t>(chunk_items);
+    const offset_t full_slots                   = max_resident_items_per_block / static_cast<offset_t>(chunk_items);
     [[maybe_unused]] const bool needs_streaming = layout.my_chunks > full_slots;
 
     // The unaligned suffix of the global tail chunk, peeled into `edge_keys` when this rank owns it (block-load path
@@ -3177,7 +3190,8 @@ private:
     cta_count_in_cluster = hw_cta_count_in_cluster;
     if constexpr (enable_runtime_single_cta)
     {
-      const bool fits_single_cta = is_single_cta_eligible(segment_size, block_tile_capacity, single_block_max_seg_size);
+      const bool fits_single_cta =
+        is_single_cta_eligible(segment_size, max_resident_items_per_block, single_block_max_seg_size);
       if (fits_single_cta)
       {
         if (hw_cta_rank_in_cluster != 0u)

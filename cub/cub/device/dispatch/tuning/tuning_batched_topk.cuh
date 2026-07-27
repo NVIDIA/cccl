@@ -292,14 +292,21 @@ struct cluster_topk_policy
     /*max_chunk_slots_per_block=*/0};
 }
 
-// Hard constraints on the block_tile byte geometry. The aligned bulk-copy (TMA) load path addresses gmem/smem in
-// `load_align_bytes`-sized, aligned units, so `load_align_bytes` must be a power of two and at least
-// `bulk_copy_min_align` (16 B), and `chunk_bytes` must be a whole number of those units. `launch_cluster_arm`
-// static-asserts this before instantiating the agent.
+// Hard constraints a cluster sub-policy must satisfy, mirroring the agent's compile-time invariants so a bad policy
+// (e.g. from a `tune` override) trips `launch_cluster_arm`'s `static_assert(is_valid_cluster_policy(policy))` with a
+// clear message instead of a cryptic failure deep in the agent (or a host-side divide-by-zero in the launch-shape
+// math). The block_tile byte geometry constraints stem from the aligned bulk-copy (TMA) load path, which addresses
+// gmem/smem in `load_align_bytes`-sized, aligned units.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto is_valid_cluster_policy(cluster_topk_policy policy) -> bool
 {
-  return policy.load_align_bytes >= bulk_copy_min_align && ::cuda::is_power_of_two(policy.load_align_bytes)
-      && policy.chunk_bytes % policy.load_align_bytes == 0;
+  return policy.chunk_bytes > 0 && policy.load_align_bytes >= bulk_copy_min_align
+      && ::cuda::is_power_of_two(policy.load_align_bytes) && policy.chunk_bytes % policy.load_align_bytes == 0
+      && policy.threads_per_block > 0 && policy.threads_per_block % warp_threads == 0 && policy.min_blocks_per_sm >= 0
+      && policy.pipeline_stages >= 1 && policy.pipeline_stages <= 32 && policy.min_chunks_per_block >= 1
+      && policy.bits_per_pass >= 1 && policy.bits_per_pass <= 16 && policy.histogram_items_per_thread > 0
+      && policy.tie_break_items_per_thread > 0 && policy.copy_items_per_thread > 0
+      && policy.single_block_max_seg_size >= 0 && policy.max_blocks_per_cluster >= 0
+      && policy.max_chunk_slots_per_block >= 0;
 }
 
 static_assert(is_valid_cluster_policy(make_cluster_policy()));
@@ -380,7 +387,7 @@ inline constexpr ::cuda::std::int64_t cluster_beneficial_min_segment_size = 8 * 
 #if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
   return cc >= ::cuda::compute_capability{cluster_min_cc_major, 0};
 #else // ^^^ dynamic cluster launches enabled ^^^ / vvv dynamic cluster launches disabled vvv
-  // The cluster backend launches with a runtime cluster width, which CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH compiles out;
+  // The cluster backend launches with a runtime cluster width, which _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH compiles out;
   // reporting no architecture as cluster-capable makes the selector fall back to baseline (or report unsupported).
   return false;
 #endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()

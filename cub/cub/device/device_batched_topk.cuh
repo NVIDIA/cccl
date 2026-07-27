@@ -27,9 +27,6 @@
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/__functional/call_or.h>
-#include <cuda/__stream/get_stream.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -80,6 +77,7 @@ template <topk::select SelectDirection,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename NumSegmentsParameterT,
+          typename TuningT,
           typename EnvT>
 _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   void* d_temp_storage,
@@ -91,7 +89,9 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   SegmentSizeParameterT segment_sizes,
   KParameterT k,
   NumSegmentsParameterT num_segments,
-  const EnvT& env)
+  cudaStream_t stream,
+  const TuningT& tuning,
+  [[maybe_unused]] const EnvT& env)
 {
   // ---------------------------------------------------------------------------
   // Execution requirements.
@@ -183,13 +183,17 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   // Only the statically-known *maximum* segment size is constrained: it must not exceed 2^21 (about 2 million). Beyond
   // that the streaming cluster backend is not competitive; larger segments are future work (a WIP multi-CTA baseline
   // backend). So a segment-size type or bound whose maximum exceeds 2^21 (e.g. an un-annotated int32/uint32, or an
-  // explicit bound above 2^21) must carry a tighter compile-time `cuda::args::bounds`. The minimum is left
+  // explicit bound above 2^21) must carry a tighter compile-time `cuda::args::bounds`. The lower bound is left
   // unconstrained: a negative statically-known lower bound is accepted, and the kernel clamps any negative runtime size
-  // up to 0 (see detail::params::__get_and_clamp_param_to_nonnegative). k carries no such maximum-value bound (on the
-  // device an over-large k is clamped to the segment size and a negative k to 0), only the 64-bit element-type width
-  // limit checked below.
+  // up to 0 (see detail::params::__get_and_clamp_param_to_nonnegative). The *upper* bound, by contrast, must be
+  // non-negative: a wholly negative range carries no representable work yet would drive the unsigned launch-sizing math
+  // with a negative `__highest_`. k carries no such maximum-value bound (on the device an over-large k is clamped to
+  // the segment size and a negative k to 0), only the 64-bit element-type width limit checked below.
   if constexpr (segment_sizes_validation::all_ok)
   {
+    static_assert(::cuda::std::cmp_greater_equal(segment_sizes_validation::args_traits::highest, 0),
+                  "cub::DeviceBatchedTopK: the statically-known maximum segment size is negative. Give a segment-size "
+                  "type or a compile-time bound (cuda::args::bounds) whose upper bound is non-negative.");
     static_assert(
       ::cuda::std::cmp_less_equal(segment_sizes_validation::args_traits::highest, ::cuda::std::int64_t{1} << 21),
       "cub::DeviceBatchedTopK: the statically-known maximum segment size exceeds the maximum currently supported "
@@ -222,13 +226,6 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
   if constexpr (segment_sizes_validation::all_ok && k_validation::all_ok && num_segments_validation::all_ok
                 && !num_segments_validation::args_traits::is_deferred)
   {
-    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-
-    // A `tune`d policy selector (keyed on `topk_policy`) is forwarded to the dispatch, which queries it from this
-    // tuning env; absent one, the dispatch builds its automatic arch+size selector.
-    using tuning_env_t =
-      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-
     // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
     // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
     // conservative 64-bit upper bound here.
@@ -246,8 +243,8 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
       ::cuda::args::constant<SelectDirection>{},
       num_segments,
       total_num_items,
-      stream.get(),
-      tuning_env_t{});
+      stream,
+      tuning);
   }
   else
   {
@@ -306,20 +303,19 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //!   as narrow, lying within the compile-time range and only tightening it further.
 //!
 //! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. ``num_segments`` must be
-//! a single, non-negative value known on the host (``constant``, ``immediate``, or a plain integral).
-//! ``segment_sizes``
-//! must have a statically-known *maximum* not exceeding the supported ``2^21`` (about 2 million; see *Current
-//! constraints* below): a type whose maximum already fits (a narrow type such as ``uint8_t``, ``int16_t``, or
-//! ``uint16_t``) is accepted without an explicit bound, while a type whose maximum exceeds ``2^21`` (e.g. ``int32_t``,
-//! ``uint32_t``, or ``int64_t``) must carry a compile-time upper bound (a ``constant<N>`` or
-//! ``cuda::args::bounds<lo, hi>()``). A negative statically-known lower bound is allowed: negative runtime sizes are
-//! clamped to an empty segment (size 0). A non-negative lower bound is trusted -- passing an actual value outside its
-//! declared bound (for instance a negative value under a non-negative bound) is a caller precondition violation
-//! (undefined behavior). ``k`` has no algorithm-imposed maximum: a ``k`` larger than a segment's size selects that
-//! whole segment. Its lower bound follows the same rule as ``segment_sizes`` above -- under a negative statically-known
-//! lower bound a negative runtime ``k`` is clamped to 0 (selecting nothing), while under a non-negative lower bound a
-//! negative value is a caller precondition violation (undefined behavior). Tight bounds on every parameter are
-//! encouraged.
+//! a single value known on the host (``constant``, ``immediate``, or a plain integral); a negative count is treated as
+//! no work (an empty batch). ``segment_sizes`` must have a statically-known *maximum* not exceeding the supported
+//! ``2^21`` (about 2 million; see *Current constraints* below): a type whose maximum already fits (a narrow type such
+//! as ``uint8_t``, ``int16_t``, or ``uint16_t``) is accepted without an explicit bound, while a type whose maximum
+//! exceeds ``2^21`` (e.g. ``int32_t``, ``uint32_t``, or ``int64_t``) must carry a compile-time upper bound (a
+//! ``constant<N>`` or ``cuda::args::bounds<lo, hi>()``). A negative statically-known lower bound is allowed: negative
+//! runtime sizes are clamped to an empty segment (size 0). A non-negative lower bound is trusted -- passing an actual
+//! value outside its declared bound (for instance a negative value under a non-negative bound) is a caller precondition
+//! violation (undefined behavior). ``k`` has no algorithm-imposed maximum: a ``k`` larger than a segment's size selects
+//! that whole segment. Its lower bound follows the same rule as ``segment_sizes`` above -- under a negative
+//! statically-known lower bound a negative runtime ``k`` is clamped to 0 (selecting nothing), while under a
+//! non-negative lower bound a negative value is a caller precondition violation (undefined behavior). Tight bounds on
+//! every parameter are encouraged.
 //!
 //! .. code-block:: c++
 //!
@@ -367,20 +363,14 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //!   the segment size through a 64-bit intermediate, so a wider integer type (e.g. ``__int128``) is rejected to avoid a
 //!   silent wrap. ``k`` itself has no algorithm-imposed maximum (see *Which form each parameter accepts* above).
 //! - **Uniform number of segments.** ``num_segments`` must be a single value (``constant``, ``immediate``, or a plain
-//!   integral) resolved on the host. A ``deferred`` (device-resident) count is not supported at this time.
+//!   integral) resolved on the host, and must not exceed ``2^31 - 1`` (it sizes the launch grid). A negative count is
+//!   treated as no work (an empty batch). A ``deferred`` (device-resident) count is not supported at this time.
 //! - **Unsorted output required.** Only ``cuda::execution::output_ordering::unsorted`` is implemented; the sorted
 //!   orderings of the default contract described in *Determinism, tie-breaking, and output ordering* below (and hence
 //!   an empty, no-requirement environment, which defaults to ``stable_sorted``) are rejected at compile time. The
 //!   supported ``determinism`` / ``tie_break`` requirements depend on the architecture -- see the *Current support*
 //!   note below. ``determinism`` and ``tie_break`` must always be specified together, or both omitted to take the
 //!   default.
-//! - **Dynamic cluster launches may be disabled.** Defining ``CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH`` compiles out the
-//!   thread-block-cluster backend, so on Hopper and newer GPUs (compute capability >= 9.0) the algorithm is restricted
-//!   to the same capability set as pre-Hopper: every segment must fit a single thread block, and only the fully
-//!   non-deterministic request (``determinism::not_guaranteed`` with ``tie_break::unspecified``) is supported. The
-//!   larger segments and the deterministic / tie-break requests otherwise available on compute capability >= 9.0 are
-//!   then rejected at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
-//!   runtime as ``cudaErrorNotSupported``).
 //!
 //! Determinism, tie-breaking, and output ordering
 //! +++++++++++++++++++++++++++++++++++++++++++++++
@@ -414,8 +404,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk(
 //!    - **Hopper and newer (compute capability >= 9.0):** all five acknowledged ``(determinism, tie_break)`` pairs are
 //!      supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run, unspecified)``, and ``(gpu_to_gpu,
 //!      {unspecified, prefer_smaller_index, prefer_larger_index})`` -- and segments larger than a single thread block
-//!      are also supported. Defining ``CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH`` restricts this to the pre-Hopper set
-//!      above (see *Current constraints*).
+//!      are also supported.
 //!
 //!    When ``determinism::not_guaranteed`` is requested the per-segment output may be non-deterministic: if multiple
 //!    items tie at the K-th position, the subset of tied elements returned is not uniquely defined and may vary between
@@ -495,8 +484,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -522,17 +510,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxKeys");
-    return detail::dispatch_batched_topk<detail::topk::select::max>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      static_cast<NullType**>(nullptr),
-      static_cast<NullType**>(nullptr),
-      segment_sizes,
-      k,
-      num_segments,
-      env);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::dispatch_batched_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType**>(nullptr),
+          static_cast<NullType**>(nullptr),
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -597,8 +590,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -622,7 +614,7 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxKeys");
-    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
       return detail::dispatch_batched_topk<detail::topk::select::max>(
         storage,
         bytes,
@@ -633,6 +625,8 @@ struct DeviceBatchedTopK
         segment_sizes,
         k,
         num_segments,
+        stream,
+        tuning,
         env);
     });
   }
@@ -705,8 +699,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -732,17 +725,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinKeys");
-    return detail::dispatch_batched_topk<detail::topk::select::min>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      static_cast<NullType**>(nullptr),
-      static_cast<NullType**>(nullptr),
-      segment_sizes,
-      k,
-      num_segments,
-      env);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::dispatch_batched_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType**>(nullptr),
+          static_cast<NullType**>(nullptr),
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -805,8 +803,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -830,7 +827,7 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinKeys");
-    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
       return detail::dispatch_batched_topk<detail::topk::select::min>(
         storage,
         bytes,
@@ -841,6 +838,8 @@ struct DeviceBatchedTopK
         segment_sizes,
         k,
         num_segments,
+        stream,
+        tuning,
         env);
     });
   }
@@ -930,8 +929,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -961,17 +959,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxPairs");
-    return detail::dispatch_batched_topk<detail::topk::select::max>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k,
-      num_segments,
-      env);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::dispatch_batched_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -1042,8 +1045,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -1071,9 +1073,20 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxPairs");
-    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
       return detail::dispatch_batched_topk<detail::topk::select::max>(
-        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        segment_sizes,
+        k,
+        num_segments,
+        stream,
+        tuning,
+        env);
     });
   }
 
@@ -1159,8 +1172,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -1190,17 +1202,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinPairs");
-    return detail::dispatch_batched_topk<detail::topk::select::min>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k,
-      num_segments,
-      env);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::dispatch_batched_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -1271,8 +1288,7 @@ struct DeviceBatchedTopK
   //!   nothing).
   //!
   //! @param[in] num_segments
-  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value. Must be
-  //!   non-negative.
+  //!   The number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -1300,9 +1316,20 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinPairs");
-    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
       return detail::dispatch_batched_topk<detail::topk::select::min>(
-        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        segment_sizes,
+        k,
+        num_segments,
+        stream,
+        tuning,
+        env);
     });
   }
 };

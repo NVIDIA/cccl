@@ -70,6 +70,13 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 #  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
     const bool has_cluster = cluster_dim.x != 0;
 #  else // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+    // Dynamic cluster launch is disabled (_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH). A requested cluster width cannot be
+    // honored; fail loudly rather than silently launching without a cluster. A `x` of 0 (no cluster) or 1 (degenerate
+    // single-block cluster) is harmless and proceeds as a non-cluster launch.
+    if (cluster_dim.x > 1)
+    {
+      return cudaErrorNotSupported;
+    }
     const bool has_cluster = false;
 #  endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
 #  if _CCCL_HAS_PDL()

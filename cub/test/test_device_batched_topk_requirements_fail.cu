@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21
+// %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21:22
 
 // Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
 // so only the requirement static_asserts under test fire, regardless of which architectures this test is compiled for.
@@ -28,8 +28,9 @@
 //       - determinism and tie_break must be acknowledged together, both specified or both omitted to take the default
 //       - an explicit tie_break of prefer_smaller_index / prefer_larger_index pins the result set across GPUs and so
 //         requires determinism::gpu_to_gpu (it cannot be paired with not_guaranteed or run_to_run)
-//   * segment_sizes (variants 6-13):
+//   * segment_sizes (variants 6-13, 22):
 //       - an explicit compile-time upper bound above the maximum supported segment size (2^21)
+//       - an explicit compile-time upper bound that is negative, i.e. a wholly-negative range (variant 22)
 //       - an un-annotated argument whose element type max exceeds 2^21 (a compile-time bound is required): int64,
 //         uint32, and int32 all need one; only a type whose max already fits (e.g. int16, uint16) is accepted bare
 //       - a deferred argument wrapping a scalar, or a range / container (even a static-extent-1 span), rather than a
@@ -86,6 +87,10 @@ int main()
 #elif TEST_ERR == 13 // single-value wrapper (immediate) around a pointer/handle rather than an integral value
   auto segment_sizes = cuda::args::immediate{static_cast<int*>(nullptr), cuda::args::bounds<0, 8>()};
   // expected-error-13 {{"must have an integral \(non-bool\) element type"}}
+#elif TEST_ERR == 22 // explicit compile-time upper bound that is negative (a wholly-negative range carries no work)
+  auto segment_sizes =
+    cuda::args::immediate{cuda::std::int64_t{-1}, cuda::args::bounds<cuda::std::int64_t{-8}, cuda::std::int64_t{-1}>()};
+  // expected-error-22 {{"maximum segment size is negative"}}
 #else
   auto segment_sizes = cuda::args::constant<8>{};
 #endif
