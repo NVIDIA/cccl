@@ -9,6 +9,7 @@ Base classes for iterators.
 from __future__ import annotations
 
 import hashlib
+import threading
 from typing import Hashable
 
 from .._bindings import Iterator, IteratorKind, IteratorState, Op
@@ -54,6 +55,7 @@ class IteratorBase:
         "_input_deref_op",
         "_output_deref_op",
         "_uid_cached",
+        "_op_lock",
     ]
 
     def __init__(
@@ -71,10 +73,21 @@ class IteratorBase:
         self._state_bytes = state_bytes
         self._state_alignment = state_alignment
         self._value_type = value_type
-        self._advance_op: Op | None = None
-        self._input_deref_op: Op | None = None
-        self._output_deref_op: Op | None = None
+        # Per-cc caches: the compiled Op is arch-specific (its LTO-IR is
+        # built for the current build's target compute capability), so the memo
+        # must be keyed on that cc. Reusing one iterator instance across builds
+        # targeting different arches otherwise leaks the first arch's LTO-IR into
+        # the others, which nvJitLink rejects. Keyed on get_target_cc() (None ==
+        # current device); see get_advance_op() below.
+        self._advance_op: dict[Hashable, Op] = {}
+        self._input_deref_op: dict[Hashable, Op | None] = {}
+        self._output_deref_op: dict[Hashable, Op | None] = {}
         self._uid_cached: str | None = None
+        # Free-threaded Python can let multiple threads share a read-only
+        # iterator object and race during the first lazy Op construction.
+        # The lock only protects that cache miss path; cached access stays
+        # lock-free and iterator mutation remains the caller's responsibility.
+        self._op_lock = threading.Lock()
 
     @property
     def state(self) -> IteratorState:
@@ -116,21 +129,36 @@ class IteratorBase:
 
     def get_advance_op(self) -> Op:
         """Get the cached Op for the advance operation."""
-        if self._advance_op is None:
-            self._advance_op = self._make_advance_op()
-        return self._advance_op
+        from .._target_cc import get_target_cc
+
+        key = get_target_cc()
+        if key not in self._advance_op:
+            with self._op_lock:
+                if key not in self._advance_op:
+                    self._advance_op[key] = self._make_advance_op()
+        return self._advance_op[key]
 
     def get_input_deref_op(self) -> Op | None:
         """Get the cached Op for input dereference operation, or None if not supported."""
-        if self._input_deref_op is None:
-            self._input_deref_op = self._make_input_deref_op()
-        return self._input_deref_op
+        from .._target_cc import get_target_cc
+
+        key = get_target_cc()
+        if key not in self._input_deref_op:
+            with self._op_lock:
+                if key not in self._input_deref_op:
+                    self._input_deref_op[key] = self._make_input_deref_op()
+        return self._input_deref_op[key]
 
     def get_output_deref_op(self) -> Op | None:
         """Get the cached Op for output dereference operation, or None if not supported."""
-        if self._output_deref_op is None:
-            self._output_deref_op = self._make_output_deref_op()
-        return self._output_deref_op
+        from .._target_cc import get_target_cc
+
+        key = get_target_cc()
+        if key not in self._output_deref_op:
+            with self._op_lock:
+                if key not in self._output_deref_op:
+                    self._output_deref_op[key] = self._make_output_deref_op()
+        return self._output_deref_op[key]
 
     @property
     def is_input_iterator(self) -> bool:

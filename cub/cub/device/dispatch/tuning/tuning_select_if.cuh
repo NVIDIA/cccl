@@ -44,7 +44,7 @@ struct SelectPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -52,7 +52,7 @@ struct SelectPolicy
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -81,7 +81,7 @@ struct PartitionPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -89,7 +89,7 @@ struct PartitionPolicy
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -1590,7 +1590,7 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -1605,7 +1605,7 @@ struct policy_hub
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::SelectIfPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm80_tuning<InputT,
@@ -1621,10 +1621,10 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm90_tuning<InputT,
@@ -1635,7 +1635,7 @@ struct policy_hub
                                                classify_input_size<InputT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>

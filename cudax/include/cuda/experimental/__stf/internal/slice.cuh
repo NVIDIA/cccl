@@ -25,6 +25,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/array>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -362,7 +364,7 @@ class shape_of<mdspan<T, P...>>
 {
 public:
   using described_type = mdspan<T, P...>;
-  using coords_t       = array_tuple<size_t, described_type::rank()>;
+  using coords_t       = ::cuda::std::array<size_t, described_type::rank()>;
 
   /**
    * @brief Dimensionality of the slice.
@@ -426,13 +428,13 @@ public:
    * This constructor is optional.
    */
   explicit shape_of(const coords_t& sizes)
-      : extents(reserved::to_cuda_array(sizes))
+      : extents(sizes)
   {
     size_t product_sizes = 1;
     unroll<rank()>([&](auto i) {
       if (i == 0)
       {
-        strides[i] = ::std::get<0>(sizes) != 0;
+        strides[i] = sizes[0] != 0;
       }
       else
       {
@@ -453,7 +455,7 @@ public:
    */
   template <typename... Sizes>
   explicit shape_of(size_t size0, Sizes&&... sizes)
-      : extents(size0, ::std::forward<Sizes>(sizes)...)
+      : extents(size0, ::cuda::std::forward<Sizes>(sizes)...)
   {
     static_assert(sizeof...(sizes) + 1 == rank(), "Wrong number of arguments passed to shape_of.");
 
@@ -467,11 +469,7 @@ public:
   }
 
   ///@{ @name Constructors
-  explicit shape_of(const ::std::array<size_t, rank()>& sizes)
-      : extents(reserved::convert_to_cuda_array(sizes))
-  {}
-
-  explicit shape_of(const ::std::array<size_t, rank()>& sizes, const ::std::array<size_t, rank()>& _strides)
+  explicit shape_of(const ::cuda::std::array<size_t, rank()>& sizes, const ::cuda::std::array<size_t, rank()>& _strides)
       : shape_of(sizes)
   {
     if constexpr (rank() > 1)
@@ -604,7 +602,7 @@ public:
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-    ::std::array<size_t, shape_of::rank()> coordinates{};
+    coords_t coordinates{};
     // for (::std::ptrdiff_t i = _dimensions - 1; i >= 0; i--)
     for (auto i : each(0, shape_of::rank()))
     {
@@ -612,11 +610,7 @@ public:
       index /= extent(i);
     }
 
-    return ::std::apply(
-      [](const auto&... e) {
-        return ::std::make_tuple(e...);
-      },
-      coordinates);
+    return coordinates;
   }
 
 private:
@@ -1147,7 +1141,7 @@ UNITTEST("shape_of<slice> basics")
 {
   using namespace cuda::experimental::stf;
   auto s1 = shape_of<slice<double, 3>>(1, 2, 3);
-  auto s2 = shape_of<slice<double, 3>>(::std::tuple(1, 2, 3));
+  auto s2 = shape_of<slice<double, 3>>(::cuda::std::array<size_t, 3>{1, 2, 3});
   EXPECT(s1 == s2);
 };
 

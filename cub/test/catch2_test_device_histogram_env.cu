@@ -15,6 +15,8 @@ struct stream_registry_factory_t;
 #include <cuda/std/array>
 #include <cuda/std/execution>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
@@ -1733,7 +1735,7 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("HistogramPolicy", "[histogram][device]")
+C2H_TEST("Test HistogramPolicy properties", "[histogram][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::HistogramPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::HistogramPolicy>);
@@ -1761,5 +1763,15 @@ C2H_TEST("HistogramPolicy", "[histogram][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
+             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

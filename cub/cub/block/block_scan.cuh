@@ -105,7 +105,7 @@ enum BlockScanAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(BlockScanAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockScanAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -115,9 +115,8 @@ namespace detail
       return "BLOCK_SCAN_RAKING_MEMOIZE";
     case BLOCK_SCAN_WARP_SCANS:
       return "BLOCK_SCAN_WARP_SCANS";
-    default:
-      return "<unknown BlockScanAlgorithm>";
   }
+  return "<unknown BlockScanAlgorithm>";
 }
 } // namespace detail
 

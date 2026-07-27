@@ -8,12 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
-#include <cuda/functional>
+#include <cuda/buffer>
+#include <cuda/iterator>
+#include <cuda/memory_pool>
+#include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/hyperloglog.cuh>
@@ -23,6 +28,7 @@
 #include <testing.cuh>
 
 #include <c2h/catch2_test_helper.h>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 namespace cudax = cuda::experimental;
 
@@ -46,6 +52,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
       estimator.add(*(in + i));
     }
     block.sync();
+    static_assert(cuda::std::is_same_v<decltype(estimator.estimate(block)), double>);
     const auto estimate = estimator.estimate(block);
     if (block.thread_rank() == 0)
     {
@@ -54,7 +61,25 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
   }
 }
 
+template <typename Ref>
+__global__ void merge_kernel(Ref destination, const Ref source)
+{
+  const auto block = cooperative_groups::this_thread_block();
+  destination.merge(block, source);
+}
+
 using test_types = c2h::type_list<int32_t, int64_t>;
+
+// Maps index i to i / repeats, yielding `repeats` duplicates of each value
+struct scaled_index
+{
+  std::size_t repeats;
+
+  __device__ int operator()(std::size_t i) const noexcept
+  {
+    return static_cast<int>(i / repeats);
+  }
+};
 
 C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 {
@@ -69,27 +94,58 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
-  thrust::device_vector<T> items(num_items);
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   // Generate `num_items` distinct items
-  thrust::sequence(items.begin(), items.end(), T{0});
+  auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
 
   // Initialize the estimator
-  estimator_type estimator{sketch_size_kb};
+  estimator_type estimator{stream, mr, sketch_size_kb};
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(estimator.estimate(stream)), double>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(estimator.ref().estimate(stream)), double>);
 
   // Add all items to the estimator
-  estimator.add(items.begin(), items.end());
+  estimator.add(stream, items.begin(), items.end());
 
-  const auto host_estimate = estimator.estimate();
+  const auto host_estimate = estimator.estimate(stream);
 
-  thrust::device_vector<std::size_t> device_estimate(1);
+  auto device_estimate = cuda::make_buffer<double>(stream, mr, 1, cuda::no_init);
   estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
-    <<<1, 512, estimator.sketch_bytes()>>>(sketch_size_kb, items.begin(), num_items, device_estimate.begin());
+    <<<1, 512, estimator.sketch_bytes(), stream.get()>>>(
+      sketch_size_kb, items.begin(), num_items, device_estimate.begin());
+  REQUIRE(cudaGetLastError() == cudaSuccess);
 
-  REQUIRE_CUDART(cudaDeviceSynchronize());
+  double device_estimate_value{};
+  REQUIRE_CUDART(cudaMemcpyAsync(
+    &device_estimate_value, device_estimate.data(), sizeof(double), cudaMemcpyDeviceToHost, stream.get()));
+  stream.sync();
+  REQUIRE_THAT(device_estimate_value, Catch::Matchers::WithinRel(host_estimate, 1e-10));
+}
 
-  std::size_t device_estimate_value = device_estimate[0];
-  REQUIRE(device_estimate_value == host_estimate);
+C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
+{
+  using T              = int32_t;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  constexpr std::size_t num_items = 1 << 20;
+  const estimator_type::precision precision{8};
+
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  estimator_type source{stream, mr, precision};
+  const auto first = ::cuda::counting_iterator<T>{0};
+  source.add(stream, first, first + num_items);
+  const auto source_estimate = source.estimate(stream);
+
+  estimator_type destination{stream, mr, precision};
+  merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+
+  REQUIRE(destination.estimate(stream) == source_estimate);
+  REQUIRE(source.estimate(stream) == source_estimate);
 }
 
 C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
@@ -109,33 +165,35 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   // RSD for a given precision is given by the following formula
   const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
-  thrust::device_vector<T> items(num_items);
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   // Generate `num_items` distinct items
-  thrust::sequence(items.begin(), items.end(), T{0});
+  auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
 
   // Initialize the estimator
-  estimator_type estimator{sketch_size_kb};
+  estimator_type estimator{stream, mr, sketch_size_kb};
 
-  REQUIRE(estimator.estimate() == 0);
+  REQUIRE(estimator.estimate(stream) == 0);
 
   // Add all items to the estimator
-  estimator.add(items.begin(), items.end());
+  estimator.add(stream, items.begin(), items.end());
 
-  const auto estimate = estimator.estimate();
+  const auto estimate = estimator.estimate(stream);
 
   // Adding the same items again should not affect the result
-  estimator.add(items.begin(), items.begin() + num_items / 2);
-  REQUIRE(estimator.estimate() == estimate);
+  estimator.add(stream, items.begin(), items.begin() + num_items / 2);
+  REQUIRE(estimator.estimate(stream) == estimate);
 
   // Adding the same items again (might use shared memory code path) should not affect the result
-  auto* ptr = thrust::raw_pointer_cast(items.data());
-  estimator.add(ptr, ptr + num_items / 2);
-  REQUIRE(estimator.estimate() == estimate);
+  auto* ptr = items.data();
+  estimator.add(stream, ptr, ptr + num_items / 2);
+  REQUIRE(estimator.estimate(stream) == estimate);
 
   // Clearing the estimator should reset the estimate
-  estimator.clear();
-  REQUIRE(estimator.estimate() == 0);
+  estimator.clear(stream);
+  REQUIRE(estimator.estimate(stream) == 0);
 
   const double relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
 
@@ -173,19 +231,20 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
   REQUIRE(estimator_type::sketch_bytes(sd) == expected_sketch_bytes);
   REQUIRE(estimator_type::sketch_bytes(sd) == estimator_type::sketch_bytes(sb));
 
-  auto items_begin = thrust::make_transform_iterator(
-    thrust::make_counting_iterator<std::size_t>(0), cuda::proclaim_return_type<T>([repeats] __device__(auto i) {
-      return static_cast<T>(i / repeats);
-    }));
+  auto items_begin = cuda::transform_iterator(cuda::counting_iterator<std::size_t>{0}, scaled_index{repeats});
 
-  estimator_type estimator{sd};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  REQUIRE(estimator.estimate() == 0);
+  estimator_type estimator{stream, mr, sd};
+
+  REQUIRE(estimator.estimate(stream) == 0);
 
   // Add all items to the estimator
-  estimator.add(items_begin, items_begin + num_items);
+  estimator.add(stream, items_begin, items_begin + num_items);
 
-  const auto estimate = estimator.estimate();
+  // Spark rounds the floating-point estimate to the nearest integer with Math.round.
+  const auto estimate = cuda::std::round(estimator.estimate(stream));
 
   const double expected_count = static_cast<double>(num_items) / static_cast<double>(repeats);
   const double relative_error = std::abs((static_cast<double>(estimate) / expected_count) - 1.0);
@@ -210,10 +269,42 @@ C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
 
   REQUIRE(estimator_type::sketch_bytes(precision) == expected_sketch_bytes);
 
-  estimator_type estimator{precision};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  estimator_type estimator{stream, mr, precision};
 
   REQUIRE(estimator.sketch_bytes() == expected_sketch_bytes);
-  REQUIRE(estimator.estimate() == 0);
+  REQUIRE(estimator.estimate(stream) == 0);
+}
+
+C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]")
+{
+  using estimator_type = cudax::cuco::hyperloglog<int32_t>;
+
+  cuda::stream stream{cuda::device_ref{0}};
+  auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
+
+  estimator_type estimator{stream, mr, estimator_type::precision{8}};
+  const auto item = cuda::counting_iterator<int32_t>{0};
+  estimator.add(stream, item, item + 1);
+
+  const auto estimate = estimator.estimate(stream);
+  REQUIRE(estimate > 1.0);
+  REQUIRE(estimate < 2.0);
+}
+
+C2H_TEST("HyperLogLog ref validates sketch storage size", "[hyperloglog]")
+{
+  using ref_type = cudax::cuco::hyperloglog_ref<int32_t>;
+
+  alignas(ref_type::sketch_alignment()) cuda::std::byte undersized_storage[32]{};
+  REQUIRE_THROWS_WITH(ref_type{cuda::std::span<cuda::std::byte>{undersized_storage}},
+                      "Minimum required sketch size is 0.0625KB or 64B");
+
+  alignas(ref_type::sketch_alignment()) cuda::std::byte rounded_storage[96]{};
+  const ref_type ref{cuda::std::span<cuda::std::byte>{rounded_storage}};
+  REQUIRE(ref.sketch_bytes() == 64);
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 9) // Pinned memory resource is only supported with CTK 12.9 and later
@@ -231,14 +322,17 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
   constexpr double tolerance_factor        = 2.5;
   const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
-  thrust::device_vector<T> items(num_items);
-  thrust::sequence(items.begin(), items.end(), T{0});
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  estimator_type estimator{sketch_size_kb};
-  estimator.add(items.begin(), items.end());
+  auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), items.begin(), items.end(), T{0});
+
+  estimator_type estimator{stream, mr, sketch_size_kb};
+  estimator.add(stream, items.begin(), items.end());
 
   auto host_mr        = ::cuda::pinned_default_memory_pool();
-  const auto estimate = estimator.estimate(host_mr);
+  const auto estimate = estimator.estimate(stream, host_mr);
 
   const double relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
 

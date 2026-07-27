@@ -670,15 +670,15 @@ struct RadixSortKeysPolicySelector
     const int onesweep_threads = cc >= cuda::compute_capability{8, 0} ? 256 : 128;
     return {
       .algorithm     = cub::RadixSortAlgorithm::onesweep,
-      .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .num_private_partitions = 1, .radix_bits = 8},
+      .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8},
       .exclusive_sum = {.threads_per_block = 256, .radix_bits = 8},
-      .onesweep      = {.threads_per_block           = onesweep_threads,
-                        .items_per_thread            = 21,
-                        .store_algorithm             = cub::RADIX_SORT_STORE_DIRECT,
-                        .rank_algorithm              = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-                        .scan_algorithm              = cub::BLOCK_SCAN_WARP_SCANS,
-                        .rank_num_private_partitions = 2,
-                        .radix_bits                  = 8},
+      .onesweep      = {.threads_per_block       = onesweep_threads,
+                        .items_per_thread        = 21,
+                        .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+                        .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+                        .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+                        .rank_private_partitions = 2,
+                        .radix_bits              = 8},
       .scan          = {.algorithm = cub::ScanAlgorithm::lookback,
                         .lookback  = {.threads_per_block = 512,
                                       .items_per_thread  = 23,
@@ -717,7 +717,7 @@ struct RadixSortKeysPolicySelector
 };
 // example-end radix-sort-keys-policy-selector
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API with tuning", "[radix_sort][env]")
+C2H_TEST("cub::DeviceRadixSort::SortKeys accepts a custom policy selector", "[radix_sort][env]")
 {
   // example-begin radix-sort-keys-tuning
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};

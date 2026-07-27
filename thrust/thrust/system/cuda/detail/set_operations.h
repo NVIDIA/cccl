@@ -422,7 +422,7 @@ struct SetOpAgent
 
       for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
       {
-        output[tile_output_prefix + item] = shared[item];
+        output[tile_output_prefix + item] = shared[item]; // NOLINT(bugprone-misplaced-widening-cast)
       }
     }
 
@@ -598,7 +598,7 @@ struct SetOpAgent
 
       if (IS_LAST_TILE && threadIdx.x == 0)
       {
-        *output_count = tile_output_prefix + tile_output_count;
+        *output_count = static_cast<std::size_t>(tile_output_prefix) + tile_output_count;
       }
     }
 
@@ -713,7 +713,7 @@ struct PartitionAgent
     int items_per_tile,
     char* /*shmem*/)
   {
-    Size partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
+    Size partition_idx = static_cast<Size>(blockDim.x) * blockIdx.x + threadIdx.x;
     if (partition_idx < num_partitions)
     {
       Size partition_at = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);

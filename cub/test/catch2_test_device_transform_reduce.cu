@@ -205,7 +205,7 @@ C2H_TEST("Device transform reduce doesn't let input type into reduction op", "[r
 
   device_transform_reduce(d_in, d_out, num_items, reduction_op_t{}, transform_op_t{}, init);
 
-  const std::uint64_t expected = num_items * magic_val.a * magic_val.a + init.a;
+  const std::uint64_t expected = static_cast<std::uint64_t>(num_items) * magic_val.a * magic_val.a + init.a;
   const output_t actual        = out[0];
 
   INFO("num_items: " << num_items);

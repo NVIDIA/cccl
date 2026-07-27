@@ -11,6 +11,7 @@
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -259,6 +260,56 @@ C2H_CCCLRT_TEST("cuda::buffer make_buffer uses the explicit device", "[container
   }
 
   explicit_device_stream.sync();
+}
+
+C2H_CCCLRT_TEST("cuda::buffer make_buffer copies between peer devices", "[container][buffer][multi_gpu]")
+{
+  // Cross-device copy coverage requires at least two GPUs.
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref source_device{0};
+  auto peers = source_device.peers();
+  // This test exercises direct peer memory access; non-peer topologies have no legal device-to-device path to cover.
+  if (peers.empty())
+  {
+    return;
+  }
+
+  cuda::device_ref destination_device = peers.front();
+  // Device buffers are allocated from stream-ordered memory pools.
+  if (!source_device.attribute(cuda::device_attributes::memory_pools_supported)
+      || !destination_device.attribute(cuda::device_attributes::memory_pools_supported))
+  {
+    return;
+  }
+
+  cuda::stream source_stream{source_device};
+  cuda::stream destination_stream{destination_device};
+  cuda::device_memory_pool source_pool{source_device};
+  cuda::device_memory_pool destination_pool{destination_device};
+  source_pool.enable_access_from(destination_device);
+  CCCLRT_REQUIRE(source_pool.is_accessible_from(destination_device));
+  auto source_resource      = source_pool.as_ref();
+  auto destination_resource = destination_pool.as_ref();
+
+  {
+    cuda::device_buffer<int> source{source_stream, source_resource, compare_data_initializer_list};
+    destination_stream.wait(source_stream);
+    auto copy = cuda::make_buffer(destination_stream, destination_resource, source);
+
+    CCCLRT_CHECK(source.size() == cuda::std::size(compare_data_initializer_list));
+    CCCLRT_CHECK(copy.size() == source.size());
+    check_allocation_device(source, source_device);
+    check_allocation_device(copy, destination_device);
+    CCCLRT_CHECK(equal_range(source));
+    CCCLRT_CHECK(equal_range(copy));
+  }
+
+  source_stream.sync();
+  destination_stream.sync();
 }
 
 C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")

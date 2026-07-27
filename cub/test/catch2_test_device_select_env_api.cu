@@ -452,7 +452,7 @@ struct SelectPolicySelector
 };
 // example-end select-if-policy-selector
 
-C2H_TEST("cub::DeviceSelect::If env-based API with tuning", "[select][env]")
+C2H_TEST("cub::DeviceSelect::If accepts a custom policy selector", "[select][env]")
 {
   // example-begin select-if-tuning
   auto d_in           = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -492,7 +492,8 @@ struct UniqueByKeyPolicySelector
             .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
             .load_modifier     = cub::LOAD_DEFAULT,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+            .lookback_delay    = cub::LookbackDelayPolicy{
+                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   }
 };
 // example-end unique-by-key-policy-selector

@@ -18,17 +18,17 @@
 #include <type_traits>
 #include <vector>
 
-#include <cccl/c/aot.h>
 #include <cccl/c/binary_search.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 #include <jit_templates/templates/input_iterator.h>
 #include <jit_templates/templates/operation.h>
 #include <nvrtc/command_list.h>
-#include <util/aot_serialize.h>
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
+#include <util/serialization.h>
 #include <util/types.h>
 
 using OffsetT = unsigned long long;
@@ -471,11 +471,11 @@ try
   // Ensure the inner buffer is freed even if writing the outer blob throws.
   std::unique_ptr<char[]> inner_owner(static_cast<char*>(inner_buf));
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
   // Outer header re-uses the transform's payload_kind / cc fields, since the
   // binary_search build_result_t doesn't carry its own copies.
-  write_header(w, CCCL_AOT_ALGO_BINARY_SEARCH, build_ptr->transform.payload_kind, build_ptr->transform.cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_BINARY_SEARCH, build_ptr->transform.payload_kind, build_ptr->transform.cc);
   w.write_pod<uint64_t>(static_cast<uint64_t>(build_ptr->op_state_size));
   w.write_pod<uint64_t>(static_cast<uint64_t>(build_ptr->op_state_alignment));
   w.write_blob(inner_owner.get(), inner_buf_size);
@@ -499,9 +499,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  read_and_validate_header(r, CCCL_AOT_ALGO_BINARY_SEARCH);
+  read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_BINARY_SEARCH);
 
   const uint64_t state_size  = r.read_pod<uint64_t>();
   const uint64_t state_align = r.read_pod<uint64_t>();
@@ -509,7 +509,8 @@ try
   {
     if (state_align == 0 || (state_align & (state_align - 1)) != 0)
     {
-      throw std::runtime_error(std::format("aot blob: invalid binary_search state alignment ({})", state_align));
+      throw std::runtime_error(
+        std::format("serialization blob: invalid binary_search state alignment ({})", state_align));
     }
   }
 
@@ -523,7 +524,7 @@ try
   }
   if (inner_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   cccl_device_binary_search_build_result_t result{};

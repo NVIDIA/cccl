@@ -32,8 +32,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for all ByKey algorithms in @ref DeviceScan.
-struct ScanByKeyPolicy
+//! The lookback tuning policy for all ByKey algorithms in @ref DeviceScan.
+struct ScanByKeyLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int items_per_thread; //!< Number of items processed per thread
@@ -43,8 +43,8 @@ struct ScanByKeyPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ScanByKeyLookbackPolicy& lhs, const ScanByKeyLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -52,7 +52,64 @@ struct ScanByKeyPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ScanByKeyLookbackPolicy& lhs, const ScanByKeyLookbackPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyLookbackPolicy& p)
+  {
+    return os
+        << "ScanByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The algorithm used by the @ref cub::ScanByKeyPolicy "ScanByKeyPolicy".
+enum class ScanByKeyAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_API constexpr const char* to_string(ScanByKeyAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case ScanByKeyAlgorithm::lookback:
+      return "ScanByKeyAlgorithm::lookback";
+  }
+  return "<unknown ScanByKeyAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for all ByKey algorithms in @ref DeviceScan.
+struct ScanByKeyPolicy
+{
+  ScanByKeyAlgorithm algorithm; //!< The scan-by-key algorithm to use
+  ScanByKeyLookbackPolicy lookback; //!< The policy for the scan-by-key algorithm based on decoupled-lookback. Only used
+                                    //!< when @p algorithm is @lookback.
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -61,11 +118,7 @@ struct ScanByKeyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyPolicy& p)
   {
-    return os
-        << "ScanByKeyPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+    return os << "ScanByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -935,20 +988,20 @@ struct policy_hub
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max) (sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
       max_input_bytes <= 8 ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<128,
-                           items_per_thread,
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_CA,
-                           BLOCK_SCAN_WARP_SCANS,
-                           BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+      agent_scan_by_key_policy<128,
+                               items_per_thread,
+                               BLOCK_LOAD_WARP_TRANSPOSE,
+                               LOAD_CA,
+                               BLOCK_SCAN_WARP_SCANS,
+                               BLOCK_STORE_WARP_TRANSPOSE,
+                               default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
   template <CacheLoadModifier LoadModifier, typename DelayConstructurValueT>
@@ -959,13 +1012,13 @@ struct policy_hub
       max_input_bytes <= 8 ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<256,
-                           items_per_thread,
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LoadModifier,
-                           BLOCK_SCAN_WARP_SCANS,
-                           BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
+      agent_scan_by_key_policy<256,
+                               items_per_thread,
+                               BLOCK_LOAD_WARP_TRANSPOSE,
+                               LoadModifier,
+                               BLOCK_SCAN_WARP_SCANS,
+                               BLOCK_STORE_WARP_TRANSPOSE,
+                               default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy520
@@ -973,25 +1026,25 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy520
-      , ChainedPolicy<520, Policy520, Policy500>
+      , detail::chained_policy<520, Policy520, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentScanByKeyPolicy<Tuning::threads,
-                            Tuning::items,
-                            Tuning::load_algorithm,
-                            LOAD_DEFAULT,
-                            BLOCK_SCAN_WARP_SCANS,
-                            Tuning::store_algorithm,
-                            typename Tuning::delay_constructor>;
+    -> agent_scan_by_key_policy<Tuning::threads,
+                                Tuning::items,
+                                Tuning::load_algorithm,
+                                LOAD_DEFAULT,
+                                BLOCK_SCAN_WARP_SCANS,
+                                Tuning::store_algorithm,
+                                typename Tuning::delay_constructor>;
 
   template <typename Tuning>
   // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT, ValueT>::ScanByKeyPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
@@ -1001,26 +1054,26 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static auto select_agent_policy100(int)
-      -> AgentScanByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              BLOCK_SCAN_WARP_SCANS,
-                              Tuning::store_algorithm,
-                              typename Tuning::delay_constructor>;
+      -> agent_scan_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  Tuning::load_modifier,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  Tuning::store_algorithm,
+                                  typename Tuning::delay_constructor>;
 
     template <typename Tuning>
     // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
@@ -1038,13 +1091,14 @@ template <typename ActivePolicyT>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::ScanByKeyPolicyT;
-  return {policy_t::BLOCK_THREADS,
-          policy_t::ITEMS_PER_THREAD,
-          policy_t::LOAD_ALGORITHM,
-          policy_t::LOAD_MODIFIER,
-          policy_t::STORE_ALGORITHM,
-          policy_t::SCAN_ALGORITHM,
-          lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>};
+  return {ScanByKeyAlgorithm::lookback,
+          {policy_t::BLOCK_THREADS,
+           policy_t::ITEMS_PER_THREAD,
+           policy_t::LOAD_ALGORITHM,
+           policy_t::LOAD_MODIFIER,
+           policy_t::STORE_ALGORITHM,
+           policy_t::SCAN_ALGORITHM,
+           lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -1076,7 +1130,9 @@ struct policy_selector
   type_t accum_type;
   op_kind_t operation_t;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> ScanByKeyLookbackPolicy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
     const bool accum_is_primitive_or_trivially_copyable = accum_is_primitive || accum_is_trivially_copyable;
@@ -1088,7 +1144,7 @@ struct policy_selector
     auto default_policy =
       [&](CacheLoadModifier load_modifier,
           int delay_ctor_key_size,
-          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> ScanByKeyPolicy {
+          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> ScanByKeyLookbackPolicy {
       const auto items_per_thread =
         max_input_bytes <= 8
           ? 9
@@ -1915,6 +1971,12 @@ struct policy_selector
             BLOCK_SCAN_WARP_SCANS,
             default_reduce_by_key_delay_constructor_policy(
               accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
+  }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
+  {
+    return ScanByKeyPolicy{ScanByKeyAlgorithm::lookback, get_lookback_policy(cc)};
   }
 };
 

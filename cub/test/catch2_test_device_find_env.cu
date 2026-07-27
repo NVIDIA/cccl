@@ -16,6 +16,8 @@ struct stream_registry_factory_t;
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_find_if);
@@ -41,7 +43,7 @@ struct is_greater_than_t
 template <int ThreadsPerBlock>
 struct find_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::FindPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::FindIfPolicy
   {
     return {ThreadsPerBlock, 4, 4, cub::LOAD_LDG};
   }
@@ -539,17 +541,17 @@ C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("FindPolicy", "[find][device]")
+C2H_TEST("Test FindIfPolicy properties", "[find][device]")
 {
-  STATIC_REQUIRE(::cuda::std::semiregular<cub::FindPolicy>);
-  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::FindIfPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindIfPolicy>);
 
   // aggregate init
-  constexpr auto p1 = cub::FindPolicy{128, 7, 4, cub::CacheLoadModifier::LOAD_LDG};
+  constexpr auto p1 = cub::FindIfPolicy{128, 7, 4, cub::CacheLoadModifier::LOAD_LDG};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto p2 = cub::FindPolicy{
+  constexpr auto p2 = cub::FindIfPolicy{
     .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4, .load_modifier = cub::CacheLoadModifier::LOAD_LDG};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
@@ -558,5 +560,14 @@ C2H_TEST("FindPolicy", "[find][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "FindIfPolicy { .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4"
+             ", .load_modifier = LOAD_LDG }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

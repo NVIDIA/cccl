@@ -302,22 +302,24 @@ public:
 };
 
 template <::cuda::std::size_t... _UnitCounts>
-_CCCL_DEVICE group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&)
   -> group_as<__group_as_static_tag<_UnitCounts...>, true>;
 
 template <::cuda::std::size_t... _UnitCounts>
-_CCCL_DEVICE group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&,
-                      const non_exhaustive_t&) -> group_as<__group_as_static_tag<_UnitCounts...>, false>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&, const non_exhaustive_t&)
+  -> group_as<__group_as_static_tag<_UnitCounts...>, false>;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_spannable<_Tp> _CCCL_AND ::cuda::std::
                  is_same_v<unsigned, _SpanValueType<decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))>>)
-_CCCL_DEVICE group_as(_Tp& __v) -> group_as<__group_as_dynamic_tag<decltype(::cuda::std::span(__v))::extent>, true>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(_Tp& __v)
+  -> group_as<__group_as_dynamic_tag<decltype(::cuda::std::span(__v))::extent>, true>;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_spannable<_Tp> _CCCL_AND ::cuda::std::
                  is_same_v<unsigned, _SpanValueType<decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))>>)
-_CCCL_DEVICE group_as(_Tp& __v, const non_exhaustive_t&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(_Tp& __v, const non_exhaustive_t&)
   -> group_as<__group_as_dynamic_tag<decltype(::cuda::std::span(__v))::extent>, false>;
 } // namespace cuda::experimental
 

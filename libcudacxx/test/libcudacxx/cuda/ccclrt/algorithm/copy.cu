@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/devices>
+#include <cuda/memory_pool>
 
 #include "common.cuh"
 #include "cuda/__algorithm/copy.h"
@@ -129,8 +130,8 @@ C2H_CCCLRT_TEST("copy_bytes uses the stream device when current device differs",
     auto src      = cuda::make_device_buffer<int>(stream, explicit_device, 1, cuda::no_init);
     auto dst      = cuda::make_device_buffer<int>(stream, explicit_device, 1, cuda::no_init);
 
-    host_src.data()[0] = expected;
-    host_dst.data()[0] = 0;
+    host_src.get_unsynchronized(0) = expected;
+    host_dst.get_unsynchronized(0) = 0;
 
     {
       cuda::__ensure_current_context guard(explicit_device);
@@ -148,12 +149,81 @@ C2H_CCCLRT_TEST("copy_bytes uses the stream device when current device differs",
     }
 
     stream.sync();
-    result = host_dst.data()[0];
+    result = host_dst.get_unsynchronized(0);
   }
   stream.sync();
 
   CCCLRT_REQUIRE(result == expected);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+}
+
+C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][multi_gpu]")
+{
+  // Cross-device copy coverage requires at least two GPUs.
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref source_device{0};
+  auto peers = source_device.peers();
+  // This test exercises direct peer memory access; non-peer topologies have no legal device-to-device path to cover.
+  if (peers.empty())
+  {
+    return;
+  }
+
+  cuda::device_ref destination_device = peers.front();
+  // Device buffers are allocated from stream-ordered memory pools.
+  if (!source_device.attribute(cuda::device_attributes::memory_pools_supported)
+      || !destination_device.attribute(cuda::device_attributes::memory_pools_supported))
+  {
+    return;
+  }
+
+  cuda::stream source_stream{source_device};
+  cuda::stream destination_stream{destination_device};
+  cuda::device_memory_pool source_pool{source_device};
+  cuda::device_memory_pool destination_pool{destination_device};
+  source_pool.enable_access_from(destination_device);
+  CCCLRT_REQUIRE(source_pool.is_accessible_from(destination_device));
+  auto source_resource      = source_pool.as_ref();
+  auto destination_resource = destination_pool.as_ref();
+
+  int expected = get_expected_value(fill_byte);
+  int result{};
+
+  {
+    auto host_src = make_pinned_memory_buffer<int>(source_stream, 1, source_device);
+    auto host_dst = make_pinned_memory_buffer<int>(destination_stream, 1, destination_device);
+    auto src      = cuda::make_buffer<int>(source_stream, source_resource, 1, cuda::no_init);
+    auto dst      = cuda::make_buffer<int>(destination_stream, destination_resource, 1, cuda::no_init);
+
+    host_src.get_unsynchronized(0) = expected;
+    host_dst.get_unsynchronized(0) = 0;
+
+    {
+      cuda::__ensure_current_context guard(source_device);
+      cuda::copy_bytes(source_stream, host_src, src);
+    }
+    source_stream.sync();
+
+    cuda::copy_configuration config;
+    config.src_location_hint = source_device;
+    config.dst_location_hint = destination_device;
+
+    {
+      cuda::__ensure_current_context guard(destination_device);
+      cuda::copy_bytes(destination_stream, src, dst, config);
+      cuda::copy_bytes(destination_stream, dst, host_dst);
+    }
+    destination_stream.sync();
+    result = host_dst.get_unsynchronized(0);
+  }
+  source_stream.sync();
+  destination_stream.sync();
+
+  CCCLRT_REQUIRE(result == expected);
 }
 
 template <typename SrcLayout = cuda::std::layout_right,

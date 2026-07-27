@@ -169,7 +169,7 @@ void compute_host_reference(
     // Work backwards
     while (item_offset >= warp_offset)
     {
-      if (h_flags[item_offset + 1])
+      if (h_flags[item_offset + 1]) // NOLINT(bugprone-misplaced-widening-cast)
       {
         head_aggregate = h_in[item_offset];
       }
@@ -186,7 +186,7 @@ void compute_host_reference(
         }
         else if (mode == reduce_mode::tail_flags)
         {
-          h_data_out[item_offset + 1] = tail_aggregate;
+          h_data_out[item_offset + 1] = tail_aggregate; // NOLINT(bugprone-misplaced-widening-cast)
           tail_aggregate              = h_in[item_offset];
         }
       }

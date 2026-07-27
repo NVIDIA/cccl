@@ -38,7 +38,7 @@ struct BatchedCopySmallBufferPolicy
   LookbackDelayPolicy buffer_lookback_delay; //!< The @ref LookbackDelayPolicy for the buffer offset scan
   LookbackDelayPolicy block_lookback_delay; //!< The @ref LookbackDelayPolicy for the block offset scan
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const BatchedCopySmallBufferPolicy& lhs, const BatchedCopySmallBufferPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.buffers_per_thread == rhs.buffers_per_thread
@@ -50,7 +50,7 @@ struct BatchedCopySmallBufferPolicy
         && lhs.block_lookback_delay == rhs.block_lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const BatchedCopySmallBufferPolicy& lhs, const BatchedCopySmallBufferPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -77,13 +77,13 @@ struct BatchedCopyLargeBufferPolicy
   int threads_per_block; //!< Number of threads in a CUDA block
   int bytes_per_thread; //!< Number of bytes processed per thread
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const BatchedCopyLargeBufferPolicy& lhs, const BatchedCopyLargeBufferPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.bytes_per_thread == rhs.bytes_per_thread;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const BatchedCopyLargeBufferPolicy& lhs, const BatchedCopyLargeBufferPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -104,13 +104,13 @@ struct BatchedCopyPolicy
   BatchedCopySmallBufferPolicy small_buffer; //!< Sub-policy for small buffers copied by a single thread block
   BatchedCopyLargeBufferPolicy large_buffer; //!< Sub-policy for large buffers requiring multi-block collaboration
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return lhs.small_buffer == rhs.small_buffer && lhs.large_buffer == rhs.large_buffer;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

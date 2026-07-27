@@ -32,10 +32,9 @@ using float_type_list =
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
-    -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto rp = cub::detail::reduce::agent_reduce_policy{
+    const auto rp = cub::ReducePassPolicy{
       BlockSize,
       ItemsPerThread,
       4,

@@ -52,7 +52,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // gcc < 13 fails this test with error:
-    //   invalid use of non-static data member ‘S::value’
+    //   invalid use of non-static data member 'S::value'
 #if !_CCCL_COMPILER(GCC, <, 13)
     // struct constant
     constexpr S s{13};

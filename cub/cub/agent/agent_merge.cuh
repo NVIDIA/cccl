@@ -41,6 +41,7 @@ template <int ThreadsPerBlock,
           BlockStoreAlgorithm StoreAlgorithm,
           bool UseBl2ShForKeys,
           bool UseBl2ShForItems,
+          bool Unroll,
           typename KeysIt1,
           typename ItemsIt1,
           typename KeysIt2,
@@ -68,7 +69,7 @@ struct agent_t
   struct alignas(cub::detail::LoadToSharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
-    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1)
+    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1ULL)
                                       + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
     char c_array[bytes_needed];
@@ -134,7 +135,7 @@ struct agent_t
     // number of keys per tile
     const int keys1_count_tile = static_cast<int>(keys1_end - keys1_beg);
     const int keys2_count_tile = static_cast<int>(keys2_end - keys2_beg);
-    if constexpr (IsFullTile)
+    if constexpr (IsFullTile) // NOLINT(bugprone-branch-clone)
     {
       _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == items_per_tile, "");
     }
@@ -212,7 +213,7 @@ struct agent_t
 
     // perform serial merge
     int indices[ItemsPerThread];
-    cub::SerialMerge(
+    cub::detail::serial_merge<Unroll>(
       keys1_shared,
       keys1_beg_thread,
       keys2_offset + keys2_beg_thread,

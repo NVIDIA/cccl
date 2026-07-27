@@ -56,6 +56,25 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceSegmentedRadixSort}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedRadixSort that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedRadixSortPolicy`, as shown
+//! in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-radix-sort-policy-selector
+//!      :end-before: example-end segmented-radix-sort-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-radix-sort-keys-tuning
+//!      :end-before: example-end segmented-radix-sort-keys-tuning
+//!
 //! @endrst
 struct DeviceSegmentedRadixSort
 {
@@ -538,9 +557,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -691,9 +710,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1194,9 +1213,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1347,9 +1366,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1814,9 +1833,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1954,9 +1973,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2418,9 +2437,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2558,9 +2577,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

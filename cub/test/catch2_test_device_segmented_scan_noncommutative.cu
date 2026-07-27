@@ -131,7 +131,7 @@ C2H_TEST("Device inclusive segmented scan works with non-commutative operator", 
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op_t{},
       pair_t{0, 0});

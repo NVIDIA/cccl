@@ -3,7 +3,7 @@
 
 // TODO(bgruber): drop this test with CCCL 4.0 when we drop the segmented sort dispatcher
 
-// disable deprecation warnings for radix sort agent policies
+// disable deprecation warnings for radix sort and sub-warp merge sort agent policies
 #define CCCL_IGNORE_DEPRECATED_API
 
 #include "insert_nested_NVTX_range_guard.h"
@@ -22,7 +22,7 @@ template <typename KeyT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB segmented sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = 6;

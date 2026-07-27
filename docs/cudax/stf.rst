@@ -293,7 +293,7 @@ synchronization. Each ``stream_task`` in the ``stream_ctx`` backend
 represents a task that is associated with an input CUDA stream.
 Asynchronous work can be submitted in the body of the task using this
 input stream. Once the ``stream_task`` completes, all work submitted
-within the task’s body is assumed to be synchronized with the associated
+within the task's body is assumed to be synchronized with the associated
 stream.
 
 Users can query the stream associated to a ``stream_task`` using its
@@ -322,7 +322,7 @@ Users can retrieve the graph associated to a ``graph_task`` by using its
 Logical data
 ------------
 
-In traditional computing, “data”, such as a matrix describing a neural
+In traditional computing, "data", such as a matrix describing a neural
 network layer, typically refers to a location in memory with a defined
 address. However, in mixed CPU/GPU systems, the same conceptual data may
 exist simultaneously in multiple locations and have multiple addresses
@@ -331,7 +331,7 @@ high-bandwidth memory used by GPUs). CUDASTF refers to such conceptual
 data as *logical data*, an abstract handle for data that may get
 transparently transferred to or replicated over the different places
 used by CUDASTF tasks. When user code creates a logical data object from
-a user-provided object (e.g. an array of ``double``), they transfer the
+a user-provided object (e.g. an array of ``double``), they transfer the
 ownership of the original data to CUDASTF. As a result, any access to
 the original data should be performed through the logical data
 interface, as CUDASTF may transfer the logical data to a CUDA device
@@ -411,7 +411,7 @@ Write-back policy
 
 When a logical data object is destroyed, the original data instance is
 updated (unless the logical data was created without a reference value,
-e.g. from a shape). The result is only guaranteed to be available on the
+e.g. from a shape). The result is only guaranteed to be available on the
 corresponding data place when after the ``finalize()`` method was called
 on the context. Likewise, when calling ``finalize()`` a write-back
 mechanism is automatically issued on all logical data associated to the
@@ -428,7 +428,7 @@ Slices
 
 To facilitate the use of potentially non-contiguous multi-dimensional
 arrays, we have introduced a C++ data structure class called ``slice``.
-A slice is a partial specialization of C++’s
+A slice is a partial specialization of C++'s
 ``std::mdspan`` (or ``std::experimental::mdspan`` depending on the C++ revision).
 
 .. code:: cpp
@@ -608,7 +608,7 @@ needs to be updated so it uses a read-write access mode.
 
 The object returned by the call ``ctx.task()`` overloads
 ``operator->*()`` to accept a lambda function on the right-hand side.
-This makes it easy for user code to pass the task’s body to the context
+This makes it easy for user code to pass the task's body to the context
 with a syntax akin to a control flow statement. The first argument of
 the lambda function is a ``cudaStream_t`` that can be used to submit
 work asynchronously on the selected device within the body of the task.
@@ -756,7 +756,7 @@ CUDASTF transparently handles data management (allocations, transfers,
 …), there can be outstanding asynchronous operations that were not
 submitted explicitly by the user. Therefore it is not sufficient to use
 native CUDA synchronization operations because they are not aware of
-CUDASTF’s state. Client code must call ``ctx.finalize()`` instead of
+CUDASTF's state. Client code must call ``ctx.finalize()`` instead of
 ``cudaStreamSynchronize()`` or ``cudaDeviceSynchronize()``.
 
 -  ``ctx.submit()`` initiates the submission of all asynchronous tasks
@@ -769,7 +769,7 @@ Usually, creating the task and invoking ``ctx.finalize()`` is
 sufficient. However, manually calling ``ctx.submit()`` can be beneficial
 in at least two situations. First, it allows for executing additional
 unrelated work on the CPU (or another GPU) between submission and
-synchronization. Second, when it’s necessary for two contexts to run
+synchronization. Second, when it's necessary for two contexts to run
 concurrently, using the sequence
 ``ctx1.submit(); ctx2.submit(); ctx1.finalize(); ctx2.finalize();``
 achieves this goal (whereas calling
@@ -808,7 +808,7 @@ Places
 CUDASTF uses :ref:`places <cudax-places>` to manage data and execution
 affinity. Places can represent either *execution places*, which determine
 where code is executed, or *data places*, specifying the location of data
-across the machine’s non-uniform memory. See :ref:`cudax-places` for the
+across the machine's non-uniform memory. See :ref:`cudax-places` for the
 full places API reference, including stream management, memory allocation,
 grid of places, and partitioning policies.
 
@@ -817,7 +817,7 @@ This section describes how places are used with CUDASTF tasks.
 Execution places in tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A task’s constructor allows choosing an execution place. The example
+A task's constructor allows choosing an execution place. The example
 below creates a logical data variable that describes an integer as a
 vector of one ``int``. The logical data variable is then updated on
 device ``0`` and on device ``1`` before being accessed again from the
@@ -830,7 +830,7 @@ and tells CUDASTF where the task is expected to execute.
 the host.
 
 Regardless of the *execution place*, it is important to note that the
-task’s body (i.e., the contents of the lambda function) corresponds to
+task's body (i.e., the contents of the lambda function) corresponds to
 CPU code that is expected to launch computation asynchronously. When
 using ``exec_place::device(id)``, CUDASTF will automatically set the
 current CUDA device to ``id`` when the task is started, and restore the
@@ -1584,7 +1584,7 @@ Note the use of the ``mutable`` qualifier because a task accessing a
 ``const foo`` object might want to read the ``ldata`` field. Submitting a
 task that use this logical data in read only mode would modify the
 internal data structures of the logical data, but should probably appear
-as a ``const`` operation from user’s perspective. Without this ``mutable``
+as a ``const`` operation from user's perspective. Without this ``mutable``
 qualifier, we could not have a ``const`` qualifier on the ``f`` variable
 in the following code :
 
@@ -1628,7 +1628,7 @@ compilation.
        ...
    };
 
-In most cases, it’s recommended to use the ``auto`` C++ keyword to
+In most cases, it's recommended to use the ``auto`` C++ keyword to
 automatically obtain the correct data types:
 
 .. code:: cpp
@@ -1832,7 +1832,7 @@ task.
 
 Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
-task’s implementation. Thus, the above task is equivalent to this code:
+task's implementation. Thus, the above task is equivalent to this code:
 
 .. code:: cpp
 
@@ -2099,7 +2099,7 @@ would all have the same name. One possible work-around is to let ``ncu``
 rename kernels accordingly to ``NVTX`` annotations. To do so, a symbol
 must be associated to the ``ctx.parallel_for`` and ``ctx.launch``
 constructs using the ``set_symbol`` method. In the following example, we
-name the generated kernel “updateA” :
+name the generated kernel "updateA" :
 
 .. code:: cpp
 

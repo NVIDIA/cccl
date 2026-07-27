@@ -77,6 +77,25 @@ CUB_NAMESPACE_BEGIN
 //! ``gpu_to_gpu`` is not supported and is rejected at compile time. See the
 //! :ref:`determinism guarantees <cccl-determinism>` for what each level means.
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedReduce that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedReducePolicy`, as shown in
+//! the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-reduce-sum-policy-selector
+//!      :end-before: example-end segmented-reduce-sum-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-reduce-sum-tuning
+//!      :end-before: example-end segmented-reduce-sum-tuning
+//!
 //! @endrst
 struct DeviceSegmentedReduce
 {
@@ -121,8 +140,8 @@ private:
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::segmented_reduce::segmented_reduce_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
 
     return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
       d_temp_storage,
@@ -139,7 +158,7 @@ private:
 
   template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT, typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_impl_env(
-    InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env)
+    InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, const EnvT& env)
   {
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -175,7 +194,7 @@ private:
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     InitValueT initial_value,
-    EnvT env)
+    const EnvT& env)
   {
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -194,10 +213,8 @@ private:
         env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
           using default_policy_selector_t =
             detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
-          using policy_selector_t =
-            ::cuda::std::execution::__query_result_or_t<decltype(tuning),
-                                                        detail::segmented_reduce::segmented_reduce_policy,
-                                                        default_policy_selector_t>;
+          using policy_selector_t = ::cuda::std::execution::
+            __query_result_or_t<decltype(tuning), SegmentedReducePolicy, default_policy_selector_t>;
           // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
             d_temp_storage,
@@ -259,7 +276,7 @@ private:
     OffsetT segment_size,
     ReductionOpT reduction_op,
     InitValueT initial_value,
-    EnvT env)
+    const EnvT& env)
   {
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -544,7 +561,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     T initial_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Reduce");
 
@@ -716,7 +733,7 @@ public:
     int segment_size,
     ReductionOpT reduction_op,
     T initial_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Reduce");
 
@@ -943,7 +960,7 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      EnvT env = {})
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
 
@@ -1081,7 +1098,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Sum(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  Sum(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
 
@@ -1313,7 +1334,7 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      EnvT env = {})
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Min");
 
@@ -1460,7 +1481,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Min(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  Min(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Min");
 
@@ -1735,7 +1760,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMin");
 
@@ -1890,7 +1915,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMin(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  ArgMin(InputIteratorT d_in,
+         OutputIteratorT d_out,
+         ::cuda::std::int64_t num_segments,
+         int segment_size,
+         const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMin");
     return fixed_size_arg_impl_env<cub::detail::arg_min>(d_in, d_out, num_segments, segment_size, env);
@@ -2103,7 +2132,7 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      EnvT env = {})
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Max");
 
@@ -2250,7 +2279,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Max(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  Max(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Max");
 
@@ -2525,7 +2558,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMax");
 
@@ -2682,7 +2715,11 @@ public:
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMax(InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, EnvT env = {})
+  ArgMax(InputIteratorT d_in,
+         OutputIteratorT d_out,
+         ::cuda::std::int64_t num_segments,
+         int segment_size,
+         const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMax");
     return fixed_size_arg_impl_env<cub::detail::arg_max>(d_in, d_out, num_segments, segment_size, env);

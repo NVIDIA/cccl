@@ -336,7 +336,7 @@ struct SegmentedScanPolicySelector
 };
 // example-end segmented-scan-policy-selector
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan env-based API with tuning", "[segmented_scan][env]")
+C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom policy selector", "[segmented_scan][env]")
 {
   // example-begin segmented-scan-tuning
   ::cuda::std::int64_t num_segments    = 3;

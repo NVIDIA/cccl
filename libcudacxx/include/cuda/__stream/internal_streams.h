@@ -29,9 +29,15 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+// We make __cccl_allocation_stream() noexcept because the only way it could potentially fail
+// is e.g. bad driver state or some other deeper corruption so we are pretty much in an
+// unusable state anyways.
+
+// NOLINTBEGIN(bugprone-exception-escape)
+
 //! @brief internal stream used for memory allocations, no real blocking work
 //! should ever be pushed into it
-inline ::cuda::stream_ref __cccl_allocation_stream()
+inline ::cuda::stream_ref __cccl_allocation_stream() noexcept
 {
   // Intentionally leak the stream here to avoid stream destruction when the program exits, which is not guaraneed to
   // work.
@@ -41,6 +47,8 @@ inline ::cuda::stream_ref __cccl_allocation_stream()
   }();
   return __stream;
 }
+
+// NOLINTEND(bugprone-exception-escape)
 
 _CCCL_END_NAMESPACE_CUDA
 
