@@ -444,7 +444,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
 }
 
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
-         "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         "[large-mem][keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {
@@ -493,7 +493,7 @@ catch (std::bad_alloc& e)
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
 #  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
-         "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         "[large-mem][keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {

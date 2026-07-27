@@ -179,7 +179,7 @@ C2H_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][s
 #if TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortKeys: very large number of segments",
-         "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         "[large-mem][keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
          all_offset_types)
 try
 {
@@ -224,7 +224,7 @@ catch (std::bad_alloc& e)
 }
 
 C2H_TEST("DeviceSegmentedSort::SortKeys: very large segments",
-         "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         "[large-mem][keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
          all_offset_types)
 try
 {

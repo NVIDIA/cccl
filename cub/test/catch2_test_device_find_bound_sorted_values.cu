@@ -189,7 +189,7 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[f
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 C2H_TEST("DeviceFind::LowerBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck][large-mem]")
 {
   try
   {
@@ -207,7 +207,7 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues really large input",
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 C2H_TEST("DeviceFind::UpperBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck][large-mem]")
 {
   try
   {

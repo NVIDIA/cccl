@@ -111,7 +111,7 @@ struct times_seven
 // straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
 // and I64 offset types.
 C2H_TEST("DeviceTransform::Transform works with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+         "[large-mem][device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::uint32_t;

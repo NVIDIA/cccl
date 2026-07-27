@@ -70,7 +70,9 @@ struct fixed_policy_selector
   }
 };
 
-C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_list<large_type_vsmem, large_type_fallb>)
+C2H_TEST("DeviceMerge::MergeKeys large key types",
+         "[merge][device][large-mem]",
+         c2h::type_list<large_type_vsmem, large_type_fallb>)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = int;

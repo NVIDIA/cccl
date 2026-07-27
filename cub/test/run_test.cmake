@@ -14,6 +14,7 @@ function(usage)
   message("  - CCCL_SOURCE_DIR: Required.  Path to the CCCL source directory.")
   message("  - TEST: Required.  Path to the test executable.")
   message("  - ARGS: Optional.  Arguments to pass to the test executable.")
+  message("  - ALLOW_RUNNING_NO_TESTS: Optional. Allow an empty Catch2 filter.")
   message("  - TYPE: Optional.")
   message("    - The test framework used by the test executable.")
   message("    - Must be one of the following:")
@@ -60,6 +61,10 @@ if (NOT DEFINED ARGS)
   set(ARGS)
 endif()
 
+if (ALLOW_RUNNING_NO_TESTS)
+  list(APPEND ARGS "--allow-running-no-tests")
+endif()
+
 if (NOT DEFINED TYPE)
   set(TYPE "none")
 endif()
@@ -76,7 +81,8 @@ elseif (NOT MODE)
 endif()
 
 if (MODE STREQUAL "none")
-  run_command(${TEST} ${ARGS})
+  set(command_to_run ${TEST})
+  set(command_args ${ARGS})
 elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
   set(tool ${CMAKE_MATCH_1})
 
@@ -154,12 +160,17 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     set(cs_tool_args)
   endif()
 
-  run_command(compute-sanitizer
+  set(command_to_run compute-sanitizer)
+  # gersemi: off
+  set(command_args
     ${cs_general_args}
     ${cs_tool_args}
     ${TEST} ${ARGS}
   )
+  # gersemi: on
 else()
   usage()
   message(FATAL_ERROR "Invalid MODE: ${MODE}")
 endif()
+
+run_command(${command_to_run} ${command_args})

@@ -310,7 +310,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode works with non-default constructible ite
 }
 
 C2H_TEST("DeviceRunLengthEncode::Encode works for a large number of items",
-         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         "[device][run_length_encode][large-mem][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 try
 {

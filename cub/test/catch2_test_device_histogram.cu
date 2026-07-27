@@ -658,7 +658,7 @@ C2H_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
 
 // Limit this large-memory reproducer to the host launch path.
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]")
+C2H_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device][large-mem]")
 try
 {
   using sample_t  = int64_t;

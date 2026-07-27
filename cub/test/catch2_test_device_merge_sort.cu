@@ -402,7 +402,7 @@ C2H_TEST(
 }
 
 C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
-         "[merge][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         "[large-mem][merge][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 {
   using testing_types_tuple = c2h::get<0, TestType>;

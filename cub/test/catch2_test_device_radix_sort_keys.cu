@@ -485,7 +485,7 @@ void do_large_offset_test(std::size_t num_items)
 }
 
 C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
-         "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         "[large-mem][large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
          single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
@@ -502,7 +502,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
 }
 
 C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets",
-         "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         "[large-mem][large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
          single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;

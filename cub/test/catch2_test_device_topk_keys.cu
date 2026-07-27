@@ -152,7 +152,9 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
   }
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", num_items_types)
+C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items",
+         "[keys][topk][device][large-mem]",
+         num_items_types)
 try
 {
   using key_t              = cuda::std::uint32_t;

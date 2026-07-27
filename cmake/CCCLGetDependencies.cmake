@@ -110,6 +110,19 @@ macro(cccl_get_nvtx)
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
 endmacro()
 
+macro(cccl_get_rapids_test)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage(
+    NAME rapids-cmake
+    GITHUB_REPOSITORY rapidsai/rapids-cmake
+    GIT_TAG v26.06.00
+    DOWNLOAD_ONLY ON
+    SYSTEM ON
+  )
+  set(rapids-cmake-dir "${rapids-cmake_SOURCE_DIR}/rapids-cmake")
+  include("${rapids-cmake-dir}/rapids-test.cmake")
+endmacro()
+
 macro(cccl_get_thrust)
   find_package(
     Thrust

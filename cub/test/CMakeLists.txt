@@ -15,6 +15,23 @@ cccl_get_c2h()
 cccl_get_cudatoolkit()
 cccl_get_nvtx()
 
+cccl_get_rapids_test()
+rapids_test_init()
+
+set(
+  CCCL_TEST_GPU_PERCENT_SMALL
+  15
+  CACHE STRING
+  "GPU percentage claimed by small CUB tests."
+)
+set(
+  CCCL_TEST_GPU_PERCENT_LARGE
+  100
+  CACHE STRING
+  "GPU percentage claimed by large CUB tests."
+)
+mark_as_advanced(CCCL_TEST_GPU_PERCENT_SMALL CCCL_TEST_GPU_PERCENT_LARGE)
+
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
@@ -96,6 +113,8 @@ function(
 )
   _cub_is_catch2_test(is_catch2_test "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
+  file(READ "${CUB_SOURCE_DIR}/test/${test_src}" _cub_test_source)
+  string(FIND "${_cub_test_source}" "[large-mem]" _cub_large_test)
 
   # The actual name of the test's target:
   set(test_target cub.test.${test_name}${variant_suffix})
@@ -141,21 +160,54 @@ function(
     )
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
 
-    add_test(
+    set(_cub_allow_running_no_tests_arg)
+    if (NOT _cub_large_test EQUAL -1)
+      set(_cub_allow_running_no_tests_arg "-DALLOW_RUNNING_NO_TESTS=ON")
+    endif()
+
+    rapids_test_add(
       NAME ${test_target}
       # gersemi: off
       COMMAND
         "${CMAKE_COMMAND}"
            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
+           "-DARGS=~[large-mem]"
+           ${_cub_allow_running_no_tests_arg}
            "-DTYPE=Catch2"
            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
       # gersemi: on
+      GPUS 1
+      PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
     )
     set_tests_properties(
       ${test_target}
       PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
     )
+
+    if (NOT _cub_large_test EQUAL -1)
+      rapids_test_add(
+        NAME ${test_target}.large
+        # gersemi: off
+        COMMAND
+          "${CMAKE_COMMAND}"
+             "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+             "-DTEST=$<TARGET_FILE:${test_target}>"
+             "-DARGS=[large-mem]"
+             ${_cub_allow_running_no_tests_arg}
+             "-DTYPE=Catch2"
+             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+        # gersemi: on
+        GPUS 1
+        PERCENT ${CCCL_TEST_GPU_PERCENT_LARGE}
+      )
+      set_tests_properties(
+        ${test_target}.large
+        PROPERTIES
+          SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+          ENVIRONMENT SCCACHE_NO_CACHE=1
+      )
+    endif()
 
     if ("${test_target}" MATCHES "nvrtc")
       configure_file(
@@ -271,7 +323,12 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      add_test(
+      if (_cub_large_test EQUAL -1)
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_SMALL})
+      else()
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_LARGE})
+      endif()
+      rapids_test_add(
         NAME ${test_target}
         # gersemi: off
         COMMAND
@@ -280,6 +337,8 @@ function(
             "-DTEST=$<TARGET_FILE:${test_target}>"
             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         # gersemi: on
+        GPUS 1
+        PERCENT ${_cub_gpu_percent}
       )
       set_tests_properties(
         ${test_target}

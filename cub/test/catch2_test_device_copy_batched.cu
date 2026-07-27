@@ -258,7 +258,7 @@ catch (std::bad_alloc& e)
 }
 
 C2H_TEST("DeviceCopy::Batched works for a very large range",
-         "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+         "[copy][large-mem][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using data_t        = uint64_t;
@@ -309,7 +309,7 @@ C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
 }
 
 C2H_TEST("DeviceMemcpy::Batched works for a very large number of ranges",
-         "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+         "[copy][large-mem][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using item_t         = uint8_t;

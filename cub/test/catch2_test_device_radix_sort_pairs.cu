@@ -172,7 +172,7 @@ void do_large_offset_test(std::size_t num_items)
 }
 
 C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
-         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
+         "[large-mem][large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;
@@ -185,7 +185,7 @@ C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
 }
 
 C2H_TEST("DeviceRadixSort::SortPairs: Large Offsets",
-         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
+         "[large-mem][large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;

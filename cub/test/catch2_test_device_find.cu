@@ -348,7 +348,7 @@ C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", binary
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 C2H_TEST("DeviceFind::LowerBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+         "[large-mem][find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
 {
   try
   {
@@ -365,7 +365,7 @@ C2H_TEST("DeviceFind::LowerBound really large input",
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 C2H_TEST("DeviceFind::UpperBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
+         "[large-mem][find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
 {
   try
   {

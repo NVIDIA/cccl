@@ -515,7 +515,7 @@ catch (std::bad_alloc&)
 }
 
 C2H_TEST("DeviceSelect::If works for very large number of output items",
-         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+         "[large-mem][device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::uint8_t;
