@@ -33,7 +33,6 @@ analysis and publishing jobs.
 
 Start with `git diff "${PR_BASE_SHA}" HEAD`, then use focused, read-only source inspection
 to connect failures to the PR or relevant implementation. Do not run builds or tests.
-Keep individual command results to roughly 200 lines.
 
 - Use each job's earliest actionable failure; ignore subsequent cleanup, wrapper, and
   aggregation errors.
