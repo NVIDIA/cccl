@@ -13,6 +13,9 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
+// nvcc 12.0 thinks volatile T is not trivially copyable.
+// UNSUPPORTED: nvcc-12.0
+
 // <cuda/std/atomic>
 
 // constexpr address-return-type address() const noexcept;
