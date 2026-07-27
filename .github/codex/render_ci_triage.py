@@ -62,8 +62,9 @@ def validate_schema(value, schema, location="$"):
             validate_schema(item, schema["items"], f"{location}[{index}]")
 
 
-def clean_text(value, limit):
-    value = value[:limit]
+def clean_text(value, limit=None):
+    if limit is not None:
+        value = value[:limit]
     value = CONTROL_CHARACTER.sub("", value)
     return "".join(
         character
@@ -86,7 +87,7 @@ def sanitize_inline(value, limit=1200):
     return INLINE_MARKDOWN.sub(r"\\\1", value)
 
 
-def code_block(value, limit=5000):
+def code_block(value, limit=None):
     value = clean_text(value, limit).strip()
     longest_run = max((len(run) for run in re.findall(r"`+", value)), default=0)
     fence = "`" * max(3, longest_run + 1)
@@ -233,7 +234,7 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
             "<details>",
             "<summary><strong>Prompt for an agent</strong></summary>",
             "",
-            code_block("\n".join(prompt_lines), limit=8000),
+            code_block("\n".join(prompt_lines)),
             "",
             "</details>",
             "",

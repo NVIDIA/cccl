@@ -136,6 +136,14 @@ class RenderCiTriageTest(unittest.TestCase):
         self.assertIn("&lt;b&gt;403&lt;/b&gt;", report)
         self.assertNotIn("@team", report)
 
+    def test_does_not_truncate_the_agent_prompt(self):
+        analysis = sample_analysis()
+        analysis["groups"][0]["agent_prompt"] = "Investigate. " * 1000 + "COMPLETE_FIX"
+
+        report = self.render(analysis)
+
+        self.assertIn("COMPLETE_FIX", report)
+
     def test_rejects_fields_outside_the_schema(self):
         analysis = sample_analysis()
         analysis["markdown"] = "<script>alert(1)</script>"

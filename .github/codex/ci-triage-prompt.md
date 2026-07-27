@@ -110,9 +110,10 @@ On success, set `status` to `ok` and `error` to an empty string.
   array when no source location supports the claim.
 - `next_steps`: One or two sentences containing the smallest useful verification or fix,
   including a targeted command when the repository provides one.
-- `agent_prompt`: A group-specific prompt of at most 120 words. Ask an agent to
-  independently verify the diagnosis, inspect relevant source, reproduce narrowly when
-  feasible, implement the smallest appropriate fix, and run focused validation. Do not
+- `agent_prompt`: A self-contained, group-specific prompt. Include concrete fix guidance
+  based on the analysis and, when useful, a complete proposed fix or patch. Ask an agent
+  to independently verify the diagnosis, inspect relevant source, reproduce narrowly
+  when feasible, implement the appropriate fix, and run focused validation. Do not
   include repository, run, or job URLs; the renderer adds trusted context.
 - `job_ids`: The exact numeric IDs of every primary job in the group.
 - `downstream_failures`: Failed jobs that only report another failure or gate condition.
