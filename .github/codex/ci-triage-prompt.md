@@ -31,15 +31,18 @@ gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/JOB_ID/logs" \
 Do not retry or repeat GitHub API requests. If pagination is incomplete, the collected
 job count does not equal `total_count`, or any failed-job log request fails, return only
 `LOG_RETRIEVAL_FAILED`. Do not infer failures from the checked-out workflow or source
-files. The workflow is still in progress because this is its final job, so do not use
-run-level log endpoints or wait for the run to finish.
+files. The analysis and publishing jobs may not have conclusions yet; do not report them
+as failures or pending work. Do not use run-level log endpoints or wait for the run to
+finish.
 
 ## Source inspection
 
 The PR merge-base commit is available as `PR_BASE_SHA` and has already been fetched.
 Start with `git diff "${PR_BASE_SHA}" HEAD`, then inspect the checked-out source with
 read-only commands wherever it helps explain the failures. Use source evidence in the
-diagnosis.
+diagnosis. Keep command output focused: search for relevant symbols and inspect targeted
+ranges rather than printing complete logs or source files. Limit each displayed command
+result to roughly 200 lines.
 
 ## Output
 
@@ -50,6 +53,8 @@ Return only a concise Markdown summary that:
 - Separates observed evidence from hypotheses.
 - Reports cancelled jobs separately rather than treating them as root causes.
 - Gives a confidence level and the single most useful next action.
+- Does not contain raw HTML, images, or `@` mentions.
+- Uses links only for the affected GitHub Actions jobs.
 - Includes a line beginning `Log retrieval: succeeded` that reports
   `N of M failure logs retrieved`.
 - Includes a line beginning `Repository inspection:` that names at least one file inspected.
