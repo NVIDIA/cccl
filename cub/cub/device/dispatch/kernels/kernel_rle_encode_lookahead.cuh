@@ -42,14 +42,14 @@ _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const RleLookaheadPolicy& 
 }
 
 // This is important for position staging on dense cases (16 way bank conflicts).
-__device__ __forceinline__ int swizzle_xor_stride32(int x)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE int swizzle_xor_stride32(int x)
 {
   return x ^ (x >> 5);
 }
 
 constexpr unsigned full_mask = 0xffffffffu;
 
-__device__ __forceinline__ void wait_parity(cuda::std::uint64_t* bar, unsigned parity)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void wait_parity(cuda::std::uint64_t* bar, unsigned parity)
 {
   while (!ptx::mbarrier_try_wait_parity(bar, parity))
   {
@@ -63,7 +63,7 @@ struct RingCursorT
   int slot        = 0;
   unsigned parity = 0;
 
-  __device__ __forceinline__ void advance(int stages)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void advance(int stages)
   {
     if (++slot == stages)
     {
@@ -85,29 +85,29 @@ struct TilePartialStateT
 {
   cuda::std::uint64_t dword;
 
-  __device__ __forceinline__ unsigned published_tag() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned published_tag() const
   {
     return (unsigned) (dword >> 32);
   }
 
-  __device__ __forceinline__ int run_count() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE int run_count() const
   {
     return (int) (dword & 0xffffu);
   }
 
-  __device__ __forceinline__ int open_len() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE int open_len() const
   {
     return (int) ((dword >> 16) & 0xffffu);
   }
 
-  static __device__ __forceinline__ TilePartialStateT pack(int run_count, int open_len)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT pack(int run_count, int open_len)
   {
     return {((cuda::std::uint64_t) tile_published << 32) | ((cuda::std::uint64_t) (unsigned) open_len << 16)
             | (cuda::std::uint64_t) (unsigned) run_count};
   }
 };
 
-__device__ __forceinline__ void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
   cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
@@ -116,7 +116,7 @@ publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, in
 
 // return the state (even if not yet publish for this launch, caller checks it)
 // we do not want to spin here
-__device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
   cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
   return {a.load(cuda::memory_order_relaxed)};
@@ -132,17 +132,17 @@ struct PrefixT<OffT, false>
 {
   cuda::std::uint64_t dword;
 
-  static __device__ __forceinline__ PrefixT pack(OffT run_count, OffT open_len)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
   {
     return {((cuda::std::uint64_t) (unsigned) open_len << 32) | (unsigned) run_count};
   }
 
-  __device__ __forceinline__ OffT run_count() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT run_count() const
   {
     return (OffT) (unsigned) (dword & 0xffffffffull);
   }
 
-  __device__ __forceinline__ OffT open_len() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT open_len() const
   {
     return (OffT) (unsigned) (dword >> 32);
   }
@@ -154,17 +154,17 @@ struct alignas(16) PrefixT<OffT, true>
   cuda::std::uint64_t packed_run_count;
   cuda::std::uint64_t packed_open_len;
 
-  static __device__ __forceinline__ PrefixT pack(OffT run_count, OffT open_len)
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
   {
     return {(cuda::std::uint64_t) run_count, (cuda::std::uint64_t) open_len};
   }
 
-  __device__ __forceinline__ OffT run_count() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT run_count() const
   {
     return (OffT) packed_run_count;
   }
 
-  __device__ __forceinline__ OffT open_len() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT open_len() const
   {
     return (OffT) packed_open_len;
   }
@@ -173,7 +173,7 @@ struct alignas(16) PrefixT<OffT, true>
 // position of the n-th set bit of flag_mask, requires popc(flag_mask) > rank. Implementation is binary search.
 // __fns(flag_mask, 0, rank+1) computes the same thing but has NO hardware op on sm_100a and is slower
 // TODO (Nan): as per discussion with Federico, this could be in libcudacxx
-__device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
 {
   // each step: if the wanted bit is not among the low half's set bits, skip that half entirely
   int bit_position         = 0;
@@ -220,7 +220,8 @@ struct WarpTileRunScanT
 
 // we need this because STORE and BOOKKEEPER both recalculate from slot_warp_run_counts
 template <int compute_warps>
-__device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE WarpTileRunScanT
+scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
 {
   const int lane_run_count = (lane_id < compute_warps) ? slot_warp_run_counts[lane_id] : 0;
   typename WarpScan<int>::TempStorage warp_scan_storage;
@@ -230,7 +231,7 @@ __device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int*
 }
 
 template <int tile_size, int slot_pad, class KeyT>
-__device__ __forceinline__ void load_tile_keys(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
   KeyT* slot,
   const KeyT* d_keys,
   int tile_id,
@@ -270,7 +271,7 @@ __device__ __forceinline__ void load_tile_keys(
   __syncwarp();
 }
 
-__device__ __forceinline__ int
+_CCCL_DEVICE_API _CCCL_FORCEINLINE int
 clc_next_tile_id(uint4& clc_resp, cuda::std::uint64_t& clc_bar, int pipeline_gen, int num_tiles, int lane_id)
 {
   int nxt = num_tiles; // if no more work was cancellable
@@ -295,7 +296,7 @@ clc_next_tile_id(uint4& clc_resp, cuda::std::uint64_t& clc_bar, int pipeline_gen
 // calculate head_flags: each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
 // head = (key != predecessor)
 template <int items_per_thread, bool clamp_tail, class KeyT>
-__device__ __forceinline__ unsigned
+_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned
 compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int tile_id, int lane_id, int skip_elems)
 {
   static_assert(items_per_thread <= 32, "one lane per iter requires items_per_thread<=32");
@@ -328,7 +329,7 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
 }
 
 template <int compute_warps>
-__device__ __forceinline__ void reduce_and_publish_tile_state(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   TilePartialStateT* tile_partial_states,
   int tile_id,
   int tile_len,
@@ -360,7 +361,7 @@ __device__ __forceinline__ void reduce_and_publish_tile_state(
 }
 
 template <int items_per_thread>
-__device__ __forceinline__ void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, int lane_id)
 {
   // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
@@ -401,7 +402,7 @@ struct HeadFlagDecodeT
   int lane_runs_before_word;
   int lane_first_head_from_word;
 
-  __device__ __forceinline__ HeadFlagDecodeT(const unsigned* slot_head_flags, int warp_tile_id, int lane_id)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE HeadFlagDecodeT(const unsigned* slot_head_flags, int warp_tile_id, int lane_id)
   {
     lane_head_flag_word           = slot_head_flags[warp_tile_id * 32 + lane_id];
     const int lane_word_run_count = __popc(lane_head_flag_word);
@@ -425,7 +426,7 @@ struct HeadFlagDecodeT
     // now, lane i holds the next head in [i, 32). we precalculate this in parallel
   }
 
-  __device__ __forceinline__ RunSpanT decode_run(int run_idx) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE RunSpanT decode_run(int run_idx) const
   {
     // first question: which head_flag word contains my run's (run_idx) head?
     // lane_runs_before_word's row i = number of heads in words [0, i)
@@ -468,7 +469,7 @@ struct HeadFlagDecodeT
 };
 
 template <int window_size_cap, class PolicySelector, class OffT>
-__device__ __forceinline__ void poll_fold_windows(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   TilePartialStateT* tile_partial_states,
   int tile_id,
   int& last_seen_tile_id,
@@ -549,7 +550,7 @@ __device__ __forceinline__ void poll_fold_windows(
 }
 
 template <class PolicySelector, class OffT>
-__device__ __forceinline__ void poll_and_fold(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   TilePartialStateT* tile_partial_states,
   int tile_id,
   int& last_seen_tile_id,
