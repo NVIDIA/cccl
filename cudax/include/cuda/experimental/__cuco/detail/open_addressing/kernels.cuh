@@ -25,6 +25,8 @@
 
 #include <cuda/__atomic/atomic.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
@@ -179,6 +181,104 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __contains_if_n(
     if (__tile.thread_rank() == 0)
     {
       *(__output_begin + __idx) = __found;
+    }
+    __idx += __loop_stride;
+  }
+}
+
+//! @brief Helper to determine the buffer type for the find kernel.
+template <class _Container, class = void>
+struct __find_buffer
+{
+  using type = typename _Container::key_type;
+};
+
+//! @brief Helper to determine the buffer type for the find kernel when `mapped_type` exists.
+template <class _Container>
+struct __find_buffer<_Container, ::cuda::std::void_t<typename _Container::mapped_type>>
+{
+  using type = typename _Container::mapped_type;
+};
+
+//! @brief Converts a find result to the output value or the appropriate empty sentinel.
+template <class _Ref, class _Iterator>
+[[nodiscard]] _CCCL_DEVICE_API typename __find_buffer<_Ref>::type __find_output(_Ref const& __ref, _Iterator __found)
+{
+  constexpr bool __has_payload = !::cuda::std::is_same_v<typename _Ref::key_type, typename _Ref::value_type>;
+
+  if constexpr (__has_payload)
+  {
+    return __found == __ref.end() ? __ref.empty_value_sentinel() : __found->second;
+  }
+  else
+  {
+    return __found == __ref.end() ? __ref.empty_key_sentinel() : *__found;
+  }
+}
+
+//! @brief Find with predicate.
+template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
+  _InputIt __first,
+  detail::__index_type __n,
+  _StencilIt __stencil,
+  _Predicate __pred,
+  _OutputIt __output_begin,
+  _Ref __ref)
+{
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __thread_idx  = __block.thread_rank();
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
+
+  using __output_type = typename __find_buffer<_Ref>::type;
+  __shared__ __output_type __output_buffer[_BlockSize / _CgSize];
+
+  while ((__idx - __thread_idx / _CgSize) < __n)
+  {
+    if constexpr (_CgSize == 1)
+    {
+      if (__idx < __n)
+      {
+        using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_t __key = *(__first + __idx);
+        const auto __selected = __pred(*(__stencil + __idx));
+        const auto __found    = __selected ? __ref.find(__key) : __ref.end();
+        /*
+         * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
+         * sector stores from L2 to global memory. By writing results to shared memory and then
+         * synchronizing before writing back to global, we no longer rely on L1, preventing the
+         * increase in sector stores from L2 to global and improving performance.
+         */
+        __output_buffer[__thread_idx] = __find_output(__ref, __found);
+      }
+      __block.sync();
+      if (__idx < __n)
+      {
+        *(__output_begin + __idx) = __output_buffer[__thread_idx];
+      }
+    }
+    else
+    {
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+      if (__idx < __n)
+      {
+        using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_t __key = *(__first + __idx);
+
+        bool __selected = false;
+        if (__tile.thread_rank() == 0)
+        {
+          __selected = __pred(*(__stencil + __idx));
+        }
+        __selected         = __tile.shfl(__selected, 0);
+        const auto __found = __selected ? __ref.find(__tile, __key) : __ref.end();
+
+        if (__tile.thread_rank() == 0)
+        {
+          *(__output_begin + __idx) = __find_output(__ref, __found);
+        }
+      }
     }
     __idx += __loop_stride;
   }
