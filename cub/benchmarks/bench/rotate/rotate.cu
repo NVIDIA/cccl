@@ -97,7 +97,7 @@ void rotate_benchmark_percentage(nvbench::state& state, nvbench::type_list<T> ty
   rotate_benchmark<true, T>(state, types);
 }
 
-using TypeList = nvbench::type_list<uint8_t, uint16_t, uint32_t, uint64_t>;
+using TypeList = nvbench::type_list<uint8_t, uint32_t>;
 
 // Short kernel: absolute rotate-distance magnitudes that stay within the short-path tile threshold.
 // Direction selects which side of the array is rotated by that magnitude.
@@ -105,7 +105,7 @@ NVBENCH_BENCH_TYPES(rotate_benchmark_distance, NVBENCH_TYPE_AXES(TypeList))
   .set_name("rotate_short")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Bytes{io}", nvbench::range(26, 32, 2))
-  .add_int64_axis("RotateDistanceBytes", {1, 100, 500, 5000, 10000, 20000, 30000, 32700})
+  .add_int64_axis("RotateDistanceBytes", {1, 2000, 10000})
   .add_string_axis("Direction", {"Left", "Right"})
   .add_int64_axis("NumUnalignedElems", {0LL, 1LL});
 
@@ -114,5 +114,5 @@ NVBENCH_BENCH_TYPES(rotate_benchmark_percentage, NVBENCH_TYPE_AXES(TypeList))
   .set_name("rotate_long")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Bytes{io}", nvbench::range(26, 32, 2))
-  .add_float64_axis("RotatePercentage", {0.01, 0.3, 0.6, 0.9, 0.99})
+  .add_float64_axis("RotatePercentage", {0.01, 0.3, 0.6, 0.99})
   .add_int64_axis("NumUnalignedElems", {0LL, 1LL});
