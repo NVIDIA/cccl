@@ -13,106 +13,186 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/atomic>
-#include <cuda/cmath>
+#include <cub/util_device.cuh>
 
-#include <algorithm>
+#include <cuda/__device/arch_traits.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/cmath>
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/algorithm>
+#include <cuda/std/concepts>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace detail::rotate
 {
-namespace rotate
+struct kernel_policy
 {
-constexpr int WS               = 32; // warp size
-constexpr int BYTES_PER_SECTOR = 32; // cache sector size
-constexpr int REGS_PER_SM      = 65536;
+  int threads_per_block;
+  int blocks_per_sm;
+  int tile_bytes;
+  int pipeline_stages;
+  int max_regs_per_thread;
 
-using device_flag_t = cuda::atomic<int, cuda::thread_scope_device>;
-
-#ifdef __CUDA_ARCH__
-#  if (__CUDA_ARCH__ > 800 && __CUDA_ARCH__ < 900) || __CUDA_ARCH__ >= 1100
-constexpr size_t MAX_TPSM = 1536;
-#  elif __CUDA_ARCH__ == 750
-constexpr size_t MAX_TPSM = 1024;
-#  else
-constexpr size_t MAX_TPSM = 2048;
-#  endif
-
-#  if __CUDA_ARCH__ == 750
-constexpr int SHMEM_PER_SM = 64 * 1024;
-#  elif __CUDA_ARCH__ == 800 || __CUDA_ARCH__ == 870
-constexpr int SHMEM_PER_SM = 164 * 1024;
-#  elif __CUDA_ARCH__ == 860 || __CUDA_ARCH__ == 890 || __CUDA_ARCH__ >= 1200
-constexpr int SHMEM_PER_SM = 100 * 1024;
-#  elif __CUDA_ARCH__ >= 900 && __CUDA_ARCH__ <= 1100
-constexpr int SHMEM_PER_SM = 228 * 1024;
-#  else
-#    error "Unknown device architecture, please define SHMEM_PER_SM for __CUDA_ARCH__"
-#  endif
-
-#  define CUB_ROTATE_LB(x, y) __launch_bounds__(x, y)
-#else
-constexpr int SHMEM_PER_SM = 1;
-constexpr int MAX_TPSM     = 1;
-#  define CUB_ROTATE_LB(x, y)
-#endif // __CUDA_ARCH__
-
-constexpr std::pair<int, int> get_launch_bounds(const int tile_bytes, const int shmem_per_sm, const int max_tpsm)
-{
-  const int BLOCKS_PER_SM = shmem_per_sm / (tile_bytes + 1'000); // extra bytes to ensure no spilling
-  if (BLOCKS_PER_SM <= 0)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const kernel_policy& lhs, const kernel_policy& rhs)
   {
-    return {1, 1}; // shmem too small (e.g. host-side fallback); return safe defaults
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.blocks_per_sm == rhs.blocks_per_sm
+        && lhs.tile_bytes == rhs.tile_bytes && lhs.pipeline_stages == rhs.pipeline_stages
+        && lhs.max_regs_per_thread == rhs.max_regs_per_thread;
   }
 
-  const int BLOCK_SIZE = cuda::prev_power_of_two(max_tpsm / BLOCKS_PER_SM);
-  return {BLOCK_SIZE, BLOCKS_PER_SM};
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const kernel_policy& lhs, const kernel_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const kernel_policy& policy)
+  {
+    return os
+        << "kernel_policy { .threads_per_block = " << policy.threads_per_block
+        << ", .blocks_per_sm = " << policy.blocks_per_sm << ", .tile_bytes = " << policy.tile_bytes
+        << ", .pipeline_stages = " << policy.pipeline_stages
+        << ", .max_regs_per_thread = " << policy.max_regs_per_thread << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+struct short_algorithm_policy
+{
+  kernel_policy kernel;
+  int tiles_per_grab;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const short_algorithm_policy& lhs, const short_algorithm_policy& rhs)
+  {
+    return lhs.kernel == rhs.kernel && lhs.tiles_per_grab == rhs.tiles_per_grab;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const short_algorithm_policy& lhs, const short_algorithm_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const short_algorithm_policy& policy)
+  {
+    return os << "short_algorithm_policy { .kernel = " << policy.kernel
+              << ", .tiles_per_grab = " << policy.tiles_per_grab << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+struct long_algorithm_policy
+{
+  kernel_policy kernel;
+  int cooperative_grid_safety_margin;
+  ::cuda::std::uint32_t max_direct_dependency_distance;
+  ::cuda::std::size_t naive_fallback_min_size;
+  double naive_fallback_max_fraction;
+  ::cuda::std::size_t naive_fallback_min_distance_bytes;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const long_algorithm_policy& lhs, const long_algorithm_policy& rhs)
+  {
+    return lhs.kernel == rhs.kernel && lhs.cooperative_grid_safety_margin == rhs.cooperative_grid_safety_margin
+        && lhs.max_direct_dependency_distance == rhs.max_direct_dependency_distance
+        && lhs.naive_fallback_min_size == rhs.naive_fallback_min_size
+        && lhs.naive_fallback_max_fraction == rhs.naive_fallback_max_fraction
+        && lhs.naive_fallback_min_distance_bytes == rhs.naive_fallback_min_distance_bytes;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const long_algorithm_policy& lhs, const long_algorithm_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const long_algorithm_policy& policy)
+  {
+    return os
+        << "long_algorithm_policy { .kernel = " << policy.kernel
+        << ", .cooperative_grid_safety_margin = " << policy.cooperative_grid_safety_margin
+        << ", .max_direct_dependency_distance = " << policy.max_direct_dependency_distance
+        << ", .naive_fallback_min_size = " << policy.naive_fallback_min_size
+        << ", .naive_fallback_max_fraction = " << policy.naive_fallback_max_fraction
+        << ", .naive_fallback_min_distance_bytes = " << policy.naive_fallback_min_distance_bytes << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+struct rotate_policy
+{
+  short_algorithm_policy short_algorithm;
+  long_algorithm_policy long_algorithm;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const rotate_policy& lhs, const rotate_policy& rhs)
+  {
+    return lhs.short_algorithm == rhs.short_algorithm && lhs.long_algorithm == rhs.long_algorithm;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const rotate_policy& lhs, const rotate_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const rotate_policy& policy)
+  {
+    return os << "rotate_policy { .short_algorithm = " << policy.short_algorithm
+              << ", .long_algorithm = " << policy.long_algorithm << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept rotate_policy_selector = policy_selector<T, rotate_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+[[nodiscard]] _CCCL_API constexpr auto make_kernel_policy(
+  ::cuda::compute_capability cc, int tile_bytes, int pipeline_stages, int max_regs_per_thread) -> kernel_policy
+{
+  const auto arch         = ::cuda::arch_traits_for(cc);
+  const int blocks_per_sm = ::cuda::std::max(
+    static_cast<int>(arch.max_shared_memory_per_multiprocessor) / (tile_bytes * pipeline_stages + 1'000), 1);
+  const int threads_per_block = ::cuda::prev_power_of_two(
+    ::cuda::std::min(arch.max_threads_per_multiprocessor / blocks_per_sm, arch.max_threads_per_block));
+  return {threads_per_block, blocks_per_sm, tile_bytes, pipeline_stages, max_regs_per_thread};
 }
 
-struct short_algorithm
+struct policy_selector
 {
-  static constexpr int tile_bytes = 18 * 1024;
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rotate_policy
+  {
+    constexpr int short_tile_bytes = 18 * 1024;
+    constexpr int long_tile_bytes  = 32 * 1024;
+    static_assert(short_tile_bytes < long_tile_bytes,
+                  "The short rotate tile must be smaller than the long rotate tile");
 
-  // How many contiguous tiles a CTA grabs at once.
-  static constexpr int tiles_per_grab = 6;
-
-  // Number of shared-memory tile buffers per block.
-  static constexpr int pipeline_stages = 2;
-
-  static constexpr auto launch_bounds = get_launch_bounds(tile_bytes * pipeline_stages, SHMEM_PER_SM, MAX_TPSM);
-  static constexpr int block_size     = launch_bounds.first;
-  static constexpr int blocks_per_sm  = launch_bounds.second;
-
-  // Limit the number of registers per thread when copying from shared to global.
-  static constexpr int max_regs_per_thread_override = 4;
+    return rotate_policy{
+      short_algorithm_policy{
+        /* .kernel = */ make_kernel_policy(
+          cc, /* tile_bytes = */ short_tile_bytes, /* pipeline_stages = */ 2, /* max_regs_per_thread = */ 4),
+        /* .tiles_per_grab = */ 6,
+      },
+      long_algorithm_policy{
+        /* .kernel = */ make_kernel_policy(
+          cc, /* tile_bytes = */ long_tile_bytes, /* pipeline_stages = */ 2, /* max_regs_per_thread = */ 4),
+        /* .cooperative_grid_safety_margin = */ 50,
+        /* .max_direct_dependency_distance = */ 256,
+        /* .naive_fallback_min_size = */ 1'000'000'000,
+        /* .naive_fallback_max_fraction = */ 0.3,
+        /* .naive_fallback_min_distance_bytes = */ 500'000'000,
+      }};
+  }
 };
 
-struct long_algorithm
-{
-  static constexpr int tile_bytes = 32 * 1024;
-
-  // Keep dependency chains below the cooperative grid size by this many CTAs.
-  static constexpr int cooperative_grid_safety_margin = 50;
-
-  // Use a closed-form processing order while either side fits within this many tiles.
-  static constexpr int max_direct_dependency_distance = 256;
-
-  static constexpr size_t naive_fallback_min_size     = 1'000'000'000;
-  static constexpr double naive_fallback_max_fraction = 0.3;
-  static constexpr size_t naive_fallback_min_distance_bytes = 500'000'000;
-
-  static constexpr int pipeline_stages = 2;
-
-  static constexpr auto launch_bounds = get_launch_bounds(tile_bytes * pipeline_stages, SHMEM_PER_SM, MAX_TPSM);
-  static constexpr int block_size     = launch_bounds.first;
-  static constexpr int blocks_per_sm  = launch_bounds.second;
-
-  // Cap the shared->global store register buffer at the BUFFERED_ITERS=1 floor (= min(4, REGS_PER_T)/4)
-  // so the store loop interleaves each per-uint4 shmem load with its write-through gmem store (higher
-  // store-side memory-level parallelism / DRAM utilization) instead of buffering the whole tile in
-  // registers before storing. Swept 4/8/16 under the pipeline -- 4 is the tuned winner.
-  static constexpr int max_regs_per_thread_override = 4;
-};
-} // namespace rotate
-} // namespace detail
+#if _CCCL_HAS_CONCEPTS()
+static_assert(rotate_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+} // namespace detail::rotate
 CUB_NAMESPACE_END

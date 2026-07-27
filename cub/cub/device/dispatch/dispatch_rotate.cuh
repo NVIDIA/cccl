@@ -15,8 +15,10 @@
 
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/kernels/kernel_rotate.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/functional>
 
 #include <algorithm>
@@ -48,20 +50,12 @@ namespace rotate
 // Runtime device queries
 // ============================================================================
 
-inline cudaError_t get_launch_config(cudaStream_t stream, const int tile_bytes, int& block_size_out, int& grid_size_out)
+inline cudaError_t get_num_sms(cudaStream_t stream, int& num_sms)
 {
   int device;
   CUB_ROTATE_CHECK(cudaStreamGetDevice(stream, &device));
 
-  int num_sms;
   CUB_ROTATE_CHECK(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device));
-  int max_threads_per_sm;
-  CUB_ROTATE_CHECK(cudaDeviceGetAttribute(&max_threads_per_sm, cudaDevAttrMaxThreadsPerMultiProcessor, device));
-  int shmem_per_sm;
-  CUB_ROTATE_CHECK(cudaDeviceGetAttribute(&shmem_per_sm, cudaDevAttrMaxSharedMemoryPerMultiprocessor, device));
-  const auto [block_size, blocks_per_sm] = get_launch_bounds(tile_bytes, shmem_per_sm, max_threads_per_sm);
-  block_size_out                         = block_size;
-  grid_size_out                          = blocks_per_sm * num_sms;
   return cudaSuccess;
 }
 
@@ -132,19 +126,21 @@ struct RotateState_t
 
 // Max dependency distance for which the long algorithm is faster than the naive one.
 // Derived dynamically from the cooperative grid size.
-inline size_t get_max_supported_dependency_distance(cudaStream_t stream)
+inline size_t get_max_supported_dependency_distance(int num_sms, const long_algorithm_policy& long_policy)
 {
-  int block_size, grid_size;
-  get_launch_config(stream, long_algorithm::tile_bytes * long_algorithm::pipeline_stages, block_size, grid_size);
-  return grid_size > long_algorithm::cooperative_grid_safety_margin
-         ? grid_size - long_algorithm::cooperative_grid_safety_margin
+  const int grid_size = long_policy.kernel.blocks_per_sm * num_sms;
+  return grid_size > long_policy.cooperative_grid_safety_margin
+         ? grid_size - long_policy.cooperative_grid_safety_margin
          : 0;
 }
 
 template <typename T>
-inline bool fall_back_to_naive(const size_t arr_size, const size_t rotate_distance)
+inline bool
+fall_back_to_naive(const size_t arr_size, const size_t rotate_distance, const long_algorithm_policy& long_policy)
 {
-  return arr_size > long_algorithm::naive_fallback_min_size && static_cast<double>(rotate_distance) / arr_size < long_algorithm::naive_fallback_max_fraction && rotate_distance * sizeof(T) > long_algorithm::naive_fallback_min_distance_bytes;
+  return arr_size > long_policy.naive_fallback_min_size
+      && static_cast<double>(rotate_distance) / arr_size < long_policy.naive_fallback_max_fraction
+      && rotate_distance * sizeof(T) > long_policy.naive_fallback_min_distance_bytes;
 }
 
 enum class RotateAlgo
@@ -155,20 +151,17 @@ enum class RotateAlgo
 };
 
 template <typename T>
-RotateAlgo get_algorithm_to_use(size_t arr_size, size_t rotate_distance, size_t max_distance, cudaStream_t stream)
+RotateAlgo get_algorithm_to_use(
+  size_t arr_size, size_t rotate_distance, size_t max_distance, int num_sms, const rotate_policy& policy)
 {
-  if (rotate_distance <= short_algorithm::tile_bytes / sizeof(T))
+  if (rotate_distance <= policy.short_algorithm.kernel.tile_bytes / sizeof(T))
   {
     return RotateAlgo::Short;
   }
-  else if (max_distance < get_max_supported_dependency_distance(stream) && !fall_back_to_naive<T>(arr_size, rotate_distance))
-  {
-    return RotateAlgo::Long;
-  }
-  else
-  {
-    return RotateAlgo::Naive;
-  }
+  return max_distance < get_max_supported_dependency_distance(num_sms, policy.long_algorithm)
+          && !fall_back_to_naive<T>(arr_size, rotate_distance, policy.long_algorithm)
+         ? RotateAlgo::Long
+         : RotateAlgo::Naive;
 }
 
 template <RotDir Dir, typename T>
@@ -259,17 +252,17 @@ uint8_t dependency_offsets_at(
   uint32_t const index,
   size_t const arr_size,
   size_t const rot_dist,
+  uint32_t const tile_size,
   uint32_t const head_size,
   uint32_t const neg_head_size,
   uint32_t const num_negative_tiles,
   uint32_t const num_positive_tiles)
 {
-  constexpr uint32_t TILE_SIZE = long_algorithm::tile_bytes / sizeof(T);
-  uint32_t const num_nodes     = num_negative_tiles + num_positive_tiles;
-  uint8_t mask                 = 0;
-  int32_t const tile           = tile_detail::arr_ix_to_tile_ix(index, num_negative_tiles);
+  uint32_t const num_nodes = num_negative_tiles + num_positive_tiles;
+  uint8_t mask             = 0;
+  int32_t const tile       = tile_detail::arr_ix_to_tile_ix(index, num_negative_tiles);
   auto const dependencies =
-    tile_detail::get_dependencies(arr_size, rot_dist, TILE_SIZE, tile, head_size, neg_head_size, num_negative_tiles);
+    tile_detail::get_dependencies(arr_size, rot_dist, tile_size, tile, head_size, neg_head_size, num_negative_tiles);
   for (uint32_t dependency = dependencies.begin_; dependency < dependencies.end_; ++dependency)
   {
     uint32_t const offset = dependency >= index ? dependency - index : dependency + num_nodes - index;
@@ -293,6 +286,7 @@ template <typename T>
 DependencySegments get_dependency_segments(
   size_t const arr_size,
   size_t const rot_dist,
+  uint32_t const tile_size,
   uint32_t const head_size,
   uint32_t const neg_head_size,
   uint32_t const num_negative_tiles,
@@ -342,7 +336,7 @@ DependencySegments get_dependency_segments(
       continue;
     }
     uint8_t const offsets = dependency_offsets_at<T>(
-      begin, arr_size, rot_dist, head_size, neg_head_size, num_negative_tiles, num_positive_tiles);
+      begin, arr_size, rot_dist, tile_size, head_size, neg_head_size, num_negative_tiles, num_positive_tiles);
     // If the last segment has the same offsets, merge them into one segment.
     if (result.size_ > 0 && result.segments_[result.size_ - 1].offsets_ == offsets)
     {
@@ -611,23 +605,24 @@ RotateState_t circulant_interval_visit_order(
 
 // Build a dependency-safe tile order and its maximum forward dependency distance.
 template <typename T>
-RotateState_t bfs_visit_order(size_t const arr_size, size_t const rot_dist, uint32_t const head_size)
+RotateState_t bfs_visit_order(
+  size_t const arr_size, size_t const rot_dist, uint32_t const head_size, const long_algorithm_policy& long_policy)
 {
-  constexpr size_t TILE_SIZE    = long_algorithm::tile_bytes / sizeof(T);
-  auto const neg_head_size      = tile_detail::get_neg_head_size<T>(arr_size, rot_dist, head_size);
-  const auto num_negative_tiles = tile_detail::get_num_negative_tiles(rot_dist, TILE_SIZE, neg_head_size);
-  const auto num_positive_tiles = tile_detail::get_num_positive_tiles(arr_size, rot_dist, TILE_SIZE, head_size);
-  auto const dependency_segments =
-    get_dependency_segments<T>(arr_size, rot_dist, head_size, neg_head_size, num_negative_tiles, num_positive_tiles);
+  const auto tile_size           = static_cast<uint32_t>(long_policy.kernel.tile_bytes / sizeof(T));
+  auto const neg_head_size       = tile_detail::get_neg_head_size<T>(arr_size, rot_dist, head_size);
+  const auto num_negative_tiles  = tile_detail::get_num_negative_tiles(rot_dist, tile_size, neg_head_size);
+  const auto num_positive_tiles  = tile_detail::get_num_positive_tiles(arr_size, rot_dist, tile_size, head_size);
+  auto const dependency_segments = get_dependency_segments<T>(
+    arr_size, rot_dist, tile_size, head_size, neg_head_size, num_negative_tiles, num_positive_tiles);
 
   // A descending order is both cheap to generate and has a tight dependency
   // bound while the negative side is small.
-  if (num_negative_tiles + 1 <= long_algorithm::max_direct_dependency_distance)
+  if (num_negative_tiles + 1 <= long_policy.max_direct_dependency_distance)
   {
     return small_side_visit_order<SmallSide::Negative>(num_negative_tiles, num_positive_tiles, dependency_segments);
   }
   // At an exact-half rotation, alignment rounding can make the positive side one tile smaller than the negative side.
-  if (num_positive_tiles + 1 <= long_algorithm::max_direct_dependency_distance)
+  if (num_positive_tiles + 1 <= long_policy.max_direct_dependency_distance)
   {
     return small_side_visit_order<SmallSide::Positive>(num_negative_tiles, num_positive_tiles, dependency_segments);
   }
@@ -641,24 +636,31 @@ RotateState_t bfs_visit_order(size_t const arr_size, size_t const rot_dist, uint
 // ============================================================================
 
 template <RotDir Dir, typename T>
-void compute_temp_size_and_state(
-  T* d_array, size_t size, size_t rotate_distance, cudaStream_t stream, size_t& temp_storage_bytes, RotateState_t& state)
+cudaError_t compute_temp_size_and_state(
+  T* d_array,
+  size_t size,
+  size_t rotate_distance,
+  cudaStream_t stream,
+  int num_sms,
+  size_t& temp_storage_bytes,
+  RotateState_t& state,
+  const rotate_policy& policy)
 {
   assert(rotate_distance > 0 && rotate_distance <= size / 2);
   uint32_t const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
-  if (rotate_distance <= short_algorithm::tile_bytes / sizeof(T))
+  if (rotate_distance <= policy.short_algorithm.kernel.tile_bytes / sizeof(T))
   {
     size_t const num_main_tiles =
-      cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), short_algorithm::tile_bytes);
+      cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), policy.short_algorithm.kernel.tile_bytes);
     temp_storage_bytes = sizeof(int) + sizeof(device_flag_t) * num_main_tiles;
     state              = RotateState_t{};
-    return;
+    return cudaSuccess;
   }
 
   assert(head_size < size - rotate_distance);
 
-  state                       = bfs_visit_order<T>(size, rotate_distance, head_size);
-  const auto algorithm_to_use = get_algorithm_to_use<T>(size, rotate_distance, state.max_distance_, stream);
+  state                       = bfs_visit_order<T>(size, rotate_distance, head_size, policy.long_algorithm);
+  const auto algorithm_to_use = get_algorithm_to_use<T>(size, rotate_distance, state.max_distance_, num_sms, policy);
 
   if (algorithm_to_use == RotateAlgo::Long)
   {
@@ -673,10 +675,11 @@ void compute_temp_size_and_state(
     size_t transform_temp_bytes = 0;
     T* dummy_out                = nullptr;
     cuda::std::identity id{};
-    cub::DeviceTransform::Transform(
-      nullptr, transform_temp_bytes, ::cuda::std::make_tuple(d_array), dummy_out, rotate_distance, id, stream);
+    CUB_ROTATE_CHECK(cub::DeviceTransform::Transform(
+      nullptr, transform_temp_bytes, ::cuda::std::make_tuple(d_array), dummy_out, rotate_distance, id, stream));
     temp_storage_bytes = rotate_distance * sizeof(T) + transform_temp_bytes;
   }
+  return cudaSuccess;
 }
 
 // ============================================================================
@@ -692,7 +695,10 @@ void compute_temp_size_and_state(
 //   - The rotation is executed using the precomputed state
 // ============================================================================
 
-template <typename T, RotDir Dir = RotDir::Left>
+template <typename T, RotDir Dir = RotDir::Left, typename PolicySelector = policy_selector>
+#if _CCCL_HAS_CONCEPTS()
+  requires rotate_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -700,18 +706,20 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   T* d_array,
   size_t size,
   size_t rotate_distance,
-  cudaStream_t stream)
+  cudaStream_t stream,
+  PolicySelector policy_selector = {})
 {
   if constexpr (sizeof(T) != alignof(T))
   {
-    return dispatch<uint8_t, Dir>(
+    return dispatch<uint8_t, Dir, PolicySelector>(
       d_temp_storage,
       temp_storage_bytes,
       state,
       reinterpret_cast<uint8_t*>(d_array),
       size * sizeof(T),
       rotate_distance * sizeof(T),
-      stream);
+      stream,
+      policy_selector);
   }
   else
   {
@@ -731,57 +739,80 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
     }
     if (rotate_distance > size / 2 && Dir == RotDir::Left)
     {
-      return dispatch<T, RotDir::Right>(
-        d_temp_storage, temp_storage_bytes, state, d_array, size, size - rotate_distance, stream);
+      return dispatch<T, RotDir::Right, PolicySelector>(
+        d_temp_storage, temp_storage_bytes, state, d_array, size, size - rotate_distance, stream, policy_selector);
     }
     assert(rotate_distance <= size / 2);
+
+    ::cuda::compute_capability cc{};
+    CUB_ROTATE_CHECK(ptx_compute_cap(cc));
+    const rotate_policy active_policy = policy_selector(cc);
+    int num_sms;
+    CUB_ROTATE_CHECK(get_num_sms(stream, num_sms));
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceRotate to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     // Query pass: compute temp storage requirements and fill state
     if (d_temp_storage == nullptr)
     {
-      compute_temp_size_and_state<Dir>(d_array, size, rotate_distance, stream, temp_storage_bytes, state);
+      CUB_ROTATE_CHECK(compute_temp_size_and_state<Dir>(
+        d_array, size, rotate_distance, stream, num_sms, temp_storage_bytes, state, active_policy));
       return cudaSuccess;
     }
 
     // Execution pass: use the precomputed state
-    const auto algo_to_use = get_algorithm_to_use<T>(size, rotate_distance, state.max_distance_, stream);
+    const auto algo_to_use =
+      get_algorithm_to_use<T>(size, rotate_distance, state.max_distance_, num_sms, active_policy);
 
     if (algo_to_use == RotateAlgo::Short)
     {
-      constexpr size_t TILE_SIZE = short_algorithm::tile_bytes / sizeof(T);
-      bool const is_tiny         = size <= TILE_SIZE;
+      const auto& kernel     = active_policy.short_algorithm.kernel;
+      const size_t tile_size = kernel.tile_bytes / sizeof(T);
+      bool const is_tiny     = size <= tile_size;
 
       if (is_tiny)
       {
         const int shmem = static_cast<int>(size * sizeof(T));
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_tiny::rotate_tiny_kernel<Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
-        rotate_tiny::rotate_tiny_kernel<Dir, T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
+          rotate_tiny::rotate_tiny_kernel<Dir, T, PolicySelector>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        rotate_tiny::rotate_tiny_kernel<Dir, T, PolicySelector>
+          <<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
       else
       {
         auto const head_size = compute_head_size<Dir>(d_array, size, rotate_distance);
         size_t const num_main_tiles =
-          cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), short_algorithm::tile_bytes);
+          cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), kernel.tile_bytes);
 
-        int block_size, grid_size;
-        CUB_ROTATE_CHECK(get_launch_config(
-          stream, short_algorithm::tile_bytes * short_algorithm::pipeline_stages, block_size, grid_size));
+        const int grid_size = kernel.blocks_per_sm * num_sms;
 
         CUB_ROTATE_CHECK(cudaMemsetAsync(d_temp_storage, 0, temp_storage_bytes, stream));
 
         // Multi-stage pipeline holds PIPELINE_STAGES tile buffers in dynamic shared memory.
-        constexpr int dynamic_shmem = get_shmem_usage<short_algorithm, T>();
+        const int dynamic_shmem = get_shmem_usage<T>(kernel);
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_kernel<short_algorithm, Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
-        rotate_kernel<short_algorithm, Dir, T><<<grid_size, block_size, dynamic_shmem, stream>>>(
-          d_array, size, d_temp_storage, rotate_distance, num_main_tiles, head_size, OrderMode::Circulant);
+          rotate_kernel<short_algorithm, Dir, T, PolicySelector>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize,
+          dynamic_shmem));
+        rotate_kernel<short_algorithm, Dir, T, PolicySelector>
+          <<<grid_size, kernel.threads_per_block, dynamic_shmem, stream>>>(
+            d_array, size, d_temp_storage, rotate_distance, num_main_tiles, head_size, OrderMode::Circulant);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
     }
     else if (algo_to_use == RotateAlgo::Long)
     {
+      const auto& kernel     = active_policy.long_algorithm.kernel;
       size_t const num_tiles = state.ordering_.size();
       if (num_tiles == 0)
       {
@@ -803,16 +834,16 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
       }
 
       // The long variant requires a cooperative launch to keep every dependency producer resident.
-      int block_size, grid_size;
-      CUB_ROTATE_CHECK(
-        get_launch_config(stream, long_algorithm::tile_bytes * long_algorithm::pipeline_stages, block_size, grid_size));
+      const int grid_size = kernel.blocks_per_sm * num_sms;
       dim3 grid_dim(grid_size);
-      dim3 block_dim(block_size);
+      dim3 block_dim(kernel.threads_per_block);
 
       // Multi-stage pipeline holds PIPELINE_STAGES tile buffers in dynamic shared memory.
-      constexpr int dynamic_shmem = get_shmem_usage<long_algorithm, T>();
+      const int dynamic_shmem = get_shmem_usage<T>(kernel);
       CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-        rotate_kernel<long_algorithm, Dir, T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
+        rotate_kernel<long_algorithm, Dir, T, PolicySelector>,
+        cudaFuncAttributeMaxDynamicSharedMemorySize,
+        dynamic_shmem));
 
       OrderMode const order_mode = state.order_mode_;
 
@@ -826,7 +857,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
         const_cast<void*>(static_cast<const void*>(&head_size)),
         const_cast<void*>(static_cast<const void*>(&order_mode))};
       CUB_ROTATE_CHECK(cudaLaunchCooperativeKernel(
-        (void*) rotate_kernel<long_algorithm, Dir, T>, grid_dim, block_dim, kernelArgs, dynamic_shmem, stream));
+        (void*) rotate_kernel<long_algorithm, Dir, T, PolicySelector>,
+        grid_dim,
+        block_dim,
+        kernelArgs,
+        dynamic_shmem,
+        stream));
     }
     else
     {

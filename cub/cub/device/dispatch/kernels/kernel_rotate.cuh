@@ -15,6 +15,7 @@
 
 #include <cub/cub.cuh>
 #include <cub/device/dispatch/tuning/tuning_rotate.cuh>
+#include <cub/util_arch.cuh>
 
 #include <cuda/atomic>
 #include <cuda/barrier>
@@ -32,6 +33,9 @@ namespace detail
 {
 namespace rotate
 {
+inline constexpr int BYTES_PER_SECTOR = 32;
+using device_flag_t                   = cuda::atomic<int, cuda::thread_scope_device>;
+
 enum class RotDir
 {
   Left,
@@ -47,6 +51,26 @@ enum class OrderMode : uint32_t
   Negative  = 1, // small-side negative closed form: pos == 0 ? 0 : num_tiles - pos
   Positive  = 2, // small-side positive closed form: pos
 };
+
+struct short_algorithm
+{};
+
+struct long_algorithm
+{};
+
+template <typename Algorithm>
+[[nodiscard]] _CCCL_API constexpr auto get_algorithm_policy(const rotate_policy& policy)
+{
+  if constexpr (::cuda::std::is_same_v<Algorithm, short_algorithm>)
+  {
+    return policy.short_algorithm;
+  }
+  else
+  {
+    static_assert(::cuda::std::is_same_v<Algorithm, long_algorithm>);
+    return policy.long_algorithm;
+  }
+}
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE device_flag_t* get_long_flags(void* temp_storage)
 {
@@ -93,8 +117,7 @@ _CCCL_DEVICE void overcopy_memcpy_async(
 // BEFORE calling sync_op.sync(), to maximally overlap the atomic polling with other work, then writes to gmem AFTER.
 // Any remaining iterations that do not fit in the register budget are processed post-sync. sync_op must provide sync().
 //
-// MAX_REGS_PER_THREAD should be set to REGS_PER_SM / (BLOCKS_PER_SM * BLOCK_SIZE)
-// so that the register buffering does not reduce occupancy.
+// MAX_REGS_PER_THREAD is a tuning parameter and must leave room for at least one uint4.
 template <typename T, int NUM_THREADS, int TILE_BYTES, int MAX_REGS_PER_THREAD, typename SyncOp>
 _CCCL_DEVICE void shared_to_global_through_regs(T* dst, T* src, uint32_t const bytes_to_load, SyncOp& sync_op)
 {
@@ -458,22 +481,22 @@ _CCCL_HOST_DEVICE int32_t arr_ix_to_tile_ix(uint32_t const arr_ix, uint32_t cons
 };
 } // namespace tile_detail
 
-template <typename Algorithm, typename T>
-constexpr int get_shmem_usage()
+template <typename T>
+constexpr int get_shmem_usage(const kernel_policy& policy)
 {
-  constexpr int tile_size        = Algorithm::tile_bytes / sizeof(T);
+  const int tile_size            = policy.tile_bytes / sizeof(T);
   constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
-  constexpr int slot_bytes       = cuda::round_up((tile_size + elems_per_sector) * sizeof(T), BYTES_PER_SECTOR);
-  return Algorithm::pipeline_stages * slot_bytes;
+  const int slot_bytes           = cuda::round_up((tile_size + elems_per_sector) * sizeof(T), BYTES_PER_SECTOR);
+  return policy.pipeline_stages * slot_bytes;
 }
 
-template <typename Algorithm, typename T>
+template <typename Algorithm, typename T, typename PolicySelector = policy_selector>
 struct pipeline_shared_storage;
 
-template <typename T>
-struct pipeline_shared_storage<short_algorithm, T>
+template <typename T, typename PolicySelector>
+struct pipeline_shared_storage<short_algorithm, T, PolicySelector>
 {
-  static constexpr int pipeline_stages  = short_algorithm::pipeline_stages;
+  static constexpr int pipeline_stages  = current_policy<PolicySelector>().short_algorithm.kernel.pipeline_stages;
   static constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
 
   struct tile
@@ -495,10 +518,10 @@ struct pipeline_shared_storage<short_algorithm, T>
   cuda::barrier<cuda::thread_scope_block> bars[pipeline_stages];
 };
 
-template <typename T>
-struct pipeline_shared_storage<long_algorithm, T>
+template <typename T, typename PolicySelector>
+struct pipeline_shared_storage<long_algorithm, T, PolicySelector>
 {
-  static constexpr int pipeline_stages  = long_algorithm::pipeline_stages;
+  static constexpr int pipeline_stages  = current_policy<PolicySelector>().long_algorithm.kernel.pipeline_stages;
   static constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
 
   struct tile
@@ -526,24 +549,11 @@ struct pipeline_shared_storage<long_algorithm, T>
   cuda::barrier<cuda::thread_scope_block> bars[pipeline_stages];
 };
 
-
 // TODO: this may cause unnecessary register usage
-template <typename Algorithm, RotDir Dir, typename T>
+template <typename Algorithm, RotDir Dir, typename T, typename PolicySelector = policy_selector>
 struct pipeline_context
 {
-  using policy         = Algorithm;
-  using shared_storage = pipeline_shared_storage<Algorithm, T>;
-
-  static constexpr int block_size       = policy::block_size;
-  static constexpr int tile_bytes       = policy::tile_bytes;
-  static constexpr int pipeline_stages  = policy::pipeline_stages;
-  static constexpr int tile_size        = tile_bytes / sizeof(T);
-  static constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
-  static constexpr int slot_bytes       = cuda::round_up((tile_size + elems_per_sector) * sizeof(T), BYTES_PER_SECTOR);
-  static constexpr int slot_elems       = slot_bytes / sizeof(T);
-  static constexpr int max_regs_occupancy = REGS_PER_SM / (policy::blocks_per_sm * block_size);
-  static constexpr int max_regs =
-    policy::max_regs_per_thread_override > 0 ? policy::max_regs_per_thread_override : max_regs_occupancy;
+  using shared_storage = pipeline_shared_storage<Algorithm, T, PolicySelector>;
 
   T* array;
   size_t size;
@@ -557,24 +567,29 @@ struct pipeline_context
 
   _CCCL_DEVICE T* tile_cache(int slot) const
   {
+    constexpr auto kernel          = get_algorithm_policy<Algorithm>(current_policy<PolicySelector>()).kernel;
+    constexpr int tile_size        = kernel.tile_bytes / sizeof(T);
+    constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
+    constexpr int slot_bytes       = cuda::round_up((tile_size + elems_per_sector) * sizeof(T), BYTES_PER_SECTOR);
+    constexpr int slot_elems       = slot_bytes / sizeof(T);
     return cache + slot * slot_elems;
   }
 };
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE device_flag_t* get_flags(pipeline_context<short_algorithm, Dir, T> const& context)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE device_flag_t* get_flags(pipeline_context<short_algorithm, Dir, T, PolicySelector> const& context)
 {
   return reinterpret_cast<device_flag_t*>(reinterpret_cast<int*>(context.temp_storage) + 1);
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE device_flag_t* get_flags(pipeline_context<long_algorithm, Dir, T> const& context)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE device_flag_t* get_flags(pipeline_context<long_algorithm, Dir, T, PolicySelector> const& context)
 {
   return get_long_flags(context.temp_storage);
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE uint32_t* get_processing_order(pipeline_context<long_algorithm, Dir, T> const& context)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE uint32_t* get_processing_order(pipeline_context<long_algorithm, Dir, T, PolicySelector> const& context)
 {
   return get_long_processing_order(context.temp_storage, context.num_tiles);
 }
@@ -585,13 +600,14 @@ _CCCL_DEVICE uint32_t* get_processing_order(pipeline_context<long_algorithm, Dir
 
 namespace rotate_tiny
 {
-template <RotDir Dir, typename T>
-__global__ void rotate_tiny_kernel(T* arr, size_t const size, size_t const rotate_distance)
+template <RotDir Dir, typename T, typename PolicySelector = policy_selector>
+_CCCL_KERNEL_ATTRIBUTES void rotate_tiny_kernel(T* arr, size_t const size, size_t const rotate_distance)
 {
+  constexpr auto policy = current_policy<PolicySelector>().short_algorithm;
   extern __shared__ unsigned char smem_raw[];
   T* smem = reinterpret_cast<T*>(smem_raw);
 
-  assert(size <= short_algorithm::tile_bytes / sizeof(T));
+  assert(size <= policy.kernel.tile_bytes / sizeof(T));
   assert(rotate_distance > 0 && rotate_distance <= size / 2);
 
   if (blockIdx.x == 0)
@@ -615,23 +631,25 @@ __global__ void rotate_tiny_kernel(T* arr, size_t const size, size_t const rotat
 }
 } // namespace rotate_tiny
 
-template <typename Algorithm, RotDir Dir, typename T>
-_CCCL_DEVICE void initialize_pipeline(pipeline_context<Algorithm, Dir, T>& context)
+template <typename Algorithm, RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void initialize_pipeline(pipeline_context<Algorithm, Dir, T, PolicySelector>& context)
 {
-  using context_t = pipeline_context<Algorithm, Dir, T>;
-  auto const tid  = threadIdx.x;
+  constexpr auto kernel          = get_algorithm_policy<Algorithm>(current_policy<PolicySelector>()).kernel;
+  constexpr int tile_size        = kernel.tile_bytes / sizeof(T);
+  constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
+  auto const tid                 = threadIdx.x;
 
-  if (tid < context_t::pipeline_stages)
+  if (tid < kernel.pipeline_stages)
   {
-    init(&context.shared.bars[tid], context_t::block_size);
+    init(&context.shared.bars[tid], kernel.threads_per_block);
   }
 
   if constexpr (cuda::std::is_same_v<Algorithm, short_algorithm>)
   {
-    assert(context.rotate_distance <= context_t::tile_size);
-    assert(context.head_size < context_t::elems_per_sector);
+    assert(context.rotate_distance <= tile_size);
+    assert(context.head_size < elems_per_sector);
     assert(2 * context.rotate_distance <= context.size);
-    assert(context.size > context_t::tile_size);
+    assert(context.size > tile_size);
 
     if (tid == 0)
     {
@@ -642,29 +660,33 @@ _CCCL_DEVICE void initialize_pipeline(pipeline_context<Algorithm, Dir, T>& conte
   __syncthreads();
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE uint32_t get_tile_size(pipeline_context<short_algorithm, Dir, T> const& context, uint32_t tile_index)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE uint32_t get_tile_size(pipeline_context<short_algorithm, Dir, T, PolicySelector> const& context,
+                                    uint32_t tile_index)
 {
-  using context_t = pipeline_context<short_algorithm, Dir, T>;
+  constexpr auto kernel   = current_policy<PolicySelector>().short_algorithm.kernel;
+  constexpr int tile_size = kernel.tile_bytes / sizeof(T);
   if (tile_index != context.num_tiles - 1)
   {
-    return context_t::tile_size;
+    return tile_size;
   }
 
-  uint32_t const remainder = (context.size - context.rotate_distance - context.head_size) % context_t::tile_size;
-  return remainder == 0u ? context_t::tile_size : remainder;
+  uint32_t const remainder = (context.size - context.rotate_distance - context.head_size) % tile_size;
+  return remainder == 0u ? tile_size : remainder;
 }
 
 // Claim the next tile from this CTA's descending run and issue its asynchronous load.
-template <RotDir Dir, typename T>
-_CCCL_DEVICE bool claim_and_load(pipeline_context<short_algorithm, Dir, T>& context, int slot)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE bool claim_and_load(pipeline_context<short_algorithm, Dir, T, PolicySelector>& context, int slot)
 {
-  using context_t              = pipeline_context<short_algorithm, Dir, T>;
-  constexpr int tiles_per_grab = short_algorithm::tiles_per_grab;
-  auto* tile_counter           = reinterpret_cast<cuda::atomic<int, cuda::thread_scope_device>*>(context.temp_storage);
-  auto cta                     = cooperative_groups::this_thread_block();
-  auto const tid               = threadIdx.x;
-  auto& tile                   = context.shared.tiles[slot];
+  constexpr auto policy          = current_policy<PolicySelector>().short_algorithm;
+  constexpr int full_tile_size   = policy.kernel.tile_bytes / sizeof(T);
+  constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
+  constexpr int tiles_per_grab   = policy.tiles_per_grab;
+  auto* tile_counter = reinterpret_cast<cuda::atomic<int, cuda::thread_scope_device>*>(context.temp_storage);
+  auto cta           = cooperative_groups::this_thread_block();
+  auto const tid     = threadIdx.x;
+  auto& tile         = context.shared.tiles[slot];
 
   if (tid == 0)
   {
@@ -692,9 +714,9 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<short_algorithm, Dir, T>& cont
 
   uint32_t const tile_size = get_tile_size(context, tile.index);
   size_t const logical_src =
-    context.rotate_distance + context.head_size + static_cast<size_t>(tile.index) * context_t::tile_size;
+    context.rotate_distance + context.head_size + static_cast<size_t>(tile.index) * full_tile_size;
   size_t const src_offset  = tile_detail::physical_interval_start<Dir>(context.size, logical_src, tile_size);
-  uint32_t unaligned_elems = context.rotate_distance % context_t::elems_per_sector;
+  uint32_t unaligned_elems = context.rotate_distance % elems_per_sector;
   if constexpr (Dir == RotDir::Right)
   {
     unaligned_elems = (reinterpret_cast<uintptr_t>(context.array + src_offset) % BYTES_PER_SECTOR) / sizeof(T);
@@ -705,8 +727,8 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<short_algorithm, Dir, T>& cont
   return true;
 }
 
-template <typename Algorithm, RotDir Dir, typename T>
-_CCCL_DEVICE void publish_tile(pipeline_context<Algorithm, Dir, T>& context, int slot)
+template <typename Algorithm, RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void publish_tile(pipeline_context<Algorithm, Dir, T, PolicySelector>& context, int slot)
 {
   auto* flags      = get_flags(context);
   auto const& tile = context.shared.tiles[slot];
@@ -719,8 +741,8 @@ _CCCL_DEVICE void publish_tile(pipeline_context<Algorithm, Dir, T>& context, int
   }
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE void wait_for_dependencies(pipeline_context<short_algorithm, Dir, T>& context, int slot)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void wait_for_dependencies(pipeline_context<short_algorithm, Dir, T, PolicySelector>& context, int slot)
 {
   auto* flags             = get_flags(context);
   auto const& tile        = context.shared.tiles[slot];
@@ -738,17 +760,19 @@ _CCCL_DEVICE void wait_for_dependencies(pipeline_context<short_algorithm, Dir, T
   }
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T>& context, int slot)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T, PolicySelector>& context, int slot)
 {
-  using context_t          = pipeline_context<short_algorithm, Dir, T>;
-  auto cta                 = cooperative_groups::this_thread_block();
-  auto const tid           = threadIdx.x;
-  int const tile_index     = context.shared.tiles[slot].index;
-  bool const is_last_tile  = tile_index == 0;
-  uint32_t const tile_size = get_tile_size(context, tile_index);
+  constexpr auto kernel          = current_policy<PolicySelector>().short_algorithm.kernel;
+  constexpr int full_tile_size   = kernel.tile_bytes / sizeof(T);
+  constexpr int elems_per_sector = BYTES_PER_SECTOR / sizeof(T);
+  auto cta                       = cooperative_groups::this_thread_block();
+  auto const tid                 = threadIdx.x;
+  int const tile_index           = context.shared.tiles[slot].index;
+  bool const is_last_tile        = tile_index == 0;
+  uint32_t const tile_size       = get_tile_size(context, tile_index);
   size_t const logical_src =
-    context.rotate_distance + context.head_size + static_cast<size_t>(tile_index) * context_t::tile_size;
+    context.rotate_distance + context.head_size + static_cast<size_t>(tile_index) * full_tile_size;
   size_t const logical_dst = logical_src - context.rotate_distance;
   size_t const dst_offset  = tile_detail::physical_interval_start<Dir>(context.size, logical_dst, tile_size);
 
@@ -758,7 +782,7 @@ _CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T>& context,
     {
       size_t const head_src =
         tile_detail::physical_interval_start<Dir>(context.size, context.rotate_distance, context.head_size);
-      for (uint32_t i = tid; i < context.head_size; i += context_t::block_size)
+      for (uint32_t i = tid; i < context.head_size; i += kernel.threads_per_block)
       {
         context.shared.head_cache[i] = context.array[head_src + i];
       }
@@ -767,7 +791,7 @@ _CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T>& context,
     size_t const wrap_src = tile_detail::physical_interval_start<Dir>(context.size, 0, context.rotate_distance);
     size_t const wrap_dst = tile_detail::physical_interval_start<Dir>(
       context.size, context.size - context.rotate_distance, context.rotate_distance);
-    for (size_t i = tid; i < context.rotate_distance; i += context_t::block_size)
+    for (size_t i = tid; i < context.rotate_distance; i += kernel.threads_per_block)
     {
       context.array[wrap_dst + i] = context.array[wrap_src + i];
     }
@@ -776,7 +800,7 @@ _CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T>& context,
     if (context.head_size > 0u)
     {
       size_t const head_dst = tile_detail::physical_interval_start<Dir>(context.size, 0, context.head_size);
-      for (uint32_t i = tid; i < context.head_size; i += context_t::block_size)
+      for (uint32_t i = tid; i < context.head_size; i += kernel.threads_per_block)
       {
         context.array[head_dst + i] = context.shared.head_cache[i];
       }
@@ -784,12 +808,12 @@ _CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T>& context,
   }
 
   size_t const src_offset  = tile_detail::physical_interval_start<Dir>(context.size, logical_src, tile_size);
-  uint32_t unaligned_elems = context.rotate_distance % context_t::elems_per_sector;
+  uint32_t unaligned_elems = context.rotate_distance % elems_per_sector;
   if constexpr (Dir == RotDir::Right)
   {
     unaligned_elems = (reinterpret_cast<uintptr_t>(context.array + src_offset) % BYTES_PER_SECTOR) / sizeof(T);
   }
-  shared_to_global_through_regs<T, context_t::block_size, context_t::tile_bytes, context_t::max_regs>(
+  shared_to_global_through_regs<T, kernel.threads_per_block, kernel.tile_bytes, kernel.max_regs_per_thread>(
     context.array + dst_offset, context.tile_cache(slot) + unaligned_elems, tile_size * sizeof(T), cta);
 }
 
@@ -797,19 +821,20 @@ _CCCL_DEVICE void store_tile(pipeline_context<short_algorithm, Dir, T>& context,
 // Long-distance rotate operations
 // ============================================================================
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T>& context, int slot)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T, PolicySelector>& context, int slot)
 {
-  using context_t        = pipeline_context<long_algorithm, Dir, T>;
-  auto* counter          = reinterpret_cast<cuda::atomic<uint32_t, cuda::thread_scope_device>*>(context.temp_storage);
-  auto* processing_order = get_processing_order(context);
-  auto cta               = cooperative_groups::this_thread_block();
-  auto const tid         = threadIdx.x;
-  auto& tile             = context.shared.tiles[slot];
+  constexpr auto kernel   = current_policy<PolicySelector>().long_algorithm.kernel;
+  constexpr int tile_size = kernel.tile_bytes / sizeof(T);
+  auto* counter           = reinterpret_cast<cuda::atomic<uint32_t, cuda::thread_scope_device>*>(context.temp_storage);
+  auto* processing_order  = get_processing_order(context);
+  auto cta                = cooperative_groups::this_thread_block();
+  auto const tid          = threadIdx.x;
+  auto& tile              = context.shared.tiles[slot];
   uint32_t const neg_head_size =
     tile_detail::get_neg_head_size<T>(context.size, context.rotate_distance, context.head_size);
   uint32_t const num_negative_tiles =
-    tile_detail::get_num_negative_tiles(context.rotate_distance, context_t::tile_size, neg_head_size);
+    tile_detail::get_num_negative_tiles(context.rotate_distance, tile_size, neg_head_size);
 
   if (tid == 0)
   {
@@ -824,17 +849,11 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T>& conte
                : tile.work_index);
 
       int32_t const tile_index = tile_detail::arr_ix_to_tile_ix(tile.index, num_negative_tiles);
-      size_t const logical_src = tile_detail::get_tile_start(
-        context.rotate_distance, context_t::tile_size, tile_index, context.head_size, neg_head_size);
+      size_t const logical_src =
+        tile_detail::get_tile_start(context.rotate_distance, tile_size, tile_index, context.head_size, neg_head_size);
       tile.size = tile_detail::get_tile_size(
-        context.size,
-        context.rotate_distance,
-        context_t::tile_size,
-        tile_index,
-        logical_src,
-        context.head_size,
-        neg_head_size);
-      assert(tile.size <= context_t::tile_size);
+        context.size, context.rotate_distance, tile_size, tile_index, logical_src, context.head_size, neg_head_size);
+      assert(tile.size <= tile_size);
       tile.src_offset = tile_detail::physical_interval_start<Dir>(context.size, logical_src, tile.size);
       tile.unaligned_elems =
         (reinterpret_cast<uintptr_t>(context.array + tile.src_offset) % BYTES_PER_SECTOR) / sizeof(T);
@@ -861,9 +880,9 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T>& conte
     cta,
     context.shared.bars[slot]);
 
-  if (tile.head_size > 0u && tid < WS)
+  if (tile.head_size > 0u && tid < warp_threads)
   {
-    for (uint32_t i = tid; i < tile.head_size; i += WS)
+    for (uint32_t i = tid; i < tile.head_size; i += warp_threads)
     {
       context.shared.head_cache[slot][i] = context.array[tile.head_src_offset + i];
     }
@@ -874,11 +893,11 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T>& conte
   {
     int32_t const tile_index = tile_detail::arr_ix_to_tile_ix(tile.index, num_negative_tiles);
     size_t const logical_dst = tile_detail::get_overwrite_start(
-      context.size, context.rotate_distance, context_t::tile_size, tile_index, context.head_size, neg_head_size);
+      context.size, context.rotate_distance, tile_size, tile_index, context.head_size, neg_head_size);
     tile.dependencies = tile_detail::get_dependencies_from(
       context.size,
       context.rotate_distance,
-      context_t::tile_size,
+      tile_size,
       tile_index,
       context.head_size,
       neg_head_size,
@@ -894,8 +913,8 @@ _CCCL_DEVICE bool claim_and_load(pipeline_context<long_algorithm, Dir, T>& conte
   return true;
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE void wait_for_dependencies(pipeline_context<long_algorithm, Dir, T>& context, int slot)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void wait_for_dependencies(pipeline_context<long_algorithm, Dir, T, PolicySelector>& context, int slot)
 {
   auto* flags = get_flags(context);
 
@@ -909,20 +928,20 @@ _CCCL_DEVICE void wait_for_dependencies(pipeline_context<long_algorithm, Dir, T>
   }
 }
 
-template <RotDir Dir, typename T>
-_CCCL_DEVICE void store_tile(pipeline_context<long_algorithm, Dir, T>& context, int slot)
+template <RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void store_tile(pipeline_context<long_algorithm, Dir, T, PolicySelector>& context, int slot)
 {
-  using context_t  = pipeline_context<long_algorithm, Dir, T>;
-  auto cta         = cooperative_groups::this_thread_block();
-  auto const tid   = threadIdx.x;
-  auto const& tile = context.shared.tiles[slot];
+  constexpr auto kernel = current_policy<PolicySelector>().long_algorithm.kernel;
+  auto cta              = cooperative_groups::this_thread_block();
+  auto const tid        = threadIdx.x;
+  auto const& tile      = context.shared.tiles[slot];
 
-  shared_to_global_through_regs<T, context_t::block_size, context_t::tile_bytes, context_t::max_regs>(
+  shared_to_global_through_regs<T, kernel.threads_per_block, kernel.tile_bytes, kernel.max_regs_per_thread>(
     context.array + tile.dst_offset, context.tile_cache(slot) + tile.unaligned_elems, tile.size * sizeof(T), cta);
 
-  if (tile.head_size > 0u && tid < WS)
+  if (tile.head_size > 0u && tid < warp_threads)
   {
-    for (uint32_t i = tid; i < tile.head_size; i += WS)
+    for (uint32_t i = tid; i < tile.head_size; i += warp_threads)
     {
       context.array[tile.head_dst_offset + i] = context.shared.head_cache[slot][i];
     }
@@ -932,10 +951,11 @@ _CCCL_DEVICE void store_tile(pipeline_context<long_algorithm, Dir, T>& context, 
 // ============================================================================
 // Pipeline execution
 // ============================================================================
-template <typename Context>
-_CCCL_DEVICE void run_tile_pipeline(Context& context)
+template <typename Algorithm, RotDir Dir, typename T, typename PolicySelector>
+_CCCL_DEVICE void run_tile_pipeline(pipeline_context<Algorithm, Dir, T, PolicySelector>& context)
 {
-  constexpr int pipeline_stages = Context::pipeline_stages;
+  constexpr auto kernel         = get_algorithm_policy<Algorithm>(current_policy<PolicySelector>()).kernel;
+  constexpr int pipeline_stages = kernel.pipeline_stages;
   int issued                    = 0;
   int published                 = 0;
   int stored                    = 0;
@@ -977,25 +997,27 @@ _CCCL_DEVICE void run_tile_pipeline(Context& context)
   }
 }
 
-template <typename Algorithm, RotDir Dir, typename T>
-CUB_ROTATE_LB(Algorithm::block_size, Algorithm::blocks_per_sm)
-__global__ void rotate_kernel(
-  T* arr,
-  size_t const size,
-  void* temp_storage,
-  size_t const rotate_distance,
-  size_t const num_tiles,
-  uint32_t const head_size,
-  OrderMode const order_mode)
+template <typename Algorithm, RotDir Dir, typename T, typename PolicySelector = policy_selector>
+__launch_bounds__(get_algorithm_policy<Algorithm>(current_policy<PolicySelector>()).kernel.threads_per_block,
+                  get_algorithm_policy<Algorithm>(current_policy<PolicySelector>()).kernel.blocks_per_sm)
+  _CCCL_KERNEL_ATTRIBUTES void rotate_kernel(
+    T* arr,
+    size_t const size,
+    void* temp_storage,
+    size_t const rotate_distance,
+    size_t const num_tiles,
+    uint32_t const head_size,
+    OrderMode const order_mode)
 {
-  using context_t = pipeline_context<Algorithm, Dir, T>;
-  assert(blockDim.x == Algorithm::block_size);
+  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr auto kernel = get_algorithm_policy<Algorithm>(policy).kernel;
+  assert(blockDim.x == kernel.threads_per_block);
 
   alignas(BYTES_PER_SECTOR) extern __shared__ unsigned char smem_raw[];
 #pragma nv_diag_suppress static_var_with_dynamic_init
-  __shared__ typename context_t::shared_storage shared;
+  __shared__ pipeline_shared_storage<Algorithm, T, PolicySelector> shared;
 
-  context_t context{
+  pipeline_context<Algorithm, Dir, T, PolicySelector> context{
     arr, size, temp_storage, rotate_distance, num_tiles, head_size, order_mode, reinterpret_cast<T*>(smem_raw), shared};
   initialize_pipeline(context);
   run_tile_pipeline(context);

@@ -61,8 +61,13 @@ void rotate_benchmark(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(num_elements);
 
   auto const normalized_rot_dist = std::min(rot_dist, num_elements - rot_dist);
-  const auto algo =
-    cub::detail::rotate::get_algorithm_to_use<T>(num_elements, normalized_rot_dist, rotate_state.max_distance_, nullptr);
+  cuda::compute_capability cc{};
+  NVBENCH_CUDA_CALL(cub::detail::ptx_compute_cap(cc));
+  const auto policy = cub::detail::rotate::policy_selector{}(cc);
+  int num_sms;
+  NVBENCH_CUDA_CALL(cub::detail::rotate::get_num_sms(nullptr, num_sms));
+  const auto algo = cub::detail::rotate::get_algorithm_to_use<T>(
+    num_elements, normalized_rot_dist, rotate_state.max_distance_, num_sms, policy);
   auto& algo_summary = state.add_summary("Algorithm");
   algo_summary.set_string("name", "Algorithm");
   algo_summary.set_string(

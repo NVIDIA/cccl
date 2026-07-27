@@ -4,6 +4,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_rotate.cuh>
+#include <cub/util_arch.cuh>
 
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
@@ -20,6 +21,22 @@
 #include <c2h/catch2_test_helper.h>
 
 using namespace cub::detail::rotate;
+
+rotate_policy get_test_policy()
+{
+  int current_device;
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  return policy_selector{}(cc);
+}
+
+template <typename T>
+size_t test_short_tile_size()
+{
+  return get_test_policy().short_algorithm.kernel.tile_bytes / sizeof(T);
+}
 
 // ============================================================================
 // Device-side test harness
@@ -263,8 +280,8 @@ C2H_TEST("DeviceRotate no-op and modular reduction", "[device][rotate]", rotate_
 
 C2H_TEST("DeviceRotate short algorithm boundary", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -288,8 +305,8 @@ C2H_TEST("DeviceRotate short algorithm boundary", "[device][rotate]", rotate_typ
 
 C2H_TEST("DeviceRotate short rotate_tiny path", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -312,8 +329,8 @@ C2H_TEST("DeviceRotate short rotate_tiny path", "[device][rotate]", rotate_types
 
 C2H_TEST("DeviceRotate short head_size alignments", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -335,9 +352,9 @@ C2H_TEST("DeviceRotate short head_size alignments", "[device][rotate]", rotate_t
 
 C2H_TEST("DeviceRotate short overcopy and tile distribution", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -372,8 +389,8 @@ C2H_TEST("DeviceRotate short overcopy and tile distribution", "[device][rotate]"
 
 C2H_TEST("DeviceRotate long algorithm cases", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -436,16 +453,20 @@ C2H_TEST("DeviceRotate long all alignments at medium scale", "[device][rotate]",
 
 TEST_CASE("DeviceRotate positive-small ordering alignment boundary", "[device][rotate]")
 {
-  constexpr size_t size            = 16'711'682;
-  constexpr size_t rotate_distance = size / 2;
-  constexpr uint32_t head_size     = 1;
+  constexpr uint32_t head_size = 1;
 
-  auto const state = bfs_visit_order<uint8_t>(size, rotate_distance, head_size);
-  REQUIRE(state.ordering_.size() == 511);
+  auto const policy          = get_test_policy().long_algorithm;
+  auto const tile_size       = static_cast<size_t>(policy.kernel.tile_bytes);
+  auto const max_distance    = policy.max_direct_dependency_distance;
+  auto const size            = 2 * tile_size * (max_distance - 1) + 2;
+  auto const rotate_distance = size / 2;
+
+  auto const state = bfs_visit_order<uint8_t>(size, rotate_distance, head_size, policy);
+  REQUIRE(state.ordering_.size() == 2 * max_distance - 1);
   REQUIRE(state.ordering_[0] == 0);
   REQUIRE(state.ordering_[1] == 1);
   REQUIRE(state.ordering_[2] == 2);
-  REQUIRE(state.max_distance_ == 256);
+  REQUIRE(state.max_distance_ == max_distance);
 
   RotateTestHarness<uint8_t> harness;
   check_edge_case(harness, {size, rotate_distance, 31});
@@ -475,9 +496,9 @@ C2H_TEST("DeviceRotate right short near-end alignments", "[device][rotate]", rot
 
 C2H_TEST("DeviceRotate maximal and near-boundary rotations", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -513,8 +534,8 @@ C2H_TEST("DeviceRotate maximal and near-boundary rotations", "[device][rotate]",
 
 C2H_TEST("DeviceRotate large-scale tests", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -591,9 +612,9 @@ C2H_TEST("DeviceRotate size zero and one", "[device][rotate]", rotate_types)
 
 C2H_TEST("DeviceRotate right short just above tiny boundary", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -621,9 +642,9 @@ C2H_TEST("DeviceRotate right short just above tiny boundary", "[device][rotate]"
 
 C2H_TEST("DeviceRotate short zero overcopy with head", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -653,9 +674,9 @@ C2H_TEST("DeviceRotate short zero overcopy with head", "[device][rotate]", rotat
 
 C2H_TEST("DeviceRotate long dual head alignment", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -689,9 +710,9 @@ C2H_TEST("DeviceRotate long dual head alignment", "[device][rotate]", rotate_typ
 
 C2H_TEST("DeviceRotate short single tile with alignments", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -723,8 +744,8 @@ C2H_TEST("DeviceRotate short single tile with alignments", "[device][rotate]", r
 
 C2H_TEST("DeviceRotate right short medium near-end distances", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -754,8 +775,8 @@ C2H_TEST("DeviceRotate right short medium near-end distances", "[device][rotate]
 
 C2H_TEST("DeviceRotate short rot_dist one large array", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -780,9 +801,9 @@ C2H_TEST("DeviceRotate short rot_dist one large array", "[device][rotate]", rota
 
 C2H_TEST("DeviceRotate long boundary sweep alignments", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = c2h::get<0, TestType>;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -819,8 +840,8 @@ C2H_TEST("DeviceRotate long boundary sweep alignments", "[device][rotate]", rota
 
 C2H_TEST("DeviceRotate long exact tile multiples", "[device][rotate]", rotate_types)
 {
-  using T             = c2h::get<0, TestType>;
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T         = c2h::get<0, TestType>;
+  const size_t TS = test_short_tile_size<T>();
 
   RotateTestHarness<T> harness;
 
@@ -861,9 +882,9 @@ inline size_t get_free_bytes()
 
 TEST_CASE("DeviceRotate sizes near UINT32_MAX", "[device][rotate]")
 {
-  using T             = uint8_t;
-  constexpr size_t S  = BYTES_PER_SECTOR / sizeof(T);
-  constexpr size_t TS = short_algorithm::tile_bytes / sizeof(T);
+  using T            = uint8_t;
+  constexpr size_t S = BYTES_PER_SECTOR / sizeof(T);
+  const size_t TS    = test_short_tile_size<T>();
 
   constexpr size_t U32MAX = static_cast<size_t>(std::numeric_limits<uint32_t>::max());
 
@@ -936,7 +957,7 @@ inline size_t get_max_test_bytes()
 C2H_TEST("DeviceRotate random short tests", "[device][rotate]", rotate_types)
 {
   using T                = c2h::get<0, TestType>;
-  constexpr size_t TS    = short_algorithm::tile_bytes / sizeof(T);
+  const size_t TS        = test_short_tile_size<T>();
   size_t const max_elems = get_max_test_bytes() / sizeof(T);
 
   RotateTestHarness<T> harness;
@@ -952,7 +973,7 @@ C2H_TEST("DeviceRotate random short tests", "[device][rotate]", rotate_types)
 C2H_TEST("DeviceRotate random long tests", "[device][rotate]", rotate_types)
 {
   using T                = c2h::get<0, TestType>;
-  constexpr size_t TS    = short_algorithm::tile_bytes / sizeof(T);
+  const size_t TS        = test_short_tile_size<T>();
   size_t const max_elems = get_max_test_bytes() / sizeof(T);
 
   RotateTestHarness<T> harness;
