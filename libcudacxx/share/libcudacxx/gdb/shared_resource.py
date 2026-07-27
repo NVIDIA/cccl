@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from types import ModuleType
 
 import memory_resource
@@ -30,25 +31,46 @@ def _is_shared_resource(value_type: gdb.Type) -> bool:
 
 
 class SharedResourcePrinter:
-    """Summarize the ownership state of a CUDA shared resource."""
+    """Print the ownership state and the owned resource of a shared resource."""
 
     def __init__(self, value: gdb.Value) -> None:
         self.value = value
 
-    def to_string(self) -> str:
-        value_type = self.value.type.strip_typedefs().unqualified()
-        type_name = memory_resource.public_type_name(value_type)
+    def _control_block(self) -> gdb.Value | None:
+        """Return the control block, or None if this handle is empty."""
         # shared_resource holds a __shared_block_ptr, and both the wrapper and
         # the pointer spell their member __block_.
         control_block = self.value["__block_"]["__block_"]
         if int(control_block) == 0:
-            return f"{type_name} empty"
+            return None
+        return control_block.dereference()
 
-        block = control_block.dereference()
+    def to_string(self) -> str:
+        value_type = self.value.type.strip_typedefs().unqualified()
+        type_name = memory_resource.public_type_name(value_type)
+        block = self._control_block()
+        if block is None:
+            return f"{type_name} use_count=0, resource=nullptr"
+
         # cuda::std::atomic<int> keeps its value in __a.__a_value.
         use_count = int(block["__ref_count"]["__a"]["__a_value"])
-        resource = int(block["__payload"].address)
-        return f"{type_name} use_count={use_count}, resource={resource:#x}"
+        # A control block reached through a live pointer always has an address,
+        # so the fallback below guards against an unreadable frame rather than
+        # against any state the scenario can reach.
+        address = block["__payload"].address
+        location = "<invalid address>" if address is None else f"{int(address):#x}"
+        return f"{type_name} use_count={use_count}, resource={location}"
+
+    def children(self) -> Iterator[tuple[str, gdb.Value]]:
+        # Present the owned resource the way std::shared_ptr presents its
+        # pointer: one step away, so that expanding a handle does not print the
+        # implementation details of the resource itself.
+        block = self._control_block()
+        if block is None:
+            return
+        address = block["__payload"].address
+        if address is not None:
+            yield "resource", address
 
 
 class SharedResourcePrinterLookup(gdb.printing.PrettyPrinter):
