@@ -31,8 +31,8 @@ analysis and publishing jobs.
 
 ## Diagnose and group
 
-Start with `git diff "${PR_BASE_SHA}" HEAD`, then use focused, read-only source inspection
-to connect failures to the PR or relevant implementation. Do not run builds or tests.
+Inspect `git diff "${PR_BASE_SHA}" HEAD` and relevant source when they can clarify the
+failure or connect it to the PR. Do not run builds or tests.
 
 - Use each job's earliest actionable failure; ignore subsequent cleanup, wrapper, and
   aggregation errors.
@@ -52,17 +52,15 @@ On success, use `status: ok` and an empty `error`.
 
 For each group:
 
-- `title`: specific failure mechanism, at most 80 characters; never a generic workflow or
-  job name.
+- `title`: succinct, specific failure mechanism; never a generic workflow or job name.
 - `explanation`: one or two sentences describing the failure and developer impact.
-- `evidence`: one to three records containing no more than three short log lines total,
-  copied verbatim except for ANSI escapes. Each referenced job must belong to the group.
-  Use at most one record per job and the job step's numeric `number`, or `0` when
-  unavailable.
+- `evidence`: the decisive log lines, copied verbatim except for ANSI escapes. Each
+  referenced job must belong to the group. Use the job step's numeric `number`, or `0`
+  when unavailable.
 - `root_cause`: one or two sentences identifying the mechanism; if uncertain, say what
   evidence is missing.
-- `source_locations`: up to five supporting repository-relative paths with exact
-  one-based line numbers, or an empty array. Do not provide URLs.
+- `source_locations`: supporting repository-relative paths with exact one-based line
+  numbers, or an empty array. Do not provide URLs.
 - `next_steps`: one or two sentences giving the smallest useful fix or verification,
   including a targeted command when available.
 - `agent_prompt`: a self-contained prompt with concrete fix guidance and, when useful, a
@@ -72,5 +70,5 @@ For each group:
 - `job_ids`: every primary job in the group.
 
 In `jobs`, provide the exact numeric ID and name of every job referenced by a group,
-evidence record, or `cancelled_job_ids`. Use only observed log lines, IDs, names, step
-numbers, source locations, and commands.
+evidence record, or `cancelled_job_ids`. Do not invent log lines, IDs, names, step
+numbers, or source locations.
