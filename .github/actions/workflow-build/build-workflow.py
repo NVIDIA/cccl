@@ -653,6 +653,16 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
     else:
         producer_matrix_job = matrix_job
 
+    # py_ctk_mode is a consumer-only tag: it selects the pip extra the test
+    # installs, but the wheel build ignores it. Drop it from the producer so the
+    # pinned/latest/sysctk variants of a given wheel share one build instead of
+    # each spawning an identical, redundant producer (the merge below dedupes
+    # producers by their name/command).
+    if "py_ctk_mode" in producer_matrix_job:
+        if producer_matrix_job is matrix_job:
+            producer_matrix_job = copy.deepcopy(matrix_job)
+        del producer_matrix_job["py_ctk_mode"]
+
     producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
 
     consumers_json = []
