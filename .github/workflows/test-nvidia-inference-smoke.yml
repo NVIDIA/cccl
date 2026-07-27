@@ -119,8 +119,6 @@ jobs:
       - name: Publish the failure analysis
         run: |
           grep -q 'compute_999' "${RUNNER_TEMP}/agent-summary.md"
-          grep -q '^Log retrieval: succeeded' "${RUNNER_TEMP}/agent-summary.md"
-          grep -q 'Repository inspection:' "${RUNNER_TEMP}/agent-summary.md"
 
           {
             echo "## NVIDIA Inference Hub failure analysis"

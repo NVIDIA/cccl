@@ -172,8 +172,6 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
             f"{index}. {sanitize_html(group['title'], limit=100)}"
             "</strong>"
             f" &middot; {len(job_ids)} {plural(len(job_ids), 'job')}"
-            f" &middot; {group['classification']}"
-            f" &middot; {group['confidence'].title()} confidence"
             "</summary>"
         ),
         "",
@@ -184,12 +182,7 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
     if evidence:
         lines.extend(["", "**Evidence:**", "", *evidence])
 
-    root_cause_label = {
-        "confirmed": "Root cause",
-        "likely": "Likely root cause",
-        "unknown": "Root cause not yet established",
-    }[group["root_cause_status"]]
-    root_cause = f"**{root_cause_label}:** {sanitize_inline(group['root_cause'])}"
+    root_cause = f"**Root cause:** {sanitize_inline(group['root_cause'])}"
     source_links = []
     for source in group["source_locations"][:5]:
         url = source_url(repository, head_sha, source["path"], source["line"])
@@ -247,55 +240,15 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
 def render_report(analysis, repository, run_id, head_sha):
     if analysis["status"] != "ok":
         error = sanitize_inline(analysis["error"] or "GitHub logs were unavailable")
-        return (
-            "**Summary:** AI failure analysis was unavailable.\n"
-            f"**Start here:** Inspect the workflow logs directly. {error}\n"
-        )
+        return f"**AI failure analysis unavailable:** {error}\n"
 
     jobs = build_job_index(analysis["jobs"])
-    primary_job_ids = unique(
-        job_id for group in analysis["groups"] for job_id in group["job_ids"]
-    )
-    downstream_job_ids = unique(
-        item["job_id"] for item in analysis["downstream_failures"]
-    )
     cancelled_job_ids = unique(analysis["cancelled_job_ids"])
-    group_count = len(analysis["groups"])
-
-    lines = [
-        (
-            f"**Summary:** {group_count} primary "
-            f"{plural(group_count, 'failure group')} across {len(primary_job_ids)} "
-            f"{plural(len(primary_job_ids), 'job')}; {len(downstream_job_ids)} "
-            f"downstream {plural(len(downstream_job_ids), 'failure')}; "
-            f"{len(cancelled_job_ids)} cancelled "
-            f"{plural(len(cancelled_job_ids), 'job')}. "
-            f"{sanitize_inline(analysis['summary'], limit=600)}"
-        ),
-        f"**Start here:** {sanitize_inline(analysis['start_here'], limit=600)}",
-        "",
-    ]
+    lines = []
 
     for index, group in enumerate(analysis["groups"], start=1):
         lines.extend(render_group(index, group, jobs, repository, run_id, head_sha))
         lines.append("")
-
-    if analysis["downstream_failures"]:
-        lines.extend(
-            [
-                "<details>",
-                "<summary><strong>Downstream failures</strong></summary>",
-                "",
-                *[
-                    f"- {job_link(item['job_id'], jobs, repository, run_id)}: "
-                    f"{sanitize_inline(item['reason'], limit=600)}"
-                    for item in analysis["downstream_failures"]
-                ],
-                "",
-                "</details>",
-                "",
-            ]
-        )
 
     if cancelled_job_ids:
         lines.extend(
@@ -313,16 +266,6 @@ def render_report(analysis, repository, run_id, head_sha):
             ]
         )
 
-    inspected_paths = ", ".join(
-        f"<code>{html.escape(clean_text(path, 500), quote=True)}</code>"
-        for path in analysis["inspected_paths"][:50]
-    )
-    lines.extend(
-        [
-            "Log retrieval: succeeded.",
-            f"Repository inspection: {inspected_paths or 'none reported'}.",
-        ]
-    )
     report = "\n".join(lines) + "\n"
     if len(report.encode("utf-8")) > REPORT_LIMIT:
         fail(f"rendered report exceeds {REPORT_LIMIT:,} bytes")

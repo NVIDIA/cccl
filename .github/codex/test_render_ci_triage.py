@@ -16,23 +16,18 @@ def sample_analysis():
     return {
         "status": "ok",
         "error": "",
-        "summary": (
-            "Both builds reject compute_999; do not visit https://evil.example/a "
-            "or notify @team."
-        ),
-        "start_here": "Remove compute_999 from src/example.cpp before #123.",
         "jobs": [
             {"id": 101, "name": "CUDA <build> @team"},
             {"id": 102, "name": "Thrust build"},
-            {"id": 103, "name": "CI gate"},
             {"id": 104, "name": "Cancelled matrix job"},
         ],
         "groups": [
             {
                 "title": "Unsupported compute_999 target </summary>",
-                "classification": "PR-related",
-                "confidence": "high",
-                "explanation": "nvcc rejects the requested target.",
+                "explanation": (
+                    "nvcc rejects the target; do not visit https://evil.example/a "
+                    "or notify @team."
+                ),
                 "evidence": [
                     {
                         "job_id": 101,
@@ -49,7 +44,6 @@ def sample_analysis():
                         ],
                     },
                 ],
-                "root_cause_status": "confirmed",
                 "root_cause": "The source requests an unsupported architecture.",
                 "source_locations": [{"path": "src/example.cpp", "line": 2}],
                 "next_steps": "Edit src/example.cpp and run test_script.py.",
@@ -61,14 +55,7 @@ def sample_analysis():
                 "job_ids": [101, 102],
             }
         ],
-        "downstream_failures": [
-            {
-                "job_id": 103,
-                "reason": "The gate reports the primary compile failures.",
-            }
-        ],
         "cancelled_job_ids": [104],
-        "inspected_paths": ["src/example.cpp"],
     }
 
 
@@ -83,12 +70,18 @@ class RenderCiTriageTest(unittest.TestCase):
             "a" * 40,
         )
 
-    def test_keeps_summary_visible_and_constructs_links(self):
+    def test_opens_first_group_and_constructs_links(self):
         report = self.render()
 
-        self.assertTrue(report.startswith("**Summary:**"))
-        self.assertLess(report.index("**Start here:**"), report.index("<details open>"))
+        self.assertTrue(report.startswith("<details open>"))
         self.assertEqual(report.count("<details open>"), 1)
+        self.assertIn("&middot; 2 jobs</summary>", report)
+        self.assertNotIn("Summary:", report)
+        self.assertNotIn("Start here:", report)
+        self.assertNotIn("confidence", report)
+        self.assertNotIn("Downstream failures", report)
+        self.assertNotIn("Log retrieval:", report)
+        self.assertNotIn("Repository inspection:", report)
         self.assertIn(
             "https://github.com/NVIDIA/cccl/actions/runs/12345/job/101#step:4:1",
             report,
@@ -121,18 +114,14 @@ class RenderCiTriageTest(unittest.TestCase):
         analysis = {
             "status": "log_retrieval_failed",
             "error": "GitHub returned <b>403</b> @team",
-            "summary": "",
-            "start_here": "",
             "jobs": [],
             "groups": [],
-            "downstream_failures": [],
             "cancelled_job_ids": [],
-            "inspected_paths": [],
         }
 
         report = self.render(analysis)
 
-        self.assertIn("analysis was unavailable", report)
+        self.assertIn("analysis unavailable", report)
         self.assertIn("&lt;b&gt;403&lt;/b&gt;", report)
         self.assertNotIn("@team", report)
 

@@ -12,12 +12,6 @@
     "error": {
       "type": "string"
     },
-    "summary": {
-      "type": "string"
-    },
-    "start_here": {
-      "type": "string"
-    },
     "jobs": {
       "type": "array",
       "items": {
@@ -45,24 +39,6 @@
         "properties": {
           "title": {
             "type": "string"
-          },
-          "classification": {
-            "type": "string",
-            "enum": [
-              "PR-related",
-              "infrastructure",
-              "dependency",
-              "flaky",
-              "unknown"
-            ]
-          },
-          "confidence": {
-            "type": "string",
-            "enum": [
-              "high",
-              "medium",
-              "low"
-            ]
           },
           "explanation": {
             "type": "string"
@@ -92,14 +68,6 @@
                 "lines"
               ]
             }
-          },
-          "root_cause_status": {
-            "type": "string",
-            "enum": [
-              "confirmed",
-              "likely",
-              "unknown"
-            ]
           },
           "root_cause": {
             "type": "string"
@@ -138,11 +106,8 @@
         },
         "required": [
           "title",
-          "classification",
-          "confidence",
           "explanation",
           "evidence",
-          "root_cause_status",
           "root_cause",
           "source_locations",
           "next_steps",
@@ -151,47 +116,18 @@
         ]
       }
     },
-    "downstream_failures": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "job_id": {
-            "type": "integer"
-          },
-          "reason": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "job_id",
-          "reason"
-        ]
-      }
-    },
     "cancelled_job_ids": {
       "type": "array",
       "items": {
         "type": "integer"
-      }
-    },
-    "inspected_paths": {
-      "type": "array",
-      "items": {
-        "type": "string"
       }
     }
   },
   "required": [
     "status",
     "error",
-    "summary",
-    "start_here",
     "jobs",
     "groups",
-    "downstream_failures",
-    "cancelled_job_ids",
-    "inspected_paths"
+    "cancelled_job_ids"
   ]
 }
