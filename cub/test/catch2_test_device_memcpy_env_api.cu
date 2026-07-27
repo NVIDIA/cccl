@@ -98,7 +98,7 @@ struct BatchedMemcpyPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceMemcpy::Batched env-based API with tuning", "[memcpy][env]")
+C2H_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]")
 {
   // example-begin memcpy-batched-tuning
   // Source data: 3 buffers laid out contiguously

@@ -180,7 +180,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     result.merge(ctx.get_start_events());
   }
 
-  // @@@@ TODO@@@@ explain this algorithm, and why we need to go in reversed
+  // @@@@ TODO@@@@ explain this algorithm, and why we need to go in reversed
   // order because we skipped equivalent dependencies that were stored
   // contiguously after sorting.
   instance_id_t previous_instance_id = instance_id_t::invalid;
@@ -193,7 +193,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     else
     {
       assert(previous_instance_id != instance_id_t::invalid);
-      // @@@@ TODO @@@@ make a unit test to make sure we have the same instance id for different acquired_data
+      // @@@@ TODO @@@@ make a unit test to make sure we have the same instance id for different acquired_data
       // ? fprintf(stderr, "SETTING SKIPPED INSTANCE ID ... %d\n", previous_instance_id);
       it->set_instance_id(previous_instance_id);
     }

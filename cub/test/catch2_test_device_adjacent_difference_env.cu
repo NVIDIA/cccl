@@ -14,6 +14,8 @@ struct stream_registry_factory_t;
 
 #include <cuda/__execution/tune.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, device_adjacent_difference_subtract_left_copy);
@@ -242,7 +244,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("AdjacentDifferencePolicy", "[adjacent_difference][device]")
+C2H_TEST("Test AdjacentDifferencePolicy properties", "[adjacent_difference][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::AdjacentDifferencePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::AdjacentDifferencePolicy>);
@@ -270,5 +272,15 @@ C2H_TEST("AdjacentDifferencePolicy", "[adjacent_difference][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "AdjacentDifferencePolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_LDG"
+             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

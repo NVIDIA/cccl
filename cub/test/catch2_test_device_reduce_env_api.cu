@@ -676,7 +676,7 @@ struct ReducePolicySelector
 };
 // example-end reduce-policy-selector
 
-C2H_TEST("cub::DeviceReduce::Reduce env-based API with tuning", "[reduce][env]")
+C2H_TEST("cub::DeviceReduce::Reduce accepts a custom policy selector", "[reduce][env]")
 {
   // example-begin reduce-tuning
   auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};

@@ -29,7 +29,7 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
 
   for (int item = 0; item < ITEMS_PER_THREAD; item++)
   {
-    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item);
+    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
   }
 
   const int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -108,8 +108,8 @@ c2h::device_vector<T> compute_reference(int valid_items)
     for (int warp_id = 0; warp_id < TOTAL_WARPS; warp_id++)
     {
       thrust::fill(c2h::device_policy,
-                   d_input.begin() + warp_id * tile_size + valid_items,
-                   d_input.begin() + (warp_id + 1) * tile_size,
+                   d_input.begin() + warp_id * tile_size + valid_items, // NOLINT(bugprone-misplaced-widening-cast)
+                   d_input.begin() + (warp_id + 1) * tile_size, // NOLINT(bugprone-misplaced-widening-cast)
                    T{});
     }
   }

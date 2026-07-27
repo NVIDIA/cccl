@@ -22,6 +22,7 @@
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <vector>
 
@@ -87,7 +88,7 @@ protected:
     // graph events by making them depend on a single node instead
     if (events.size() > 16)
     {
-      cudaGraphNode_t n;
+      cudaGraphNode_t n = nullptr;
 
       ::std::vector<cudaGraphNode_t> nodes;
 
@@ -123,7 +124,7 @@ protected:
 
         // Create a new empty graph node which depends on the previous ones,
         // empty the list of events and replace it with this single "empty" event
-        cuda_safe_call(cudaGraphAddEmptyNode(&n, bctx_graph, nodes.data(), nodes.size()));
+        n = cuda_try<cudaGraphAddEmptyNode>(bctx_graph, nodes.data(), nodes.size());
       }
 
       events.clear();

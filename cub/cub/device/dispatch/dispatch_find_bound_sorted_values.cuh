@@ -134,7 +134,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
        "Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n", cc.get(), ss.str().c_str());))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block * active_policy.items_per_thread);
+  const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block) * active_policy.items_per_thread;
   if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
   {
     return cudaErrorInvalidValue;

@@ -13,15 +13,16 @@
 #  pragma nv_diag_suppress 20011
 #endif
 
-#include <thrust/device_vector.h>
-#include <thrust/fill.h>
-#include <thrust/host_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/logical.h>
 
+#include <cuda/buffer>
 #include <cuda/iterator>
+#include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -44,6 +45,26 @@ struct iota_pair
   __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
   {
     return _Pair{__i, __i};
+  }
+};
+
+// Present keys [0, num_keys) are found, absent keys [num_keys, ...) are not
+struct match_expected
+{
+  const int* found;
+  int num_keys;
+
+  __device__ bool operator()(int i) const noexcept
+  {
+    return static_cast<bool>(found[i]) == (i < num_keys);
+  }
+};
+
+struct is_nonzero
+{
+  __device__ bool operator()(int v) const noexcept
+  {
+    return v != 0;
   }
 };
 
@@ -71,33 +92,34 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
 
   constexpr int num_keys = 400;
 
-  map_type map{static_cast<::cuda::std::size_t>(num_keys * 2),
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  map_type map{stream,
+               mr,
+               static_cast<::cuda::std::size_t>(num_keys * 2),
                cudax::cuco::empty_key{key_type{-1}},
                cudax::cuco::empty_value{key_type{-1}}};
 
   auto __pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
-  map.insert(__pairs, __pairs + num_keys);
+  map.insert(stream, __pairs, __pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
-  ::thrust::device_vector<int> found(2 * num_keys, 0);
-  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  auto found = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  map.contains(
+    stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
 
-  ::thrust::host_vector<int> h_found(found);
-  int mismatches = 0;
-  for (int i = 0; i < 2 * num_keys; ++i)
-  {
-    const bool expected = i < num_keys; // present keys found, absent keys not
-    mismatches += (static_cast<bool>(h_found[i]) != expected);
-  }
-  REQUIRE(mismatches == 0);
+  REQUIRE(::thrust::all_of(
+    ::thrust::cuda::par.on(stream.get()),
+    cuda::counting_iterator<int>{0},
+    cuda::counting_iterator<int>{2 * num_keys},
+    match_expected{found.data(), num_keys}));
 
   // After clear the map is empty, so none of the previously inserted keys are found
-  map.clear();
-  ::thrust::fill(found.begin(), found.end(), 1);
-  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, found.begin());
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-  REQUIRE(::thrust::none_of(found.begin(), found.begin() + num_keys, [] __device__(int v) {
-    return v != 0;
-  }));
+  map.clear(stream);
+  auto cleared = ::cuda::make_buffer<int>(stream, mr, num_keys, 1);
+  map.contains(
+    stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, cleared.begin());
+  REQUIRE(
+    ::thrust::none_of(::thrust::cuda::par.on(stream.get()), cleared.data(), cleared.data() + num_keys, is_nonzero{}));
 }

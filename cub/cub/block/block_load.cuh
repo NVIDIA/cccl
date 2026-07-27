@@ -69,7 +69,7 @@ LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid * ItemsPerThread + i];
+    dst_items[i] = block_src_it[linear_tid * ItemsPerThread + i]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -313,7 +313,7 @@ LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid + i * ThreadsPerBlock];
+    dst_items[i] = block_src_it[linear_tid + i * ThreadsPerBlock]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -326,7 +326,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = transform_op(block_src_it[linear_tid + i * ThreadsPerBlock]);
+    dst_items[i] =
+      transform_op(block_src_it[linear_tid + i * ThreadsPerBlock]); // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 } // namespace detail
@@ -484,7 +485,8 @@ LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]);
+    new (&dst_items[i])
+      T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]); // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -730,7 +732,7 @@ enum BlockLoadAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(BlockLoadAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockLoadAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -746,9 +748,8 @@ namespace detail
       return "BLOCK_LOAD_WARP_TRANSPOSE";
     case BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED:
       return "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
-    default:
-      return "<unknown BlockLoadAlgorithm>";
   }
+  return "<unknown BlockLoadAlgorithm>";
 }
 } // namespace detail
 

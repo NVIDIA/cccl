@@ -37,7 +37,7 @@ struct TransformPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceTransform::Transform env-based API with tuning", "[transform][env]")
+C2H_TEST("cub::DeviceTransform::Transform accepts a custom policy selector", "[transform][env]")
 {
   // example-begin transform-tuning
   auto d_input  = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7};
@@ -59,6 +59,14 @@ C2H_TEST("cub::DeviceTransform::Transform env-based API with tuning", "[transfor
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_output == expected);
+}
+
+#else // _CCCL_STD_VER >= 2020
+
+// we need a dummy test for C++17, otherwise the return code of the test executable is 2 (not 0)
+C2H_TEST("cub::DeviceTransform::Transform dummy test", "[transform][env]")
+{
+  SUCCEED();
 }
 
 #endif // _CCCL_STD_VER >= 2020

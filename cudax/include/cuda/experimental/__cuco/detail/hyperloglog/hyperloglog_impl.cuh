@@ -31,10 +31,10 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/span>
 
@@ -42,7 +42,6 @@
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
-#include <cuda/experimental/memory_resource.cuh>
 
 #include <cooperative_groups.h>
 
@@ -109,6 +108,12 @@ public:
       , __sketch{reinterpret_cast<int*>(__sketch_span.data()), __sketch_bytes() / sizeof(__register_type)}
   // MSVC fails with __register_type*, use int* instead
   {
+    constexpr ::cuda::std::size_t __minimum_sketch_bytes = sizeof(__register_type) * (1ull << 4);
+    if (__sketch_span.size() < __minimum_sketch_bytes)
+    {
+      _CCCL_THROW(::std::invalid_argument, "Minimum required sketch size is 0.0625KB or 64B");
+    }
+
     if (!::cuda::is_aligned(__sketch_span.data(), __sketch_alignment()))
     {
       _CCCL_THROW(::std::invalid_argument, "Sketch storage has insufficient alignment");
@@ -163,7 +168,7 @@ public:
   _CCCL_DEVICE_API constexpr void __add(const _Tp& __item) noexcept
   {
     const auto __h = __policy.hash(__item);
-    this->__update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
+    __update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
   }
 
   //! @brief Asynchronously adds to be counted items to the estimator.
@@ -232,7 +237,7 @@ public:
           __kernel,
           __shmem_bytes);
 
-        const auto __ptr      = ::cuda::std::addressof(__first[0]);
+        const auto __ptr      = ::cuda::std::to_address(__first);
         void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
                                  const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
@@ -331,7 +336,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE_API constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
+  _CCCL_DEVICE_API constexpr void __merge(_CG __group, const __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
   {
     if (__other.__precision != __precision)
     {
@@ -390,12 +395,11 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t
-  __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API double __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
     __shared__ ::cuda::atomic<::cuda::std::int32_t, ::cuda::std::thread_scope_block> __block_zeroes;
-    __shared__ ::cuda::std::size_t __estimate;
+    __shared__ __fp_type __estimate;
 
     if (__group.thread_rank() == 0)
     {
@@ -444,8 +448,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource>
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
-  __estimate(_HostMemoryResource __host_mr, ::cuda::stream_ref __stream) const
+  [[nodiscard]] _CCCL_HOST_API double __estimate(_HostMemoryResource __host_mr, ::cuda::stream_ref __stream) const
   {
     const auto __num_regs = __sketch.size();
 
@@ -527,7 +530,7 @@ public:
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
-    auto const __precision_from_sd =
+    const auto __precision_from_sd =
       static_cast<::cuda::std::int32_t>(::cuda::std::ceil(2.0 * ::cuda::std::log2(1.106 / __standard_deviation)));
 
     //  minimum precision is 4 or 64 bytes

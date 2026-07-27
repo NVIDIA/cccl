@@ -78,6 +78,8 @@ The current device can still be set via the CUDA Runtime, but cccl-runtime APIs 
 explicit device argument. cccl-runtime also does not provide APIs that read or mutate the current device, by design.
 
 
+.. _cccl-runtime-cudart-default-stream:
+
 Default stream interop
 ----------------------
 
@@ -106,3 +108,24 @@ Example: wrapping the default stream
 
 The above applies to Driver API interop cases as well, where the current context must be managed by the user rather than
 the current device setting.
+
+
+.. _cccl-runtime-cudart-non-blocking-streams:
+
+Non-blocking stream creation
+----------------------------
+
+Constructing a new :cpp:struct:`cuda::stream` always creates a stream with CUDA Runtime non-blocking behavior. This is
+the behavior of CCCL Runtime-created streams; wrapping or taking ownership of an existing ``cudaStream_t`` preserves the
+behavior of that handle.
+
+In the CUDA Runtime API, the blocking/non-blocking stream creation flag controls synchronization with the CUDA default
+(NULL) stream. Because CCCL Runtime treats the default stream as an interop case rather than a first-class object,
+as described in :ref:`default stream interop <cccl-runtime-cudart-default-stream>`, :cpp:struct:`cuda::stream` does not
+expose a blocking/non-blocking construction option.
+
+New Runtime code should express ordering between explicit streams directly, for example by making one
+:cpp:class:`cuda::stream_ref` wait on another. Code that needs legacy CUDA Runtime implicit stream semantics should wrap
+the relevant CUDA Runtime stream handle in :cpp:class:`cuda::stream_ref` (or take ownership with
+``cuda::stream::from_native_handle``); operations submitted through the wrapper use the same native handle and preserve
+that handle's CUDA Runtime semantics, including any default-stream synchronization semantics.

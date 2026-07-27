@@ -23,7 +23,7 @@ template <typename InputValueT, typename OutputValueT, typename AccumT, typename
 struct my_policy_hub
 {
   // from Policy500 of the CUB scan tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ScanPolicyT =
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;

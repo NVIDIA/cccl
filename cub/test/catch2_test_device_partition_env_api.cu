@@ -146,7 +146,7 @@ struct PartitionPolicySelector
 };
 // example-end partition-if-policy-selector
 
-C2H_TEST("cub::DevicePartition::If env-based API with tuning", "[partition][env]")
+C2H_TEST("cub::DevicePartition::If accepts a custom policy selector", "[partition][env]")
 {
   // example-begin partition-if-tuning
   auto d_in           = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -182,17 +182,18 @@ struct ThreeWayPartitionPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ThreeWayPartitionPolicy
   {
-    return {.threads_per_block = 256,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 9,
-            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::ThreeWayPartitionAlgorithm::lookback,
+            .lookback  = {.threads_per_block = 256,
+                          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 9,
+                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                          .load_modifier     = cub::LOAD_DEFAULT,
+                          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end partition-three-way-policy-selector
 
-C2H_TEST("cub::DevicePartition::If three-way env-based API with tuning", "[partition][env]")
+C2H_TEST("cub::DevicePartition::If three-way accepts a custom policy selector", "[partition][env]")
 {
   // example-begin partition-three-way-tuning
   auto d_in             = thrust::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8, 63};

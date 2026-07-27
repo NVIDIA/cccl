@@ -346,16 +346,16 @@ __launch_bounds__(int(
                     OffsetT,
                     StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const FlagsInputIteratorT d_flags,
-    _CCCL_GRID_CONSTANT const SelectedOutputIteratorT d_selected_out,
-    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
+    const InputIteratorT d_in,
+    const FlagsInputIteratorT d_flags,
+    const SelectedOutputIteratorT d_selected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectOpT select_op,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
@@ -412,6 +412,8 @@ struct policy_selector_from_hub
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceSelect and DevicePartition
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items
  *
@@ -454,7 +456,7 @@ template <
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
     detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
     SelectionOpt>>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") DispatchSelectIf
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") DispatchSelectIf
 {
   /******************************************************************************
    * Types and constants
@@ -603,7 +605,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") Dis
 
     constexpr auto threads_per_block = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
     constexpr auto items_per_thread  = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
-    constexpr auto tile_size         = static_cast<OffsetT>(threads_per_block * items_per_thread);
+    constexpr auto tile_size         = OffsetT{threads_per_block * items_per_thread};
 
     // The maximum number of items per partition
     static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
@@ -918,7 +920,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
   constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
   constexpr auto items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
-  constexpr auto tile_size         = static_cast<OffsetT>(threads_per_block * items_per_thread);
+  constexpr auto tile_size         = OffsetT{threads_per_block * items_per_thread};
 
   static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr auto full_tile_partition_size =

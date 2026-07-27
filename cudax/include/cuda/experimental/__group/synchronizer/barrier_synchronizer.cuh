@@ -144,11 +144,12 @@ public:
 };
 
 template <class _Barrier, ::cuda::std::size_t _Np>
-_CCCL_DEVICE barrier_synchronizer(::cuda::std::span<_Barrier, _Np>) -> barrier_synchronizer<_Barrier, _Np>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(::cuda::std::span<_Barrier, _Np>)
+  -> barrier_synchronizer<_Barrier, _Np>;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_spannable<_Tp&> _CCCL_AND(!::cuda::std::__is_cuda_std_span_v<::cuda::std::remove_cv_t<_Tp>>))
-_CCCL_DEVICE barrier_synchronizer(_Tp&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(_Tp&)
   -> barrier_synchronizer<_SpanElementType<decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))>,
                           decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))::extent>;
 } // namespace cuda::experimental

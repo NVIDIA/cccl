@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 #include <cuda/iterator>
 #include <cuda/stream>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, device_memcpy_batched);
@@ -181,50 +183,88 @@ C2H_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("BatchedCopyPolicy", "[memcpy][device]")
+C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::BatchedCopyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BatchedCopyPolicy>);
 
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::BatchedCopySmallBufferPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BatchedCopySmallBufferPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::BatchedCopyLargeBufferPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BatchedCopyLargeBufferPolicy>);
+
   // aggregate init
-  constexpr auto p1 = cub::BatchedCopyPolicy{
-    cub::BatchedCopySmallBufferPolicy{
-      128,
-      4,
-      8,
-      false,
-      256 * 32,
-      128,
-      8 * 1024,
-      cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
-      cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}},
-    cub::BatchedCopyLargeBufferPolicy{256, 32}};
+  constexpr auto p1_small = cub::BatchedCopySmallBufferPolicy{
+    128,
+    4,
+    8,
+    false,
+    256 * 32,
+    128,
+    8 * 1024,
+    cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
+    cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+  constexpr auto p1_large = cub::BatchedCopyLargeBufferPolicy{256, 32};
+  constexpr auto p1       = cub::BatchedCopyPolicy{p1_small, p1_large};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto p2 = cub::BatchedCopyPolicy{
-    .small_buffer =
-      cub::BatchedCopySmallBufferPolicy{
-        .threads_per_block     = 128,
-        .buffers_per_thread    = 4,
-        .bytes_per_thread      = 8,
-        .prefer_pow2_bits      = false,
-        .block_level_tile_size = 256 * 32,
-        .warp_level_threshold  = 128,
-        .block_level_threshold = 8 * 1024,
-        .buffer_lookback_delay =
-          cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
-        .block_lookback_delay =
-          cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}},
-    .large_buffer = cub::BatchedCopyLargeBufferPolicy{.threads_per_block = 256, .bytes_per_thread = 32}};
+  constexpr auto p2_small = cub::BatchedCopySmallBufferPolicy{
+    .threads_per_block     = 128,
+    .buffers_per_thread    = 4,
+    .bytes_per_thread      = 8,
+    .prefer_pow2_bits      = false,
+    .block_level_tile_size = 256 * 32,
+    .warp_level_threshold  = 128,
+    .block_level_threshold = 8 * 1024,
+    .buffer_lookback_delay =
+      cub::LookbackDelayPolicy{.kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
+    .block_lookback_delay = cub::LookbackDelayPolicy{
+      .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+  constexpr auto p2_large = cub::BatchedCopyLargeBufferPolicy{.threads_per_block = 256, .bytes_per_thread = 32};
+  constexpr auto p2       = cub::BatchedCopyPolicy{.small_buffer = p2_small, .large_buffer = p2_large};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto p2_small = p1_small;
+  constexpr auto p2_large = p1_large;
+  constexpr auto p2       = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(p1_small == p2_small);
+  STATIC_REQUIRE_FALSE(p1_small != p2_small);
+
+  STATIC_REQUIRE(p1_large == p2_large);
+  STATIC_REQUIRE_FALSE(p1_large != p2_large);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(
+    to_string(p1_small)
+    == "BatchedCopySmallBufferPolicy { .threads_per_block = 128, .buffers_per_thread = 4"
+       ", .bytes_per_thread = 8, .prefer_pow2_bits = 0, .block_level_tile_size = 8192"
+       ", .warp_level_threshold = 128, .block_level_threshold = 8192"
+       ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", .block_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 } }");
+  REQUIRE(to_string(p1_large) == "BatchedCopyLargeBufferPolicy { .threads_per_block = 256, .bytes_per_thread = 32 }");
+  REQUIRE(
+    to_string(p1)
+    == "BatchedCopyPolicy { .small_buffer = BatchedCopySmallBufferPolicy { .threads_per_block = 128"
+       ", .buffers_per_thread = 4, .bytes_per_thread = 8, .prefer_pow2_bits = 0"
+       ", .block_level_tile_size = 8192, .warp_level_threshold = 128, .block_level_threshold = 8192"
+       ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", .block_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 } }"
+       ", .large_buffer = BatchedCopyLargeBufferPolicy { .threads_per_block = 256"
+       ", .bytes_per_thread = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

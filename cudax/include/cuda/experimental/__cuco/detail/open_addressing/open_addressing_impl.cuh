@@ -147,12 +147,12 @@ private:
 public:
   //! @brief Constructs an open addressing implementation with the given capacity.
   _CCCL_HOST_API __open_addressing_impl(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    _MemoryResource __mr,
-    ::cuda::stream_ref __stream)
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
@@ -166,13 +166,13 @@ public:
   //! @brief Constructs an open addressing implementation with capacity derived from desired load
   //! factor.
   _CCCL_HOST_API __open_addressing_impl(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     __size_type __n,
     double __desired_load_factor,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    _MemoryResource __mr,
-    ::cuda::stream_ref __stream)
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
@@ -185,13 +185,13 @@ public:
 
   //! @brief Constructs an open addressing implementation with erasure support.
   _CCCL_HOST_API __open_addressing_impl(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     __key_type __erased_key_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    _MemoryResource __mr,
-    ::cuda::stream_ref __stream)
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__erased_key_sentinel}
       , __predicate{__pred}
@@ -234,7 +234,7 @@ public:
 
   //! @brief Inserts keys in `[first, last)` and returns the number of successful insertions.
   template <class _InputIt, class _Ref>
-  _CCCL_HOST_API __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API __size_type insert(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -262,7 +262,7 @@ public:
   //!
   //! @throws cuda_error if the insert operation fails to launch
   template <class _InputIt, class _Ref>
-  _CCCL_HOST_API void insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -291,7 +291,7 @@ public:
   //! @throws cuda_error if the query operation fails to launch
   template <class _InputIt, class _OutputIt, class _Ref>
   _CCCL_HOST_API void contains_async(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream) const
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -318,6 +318,55 @@ public:
           __output_begin,
           __container_ref);
     }
+  }
+
+  //! @brief Asynchronously finds payloads for keys in `[first, last)` whose stencil satisfies `pred`.
+  //!
+  //! For each key `first[i]` with `pred(stencil[i]) == true` that is present, the associated payload is
+  //! written to the corresponding output position; otherwise the empty value sentinel is written.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
+  _CCCL_HOST_API void find_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin,
+    _Ref __container_ref) const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+
+    __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
+      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
+        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
+  }
+
+  //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
+  //!
+  //! For each key that is present, the associated payload is written to the corresponding output
+  //! position; for each key that is absent, the empty value sentinel is written instead.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _OutputIt, class _Ref>
+  _CCCL_HOST_API void find_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
+  {
+    this->find_if_async(
+      __stream,
+      __first,
+      __last,
+      ::cuda::constant_iterator<bool>{true},
+      ::cuda::std::identity{},
+      __output_begin,
+      __container_ref);
   }
 
   //! @brief Returns the total number of slots.

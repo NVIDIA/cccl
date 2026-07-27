@@ -214,8 +214,11 @@ void compute_host_reference(
   {
     for (int j = 0; j < logical_warps; ++j)
     {
-      auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread;
-      auto end                     = start + items_per_logical_warp * items_per_thread;
+      auto start =
+        h_in.begin()
+        + (i * warp_size + j * logical_warp_threads) * items_per_thread; // NOLINT(bugprone-misplaced-widening-cast)
+      auto end = start + static_cast<long>(items_per_logical_warp) * items_per_thread;
+      // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
       h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
     }
   }

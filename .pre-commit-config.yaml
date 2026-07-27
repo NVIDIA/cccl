@@ -98,6 +98,14 @@ repos:
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
 
+  - repo: https://github.com/sirosen/texthooks
+    rev: 0.7.1
+    hooks:
+      - id: fix-smartquotes
+      - id: fix-spaces
+      - id: forbid-bidi-controls
+      - id: fix-ligatures
+
   - repo: local
     hooks:
       - id: check-shebang
@@ -109,6 +117,12 @@ repos:
           (?x)^(
             ^.*libcudacxx/cmake/config\.guess$
           )
+
+      - id: unprintable-unicode
+        name: unprintable-unicode
+        entry: ci/util/pre-commit/strip_unprintable.py
+        language: python
+        types: [text]
 
 default_language_version:
   python: python3

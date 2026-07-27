@@ -16,6 +16,8 @@ struct stream_registry_factory_t;
 #include <cuda/devices>
 #include <cuda/stream>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
@@ -578,7 +580,7 @@ TEST_CASE("DeviceMergeSort::SortKeys works with unroll disabled", "[merge_sort][
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
+C2H_TEST("Test MergeSortPolicy properties", "[merge_sort][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::MergeSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergeSortPolicy>);
@@ -606,5 +608,15 @@ C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "MergeSortPolicy { .threads_per_block = 256, .items_per_thread = 11"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = BLOCK_STORE_DIRECT, .unroll = 1 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -40,7 +40,7 @@ struct MergePolicy
   bool use_bulk_copy_for_values; //!< Whether to use bulk copy (cp.async.bulk) for loading values into shared memory
   bool unroll = true; //<! Whether to unroll the loops inside the serial merge implementation
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -49,7 +49,7 @@ struct MergePolicy
         && lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values && lhs.unroll == rhs.unroll;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
     return !(lhs == rhs);

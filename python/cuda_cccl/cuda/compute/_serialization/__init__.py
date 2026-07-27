@@ -10,6 +10,7 @@ from .dispatch import deserialize as deserialize
 from .dispatch import serialize as serialize
 from .serializable import BOOL as BOOL
 from .serializable import BUILD_RESULT as BUILD_RESULT
+from .serializable import BUILD_RESULTS as BUILD_RESULTS
 from .serializable import CONDITIONAL as CONDITIONAL
 from .serializable import ENUM as ENUM
 from .serializable import ITER as ITER
@@ -35,5 +36,6 @@ __all__ = [
     "ENUM",
     "CONDITIONAL",
     "BUILD_RESULT",
+    "BUILD_RESULTS",
     "NESTED",
 ]
