@@ -212,8 +212,9 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
     : tuple_element<Id, tuple<Ts...>>
 {};
 
-// tuple_of_iterator_references<_TTypes...> implicitly converts to tuple<_UTypes...> if is_compatible_tuple_v holds
-// So make sure that basic_common_reference in that case is the same as that of tuple<_UTypes...> with qualifiers
+// tuple_of_iterator_references<_TTypes...> implicitly converts to tuple<_UTypes...> if is_compatible_tuple_v holds.
+// Compute the common reference from the actual element types (not by substituting _UTypes/_TTypes on both sides),
+// so proxy reference elements (e.g. __transform_input_output_proxy) participate correctly.
 template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
 struct basic_common_reference<
   THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_TTypes...>,
@@ -221,7 +222,7 @@ struct basic_common_reference<
   _TQual,
   _UQual,
   enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<_TTypes...>, tuple<_UTypes...>>>>
-    : basic_common_reference<tuple<_UTypes...>, tuple<_UTypes...>, _TQual, _UQual>
+    : basic_common_reference<tuple<_TTypes...>, tuple<_UTypes...>, _TQual, _UQual>
 {};
 
 template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
@@ -231,7 +232,7 @@ struct basic_common_reference<
   _TQual,
   _UQual,
   enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<_TTypes...>, tuple<_UTypes...>>>>
-    : basic_common_reference<tuple<_TTypes...>, tuple<_TTypes...>, _TQual, _UQual>
+    : basic_common_reference<tuple<_TTypes...>, tuple<_UTypes...>, _TQual, _UQual>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

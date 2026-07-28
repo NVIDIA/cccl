@@ -3,7 +3,7 @@
 
 .. _cub-policy-selectors:
 
-CUB Tunings
+Tunings
 ================================================================================
 
 Device-scope algorithms in CUB have many knobs that significantly impact performance (without affecting correctness).

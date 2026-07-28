@@ -37,8 +37,8 @@ struct timer
 
   ~timer()
   {
-    cuda_safe_call(cudaEventDestroy(start));
-    cuda_safe_call(cudaEventDestroy(end));
+    static_cast<void>(cudaEventDestroy(start));
+    static_cast<void>(cudaEventDestroy(end));
   }
 
   void restart()
