@@ -91,22 +91,49 @@ inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
   _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
 
 template <class... _Types>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
-__tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
+struct __tuple_constraints;
+
+template <class... _Types>
+[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __tuple_get_constraints(__tuple_types<_Types...>) noexcept
 {
-  if constexpr (!(is_default_constructible_v<_Types> && ...))
-  {
-    return __select_constructor::__invalid;
-  }
-  else if constexpr ((__is_implicitly_default_constructible<_Types>::value && ...))
-  {
-    return __select_constructor::__implicit;
-  }
-  else
-  {
-    return __select_constructor::__explicit;
-  }
+  return __tuple_constraints<_Types...>{};
 }
+
+template <class... _Types>
+struct __tuple_constraints
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor __select_default_constructible_() noexcept
+  {
+    if constexpr (!(is_default_constructible_v<_Types> && ...))
+    {
+      return __select_constructor::__invalid;
+    }
+    else if constexpr ((__is_implicitly_default_constructible<_Types>::value && ...))
+    {
+      return __select_constructor::__implicit;
+    }
+    else
+    {
+      return __select_constructor::__explicit;
+    }
+  }
+
+  static constexpr __select_constructor __select_default_constructible = __select_default_constructible_();
+
+  template <class... _UTypes>
+  static constexpr bool __is_equality_comparable_v = (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
+
+  template <class... _UTypes>
+  static constexpr bool __is_nothrow_equality_comparable_v =
+    (__is_cpp17_nothrow_equality_comparable_v<_Types, _UTypes> && ...);
+
+  template <class... _UTypes>
+  static constexpr bool __is_less_than_comparable_v = (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
+
+  template <class... _UTypes>
+  static constexpr bool __is_nothrow_less_than_comparable_v =
+    (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
+};
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
@@ -281,9 +308,9 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
   else
   { // MSVC has issues with constexpr variables here, so no `__can_construct<_Trait>` or constexpr variable
     using __arg_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-    if constexpr (::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
+    if constexpr (::cuda::std::__tuple_select_variadic_constructible_v<__arg_list, __tuple_types<_UTypes...>>
                     == __select_constructor::__invalid
-                  || ::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
+                  || ::cuda::std::__tuple_select_variadic_constructible_v<__arg_list, __tuple_types<_UTypes...>>
                        == __select_constructor::__deleted)
     {
       return __select_constructor::__invalid;
@@ -291,10 +318,9 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
     else
     {
       using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-      if constexpr (::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
-                      == __select_constructor::__invalid
-                    || ::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
-                         == __select_constructor::__deleted)
+      using __defaulted_constraints = decltype(::cuda::std::__tuple_get_constraints(__defaulted_list{}));
+      if constexpr (__defaulted_constraints::__select_default_constructible == __select_constructor::__invalid
+                    || __defaulted_constraints::__select_default_constructible == __select_constructor::__deleted)
       {
         return __select_constructor::__invalid;
       }
@@ -434,69 +460,14 @@ template <class _UTuple, class _TupleTypes, class _TupleIndices>
 inline constexpr __select_constructor __tuple_select_tuple_like_constructible_v =
   ::cuda::std::__tuple_select_tuple_like_constructible<_UTuple>(_TupleTypes{}, _TupleIndices{});
 
-_CCCL_EXEC_CHECK_DISABLE
-template <class _UTuple, class _Type, class... _Types, size_t _Index, size_t... _Indices>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
-__tuple_nothrow_tuple_like_constructible(__tuple_types<_Type, _Types...>, __tuple_indices<_Index, _Indices...>) noexcept
-{
-  using ::cuda::std::get;
-  if constexpr (!is_nothrow_constructible_v<_Type, decltype(get<_Index>(::cuda::std::declval<_UTuple>()))>)
-  {
-    return false;
-  }
-  else if constexpr (sizeof...(_Types) != 0)
-  {
-    return ::cuda::std::__tuple_nothrow_tuple_like_constructible<_UTuple>(
-      __tuple_types<_Types...>{}, __tuple_indices<_Indices...>{});
-  }
-  else
-  {
-    return true;
-  }
-}
+template <class, class, class>
+inline constexpr bool __tuple_nothrow_tuple_like_constructible_v = false;
 
-template <class _UTuple>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
-__tuple_nothrow_tuple_like_constructible(__tuple_types<>, __tuple_indices<>) noexcept
-{
-  return true;
-}
-
-template <class _UTuple, class _TupleTypes, class _TupleIndices>
-inline constexpr bool __tuple_nothrow_tuple_like_constructible_v =
-  ::cuda::std::__tuple_nothrow_tuple_like_constructible<_UTuple>(_TupleTypes{}, _TupleIndices{});
-
-struct _InvalidTupleComparison
-{
-  static constexpr bool __equality_comparable         = false;
-  static constexpr bool __nothrow_equality_comparable = false;
-
-  static constexpr bool __less_than_comparable         = false;
-  static constexpr bool __nothrow_less_than_comparable = false;
-};
-
-template <class, class>
-struct _TupleComparableTraits;
-
-template <class... _Types, class... _UTypes>
-struct _TupleComparableTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
-{
-  static constexpr bool __equality_comparable = (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
-  static constexpr bool __nothrow_equality_comparable =
-    (__is_cpp17_nothrow_equality_comparable_v<_Types, _UTypes> && ...);
-
-  static constexpr bool __less_than_comparable = (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
-  static constexpr bool __nothrow_less_than_comparable =
-    (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
-};
-
-template <class... _Types, class... _UTypes, enable_if_t<(sizeof...(_Types) == sizeof...(_UTypes)), int> = 0>
-[[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
-  -> _TupleComparableTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>;
-template <class>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(...) noexcept -> _InvalidTupleComparison;
-
+template <class _UTuple, class... _Types, size_t... _Indices>
+inline constexpr bool
+  __tuple_nothrow_tuple_like_constructible_v<_UTuple, __tuple_types<_Types...>, __tuple_indices<_Indices...>> =
+    (is_nothrow_constructible_v<_Types, decltype(::cuda::std::__adl_get<_Indices>(::cuda::std::declval<_UTuple>()))>
+     && ...);
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment
 __tuple_select_const_copy_assignable(__tuple_types<_Types...>) noexcept

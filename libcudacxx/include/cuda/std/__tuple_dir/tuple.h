@@ -85,13 +85,13 @@ public:
   }
 
   // Going through an inline variable forces instantiation of the default constructors of all _Tp fr old GCC
-  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
-            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  template <class _Constraints = __tuple_constraints<_Tp...>,
+            enable_if_t<__can_construct_implicitly<_Constraints::__select_default_constructible>, int> = 0>
   _CCCL_API constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
-  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
-            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  template <class _Constraints = __tuple_constraints<_Tp...>,
+            enable_if_t<__can_construct_explicitly<_Constraints::__select_default_constructible>, int> = 0>
   _CCCL_API explicit constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
@@ -99,16 +99,16 @@ public:
   _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
 
   template <class _Alloc,
-            __select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
-            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+            class _Constraints = __tuple_constraints<_Tp...>,
+            enable_if_t<__can_construct_implicitly<_Constraints::__select_default_constructible>, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t,
                             _Alloc const& __a) noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
       : __base_(allocator_arg_t(), __a)
   {}
 
   template <class _Alloc,
-            __select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
-            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+            class _Constraints = __tuple_constraints<_Tp...>,
+            enable_if_t<__can_construct_explicitly<_Constraints::__select_default_constructible>, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t,
                                      _Alloc const& __a) noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
       : __base_(allocator_arg_t(), __a)
@@ -525,44 +525,37 @@ public:
     __t.swap(__u);
   }
 
-  template <class... _UTypes>
-  using _ComparisonConstraints =
-    decltype(::cuda::std::__tuple_is_comparable(__tuple_types<_Tp...>{}, __tuple_types<_UTypes...>{}));
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <class... _UTypes, size_t... _Indices, class _Constraints = _ComparisonConstraints<_UTypes...>>
+  template <class... _UTypes, size_t... _Indices, class _Constraints = __tuple_constraints<_Tp...>>
   [[nodiscard]] _CCCL_API constexpr bool __equal(const tuple<_UTypes...>& __other, __tuple_indices<_Indices...>) const
-    noexcept(_Constraints::__nothrow_equality_comparable)
+    noexcept(_Constraints::template __is_nothrow_equality_comparable_v<_UTypes...>)
   {
     using ::cuda::std::get;
     return ((get<_Indices>(*this) == get<_Indices>(__other)) && ...);
   }
 
   // Not a friend function because MSVC has issues with nested namespaces and thrust::tuple
-  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
-  _CCCL_REQUIRES(_Constraints::__equality_comparable)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = __tuple_constraints<_Tp...>)
+  _CCCL_REQUIRES(_Constraints::template __is_equality_comparable_v<_UTypes...>)
   [[nodiscard]] _CCCL_API constexpr bool operator==(const tuple<_UTypes...>& __rhs) const
-    noexcept(_Constraints::__nothrow_equality_comparable)
+    noexcept(_Constraints::template __is_nothrow_equality_comparable_v<_UTypes...>)
   {
     return __equal(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
-  _CCCL_REQUIRES(_Constraints::__equality_comparable)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = __tuple_constraints<_Tp...>)
+  _CCCL_REQUIRES(_Constraints::template __is_equality_comparable_v<_UTypes...>)
   [[nodiscard]] _CCCL_API constexpr bool operator!=(const tuple<_UTypes...>& __rhs) const
-    noexcept(_Constraints::__nothrow_equality_comparable)
+    noexcept(_Constraints::template __is_nothrow_equality_comparable_v<_UTypes...>)
   {
     return !__equal(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class... _UTypes,
-            size_t _CurrentIndex,
-            size_t... _Indices,
-            class _Constraints = _ComparisonConstraints<_UTypes...>>
+  template <class... _UTypes, size_t _CurrentIndex, size_t... _Indices, class _Constraints = __tuple_constraints<_Tp...>>
   [[nodiscard]] _CCCL_API constexpr bool
   __tuple_less_than(const tuple<_UTypes...>& __other, __tuple_indices<_CurrentIndex, _Indices...>) const
-    noexcept(_Constraints::__nothrow_less_than_comparable)
+    noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
     using ::cuda::std::get;
     if constexpr (sizeof...(_Indices) == 0)
@@ -583,34 +576,34 @@ public:
     }
   }
 
-  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
-  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = __tuple_constraints<_Tp...>)
+  _CCCL_REQUIRES(_Constraints::template __is_less_than_comparable_v<_UTypes...>)
   [[nodiscard]] _CCCL_API constexpr bool operator<(const tuple<_UTypes...>& __rhs) const
-    noexcept(_Constraints::__nothrow_less_than_comparable)
+    noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
     return __tuple_less_than(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
-  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = __tuple_constraints<_Tp...>)
+  _CCCL_REQUIRES(_Constraints::template __is_less_than_comparable_v<_UTypes...>)
   [[nodiscard]] _CCCL_API constexpr bool operator>(const tuple<_UTypes...>& __rhs) const
-    noexcept(_Constraints::__nothrow_less_than_comparable)
+    noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
     return __rhs.__tuple_less_than(*this, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
-  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = __tuple_constraints<_Tp...>)
+  _CCCL_REQUIRES(_Constraints::template __is_less_than_comparable_v<_UTypes...>)
   [[nodiscard]] _CCCL_API constexpr bool operator>=(const tuple<_UTypes...>& __rhs) const
-    noexcept(_Constraints::__nothrow_less_than_comparable)
+    noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
     return !__tuple_less_than(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
-  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = __tuple_constraints<_Tp...>)
+  _CCCL_REQUIRES(_Constraints::template __is_less_than_comparable_v<_UTypes...>)
   [[nodiscard]] _CCCL_API constexpr bool operator<=(const tuple<_UTypes...>& __rhs) const
-    noexcept(_Constraints::__nothrow_less_than_comparable)
+    noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
     return !__rhs.__tuple_less_than(*this, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
