@@ -15,10 +15,13 @@ from cpython.buffer cimport (
 from cpython.ref cimport PyObject, Py_INCREF, Py_XDECREF
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.pycapsule cimport (
-    PyCapsule_CheckExact, PyCapsule_IsValid, PyCapsule_GetPointer
+    PyCapsule_CheckExact, PyCapsule_IsValid, PyCapsule_GetPointer,
+    PyCapsule_New
 )
 from libc.stddef cimport ptrdiff_t
-from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
+from libc.stdint cimport (
+    uint8_t, uint16_t, uint32_t, uint64_t, int32_t, int64_t, uintptr_t
+)
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset, memcpy
 
@@ -4895,3 +4898,118 @@ cdef class stackable_context:
             stf_stackable_host_launch_submit(h, _host_launch_trampoline)
         finally:
             stf_stackable_host_launch_destroy(h)
+
+
+# ---------------------------------------------------------------------------
+# DLPack producer -- the C half of ``DeviceArray.__dlpack__``.
+#
+# DLPack is the OWNERSHIP-TRANSFERRING companion to the CUDA Array Interface
+# (which describes memory but retains nothing): the exported capsule holds a
+# strong reference to a Python owner object, and the DLManagedTensor deleter
+# -- run by the consumer when the imported tensor's storage dies, or by the
+# capsule destructor if the capsule is never consumed -- drops that
+# reference. Deallocation itself stays with the owner's finalizer, so there
+# is exactly ONE deallocation point regardless of how many protocols the
+# buffer was exported through.
+#
+# Struct layout follows dlpack.h (DLTensor / DLManagedTensor, ABI v1,
+# unversioned "dltensor" capsule -- accepted by every consumer including
+# ones that negotiate ``max_version``).
+# ---------------------------------------------------------------------------
+
+cdef struct _DLDevice:
+    int32_t device_type
+    int32_t device_id
+
+cdef struct _DLDataType:
+    uint8_t code
+    uint8_t bits
+    uint16_t lanes
+
+cdef struct _DLTensor:
+    void* data
+    _DLDevice device
+    int32_t ndim
+    _DLDataType dtype
+    int64_t* shape
+    int64_t* strides
+    uint64_t byte_offset
+
+cdef struct _DLManagedTensor:
+    _DLTensor dl_tensor
+    void* manager_ctx
+    void (*deleter)(_DLManagedTensor*) noexcept
+
+
+cdef void _dlpack_managed_deleter(_DLManagedTensor* dlm) noexcept with gil:
+    # Consumers may invoke the deleter from a non-Python thread once the
+    # imported tensor's storage dies -- hence ``with gil``.
+    if dlm == NULL:
+        return
+    Py_XDECREF(<PyObject*> dlm.manager_ctx)
+    dlm.manager_ctx = NULL
+    free(dlm.dl_tensor.shape)
+    free(dlm)
+
+
+cdef void _dlpack_capsule_destructor(object capsule) noexcept:
+    # A consumed capsule is renamed "used_dltensor" by the consumer, which
+    # then owns the deleter call; only an UNCONSUMED capsule still answers
+    # to "dltensor" and must be cleaned up here (no owner-reference leak).
+    cdef _DLManagedTensor* dlm
+    if PyCapsule_IsValid(capsule, "dltensor"):
+        dlm = <_DLManagedTensor*> PyCapsule_GetPointer(capsule, "dltensor")
+        if dlm != NULL and dlm.deleter != NULL:
+            dlm.deleter(dlm)
+
+
+# dlpack.h DLDataTypeCode values used by dlpack_export callers.
+DLPACK_TYPE_CODES = {
+    "int": 0,        # kDLInt
+    "uint": 1,       # kDLUInt
+    "float": 2,      # kDLFloat
+    "bfloat": 4,     # kDLBfloat
+    "complex": 5,    # kDLComplex
+    "bool": 6,       # kDLBool
+}
+DLPACK_DEVICE_CUDA = 2  # kDLCUDA
+
+
+def dlpack_export(owner, uintptr_t data_ptr, shape, int dtype_code,
+                  int dtype_bits, int device_id):
+    """Build a ``"dltensor"`` PyCapsule over *owner*'s device memory.
+
+    *owner* is the Python object keeping the allocation alive (for a
+    ``DeviceArray`` view, its root array): the capsule INCREFs it and the
+    DLPack deleter DECREFs it -- the buffer is freed by *owner*'s own
+    finalizer once every DLPack consumer and every direct reference is
+    gone. ``shape`` is the exported C-order geometry (strides are compact
+    C-contiguous by construction, encoded as NULL per the DLPack spec).
+    """
+    cdef int ndim = len(shape)
+    cdef int i
+    cdef _DLManagedTensor* dlm = <_DLManagedTensor*> malloc(sizeof(_DLManagedTensor))
+    if dlm == NULL:
+        raise MemoryError("dlpack_export: DLManagedTensor allocation failed")
+    cdef int64_t* sh = NULL
+    if ndim > 0:
+        sh = <int64_t*> malloc(ndim * sizeof(int64_t))
+        if sh == NULL:
+            free(dlm)
+            raise MemoryError("dlpack_export: shape allocation failed")
+        for i in range(ndim):
+            sh[i] = <int64_t> shape[i]
+    dlm.dl_tensor.data = <void*> data_ptr
+    dlm.dl_tensor.device.device_type = DLPACK_DEVICE_CUDA
+    dlm.dl_tensor.device.device_id = <int32_t> device_id
+    dlm.dl_tensor.ndim = <int32_t> ndim
+    dlm.dl_tensor.dtype.code = <uint8_t> dtype_code
+    dlm.dl_tensor.dtype.bits = <uint8_t> dtype_bits
+    dlm.dl_tensor.dtype.lanes = 1
+    dlm.dl_tensor.shape = sh
+    dlm.dl_tensor.strides = NULL  # compact C-contiguous
+    dlm.dl_tensor.byte_offset = 0
+    Py_INCREF(owner)
+    dlm.manager_ctx = <void*> owner
+    dlm.deleter = _dlpack_managed_deleter
+    return PyCapsule_New(<void*> dlm, "dltensor", _dlpack_capsule_destructor)

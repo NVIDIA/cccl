@@ -4,13 +4,26 @@
 
 """Lightweight device array backed by ``data_place.allocate()``.
 
-Implements ``__cuda_array_interface__`` (CAI v3) so it can be passed
-directly to ``cuda.compute`` algorithms, and provides ``copy_to_host`` /
-``copy_to_device`` helpers that mirror the Numba DeviceNDArray API.
+Implements BOTH device-memory interchange protocols -- they are
+complementary, and a consumer picks by construction:
+
+* ``__cuda_array_interface__`` (CAI v3): a *description* of the memory.
+  The importer retains nothing; the ``DeviceArray`` (or something holding
+  it) must outlive every borrowed view. This is the borrowed / zero-copy
+  path -- ``cuda.compute`` algorithms, Numba, ``torch.as_tensor``.
+* ``__dlpack__`` / ``__dlpack_device__`` (DLPack): an *ownership-carrying*
+  export. The capsule holds the owning array alive, and the consumer's
+  deleter releases it when the imported tensor's storage dies -- e.g.
+  ``torch.from_dlpack`` gives a tensor whose lifetime carries the
+  allocation, with the ``DeviceArray`` finalizer remaining the single
+  deallocation point.
+
+Also provides ``copy_to_host`` / ``copy_to_device`` helpers that mirror the
+Numba DeviceNDArray API.
 
 Shapes follow the public C-order contract: a :class:`DeviceArray` stores its
-public shape, exposes it (with compact C-contiguous strides) through the CUDA
-Array Interface, and supports contiguous ``reshape()`` views.
+public shape, exposes it (with compact C-contiguous strides) through both
+protocols, and supports contiguous ``reshape()`` views.
 """
 
 from __future__ import annotations
@@ -307,6 +320,130 @@ class DeviceArray:
         if self._dtype.fields is not None:
             cai["descr"] = self._dtype.descr
         return cai
+
+    # -- DLPack --------------------------------------------------------------
+
+    # numpy dtype kind -> dlpack.h DLDataTypeCode. bfloat16 has no numpy
+    # dtype; buffers for such types are allocated through a same-size
+    # storage dtype and viewed back on the consumer side.
+    _DLPACK_KIND_CODE = {"i": 0, "u": 1, "f": 2, "c": 5, "b": 6}
+    _DLPACK_DEVICE_CUDA = 2  # kDLCUDA
+
+    def _device_ordinal(self) -> int:
+        """The CUDA device ordinal owning this array's memory.
+
+        The driver answers authoritatively per pointer (a composite VMM
+        range spans the locality domains of ONE physical device); empty
+        arrays fall back to the current device.
+        """
+        if self._ptr:
+            try:
+                from cuda.bindings import driver as _drv  # noqa: PLC0415
+
+                err, dev = _drv.cuPointerGetAttribute(
+                    _drv.CUpointer_attribute.CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+                    self._ptr,
+                )
+                if int(err) == 0:
+                    return int(dev)
+            except Exception:
+                pass
+        err, dev = cudart.cudaGetDevice()
+        if err != cudart.cudaError_t.cudaSuccess:
+            raise RuntimeError(f"cudaGetDevice failed with error code {int(err)}")
+        return int(dev)
+
+    def __dlpack_device__(self):
+        return (self._DLPACK_DEVICE_CUDA, self._device_ordinal())
+
+    def _make_ready_on(self, consumer_stream) -> None:
+        """DLPack stream handshake: make the data ready on the consumer's
+        stream.
+
+        Per the protocol (CUDA device type): ``-1`` requests no
+        synchronization; ``None``/``1`` mean the legacy default stream;
+        any other int is the consumer's stream handle. The producer inserts
+        an event-wait ordering the consumer stream after the allocation
+        stream -- nothing blocks on the host.
+        """
+        if consumer_stream == -1:
+            return
+        if consumer_stream is None or consumer_stream == 1:
+            consumer = 0
+        elif consumer_stream == 2:  # per-thread default stream
+            consumer = 2
+        elif isinstance(consumer_stream, int):
+            if consumer_stream < 0:
+                raise ValueError(
+                    f"__dlpack__: invalid stream value {consumer_stream}"
+                )
+            consumer = consumer_stream
+        else:
+            raise TypeError("__dlpack__: stream must be an int or None")
+        producer = self._stream_int
+        if consumer == producer or self._nbytes == 0:
+            return
+        (err, event) = cudart.cudaEventCreateWithFlags(
+            cudart.cudaEventDisableTiming
+        )
+        if err != cudart.cudaError_t.cudaSuccess:
+            raise RuntimeError(f"cudaEventCreateWithFlags failed ({int(err)})")
+        try:
+            (err,) = cudart.cudaEventRecord(event, producer)
+            if err != cudart.cudaError_t.cudaSuccess:
+                raise RuntimeError(f"cudaEventRecord failed ({int(err)})")
+            (err,) = cudart.cudaStreamWaitEvent(consumer, event, 0)
+            if err != cudart.cudaError_t.cudaSuccess:
+                raise RuntimeError(f"cudaStreamWaitEvent failed ({int(err)})")
+        finally:
+            cudart.cudaEventDestroy(event)
+
+    def __dlpack__(self, *, stream=None, max_version=None, dl_device=None, copy=None):
+        """Export as a ``"dltensor"`` capsule (ownership-carrying).
+
+        The capsule keeps the OWNING array (a view's root) alive; the
+        consumer's deleter drops that reference when the imported tensor's
+        storage dies, and the ``DeviceArray`` finalizer -- the single
+        deallocation point -- then frees the memory once no other reference
+        remains. Complements ``__cuda_array_interface__``, which describes
+        the same memory but transfers no ownership.
+
+        ``max_version`` is accepted and answered with an unversioned
+        capsule (permitted by the spec; understood by all consumers).
+        """
+        if copy:
+            raise BufferError(
+                "DeviceArray.__dlpack__: copy=True is not supported "
+                "(export is zero-copy by design)"
+            )
+        if dl_device is not None and tuple(dl_device) != self.__dlpack_device__():
+            raise BufferError(
+                f"DeviceArray.__dlpack__: cannot export to device {dl_device}; "
+                f"data lives on {self.__dlpack_device__()}"
+            )
+        if self._dtype.fields is not None:
+            raise BufferError(
+                "DeviceArray.__dlpack__: structured dtypes are not "
+                "representable in DLPack; use __cuda_array_interface__"
+            )
+        code = self._DLPACK_KIND_CODE.get(self._dtype.kind)
+        if code is None:
+            raise BufferError(
+                f"DeviceArray.__dlpack__: dtype {self._dtype} is not "
+                "representable in DLPack"
+            )
+        self._make_ready_on(stream)
+        from cuda.stf._experimental._stf_bindings import dlpack_export  # noqa: PLC0415
+
+        owner = self._base if self._base is not None else self
+        return dlpack_export(
+            owner,
+            self._ptr,
+            self._shape,
+            code,
+            self._dtype.itemsize * 8,
+            self._device_ordinal(),
+        )
 
     # -- properties --------------------------------------------------------
 

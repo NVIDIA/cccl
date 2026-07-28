@@ -60,6 +60,35 @@ addition to the CUDA toolkit. The `test-*` extras add `cuda-cccl`, `pytest`,
 **Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with
 Compute Capability 7.5+, Linux.
 
+## Device memory interchange: CAI and DLPack
+
+`DeviceArray` (buffers allocated through a `data_place`, including composite
+localized places) implements **both** interchange protocols. They are
+complementary — a consumer picks the semantics by construction:
+
+- **CUDA Array Interface** (`__cuda_array_interface__`, CAI v3) *describes*
+  the memory and transfers **no ownership**: the `DeviceArray` must outlive
+  every borrowed view. This is the zero-copy path used by task arguments,
+  Numba, `cuda.compute`, and `torch.as_tensor`.
+- **DLPack** (`__dlpack__` / `__dlpack_device__`) *carries ownership*: the
+  exported capsule keeps the array alive and the consumer's deleter releases
+  it, so e.g. `torch.from_dlpack(arr)` yields a tensor whose storage lifetime
+  owns the allocation. Deallocation stays with the `DeviceArray` finalizer —
+  one deallocation point regardless of protocol.
+
+```python
+arr = stf.DeviceArray((4, 8), np.float32, stf.data_place.device(0))
+borrowed = numba.cuda.as_cuda_array(arr)   # CAI: arr must stay alive
+owned    = torch.from_dlpack(arr)          # DLPack: the tensor keeps it alive
+```
+
+The localized-allocation surface (`interop.pytorch.localized_empty`) exposes
+this as `lifetime="pinned"` (CAI + registry, freed by `release()`) versus
+`lifetime="gc"` (DLPack; the tensor — typically an `nn.Parameter`, where it
+is the default — owns the pages, freed when the module is unloaded). See
+`tests/stf/test_device_array_dlpack.py` and
+`tests/stf/interop/test_localized_weights_example.py`.
+
 ## Documentation
 
 For complete documentation, examples, and API reference, visit:

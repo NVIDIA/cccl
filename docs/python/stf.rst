@@ -130,6 +130,35 @@ complete program)::
         k.launch(kernel, grid=(4,), block=(256,),
                  args=[ctypes.c_int(N), ctypes.c_double(alpha), dX, dY])
 
+Device memory interchange: CAI and DLPack
+-----------------------------------------
+
+``DeviceArray`` (memory allocated through a ``data_place``, including
+composite localized places) implements **both** interchange protocols; they
+are complementary and a consumer picks the semantics by construction:
+
+* **CUDA Array Interface** (``__cuda_array_interface__``) *describes* the
+  memory and transfers **no ownership** -- the array must outlive every
+  borrowed view. It is the zero-copy path for task arguments, Numba,
+  ``cuda.compute``, and ``torch.as_tensor``. Structured dtypes are only
+  representable here.
+* **DLPack** (``__dlpack__`` / ``__dlpack_device__``) *carries ownership*:
+  the exported capsule keeps the array alive and the consumer's deleter
+  releases it, so ``torch.from_dlpack(arr)`` yields a tensor whose storage
+  lifetime owns the allocation. Deallocation remains with the
+  ``DeviceArray`` finalizer -- one deallocation point regardless of how many
+  protocols exported the buffer. The protocol stream handshake orders the
+  consumer's stream after the allocation stream with an event wait (nothing
+  blocks on the host).
+
+The localized-allocation surface (``interop.pytorch.localized_empty``)
+exposes the same choice as ``lifetime="pinned"`` (CAI import; the metadata
+registry pins the pages until :func:`release`) versus ``lifetime="gc"``
+(DLPack import; the tensor -- typically an ``nn.Parameter``, where it is the
+default -- owns the pages, so unloading the module frees the VMM and the
+placement metadata). See ``tests/stf/test_device_array_dlpack.py`` and
+``tests/stf/interop/test_localized_weights_example.py``.
+
 Interop adapters
 ----------------
 
