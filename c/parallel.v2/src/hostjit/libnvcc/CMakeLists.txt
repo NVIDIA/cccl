@@ -192,6 +192,10 @@ set_target_properties(
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
+if (WIN32)
+  set_target_properties(libnvcc PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OUT_DIR})
+endif()
+
 if (LIBNVCC_LIBRARY_OUTPUT_DIRECTORY)
   set_target_properties(
     libnvcc
@@ -207,20 +211,6 @@ elseif (WIN32 AND DEFINED CCCL_EXECUTABLE_OUTPUT_DIR)
   set_target_properties(
     libnvcc
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CCCL_EXECUTABLE_OUTPUT_DIR}"
-  )
-endif()
-
-if (WIN32)
-  # libnvcc links CUDA DLLs dynamically on Windows. Stage those runtime
-  # dependencies next to libnvcc.dll so test executables that load libnvcc via
-  # hostjit_lib do not fail before main with STATUS_DLL_NOT_FOUND.
-  add_custom_command(
-    TARGET libnvcc
-    POST_BUILD
-    COMMAND
-      ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:libnvcc>
-      $<TARGET_FILE_DIR:libnvcc>
-    COMMAND_EXPAND_LISTS
   )
 endif()
 
