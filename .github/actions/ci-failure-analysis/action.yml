@@ -5,8 +5,8 @@ inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
     required: true
-  base_sha:
-    description: "Optional baseline commit for source-change inspection."
+  pr_number:
+    description: "Optional pull request number for collecting its diff."
     required: false
     default: ""
 
@@ -23,7 +23,9 @@ runs:
         GH_TOKEN: ${{ github.token }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        "${GITHUB_ACTION_PATH}/collect-logs.sh" /tmp/ci-logs
+        "${GITHUB_ACTION_PATH}/collect-logs.sh" \
+          /tmp/ci-logs \
+          "${{ inputs.pr_number }}"
 
     - name: Configure agent permissions
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -35,7 +37,6 @@ runs:
     - name: Investigate the workflow run
       uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1
       env:
-        BASE_SHA: ${{ inputs.base_sha }}
         CI_LOG_DIR: /tmp/ci-logs
       with:
         openai-api-key: ${{ inputs.inference_api_key }}

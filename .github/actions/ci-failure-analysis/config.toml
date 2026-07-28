@@ -16,5 +16,4 @@ include_only = [
   "HOME",
   "PATH",
   "CI_LOG_DIR",
-  "BASE_SHA",
 ]

@@ -12,6 +12,7 @@ failure logs in `CI_LOG_DIR`:
 - `jobs.json` contains the metadata for every failed job.
 - `job-JOB_ID.log` contains the complete log for each job concluded as `failure`,
   `timed_out`, `startup_failure`, or `action_required`.
+- `pr.diff`, when present, contains the pull request diff.
 
 Read every collected failure log before grouping. Use `jobs.json` for exact job IDs,
 names, conclusions, and step numbers. Log collection has already been validated. Ignore
@@ -19,8 +20,8 @@ the analysis and publishing jobs.
 
 ## Diagnose and group
 
-When `BASE_SHA` is non-empty, inspect `git diff "${BASE_SHA}" HEAD`. Inspect relevant
-source when it can clarify the failure. Do not run builds or tests.
+When present, inspect `pr.diff` and relevant source when they can clarify the failure. Do
+not run builds or tests.
 
 - Use each job's earliest actionable failure; ignore subsequent cleanup, wrapper, and
   aggregation errors.

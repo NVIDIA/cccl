@@ -3,9 +3,14 @@
 set -euo pipefail
 
 output_dir="$1"
+pr_number="${2:-}"
 repository="${GITHUB_REPOSITORY:?}"
 run_id="${GITHUB_RUN_ID:?}"
 mkdir -p "${output_dir}"
+
+if [[ -n "${pr_number}" ]]; then
+  gh pr diff "${pr_number}" --repo "${repository}" > "${output_dir}/pr.diff"
+fi
 
 gh api --paginate --slurp \
   "repos/${repository}/actions/runs/${run_id}/jobs?filter=latest&per_page=100" \
