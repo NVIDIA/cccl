@@ -2,8 +2,7 @@ model_catalog_json = "/tmp/ci-logs/model-catalog.json"
 
 [permissions.ci_triage.filesystem]
 ":minimal" = "read"
-":slash_tmp" = "write"
-":tmpdir" = "write"
+"/tmp/ci-logs" = "read"
 # codex-action installs the CLI under the hosted Node toolcache.
 "/opt/hostedtoolcache/node" = "read"
 
