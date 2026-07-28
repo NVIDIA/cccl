@@ -8,6 +8,11 @@ repository="${GITHUB_REPOSITORY:?}"
 run_id="${GITHUB_RUN_ID:?}"
 mkdir -p "${output_dir}"
 
+if [[ -n "${pr_number}" && ! "${pr_number}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Pull request number must be a positive integer" >&2
+  exit 1
+fi
+
 if [[ -n "${pr_number}" ]]; then
   gh pr diff "${pr_number}" --repo "${repository}" > "${output_dir}/pr.diff"
 fi

@@ -21,11 +21,12 @@ runs:
     - name: Collect workflow logs
       env:
         GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ inputs.pr_number }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         "${GITHUB_ACTION_PATH}/collect-logs.sh" \
           /tmp/ci-logs \
-          "${{ inputs.pr_number }}"
+          "${PR_NUMBER}"
 
     - name: Configure agent permissions
       shell: bash --noprofile --norc -euo pipefail {0}
