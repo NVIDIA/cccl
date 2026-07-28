@@ -9,6 +9,9 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
 fi
 
 ci/rapids/post-create-command.sh;
+mkdir -p "${HOME}/.conda/pkgs" "${HOME}/.conda/envs";
+sudo mkdir -p /opt/conda/pkgs /opt/conda/envs;
+sudo chown -R "$(id -u):$(id -g)" /opt/conda/pkgs /opt/conda/envs;
 rapids-post-start-command -f;
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
