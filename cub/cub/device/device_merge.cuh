@@ -32,7 +32,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceMerge that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref MergePolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::MergePolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
@@ -210,7 +210,7 @@ struct DeviceMerge
     ::cuda::std::int64_t num_keys2,
     KeyIteratorOut keys_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
@@ -436,7 +436,7 @@ struct DeviceMerge
     KeyIteratorOut keys_out,
     ValueIteratorOut values_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
     using default_policy_selector = detail::merge::

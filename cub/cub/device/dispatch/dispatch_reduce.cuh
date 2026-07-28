@@ -164,6 +164,8 @@ struct policy_selector_from_hub
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
@@ -200,7 +202,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") DispatchReduce
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -556,6 +558,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") DispatchReduce
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide transform reduce
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
@@ -600,7 +604,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
+using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,

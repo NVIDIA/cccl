@@ -41,6 +41,63 @@ static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 d
   result->t = 0;
 }
 
+C2H_TEST("exec place from an externally-owned CUDA context", "[task][places][cuda_context]")
+{
+  constexpr size_t element_count{1024};
+
+  // Wrap the primary context of device 0 as an exec place
+  CUdevice dev = 0;
+  REQUIRE(cuDeviceGet(&dev, 0) == CUDA_SUCCESS);
+  CUcontext primary_ctx = nullptr;
+  REQUIRE(cuDevicePrimaryCtxRetain(&primary_ctx, dev) == CUDA_SUCCESS);
+
+  // Null context is rejected
+  REQUIRE(stf_exec_place_cuda_context(nullptr, 0) == nullptr);
+
+  // dev_id < 0 is derived from the context
+  const stf_exec_place_handle place_derived = stf_exec_place_cuda_context(primary_ctx, -1);
+  REQUIRE(place_derived != nullptr);
+  REQUIRE(stf_exec_place_is_device(place_derived) != 0);
+  stf_exec_place_destroy(place_derived);
+
+  const stf_exec_place_handle place = stf_exec_place_cuda_context(primary_ctx, 0);
+  REQUIRE(place != nullptr);
+  REQUIRE(stf_exec_place_is_device(place) != 0);
+  REQUIRE(stf_exec_place_is_host(place) == 0);
+
+  // Run a task on the place and fill the buffer through its stream
+  const stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  std::vector<float> x(element_count, 1.0f);
+  const stf_logical_data_handle logical_x = stf_logical_data(ctx, x.data(), element_count * sizeof(float));
+  REQUIRE(logical_x != nullptr);
+
+  const stf_task_handle task = stf_task_create(ctx);
+  REQUIRE(task != nullptr);
+  stf_task_set_exec_place(task, place);
+  stf_task_add_dep(task, logical_x, STF_RW);
+  stf_task_start(task);
+  const CUstream stream = stf_task_get_custream(task);
+  REQUIRE(stream != nullptr);
+  float* const device_x = static_cast<float*>(stf_task_get(task, 0));
+  REQUIRE(device_x != nullptr);
+  REQUIRE(cudaMemsetAsync(device_x, 0, element_count * sizeof(float), stream) == cudaSuccess);
+  stf_task_end(task);
+  stf_task_destroy(task);
+
+  stf_logical_data_destroy(logical_x);
+  stf_ctx_finalize(ctx);
+
+  for (size_t i = 0; i < element_count; i++)
+  {
+    REQUIRE(x[i] == 0.0f);
+  }
+
+  stf_exec_place_destroy(place);
+  REQUIRE(cuDevicePrimaryCtxRelease(dev) == CUDA_SUCCESS);
+}
+
 C2H_TEST("empty stf tasks", "[task]")
 {
   size_t N = 1000000;

@@ -587,15 +587,15 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-    _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
-    _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
-    _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
-    _CCCL_GRID_CONSTANT const OffsetT n_segments,
-    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
-    _CCCL_GRID_CONSTANT const InitValueT init_value,
-    _CCCL_GRID_CONSTANT const int num_segments_per_worker)
+    const InputIteratorT d_in,
+    const OutputIteratorT d_out,
+    const BeginOffsetIteratorInputT begin_offset_d_in,
+    const EndOffsetIteratorInputT end_offset_d_in,
+    const BeginOffsetIteratorOutputT begin_offset_d_out,
+    const OffsetT n_segments,
+    const ScanOpT scan_op,
+    const InitValueT init_value,
+    const int num_segments_per_worker)
 {
   static constexpr auto policy = current_policy<PolicySelector>();
   static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,

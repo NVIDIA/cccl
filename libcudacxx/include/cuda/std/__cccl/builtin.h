@@ -180,6 +180,15 @@
 // __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
+#if _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+#  define _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF(...) __builtin_is_virtual_base_of(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+
+// nvcc < 13.3 doesn't implement __builtin_is_virtual_base_of
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  undef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nanf)

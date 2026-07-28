@@ -254,7 +254,7 @@ You can skip these checks with `git commit --no-verify` or with the short versio
 
 CCCL's CI pipeline tests across various CUDA versions, compilers, and GPU architectures.
 For external contributors, the CI pipeline will not begin until a maintainer leaves an `/ok to test` comment. For members of the NVIDIA GitHub enterprise, the CI pipeline will begin immediately.
-For a detailed overview of CCCL's CI, see [ci-overview.md](ci-overview.md).
+For a detailed overview of CCCL's CI, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 
 There is a CI check for pre-commit, called [pre-commit.ci](pre-commit.ci).
 This enforces that all linters (such as `clang-format`) pass.

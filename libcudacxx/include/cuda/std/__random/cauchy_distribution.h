@@ -24,6 +24,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
+#include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -98,7 +99,7 @@ public:
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     uniform_real_distribution<result_type> __gen;
     // purposefully let tan arg get as close to pi/2 as it wants, tan will return a finite
-    return __p.a() + __p.b() * ::cuda::std::tan(result_type{3.1415926535897932384626433832795} * __gen(__g));
+    return __p.a() + __p.b() * ::cuda::std::tan(__numbers<result_type>::__pi() * __gen(__g));
   }
 
   // property functions

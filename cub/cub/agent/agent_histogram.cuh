@@ -43,7 +43,7 @@ enum BlockHistogramMemoryPreference
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
 {
   switch (mempref)
   {
@@ -53,9 +53,8 @@ namespace detail
       return "SMEM";
     case BLEND:
       return "BLEND";
-    default:
-      return "<unknown BlockHistogramMemoryPreference>";
   }
+  return "<unknown BlockHistogramMemoryPreference>";
 }
 } // namespace detail
 

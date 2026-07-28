@@ -126,6 +126,8 @@ struct policy_selector_from_hub
  * @brief Utility class for dispatching the appropriately-tuned kernels for segmented device-wide
  * radix sort
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam SortOrder
  *   Whether to sort in ascending or descending order
  *
@@ -163,7 +165,7 @@ template <SortOrder Order,
             SegmentSizeT,
             DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedRadixSort") DispatchSegmentedRadixSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort") DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants

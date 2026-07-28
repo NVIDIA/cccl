@@ -125,51 +125,27 @@ CUB_NAMESPACE_BEGIN
 //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. tab-set-code::
+//! .. code-block:: c++
 //!
-//!    .. code-block:: c++
+//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
 //!
-//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+//!    __global__ void kernel(...)
+//!    {
+//!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
+//!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
 //!
-//!        __global__ void kernel(...)
-//!        {
-//!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
-//!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
+//!        // Allocate shared memory for BlockRadixSort
+//!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
 //!
-//!            // Allocate shared memory for BlockRadixSort
-//!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
+//!        // Obtain a segment of consecutive items that are blocked across threads
+//!        int thread_keys[4];
+//!        ...
 //!
-//!            // Obtain a segment of consecutive items that are blocked across threads
-//!            int thread_keys[4];
-//!            ...
+//!        // Collectively sort the keys
+//!        BlockRadixSort(temp_storage).Sort(thread_keys);
 //!
-//!            // Collectively sort the keys
-//!            BlockRadixSort(temp_storage).Sort(thread_keys);
-//!
-//!            ...
-//!
-//!    .. code-block:: python
-//!
-//!        import cuda.coop._experimental as coop
-//!        from pynvjitlink import patch
-//!        patch.patch_numba_linker(lto=True)
-//!
-//!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
-//!        block_radix_sort = coop.block.make_radix_sort_keys(numba.int32, 128, 4)
-//!        temp_storage_bytes = block_radix_sort.temp_storage_bytes
-//!
-//!        @cuda.jit(link=block_radix_sort.files)
-//!        def kernel():
-//!            Allocate shared memory for radix sort
-//!            temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
-//!
-//!            # Obtain a segment of consecutive items that are blocked across threads
-//!            thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
-//!            # ...
-//!
-//!            // Collectively sort the keys
-//!            block_radix_sort(temp_storage, thread_keys)
-//!            # ...
+//!        ...
+//!    }
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
 //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.

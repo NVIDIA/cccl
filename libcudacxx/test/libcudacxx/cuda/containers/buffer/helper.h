@@ -231,17 +231,56 @@ struct extract_properties<cuda::buffer<T, Properties...>>
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 
+// We cannot use the default ::char3 because it does not provide a constructor or comparison
+// operators against int
+struct custom_char3
+{
+  constexpr custom_char3() = default;
+
+  TEST_FUNC custom_char3(int v) noexcept
+  {
+    const auto u = static_cast<cuda::std::int16_t>(v);
+
+    cuda::std::memcpy(data, &u, sizeof(u));
+  }
+
+  TEST_FUNC constexpr friend bool operator==(const custom_char3& lhs, const custom_char3& rhs) noexcept
+  {
+    for (cuda::std::size_t i = 0; i < cuda::std::size(lhs.data); ++i)
+    {
+      if (lhs.data[i] != rhs.data[i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  TEST_FUNC constexpr friend bool operator!=(const custom_char3& lhs, const custom_char3& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+  char data[3]{};
+};
+
+static_assert(sizeof(custom_char3) == 3);
+static_assert(::cuda::is_trivially_copyable_v<custom_char3>, "cuda::buffer will not accept the type");
+
 #if _CCCL_CTK_AT_LEAST(12, 9)
 using test_types =
   c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
                  cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
                  cuda::buffer<short, cuda::mr::device_accessible>,
                  cuda::buffer<float, cuda::mr::device_accessible>,
-                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>,
+                 cuda::buffer<::custom_char3, cuda::mr::device_accessible>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
-using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,
-                                  cuda::buffer<short, cuda::mr::device_accessible>,
-                                  cuda::buffer<float, cuda::mr::device_accessible>>;
+using test_types =
+  c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,
+                 cuda::buffer<short, cuda::mr::device_accessible>,
+                 cuda::buffer<float, cuda::mr::device_accessible>,
+                 cuda::buffer<::custom_char3, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H

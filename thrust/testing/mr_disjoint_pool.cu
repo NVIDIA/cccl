@@ -52,7 +52,7 @@ class dummy_resource final : public thrust::mr::memory_resource<alloc_id>
 public:
   dummy_resource() = default;
 
-  ~dummy_resource() override
+  ~dummy_resource() override // NOLINT(bugprone-exception-escape)
   {
     ASSERT_EQUAL(id_to_allocate, 0u);
     ASSERT_EQUAL(id_to_deallocate, 0u);

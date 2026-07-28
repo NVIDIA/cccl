@@ -123,6 +123,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${
     cuco/fixed_capacity_map/test_insert_and_contains.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.find ${cudax_target}
+    cuco/fixed_capacity_map/test_find.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
     cuco/fixed_capacity_map/test_capacity.cu
 )
@@ -180,6 +184,9 @@ cudax_add_catch2_test(test_target group.mapping.group_by
 )
 cudax_add_catch2_test(test_target group.mapping.identity_mapping
     group/mapping/identity_mapping.cu
+)
+cudax_add_catch2_test(test_target group.mapping.take
+    group/mapping/take.cu
 )
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu

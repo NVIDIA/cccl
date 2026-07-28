@@ -854,22 +854,20 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
     ::cuda::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
   }
+  else if constexpr (::cuda::__driver::__cu_driver_memsetable<_Tp>)
+  {
+    ::cuda::__driver::__memsetAsync(__first, __value, __count, __stream.get());
+  }
   else
   {
-    if constexpr (sizeof(_Tp) <= 4)
-    {
-      ::cuda::__driver::__memsetAsync(__first, __value, __count, __stream.get());
-    }
-    else
-    {
 #  if _CCCL_CUDA_COMPILATION()
-      ::cuda::__ensure_current_context __guard(__stream);
-      CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
+    ::cuda::__ensure_current_context __guard(__stream);
+    CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-      static_assert(sizeof(_Tp) <= 4,
-                    "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
+    static_assert(::cuda::__driver::__cu_driver_memsetable<_Tp>,
+                  "CUDA compiler is required to initialize an async_buffer with elements unable to be initialized "
+                  "with cuMemSet");
 #  endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
-    }
   }
 }
 

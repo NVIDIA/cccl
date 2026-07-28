@@ -283,7 +283,8 @@ struct reduce_by_key_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReduceByKeyPolicy
   {
-    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
+    return {cub::ReduceByKeyAlgorithm::lookback,
+            {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
   }
 };
 
@@ -448,7 +449,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
@@ -588,7 +589,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
@@ -1166,23 +1167,26 @@ C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
 
   // aggregate init
   constexpr auto p1 = cub::ReduceByKeyPolicy{
-    128,
-    7,
-    cub::BLOCK_LOAD_DIRECT,
-    cub::LOAD_DEFAULT,
-    cub::BLOCK_SCAN_WARP_SCANS,
-    {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+    cub::ReduceByKeyAlgorithm::lookback,
+    {128,
+     7,
+     cub::BLOCK_LOAD_DIRECT,
+     cub::LOAD_DEFAULT,
+     cub::BLOCK_SCAN_WARP_SCANS,
+     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::ReduceByKeyPolicy{
-    .threads_per_block = 128,
-    .items_per_thread  = 7,
-    .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-    .load_modifier     = cub::LOAD_DEFAULT,
-    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{
-         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+    .algorithm = cub::ReduceByKeyAlgorithm::lookback,
+    .lookback  = cub::ReduceByKeyLookbackPolicy{
+       .threads_per_block = 128,
+       .items_per_thread  = 7,
+       .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+       .load_modifier     = cub::LOAD_DEFAULT,
+       .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+       .lookback_delay    = cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1197,10 +1201,11 @@ C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
     return os.str();
   };
   REQUIRE(to_string(p1)
-          == "ReduceByKeyPolicy { .threads_per_block = 128, .items_per_thread = 7"
+          == "ReduceByKeyPolicy { .algorithm = ReduceByKeyAlgorithm::lookback"
+             ", .lookback = ReduceByKeyLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
              ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 832, .l2_write_latency = 1165 } }");
+             ", .delay = 832, .l2_write_latency = 1165 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

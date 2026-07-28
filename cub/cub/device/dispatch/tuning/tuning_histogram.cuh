@@ -40,7 +40,7 @@ struct HistogramPolicy
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
@@ -50,7 +50,7 @@ struct HistogramPolicy
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

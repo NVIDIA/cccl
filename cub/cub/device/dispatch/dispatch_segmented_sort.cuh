@@ -180,25 +180,25 @@ template <typename LargeKernelT,
           typename EndOffsetIteratorT,
           typename KernelLauncherFactory>
 __launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
-  _CCCL_GRID_CONSTANT const LargeKernelT large_kernel,
-  _CCCL_GRID_CONSTANT const SmallKernelT small_kernel,
-  _CCCL_GRID_CONSTANT const local_segment_index_t num_segments,
-  _CCCL_GRID_CONSTANT KeyT* const d_current_keys,
-  _CCCL_GRID_CONSTANT KeyT* const d_final_keys,
+  const LargeKernelT large_kernel,
+  const SmallKernelT small_kernel,
+  const local_segment_index_t num_segments,
+  KeyT* const d_current_keys,
+  KeyT* const d_final_keys,
   device_double_buffer<KeyT> d_keys_double_buffer,
-  _CCCL_GRID_CONSTANT ValueT* const d_current_values,
-  _CCCL_GRID_CONSTANT ValueT* const d_final_values,
+  ValueT* const d_current_values,
+  ValueT* const d_final_values,
   device_double_buffer<ValueT> d_values_double_buffer,
-  _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
-  _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
-  _CCCL_GRID_CONSTANT local_segment_index_t* const group_sizes,
-  _CCCL_GRID_CONSTANT local_segment_index_t* const large_and_medium_segments_indices,
-  _CCCL_GRID_CONSTANT local_segment_index_t* const small_segments_indices,
-  _CCCL_GRID_CONSTANT const KernelLauncherFactory launcher_factory,
-  _CCCL_GRID_CONSTANT const int large_threads_per_block,
-  _CCCL_GRID_CONSTANT const int small_threads_per_block,
-  _CCCL_GRID_CONSTANT const int medium_segments_per_block,
-  _CCCL_GRID_CONSTANT const int small_segments_per_block)
+  const BeginOffsetIteratorT d_begin_offsets,
+  const EndOffsetIteratorT d_end_offsets,
+  local_segment_index_t* const group_sizes,
+  local_segment_index_t* const large_and_medium_segments_indices,
+  local_segment_index_t* const small_segments_indices,
+  const KernelLauncherFactory launcher_factory,
+  const int large_threads_per_block,
+  const int small_threads_per_block,
+  const int medium_segments_per_block,
+  const int small_segments_per_block)
 {
   // In case of CDP:
   // 1. each CTA has a different main stream
@@ -336,6 +336,7 @@ static constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
 // TODO(bgruber): remove in CCCL 4.0
+//! Deprecated [Since 3.5]
 template <
   SortOrder Order,
   typename KeyT,
@@ -369,7 +370,7 @@ template <
     detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>,
     detail::choose_signed_offset<cub::detail::segmented_sort::global_segment_offset_t>::type>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedSort and pass tunings") DispatchSegmentedSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") DispatchSegmentedSort
 {
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;

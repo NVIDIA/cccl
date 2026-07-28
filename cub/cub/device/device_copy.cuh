@@ -37,7 +37,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! The Batched algorithms in DeviceCopy that accept an environment can be tuned by passing a custom :ref:`policy
-//! selector <cub-policy-selectors>` that returns a @ref BatchedCopyPolicy, as shown in the example below:
+//! selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::BatchedCopyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_copy_env_api.cu
 //!      :language: c++

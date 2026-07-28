@@ -8,7 +8,7 @@ Memory Pools
 
 Memory pools provide efficient, stream-ordered memory allocation using CUDA's memory pool API. They support both synchronous and stream-ordered allocation/deallocation and can be configured with various memory spaces, properties and attributes.
 
-Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extended-api-memory-resources-resource>`
+Memory pool objects implement the :ref:`cuda::mr::resource <libcudacxx-extended-api-memory-resources-resource>`
 interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member
 functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and
 ``deallocate_sync(ptr, size, alignment)`` member functions. For all of them, the alignment argument is optional.

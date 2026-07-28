@@ -33,7 +33,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! Backend algorithms for @ref DeviceTransform.
+//! Backend algorithms for @ref cub::DeviceTransform "DeviceTransform".
 enum class TransformAlgorithm
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
@@ -47,7 +47,7 @@ enum class TransformAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(TransformAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(TransformAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -59,9 +59,8 @@ namespace detail
       return "TransformAlgorithm::ldgsts";
     case TransformAlgorithm::ublkcp:
       return "TransformAlgorithm::ublkcp";
-    default:
-      return "<unknown TransformAlgorithm>";
   }
+  return "<unknown TransformAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
@@ -106,7 +105,7 @@ struct TransformPrefetchPolicy
                          //!< retains the compiler's default unrolling by specifying no unroll pragma. 1 prevents
                          //!< unrolling.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block
@@ -115,7 +114,7 @@ struct TransformPrefetchPolicy
         && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -141,14 +140,14 @@ struct TransformVectorizedPolicy
   int items_per_thread; //!< Number of items processed per thread. Must be a multiple of vec_size.
   int vec_size; //!< Number of elements loaded/stored per vectorized access. Must evenly divide items_per_thread.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -181,7 +180,7 @@ struct TransformAsyncCopyPolicy
                           //!< (16 / sizeof(output), a 16-byte STG.128); 1 disables vectorization (scalar stores) and
                           //!< compiles the vectorized branch out of the kernel.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.min_items_per_thread == rhs.min_items_per_thread
@@ -189,7 +188,7 @@ struct TransformAsyncCopyPolicy
         && lhs.store_vec_size == rhs.store_vec_size;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -207,7 +206,7 @@ struct TransformAsyncCopyPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The tuning policy for all algorithms in @ref DeviceTransform.
+//! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
@@ -221,14 +220,14 @@ struct TransformPolicy
   TransformAsyncCopyPolicy async_copy; //!< Sub-policy for the async copy algorithms. Only used when @p algorithm is @p
                                        //!< ldgsts or @p ublkcp.
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
   {
     return lhs.min_bytes_in_flight == rhs.min_bytes_in_flight && lhs.algorithm == rhs.algorithm
         && lhs.prefetch == rhs.prefetch && lhs.vectorized == rhs.vectorized && lhs.async_copy == rhs.async_copy;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

@@ -51,7 +51,7 @@
 #if _CCCL_TILE_COMPILATION() // nvbug6081171: error: "call to non-tile function not supported!"
 #  undef _CCCL_BUILTIN_POPCOUNT
 #  undef _CCCL_BUILTIN_POPCOUNTLL
-#  undef _CCCL_BUILTIN_POPCOUNTLL
+#  undef _CCCL_BUILTIN_POPCOUNTG
 #endif // _CCCL_TILE_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

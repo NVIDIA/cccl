@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
+from ..._caching import cache_build_results, cache_with_registered_key_functions
 from ..._cccl_interop import set_cccl_iterator_state
 from ..._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from ..._utils.protocols import (
@@ -22,6 +22,7 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 class _RadixSort(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_keys_cccl",
         "d_out_keys_cccl",
         "d_in_values_cccl",
@@ -68,17 +69,28 @@ class _RadixSort(Serializable):
         )
         decomposer_return_type = "".encode("utf-8")
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
-            _bindings.DeviceRadixSortBuildResult,
+        build_order = (
             _bindings.SortOrder.ASCENDING
             if order is SortOrder.ASCENDING
-            else _bindings.SortOrder.DESCENDING,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.decomposer_op,
-            decomposer_return_type,
+            else _bindings.SortOrder.DESCENDING
+        )
+        self.build_results, self._bound_build_result = cache_build_results(
+            _bindings.DeviceRadixSortBuildResult,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            order,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceRadixSortBuildResult,
+                build_order,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.decomposer_op,
+                decomposer_return_type,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -95,7 +107,9 @@ class _RadixSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
