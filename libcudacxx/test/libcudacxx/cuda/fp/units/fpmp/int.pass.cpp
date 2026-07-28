@@ -43,7 +43,7 @@ static_assert(::cuda::std::is_constructible_v<int64_t, ffloat>, "");
 // Unlike the single-double emulated types (fpemu), the double-double fp64mp2 has
 // enough mantissa (~106 bits) to hold a 128-bit float, so quad construction and
 // conversion are deliberately SUPPORTED (not deleted). __fpmp_fp128 is __float128
-// on x86 Linux + libquadmath and long double on IEEE-128 long double platforms.
+// wherever _CCCL_HAS_FLOAT128() and long double on IEEE-128 long double platforms.
 static_assert(::cuda::std::is_constructible_v<fp64mp2, __fpmp_fp128>, "");
 static_assert(::cuda::std::is_constructible_v<__fpmp_fp128, fp64mp2>, "");
 #endif // _CCCL_FPMP_FP128_ENABLE == 1

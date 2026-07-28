@@ -155,7 +155,10 @@
       INTO fpmp2, which can drop precision at unintended conversions or introduce accidental
       round-trips / FP64 use (accuracy/perf) with no diagnostic; keep the default 1 unless the
       migration benefit outweighs that risk.
-    - _CCCL_FPMP_FP128_ENABLE: Automatically detected from compiler version and CUDA capabilities.
+    - _CCCL_FPMP_FP128_ENABLE: Automatically detected, following _CCCL_HAS_FLOAT128() for __float128
+      and falling back to a 128-bit long double on platforms that have one. Note that CCCL reports no
+      __float128 for GCC in strict-ANSI mode (so for nvcc, which always compiles strictly) unless you
+      define CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS and compile with -fext-numeric-literals.
       Can be explicitly set to 0 to disable 128-bit float support (older compilers, compatibility).
     - _CCCL_FPMP_FP128_MATH_FALLBACK: When 1, fp64mp2 math functions use quad-precision (__fpmp_fp128)
       for higher accuracy. Requires libquadmath linkage, slower compilation, larger code.
@@ -1377,6 +1380,10 @@ __shfl_up_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, unsigned int 
  * CUDA-style freestanding atomic functions that work with the fpmp2 class.
  * They dispatch to the templated impl (inline mode) or the extern-"C" ABI
  * symbols (library mode), so they work in both modes.
+ *
+ * fp32mp2 works on every supported architecture. fp64mp2 needs a 128-bit
+ * compare-exchange, so it requires sm_90+ and PTX ISA 8.4+; calling it elsewhere
+ * fails to link on __fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840.
  * ============================================================================
  */
 

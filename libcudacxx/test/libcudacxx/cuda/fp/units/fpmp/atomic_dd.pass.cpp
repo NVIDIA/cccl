@@ -4,14 +4,16 @@
 // UNSUPPORTED: enable-tile
 // error: atomic operations are unsupported in tile code
 // UNSUPPORTED: pre-sm-90
-// note: 128-bit atomicCAS (needed by the double-double atomics) requires compute capability >= 9.0 (Hopper)
+// note: the 128-bit compare-exchange (needed by the double-double atomics) requires
+// compute capability >= 9.0 (Hopper) and PTX ISA 8.4+; the architecture half is checked
+// here, the PTX ISA half below, since lit does not model the PTX ISA version
 
 //===----------------------------------------------------------------------===//
 //
 //  Unit test: atomicAdd / atomicSub on fp64mp2 (double-double).
 //
 //  Device-only test (multi-block 128-bit atomics; requires compute capability
-//  >= 9.0 / Hopper for 128-bit atomicCAS). Two checks:
+//  >= 9.0 / Hopper and PTX ISA 8.4+ for the 128-bit compare-exchange). Two checks:
 //    - Atomicity: every thread does atomicAdd(1.0) then atomicSub(1.0); with
 //      correct atomics the shared accumulator cancels back to ~0.
 //    - Accuracy: many threads accumulate/subtract a small value and the result is
@@ -33,7 +35,8 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Type alias for the double-double multi-precision floating-point type.
 using dfloat = fp64mp2;
 
-#if _CCCL_CUDA_COMPILATION()
+// Skip the test if the PTX ISA is insufficient for the 128-bit compare-exchange
+#if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 840
 // Each thread adds then subtracts 1.0; the accumulator must cancel to ~0.
 __global__ void test_atomicity_kernel_dd(unsigned int* idx, dfloat* res)
 {
@@ -156,12 +159,12 @@ void run_accuracy()
     assert(cudaFree(d_res) == cudaSuccess);
   }
 }
-#endif // _CCCL_CUDA_COMPILATION()
+#endif // _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 840
 
 int main(int, char**)
 {
-#if _CCCL_CUDA_COMPILATION()
+#if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 840
   NV_IF_TARGET(NV_IS_HOST, (run_atomicity(); run_accuracy();))
-#endif // _CCCL_CUDA_COMPILATION()
+#endif // _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 840
   return 0;
 }

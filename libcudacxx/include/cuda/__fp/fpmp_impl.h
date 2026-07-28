@@ -93,6 +93,7 @@
 #include <cuda/__fp/fpmp_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/native_type.h> // __fpmp_fp128 is CCCL's native binary128 type
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -103,6 +104,7 @@
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/cfloat> // LDBL_* , to recognize a binary128 long double
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
@@ -178,18 +180,21 @@ namespace cuda::experimental
 // enabling the use of standard <cmath> functions (expl, sinl, sqrtl, logl, etc.)
 // instead of libquadmath (*q functions like expq, sinq, sqrtq, logq).
 //
-// True on:
-//   - aarch64/ARM64: IEEE quad is the standard long double
-//   - s390x (IBM Z): IEEE quad long double
-//   - PowerPC with -mabi=ieeelongdouble (GCC defines __LONG_DOUBLE_IEEE128__)
+// The test is on the format rather than on a list of architectures, and is the same one
+// CCCL applies in <cuda/std/__floating_point/format.h> to classify long double as
+// __fp_format::__binary128. It is true on aarch64, s390x and PowerPC built with
+// -mabi=ieeelongdouble, and false wherever long double is x87 80-bit (x86) or plain
+// binary64 (Windows, including ARM64) - no special case needed for either.
 //
-// NOT true on:
-//   - x86/x86_64: long double is 80-bit x87 extended precision (different format)
-//   - PowerPC default: long double is IBM double-double format (different format)
-//   - Windows: long double equals double (64-bit)
+// It would be preferable to ask __fp_has_native_type_v<__binary128> directly, but that is
+// a constexpr variable and this decision has to be made by the preprocessor; the
+// static_assert next to __fpmp_fp128 below keeps the two answers in agreement.
+//
+// _CCCL_HAS_LONG_DOUBLE() additionally excludes CUDA compilation, where long double is
+// not a usable device type, and honors CCCL_DISABLE_LONG_DOUBLE_SUPPORT.
 */
 #ifndef _CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128
-#  if defined(__aarch64__) || defined(_M_ARM64) || defined(__s390x__) || defined(__LONG_DOUBLE_IEEE128__)
+#  if _CCCL_HAS_LONG_DOUBLE() && LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113
 #    define _CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 1
 #  else
 #    define _CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 0
@@ -201,24 +206,25 @@ namespace cuda::experimental
 // --------------------------------------------------------------------
 // FP128 is enabled when the platform provides 128-bit IEEE 754 quadruple
 // precision arithmetic, either via:
-//   - __float128 + libquadmath (x86 Linux/Unix with GCC)
+//   - __float128, as reported by _CCCL_HAS_FLOAT128()
 //   - 128-bit long double (aarch64, s390x, PowerPC with IEEE long double)
-//   - CUDA device intrinsics (sm_100+ / Blackwell)
 //
-// Disabled on:
-//   - Windows (MSVC has no __float128; MinGW varies)
-//   - x86 without libquadmath
-//   - Older CUDA architectures (< sm_100)
+// _CCCL_HAS_FLOAT128() is CCCL's own detection and already accounts for everything that
+// decides whether the type can even be named: a host compiler that provides it, Linux,
+// a non-ARM64 host, __int128 support, and - during device compilation - NVCC/NVRTC 12.8+
+// targeting sm_100+ (Blackwell). Asking it instead of re-deriving the platform matrix
+// here is what keeps ARM64 and Windows working.
 */
 #ifndef _CCCL_FPMP_FP128_ENABLE
 #  if defined(__CUDACC__)
-#    if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1000)
+// Under CUDA the quad conversions are device-only, as they were before.
+#    if _CCCL_DEVICE_COMPILATION() && _CCCL_HAS_FLOAT128()
 #      define _CCCL_FPMP_FP128_ENABLE 1
 #    else
 #      define _CCCL_FPMP_FP128_ENABLE 0
 #    endif
 #  else
-#    if (_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH == 1) || (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1)
+#    if _CCCL_HAS_FLOAT128() || (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1)
 #      define _CCCL_FPMP_FP128_ENABLE 1
 #    else
 #      define _CCCL_FPMP_FP128_ENABLE 0
@@ -240,22 +246,21 @@ namespace cuda::experimental
 /*
 // Internal 128-bit floating-point type definition
 // ------------------------------------------------
-// __fpmp_fp128 is the library's internal quad-precision type, mapped to the
-// platform-specific 128-bit IEEE 754 floating-point type:
+// __fpmp_fp128 is the library's internal quad-precision type. Which type that is on a
+// given platform is CCCL's decision, not ours: __fp_native_type_t resolves binary128 to
+// __float128 where _CCCL_HAS_FLOAT128() and to a 128-bit long double otherwise (aarch64,
+// s390x, PowerPC with IEEE long double).
 //
-//   - x86 Linux/Unix with libquadmath: __float128 (GCC extension)
-//   - ARM64, s390x, PowerPC with IEEE long double: long double
+// The static_assert catches the case where the preprocessor conditions that set
+// _CCCL_FPMP_FP128_ENABLE - or a hand override of it - claim a quad type that CCCL does
+// not actually have, which would otherwise show up as __fpmp_fp128 being void.
 //
 // Only defined when _CCCL_FPMP_FP128_ENABLE == 1.
 */
 #if (_CCCL_FPMP_FP128_ENABLE == 1)
-#  if (defined(__CUDA_ARCH__)) || (_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH == 1)
-typedef __float128 __fpmp_fp128;
-#  elif (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1)
-typedef long double __fpmp_fp128;
-#  else
-#    error "_CCCL_FPMP_FP128_ENABLE=1 but no 128-bit float type available"
-#  endif
+static_assert(::cuda::std::__fp_has_native_type_v<::cuda::std::__fp_format::__binary128>,
+              "_CCCL_FPMP_FP128_ENABLE=1 but CCCL reports no native 128-bit float type");
+using __fpmp_fp128 = ::cuda::std::__fp_native_type_t<::cuda::std::__fp_format::__binary128>;
 #endif
 
 /*

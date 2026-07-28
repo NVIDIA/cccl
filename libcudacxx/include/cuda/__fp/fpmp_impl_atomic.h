@@ -31,6 +31,7 @@
     error-free-transform primitives live in <cuda/__fp/fpmp_impl.h>, which this header includes.
 */
 
+#include <cuda/__atomic/atomic.h> // dd atomics use cuda::atomic_ref for the 128-bit compare-exchange
 #include <cuda/__fp/fpmp_impl.h>
 #include <cuda/__fp/fpmp_impl_muladd.h> // dd atomics reuse __fpmp2_high_add (muladd family)
 
@@ -146,8 +147,22 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicSub<float>(
  * Atomic operations - Double (fp64) specializations
  * --------------------------------------------------------------------
  */
-// atomicAdd for double (fp64mp2): Uses 128-bit atomicCAS
-// Two doubles = 128 bits requires ulonglong2 and sm_90+ (Hopper architecture)
+// Declared but never defined, so that calling the double-double atomics on a target
+// without a 128-bit compare-exchange is a link-time error naming the requirement rather
+// than a silent no-op. Only callers pay: this body is discarded when nobody uses it.
+// Mirrors __atomic_cas_128b_unsupported_before_SM_90 in <cuda/std/atomic>.
+extern "C" _CCCL_DEVICE void __fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840();
+
+// Bit image of a double-double, laid out like the class (hi first), so that a whole
+// fp64mp2 can be exchanged as a single 128-bit word.
+struct alignas(16) __fpmp2_dd_bits
+{
+  uint64_t __hi;
+  uint64_t __lo;
+};
+
+// atomicAdd for double (fp64mp2): Uses a 128-bit compare-exchange
+// Two doubles = 128 bits requires sm_90+ (Hopper architecture) and PTX ISA 8.4+
 // Returns the old value before the addition
 template <>
 _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
@@ -158,24 +173,26 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
   double* __old_hi,
   double* __old_lo) noexcept
 {
-#    if __CUDA_ARCH__ >= 900
+#    if __CUDA_ARCH__ >= 900 && __cccl_ptx_isa >= 840
 
   // Treat the two doubles as a single 128-bit value for atomic operations
   // The address must be 16-byte aligned for 128-bit atomics
-  static_assert(sizeof(double) * 2 == sizeof(ulonglong2), "Two doubles must equal one ulonglong2 (128 bits)");
+  static_assert(sizeof(double) * 2 == sizeof(__fpmp2_dd_bits), "Two doubles must equal one 128-bit word");
 
-  ulonglong2* __address_as_ull2 = reinterpret_cast<ulonglong2*>(__address_hi);
-  ulonglong2 __old              = *__address_as_ull2;
-  ulonglong2 __assumed;
+  // The 128-bit CAS goes through cuda::atomic_ref rather than atomicCAS: the ulonglong2
+  // overload of atomicCAS lives in CUDA's sm_90_rt.hpp, which clang-CUDA never includes.
+  ::cuda::atomic_ref<__fpmp2_dd_bits, ::cuda::thread_scope_device> __address_as_bits{
+    *reinterpret_cast<__fpmp2_dd_bits*>(__address_hi)};
 
-  // Use the atomicCAS loop with retries to ensure atomicity
+  __fpmp2_dd_bits __assumed = __address_as_bits.load(::cuda::std::memory_order_relaxed);
+  __fpmp2_dd_bits __new_bits;
+
+  // Use the compare-exchange loop with retries to ensure atomicity
   do
   {
-    __assumed = __old;
-
     // Extract old values from the 128-bit structure
-    double __old_hi_val = ::cuda::std::bit_cast<double>(__assumed.x);
-    double __old_lo_val = ::cuda::std::bit_cast<double>(__assumed.y);
+    double __old_hi_val = ::cuda::std::bit_cast<double>(__assumed.__hi);
+    double __old_lo_val = ::cuda::std::bit_cast<double>(__assumed.__lo);
 
     // Perform addition based on method
     double __new_hi;
@@ -183,28 +200,24 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
     __fpmp2_high_add(__old_hi_val, __old_lo_val, __addition_hi, __addition_lo, &__new_hi, &__new_lo);
 
     // Pack new values into a 128-bit structure
-    ulonglong2 __new_ull2;
-    __new_ull2.x = ::cuda::std::bit_cast<unsigned long long int>(__new_hi);
-    __new_ull2.y = ::cuda::std::bit_cast<unsigned long long int>(__new_lo);
+    __new_bits.__hi = ::cuda::std::bit_cast<uint64_t>(__new_hi);
+    __new_bits.__lo = ::cuda::std::bit_cast<uint64_t>(__new_lo);
 
-    // 128-bit atomicCAS available on sm_90+
-    __old = atomicCAS(__address_as_ull2, __assumed, __new_ull2);
-  } while (__assumed.x != __old.x || __assumed.y != __old.y);
+    // On failure __assumed receives the current value, so the retry re-adds to it
+  } while (!__address_as_bits.compare_exchange_weak(__assumed, __new_bits, ::cuda::std::memory_order_relaxed));
 
-  // Return old value - extract from the final 'old' value
-  *__old_hi = ::cuda::std::bit_cast<double>(__old.x);
-  *__old_lo = ::cuda::std::bit_cast<double>(__old.y);
+  // Return old value - __assumed holds the value that the successful exchange replaced
+  *__old_hi = ::cuda::std::bit_cast<double>(__assumed.__hi);
+  *__old_lo = ::cuda::std::bit_cast<double>(__assumed.__lo);
 #    else
-  // 128-bit atomicCAS requires sm_90+ (Hopper architecture)
-  // On older architectures, this is a no-op stub
-  // Runtime checks should prevent this code path from being executed
+  // The 128-bit compare-exchange requires sm_90+ (Hopper architecture) and PTX ISA 8.4+
   (void) __address_hi;
   (void) __address_lo;
   (void) __addition_hi;
   (void) __addition_lo;
-  // Return the current values unchanged
-  *__old_hi = *__address_hi;
-  *__old_lo = *__address_lo;
+  (void) __old_hi;
+  (void) __old_lo;
+  __fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840();
 #    endif
 }
 
