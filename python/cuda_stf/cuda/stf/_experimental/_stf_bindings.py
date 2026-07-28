@@ -37,6 +37,7 @@ _BINDING_EXPORTS = (
     "cuda_kernel",
     "data_place",
     "dep",
+    "dlpack_export",
     "exec_place",
     "exec_place_grid",
     "exec_place_resources",
