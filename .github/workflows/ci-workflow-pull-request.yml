@@ -600,6 +600,11 @@ jobs:
             echo "pr_number=${pr_number}"
           } >> "${GITHUB_OUTPUT}"
 
+      - name: Collect workflow logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/codex/collect_ci_logs.sh /tmp/ci-logs
+
       - name: Configure agent permissions
         run: |
           mkdir -p "${RUNNER_TEMP}/codex-home"
@@ -608,7 +613,7 @@ jobs:
       - name: Investigate the workflow run
         uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1
         env:
-          GH_TOKEN: ${{ github.token }}
+          CI_LOG_DIR: /tmp/ci-logs
           PR_BASE_SHA: ${{ steps.pull-request.outputs.base_sha }}
         with:
           openai-api-key: ${{ secrets.NVINFERENCE_API_KEY }}

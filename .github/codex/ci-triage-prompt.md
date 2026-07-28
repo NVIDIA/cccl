@@ -1,33 +1,22 @@
 # CI failure triage
 
-Diagnose the current GitHub Actions run. Retrieve every relevant failure log, group
-equivalent actionable failures, inspect the PR changes and source where useful, and
-return the supplied JSON schema.
+Diagnose the current GitHub Actions run from the collected logs. Group equivalent
+actionable failures, inspect the PR changes and source where useful, and return the
+supplied JSON schema.
 
-## Retrieve the logs
+## Evidence
 
-Use `gh api`, authenticated by `GH_TOKEN`. List every job with one paginated request:
+The workflow has already collected the complete job manifest and all relevant failure
+logs in `CI_LOG_DIR`:
 
-```bash
-gh api --paginate --slurp \
-  "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?filter=latest&per_page=100" \
-  > /tmp/ci-triage-job-pages.json
-```
+- `jobs.json` contains `total_count` and the metadata for every job.
+- `job-JOB_ID.log` contains the complete log for each job concluded as `failure`,
+  `timed_out`, `startup_failure`, or `action_required`.
 
-Require the number of unique collected jobs to equal `total_count`. Download the complete
-log exactly once for each job concluded as `failure`, `timed_out`, `startup_failure`, or
-`action_required`:
-
-```bash
-gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/JOB_ID/logs" \
-  > /tmp/ci-triage-JOB_ID.log
-```
-
-Do not retry, repeat requests, use run-level log endpoints, or wait for the run to finish.
-If collection is incomplete or any required log request fails, return
+Read every collected failure log before grouping. Use `jobs.json` for exact job IDs,
+names, conclusions, and step numbers. If any required file is missing, return
 `status: log_retrieval_failed`, briefly explain the error, and leave `jobs`, `groups`, and
-`cancelled_job_ids` empty. Do not infer missing logs from source. Ignore the still-running
-analysis and publishing jobs.
+`cancelled_job_ids` empty. Ignore the analysis and publishing jobs.
 
 ## Diagnose and group
 
