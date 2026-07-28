@@ -1,3 +1,6 @@
+# Keep PR-controlled AGENTS.md files available as source, not model instructions.
+project_doc_max_bytes = 0
+
 [permissions.ci_triage.filesystem]
 ":minimal" = "read"
 "/tmp/ci-logs" = "read"
@@ -6,6 +9,9 @@
 
 [permissions.ci_triage.filesystem.":workspace_roots"]
 "." = "read"
+
+[permissions.ci_triage.network]
+enabled = false
 
 [shell_environment_policy]
 inherit = "all"

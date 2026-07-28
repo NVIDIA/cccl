@@ -44,10 +44,11 @@ runs:
         codex-version: 0.144.5
         codex-home: ${{ runner.temp }}/codex-home
         permission-profile: ci_triage
+        safety-strategy: drop-sudo
         allow-bot-users: "copy-pr-bot[bot]"
         model: gpt-5.5
         effort: medium
-        codex-args: --ignore-rules --ephemeral
+        codex-args: --strict-config --ignore-rules --ephemeral
         output-file: ${{ runner.temp }}/agent-analysis.json
         output-schema-file: ${{ github.action_path }}/output.schema.json
         prompt-file: ${{ github.action_path }}/prompt.md
