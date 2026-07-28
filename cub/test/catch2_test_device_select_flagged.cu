@@ -324,10 +324,10 @@ void test_explicit_prefetch_policy()
 
   c2h::device_vector<int> num_selected_out(1, 0);
 
-  int* d_in                  = thrust::raw_pointer_cast(in.data());
-  int* d_flags               = thrust::raw_pointer_cast(flags.data());
-  int* d_num_selected_out    = thrust::raw_pointer_cast(num_selected_out.data());
-  const auto tuned_execution = cuda::execution::tune(flagged_prefetch_policy_selector<Prefetch, SelectionOpt>{});
+  int* const d_in               = thrust::raw_pointer_cast(in.data());
+  int* const d_flags            = thrust::raw_pointer_cast(flags.data());
+  int* const d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  const auto tuned_execution    = cuda::execution::tune(flagged_prefetch_policy_selector<Prefetch, SelectionOpt>{});
 
   if constexpr (SelectionOpt == cub::SelectImpl::SelectPotentiallyInPlace)
   {
@@ -341,7 +341,7 @@ void test_explicit_prefetch_policy()
   else
   {
     c2h::device_vector<int> out(num_items);
-    int* d_out = thrust::raw_pointer_cast(out.data());
+    int* const d_out = thrust::raw_pointer_cast(out.data());
 
     REQUIRE(
       cudaSuccess == cub::DeviceSelect::Flagged(d_in, d_flags, d_out, d_num_selected_out, num_items, tuned_execution));
