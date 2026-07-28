@@ -218,7 +218,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Works with iterators", "[pairs][topk][device]", 
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device]", num_items_types)
+C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device][large-mem]", num_items_types)
 {
   using key_t              = cuda::std::uint32_t;
   using value_t            = cuda::std::uint32_t;
