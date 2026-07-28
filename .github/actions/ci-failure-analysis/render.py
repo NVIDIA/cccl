@@ -100,17 +100,7 @@ def code_block(value, limit=None):
     return f"{fence}text\n{value}\n{fence}"
 
 
-def unique(values):
-    return list(dict.fromkeys(values))
-
-
-def plural(count, singular, plural_form=None):
-    return singular if count == 1 else (plural_form or f"{singular}s")
-
-
 def job_url(repository, run_id, job_id):
-    if job_id <= 0:
-        return None
     return f"https://github.com/{repository}/actions/runs/{run_id}/job/{job_id}"
 
 
@@ -193,10 +183,8 @@ def validate_job_references(analysis, step_numbers, failed_job_ids):
 
 
 def job_link(job_id, jobs, repository, run_id, step_number=0):
-    label = sanitize_inline(jobs.get(job_id, f"Job {job_id}"), limit=300)
+    label = sanitize_inline(jobs[job_id], limit=300)
     url = job_url(repository, run_id, job_id)
-    if not url:
-        return label
     if step_number > 0:
         label += f", step {step_number}"
         url += f"#step:{step_number}:1"
@@ -231,7 +219,8 @@ def render_evidence(group, jobs, repository, run_id):
 
 
 def render_group(index, group, jobs, repository, run_id, head_sha):
-    job_ids = unique(group["job_ids"])
+    job_ids = group["job_ids"]
+    job_label = "job" if len(job_ids) == 1 else "jobs"
     open_attribute = " open" if index == 1 else ""
     lines = [
         f"<details{open_attribute}>",
@@ -239,7 +228,7 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
             "<summary><strong>"
             f"{index}. {sanitize_html(group['title'], limit=100)}"
             "</strong>"
-            f" &middot; {len(job_ids)} {plural(len(job_ids), 'job')}"
+            f" &middot; {len(job_ids)} {job_label}"
             "</summary>"
         ),
         "",
@@ -275,8 +264,7 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
         f"Failure group: {group['title']}",
         "Affected jobs:",
         *[
-            f"- {jobs.get(job_id, f'Job {job_id}')}: "
-            f"{job_url(repository, run_id, job_id) or '(invalid job ID)'}"
+            f"- {jobs[job_id]}: {job_url(repository, run_id, job_id)}"
             for job_id in job_ids
         ],
         "",
