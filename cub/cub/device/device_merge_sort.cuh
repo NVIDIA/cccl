@@ -313,8 +313,8 @@ public:
             typename OffsetT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -566,7 +566,7 @@ public:
     ValueIteratorT d_output_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -765,7 +765,7 @@ public:
   //!   @endrst
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -993,7 +993,11 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysCopy(
-    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1187,8 +1191,8 @@ public:
             typename OffsetT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortPairs(
+    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1364,7 +1368,7 @@ public:
   //!   @endrst
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1565,7 +1569,11 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortKeysCopy(
-    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

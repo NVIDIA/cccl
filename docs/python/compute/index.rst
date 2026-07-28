@@ -302,7 +302,7 @@ Free-threaded Python
 
 .. important::
 
-   Free-threaded Python support is currently validated on Linux with the
+   Free-threaded Python support is currently validated with the
    ``minimal-cu12`` and ``minimal-cu13`` extras, which do not install Numba or
    Numba CUDA:
 
@@ -310,8 +310,8 @@ Free-threaded Python
 
       pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
 
-   The full ``cu12`` and ``cu13`` extras, ``cuda.coop._experimental``, and
-   Python-callable operators that require Numba CUDA are not currently
+   The full ``cu12`` and ``cu13`` extras and Python-callable operators that
+   require Numba CUDA are not currently
    supported in free-threaded Python. Use built-in
    :class:`OpKind <cuda.compute.op.OpKind>` operations or externally compiled
    :class:`RawOp <cuda.compute.op.RawOp>` operations with the minimal
