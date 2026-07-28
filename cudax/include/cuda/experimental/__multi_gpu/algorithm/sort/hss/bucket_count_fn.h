@@ -36,9 +36,7 @@ namespace cuda::experimental::__detail::__hss_sort
 //! Counts, for a given bucket index `b`, how many keys of a sorted key range land in
 //! `[split[b - 1], split[b])`, with the two boundary buckets half-open at the ends of the range
 //! (bucket `0` covers `(-inf, split[0])` and bucket `__num_splitters` covers
-//! `[split[__num_splitters - 1], +inf)`). It is shared by `__compute_histogram` in
-//! `histogramming.h` (splitters = probe keys) and by `__data_exchange` in `data_exchange.h`
-//! (splitters = the finalized splitter keys), and drives one CUB `DeviceTransform` in each.
+//! `[split[__num_splitters - 1], +inf)`).
 //!
 //! CUB invokes the operator with a monotonically increasing bucket index over a fixed stride,
 //! so the previous call's upper bound is a valid lower bound for the next bucket. The functor
@@ -66,7 +64,7 @@ struct __bucket_count_fn
   //!
   //! @return The count of keys in the half-open interval delimited by the surrounding splitters.
   [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint64_t
-  operator()(::cuda::std::uint64_t __bucket) const noexcept
+  operator()(const ::cuda::std::uint64_t __bucket) const noexcept
   {
     auto __hi = __keys_last;
     // This reordering takes advantage of the fact that we cached __lo previously. In

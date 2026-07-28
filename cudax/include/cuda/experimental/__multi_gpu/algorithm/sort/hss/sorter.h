@@ -25,7 +25,6 @@
 #include <cuda/__container/buffer.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__optional/optional.h>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
@@ -77,30 +76,13 @@ struct _LocalSetupResult
   ::cuda::std::int32_t __comm_size{};
 };
 
-//! @brief The histogramming phase's outputs.
-//!
-//! `__local_hists[i]` is comm `i`'s all-reduced probe histogram from the final sampling round,
-//! `__probes.size() + 1` buckets. It outlives the sampling scratch it was computed in because the
-//! data-exchange phase reads its first and last buckets: when a splitter's selected bracket
-//! carries no key the splitter realizes to a probe extremum, whose global rank is that bucket
-//! rather than the bracket's `0` / `N` placeholder. See `__splitter_fn`.
 template <template <class> class _Buffer, class _Tp>
-struct _HistogrammingResult
+struct _PerCommHistogrammingResult
 {
-  ::std::vector<_PerCommSplitters<_Buffer, _Tp>> __local_splitters{};
-  ::std::vector<_Buffer<::cuda::std::uint64_t>> __local_hists{};
+  _PerCommSplitters<_Buffer, _Tp> __splitters{};
+  _Buffer<::cuda::std::uint64_t> __hist{};
 };
 
-//! @brief The data-exchange phase's outputs.
-//!
-//! `__local_current_offsets[i][d]` is the global rank of splitter `S(d - 1)` (`0` for `d == 0`).
-//! Because the exchange's per-destination bucket counts telescope when summed over ranks, that is
-//! exactly the start of rank `d`'s post-exchange interval, so the rebalance phase takes its
-//! current offsets from here instead of measuring the distribution after the fact. They are
-//! produced by the same `DeviceTransform` that produces the send counts, from the same splitter
-//! realization, so the offsets and the partition can never describe different splitters.
-//!
-//! This saves us two-ish all-to-all's and several allocations.
 template <template <class> class _Buffer, class _Tp>
 struct _DataExchangeResult
 {
@@ -120,11 +102,11 @@ public:
   template <class _Up>
   using __buffer_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__hss_sort::__buffer<_Up, __resource_type>;
 
-  using __per_comm_splitters_type _CCCL_NODEBUG        = _PerCommSplitters<__buffer_type, _Tp>;
-  using __per_comm_sampling_scratch_type _CCCL_NODEBUG = _PerCommSamplingScratch<__buffer_type, _Tp>;
-  using __local_setup_result_type _CCCL_NODEBUG        = _LocalSetupResult<__resource_type, __buffer_type>;
-  using __histogramming_result_type _CCCL_NODEBUG      = _HistogrammingResult<__buffer_type, _Tp>;
-  using __data_exchange_result_type _CCCL_NODEBUG      = _DataExchangeResult<__buffer_type, _Tp>;
+  using __per_comm_splitters_type _CCCL_NODEBUG            = _PerCommSplitters<__buffer_type, _Tp>;
+  using __per_comm_sampling_scratch_type _CCCL_NODEBUG     = _PerCommSamplingScratch<__buffer_type, _Tp>;
+  using __local_setup_result_type _CCCL_NODEBUG            = _LocalSetupResult<__resource_type, __buffer_type>;
+  using __per_comm_histogramming_result_type _CCCL_NODEBUG = _PerCommHistogrammingResult<__buffer_type, _Tp>;
+  using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<__buffer_type, _Tp>;
 
 private:
   template <class _CommRange, class _EnvRange, class _InputRange>
@@ -135,7 +117,7 @@ private:
   // ------------------------------------------------------------------------------------------
 
   template <class _CommRange, class _EnvRange, class _InputRange>
-  [[nodiscard]] _CCCL_HOST_API static __histogramming_result_type __histogramming_phase(
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__per_comm_histogramming_result_type> __histogramming_phase(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
@@ -154,9 +136,8 @@ private:
 
   template <class _CommRange, class _EnvRange>
   [[nodiscard]]
-  _CCCL_HOST_API static ::cuda::std::tuple<::std::vector<__per_comm_splitters_type>,
-                                           ::std::vector<__per_comm_sampling_scratch_type>,
-                                           ::std::vector<__buffer_type<::cuda::std::uint64_t>>>
+  _CCCL_HOST_API static ::cuda::std::pair<::std::vector<__per_comm_sampling_scratch_type>,
+                                          ::std::vector<__per_comm_histogramming_result_type>>
   __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs);
 
   template <class _CommRange, class _EnvRange>
@@ -165,7 +146,7 @@ private:
     _EnvRange&& __envs,
     const _BinaryOp& __cmp,
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
-    ::std::vector<__per_comm_splitters_type>* __local_splitters,
+    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
     ::std::vector<::cuda::std::size_t>* __root_recvcounts,
     ::std::vector<::cuda::std::size_t>* __root_displs,
     ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples);
@@ -175,17 +156,15 @@ private:
     _CommRange&& __comms,
     _EnvRange&& __envs,
     _InputRange&& __range_of_local_keys,
-    const ::std::vector<__per_comm_splitters_type>& __local_splitters,
     const _BinaryOp& __cmp,
-    ::std::vector<__buffer_type<::cuda::std::uint64_t>>* __local_hists);
+    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
   template <class _CommRange, class _EnvRange>
   _CCCL_HOST_API static void __update_intervals(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     ::cuda::std::uint64_t __N,
-    const ::std::vector<__buffer_type<::cuda::std::uint64_t>>& __local_hists,
-    ::std::vector<__per_comm_splitters_type>* __local_splitters,
+    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   // ------------------------------------------------------------------------------------------
@@ -197,7 +176,7 @@ private:
     _EnvRange&& __envs,
     _InputRange&& __local_inputs,
     const _BinaryOp& __cmp,
-    const __histogramming_result_type& __hist_result);
+    const ::std::vector<__per_comm_histogramming_result_type>& __hist_results);
 
   // ------------------------------------------------------------------------------------------
 

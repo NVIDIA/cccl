@@ -44,8 +44,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 // Horrifically inefficient, needs to be replaced by a proper CUB primitive!
 //
 // __data holds a series of sorted sequences. The offsets of the beginning of each such
-// sequence is in __displs, while the count is in __counts. __dipls[0] should probably be 0,
-// but it's not required.
+// sequence is in __displs, while the count is in __counts.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _Comm>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
@@ -61,11 +60,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
 
   const auto __total = __counts.back() + __displs.back();
 
-  ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(*__ret, __total);
+  __ret->resize(__ret->__get().stream(), __total, ::cuda::no_init);
 
   // This staggered implementation is an optimization to avoid allocating a temporary
   // buffer. If we can just do a single merge we don't need the bounce buffer.
-
   __CUDAX_MULTI_GPU_DISPATCH(
     __comm.logical_device(),
     CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,

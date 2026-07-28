@@ -129,24 +129,7 @@ struct __buffer
       , __actual_size_{__buf_.size()}
   {}
 
-  _CCCL_HOST_API void resize(::cuda::std::size_t __new_size)
-  {
-    // TODO(jfaibussowit):
-    //
-    // This is WRONG
-    resize(__new_size, ::cuda::no_init);
-  }
-
-  //! @brief Grow or shrink the buffer to `__new_size` without touching existing values.
-  //!
-  //! Behaves like `std::vector::resize` except it never initializes or preserves element
-  //! contents. On growth past `capacity()` it returns the current allocation to the memory
-  //! resource and allocates a fresh uninitialized one (preserving the stream and alignment);
-  //! on shrinkage it only lowers the logical size and leaves the existing allocation and its
-  //! values in place. Sets `__actual_size_` to `__new_size`.
-  //!
-  //! @param[in] __new_size The new logical element count.
-  _CCCL_HOST_API void resize(::cuda::std::size_t __new_size, ::cuda::no_init_t)
+  _CCCL_HOST_API void resize(::cuda::stream_ref, ::cuda::std::size_t __new_size, ::cuda::no_init_t)
   {
     if (__new_size > capacity())
     {
@@ -158,7 +141,7 @@ struct __buffer
       auto __mr           = __get().memory_resource();
       const auto __align  = __get().alignment();
 
-      __get().destroy();
+      __get().destroy(__stream);
 
       __get() = __buff_type{
         __stream,
@@ -269,33 +252,6 @@ private:
   __buff_type __buf_;
   ::cuda::std::size_t __actual_size_{};
 };
-
-template <class _Range>
-_CCCL_CONCEPT __can_thrust_no_init_resize = _CCCL_REQUIRES_EXPR((_Range), _Range& __range)(
-  requires(::cuda::std::is_trivially_default_constructible_v<::cuda::std::ranges::range_value_t<_Range>>),
-  __range.resize(::cuda::std::size_t{}, ::thrust::no_init));
-
-template <class _Range>
-_CCCL_CONCEPT __can_cuda_no_init_resize = _CCCL_REQUIRES_EXPR((_Range), _Range& __range)(
-  requires(::cuda::std::is_trivially_default_constructible_v<::cuda::std::ranges::range_value_t<_Range>>),
-  __range.resize(::cuda::std::size_t{}, ::cuda::no_init));
-
-template <class _Range>
-_CCCL_HOST_API void __resize_for_overwrite(_Range& __range, ::cuda::std::size_t __size)
-{
-  if constexpr (__can_thrust_no_init_resize<_Range>)
-  {
-    __range.resize(__size, ::thrust::no_init);
-  }
-  else if constexpr (__can_cuda_no_init_resize<_Range>)
-  {
-    __range.resize(__size, ::cuda::no_init);
-  }
-  else
-  {
-    __range.resize(__size);
-  }
-}
 } // namespace cuda::experimental::__detail::__hss_sort
 
 // NOLINTEND(bugprone-reserved-identifier)

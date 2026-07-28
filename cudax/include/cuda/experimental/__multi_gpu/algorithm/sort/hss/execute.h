@@ -52,16 +52,6 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! the algorithm defined in "Histogram Sort with Sampling" by Harsh
 //! et. al. (arxiv.org/abs/1803.01237, alternatively
 //! dl.acm.org/doi/10.1145/3323165.3323184)
-//!
-//! @tparam _Traits The `__hss_traits` instantiation carrying the value, environment, and
-//!                 comparator types.
-//!
-//! @param[in] __result_policy_base The result-policy tag (must be `distributed_t`); its value is
-//!            unused.
-//! @param[in] __comms The range of per-rank communicators.
-//! @param[in] __envs The range of per-rank execution environments (one stream each).
-//! @param[in,out] __local_inputs The range of per-rank local key ranges, sorted in place.
-//! @param[in] __cmp The comparator defining the sorted order.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
@@ -116,15 +106,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
     return;
   }
 
-  // The exchanged keys stay in scratch buffers until the rebalance phase writes them back, so the
-  // caller's ranges are read as send buffers throughout and resized exactly once, at the end. The
-  // exchange also emits the post-exchange offsets as a second column of the same transform that
-  // produces its send counts, so rebalance needs no measurement of the distribution the exchange
-  // produced.
   auto __exchange_result = [&] {
-    auto __hist_result = __histogramming_phase(__setup, __comms, __envs, __local_inputs, __cmp);
+    auto __hist_results = __histogramming_phase(__setup, __comms, __envs, __local_inputs, __cmp);
 
-    return __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __hist_result);
+    return __data_exchange(__setup, __comms, __envs, __local_inputs, __cmp, __hist_results);
   }();
 
   __rebalance_to_original_counts(__setup, __comms, __envs, __local_inputs, __exchange_result);

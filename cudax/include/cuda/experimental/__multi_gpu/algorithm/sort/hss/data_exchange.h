@@ -132,24 +132,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Send the keys in `[S(d - 1), S(d))` to rank `d`, then merge the runs each rank receives.
 //!
-//! `__local_inputs` must be locally sorted and `__local_splitters` carry finalized brackets
+//! `__local_inputs` must be locally sorted and `__hist_results` carry finalized brackets
 //! from `__histogramming_phase`.
-//!
-//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
-//!
-//! @param[in] __setup The local-setup result supplying resources, comm size, and `N`.
-//! @param[in] __comms The range of per-rank communicators.
-//! @param[in] __envs The range of per-rank execution environments (one stream each).
-//! @param[in] __local_inputs The range of per-rank local key ranges, read as the send buffer of
-//!            the exchange and left unmodified.
-//! @param[in] __cmp The comparator defining the sorted order.
-//! @param[in] __local_splitters The per-comm splitter state supplying the finalized brackets and
-//!            probes.
-//! @param[in] __local_hists The per-comm all-reduced probe histograms from the histogramming
-//!            phase.
-//!
-//! @returns The per-rank exchanged-and-merged keys alongside the per-rank starts of the
-//!          post-exchange intervals.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API typename _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange_result_type
@@ -159,7 +143,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   _EnvRange&& __envs,
   _InputRange&& __local_inputs,
   const _BinaryOp& __cmp,
-  const __histogramming_result_type& __hist_results)
+  const ::std::vector<__per_comm_histogramming_result_type>& __hist_results)
 {
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
@@ -184,17 +168,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
 
   __local_current_offsets.reserve(__num_local_inputs);
-  for (auto&& [__comm, __env, __resource, __input, __splitters, __hist] : ::cuda::std::ranges::views::zip(
-         __comms,
-         __envs,
-         __setup.__resources,
-         __local_inputs,
-         __hist_results.__local_splitters,
-         __hist_results.__local_hists))
+  for (auto&& [__comm, __env, __resource, __input, __hist_result] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs, __hist_results))
   {
-    const auto& __Ls     = __splitters.__Ls;
-    const auto& __Us     = __splitters.__Us;
-    const auto& __probes = __splitters.__probes;
+    const auto& __hist   = __hist_result.__hist;
+    const auto& __Ls     = __hist_result.__splitters.__Ls;
+    const auto& __Us     = __hist_result.__splitters.__Us;
+    const auto& __probes = __hist_result.__splitters.__probes;
 
     auto& __counts =
       __local_counts.emplace_back(__Ls.__get().stream(), __resource, 2 * __comm_size, ::cuda::no_init, __env);

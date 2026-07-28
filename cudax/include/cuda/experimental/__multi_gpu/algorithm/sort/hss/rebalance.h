@@ -101,29 +101,6 @@ struct __rebalance_counts_fn
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Redistribute the globally sorted keys back to each rank's original per-rank size.
-//!
-//! Final HSS phase. The data-exchange phase leaves a globally sorted but only approximately
-//! balanced distribution; this phase corrects the rank ranges back to the exact original per-rank
-//! sizes. It needs each rank's current global offset, which the data-exchange phase derived from
-//! the all-reduced probe histogram and hands in, so no collective measures the distribution here.
-//!
-//! The desired offsets are the setup's exclusive scan of the original sizes. One CUB
-//! `DeviceTransform` intersects each rank's current global interval with each peer's desired
-//! interval to derive the send/recv counts and displacements directly.
-//!
-//! @tparam _Traits The `__hss_traits` instantiation carrying the value and buffer types.
-//!
-//! @param[in] __setup The local-setup result supplying resources, desired offsets, original
-//!            sizes, `N`, and comm size.
-//! @param[in] __comms The range of per-rank communicators.
-//! @param[in] __envs The range of per-rank execution environments (one stream each).
-//! @param[out] __local_inputs The range of per-rank local key ranges, rewritten at their
-//!             original per-rank sizes. This is the only point in the algorithm at which the
-//!             caller's ranges are resized, and it happens with no collective in flight.
-//! @param[in] __local_exchanged The per-rank output of the data-exchange phase, used as the send
-//!            buffer of the rebalance exchange.
-//! @param[in] __local_current_offsets The per-rank starts of the post-exchange rank intervals,
-//!            derived by the data-exchange phase.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_counts(
@@ -147,12 +124,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   // to every other GPU, then they add them up. It works, but it's a synchronization point -
   // all GPUs have to stop and wait for each other.
   //
-  // But we don't actually need this because we can deduce everyone else's sizes based on what
-  // we have already:
-  //
   // Earlier in the algorithm the GPUs agreed on a set of splitters - dividing lines in the
-  // sorted order. "Everything below 500 goes to GPU 0, 500-999 to GPU 1," etc. That agreement
-  // is what drove the shuffle in the first place.
+  // sorted order. "Everything below 500 goes to GPU 0, 500-999 to GPU 1," etc.
   //
   // It's tempting to think you'd need to track the actual traffic - who sent how many items to
   // whom - but this isn't necessary. We already have this information from... the splitters!
@@ -173,11 +146,6 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   constexpr ::cuda::std::size_t __recv_displs_column = 3;
   constexpr ::cuda::std::size_t __num_columns        = 4;
 
-  static_assert(
-    __send_counts_column == 0 && __send_displs_column == 1 && __recv_counts_column == 2 && __recv_displs_column == 3,
-    "The fused D2H copy requires the device and host columns to be contiguous and in "
-    "the same order on both sides");
-
   ::std::vector<::cuda::std::size_t> __local_h_counts(__num_local_inputs * __num_columns * __comm_size);
 
   const auto __column = [__comm_size](auto& __counts, ::cuda::std::size_t __col) {
@@ -195,14 +163,14 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   {
     auto __idx = 0;
 
-    for (auto&& [__comm, __env, __resource, __current_offsets, __desired_offsets, __original_size] :
+    for (auto&& [__comm, __input, __env, __resource, __current_offsets, __desired_offsets] :
          ::cuda::std::ranges::views::zip(
            __comms,
+           __local_inputs,
            __envs,
            __setup.__resources,
            __exchange_results.__local_current_offsets,
-           __setup.__all_local_offsets,
-           __setup.__local_original_sizes))
+           __setup.__all_local_offsets))
     {
       auto __counts = ::cuda::make_buffer<::cuda::std::size_t>(
         __current_offsets.__get().stream(),
@@ -233,16 +201,24 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
         __op,
         __env);
 
-      ::cuda::copy_bytes(
-        __counts.stream(),
-        __counts,
-        ::cuda::std::span<::cuda::std::size_t>{__h_column(__local_h_counts, __idx, __send_counts_column).data(),
-                                               __num_columns * static_cast<::cuda::std::size_t>(__comm_size)},
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
+      {
+        auto __h_counts_dest = __h_column(__local_h_counts, __idx, __send_counts_column);
 
-      __local_rebalanced.emplace_back(__counts.stream(), __resource, __original_size, ::cuda::no_init, __env);
+        static_assert(__send_counts_column == 0 && __send_displs_column == 1 && __recv_counts_column == 2
+                        && __recv_displs_column == 3,
+                      "The fused D2H copy requires the device and host columns to be contiguous and in "
+                      "the same order on both sides");
+        ::cuda::copy_bytes(
+          __counts.stream(),
+          __counts,
+          ::cuda::std::span<::cuda::std::size_t>{__h_counts_dest.data(), __num_columns * __h_counts_dest.size()},
+          ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+                                     ::cuda::host_memory_location,
+                                     ::cuda::source_access_order::stream});
+      }
+
+      __local_rebalanced.emplace_back(
+        __counts.stream(), __resource, ::cuda::std::ranges::size(__input), ::cuda::no_init, __env);
 
       ++__idx;
     }
@@ -272,21 +248,17 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     }
   }
 
-  for (auto&& [__comm, __input, __out] : ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_rebalanced))
+  for (auto&& [__comm, __input, __rebalanced] :
+       ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_rebalanced))
   {
+    _CCCL_VERIFY(::cuda::std::ranges::size(__input) == __rebalanced.size(), "Incorrect sizing for temp storage");
     const ::cuda::device_ref __device = __comm.logical_device().underlying_device();
-    // We cannot assume the user will set their device properly if they need to reallocate/move
-    // elements in the resize, so we do this for them
-    const auto _ = ::cuda::__ensure_current_context{__device};
-
-    // This resize is safe only so long as the user promises to free their allocation on the
-    // stream that they passed us. For thrust/cuda containers, this is vacuously true.
-    ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__input, __out.size());
 
     ::cuda::copy_bytes(
-      __out.__get().stream(),
-      __out.__get(),
-      ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(__input)), __out.size()},
+      __rebalanced.__get().stream(),
+      __rebalanced.__get(),
+      ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
+                             ::cuda::std::ranges::size(__input)},
       ::cuda::copy_configuration{__device, __device, ::cuda::source_access_order::stream});
   }
 }
