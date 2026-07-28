@@ -1,0 +1,24 @@
+=============== stream.owning begin ===============
+(const cuda::stream) handle=<address>
+=============== stream.owning end ===============
+=============== stream.ref begin ===============
+(const cuda::stream_ref) handle=<address>
+=============== stream.ref end ===============
+=============== stream.alias begin ===============
+(const stream_ref_alias) handle=<address>
+=============== stream.alias end ===============
+=============== stream.default begin ===============
+(const cuda::stream_ref) handle=default
+=============== stream.default end ===============
+=============== stream.legacy begin ===============
+(const cuda::stream_ref) handle=legacy
+=============== stream.legacy end ===============
+=============== stream.per_thread begin ===============
+(const cuda::stream_ref) handle=per-thread
+=============== stream.per_thread end ===============
+=============== stream.invalid begin ===============
+(const cuda::stream_ref) handle=invalid
+=============== stream.invalid end ===============
+=============== stream.moved_from begin ===============
+(cuda::stream) handle=invalid
+=============== stream.moved_from end ===============

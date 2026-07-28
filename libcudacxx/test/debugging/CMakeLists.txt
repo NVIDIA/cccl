@@ -199,3 +199,4 @@ endfunction()
 
 add_subdirectory(buffer)
 add_subdirectory(memory_resource)
+add_subdirectory(stream)
