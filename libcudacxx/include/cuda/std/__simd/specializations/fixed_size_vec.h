@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
@@ -197,6 +199,32 @@ struct __fixed_size_operations
     for (__simd_size_type __i = 0; __i < _Np; ++__i)
     {
       __result.__data[__i] = (__lhs.__data[__i] % __rhs.__data[__i]);
+    }
+    return __result;
+  }
+
+  // Min/max operations
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
+  __min_simd(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
+  {
+    _SimdStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (__simd_size_type __i = 0; __i < _Np; ++__i)
+    {
+      __result.__data[__i] = ::cuda::std::min(__lhs.__data[__i], __rhs.__data[__i]);
+    }
+    return __result;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
+  __max_simd(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
+  {
+    _SimdStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (__simd_size_type __i = 0; __i < _Np; ++__i)
+    {
+      __result.__data[__i] = ::cuda::std::max(__lhs.__data[__i], __rhs.__data[__i]);
     }
     return __result;
   }
