@@ -24,24 +24,24 @@ _CCCL_CONCEPT HasSize = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.size()));
 
 struct SubtractableIters
 {
-  __host__ __device__ forward_iterator<int*> begin();
-  __host__ __device__ sized_sentinel<forward_iterator<int*>> end();
+  TEST_FUNC forward_iterator<int*> begin();
+  TEST_FUNC sized_sentinel<forward_iterator<int*>> end();
 };
 
 struct NoSize
 {
-  __host__ __device__ bidirectional_iterator<int*> begin();
-  __host__ __device__ bidirectional_iterator<int*> end();
+  TEST_FUNC bidirectional_iterator<int*> begin();
+  TEST_FUNC bidirectional_iterator<int*> end();
 };
 
 struct SizeMember
 {
-  __host__ __device__ bidirectional_iterator<int*> begin();
-  __host__ __device__ bidirectional_iterator<int*> end();
-  __host__ __device__ int size() const;
+  TEST_FUNC bidirectional_iterator<int*> begin();
+  TEST_FUNC bidirectional_iterator<int*> end();
+  TEST_FUNC int size() const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using OwningView = cuda::std::ranges::owning_view<SubtractableIters>;

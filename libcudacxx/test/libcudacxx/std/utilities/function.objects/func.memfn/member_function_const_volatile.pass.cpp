@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <cuda/std/functional>
 
 // template<Returnable R, class T, CopyConstructible... Args>
@@ -14,24 +18,26 @@
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
+#include "test_macros.h"
+
 struct A
 {
-  __host__ __device__ char test0() const volatile
+  TEST_FUNC char test0() const volatile
   {
     return 'a';
   }
-  __host__ __device__ char test1(int) const volatile
+  TEST_FUNC char test1(int) const volatile
   {
     return 'b';
   }
-  __host__ __device__ char test2(int, double) const volatile
+  TEST_FUNC char test2(int, double) const volatile
   {
     return 'c';
   }
 };
 
 template <class F>
-__host__ __device__ void test0(F f)
+TEST_FUNC void test0(F f)
 {
   {
     A a;
@@ -46,7 +52,7 @@ __host__ __device__ void test0(F f)
 }
 
 template <class F>
-__host__ __device__ void test1(F f)
+TEST_FUNC void test1(F f)
 {
   {
     A a;
@@ -61,7 +67,7 @@ __host__ __device__ void test1(F f)
 }
 
 template <class F>
-__host__ __device__ void test2(F f)
+TEST_FUNC void test2(F f)
 {
   {
     A a;

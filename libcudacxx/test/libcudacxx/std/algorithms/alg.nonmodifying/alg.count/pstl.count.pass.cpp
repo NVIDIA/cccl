@@ -13,7 +13,6 @@
 // template<class ExecutionPolicy, class ForwardIterator, class T>
 //   void count(ExecutionPolicy&& exec, ForwardIterator first, ForwardIterator last, const T& value);
 
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
@@ -44,7 +43,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   types::count(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }

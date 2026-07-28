@@ -13,7 +13,7 @@
  * @brief Apply partitioning operations on shapes to manipulate data subsets
  */
 
-#include <cuda/experimental/__stf/places/tiled_partition.cuh>
+#include <cuda/experimental/__places/partitions/tiled_partition.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 using namespace cuda::experimental::stf;

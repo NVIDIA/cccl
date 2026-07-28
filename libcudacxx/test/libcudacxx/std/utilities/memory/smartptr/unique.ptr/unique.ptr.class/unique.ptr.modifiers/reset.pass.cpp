@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -20,7 +24,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_pointer()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_reset_pointer()
 {
   using VT               = typename cuda::std::conditional<IsArray, A[], A>::type;
   const int expect_alive = IsArray ? 3 : 1;
@@ -81,7 +85,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_pointer()
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_nullptr()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_reset_nullptr()
 {
   using VT               = typename cuda::std::conditional<IsArray, A[], A>::type;
   const int expect_alive = IsArray ? 3 : 1;
@@ -113,7 +117,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_nullptr()
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_no_arg()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_reset_no_arg()
 {
   using VT               = typename cuda::std::conditional<IsArray, A[], A>::type;
   const int expect_alive = IsArray ? 3 : 1;
@@ -144,7 +148,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_reset_no_arg()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_reset_pointer</*IsArray*/ false>();

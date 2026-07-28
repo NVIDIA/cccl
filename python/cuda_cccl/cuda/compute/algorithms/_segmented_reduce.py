@@ -11,13 +11,13 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
-    call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -27,9 +27,11 @@ from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
-class _SegmentedReduce:
+class _SegmentedReduce(Serializable):
     __slots__ = [
-        "build_result",
+        "_bound_build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "start_offsets_in_cccl",
@@ -37,6 +39,16 @@ class _SegmentedReduce:
         "h_init_cccl",
         "op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("h_init_cccl", VALUE),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceSegmentedReduceBuildResult)),
+    )
 
     def __init__(
         self,
@@ -46,6 +58,7 @@ class _SegmentedReduce:
         end_offsets_in: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -58,32 +71,67 @@ class _SegmentedReduce:
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
-            self.op_cccl,
-            self.h_init_cccl,
+            d_in,
+            d_out,
+            start_offsets_in,
+            end_offsets_in,
+            op,
+            h_init,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceSegmentedReduceBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                self.op_cccl,
+                self.h_init_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
         num_segments: int,
         start_offsets_in,
         end_offsets_in,
+        op: Callable | OpAdapter,
         h_init,
+        max_segment_size: int | None = None,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(
                 "Segmented sort does not currently support more than 2^31-1 segments."
             )
+
+        if max_segment_size is None:
+            max_segment_size = 0  # CCCL.c treats 0 as "not specified"
+
+        if max_segment_size > 0:
+            try:
+                from .._build_info import USING_V2  # type: ignore[import-not-found]
+            except ImportError:
+                USING_V2 = False
+            if USING_V2:
+                import warnings
+
+                warnings.warn(
+                    "max_segment_size is not used by the v2 backend and will be ignored",
+                    stacklevel=4,
+                )
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
@@ -103,7 +151,7 @@ class _SegmentedReduce:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -113,6 +161,7 @@ class _SegmentedReduce:
             self.end_offsets_in_cccl,
             self.op_cccl,
             self.h_init_cccl,
+            max_segment_size,
             stream_handle,
         )
         return temp_storage_bytes
@@ -120,12 +169,14 @@ class _SegmentedReduce:
 
 @cache_with_registered_key_functions
 def make_segmented_reduce(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     start_offsets_in: DeviceArrayLike | IteratorT,
     end_offsets_in: DeviceArrayLike | IteratorT,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
+    compute_capability=None,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -146,24 +197,37 @@ def make_segmented_reduce(
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the reduction
     """
     op_adapter = make_op_adapter(op)
     return _SegmentedReduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init
+        d_in,
+        d_out,
+        start_offsets_in,
+        end_offsets_in,
+        op_adapter,
+        h_init,
+        compute_capability=compute_capability,
     )
 
 
 def segmented_reduce(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
+    num_segments: int,
     start_offsets_in: DeviceArrayLike | IteratorT,
     end_offsets_in: DeviceArrayLike | IteratorT,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
-    num_segments: int,
+    max_segment_size: int | None = None,
     stream=None,
 ):
     """
@@ -182,38 +246,48 @@ def segmented_reduce(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array to store the result of the reduction for each segment
+        num_segments: Number of segments to reduce
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
         op: Binary operator to apply.
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
         h_init: Initial value for the reduction
-        num_segments: Number of segments to reduce
+        max_segment_size: The number of elements in the largest segment (optional)
+            If provided, this information is used to dispatch to the
+            optimal kernel for best performance.
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_segmented_reduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
+        d_in=d_in,
+        d_out=d_out,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
     )
     tmp_storage_bytes = reducer(
-        None,
-        d_in,
-        d_out,
-        op,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        h_init,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
+        max_segment_size=max_segment_size,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     reducer(
-        tmp_storage,
-        d_in,
-        d_out,
-        op,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        h_init,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
+        max_segment_size=max_segment_size,
+        stream=stream,
     )

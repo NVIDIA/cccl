@@ -170,12 +170,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   // Define the electric and magnetic fields
   auto data_shape = shape_of<slice<double, 3>>(SIZE_X, SIZE_Y, SIZE_Z);
-  auto lEx        = ctx.logical_data(data_shape);
-  auto lEy        = ctx.logical_data(data_shape);
-  auto lEz        = ctx.logical_data(data_shape);
-  auto lHx        = ctx.logical_data(data_shape);
-  auto lHy        = ctx.logical_data(data_shape);
-  auto lHz        = ctx.logical_data(data_shape);
+
+  // One structured partition drives every task's decomposition AND the data
+  // placement: dimension 2 blocked over the grid of devices (change the spec
+  // entry to split any other dimension). Interior boxes below iterate each
+  // place's owned coordinates restricted to the box, and uneven sizes are
+  // handled by predication.
+  auto part = make_partition(dim4(SIZE_X, SIZE_Y, SIZE_Z), partition_spec{whole, whole, blocked<0>}, where.get_dims());
+  auto lEx  = ctx.logical_data(data_shape);
+  auto lEy  = ctx.logical_data(data_shape);
+  auto lEz  = ctx.logical_data(data_shape);
+  auto lHx  = ctx.logical_data(data_shape);
+  auto lHy  = ctx.logical_data(data_shape);
+  auto lHz  = ctx.logical_data(data_shape);
 
   // Define the permittivity and permeability of the medium
   auto lepsilon = ctx.logical_data(data_shape);
@@ -188,7 +195,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   double DT = 0.25 * min(min(DX, DY), DZ) * sqrt(EPSILON * MU);
 
   // Initialize E
-  ctx.parallel_for(blocked_partition(), where, data_shape, lEx.write(), lEy.write(), lEz.write())
+  ctx.parallel_for(part, where, data_shape, lEx.write(), lEy.write(), lEz.write())
       ->*[] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Ey, auto Ez) {
             Ex(i, j, k) = 0.0;
             Ey(i, j, k) = 0.0;
@@ -196,7 +203,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           };
 
   // Initialize H
-  ctx.parallel_for(blocked_partition(), where, data_shape, lHx.write(), lHy.write(), lHz.write())
+  ctx.parallel_for(part, where, data_shape, lHx.write(), lHy.write(), lHz.write())
       ->*[] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Hy, auto Hz) {
             Hx(i, j, k) = 0.0;
             Hy(i, j, k) = 0.0;
@@ -204,7 +211,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           };
 
   // Initialize permittivity and permeability fields
-  ctx.parallel_for(blocked_partition(), where, data_shape, lepsilon.write(), lmu.write())
+  ctx.parallel_for(part, where, data_shape, lepsilon.write(), lmu.write())
       ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto epsilon, auto mu) {
             epsilon(i, j, k) = EPSILON;
             mu(i, j, k)      = MU;
@@ -216,16 +223,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   const size_t center_y = SIZE_Y / 2;
   const size_t center_z = SIZE_Z / 2;
 
-  /* Index shapes for Electric fields, Magnetic fields, and the indices where there is a source */
+  // Index shapes for the electric and magnetic fields
   box Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
   box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
-  box source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
   ctx.repeat(timesteps)->*[&](context ctx, size_t n) {
     // Update the electric fields
 
     // Update Ex
-    ctx.parallel_for(blocked_partition(), where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
+    ctx.parallel_for(part, where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
         Ex(i, j, k) = Ex(i, j, k)
@@ -233,45 +239,43 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       };
 
     // Update Ey
-    ctx.parallel_for(blocked_partition(), where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
+    ctx.parallel_for(part, where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
         Ey(i, j, k) = Ey(i, j, k)
                     + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
       };
 
-    // Update Ez
-    ctx.parallel_for(blocked_partition(), where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
+    // Update Ez and inject the point source in the same volumetric pass
+    ctx.parallel_for(part, where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
         ->*[=]
       _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
         Ez(i, j, k) = Ez(i, j, k)
                     + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
+        if (i == center_x && j == center_y && k == center_z)
+        {
+          Ez(i, j, k) += Source(n * DT, i * DX, j * DY, k * DZ);
+        }
       };
-
-    // Add the source function at the center of the grid
-    ctx.parallel_for(blocked_partition(), where, source_s, lEz.rw())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-              Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
-            };
 
     // Update the magnetic fields
 
     // Update Hx
-    ctx.parallel_for(blocked_partition(), where, Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
+    ctx.parallel_for(part, where, Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
         ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
               Hx(i, j, k) = Hx(i, j, k)
                           - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
             };
 
     // Update Hy
-    ctx.parallel_for(blocked_partition(), where, Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
+    ctx.parallel_for(part, where, Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
         ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
               Hy(i, j, k) = Hy(i, j, k)
                           - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
             };
 
     // Update Hz
-    ctx.parallel_for(blocked_partition(), where, Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
+    ctx.parallel_for(part, where, Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
         ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
               Hz(i, j, k) = Hz(i, j, k)
                           - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));

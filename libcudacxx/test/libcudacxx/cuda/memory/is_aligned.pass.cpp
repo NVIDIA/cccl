@@ -7,12 +7,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#include "test_macros.h"
+
 template <typename T, typename U>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   uintptr_t ptr_int = 10;
   auto ptr          = reinterpret_cast<T>(ptr_int);
@@ -26,7 +32,7 @@ __host__ __device__ void test()
   assert(!cuda::is_aligned(ptr2, 8));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test<char*, int*>();
   test<const char*, const int*>();

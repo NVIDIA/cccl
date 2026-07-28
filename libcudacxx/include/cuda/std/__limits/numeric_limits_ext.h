@@ -33,11 +33,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // nvfp16
 
 #if _CCCL_HAS_NVFP16()
-template <>
-class __numeric_limits_impl<__half, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__half, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __half;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -45,29 +45,29 @@ public:
   static constexpr int digits       = 11;
   static constexpr int digits10     = 3;
   static constexpr int max_digits10 = 5;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x0400u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x0400u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x7bffu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7bffu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0xfbffu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0xfbffu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x1400u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x1400u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x3800u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x3800u));
   }
 
   static constexpr int min_exponent   = -13;
@@ -80,21 +80,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = true;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x7c00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7c00u));
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x7e00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7e00u));
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x7d00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7d00u));
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__half>(uint16_t(0x0001u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x0001u));
   }
 
   static constexpr bool is_iec559  = true;
@@ -110,11 +110,11 @@ public:
 // nvbf16
 
 #if _CCCL_HAS_NVBF16()
-template <>
-class __numeric_limits_impl<__nv_bfloat16, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_bfloat16, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_bfloat16;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -122,29 +122,29 @@ public:
   static constexpr int digits       = 8;
   static constexpr int digits10     = 2;
   static constexpr int max_digits10 = 4;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x0080u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x0080u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7f7fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7f7fu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0xff7fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0xff7fu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x3c00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x3c00u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x3f00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x3f00u));
   }
 
   static constexpr int min_exponent   = -125;
@@ -157,21 +157,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = true;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7f80u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7f80u));
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7fc0u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7fc0u));
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x7fa0u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x7fa0u));
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(uint16_t(0x0001u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint16_t(0x0001u));
   }
 
   static constexpr bool is_iec559  = true;
@@ -187,11 +187,11 @@ public:
 // nvfp8_e4m3
 
 #if _CCCL_HAS_NVFP8_E4M3()
-template <>
-class __numeric_limits_impl<__nv_fp8_e4m3, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_fp8_e4m3, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_fp8_e4m3;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -199,29 +199,29 @@ public:
   static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 3;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x08u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x08u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x7eu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7eu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0xfeu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0xfeu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x20u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x20u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x30u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x30u));
   }
 
   static constexpr int min_exponent   = -6;
@@ -234,21 +234,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = false;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x7fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7fu));
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(uint8_t(0x01u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x01u));
   }
 
   static constexpr bool is_iec559  = false;
@@ -264,11 +264,11 @@ public:
 // nvfp8_e5m2
 
 #if _CCCL_HAS_NVFP8_E5M2()
-template <>
-class __numeric_limits_impl<__nv_fp8_e5m2, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_fp8_e5m2, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_fp8_e5m2;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -276,29 +276,29 @@ public:
   static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x04u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x04u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7bu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7bu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0xfbu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0xfbu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x34u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x34u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x38u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x38u));
   }
 
   static constexpr int min_exponent   = -15;
@@ -311,21 +311,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = true;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7cu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7cu));
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7eu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7eu));
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x7du));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7du));
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(uint8_t(0x01u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x01u));
   }
 
   static constexpr bool is_iec559  = false;
@@ -341,11 +341,11 @@ public:
 // nvfp8_e8m0
 
 #if _CCCL_HAS_NVFP8_E8M0()
-template <>
-class __numeric_limits_impl<__nv_fp8_e8m0, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_fp8_e8m0, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_fp8_e8m0;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -353,29 +353,29 @@ public:
   static constexpr int digits       = 1;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x00u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0xfeu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0xfeu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x00u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x00u));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x7fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7fu));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0x7fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7fu));
   }
 
   static constexpr int min_exponent   = -127;
@@ -388,21 +388,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = false;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(uint8_t(0xffu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0xffu));
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return type{};
+    return _Tp{};
   }
 
   static constexpr bool is_iec559  = false;
@@ -418,11 +418,11 @@ public:
 // nvfp6_e2m3
 
 #if _CCCL_HAS_NVFP6_E2M3()
-template <>
-class __numeric_limits_impl<__nv_fp6_e2m3, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_fp6_e2m3, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_fp6_e2m3;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -430,29 +430,29 @@ public:
   static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 3;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x08u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x08u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x1fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x1fu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x3fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x3fu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x01u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x01u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x04u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x04u));
   }
 
   static constexpr int min_exponent   = 0;
@@ -465,21 +465,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = false;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(uint8_t(0x01u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x01u));
   }
 
   static constexpr bool is_iec559  = false;
@@ -495,11 +495,11 @@ public:
 // nvfp6_e3m2
 
 #if _CCCL_HAS_NVFP6_E3M2()
-template <>
-class __numeric_limits_impl<__nv_fp6_e3m2, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_fp6_e3m2, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_fp6_e3m2;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -507,29 +507,29 @@ public:
   static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x04u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x04u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x1fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x1fu));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x3fu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x3fu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x04u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x04u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x08u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x08u));
   }
 
   static constexpr int min_exponent   = -2;
@@ -542,21 +542,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = false;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(uint8_t(0x01u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x01u));
   }
 
   static constexpr bool is_iec559  = false;
@@ -572,11 +572,11 @@ public:
 // nvfp4_e2m1
 
 #if _CCCL_HAS_NVFP4_E2M1()
-template <>
-class __numeric_limits_impl<__nv_fp4_e2m1, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<__nv_fp4_e2m1, __numeric_limits_type::__floating_point, _Tp>
 {
 public:
-  using type = __nv_fp4_e2m1;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
@@ -584,29 +584,29 @@ public:
   static constexpr int digits       = 2;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
-  _CCCL_API static constexpr type min() noexcept
+  _CCCL_API static constexpr _Tp min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x2u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x2u));
   }
-  _CCCL_API static constexpr type max() noexcept
+  _CCCL_API static constexpr _Tp max() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x7u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x7u));
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  _CCCL_API static constexpr _Tp lowest() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0xfu));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0xfu));
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
   static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  _CCCL_API static constexpr _Tp epsilon() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x1u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x1u));
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  _CCCL_API static constexpr _Tp round_error() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x1u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x1u));
   }
 
   static constexpr int min_exponent   = 0;
@@ -619,21 +619,21 @@ public:
   static constexpr bool has_signaling_NaN                                  = false;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
+  _CCCL_API static constexpr _Tp infinity() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
+  _CCCL_API static constexpr _Tp quiet_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
+  _CCCL_API static constexpr _Tp signaling_NaN() noexcept
   {
-    return type{};
+    return _Tp{};
   }
-  _CCCL_API static constexpr type denorm_min() noexcept
+  _CCCL_API static constexpr _Tp denorm_min() noexcept
   {
-    return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(uint8_t(0x1u));
+    return ::cuda::std::__fp_from_storage<_Tp>(uint8_t(0x1u));
   }
 
   static constexpr bool is_iec559  = false;

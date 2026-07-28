@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 // error: expression must have a constant value annotated_ptr.h: note #2701-D: attempt to access run-time storage
@@ -17,7 +21,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_public_methods()
+TEST_FUNC constexpr bool test_public_methods()
 {
   using namespace cuda;
   using annotated_ptr                       = cuda::annotated_ptr<const int, access_property::persisting>;
@@ -38,7 +42,7 @@ __host__ __device__ constexpr bool test_public_methods()
   return true;
 }
 
-__host__ __device__ constexpr bool test_interleave_values()
+TEST_FUNC constexpr bool test_interleave_values()
 {
   using namespace cuda;
   constexpr auto normal = __l2_interleave(__l2_evict_t::_L2_Evict_Unchanged, __l2_evict_t::_L2_Evict_Unchanged, 1.0f);

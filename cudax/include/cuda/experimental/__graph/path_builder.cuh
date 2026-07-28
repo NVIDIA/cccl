@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,10 +13,12 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__event/event_ref.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
@@ -70,57 +72,24 @@ struct path_builder
   template <typename _Fn>
   _CCCL_HOST_API void legacy_stream_capture(stream_ref __stream, _Fn&& __capture_fn)
   {
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamBeginCaptureToGraph,
-      "Failed to begin stream capture",
-      __stream.get(),
-      __graph_,
-      __nodes_.data(),
-      nullptr,
-      __nodes_.size(),
-      cudaStreamCaptureModeGlobal);
+    ::cuda::experimental::__driver::__streamBeginCaptureToGraph(
+      __stream.get(), __graph_, __nodes_.data(), __nodes_.size(), CU_STREAM_CAPTURE_MODE_GLOBAL);
 
     __capture_fn(__stream.get());
 
-    cudaGraph_t __graph_out = nullptr;
+    auto __info = ::cuda::experimental::__driver::__streamGetCaptureInfo(__stream.get());
 
-    cudaStreamCaptureStatus __capture_status;
-    const cudaGraphNode_t* __last_captured_node = nullptr;
-    size_t __num_nodes                          = 0;
-
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamGetCaptureInfo,
-      "Failed to get stream capture info",
-      __stream.get(),
-      &__capture_status,
-      nullptr,
-      nullptr,
-      &__last_captured_node,
-      nullptr,
-      &__num_nodes);
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamGetCaptureInfo,
-      "Failed to get stream capture info",
-      __stream.get(),
-      &__capture_status,
-      nullptr,
-      nullptr,
-      &__last_captured_node,
-      &__num_nodes);
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-
-    if (__capture_status != cudaStreamCaptureStatusActive)
+    if (__info.__status != CU_STREAM_CAPTURE_STATUS_ACTIVE)
     {
-      _CCCL_THROW(
-        cuda::cuda_error, cudaErrorInvalidValue, "Stream capture no longer active", "cudaStreamGetCaptureInfo");
+      _CCCL_THROW(cuda::cuda_error, cudaErrorInvalidValue, "Stream capture no longer active", "cuStreamGetCaptureInfo");
     }
-    _CCCL_TRY_CUDA_API(::cudaStreamEndCapture, "Failed to end stream capture", __stream.get(), &__graph_out);
+
+    cudaGraph_t __graph_out = nullptr;
+    ::cuda::experimental::__driver::__streamEndCapture(__stream.get(), &__graph_out);
     assert(__graph_out == __graph_);
-    assert(__num_nodes == 1);
+    assert(__info.__ndeps == 1);
     __nodes_.clear();
-    __nodes_.push_back(__last_captured_node[0]);
+    __nodes_.push_back(__info.__deps[0]);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
 
@@ -148,6 +117,49 @@ struct path_builder
   {
     __nodes_.insert(__nodes_.end(), __other.__nodes_.begin(), __other.__nodes_.end());
   }
+
+  //! \brief Adds an event-wait node and makes it the next dependency.
+  //!
+  //! The new node waits for \p __ev to be recorded before any successor of this node
+  //! executes. This mirrors `stream_ref::wait(event_ref)`.
+  //!
+  //! \param __ev Event that graph execution should wait on.
+  //! \return A `graph_node_ref` for the newly added event-wait node.
+  //! \throws cuda::std::cuda_error if `cudaGraphAddEventWaitNode` fails.
+#if _CCCL_CTK_AT_LEAST(12, 2)
+  _CCCL_HOST_API graph_node_ref wait(::cuda::event_ref __ev)
+  {
+    auto __deps = get_dependencies();
+    ::CUgraphNodeParams __params{};
+    __params.type            = ::CU_GRAPH_NODE_TYPE_WAIT_EVENT;
+    __params.eventWait.event = __ev.get();
+    auto __node = ::cuda::experimental::__driver::__graphAddNode(__graph_, __deps.data(), __deps.size(), &__params);
+
+    __clear_and_set_dependency_node(__node);
+    return graph_node_ref{__node, __graph_};
+  }
+
+  //! \brief Adds an event-record node and makes it the next dependency.
+  //!
+  //! The new node records \p __ev when it executes, signalling any downstream waiters.
+  //! This mirrors `stream_ref::record_event(event_flags)` but takes an existing event
+  //! because graph construction happens before execution.
+  //!
+  //! \param __ev Event to record.
+  //! \return A `graph_node_ref` for the newly added event-record node.
+  //! \throws cuda::std::cuda_error if `cudaGraphAddEventRecordNode` fails.
+  _CCCL_HOST_API graph_node_ref record_event(::cuda::event_ref __ev)
+  {
+    auto __deps = get_dependencies();
+    ::CUgraphNodeParams __params{};
+    __params.type              = ::CU_GRAPH_NODE_TYPE_EVENT_RECORD;
+    __params.eventRecord.event = __ev.get();
+    auto __node = ::cuda::experimental::__driver::__graphAddNode(__graph_, __deps.data(), __deps.size(), &__params);
+
+    __clear_and_set_dependency_node(__node);
+    return graph_node_ref{__node, __graph_};
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   template <typename... Nodes>
   static constexpr bool __all_dependencies = (graph_dependency<Nodes> && ...);

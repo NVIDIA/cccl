@@ -22,15 +22,15 @@
 
 struct BorrowedRange
 {
-  __host__ __device__ constexpr explicit BorrowedRange(int* b, int* e)
+  TEST_FUNC constexpr explicit BorrowedRange(int* b, int* e)
       : begin_(b)
       , end_(e)
   {}
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return begin_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return end_;
   }
@@ -43,7 +43,7 @@ private:
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<::BorrowedRange> = true;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buff[]     = {1, 2, 3, 4, 5, 6, 7, 8};
   using Subrange = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;

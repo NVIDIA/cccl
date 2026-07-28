@@ -19,11 +19,13 @@
 
 #include <testing.cuh>
 
+#include "test_macros.h"
+
 template <class T, class View>
 struct TestKernel
 {
   template <class Config>
-  __device__ void operator()(const Config& config)
+  TEST_DEVICE_FUNC void operator()(const Config& config)
   {
     static_assert(cuda::std::is_same_v<View, decltype(cuda::dynamic_shared_memory(config))>);
     static_assert(noexcept(cuda::dynamic_shared_memory(config)));
@@ -31,14 +33,14 @@ struct TestKernel
     write_smem(cuda::dynamic_shared_memory(config));
   }
 
-  __device__ void write_smem(T& view)
+  TEST_DEVICE_FUNC void write_smem(T& view)
   {
     view = T{};
     CCCLRT_REQUIRE_DEVICE(view == T{});
   }
 
   template <cuda::std::size_t N>
-  __device__ void write_smem(cuda::std::span<T, N> view)
+  TEST_DEVICE_FUNC void write_smem(cuda::std::span<T, N> view)
   {
     for (cuda::std::size_t i = 0; i < view.size(); ++i)
     {

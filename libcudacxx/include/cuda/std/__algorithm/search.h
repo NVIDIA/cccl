@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -88,7 +88,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _CCCL_API constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -146,7 +146,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1
 search(_ForwardIterator1 __first1,
        _ForwardIterator1 __last1,
        _ForwardIterator2 __first2,
@@ -159,20 +159,20 @@ search(_ForwardIterator1 __first1,
            __first2,
            __last2,
            __pred,
-           typename iterator_traits<_ForwardIterator1>::iterator_category(),
-           typename iterator_traits<_ForwardIterator2>::iterator_category())
+           __iterator_traits_category_or_concept_t<_ForwardIterator1>(),
+           __iterator_traits_category_or_concept_t<_ForwardIterator2>())
     .first;
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator1
 search(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return ::cuda::std::search(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
 template <class _ForwardIterator, class _Searcher>
-[[nodiscard]] _CCCL_API constexpr _ForwardIterator
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ForwardIterator
 search(_ForwardIterator __f, _ForwardIterator __l, const _Searcher& __s)
 {
   return __s(__f, __l).first;

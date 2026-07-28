@@ -1,4 +1,5 @@
 set(_cccl_cpm_file "${CMAKE_CURRENT_LIST_DIR}/CPM.cmake")
+set(_cccl_find_module_dir "${CMAKE_CURRENT_LIST_DIR}/find_modules")
 
 macro(cccl_get_boost)
   include("${_cccl_cpm_file}")
@@ -65,11 +66,6 @@ macro(cccl_get_dlpack)
   CPMAddPackage("gh:dmlc/dlpack#v1.2")
 endmacro()
 
-macro(cccl_get_json)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:nlohmann/json@3.12.0")
-endmacro()
-
 macro(cccl_get_libcudacxx)
   find_package(
     libcudacxx
@@ -82,7 +78,7 @@ endmacro()
 
 set(
   CCCL_NVBENCH_SHA
-  "728212f9f162d1e598c21cc0fff456eb999b971a"
+  "56d552687e6a462a812d6f046f5a85a07f13c9f3"
   CACHE STRING
   "SHA/tag to use for CCCL's NVBench."
 )
@@ -122,4 +118,10 @@ macro(cccl_get_thrust)
     NO_DEFAULT_PATH # Only check the explicit HINTS below:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )
+endmacro()
+
+macro(cccl_get_nccl)
+  list(APPEND CMAKE_MODULE_PATH "${_cccl_find_module_dir}")
+  find_package(NCCL ${ARGN})
+  list(POP_BACK CMAKE_MODULE_PATH)
 endmacro()

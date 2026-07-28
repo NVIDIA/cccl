@@ -27,7 +27,7 @@ _CCCL_DEVICE static inline void mbarrier_expect_tx(
   ::cuda::std::uint32_t __txCount)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster);
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__scope == scope_cta)
@@ -75,7 +75,7 @@ _CCCL_DEVICE static inline void mbarrier_expect_tx(
   ::cuda::std::uint32_t __txCount)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster);
 // __space == space_cluster (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__scope == scope_cta)

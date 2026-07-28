@@ -125,6 +125,7 @@ struct composite<Eval, SubExpr1, SubExpr2>
     -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr1>().eval(THRUST_FWD(args)...),
                                                   ::cuda::std::declval<SubExpr2>().eval(THRUST_FWD(args)...)))
   {
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     return m_eval.eval(m_subexpr1.eval(THRUST_FWD(args)...), m_subexpr2.eval(THRUST_FWD(args)...));
   }
 

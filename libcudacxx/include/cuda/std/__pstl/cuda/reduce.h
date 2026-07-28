@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -36,8 +37,6 @@ _CCCL_DIAG_POP
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/tabulate_output_iterator.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -54,6 +53,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__numeric/reduce.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -74,6 +74,9 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   [[nodiscard]] _CCCL_HOST_API static _Tp
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __count, _Tp __init, _BinaryOp __func)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     _Tp __ret;
 
     // We need to know the accumulator type to determine whether we need construct_at for the return value
@@ -93,13 +96,8 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       __func,
       __init);
 
-    // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
-
     {
-      __temporary_storage<decltype(__resource), _Tp> __storage{__stream, __resource, __num_bytes, 1};
+      __temporary_storage<_Tp> __storage{__policy, __num_bytes, 1};
 
       // Run the reduction
       _CCCL_TRY_CUDA_API(
@@ -135,12 +133,12 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__init), ::cuda::std::move(__func));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -148,9 +146,10 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

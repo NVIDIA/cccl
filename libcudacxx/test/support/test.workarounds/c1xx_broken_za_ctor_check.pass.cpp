@@ -15,7 +15,7 @@
 
 struct X
 {
-  __host__ __device__ X(int) {}
+  TEST_FUNC X(int) {}
 
   X(X&&)            = default;
   X& operator=(X&&) = default;
@@ -25,18 +25,18 @@ private:
   X& operator=(const X&) = default;
 };
 
-__host__ __device__ void PushFront(X&&) {}
+TEST_FUNC void PushFront(X&&) {}
 
 template <class T = int>
-__host__ __device__ auto test(int) -> decltype(PushFront(cuda::std::declval<T>()), cuda::std::true_type{});
-__host__ __device__ auto test(long) -> cuda::std::false_type;
+TEST_FUNC auto test(int) -> decltype(PushFront(cuda::std::declval<T>()), cuda::std::true_type{});
+TEST_FUNC auto test(long) -> cuda::std::false_type;
 
 int main(int, char**)
 {
 #if defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK)
-  static_assert(!decltype(test(0))::value, "");
+  static_assert(!decltype(test(0))::value);
 #else
-  static_assert(decltype(test(0))::value, "");
+  static_assert(decltype(test(0))::value);
 #endif
 
   return 0;

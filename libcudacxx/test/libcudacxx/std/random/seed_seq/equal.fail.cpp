@@ -11,7 +11,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/random>
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   ::cuda::std::seed_seq seq1{1, 2, 3};
   ::cuda::std::seed_seq seq2;

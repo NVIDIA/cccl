@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;
@@ -18,7 +21,7 @@
 #include "helper.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr char data[] = {'H', 'O', 'P', 'P', 'E', 'R'};
 
@@ -407,6 +410,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  // static_assert(test(), "");
+  // static_assert(test());
   return 0;
 }

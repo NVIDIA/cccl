@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: indirect call is unsupported in tile code
+
 // <cuda/std/string_view>
 
 // constexpr size_type find_first_of(const charT* s, size_type pos = 0) const;
@@ -19,8 +22,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void
-test_find_first_of(const SV& sv, const typename SV::value_type* str, typename SV::size_type x)
+TEST_FUNC constexpr void test_find_first_of(const SV& sv, const typename SV::value_type* str, typename SV::size_type x)
 {
   assert(sv.find_first_of(str) == x);
   if (x != SV::npos)
@@ -30,7 +32,7 @@ test_find_first_of(const SV& sv, const typename SV::value_type* str, typename SV
 }
 
 template <class SV>
-__host__ __device__ constexpr void test_find_first_of(
+TEST_FUNC constexpr void test_find_first_of(
   const SV& sv, const typename SV::value_type* str, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.find_first_of(str, pos) == x);
@@ -45,7 +47,7 @@ __host__ __device__ constexpr void test_find_first_of(
     SV_T(TEST_STRLIT(typename SV_T::value_type, SV_STR)), TEST_STRLIT(typename SV_T::value_type, STR), __VA_ARGS__)
 
 template <class SV>
-__host__ __device__ constexpr void test_find_first_of()
+TEST_FUNC constexpr void test_find_first_of()
 {
   using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
@@ -157,7 +159,7 @@ __host__ __device__ constexpr void test_find_first_of()
   TEST_FIND_FIRST_OF(SV, "lecfratdjkhnsmqpoigb", "tpflmdnoicjgkberhqsa", 21, SV::npos);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_find_first_of<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

@@ -22,8 +22,8 @@
 
 struct NotEqualityComparable
 {
-  __host__ __device__ friend bool operator==(const NotEqualityComparable&, const NotEqualityComparable&);
-  __host__ __device__ friend bool operator!=(const NotEqualityComparable&, const NotEqualityComparable&) = delete;
+  TEST_FUNC friend bool operator==(const NotEqualityComparable&, const NotEqualityComparable&);
+  TEST_FUNC friend bool operator!=(const NotEqualityComparable&, const NotEqualityComparable&) = delete;
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::equal_to, NotEqualityComparable, NotEqualityComparable>);
@@ -42,7 +42,7 @@ inline constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transpa
 static_assert(is_transparent<cuda::std::ranges::equal_to>);
 #endif
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   auto fn = cuda::std::ranges::equal_to();
 

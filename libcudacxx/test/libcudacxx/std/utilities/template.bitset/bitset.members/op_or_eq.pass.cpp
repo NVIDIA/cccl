@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 // CONSTEXPR_STEPS: 15000000
 
 // bitset<N>& operator|=(const bitset<N>& rhs); // constexpr since C++23
@@ -20,7 +23,7 @@
 TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
-__host__ __device__ constexpr bool test_op_or_eq()
+TEST_FUNC constexpr bool test_op_or_eq()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   if (Start != 0)
@@ -58,15 +61,15 @@ int main(int, char**)
   test_op_or_eq<64>();
   test_op_or_eq<65>();
   test_op_or_eq<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test_op_or_eq<0>(), "");
-  static_assert(test_op_or_eq<1>(), "");
-  static_assert(test_op_or_eq<31>(), "");
-  static_assert(test_op_or_eq<32>(), "");
-  static_assert(test_op_or_eq<33>(), "");
-  static_assert(test_op_or_eq<63>(), "");
-  static_assert(test_op_or_eq<64>(), "");
-  static_assert(test_op_or_eq<65, 0, 6>(), "");
-  static_assert(test_op_or_eq<65, 6>(), "");
+  static_assert(test_op_or_eq<0>());
+  static_assert(test_op_or_eq<1>());
+  static_assert(test_op_or_eq<31>());
+  static_assert(test_op_or_eq<32>());
+  static_assert(test_op_or_eq<33>());
+  static_assert(test_op_or_eq<63>());
+  static_assert(test_op_or_eq<64>());
+  static_assert(test_op_or_eq<65, 0, 6>());
+  static_assert(test_op_or_eq<65, 6>());
 
   return 0;
 }

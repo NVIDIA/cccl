@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -32,7 +36,7 @@ class A
   int state_;
 
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
       : state_(0)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -41,24 +45,24 @@ public:
     }
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 int get() const
+  TEST_FUNC TEST_CONSTEXPR_CXX23 int get() const
   {
     return state_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX23 bool operator==(const A& x, int y)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX23 bool operator==(const A& x, int y)
   {
     return x.state_ == y;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A& operator=(int i)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A& operator=(int i)
   {
     state_ = i;
     return *this;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::unique_ptr<A[]> p(new A[3]);
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())

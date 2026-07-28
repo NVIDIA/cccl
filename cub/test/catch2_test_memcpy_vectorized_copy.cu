@@ -48,8 +48,12 @@ C2H_TEST("The vectorized copy used by DeviceMemcpy works", "[memcpy]", vector_ty
   c2h::device_vector<uint32_t> data_in(copy_size);
   c2h::device_vector<uint32_t> data_out(copy_size);
   thrust::copy(
-    data_input_buffer.cbegin() + in_offset, data_input_buffer.cbegin() + in_offset + copy_size, data_in.begin());
+    data_input_buffer.cbegin() + static_cast<std::ptrdiff_t>(in_offset),
+    data_input_buffer.cbegin() + static_cast<std::ptrdiff_t>(in_offset) + static_cast<std::ptrdiff_t>(copy_size),
+    data_in.begin());
   thrust::copy(
-    data_output_buffer.cbegin() + out_offset, data_output_buffer.cbegin() + out_offset + copy_size, data_out.begin());
+    data_output_buffer.cbegin() + static_cast<std::ptrdiff_t>(out_offset),
+    data_output_buffer.cbegin() + static_cast<std::ptrdiff_t>(out_offset) + static_cast<std::ptrdiff_t>(copy_size),
+    data_out.begin());
   REQUIRE(data_in == data_out);
 }

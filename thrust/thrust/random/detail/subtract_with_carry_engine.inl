@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE void subtract_with_carry_engine<UIntType, w, s, r>::seed(resul
 
 template <typename UIntType, size_t w, size_t s, size_t r>
 _CCCL_HOST_DEVICE typename subtract_with_carry_engine<UIntType, w, s, r>::result_type
-subtract_with_carry_engine<UIntType, w, s, r>::operator()(void)
+subtract_with_carry_engine<UIntType, w, s, r>::operator()()
 {
   // XXX we probably need to cache these m_x[m_k] in a register
   //     maybe we need to cache the use of all member variables

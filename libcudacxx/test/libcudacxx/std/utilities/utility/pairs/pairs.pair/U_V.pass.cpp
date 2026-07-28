@@ -6,18 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: gcc-4
-
 // <utility>
 
 // template <class T1, class T2> struct pair
 
 // template<class U, class V> pair(U&& x, V&& y);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "archetypes.h"
 #include "test_convertible.h"
@@ -25,20 +22,20 @@
 using namespace ImplicitTypes; // Get implicitly archetypes
 
 template <class T1, class T1Arg, bool CanCopy = true, bool CanConvert = CanCopy>
-__host__ __device__ void test_sfinae()
+TEST_FUNC void test_sfinae()
 {
   using P1 = cuda::std::pair<T1, int>;
   using P2 = cuda::std::pair<int, T1>;
   using T2 = int const&;
-  static_assert(cuda::std::is_constructible<P1, T1Arg, T2>::value == CanCopy, "");
-  static_assert(test_convertible<P1, T1Arg, T2>() == CanConvert, "");
-  static_assert(cuda::std::is_constructible<P2, T2, T1Arg>::value == CanCopy, "");
-  static_assert(test_convertible<P2, T2, T1Arg>() == CanConvert, "");
+  static_assert(cuda::std::is_constructible<P1, T1Arg, T2>::value == CanCopy);
+  static_assert(test_convertible<P1, T1Arg, T2>() == CanConvert);
+  static_assert(cuda::std::is_constructible<P2, T2, T1Arg>::value == CanCopy);
+  static_assert(test_convertible<P2, T2, T1Arg>() == CanConvert);
 }
 
 struct ExplicitT
 {
-  __host__ __device__ constexpr explicit ExplicitT(int x)
+  TEST_FUNC constexpr explicit ExplicitT(int x)
       : value(x)
   {}
   int value;
@@ -46,7 +43,7 @@ struct ExplicitT
 
 struct ImplicitT
 {
-  __host__ __device__ constexpr ImplicitT(int x)
+  TEST_FUNC constexpr ImplicitT(int x)
       : value(x)
   {}
   int value;
@@ -54,15 +51,12 @@ struct ImplicitT
 
 int main(int, char**)
 {
-  // cuda/std/memory not supported
-  /*
   {
-      using P = cuda::std::pair<cuda::std::unique_ptr<int>, short*>;
-      P p(cuda::std::unique_ptr<int>(new int(3)), nullptr);
-      assert(*p.first == 3);
-      assert(p.second == nullptr);
+    using P = cuda::std::pair<cuda::std::unique_ptr<int>, short*>;
+    P p(cuda::std::unique_ptr<int>(new int(3)), nullptr);
+    assert(*p.first == 3);
+    assert(p.second == nullptr);
   }
-  */
   {
     // Test non-const lvalue and rvalue types
     test_sfinae<AllCtors, AllCtors&>();
@@ -95,13 +89,13 @@ int main(int, char**)
   }
   { // explicit constexpr test
     constexpr cuda::std::pair<ExplicitT, ExplicitT> p(42, 43);
-    static_assert(p.first.value == 42, "");
-    static_assert(p.second.value == 43, "");
+    static_assert(p.first.value == 42);
+    static_assert(p.second.value == 43);
   }
   { // implicit constexpr test
     constexpr cuda::std::pair<ImplicitT, ImplicitT> p = {42, 43};
-    static_assert(p.first.value == 42, "");
-    static_assert(p.second.value == 43, "");
+    static_assert(p.first.value == 42);
+    static_assert(p.second.value == 43);
   }
 
   return 0;

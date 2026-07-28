@@ -107,7 +107,7 @@ struct verify_n
 {
   __device__ void operator()(int* pi) const noexcept
   {
-    CUDAX_REQUIRE(*pi == N);
+    REQUIRE_DEVICE(*pi == N);
   }
 };
 

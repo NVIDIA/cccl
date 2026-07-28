@@ -9,7 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir, make_variable_declaration
+from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
 from ._base import IteratorBase
@@ -71,7 +71,12 @@ class TransformIterator(IteratorBase):
         self._underlying = underlying
         self._transform_op = make_op_adapter(transform_op)
         self._is_input = is_input
-        self._compiled_op = None  # Lazy compiled Op
+        # Lazily compiled transform Op, keyed on the build's target compute
+        # capability: its LTO-IR is arch-specific, so reusing one iterator
+        # instance across builds targeting different arches must not reuse the
+        # first arch's op (nvJitLink rejects a newer-arch input linked into an
+        # older-arch result). Mirrors the per-cc op caches in IteratorBase.
+        self._compiled_op: dict = {}
 
         # Determine value type
         if value_type is None:
@@ -100,8 +105,11 @@ class TransformIterator(IteratorBase):
         )
 
     def _get_compiled_op(self):
-        """Get the compiled Op, compiling lazily if needed."""
-        if self._compiled_op is None:
+        """Get the compiled Op for the current target cc, compiling lazily if needed."""
+        from .._target_cc import get_target_cc
+
+        key = get_target_cc()
+        if key not in self._compiled_op:
             if self._is_input:
                 input_type = self._underlying.value_type
                 output_type = self._value_type
@@ -109,11 +117,11 @@ class TransformIterator(IteratorBase):
                 input_type = self._value_type
                 output_type = self._underlying.value_type
 
-            self._compiled_op = self._transform_op.compile(
+            self._compiled_op[key] = self._transform_op.compile(
                 (input_type,),
                 output_type,
             )
-        return self._compiled_op
+        return self._compiled_op[key]
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
@@ -130,13 +138,13 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
+            ltoir=code,
+            extra_ltoirs=[child_op.code, *child_op.extra_code],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -165,17 +173,17 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[
-                compiled_op.ltoir,
-                *compiled_op.extra_ltoirs,
-                child_op.ltoir,
-                *child_op.extra_ltoirs,
+                compiled_op.code,
+                *compiled_op.extra_code,
+                child_op.code,
+                *child_op.extra_code,
             ],
         )
 
@@ -205,17 +213,17 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[
-                compiled_op.ltoir,
-                *compiled_op.extra_ltoirs,
-                child_op.ltoir,
-                *child_op.extra_ltoirs,
+                compiled_op.code,
+                *compiled_op.extra_code,
+                child_op.code,
+                *child_op.extra_code,
             ],
         )
 

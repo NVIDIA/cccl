@@ -23,6 +23,9 @@ endif()
 # Enable CXX so CMake can configure install paths
 project(CCCL LANGUAGES CXX)
 
+# Enable CCCL specific platform files
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 include(cmake/CCCLInstallRules.cmake)
 
 # Support adding CCCL to a parent project via add_subdirectory.
@@ -50,6 +53,11 @@ option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." OFF)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
 option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
+option(
+  CCCL_ENABLE_C_PARALLEL_V2
+  "Enable CUDA C Parallel Library v2 (HostJIT-based)."
+  OFF
+)
 option(CCCL_ENABLE_C_EXPERIMENTAL_STF "Enable CUDA C CUDASTF Library." OFF)
 option(CCCL_ENABLE_NVBENCH_HELPER "Enable the NVBench Helper Dev Build." OFF)
 
@@ -58,6 +66,8 @@ if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
 else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
+
+option(CCCL_ENABLE_TILE "Enable tile support" OFF)
 
 option(
   CCCL_ENABLE_UNSTABLE
@@ -75,6 +85,17 @@ else()
   # Note that this doesn't override the cache variable, but rather creates a new
   # directory-scoped variable that shadows it. This is sufficient for our purposes.
   set(CCCL_ENABLE_CUDAX OFF)
+endif()
+
+option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
+
+if (CCCL_TOPLEVEL_PROJECT)
+  include(cmake/CCCLAddTidyTarget.cmake)
+
+  if (CCCL_ENABLE_CLANG_TIDY)
+    cccl_tidy_init()
+  endif()
 endif()
 
 include(CTest)
@@ -98,6 +119,13 @@ if (CCCL_TOPLEVEL_PROJECT)
   cccl_build_compiler_targets()
 endif()
 
+option(
+  CCCL_ENABLE_CUDA_SMOKE_TESTS
+  "Build the CUDA runtime smoke test (cccl.test.cuda_runtime_smoke)."
+  OFF
+)
+set(CCCL_CUDA_SMOKE_TARGET cccl.test.cuda_runtime_smoke)
+
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
 add_subdirectory(thrust)
@@ -106,13 +134,21 @@ if (CCCL_ENABLE_UNSTABLE)
   add_subdirectory(cudax)
 endif()
 
-if (CCCL_ENABLE_C_PARALLEL OR CCCL_ENABLE_C_EXPERIMENTAL_STF)
+if (
+  CCCL_ENABLE_C_PARALLEL
+  OR CCCL_ENABLE_C_PARALLEL_V2
+  OR CCCL_ENABLE_C_EXPERIMENTAL_STF
+)
   add_subdirectory(c)
 endif()
 
 if (CCCL_ENABLE_TESTING)
   add_subdirectory("ci")
   add_subdirectory("test")
+endif()
+
+if (CCCL_ENABLE_CUDA_SMOKE_TESTS AND CCCL_TOPLEVEL_PROJECT)
+  add_subdirectory(test/cuda_smoke)
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)

@@ -12,7 +12,7 @@
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -24,11 +24,11 @@ static void range_iter(nvbench::state& state, nvbench::type_list<T>)
   // set up input
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
+  const auto mismatch_point = static_cast<std::size_t>(static_cast<double>(elements) * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::gpu, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::gpu, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
@@ -54,11 +54,11 @@ static void range_range(nvbench::state& state, nvbench::type_list<T>)
   // set up input
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
+  const auto mismatch_point = static_cast<std::size_t>(static_cast<double>(elements) * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::gpu, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::gpu, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);

@@ -21,22 +21,22 @@ struct InputOrOutputArchetype
 
   int* ptr;
 
-  __host__ __device__ constexpr int operator*()
+  TEST_FUNC constexpr int operator*()
   {
     return *ptr;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++ptr;
   }
-  __host__ __device__ constexpr InputOrOutputArchetype& operator++()
+  TEST_FUNC constexpr InputOrOutputArchetype& operator++()
   {
     ++ptr;
     return *this;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

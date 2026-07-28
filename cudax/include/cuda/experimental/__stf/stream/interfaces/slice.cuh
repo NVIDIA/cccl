@@ -94,60 +94,31 @@ public:
       return;
     }
 
-    exec_place_grid grid = memory_node.get_grid();
-    size_t total_size    = this->shape.size();
-
-    // position (x,y,z,t) on (nx,ny,nz,nt)
-    // * index = x + nx*y + nx*ny*z + nx*ny*nz*t
-    // * index = x + nx(y + ny(z + nz*t))
-    // So we can compute x, y, z, t from the index
-    // * x := index % nx;
-    // * index - x = nx(y + ny(z + nz*t))
-    // * (index - x)/nx = y +  ny(z + nz*t))
-    // So, y := ( (index - x)/nx ) %ny
-    // index = x + nx(y + ny(z + nz*t))
-    // (index -  x)/nx = y + ny(z+nz*t)
-    // (index -  x)/nx - y = ny(z+nz*t)
-    // ( (index -  x)/nx - y)/ny  = z+nz*t
-    // So, z := (( (index -  x)/nx - y)/ny) % nz
-    // ( (index -  x)/nx - y)/ny - z  = nz*t
-    // ( ( (index -  x)/nx - y)/ny - z ) / nz = t
-    auto delinearize = [&](size_t ind) {
-      static_assert(dimensions <= 4);
-
-      size_t nx, ny, nz;
-      size_t x = 0, y = 0, z = 0, t = 0;
-      if constexpr (dimensions >= 1)
-      {
-        nx = this->shape.extent(0);
-        x  = ind % nx;
-      }
-      if constexpr (dimensions >= 2)
-      {
-        ny = this->shape.extent(1);
-        y  = ((ind - x) / nx) % ny;
-      }
-      if constexpr (dimensions >= 3)
-      {
-        nz = this->shape.extent(2);
-        z  = (((ind - x) / nx - y) / ny) % nz;
-      }
-
-      if constexpr (dimensions >= 4)
-      {
-        t = (((ind - x) / nx - y) / ny - z) / nz;
-      }
-
-      return pos4(x, y, z, t);
-    };
+    size_t total_size = this->shape.size();
 
     // Get the extents stored as a dim4
     const dim4 data_dims = this->shape.get_data_dims();
 
-    auto array = bctx.get_composite_cache().get(
-      memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
-    // We need to wait for its pending dependencies if any...
-    array->merge_into(prereqs);
+    // Slices are linearized with dimension 0 varying fastest; index_to_pos is
+    // the inverse of dim4::get_index and is shared with the raw composite
+    // allocation path so the two conventions cannot drift.
+    static_assert(dimensions <= 4);
+    auto delinearize = [data_dims](size_t ind) {
+      // Rank-0 (scalar) slices have no coordinates (get_data_dims() reports
+      // an extent of 0 there, so index_to_pos must not be used)
+      if constexpr (dimensions == 0)
+      {
+        return pos4(0, 0, 0, 0);
+      }
+      else
+      {
+        return data_dims.index_to_pos(ind);
+      }
+    };
+
+    auto [array,
+          cached_prereqs] = bctx.get_composite_cache().get(memory_node, delinearize, total_size, sizeof(T), data_dims);
+    prereqs.merge(mv(cached_prereqs));
     base_ptr = static_cast<T*>(array->get_base_ptr());
 
     // Store this localized array in the extra_args associated to the
@@ -187,8 +158,14 @@ public:
     // localized_array object into a cache, which will speedup the
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
-    auto* array = static_cast<reserved::localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<reserved::localized_array>(array), prereqs);
+    auto* array = static_cast<localized_array*>(extra_args);
+    bctx.get_composite_cache().put(
+      memory_node,
+      ::std::unique_ptr<localized_array>(array),
+      prereqs,
+      this->shape.size(),
+      sizeof(T),
+      this->shape.get_data_dims());
   }
 
   void data_copy(backend_ctx_untyped& bctx,
@@ -203,8 +180,14 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    auto decorated_s = dst_memory_node.getDataStream();
-    auto op          = stream_async_op(bctx, decorated_s, prereqs);
+    // Host places borrow stream pools from the current device. For host-destination copies,
+    // prefer the source place stream so stream/context affinity follows the data origin.
+    const bool dst_is_host_like          = dst_memory_node.is_host() || dst_memory_node.is_managed();
+    const bool src_is_host_like          = src_memory_node.is_host() || src_memory_node.is_managed();
+    const data_place& stream_memory_node = (dst_is_host_like && !src_is_host_like) ? src_memory_node : dst_memory_node;
+    const auto augmented_s = stream_memory_node.getDataStream(bctx.async_resources().get_place_resources());
+    [[maybe_unused]] const auto active_stream_place = stream_memory_node.affine_exec_place().activate();
+    auto op                                         = stream_async_op(bctx, augmented_s, prereqs);
 
     if (bctx.generate_event_symbols())
     {
@@ -212,7 +195,7 @@ public:
       op.set_symbol("slice copy " + src_memory_node.to_string() + "->" + dst_memory_node.to_string());
     }
 
-    cudaStream_t s = decorated_s.stream;
+    cudaStream_t s = augmented_s.stream;
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;
@@ -233,15 +216,17 @@ public:
 
     if constexpr (dimensions == 0)
     {
-      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
+      // cudaMemcpyAsync is an overload set (cuda_runtime.h adds an alternate-spelling
+      // wrapper), so it keeps the runtime-status cuda_try form.
+      cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
     }
     else if constexpr (dimensions == 1)
     {
-      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
+      cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
     }
     else if constexpr (dimensions == 2)
     {
-      cuda_safe_call(cudaMemcpy2DAsync(
+      cuda_try<cudaMemcpy2DAsync>(
         dst_ptr,
         dst_instance.stride(1) * sizeof(T),
         src_ptr,
@@ -249,14 +234,14 @@ public:
         b.extent(0) * sizeof(T),
         b.extent(1),
         kind,
-        s));
+        s);
     }
     else
     {
       // We only support higher dimensions if they are contiguous !
       if ((contiguous_dims(src_instance) == dimensions) && (contiguous_dims(dst_instance) == dimensions))
       {
-        cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
+        cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
       }
       else
       {
@@ -280,11 +265,7 @@ public:
 
   ::std::optional<cudaMemoryType> get_memory_type(instance_id_t instance_id) override
   {
-    auto s = this->instance(instance_id);
-
-    cudaPointerAttributes attributes{};
-    cuda_safe_call(cudaPointerGetAttributes(&attributes, s.data_handle()));
-
+    const auto attributes = cuda_try<cudaPointerGetAttributes>(this->instance(instance_id).data_handle());
     // Implicitly converted to an optional
     return attributes.type;
   }

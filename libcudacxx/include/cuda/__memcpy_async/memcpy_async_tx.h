@@ -33,9 +33,9 @@
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
+#    include <cuda/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/__atomic/scopes.h>
 #    include <cuda/std/__type_traits/conditional.h>
-#    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/cstdint>
 
 #    include <cuda/std/__cccl/prologue.h>
@@ -55,7 +55,7 @@ _CCCL_DEVICE_API async_contract_fulfillment memcpy_async_tx(
   // memcpy_async when compiling with GCC 4.8.
   // FIXME: remove the #if once GCC 4.8 is no longer supported.
 #    if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 4, 8)
-  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "memcpy_async_tx requires a trivially copyable type");
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>, "memcpy_async_tx requires a trivially copyable type");
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
   static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");

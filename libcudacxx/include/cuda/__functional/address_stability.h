@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__fwd/iterator.h>
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
@@ -63,9 +64,15 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! @see proclaims_copyable_arguments
 template <typename F>
 [[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
-  -> __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>
 {
-  return {::cuda::std::forward<F>(f)};
+  if constexpr (proclaims_copyable_arguments<F>::value)
+  { // If F is already marked then we do not need to wrap it
+    return f;
+  }
+  else
+  {
+    return __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>{::cuda::std::forward<F>(f)};
+  }
 }
 
 // Specializations for libcu++ function objects are provided here to not pull this include into `<cuda/std/...>` headers
@@ -128,6 +135,14 @@ _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater)
 _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater_equal)
 
 #undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
+
+// always_true and always_false never inspect the addresses of their arguments
+template <>
+struct proclaims_copyable_arguments<::cuda::always_true> : ::cuda::std::true_type
+{};
+template <>
+struct proclaims_copyable_arguments<::cuda::always_false> : ::cuda::std::true_type
+{};
 
 _CCCL_END_NAMESPACE_CUDA
 

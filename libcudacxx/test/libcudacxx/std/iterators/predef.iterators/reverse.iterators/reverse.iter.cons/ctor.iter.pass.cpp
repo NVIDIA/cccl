@@ -20,13 +20,13 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ constexpr void test(It i)
+TEST_FUNC constexpr void test(It i)
 {
   cuda::std::reverse_iterator<It> r(i);
   assert(r.base() == i);
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   const char s[] = "123";
   test(bidirectional_iterator<const char*>(s));
@@ -38,6 +38,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

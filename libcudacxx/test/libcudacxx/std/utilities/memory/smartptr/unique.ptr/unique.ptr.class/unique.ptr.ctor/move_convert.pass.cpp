@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: nvrtc
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -26,16 +29,16 @@
 template <int ID = 0>
 struct GenericDeleter
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
 template <int ID = 0>
 struct GenericConvertingDeleter
 {
   template <int OID>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 GenericConvertingDeleter(GenericConvertingDeleter<OID>)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 GenericConvertingDeleter(GenericConvertingDeleter<OID>)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
 template <class Templ, class Other>
@@ -56,46 +59,46 @@ using EnableIfSpecialization =
 template <int ID>
 struct TrackingDeleter
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter()
       : arg_type(&makeArgumentID<>())
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter(TrackingDeleter const&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter(TrackingDeleter const&)
       : arg_type(&makeArgumentID<TrackingDeleter const&>())
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter(TrackingDeleter&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter(TrackingDeleter&&)
       : arg_type(&makeArgumentID<TrackingDeleter&&>())
   {}
 
   template <class T, class = EnableIfSpecialization<TrackingDeleter, T>>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter(T&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter(T&&)
       : arg_type(&makeArgumentID<T&&>())
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter& operator=(TrackingDeleter const&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter& operator=(TrackingDeleter const&)
   {
     arg_type = &makeArgumentID<TrackingDeleter const&>();
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter& operator=(TrackingDeleter&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter& operator=(TrackingDeleter&&)
   {
     arg_type = &makeArgumentID<TrackingDeleter&&>();
     return *this;
   }
 
   template <class T, class = EnableIfSpecialization<TrackingDeleter, T>>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TrackingDeleter& operator=(T&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TrackingDeleter& operator=(T&&)
   {
     arg_type = &makeArgumentID<T&&>();
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX23 TypeID const* reset() const
+  TEST_FUNC TEST_CONSTEXPR_CXX23 TypeID const* reset() const
   {
     TypeID const* tmp = arg_type;
     arg_type          = nullptr;
@@ -106,13 +109,13 @@ public:
 };
 
 template <class ExpectT, int ID>
-__host__ __device__ bool checkArg(TrackingDeleter<ID> const& d)
+TEST_FUNC bool checkArg(TrackingDeleter<ID> const& d)
 {
   return d.arg_type && *d.arg_type == makeArgumentID<ExpectT>();
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using VT = typename cuda::std::conditional<IsArray, A[], A>::type;
 
@@ -120,13 +123,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     // as they convert to each other.
     using U1 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<0>>;
     using U2 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>>;
-    static_assert(cuda::std::is_constructible<U1, U2&&>::value, "");
+    static_assert(cuda::std::is_constructible<U1, U2&&>::value);
   }
   { // Test that different non-reference deleter types are disallowed when
     // they cannot convert.
     using U1 = cuda::std::unique_ptr<VT, GenericDeleter<0>>;
     using U2 = cuda::std::unique_ptr<VT, GenericDeleter<1>>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
   }
   { // Test that if the destination deleter is a reference type then only
     // exact matches are allowed.
@@ -135,13 +138,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U3 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<0>&>;
     using U4 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>>;
     using U5 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1> const&>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U3&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U4&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U5&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U3&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U4&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U5&&>::value);
 
     using U1C = cuda::std::unique_ptr<const VT, GenericConvertingDeleter<0> const&>;
-    static_assert(cuda::std::is_nothrow_constructible<U1C, U1&&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U1C, U1&&>::value);
   }
   { // Test that non-reference destination deleters can be constructed
     // from any source deleter type with a suitable conversion. Including
@@ -152,42 +155,42 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U4 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>>;
     using U5 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>&>;
     using U6 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1> const&>;
-    static_assert(cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U3&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U4&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U5&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U6&&>::value, "");
+    static_assert(cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U3&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U4&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U5&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U6&&>::value);
   }
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   using VT = typename cuda::std::conditional<IsArray, A[], A>::type;
   {
     using APtr = cuda::std::unique_ptr<const VT>;
     using BPtr = cuda::std::unique_ptr<VT>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<const VT, CDeleter<const VT>>;
     using BPtr = cuda::std::unique_ptr<VT, CDeleter<VT>>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<const VT, NCDeleter<const VT>&>;
     using BPtr = cuda::std::unique_ptr<VT, NCDeleter<const VT>&>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<const VT, const NCConstDeleter<const VT>&>;
     using BPtr = cuda::std::unique_ptr<VT, const NCConstDeleter<const VT>&>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_deleter_value_category()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_deleter_value_category()
 {
   using VT  = typename cuda::std::conditional<IsArray, A[], A>::type;
   using TD1 = TrackingDeleter<1>;
@@ -219,7 +222,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_deleter_value_category()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae</*IsArray*/ false>();

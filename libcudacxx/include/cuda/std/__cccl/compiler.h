@@ -151,6 +151,12 @@
 #  define _CCCL_DEVICE_COMPILATION() 0
 #endif // ^^^ not compiling device code ^^^
 
+#if defined(__CUDACC_TILE__) && _CCCL_CUDA_COMPILER(NVCC, >, 13, 3)
+#  define _CCCL_TILE_COMPILATION() 1
+#else // ^^^ compiling .cu file in tile mode ^^^ / vvv not compiling in tile mode vvv
+#  define _CCCL_TILE_COMPILATION() 0
+#endif // ^^^ not compiling .cu file ^^^
+
 #define _CCCL_CUDACC_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
 
 // clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
@@ -215,5 +221,18 @@
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_WARNING(_MSG) _CCCL_PRAGMA(GCC warning _MSG)
 #endif // !_CCCL_COMPILER(MSVC)
+
+// Freestanding environment detection
+// NVRTC is treated as freestanding since it has no access to the host standard library
+#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_FREESTANDING() 1
+#  define _CCCL_HOSTED()       0
+#  define _CCCL_HOSTJIT()      (!_CCCL_COMPILER(NVRTC))
+#  define _CCCL_NO_TYPEID
+#else // ^^^ _CCCL_ENABLE_FREESTANDING ||  _CCCL_COMPILER(NVRTC) ^^^ / vvv Hosted environment vvv
+#  define _CCCL_FREESTANDING() 0
+#  define _CCCL_HOSTED()       1
+#  define _CCCL_HOSTJIT()      0
+#endif // Hosted environment
 
 #endif // __CCCL_COMPILER_H

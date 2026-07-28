@@ -29,23 +29,23 @@
 template <typename T>
 struct IsAContainer
 {
-  __host__ __device__ constexpr IsAContainer()
+  TEST_FUNC constexpr IsAContainer()
       : v_{}
   {}
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return 1;
   }
-  __host__ __device__ constexpr T* data()
+  TEST_FUNC constexpr T* data()
   {
     return &v_;
   }
-  __host__ __device__ constexpr const T* data() const
+  TEST_FUNC constexpr const T* data() const
   {
     return &v_;
   }
 
-  __host__ __device__ constexpr const T* getV() const
+  TEST_FUNC constexpr const T* getV() const
   {
     return &v_;
   } // for checking
@@ -55,7 +55,7 @@ struct IsAContainer
 template <typename T>
 struct NotAContainerNoData
 {
-  __host__ __device__ size_t size() const
+  TEST_FUNC size_t size() const
   {
     return 0;
   }
@@ -64,7 +64,7 @@ struct NotAContainerNoData
 template <typename T>
 struct NotAContainerNoSize
 {
-  __host__ __device__ const T* data() const
+  TEST_FUNC const T* data() const
   {
     return nullptr;
   }
@@ -74,18 +74,18 @@ template <typename T>
 struct NotAContainerPrivate
 {
 private:
-  __host__ __device__ size_t size() const
+  TEST_FUNC size_t size() const
   {
     return 0;
   }
-  __host__ __device__ const T* data() const
+  TEST_FUNC const T* data() const
   {
     return nullptr;
   }
 };
 
 template <class T, size_t extent, class container>
-__host__ __device__ cuda::std::span<T, extent> createImplicitSpan(container c)
+TEST_FUNC cuda::std::span<T, extent> createImplicitSpan(container c)
 {
   return {c}; // expected-error-re {{no matching constructor for initialization of 'cuda::std::span<{{.+}}>'}}
 }

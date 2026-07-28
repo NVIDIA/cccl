@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "test_macros.h"
-
 // <cuda/std/iterator>
 // template <class C> auto begin(C& c) -> decltype(c.begin());
 // template <class C> auto begin(const C& c) -> decltype(c.begin());
@@ -20,42 +18,44 @@
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 namespace Foo
 {
 struct FakeContainer
 {};
 using FakeIter = int;
 
-__host__ __device__ FakeIter begin(const FakeContainer&)
+TEST_FUNC FakeIter begin(const FakeContainer&)
 {
   return 1;
 }
-__host__ __device__ FakeIter end(const FakeContainer&)
+TEST_FUNC FakeIter end(const FakeContainer&)
 {
   return 2;
 }
-__host__ __device__ FakeIter rbegin(const FakeContainer&)
+TEST_FUNC FakeIter rbegin(const FakeContainer&)
 {
   return 3;
 }
-__host__ __device__ FakeIter rend(const FakeContainer&)
+TEST_FUNC FakeIter rend(const FakeContainer&)
 {
   return 4;
 }
 
-__host__ __device__ FakeIter cbegin(const FakeContainer&)
+TEST_FUNC FakeIter cbegin(const FakeContainer&)
 {
   return 11;
 }
-__host__ __device__ FakeIter cend(const FakeContainer&)
+TEST_FUNC FakeIter cend(const FakeContainer&)
 {
   return 12;
 }
-__host__ __device__ FakeIter crbegin(const FakeContainer&)
+TEST_FUNC FakeIter crbegin(const FakeContainer&)
 {
   return 13;
 }
-__host__ __device__ FakeIter crend(const FakeContainer&)
+TEST_FUNC FakeIter crend(const FakeContainer&)
 {
   return 14;
 }

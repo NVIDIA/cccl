@@ -9,9 +9,15 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/stream>
+
+#include <sstream>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -23,6 +29,29 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_r
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
+
+template <int ThreadsPerBlock>
+struct rle_encode_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
+  {
+    return {cub::RleAlgorithm::lookback,
+            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+  }
+};
+
+template <int ThreadsPerBlock>
+struct rle_non_trivial_runs_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleNonTrivialRunsPolicy
+  {
+    return {cub::RleNonTrivialRunsAlgorithm::lookback,
+            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
 #if TEST_LAUNCH == 0
 
@@ -152,8 +181,7 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
   auto d_num_runs_out = c2h::device_vector<int>(1);
   int num_items       = static_cast<int>(d_in.size());
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream custom_stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -167,13 +195,14 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
       d_num_runs_out.begin(),
       num_items));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  cuda::stream_ref stream_ref{custom_stream};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, stream_ref};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   run_length_encode_env(
     d_in.begin(), d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  custom_stream.sync();
 
   c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
@@ -184,8 +213,6 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
   d_counts_out.resize(d_num_runs_out[0]);
   REQUIRE(d_unique_out == expected_unique);
   REQUIRE(d_counts_out == expected_counts);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_length_encode][device]")
@@ -196,8 +223,7 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
   auto d_num_runs_out = c2h::device_vector<int>(1);
   int num_items       = static_cast<int>(d_in.size());
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream custom_stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -211,13 +237,14 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
       d_num_runs_out.begin(),
       num_items));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  cuda::stream_ref stream_ref{custom_stream};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, stream_ref};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   non_trivial_runs_env(
     d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  custom_stream.sync();
 
   c2h::device_vector<int> expected_offsets{1, 4};
   c2h::device_vector<int> expected_lengths{2, 3};
@@ -228,6 +255,156 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
   d_lengths_out.resize(d_num_runs_out[0]);
   REQUIRE(d_offsets_out == expected_offsets);
   REQUIRE(d_lengths_out == expected_lengths);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+#if TEST_LAUNCH != 1
+
+C2H_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_unique_out   = c2h::device_vector<int>(1);
+  auto d_counts_out   = c2h::device_vector<int>(1);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(rle_encode_tuning<target_block_size>{});
+
+  run_length_encode_env(d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_unique_out[0] == 42);
+  REQUIRE(d_counts_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_encode][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_offsets_out  = c2h::device_vector<int>(1);
+  auto d_lengths_out  = c2h::device_vector<int>(1);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(rle_non_trivial_runs_tuning<target_block_size>{});
+
+  non_trivial_runs_env(d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_offsets_out[0] == 0);
+  REQUIRE(d_lengths_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RleEncodePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleEncodePolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::RleEncodePolicy{
+    cub::RleAlgorithm::lookback,
+    {128,
+     7,
+     cub::BLOCK_LOAD_DIRECT,
+     cub::LOAD_DEFAULT,
+     cub::BLOCK_SCAN_WARP_SCANS,
+     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::RleEncodePolicy{
+    .algorithm = cub::RleAlgorithm::lookback,
+    .lookback  = cub::RleLookbackPolicy{
+       .threads_per_block = 128,
+       .items_per_thread  = 7,
+       .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+       .load_modifier     = cub::LOAD_DEFAULT,
+       .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+       .lookback_delay    = cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
+             ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 832, .l2_write_latency = 1165 } } }");
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RleNonTrivialRunsPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleNonTrivialRunsPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::RleNonTrivialRunsPolicy{
+    cub::RleNonTrivialRunsAlgorithm::lookback,
+    {128,
+     7,
+     cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+     cub::CacheLoadModifier::LOAD_LDG,
+     false,
+     cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+     {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::RleNonTrivialRunsPolicy{
+    .algorithm = cub::RleNonTrivialRunsAlgorithm::lookback,
+    .lookback  = cub::RleNonTrivialRunsLookbackPolicy{
+       .threads_per_block       = 128,
+       .items_per_thread        = 7,
+       .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+       .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
+       .store_with_time_slicing = false,
+       .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+       .lookback_delay          = cub::LookbackDelayPolicy{
+                  .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "RleNonTrivialRunsPolicy { .algorithm = RleNonTrivialRunsAlgorithm::lookback"
+             ", .lookback = RleNonTrivialRunsLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_LDG"
+             ", .store_with_time_slicing = 0, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } } }");
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

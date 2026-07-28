@@ -30,7 +30,7 @@ C2H_TEST("Fill", "[data_manipulation]")
     cuda::fill_bytes(_stream, buffer, fill_byte);
 
     std::vector<int> host_vector(42);
-    CUDART(cudaMemcpyAsync(
+    REQUIRE_CUDART(cudaMemcpyAsync(
       host_vector.data(), buffer.data(), buffer.size() * sizeof(int), cudaMemcpyDefault, _stream.get()));
 
     check_result_and_erase(_stream, host_vector);

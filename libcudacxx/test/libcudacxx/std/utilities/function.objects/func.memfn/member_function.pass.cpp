@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <cuda/std/functional>
 
 // template<Returnable R, class T, CopyConstructible... Args>
@@ -18,22 +22,22 @@
 
 struct A
 {
-  __host__ __device__ char test0()
+  TEST_FUNC char test0()
   {
     return 'a';
   }
-  __host__ __device__ char test1(int)
+  TEST_FUNC char test1(int)
   {
     return 'b';
   }
-  __host__ __device__ char test2(int, double)
+  TEST_FUNC char test2(int, double)
   {
     return 'c';
   }
 };
 
 template <class F>
-__host__ __device__ void test0(F f)
+TEST_FUNC void test0(F f)
 {
   {
     A a;
@@ -46,7 +50,7 @@ __host__ __device__ void test0(F f)
 }
 
 template <class F>
-__host__ __device__ void test1(F f)
+TEST_FUNC void test1(F f)
 {
   {
     A a;
@@ -59,7 +63,7 @@ __host__ __device__ void test1(F f)
 }
 
 template <class F>
-__host__ __device__ void test2(F f)
+TEST_FUNC void test2(F f)
 {
   {
     A a;
@@ -76,7 +80,7 @@ int main(int, char**)
   test0(cuda::std::mem_fn(&A::test0));
   test1(cuda::std::mem_fn(&A::test1));
   test2(cuda::std::mem_fn(&A::test2));
-  static_assert((noexcept(cuda::std::mem_fn(&A::test0))), ""); // LWG#2489
+  static_assert((noexcept(cuda::std::mem_fn(&A::test0)))); // LWG#2489
 
   return 0;
 }

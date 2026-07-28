@@ -69,7 +69,7 @@ xor_combine_engine<Engine1, s1, Engine2, s2>::base2() const
 
 template <typename Engine1, size_t s1, typename Engine2, size_t s2>
 _CCCL_HOST_DEVICE typename xor_combine_engine<Engine1, s1, Engine2, s2>::result_type
-xor_combine_engine<Engine1, s1, Engine2, s2>::operator()(void)
+xor_combine_engine<Engine1, s1, Engine2, s2>::operator()()
 {
   return (result_type(m_b1() - base1_type::min) << shift1) ^ (result_type(m_b2() - base2_type::min) << shift2);
 } // end xor_combine_engine::operator()()

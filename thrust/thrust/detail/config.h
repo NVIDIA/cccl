@@ -19,6 +19,6 @@
 
 #include <thrust/version.h> // IWYU pragma: export
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cuda/__nvtx/nvtx.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()

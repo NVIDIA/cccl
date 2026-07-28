@@ -5,7 +5,9 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/execution>
 
 #include <algorithm>
 #include <numeric>
@@ -65,6 +67,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class T>
 struct ref_diff
 {
@@ -90,6 +93,97 @@ struct ref_diff
 };
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+#if TEST_LAUNCH == 0
+C2H_TEST("DeviceAdjacentDifference::SubtractRight works with user provided memory and environment",
+         "[device][adjacent_difference]",
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items, thrust::default_init);
+  c2h::device_vector<type> out(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items, thrust::default_init);
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
+  std::rotate(reference.begin(), reference.begin() + 1, reference.end());
+  reference.back() = h_in.back();
+
+  size_t expected_allocation_size = 0;
+  auto error                      = cub::DeviceAdjacentDifference::SubtractRight(
+    static_cast<void*>(nullptr), expected_allocation_size, in.begin(), num_items, cuda::std::minus<>{});
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_subtract_right = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceAdjacentDifference::SubtractRight(
+      static_cast<void*>(nullptr), num_bytes, in.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_allocation_size == num_bytes);
+
+    error = cub::DeviceAdjacentDifference::SubtractRight(
+      temp_storage, num_bytes, in.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(reference == in);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right(stream.get());
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right(stream);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_subtract_right(stream_ref);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_subtract_right(env);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_subtract_right(policy);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_subtract_right(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
+
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[device][adjacent_difference]", types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -109,6 +203,97 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[devic
 
   REQUIRE(reference == in);
 }
+
+#if TEST_LAUNCH == 0
+C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with user provided memory and environment",
+         "[device][adjacent_difference]",
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
+  std::rotate(reference.begin(), reference.begin() + 1, reference.end());
+  reference.back() = h_in.back();
+
+  size_t expected_allocation_size = 0;
+  auto error                      = cub::DeviceAdjacentDifference::SubtractRightCopy(
+    static_cast<void*>(nullptr), expected_allocation_size, in.begin(), out.begin(), num_items, cuda::std::minus<>{});
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_subtract_right_copy = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceAdjacentDifference::SubtractRightCopy(
+      static_cast<void*>(nullptr), num_bytes, in.begin(), out.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_allocation_size == num_bytes);
+
+    error = cub::DeviceAdjacentDifference::SubtractRightCopy(
+      temp_storage, num_bytes, in.begin(), out.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(reference == out);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right_copy(stream.get());
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right_copy(stream);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_subtract_right_copy(stream_ref);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_subtract_right_copy(env);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_subtract_right_copy(policy);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_subtract_right_copy(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[device][adjacent_difference]", types)
 {
@@ -171,6 +356,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 struct cust_diff
 {
   template <class T>

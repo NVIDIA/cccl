@@ -11,13 +11,13 @@ pool-based resources. Prefer the modern memory resources where available.
 For the full memory resource model and property system, see
 :ref:`Memory Resources (Extended API) <libcudacxx-extended-api-memory-resources>`.
 
-``cuda::mr::legacy_pinned_memory_resource``
--------------------------------------------
+:cpp:class:`cuda::mr::legacy_pinned_memory_resource`
+------------------------------------------------------
 .. _libcudacxx-memory-resource-legacy-pinned-memory-resource:
 
 Provides pinned (page-locked) host allocations using ``cudaMallocHost`` and ``cudaFreeHost``. This resource is
 *synchronous-only* and is intended as a compatibility fallback. For CUDA 12.9 and later, prefer
-``cuda::pinned_memory_resource``.
+:cpp:any:`cuda::pinned_memory_resource`.
 
 .. code:: cpp
 
@@ -30,13 +30,13 @@ Provides pinned (page-locked) host allocations using ``cudaMallocHost`` and ``cu
      resource.deallocate_sync(ptr, 1024, 64);
    }
 
-``cuda::mr::legacy_managed_memory_resource``
---------------------------------------------
+:cpp:class:`cuda::mr::legacy_managed_memory_resource`
+-------------------------------------------------------
 .. _libcudacxx-memory-resource-legacy-managed-memory-resource:
 
 Provides managed (unified) allocations using ``cudaMallocManaged`` and ``cudaFree``. This resource is
 *synchronous-only* and accepts the CUDA attachment flags (``cudaMemAttachGlobal`` / ``cudaMemAttachHost``). Prefer
-``cuda::managed_memory_resource`` when available.
+:cpp:any:`cuda::managed_memory_resource` when available.
 
 .. code:: cpp
 

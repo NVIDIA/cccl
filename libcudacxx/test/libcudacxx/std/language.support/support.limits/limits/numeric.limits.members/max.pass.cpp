@@ -21,10 +21,11 @@
 #include <cuda/std/limits>
 
 #include "common.h"
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(T expected)
+TEST_FUNC void test(T expected)
 {
   assert(float_eq(cuda::std::numeric_limits<T>::max(), expected));
   assert(cuda::std::numeric_limits<T>::is_bounded);

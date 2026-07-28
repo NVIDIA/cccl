@@ -67,7 +67,8 @@ public:
   _CCCL_API constexpr for_each_result<borrowed_iterator_t<_Range>, _Func>
   operator()(_Range&& __range, _Func __func, _Proj __proj = {}) const
   {
-    return __for_each_impl(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __func, __proj);
+    return __for_each_impl(
+      ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __func, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO

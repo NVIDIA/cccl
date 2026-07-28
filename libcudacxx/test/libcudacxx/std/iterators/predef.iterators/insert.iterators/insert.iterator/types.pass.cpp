@@ -35,10 +35,10 @@
 template <class C>
 struct find_members : private cuda::std::insert_iterator<C>
 {
-  __host__ __device__ explicit find_members(C& c)
+  TEST_FUNC explicit find_members(C& c)
       : cuda::std::insert_iterator<C>(c, c.begin())
   {}
-  __host__ __device__ void test()
+  TEST_FUNC void test()
   {
     this->container = 0;
     TEST_IGNORE_NODISCARD(this->iter == this->iter);
@@ -46,22 +46,22 @@ struct find_members : private cuda::std::insert_iterator<C>
 };
 
 template <class C>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using R = cuda::std::insert_iterator<C>;
   C c;
   find_members<C> q(c);
   q.test();
-  static_assert((cuda::std::is_same<typename R::container_type, C>::value), "");
-  static_assert((cuda::std::is_same<typename R::value_type, void>::value), "");
+  static_assert((cuda::std::is_same<typename R::container_type, C>::value));
+  static_assert((cuda::std::is_same<typename R::value_type, void>::value));
 #if _CCCL_STD_VER < 2020
-  static_assert((cuda::std::is_same<typename R::difference_type, void>::value), "");
+  static_assert((cuda::std::is_same<typename R::difference_type, void>::value));
 #else // ^^^ _CCCL_STD_VER < 2020 ^^^ / vvv _CCCL_STD_VER >= 2020 vvv
-  static_assert((cuda::std::is_same<typename R::difference_type, cuda::std::ptrdiff_t>::value), "");
+  static_assert((cuda::std::is_same<typename R::difference_type, cuda::std::ptrdiff_t>::value));
 #endif // _CCCL_STD_VER < 2020
-  static_assert((cuda::std::is_same<typename R::reference, void>::value), "");
-  static_assert((cuda::std::is_same<typename R::pointer, void>::value), "");
-  static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::output_iterator_tag>::value), "");
+  static_assert((cuda::std::is_same<typename R::reference, void>::value));
+  static_assert((cuda::std::is_same<typename R::pointer, void>::value));
+  static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::output_iterator_tag>::value));
 }
 
 int main(int, char**)

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
@@ -64,7 +64,7 @@ struct __reverse_fn
 
   _CCCL_DEVICE_API constexpr void operator()(const iter_difference_t<_InputIterator> __index) const noexcept
   {
-    ::cuda::std::iter_swap(__first_ + __index, __last_ + __index);
+    ::cuda::std::__iter_swap_cpo{}(__first_ + __index, __last_ + __index);
   }
 };
 
@@ -104,6 +104,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_REVERSE_H

@@ -26,14 +26,14 @@ struct Derived : Base
 {};
 
 template <class It, class U>
-__host__ __device__ constexpr void test(U u)
+TEST_FUNC constexpr void test(U u)
 {
   const cuda::std::reverse_iterator<U> r2(u);
   cuda::std::reverse_iterator<It> r1 = r2;
   assert(base(r1.base()) == base(u));
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   Derived d{};
   test<bidirectional_iterator<Base*>>(bidirectional_iterator<Derived*>(&d));
@@ -45,6 +45,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

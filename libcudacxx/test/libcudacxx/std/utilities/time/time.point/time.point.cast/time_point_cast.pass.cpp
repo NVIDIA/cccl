@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class FromDuration, class ToDuration>
-__host__ __device__ constexpr void test(const FromDuration& df, const ToDuration& d)
+TEST_FUNC constexpr void test(const FromDuration& df, const ToDuration& d)
 {
   using Clock         = cuda::std::chrono::system_clock;
   using FromTimePoint = cuda::std::chrono::time_point<Clock, FromDuration>;
@@ -36,7 +36,7 @@ __host__ __device__ constexpr void test(const FromDuration& df, const ToDuration
   assert(cuda::std::chrono::time_point_cast<ToDuration>(f) == t);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(cuda::std::chrono::milliseconds(7265000), cuda::std::chrono::hours(2));
   test(cuda::std::chrono::milliseconds(7265000), cuda::std::chrono::minutes(121));

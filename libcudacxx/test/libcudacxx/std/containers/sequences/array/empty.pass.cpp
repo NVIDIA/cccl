@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using C = cuda::std::array<int, 2>;
@@ -39,12 +39,12 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
 
   // Sanity check for constexpr in C++11
   {
     constexpr cuda::std::array<int, 3> array = {};
-    static_assert(!array.empty(), "");
+    static_assert(!array.empty());
   }
 
   return 0;

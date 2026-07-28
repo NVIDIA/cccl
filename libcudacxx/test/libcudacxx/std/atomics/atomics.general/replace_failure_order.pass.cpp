@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -28,7 +32,7 @@
 #include "test_macros.h"
 
 template <template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Selector<cuda::std::atomic<int>, default_initializer> sel;
   Selector<volatile cuda::std::atomic<int>, default_initializer> vsel;

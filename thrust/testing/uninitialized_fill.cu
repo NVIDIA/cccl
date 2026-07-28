@@ -114,10 +114,7 @@ DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
 struct CopyConstructTest
 {
-  _CCCL_HOST_DEVICE CopyConstructTest()
-      : copy_constructed_on_host(false)
-      , copy_constructed_on_device(false)
-  {}
+  CopyConstructTest() = default;
 
   _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
   {
@@ -126,15 +123,10 @@ struct CopyConstructTest
                  (copy_constructed_on_device = false; copy_constructed_on_host = true;));
   }
 
-  _CCCL_HOST_DEVICE CopyConstructTest& operator=(const CopyConstructTest& x)
-  {
-    copy_constructed_on_host   = x.copy_constructed_on_host;
-    copy_constructed_on_device = x.copy_constructed_on_device;
-    return *this;
-  }
+  CopyConstructTest& operator=(const CopyConstructTest&) = default;
 
-  bool copy_constructed_on_host;
-  bool copy_constructed_on_device;
+  bool copy_constructed_on_host{false};
+  bool copy_constructed_on_device{false};
 };
 
 struct TestUninitializedFillNonPOD
@@ -148,7 +140,7 @@ struct TestUninitializedFillNonPOD
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
 
-    T host_copy_of_exemplar(exemplar);
+    T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
 
@@ -216,7 +208,7 @@ struct TestUninitializedFillNNonPOD
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
 
-    T host_copy_of_exemplar(exemplar);
+    T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
 

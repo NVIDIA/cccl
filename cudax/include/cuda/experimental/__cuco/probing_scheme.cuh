@@ -1,0 +1,273 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDAX___CUCO_PROBING_SCHEME_CUH
+#define _CUDAX___CUCO_PROBING_SCHEME_CUH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/decay.h>
+
+#include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
+
+#include <cooperative_groups.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental::cuco
+{
+//! @brief Public linear probing scheme class.
+//!
+//! @note Linear probing is efficient when few collisions are present, e.g., low occupancy or low
+//! multiplicity.
+//!
+//! @note `_Hash` should be a callable object type.
+//!
+//! @tparam _CgSize Cooperative group size
+//! @tparam _Hash Hash functor type
+template <int _CgSize, class _Hash>
+class linear_probing : detail::__probing_scheme_base<_CgSize>
+{
+  using __base_type = detail::__probing_scheme_base<_CgSize>;
+
+public:
+  static constexpr int cg_size = __base_type::__cg_size;
+  using hasher                 = _Hash;
+
+  //! @brief Constructs a linear probing scheme with the given hasher callable.
+  //!
+  //! @param __hash Hasher
+  _CCCL_HOST_DEVICE_API constexpr linear_probing(const _Hash& __hash = {})
+      : __hash{__hash}
+  {}
+
+  //! @brief Makes a copy of the current probing scheme with the given hasher.
+  //!
+  //! @tparam _NewHash New hasher type
+  //!
+  //! @param __hash Hasher
+  //!
+  //! @return Copy of the current probing scheme
+  template <class _NewHash>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const noexcept
+  {
+    return linear_probing<cg_size, _NewHash>{__hash};
+  }
+
+  //! @brief Returns a probing iterator.
+  //!
+  //! @tparam _BucketSize Size of the bucket
+  //! @tparam _ProbeKey Type of probing key
+  //! @tparam _Capacity Capacity extent type (total slots)
+  //!
+  //! @param __probe_key The probing key
+  //! @param __cap Capacity extent (total slots) bounding the iteration
+  //!
+  //! @return An iterator whose value_type is convertible to the slot index type
+  template <int _BucketSize, class _ProbeKey, class _Capacity>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  {
+    using __size_type        = typename _Capacity::index_type;
+    using __step_extent      = ::cuda::std::extents<__size_type, _BucketSize>;
+    const __size_type __init = __hash(__probe_key) % (__cap.extent(0) / _BucketSize) * _BucketSize;
+    return detail::__probing_iterator<_Capacity, __step_extent>{__init, __step_extent{}, __cap};
+  }
+
+  //! @brief Returns a cooperative group based probing iterator.
+  //!
+  //! @tparam _BucketSize Size of the bucket
+  //! @tparam _ProbeKey Type of probing key
+  //! @tparam _Capacity Capacity extent type (total slots)
+  //! @tparam _ParentCG Type of parent cooperative group
+  //!
+  //! @param __group The cooperative group used to generate the probing iterator
+  //! @param __probe_key The probing key
+  //! @param __cap Capacity extent (total slots) bounding the iteration
+  //!
+  //! @return An iterator whose value_type is convertible to the slot index type
+  template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                _ProbeKey __probe_key,
+                _Capacity __cap) const noexcept
+  {
+    using __size_type              = typename _Capacity::index_type;
+    constexpr __size_type __stride = cg_size * _BucketSize;
+    using __step_extent            = ::cuda::std::extents<__size_type, __stride>;
+    const __size_type __init =
+      __hash(__probe_key) % (__cap.extent(0) / __stride) * __stride + __size_type{__group.thread_rank() * _BucketSize};
+    return detail::__probing_iterator<_Capacity, __step_extent>{__init, __step_extent{}, __cap};
+  }
+
+  //! @brief Gets the function used to hash keys.
+  //!
+  //! @return The function used to hash keys
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  {
+    return __hash;
+  }
+
+private:
+  _Hash __hash;
+};
+
+//! @brief Public double hashing scheme class.
+//!
+//! @note Default probing scheme for cuco data structures. It shows superior performance over linear
+//! probing especially when dealing with high multiplicity and/or high occupancy use cases.
+//!
+//! @note `_Hash1` and `_Hash2` should be callable object types.
+//!
+//! @note `_Hash2` needs to be able to construct from an integer value to avoid secondary clustering.
+//!
+//! @tparam _CgSize Cooperative group size
+//! @tparam _Hash1 First hash functor
+//! @tparam _Hash2 Second hash functor
+template <int _CgSize, class _Hash1, class _Hash2 = _Hash1>
+class double_hashing : detail::__probing_scheme_base<_CgSize>
+{
+  using __base_type = detail::__probing_scheme_base<_CgSize>;
+
+public:
+  static constexpr int cg_size = __base_type::__cg_size;
+  using hasher                 = ::cuda::std::tuple<_Hash1, _Hash2>;
+
+  //! @brief Constructs a double hashing probing scheme with the two hasher callables.
+  //!
+  //! @param __hash1 First hasher
+  //! @param __hash2 Second hasher
+  _CCCL_HOST_DEVICE_API constexpr double_hashing(const _Hash1& __hash1 = {}, const _Hash2& __hash2 = {1})
+      : __hash1{__hash1}
+      , __hash2{__hash2}
+  {}
+
+  //! @brief Constructs a double hashing probing scheme with the given hasher tuple.
+  //!
+  //! @param __hash Hasher tuple
+  _CCCL_HOST_DEVICE_API constexpr double_hashing(const ::cuda::std::tuple<_Hash1, _Hash2>& __hash)
+      : __hash1{::cuda::std::get<0>(__hash)}
+      , __hash2{::cuda::std::get<1>(__hash)}
+  {}
+
+  //! @brief Makes a copy of the current probing scheme with the given hasher.
+  //!
+  //! @tparam _NewHash Tuple-like new hasher type
+  //!
+  //! @param __hash Hasher
+  //!
+  //! @return Copy of the current probing scheme
+  _CCCL_TEMPLATE(class _NewHash)
+  _CCCL_REQUIRES(::cuda::std::__tuple_like<_NewHash>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
+  {
+    static_assert(::cuda::std::__tuple_like<_NewHash> && ::cuda::std::tuple_size<_NewHash>::value == 2,
+                  "The given hasher must be a tuple-like object with exactly two elements");
+
+    const auto& [__hash1, __hash2] = __hash;
+    using __hash1_type             = ::cuda::std::decay_t<decltype(__hash1)>;
+    using __hash2_type             = ::cuda::std::decay_t<decltype(__hash2)>;
+    return double_hashing<cg_size, __hash1_type, __hash2_type>{__hash1, __hash2};
+  }
+
+  //! @brief Returns a probing iterator.
+  //!
+  //! @tparam _BucketSize Size of the bucket
+  //! @tparam _ProbeKey Type of probing key
+  //! @tparam _Capacity Capacity extent type (total slots)
+  //!
+  //! @param __probe_key The probing key
+  //! @param __cap Capacity extent (total slots) bounding the iteration
+  //!
+  //! @return An iterator whose value_type is convertible to the slot index type
+  template <int _BucketSize, class _ProbeKey, class _Capacity>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  {
+    using __size_type   = typename _Capacity::index_type;
+    using __step_extent = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+    return detail::__probing_iterator<_Capacity, __step_extent>{
+      __size_type{__hash1(__probe_key)} % (__cap.extent(0) / _BucketSize) * _BucketSize,
+      __step_extent{__size_type{(__hash2(__probe_key) % (__cap.extent(0) / _BucketSize - 1) + 1) * _BucketSize}},
+      __cap};
+  }
+
+  //! @brief Returns a cooperative group based probing iterator.
+  //!
+  //! @tparam _BucketSize Size of the bucket
+  //! @tparam _ProbeKey Type of probing key
+  //! @tparam _Capacity Capacity extent type (total slots)
+  //! @tparam _ParentCG Type of parent cooperative group
+  //!
+  //! @param __group The cooperative group used to generate the probing iterator
+  //! @param __probe_key The probing key
+  //! @param __cap Capacity extent (total slots) bounding the iteration
+  //!
+  //! @return An iterator whose value_type is convertible to the slot index type
+  template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                _ProbeKey __probe_key,
+                _Capacity __cap) const noexcept
+  {
+    using __size_type              = typename _Capacity::index_type;
+    constexpr __size_type __stride = cg_size * _BucketSize;
+    using __step_extent            = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+
+    return detail::__probing_iterator<_Capacity, __step_extent>{
+      __size_type{__hash1(__probe_key)} % (__cap.extent(0) / __stride) * __stride
+        + __size_type{__group.thread_rank() * _BucketSize},
+      __step_extent{__size_type{(__hash2(__probe_key) % (__cap.extent(0) / __stride - 1) + 1) * __stride}},
+      __cap};
+  }
+
+  //! @brief Gets the functions used to hash keys.
+  //!
+  //! @return The functions used to hash keys
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  {
+    return {__hash1, __hash2};
+  }
+
+private:
+  _Hash1 __hash1;
+  _Hash2 __hash2;
+};
+
+//! @brief Trait value indicating whether a probing scheme is double hashing.
+//!
+//! @tparam _Tp Input probing scheme type
+template <class _Tp>
+inline constexpr bool is_double_hashing_v = false;
+
+//! @brief Specialization indicating that `double_hashing` is a double hashing scheme.
+//!
+//! @tparam _CgSize Cooperative group size
+//! @tparam _Hash1 First hash functor
+//! @tparam _Hash2 Second hash functor
+template <int _CgSize, class _Hash1, class _Hash2>
+inline constexpr bool is_double_hashing_v<double_hashing<_CgSize, _Hash1, _Hash2>> = true;
+} // namespace cuda::experimental::cuco
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDAX___CUCO_PROBING_SCHEME_CUH

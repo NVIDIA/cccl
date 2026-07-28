@@ -36,7 +36,7 @@ _CCCL_HOST_DEVICE complex<T>::complex(const complex<U>& z)
     : data{T(z.real()), T(z.imag())}
 {}
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <typename T>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const ::std::complex<T>& z)
     // Initialize the storage in the member initializer list using C++ unicorn
@@ -52,7 +52,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const ::std::complex<U>
     // We do a functional-style cast here to suppress conversion warnings.
     : data{T(THRUST_STD_COMPLEX_REAL(z)), T(THRUST_STD_COMPLEX_IMAG(z))}
 {}
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 /* --- Assignment Operators --- */
 
@@ -73,7 +73,7 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const complex<U>& z)
   return *this;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <typename T>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const ::std::complex<T>& z)
 {
@@ -90,7 +90,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const ::s
   imag(T(THRUST_STD_COMPLEX_IMAG(z)));
   return *this;
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 /* --- Compound Assignment Operators --- */
 
@@ -166,7 +166,7 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y)
   return x.real() == y.real() && x.imag() == y.imag();
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const ::std::complex<T1>& y)
 {
@@ -178,7 +178,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x
 {
   return THRUST_STD_COMPLEX_REAL(x) == y.real() && THRUST_STD_COMPLEX_IMAG(x) == y.imag();
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y)
@@ -198,7 +198,7 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y)
   return !(x == y);
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const ::std::complex<T1>& y)
 {
@@ -210,7 +210,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x
 {
   return !(x == y);
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y)

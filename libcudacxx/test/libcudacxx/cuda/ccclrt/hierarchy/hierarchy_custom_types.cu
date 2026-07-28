@@ -31,7 +31,7 @@ struct custom_level_dims : public cuda::hierarchy_level_desc<Level, Dims>
 struct custom_level_test
 {
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)

@@ -10,14 +10,18 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/pipeline>
 
 #include <cooperative_groups.h>
 
 #include "cuda_space_selector.h"
+#include "test_macros.h"
 
 template <class T, cuda::thread_scope PipelineScope>
-__device__ __noinline__ void test_producer(T* dest, T* source, cuda::pipeline<PipelineScope>& pipe)
+TEST_DEVICE_FUNC __noinline__ void test_producer(T* dest, T* source, cuda::pipeline<PipelineScope>& pipe)
 {
   pipe.producer_acquire();
   cuda::memcpy_async(static_cast<void*>(&dest[0]), static_cast<void*>(&source[0]), sizeof(T), pipe);
@@ -33,7 +37,7 @@ __device__ __noinline__ void test_producer(T* dest, T* source, cuda::pipeline<Pi
 }
 
 template <class T, cuda::thread_scope PipelineScope>
-__device__ __noinline__ void test_consumer(T* dest, T* source, cuda::pipeline<PipelineScope>& pipe)
+TEST_DEVICE_FUNC __noinline__ void test_consumer(T* dest, T* source, cuda::pipeline<PipelineScope>& pipe)
 {
   pipe.consumer_wait();
   assert(source[0] == 12);
@@ -55,7 +59,7 @@ template <class T,
           template <typename, typename> class PipelineSelector,
           cuda::thread_scope PipelineScope,
           uint8_t PipelineStages>
-__device__ __noinline__ void test_fully_specialized()
+TEST_DEVICE_FUNC __noinline__ void test_fully_specialized()
 {
   __shared__ T dest[3];
   __shared__ T* source;
@@ -125,14 +129,14 @@ __device__ __noinline__ void test_fully_specialized()
 }
 
 template <class T, template <typename, typename> class PipelineSelector, cuda::thread_scope PipelineScope>
-__host__ __device__ __noinline__ void test_select_stages()
+TEST_FUNC __noinline__ void test_select_stages()
 {
   test_fully_specialized<T, PipelineSelector, PipelineScope, 1>();
   test_fully_specialized<T, PipelineSelector, PipelineScope, 8>();
 }
 
 template <class T, template <typename, typename> class PipelineSelector>
-__host__ __device__ __noinline__ void test_select_scope()
+TEST_FUNC __noinline__ void test_select_scope()
 {
   test_select_stages<T, PipelineSelector, cuda::thread_scope_block>();
   test_select_stages<T, PipelineSelector, cuda::thread_scope_device>();
@@ -140,7 +144,7 @@ __host__ __device__ __noinline__ void test_select_scope()
 }
 
 template <class T>
-__host__ __device__ __noinline__ void test_select_pipeline()
+TEST_FUNC __noinline__ void test_select_pipeline()
 {
   test_select_scope<T, shared_memory_selector>();
   test_select_scope<T, global_memory_selector>();

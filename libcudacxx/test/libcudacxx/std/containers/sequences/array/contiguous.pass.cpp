@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class Container>
-__host__ __device__ constexpr void assert_contiguous(Container const& c)
+TEST_FUNC constexpr void assert_contiguous(Container const& c)
 {
   for (cuda::std::size_t i = 0; i < c.size(); ++i)
   {
@@ -27,7 +27,7 @@ __host__ __device__ constexpr void assert_contiguous(Container const& c)
   }
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   assert_contiguous(cuda::std::array<double, 0>());
   assert_contiguous(cuda::std::array<double, 1>());
@@ -46,7 +46,7 @@ int main(int, char**)
 {
   tests();
 #if defined(_CCCL_BUILTIN_ADDRESSOF) // begin() & friends are constexpr in >= C++17 only
-  static_assert(tests(), "");
+  static_assert(tests());
 #endif // defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

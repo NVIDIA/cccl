@@ -8,7 +8,6 @@
 
 import importlib
 import locale
-import os
 import platform
 import re
 import subprocess
@@ -160,9 +159,6 @@ class DarwinLocalTI(DefaultTargetInfo):
         # Configure the library path for libc++
         if self.full_config.cxx_runtime_root:
             library_paths += [self.full_config.cxx_runtime_root]
-        elif self.full_config.use_system_cxx_lib:
-            if os.path.isdir(str(self.full_config.use_system_cxx_lib)):
-                library_paths += [self.full_config.use_system_cxx_lib]
 
         # Configure the abi library path
         if self.full_config.abi_library_root:
@@ -219,28 +215,15 @@ class LinuxLocalTI(DefaultTargetInfo):
         enable_threads = (
             "libcpp-has-no-threads" not in self.full_config.config.available_features
         )
-        llvm_unwinder = self.full_config.get_lit_bool("llvm_unwinder", False)
-        shared_libcxx = self.full_config.get_lit_bool("enable_shared", True)
-        flags += ["-lm"]
-        if not llvm_unwinder:
-            flags += ["-lgcc_s", "-lgcc"]
+        flags += ["-lm", "-lgcc_s", "-lgcc"]
         if enable_threads:
-            flags += ["-lpthread"]
-            if not shared_libcxx:
-                flags += ["-lrt"]
+            flags += ["-lpthread", "-lrt"]
         flags += ["-lc"]
-        if llvm_unwinder:
-            flags += ["-lunwind", "-ldl"]
-        else:
-            flags += ["-lgcc_s"]
         builtins_lib = self.full_config.get_lit_conf("builtins_library")
         if builtins_lib:
             flags += [builtins_lib]
         else:
             flags += ["-lgcc"]
-        use_libatomic = self.full_config.get_lit_bool("use_libatomic", False)
-        if use_libatomic:
-            flags += ["-latomic"]
         san = self.full_config.get_lit_conf("use_sanitizer", "").strip()
         if san:
             # The libraries and their order are taken from the

@@ -28,20 +28,20 @@ struct False
 
 int main(int, char**)
 {
-  static_assert(!cuda::std::negation<cuda::std::true_type>::value, "");
-  static_assert(cuda::std::negation<cuda::std::false_type>::value, "");
+  static_assert(!cuda::std::negation<cuda::std::true_type>::value);
+  static_assert(cuda::std::negation<cuda::std::false_type>::value);
 
-  static_assert(!cuda::std::negation_v<cuda::std::true_type>, "");
-  static_assert(cuda::std::negation_v<cuda::std::false_type>, "");
+  static_assert(!cuda::std::negation_v<cuda::std::true_type>);
+  static_assert(cuda::std::negation_v<cuda::std::false_type>);
 
-  static_assert(!cuda::std::negation<True>::value, "");
-  static_assert(cuda::std::negation<False>::value, "");
+  static_assert(!cuda::std::negation<True>::value);
+  static_assert(cuda::std::negation<False>::value);
 
-  static_assert(!cuda::std::negation_v<True>, "");
-  static_assert(cuda::std::negation_v<False>, "");
+  static_assert(!cuda::std::negation_v<True>);
+  static_assert(cuda::std::negation_v<False>);
 
-  static_assert(cuda::std::negation<cuda::std::negation<cuda::std::true_type>>::value, "");
-  static_assert(!cuda::std::negation<cuda::std::negation<cuda::std::false_type>>::value, "");
+  static_assert(cuda::std::negation<cuda::std::negation<cuda::std::true_type>>::value);
+  static_assert(!cuda::std::negation<cuda::std::negation<cuda::std::false_type>>::value);
 
   return 0;
 }

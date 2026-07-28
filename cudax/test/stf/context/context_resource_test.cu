@@ -37,7 +37,7 @@ public:
 
   ~test_stream_resource() override = default;
 
-  void release(cudaStream_t stream) override
+  void release(cudaStream_t stream) noexcept override
   {
     // Simulate async resource release that needs a stream
     cudaEvent_t event;
@@ -49,7 +49,7 @@ public:
     stream_resource_release_count.fetch_add(1);
   }
 
-  bool can_release_in_callback() const override
+  bool can_release_in_callback() const noexcept override
   {
     return false; // This resource needs a stream
   }
@@ -66,18 +66,18 @@ public:
 
   ~test_callback_resource() override = default;
 
-  void release(cudaStream_t /*stream*/) override
+  void release(cudaStream_t /*stream*/) noexcept override
   {
     // Should not be called for callback resources
     assert(false && "release() should not be called for callback resources");
   }
 
-  bool can_release_in_callback() const override
+  bool can_release_in_callback() const noexcept override
   {
     return true; // This resource can be released in a callback
   }
 
-  void release_in_callback() override
+  void release_in_callback() noexcept override
   {
     // Simulate host-side resource cleanup
     callback_resource_release_count.fetch_add(1);

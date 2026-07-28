@@ -50,13 +50,13 @@ int main()
   }
 
   // ==========================================================================
-  // Test exec_place::getStream() - returns decorated_stream with metadata
+  // Test exec_place::getStream() - returns augmented_stream with metadata
   // ==========================================================================
   {
     exec_place place = exec_place::current_device();
 
-    // getStream() returns a decorated_stream with additional metadata
-    decorated_stream dstream = place.getStream(resources, true);
+    // getStream() returns a augmented_stream with additional metadata
+    augmented_stream dstream = place.getStream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
     EXPECT(get_device_from_stream(dstream.stream) == current_device);
@@ -100,7 +100,7 @@ int main()
       EXPECT(get_device_from_stream(stream) == test_device);
 
       // getStream returns more metadata
-      decorated_stream dstream = dev_place.getStream(resources, true);
+      augmented_stream dstream = dev_place.getStream(resources, true);
       EXPECT(dstream.stream != nullptr);
       EXPECT(dstream.dev_id == test_device);
     }
@@ -117,59 +117,71 @@ int main()
 
     // Use activate() to switch to current device (no-op but verifies it works)
     exec_place current_place = exec_place::current_device();
-    exec_place prev          = current_place.activate();
+    {
+      auto active = current_place.activate();
 
-    int after_activate;
-    cuda_safe_call(cudaGetDevice(&after_activate));
-    EXPECT(after_activate == initial_device);
-
-    // Restore (also a no-op in this case)
-    current_place.deactivate(prev);
+      int after_activate;
+      cuda_safe_call(cudaGetDevice(&after_activate));
+      EXPECT(after_activate == initial_device);
+    }
+    // exec_place_scope destructor restores automatically
   }
 
-  // Test activate()/deactivate() with multiple devices
+  // Test activate() with multiple devices using RAII
   if (device_count > 1)
   {
     // Save initial device
     int initial_device;
     cuda_safe_call(cudaGetDevice(&initial_device));
 
-    // Switch to device 1
-    exec_place place1 = exec_place::device(1);
-    exec_place prev   = place1.activate();
+    // Switch to device 1 using RAII scope
+    {
+      exec_place place1 = exec_place::device(1);
+      auto active       = place1.activate();
 
-    // Verify we're now on device 1
-    int new_device;
-    cuda_safe_call(cudaGetDevice(&new_device));
-    EXPECT(new_device == 1);
-
-    // Restore previous device using deactivate
-    place1.deactivate(prev);
+      // Verify we're now on device 1
+      int new_device;
+      cuda_safe_call(cudaGetDevice(&new_device));
+      EXPECT(new_device == 1);
+    }
+    // exec_place_scope destructor restores previous device
 
     // Verify we're back on the initial device
     int restored_device;
     cuda_safe_call(cudaGetDevice(&restored_device));
     EXPECT(restored_device == initial_device);
 
-    // Alternative: restore by calling activate() on the previous place
-    exec_place place0 = exec_place::device(0);
-    prev              = place0.activate();
+    // Nested activation test
+    {
+      exec_place place0 = exec_place::device(0);
+      auto active0      = place0.activate();
 
-    cuda_safe_call(cudaGetDevice(&new_device));
-    EXPECT(new_device == 0);
+      int new_device;
+      cuda_safe_call(cudaGetDevice(&new_device));
+      EXPECT(new_device == 0);
 
-    // Restore by activating the previous place directly
-    prev.activate();
+      {
+        exec_place place1 = exec_place::device(1);
+        auto active1      = place1.activate();
+
+        cuda_safe_call(cudaGetDevice(&new_device));
+        EXPECT(new_device == 1);
+      }
+      // active1 destroyed, should restore to device 0
+
+      cuda_safe_call(cudaGetDevice(&new_device));
+      EXPECT(new_device == 0);
+    }
+    // active0 destroyed, should restore to initial device
 
     cuda_safe_call(cudaGetDevice(&restored_device));
     EXPECT(restored_device == initial_device);
   }
 
-  // Test that host exec_place activate/deactivate works (no-op in practice)
+  // Test that host exec_place activate works (no-op in practice)
   {
-    exec_place host_place = exec_place::host;
-    exec_place prev       = host_place.activate();
-    host_place.deactivate(prev);
+    exec_place host_place = exec_place::host();
+    auto active           = host_place.activate();
   }
 
   // ==========================================================================
@@ -227,7 +239,7 @@ int main()
     context ctx;
 
     exec_place dev1_place = exec_place::device(1);
-    ctx.set_affinity({::std::make_shared<exec_place>(dev1_place)});
+    ctx.push_affinity(::std::make_shared<exec_place>(dev1_place));
 
     // Stream should now come from device 1's pool
     cudaStream_t affinity_stream = ctx.pick_stream();

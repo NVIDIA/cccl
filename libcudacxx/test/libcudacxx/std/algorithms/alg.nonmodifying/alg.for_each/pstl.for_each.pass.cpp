@@ -15,7 +15,6 @@
 //                 ForwardIterator first, ForwardIterator last,
 //                 Function f);
 
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
@@ -52,7 +51,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   types::for_each(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }

@@ -38,7 +38,7 @@ error_code ::error_code(ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
                         ,
-                        ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>*
+                        ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
 )
 {

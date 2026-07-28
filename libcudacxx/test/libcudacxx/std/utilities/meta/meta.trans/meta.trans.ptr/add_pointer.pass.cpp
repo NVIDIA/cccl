@@ -20,14 +20,14 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_add_pointer()
+TEST_FUNC void test_add_pointer()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::add_pointer<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::add_pointer_t<T>>);
 }
 
 template <class F>
-__host__ __device__ void test_function0()
+TEST_FUNC void test_function0()
 {
   static_assert(cuda::std::is_same_v<F*, typename cuda::std::add_pointer<F>::type>);
 
@@ -35,7 +35,7 @@ __host__ __device__ void test_function0()
 }
 
 template <class F>
-__host__ __device__ void test_function1()
+TEST_FUNC void test_function1()
 {
   static_assert(cuda::std::is_same_v<F, typename cuda::std::add_pointer<F>::type>);
   static_assert(cuda::std::is_same_v<F, cuda::std::add_pointer_t<F>>);

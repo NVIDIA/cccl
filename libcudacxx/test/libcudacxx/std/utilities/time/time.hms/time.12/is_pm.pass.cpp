@@ -22,10 +22,10 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::chrono::is_pm(cuda::std::declval<hours>()))>);
   static_assert(noexcept(cuda::std::chrono::is_pm(cuda::std::declval<hours>())));
 
-  static_assert(!cuda::std::chrono::is_pm(hours(0)), "");
-  static_assert(!cuda::std::chrono::is_pm(hours(11)), "");
-  static_assert(cuda::std::chrono::is_pm(hours(12)), "");
-  static_assert(cuda::std::chrono::is_pm(hours(23)), "");
+  static_assert(!cuda::std::chrono::is_pm(hours(0)));
+  static_assert(!cuda::std::chrono::is_pm(hours(11)));
+  static_assert(cuda::std::chrono::is_pm(hours(12)));
+  static_assert(cuda::std::chrono::is_pm(hours(23)));
 
   for (int i = 0; i < 12; ++i)
   {

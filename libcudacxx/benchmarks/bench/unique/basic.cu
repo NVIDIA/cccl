@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -14,7 +14,7 @@
 #include <thrust/unique.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream_ref>
 
 #include "nvbench_helper.cuh"
@@ -29,7 +29,9 @@ static void make_unique_input(thrust::device_vector<T>& in, std::size_t elements
     thrust::counting_iterator<std::size_t>(elements),
     in.begin(),
     [] __device__(std::size_t i) {
-      return static_cast<T>(i / 2);
+      // This seems like a clang-tidy bug. Yes we end up converting to double, but the division
+      // is done entirely in integer land...
+      return static_cast<T>(i / 2ULL); // NOLINT(bugprone-integer-division)
     });
 }
 

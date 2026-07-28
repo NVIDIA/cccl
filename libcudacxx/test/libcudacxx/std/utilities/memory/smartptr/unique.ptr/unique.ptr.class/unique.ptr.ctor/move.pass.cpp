@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -39,39 +43,39 @@
 //    'sink' should accept the unique_ptr by value. (C-1,2,4)
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 cuda::std::unique_ptr<VT> source1()
+TEST_FUNC TEST_CONSTEXPR_CXX23 cuda::std::unique_ptr<VT> source1()
 {
   return cuda::std::unique_ptr<VT>(newValue<VT>(1));
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 cuda::std::unique_ptr<VT, Deleter<VT>> source2()
+TEST_FUNC TEST_CONSTEXPR_CXX23 cuda::std::unique_ptr<VT, Deleter<VT>> source2()
 {
   return cuda::std::unique_ptr<VT, Deleter<VT>>(newValue<VT>(1), Deleter<VT>(5));
 }
 
 template <class VT>
-__host__ __device__ cuda::std::unique_ptr<VT, NCDeleter<VT>&> source3()
+TEST_FUNC cuda::std::unique_ptr<VT, NCDeleter<VT>&> source3()
 {
   static NCDeleter<VT> d(5);
   return cuda::std::unique_ptr<VT, NCDeleter<VT>&>(newValue<VT>(1), d);
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void sink1(cuda::std::unique_ptr<VT> p)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void sink1(cuda::std::unique_ptr<VT> p)
 {
   assert(p.get() != nullptr);
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void sink2(cuda::std::unique_ptr<VT, Deleter<VT>> p)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void sink2(cuda::std::unique_ptr<VT, Deleter<VT>> p)
 {
   assert(p.get() != nullptr);
   assert(p.get_deleter().state() == 5);
 }
 
 template <class VT>
-__host__ __device__ void sink3(cuda::std::unique_ptr<VT, NCDeleter<VT>&> p)
+TEST_FUNC void sink3(cuda::std::unique_ptr<VT, NCDeleter<VT>&> p)
 {
   assert(p.get() != nullptr);
   assert(p.get_deleter().state() == 5);
@@ -79,17 +83,17 @@ __host__ __device__ void sink3(cuda::std::unique_ptr<VT, NCDeleter<VT>&> p)
 }
 
 template <class ValueT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using U = cuda::std::unique_ptr<ValueT>;
   { // Ensure unique_ptr is non-copyable
-    static_assert((!cuda::std::is_constructible<U, U const&>::value), "");
-    static_assert((!cuda::std::is_constructible<U, U&>::value), "");
+    static_assert((!cuda::std::is_constructible<U, U const&>::value));
+    static_assert((!cuda::std::is_constructible<U, U&>::value));
   }
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT               = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -172,27 +176,27 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   {
     using U = cuda::std::unique_ptr<VT>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
   {
     using U = cuda::std::unique_ptr<VT, Deleter<VT>>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
   {
     using U = cuda::std::unique_ptr<VT, NCDeleter<VT>&>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
   {
     using U = cuda::std::unique_ptr<VT, const NCConstDeleter<VT>&>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_basic</*IsArray*/ false>();
@@ -209,7 +213,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 }
 
 template <bool IsArray>
-__host__ __device__ void test_sink3()
+TEST_FUNC void test_sink3()
 {
   NV_IF_TARGET(NV_IS_HOST, ({
                  using VT = typename cuda::std::conditional<!IsArray, A, A[]>::type;

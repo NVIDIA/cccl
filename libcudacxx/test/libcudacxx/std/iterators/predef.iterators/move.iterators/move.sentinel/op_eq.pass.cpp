@@ -61,7 +61,7 @@ static_assert(HasNotEquals<cuda::std::move_iterator<const int*>, cuda::std::move
 static_assert(!HasLess<cuda::std::move_iterator<const int*>, cuda::std::move_sentinel<int*>>);
 
 template <class It>
-__host__ __device__ constexpr void test_one()
+TEST_FUNC constexpr void test_one()
 {
   char s[]         = "abc";
   const auto it    = cuda::std::move_iterator<It>(It(s));
@@ -80,7 +80,7 @@ __host__ __device__ constexpr void test_one()
   static_assert(!HasLess<decltype(sent1), decltype(sent1)>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_one<cpp17_input_iterator<char*>>();
   test_one<cpp20_input_iterator<char*>>();

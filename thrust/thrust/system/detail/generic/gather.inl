@@ -12,11 +12,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/gather.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/__functional/identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

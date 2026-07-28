@@ -18,8 +18,8 @@ int main(int, char**)
 {
   using weekday_last = cuda::std::chrono::weekday_last;
 
-  static_assert(cuda::std::is_trivially_copyable_v<weekday_last>, "");
-  static_assert(cuda::std::is_standard_layout_v<weekday_last>, "");
+  static_assert(cuda::std::is_trivially_copyable_v<weekday_last>);
+  static_assert(cuda::std::is_standard_layout_v<weekday_last>);
 
   return 0;
 }

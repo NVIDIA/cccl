@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -38,16 +42,16 @@ _CCCL_CONSTINIT cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime;
 struct NonDefaultDeleter
 {
   NonDefaultDeleter() = delete;
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
 template <class ElemType>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
     using U = cuda::std::unique_ptr<ElemType, void (*)(void*)>;
-    static_assert(!cuda::std::is_default_constructible<U>::value, "");
+    static_assert(!cuda::std::is_default_constructible<U>::value);
   }
   { // the constructor does not participate in overload resolution when
     // the deleter is not default constructible
@@ -55,20 +59,20 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U1  = cuda::std::unique_ptr<ElemType, NonDefaultDeleter>;
     using U2  = cuda::std::unique_ptr<ElemType, Del&>;
     using U3  = cuda::std::unique_ptr<ElemType, Del const&>;
-    static_assert(!cuda::std::is_default_constructible<U1>::value, "");
-    static_assert(!cuda::std::is_default_constructible<U2>::value, "");
-    static_assert(!cuda::std::is_default_constructible<U3>::value, "");
+    static_assert(!cuda::std::is_default_constructible<U1>::value);
+    static_assert(!cuda::std::is_default_constructible<U2>::value);
+    static_assert(!cuda::std::is_default_constructible<U3>::value);
   }
 }
 
 template <class ElemType>
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test_basic()
 {
   {
     using U1 = cuda::std::unique_ptr<ElemType>;
     using U2 = cuda::std::unique_ptr<ElemType, Deleter<ElemType>>;
-    static_assert(cuda::std::is_nothrow_default_constructible<U1>::value, "");
-    static_assert(cuda::std::is_nothrow_default_constructible<U2>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<U1>::value);
+    static_assert(cuda::std::is_nothrow_default_constructible<U2>::value);
   }
   {
     cuda::std::unique_ptr<ElemType> p;
@@ -101,7 +105,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST(
   })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae<int>();

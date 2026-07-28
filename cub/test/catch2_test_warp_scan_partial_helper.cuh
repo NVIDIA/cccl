@@ -19,7 +19,8 @@ warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT acti
 
   __shared__ storage_t storage[TotalWarps];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   int warp_id = tid / LogicalWarpThreads;
@@ -65,7 +66,8 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action, int valid_items)
 
   __shared__ storage_t storage[TotalWarps];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   int warp_id = tid / LogicalWarpThreads;
@@ -108,7 +110,7 @@ c2h::host_vector<T> compute_host_reference(
   {
     return c2h::host_vector<T>{};
   }
-  assert(result.size() % logical_warp_threads == 0ul);
+  REQUIRE(result.size() % logical_warp_threads == 0ul);
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.
@@ -168,7 +170,7 @@ struct total_warps_t
 private:
   static constexpr int max_warps      = 2;
   static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
+  static constexpr bool is_pow_of_two = cuda::is_power_of_two(LogicalWarpThreads);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:

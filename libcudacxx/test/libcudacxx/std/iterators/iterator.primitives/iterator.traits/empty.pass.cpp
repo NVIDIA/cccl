@@ -32,10 +32,10 @@ private:
   };
 
   template <class U>
-  __host__ __device__ static two test(...);
+  TEST_FUNC static two test(...);
 
   template <class U>
-  __host__ __device__ static char test(typename U::value_type* = 0);
+  TEST_FUNC static char test(typename U::value_type* = 0);
 
 public:
   static const bool value = sizeof(test<T>(0)) == 1;
@@ -44,7 +44,7 @@ public:
 int main(int, char**)
 {
   using It = cuda::std::iterator_traits<not_an_iterator>;
-  static_assert(!(has_value_type<It>::value), "");
+  static_assert(!(has_value_type<It>::value));
 
   return 0;
 }

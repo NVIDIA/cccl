@@ -446,7 +446,7 @@ void TestRemoveCopyToDiscardIterator(const size_t n)
   thrust::discard_iterator<> d_result =
     thrust::remove_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator(), T(0));
 
-  thrust::discard_iterator<> reference(num_nonzeros);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_nonzeros));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -483,7 +483,7 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
     thrust::make_zip_iterator(d_output.begin(), thrust::make_discard_iterator()),
     cuda::std::tuple(T(0), T(0)));
 
-  thrust::discard_iterator<> reference(num_nonzeros);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_nonzeros));
 
   ASSERT_EQUAL(h_output, d_output);
   ASSERT_EQUAL_QUIET(reference, cuda::std::get<1>(h_result.get_iterator_tuple()));
@@ -528,7 +528,7 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
   thrust::discard_iterator<> d_result =
     thrust::remove_copy_if(d_data.begin(), d_data.end(), thrust::make_discard_iterator(), is_true<T>());
 
-  thrust::discard_iterator<> reference(num_false);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_false));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -580,7 +580,7 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
   thrust::discard_iterator<> d_result = thrust::remove_copy_if(
     d_data.begin(), d_data.end(), d_stencil.begin(), thrust::make_discard_iterator(), is_true<T>());
 
-  thrust::discard_iterator<> reference(num_false);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_false));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);

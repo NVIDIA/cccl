@@ -21,13 +21,13 @@
 struct TakesTwoInts
 {
   int a_, b_;
-  __host__ __device__ constexpr TakesTwoInts(int a, int b)
+  TEST_FUNC constexpr TakesTwoInts(int a, int b)
       : a_(a)
       , b_(b)
   {}
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::single_view<TakesTwoInts> sv(cuda::std::in_place, 1, 2);

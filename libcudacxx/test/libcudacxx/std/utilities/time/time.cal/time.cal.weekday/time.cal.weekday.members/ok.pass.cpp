@@ -25,10 +25,10 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const weekday>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const weekday>().ok())>);
 
-  static_assert(weekday{0}.ok(), "");
-  static_assert(weekday{1}.ok(), "");
-  static_assert(weekday{7}.ok(), ""); // 7 is transmorgified into 0 in the ctor
-  static_assert(!weekday{8}.ok(), "");
+  static_assert(weekday{0}.ok());
+  static_assert(weekday{1}.ok());
+  static_assert(weekday{7}.ok()); // 7 is transmorgified into 0 in the ctor
+  static_assert(!weekday{8}.ok());
 
   for (unsigned i = 0; i <= 7; ++i)
   {

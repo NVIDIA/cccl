@@ -17,25 +17,25 @@
 
 struct ExplicitCopy
 {
-  __host__ __device__ ExplicitCopy(int) {}
-  __host__ __device__ explicit ExplicitCopy(ExplicitCopy const&) {}
+  TEST_FUNC ExplicitCopy(int) {}
+  TEST_FUNC explicit ExplicitCopy(ExplicitCopy const&) {}
 };
 
-__host__ __device__ std::tuple<ExplicitCopy> const_explicit_copy()
+TEST_FUNC std::tuple<ExplicitCopy> const_explicit_copy()
 {
   const ExplicitCopy e(42);
   return {e};
   // expected-error@-1 {{chosen constructor is explicit in copy-initialization}}
 }
 
-__host__ __device__ std::tuple<ExplicitCopy> non_const_explicit_copy()
+TEST_FUNC std::tuple<ExplicitCopy> non_const_explicit_copy()
 {
   ExplicitCopy e(42);
   return {e};
   // expected-error@-1 {{chosen constructor is explicit in copy-initialization}}
 }
 
-__host__ __device__ std::tuple<ExplicitCopy> const_explicit_copy_no_brace()
+TEST_FUNC std::tuple<ExplicitCopy> const_explicit_copy_no_brace()
 {
   const ExplicitCopy e(42);
   return e;

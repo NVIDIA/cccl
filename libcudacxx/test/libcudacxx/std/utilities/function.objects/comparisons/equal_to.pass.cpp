@@ -21,7 +21,7 @@
 // ensure that we allow `__device__` functions too
 struct with_device_op
 {
-  __device__ friend constexpr bool operator==(const with_device_op&, const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr bool operator==(const with_device_op&, const with_device_op&)
   {
     return true;
   }
@@ -33,14 +33,31 @@ __global__ void test_global_kernel()
   assert(f({}, {}));
 }
 
+#if _CCCL_TILE_COMPILATION()
+// ensure that we allow `__tile__` functions too
+struct with_tile_op
+{
+  TEST_TILE_FUNC friend constexpr bool operator==(const with_tile_op&, const with_tile_op&)
+  {
+    return true;
+  }
+};
+
+__tile_global__ void test_tile_kernel()
+{
+  const cuda::std::equal_to<with_tile_op> f;
+  assert(f({}, {}));
+}
+#endif // _CCCL_TILE_COMPILATION()
+
 int main(int, char**)
 {
   using F   = cuda::std::equal_to<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
-  static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
-  static_assert((cuda::std::is_same<bool, F::result_type>::value), "");
+  static_assert((cuda::std::is_same<int, F::first_argument_type>::value));
+  static_assert((cuda::std::is_same<int, F::second_argument_type>::value));
+  static_assert((cuda::std::is_same<bool, F::result_type>::value));
 #endif // TEST_STD_VER <= 2017
   assert(f(36, 36));
   assert(!f(36, 6));
@@ -52,10 +69,10 @@ int main(int, char**)
   assert(f2(36, 36.0));
   assert(f2(36.0, 36L));
   constexpr bool foo = cuda::std::equal_to<int>()(36, 36);
-  static_assert(foo, "");
+  static_assert(foo);
 
   constexpr bool bar = cuda::std::equal_to<>()(36.0, 36);
-  static_assert(bar, "");
+  static_assert(bar);
 
   return 0;
 }

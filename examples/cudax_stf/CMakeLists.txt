@@ -54,8 +54,8 @@ if (CMAKE_CUDA_COMPILER)
   target_compile_options(
     simple_stf
     PUBLIC
-      $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
-      $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
   )
 endif()
 

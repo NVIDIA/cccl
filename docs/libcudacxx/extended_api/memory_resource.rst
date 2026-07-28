@@ -5,7 +5,6 @@ Memory Resources
 ================
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
 
    memory_resource/properties
@@ -41,12 +40,22 @@ At a high level, the header provides:
        :ref:`cuda::mr::any_synchronous_resource <libcudacxx-extended-api-memory-resources-any-synchronous-resource>`
      - Owning type-erased wrappers for stream-ordered and synchronous resources.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`try_get_property <libcudacxx-extended-api-memory-resources-try-get-property>`
+     - Property query helper for type-erased resource wrappers.
+     - stable CCCL 3.2.0 / CUDA 13.2
+   * - :ref:`cuda::mr::resource_cast <libcudacxx-extended-api-memory-resources-resource-cast>` and
+       :ref:`cuda::mr::dynamic_resource_cast <libcudacxx-extended-api-memory-resources-dynamic-resource-cast>`
+     - Cast helpers for type-erased resource wrappers.
+     - stable CCCL 3.3.0 / CUDA 13.3
    * - :ref:`cuda::mr::shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>`
      - Reference-counted wrapper to share a resource instance across objects.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
    * - :ref:`cuda::mr::synchronous_resource_adapter <libcudacxx-extended-api-memory-resources-synchronous-adapter>`
      - Adapter that enables synchronous resources to work with streams.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::get_memory_resource <libcudacxx-extended-api-memory-resources-get-memory-resource>`
+     - Customization point for retrieving a memory resource from an object or execution environment.
+     - stable CCCL 3.2.0 / CUDA 13.2
 
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__
 that was introduced in C++17. While ``std::pmr::memory_resource`` provides a polymorphic memory resource that can be

@@ -7,6 +7,9 @@
 
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -28,10 +31,10 @@
 // Explicit version
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
 {
   using NewDel = typename LHS::deleter_type;
-  static_assert(cuda::std::is_reference<NewDel>::value, "");
+  static_assert(cuda::std::is_reference<NewDel>::value);
   rhs.get_deleter().set_state(42);
   assert(rhs.get_deleter().state() == 42);
   assert(lhs.get_deleter().state() == 42);
@@ -41,14 +44,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RH
 }
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSVal, int RHSVal)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSVal, int RHSVal)
 {
   assert(lhs.get_deleter().state() == LHSVal);
   assert(rhs.get_deleter().state() == RHSVal);
 }
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
 {
   assert(lhs.get() == RHSVal);
   assert(rhs.get() == nullptr);
@@ -59,7 +62,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* R
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkNoneAlive()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkNoneAlive()
 {
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
@@ -76,10 +79,10 @@ struct NCConvertingDeleter
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 template <class T>
@@ -90,10 +93,10 @@ struct NCConvertingDeleter<T[]>
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 struct NCGenericDeleter
@@ -102,10 +105,10 @@ struct NCGenericDeleter
   NCGenericDeleter(NCGenericDeleter const&)                 = delete;
   TEST_CONSTEXPR_CXX23 NCGenericDeleter(NCGenericDeleter&&) = default;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using DA  = NCConvertingDeleter<A>; // non-copyable deleters
   using DB  = NCConvertingDeleter<B>;
@@ -114,66 +117,66 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   using UAD = cuda::std::unique_ptr<A, DA>;
   using UBD = cuda::std::unique_ptr<B, DB>;
   { // cannot move from an lvalue
-    static_assert(cuda::std::is_constructible<UA, UB&&>::value, "");
-    static_assert(!cuda::std::is_constructible<UA, UB&>::value, "");
-    static_assert(!cuda::std::is_constructible<UA, const UB&>::value, "");
+    static_assert(cuda::std::is_constructible<UA, UB&&>::value);
+    static_assert(!cuda::std::is_constructible<UA, UB&>::value);
+    static_assert(!cuda::std::is_constructible<UA, const UB&>::value);
   }
   { // cannot move if the deleter-types cannot convert
-    static_assert(cuda::std::is_constructible<UAD, UBD&&>::value, "");
-    static_assert(!cuda::std::is_constructible<UAD, UB&&>::value, "");
-    static_assert(!cuda::std::is_constructible<UA, UBD&&>::value, "");
+    static_assert(cuda::std::is_constructible<UAD, UBD&&>::value);
+    static_assert(!cuda::std::is_constructible<UAD, UB&&>::value);
+    static_assert(!cuda::std::is_constructible<UA, UBD&&>::value);
   }
   { // cannot move-convert with reference deleters of different types
     using UA1 = cuda::std::unique_ptr<A, DA&>;
     using UB1 = cuda::std::unique_ptr<B, DB&>;
-    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value);
   }
   { // cannot move-convert with reference deleters of different types
     using UA1 = cuda::std::unique_ptr<A, const DA&>;
     using UB1 = cuda::std::unique_ptr<B, const DB&>;
-    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value);
   }
   { // cannot move-convert from unique_ptr<Array[]>
     using UA1 = cuda::std::unique_ptr<A>;
     using UA2 = cuda::std::unique_ptr<A[]>;
     using UB1 = cuda::std::unique_ptr<B[]>;
-    static_assert(!cuda::std::is_constructible<UA1, UA2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_constructible<UA1, UA2&&>::value);
+    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value);
   }
   { // cannot move-convert from unique_ptr<Array[]>
     using UA1 = cuda::std::unique_ptr<A, NCGenericDeleter>;
     using UA2 = cuda::std::unique_ptr<A[], NCGenericDeleter>;
     using UB1 = cuda::std::unique_ptr<B[], NCGenericDeleter>;
-    static_assert(!cuda::std::is_constructible<UA1, UA2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_constructible<UA1, UA2&&>::value);
+    static_assert(!cuda::std::is_constructible<UA1, UB1&&>::value);
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   {
     using APtr = cuda::std::unique_ptr<A>;
     using BPtr = cuda::std::unique_ptr<B>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<A, Deleter<A>>;
     using BPtr = cuda::std::unique_ptr<B, Deleter<B>>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<A, NCDeleter<A>&>;
     using BPtr = cuda::std::unique_ptr<B, NCDeleter<A>&>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<A, const NCConstDeleter<A>&>;
     using BPtr = cuda::std::unique_ptr<B, const NCConstDeleter<A>&>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae();

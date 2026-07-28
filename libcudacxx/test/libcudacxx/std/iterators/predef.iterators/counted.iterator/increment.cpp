@@ -31,26 +31,26 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  __host__ __device__ constexpr It base() const
+  TEST_FUNC constexpr It base() const
   {
     return it_;
   }
 
   ThrowsOnInc() = default;
-  __host__ __device__ explicit constexpr ThrowsOnInc(It it)
+  TEST_FUNC explicit constexpr ThrowsOnInc(It it)
       : it_(it)
   {}
 
-  __host__ __device__ constexpr reference operator*() const
+  TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr ThrowsOnInc& operator++()
+  TEST_FUNC constexpr ThrowsOnInc& operator++()
   {
     throw 42;
   }
-  __host__ __device__ constexpr ThrowsOnInc operator++(int)
+  TEST_FUNC constexpr ThrowsOnInc operator++(int)
   {
     throw 42;
   }
@@ -63,15 +63,15 @@ struct InputOrOutputArchetype
 
   int* ptr;
 
-  __host__ __device__ constexpr int operator*() const
+  TEST_FUNC constexpr int operator*() const
   {
     return *ptr;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++ptr;
   }
-  __host__ __device__ constexpr InputOrOutputArchetype& operator++()
+  TEST_FUNC constexpr InputOrOutputArchetype& operator++()
   {
     ++ptr;
     return *this;
@@ -81,7 +81,7 @@ struct InputOrOutputArchetype
 template <class Iter>
 _CCCL_CONCEPT PlusEnabled = _CCCL_REQUIRES_EXPR((Iter), Iter& iter)((iter++), (++iter));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

@@ -759,6 +759,18 @@ using host_memory_pools_supported_t = __dev_attr<::cudaDevAttrHostMemoryPoolsSup
 static constexpr host_memory_pools_supported_t host_memory_pools_supported{};
 #  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^
 
+// Total global memory available on the device in bytes
+struct total_global_memory_t
+{
+  using type = ::cuda::std::size_t;
+
+  [[nodiscard]] _CCCL_HOST_API type operator()(device_ref __dev) const
+  {
+    return ::cuda::__driver::__deviceTotalMem(__dev.get());
+  }
+};
+static constexpr total_global_memory_t total_global_memory{};
+
 // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
 // capability in a single query
 struct compute_capability_t

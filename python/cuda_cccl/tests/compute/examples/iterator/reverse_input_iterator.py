@@ -28,7 +28,13 @@ d_output = cp.empty(len(d_input), dtype=np.int32)
 h_init = np.array(0, dtype=np.int32)
 
 # Perform the reduction.
-cuda.compute.inclusive_scan(reverse_it, d_output, OpKind.PLUS, h_init, len(d_input))
+cuda.compute.inclusive_scan(
+    d_in=reverse_it,
+    d_out=d_output,
+    op=OpKind.PLUS,
+    init_value=h_init,
+    num_items=len(d_input),
+)
 
 # Verify the result.
 expected_output = np.array([5, 9, 12, 14, 15], dtype=np.int32)

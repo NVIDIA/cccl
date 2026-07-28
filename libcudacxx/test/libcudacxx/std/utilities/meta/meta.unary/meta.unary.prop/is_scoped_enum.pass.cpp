@@ -17,31 +17,31 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_positive()
+TEST_FUNC void test_positive()
 {
-  static_assert(cuda::std::is_scoped_enum<T>::value, "");
-  static_assert(cuda::std::is_scoped_enum<const T>::value, "");
-  static_assert(cuda::std::is_scoped_enum<volatile T>::value, "");
-  static_assert(cuda::std::is_scoped_enum<const volatile T>::value, "");
+  static_assert(cuda::std::is_scoped_enum<T>::value);
+  static_assert(cuda::std::is_scoped_enum<const T>::value);
+  static_assert(cuda::std::is_scoped_enum<volatile T>::value);
+  static_assert(cuda::std::is_scoped_enum<const volatile T>::value);
 
-  static_assert(cuda::std::is_scoped_enum_v<T>, "");
-  static_assert(cuda::std::is_scoped_enum_v<const T>, "");
-  static_assert(cuda::std::is_scoped_enum_v<volatile T>, "");
-  static_assert(cuda::std::is_scoped_enum_v<const volatile T>, "");
+  static_assert(cuda::std::is_scoped_enum_v<T>);
+  static_assert(cuda::std::is_scoped_enum_v<const T>);
+  static_assert(cuda::std::is_scoped_enum_v<volatile T>);
+  static_assert(cuda::std::is_scoped_enum_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_negative()
+TEST_FUNC void test_negative()
 {
-  static_assert(!cuda::std::is_scoped_enum<T>::value, "");
-  static_assert(!cuda::std::is_scoped_enum<const T>::value, "");
-  static_assert(!cuda::std::is_scoped_enum<volatile T>::value, "");
-  static_assert(!cuda::std::is_scoped_enum<const volatile T>::value, "");
+  static_assert(!cuda::std::is_scoped_enum<T>::value);
+  static_assert(!cuda::std::is_scoped_enum<const T>::value);
+  static_assert(!cuda::std::is_scoped_enum<volatile T>::value);
+  static_assert(!cuda::std::is_scoped_enum<const volatile T>::value);
 
-  static_assert(!cuda::std::is_scoped_enum_v<T>, "");
-  static_assert(!cuda::std::is_scoped_enum_v<const T>, "");
-  static_assert(!cuda::std::is_scoped_enum_v<volatile T>, "");
-  static_assert(!cuda::std::is_scoped_enum_v<const volatile T>, "");
+  static_assert(!cuda::std::is_scoped_enum_v<T>);
+  static_assert(!cuda::std::is_scoped_enum_v<const T>);
+  static_assert(!cuda::std::is_scoped_enum_v<volatile T>);
+  static_assert(!cuda::std::is_scoped_enum_v<const volatile T>);
 }
 
 class Empty
@@ -49,7 +49,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -62,7 +62,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum
@@ -84,11 +84,11 @@ using FunctionType = void();
 
 struct TestMembers
 {
-  __host__ __device__ static int static_method(int)
+  TEST_FUNC static int static_method(int)
   {
     return 0;
   }
-  __host__ __device__ int method()
+  TEST_FUNC int method()
   {
     return 0;
   }
@@ -101,8 +101,8 @@ struct TestMembers
   enum class CE1;
 };
 
-__host__ __device__ void func1();
-__host__ __device__ int func2(int);
+TEST_FUNC void func1();
+TEST_FUNC int func2(int);
 
 int main(int, char**)
 {
@@ -136,12 +136,15 @@ int main(int, char**)
   test_negative<void (TestMembers::*)()>();
 
   test_negative<decltype(func1)>();
-  test_negative<decltype(&func1)>();
   test_negative<decltype(func2)>();
-  test_negative<decltype(&func2)>();
   test_negative<decltype(TestMembers::static_method)>();
+
+#if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
+  test_negative<decltype(&func1)>();
+  test_negative<decltype(&func2)>();
   test_negative<decltype(&TestMembers::static_method)>();
   test_negative<decltype(&TestMembers::method)>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

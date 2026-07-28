@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <random>
 
 #include <cuda/__random/pcg_engine.h>
@@ -14,13 +17,13 @@
 #include "random_utilities/test_engine.h"
 
 #if _CCCL_HAS_INT128()
-__host__ __device__ constexpr void compare(__uint128_t x, cuda::__pcg_uint128_fallback b)
+TEST_FUNC constexpr void compare(__uint128_t x, cuda::__pcg_uint128_fallback b)
 {
   assert(static_cast<::cuda::std::uint64_t>(b) == static_cast<::cuda::std::uint64_t>(x));
   assert(static_cast<::cuda::std::uint64_t>(b >> 64) == static_cast<::cuda::std::uint64_t>(x >> 64));
 }
 
-__host__ __device__ constexpr bool test_fallback_uint128(__uint128_t a, __uint128_t b)
+TEST_FUNC constexpr bool test_fallback_uint128(__uint128_t a, __uint128_t b)
 {
   using Fallback = cuda::__pcg_uint128_fallback;
 
@@ -72,7 +75,7 @@ __host__ __device__ constexpr bool test_fallback_uint128(__uint128_t a, __uint12
 
   return true;
 }
-__host__ __device__ constexpr bool test_fallback()
+TEST_FUNC constexpr bool test_fallback()
 {
   // Generate 100 different test values using PCG engine
   cuda::pcg64 rng(42);
@@ -91,7 +94,7 @@ __host__ __device__ constexpr bool test_fallback()
 
 #endif // _CCCL_HAS_INT128()
 
-__host__ __device__ constexpr bool test_against_reference()
+TEST_FUNC constexpr bool test_against_reference()
 {
   // reference values obtained from other library implementations
   constexpr int seeds[]                            = {10823018, 0, 23};

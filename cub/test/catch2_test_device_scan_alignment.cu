@@ -67,6 +67,6 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value
 
   REQUIRE_THAT_QUIET(out_result_vec, Equals(expected_result));
 
-  const output_t out_sentinel = out_result[offset + num_items];
+  const output_t out_sentinel = out_result[offset + num_items]; // NOLINT(bugprone-misplaced-widening-cast)
   REQUIRE(out_sentinel == out_sentinel_value);
 }

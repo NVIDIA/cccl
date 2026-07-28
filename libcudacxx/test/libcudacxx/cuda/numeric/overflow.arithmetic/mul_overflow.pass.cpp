@@ -14,8 +14,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class Res, class L, class R, class InL, class InR, class Ref>
-__host__ __device__ constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref expected, bool overflow)
+TEST_FUNC constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref expected, bool overflow)
 {
   const auto lhs = cuda::overflow_cast<L>(lhs_in);
   const auto rhs = cuda::overflow_cast<R>(rhs_in);
@@ -38,13 +40,13 @@ __host__ __device__ constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref
 }
 
 template <class Res, class L, class R, class InL, class InR, class Ref>
-__host__ __device__ constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref expected)
+TEST_FUNC constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref expected)
 {
   test_mul_overflow<Res, L, R, InL, InR, Ref>(lhs_in, rhs_in, expected, !cuda::std::in_range<Res>(expected));
 }
 
 template <class Res, class L, class R>
-__host__ __device__ constexpr bool test_type()
+TEST_FUNC constexpr bool test_type()
 {
   static_assert(
     cuda::std::is_same_v<decltype(cuda::mul_overflow(L{}, R{})), cuda::overflow_result<cuda::std::common_type_t<L, R>>>);
@@ -115,7 +117,7 @@ using TypeList = cuda::std::tuple<
 using TypeListIndexSeq = cuda::std::make_index_sequence<cuda::std::tuple_size_v<TypeList>>;
 
 template <class... Ts, cuda::std::size_t... Is>
-__host__ __device__ constexpr void test(cuda::std::index_sequence<Is...>)
+TEST_FUNC constexpr void test(cuda::std::index_sequence<Is...>)
 {
   if constexpr (sizeof...(Ts) < 3)
   {

@@ -16,14 +16,14 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_add_const_imp()
+TEST_FUNC void test_add_const_imp()
 {
   static_assert(cuda::std::is_same_v<const U, typename cuda::std::add_const<T>::type>);
   static_assert(cuda::std::is_same_v<const U, cuda::std::add_const_t<T>>);
 }
 
 template <class T>
-__host__ __device__ void test_add_const()
+TEST_FUNC void test_add_const()
 {
   test_add_const_imp<T, const T>();
   test_add_const_imp<const T, const T>();

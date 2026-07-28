@@ -14,11 +14,12 @@ INPUT                  = ../../cub/cub \
                          ../../cub/cub/warp \
                          ../../cub/cub/block \
                          ../../cub/cub/device \
+                         ../../cub/cub/device/dispatch/tuning \
                          ../../cub/cub/grid \
                          ../../cub/cub/iterator
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */examples/*
+EXCLUDE_PATTERNS       = */detail/* */dispatch/dispatch_* */dispatch/kernels/* */kernels/* */test/* */examples/*
 EXCLUDE_SYMBOLS        = *detail* CUB_DETAIL*
 
 FILE_PATTERNS          = *.cuh *.h
@@ -71,11 +72,12 @@ ALIASES += "blocksize=The number of threads in the block is a multiple of the ar
 ALIASES += "ptxversion=The PTX compute capability for which to to specialize this collective, formatted as per the ``__CUDA_ARCH__`` macro (e.g., 750 for sm_75). Useful for determining the collective's storage requirements for a given device from the host. (Default: the value of ``__CUDA_ARCH__`` during the current compiler pass)"
 ALIASES += "blockcollective{1}=Every thread in the block uses the \1 class by first specializing the \1 type, then instantiating an instance with parameters for communication, and finally invoking one or more collective member functions."
 ALIASES += "warpcollective{1}=Every thread in the warp uses the \1 class by first specializing the \1 type, then instantiating an instance with parameters for communication, and finally invoking or more collective member functions."
-ALIASES += "devicestorage=When ``d_temp_storage`` is ``nullptr``, no work is done and the required allocation size is returned in ``temp_storage_bytes``. See :ref:`device-temp-storage` for usage guidance."
+ALIASES += "devicestorage=Temporary storage for this operation. If ``d_temp_storage`` is ``nullptr``, the required size is written to ``temp_storage_bytes`` without dereferencing iterators or launching kernels. Otherwise, ``d_temp_storage`` must point to a device-accessible allocation of at least ``temp_storage_bytes`` bytes. No special alignment is required. See :ref:`device-temp-storage` for usage guidance."
 ALIASES += "devicestorageP=This operation requires a relatively small allocation of temporary device storage that is ``O(P)``, where ``P`` is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size ``N``)."
 ALIASES += "devicestorageNP=This operation requires an allocation of temporary device storage that is ``O(N+P)``, where ``N`` is the length of the input and ``P`` is the number of streaming multiprocessors on the device."
 ALIASES += "devicestorageNCP=This operation requires a relatively small allocation of temporary device storage that is ``O(N/C + P)``, where ``N`` is the length of the input, ``C`` is the number of concurrent threads that can be actively scheduled on each streaming multiprocessor (typically several thousand), and ``P`` is the number of streaming multiprocessors on the device."
 ALIASES += "cdp_class{1}= - Dynamic parallelism. \1 methods can be called within kernel code on devices in which CUDA dynamic parallelism is supported."
+ALIASES += "determinism{1}= - Determinism. The default reproducibility guarantee is ``\1``. A different guarantee can be requested through the execution environment with ``cuda::execution::require``. See :ref:`Determinism in CUB <cub-determinism>` for the supported guarantees."
 ALIASES += "iterator=(may be a simple pointer type)"
 ALIASES += "offset_size1=(Consider using 32-bit values as offsets/lengths/etc. For example, ``int`` will typically yield better performance than ``size_t`` in 64-bit memory mode.)"
 ALIASES += "offset_size2=Careful consideration should be given to the size of integer types used for offsets and lengths. Many (if not most) scenarios will only require 32-bit offsets (e.g., ``int``). 64-bit offset types (e.g., ``size_t`` on 64-bit memory mode) can consume a significant amount of thread storage resources, adversely affecting processor occupancy and performance."
@@ -137,6 +139,7 @@ PREDEFINED             = __device__= \
                         _CCCL_TYPE_VISIBILITY_DEFAULT= \
                         _CCCL_TYPE_VISIBILITY_HIDDEN= \
                         _CCCL_API=inline \
+                        _CCCL_HOST_DEVICE_API=inline \
                         _CCCL_DEVICE_API=inline \
                         _CCCL_HOST_API=inline \
                         _CCCL_NODEBUG_API=inline \
@@ -147,6 +150,7 @@ PREDEFINED             = __device__= \
                         _CCCL_TRIVIAL_HOST_API=inline \
                         _CCCL_VISIBILITY_DEFAULT= \
                         _CCCL_VISIBILITY_HIDDEN= \
+                        _CCCL_LIFETIMEBOUND= \
                         _CCCL_TRY=try \
                         _CCCL_CATCH=catch \
                         "_CCCL_CATCH_ALL=catch (...)" \
@@ -166,11 +170,14 @@ PREDEFINED             = __device__= \
                         "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
                         "THRUST_NAMESPACE_END=}" \
                         "THRUST_PREVENT_MACRO_SUBSTITUTION" \
+                        "_CCCL_HOSTED()=1" \
                         _CCCL_DOXYGEN_INVOKED
 
 # Quiet mode
 QUIET                  = YES
-WARNINGS               = NO
+WARNINGS               = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
 WARN_IF_UNDOCUMENTED   = NO
 WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = NO
 WARN_NO_PARAMDOC       = NO

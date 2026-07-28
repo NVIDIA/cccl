@@ -162,7 +162,7 @@ struct TestReverseCopyToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::reverse_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);

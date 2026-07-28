@@ -80,20 +80,15 @@ struct E
 int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::rebind_traits<double>,
-                                    cuda::std::allocator_traits<ReboundA<double>>>::value),
-                "");
+                                    cuda::std::allocator_traits<ReboundA<double>>>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<int, char>>::rebind_traits<double>,
-                                    cuda::std::allocator_traits<ReboundB<double, char>>>::value),
-                "");
+                                    cuda::std::allocator_traits<ReboundB<double, char>>>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::rebind_traits<double>,
-                                    cuda::std::allocator_traits<C<double>>>::value),
-                "");
+                                    cuda::std::allocator_traits<C<double>>>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<int, char>>::rebind_traits<double>,
-                                    cuda::std::allocator_traits<D<double, char>>>::value),
-                "");
+                                    cuda::std::allocator_traits<D<double, char>>>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<E<char>>::rebind_traits<double>,
-                                    cuda::std::allocator_traits<E<double>>>::value),
-                "");
+                                    cuda::std::allocator_traits<E<double>>>::value));
 
   return 0;
 }

@@ -12,8 +12,6 @@
 
 // template <class... Tuples> tuple<CTypes...> tuple_cat(Tuples&&... tpls);
 
-// UNSUPPORTED: nvhpc-23.1
-
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 // cuda::std::string not supported
@@ -76,13 +74,13 @@ int main(int, char**)
   {
     constexpr cuda::std::tuple<int> t1(1);
     constexpr cuda::std::tuple<int> t = cuda::std::tuple_cat(t1);
-    static_assert(cuda::std::get<0>(t) == 1, "");
+    static_assert(cuda::std::get<0>(t) == 1);
   }
   {
     constexpr cuda::std::tuple<int> t1(1);
     constexpr cuda::std::tuple<int, int> t = cuda::std::tuple_cat(t1, t1);
-    static_assert(cuda::std::get<0>(t) == 1, "");
-    static_assert(cuda::std::get<1>(t) == 1, "");
+    static_assert(cuda::std::get<0>(t) == 1);
+    static_assert(cuda::std::get<1>(t) == 1);
   }
   {
     cuda::std::tuple<int, MoveOnly> t = cuda::std::tuple_cat(cuda::std::tuple<int, MoveOnly>(1, 2));

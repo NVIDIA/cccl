@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -15,26 +19,26 @@
 #include <cuda/std/type_traits>
 
 // Verify that the properties exist
-static_assert(cuda::std::is_empty<cuda::mr::host_accessible>::value, "");
-static_assert(cuda::std::is_empty<cuda::mr::device_accessible>::value, "");
+static_assert(cuda::std::is_empty<cuda::mr::host_accessible>::value);
+static_assert(cuda::std::is_empty<cuda::mr::device_accessible>::value);
 
 // Verify that host accessible is the default if nothing is specified
-static_assert(!cuda::mr::__is_host_accessible<>, "");
-static_assert(cuda::mr::__is_host_accessible<cuda::mr::host_accessible>, "");
-static_assert(!cuda::mr::__is_host_accessible<cuda::mr::device_accessible>, "");
-static_assert(cuda::mr::__is_host_accessible<cuda::mr::host_accessible, cuda::mr::device_accessible>, "");
+static_assert(!cuda::mr::__is_host_accessible<>);
+static_assert(cuda::mr::__is_host_accessible<cuda::mr::host_accessible>);
+static_assert(!cuda::mr::__is_host_accessible<cuda::mr::device_accessible>);
+static_assert(cuda::mr::__is_host_accessible<cuda::mr::host_accessible, cuda::mr::device_accessible>);
 
 // Verify that device accessible needs to be explicitly specified
-static_assert(!cuda::mr::__is_device_accessible<>, "");
-static_assert(!cuda::mr::__is_device_accessible<cuda::mr::host_accessible>, "");
-static_assert(cuda::mr::__is_device_accessible<cuda::mr::device_accessible>, "");
-static_assert(cuda::mr::__is_device_accessible<cuda::mr::host_accessible, cuda::mr::device_accessible>, "");
+static_assert(!cuda::mr::__is_device_accessible<>);
+static_assert(!cuda::mr::__is_device_accessible<cuda::mr::host_accessible>);
+static_assert(cuda::mr::__is_device_accessible<cuda::mr::device_accessible>);
+static_assert(cuda::mr::__is_device_accessible<cuda::mr::host_accessible, cuda::mr::device_accessible>);
 
 // Verify that host device accessible needs to be explicitly specified
-static_assert(!cuda::mr::__is_host_device_accessible<>, "");
-static_assert(!cuda::mr::__is_host_device_accessible<cuda::mr::host_accessible>, "");
-static_assert(!cuda::mr::__is_host_device_accessible<cuda::mr::device_accessible>, "");
-static_assert(cuda::mr::__is_host_device_accessible<cuda::mr::host_accessible, cuda::mr::device_accessible>, "");
+static_assert(!cuda::mr::__is_host_device_accessible<>);
+static_assert(!cuda::mr::__is_host_device_accessible<cuda::mr::host_accessible>);
+static_assert(!cuda::mr::__is_host_device_accessible<cuda::mr::device_accessible>);
+static_assert(cuda::mr::__is_host_device_accessible<cuda::mr::host_accessible, cuda::mr::device_accessible>);
 
 struct host_only_resource
 {

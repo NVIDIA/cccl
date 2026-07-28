@@ -24,13 +24,13 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ constexpr void test(Iter first, Iter last, const T& value, bool x)
+TEST_FUNC constexpr void test(Iter first, Iter last, const T& value, bool x)
 {
   assert(cuda::std::binary_search(first, last, value) == x);
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   constexpr int M = 10;
   auto v          = get_data(M);
@@ -42,12 +42,19 @@ __host__ __device__ constexpr void test()
   test(Iter(cuda::std::begin(v)), Iter(cuda::std::end(v)), M, false);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>>();
   test<const int*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   return true;
 }
@@ -55,7 +62,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

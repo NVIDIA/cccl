@@ -19,14 +19,14 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ constexpr void test(Iter first, Iter last, T init, T x)
+TEST_FUNC constexpr void test(Iter first, Iter last, T init, T x)
 {
-  static_assert(cuda::std::is_same<T, decltype(cuda::std::reduce(first, last, init))>::value, "");
+  static_assert(cuda::std::is_same<T, decltype(cuda::std::reduce(first, last, init))>::value);
   assert(cuda::std::reduce(first, last, init) == x);
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]    = {1, 2, 3, 4, 5, 6};
   unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -41,14 +41,14 @@ __host__ __device__ constexpr void test()
 }
 
 template <typename T, typename Init>
-__host__ __device__ constexpr void test_return_type()
+TEST_FUNC constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
-  static_assert(cuda::std::is_same<Init, decltype(cuda::std::reduce(p, p, Init{}))>::value, "");
+  static_assert(cuda::std::is_same<Init, decltype(cuda::std::reduce(p, p, Init{}))>::value);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_return_type<char, int>();
   test_return_type<int, int>();
@@ -64,12 +64,19 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<const int*>>();
   test<const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

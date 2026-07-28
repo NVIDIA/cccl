@@ -131,7 +131,7 @@ _CCCL_DEVICE_API _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op,
        __aligned, __old, __atomic_cuda_volatile{}, __atomic_cuda_operand_b32{}, _Sco{}, __atomic_cuda_mmio_disable{});))
 
   // Reemit CAS instructions until we succeed
-  while (1)
+  while (true)
   {
     // Calculate new desired value from last fetched __old
     // Use of the value mask is required due to the possibility of overflow when ops are widened. Possible compiler bug?

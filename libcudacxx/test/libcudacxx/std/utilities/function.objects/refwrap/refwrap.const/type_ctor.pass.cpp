@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <functional>
 
 // reference_wrapper
@@ -24,13 +28,13 @@ class functor1
 {};
 
 template <class T>
-__host__ __device__ void test(T& t)
+TEST_FUNC void test(T& t)
 {
   cuda::std::reference_wrapper<T> r(t);
   assert(&r.get() == &t);
 }
 
-__host__ __device__ void f() {}
+TEST_FUNC void f() {}
 
 int main(int, char**)
 {
@@ -46,16 +50,16 @@ int main(int, char**)
 
   {
     using Ref = cuda::std::reference_wrapper<int>;
-    static_assert((cuda::std::is_constructible<Ref, int&>::value), "");
-    static_assert((!cuda::std::is_constructible<Ref, int>::value), "");
-    static_assert((!cuda::std::is_constructible<Ref, int&&>::value), "");
+    static_assert((cuda::std::is_constructible<Ref, int&>::value));
+    static_assert((!cuda::std::is_constructible<Ref, int>::value));
+    static_assert((!cuda::std::is_constructible<Ref, int&&>::value));
   }
 
   {
     using Ref = cuda::std::reference_wrapper<int>;
-    static_assert((cuda::std::is_nothrow_constructible<Ref, int&>::value), "");
-    static_assert((!cuda::std::is_nothrow_constructible<Ref, int>::value), "");
-    static_assert((!cuda::std::is_nothrow_constructible<Ref, int&&>::value), "");
+    static_assert((cuda::std::is_nothrow_constructible<Ref, int&>::value));
+    static_assert((!cuda::std::is_nothrow_constructible<Ref, int>::value));
+    static_assert((!cuda::std::is_nothrow_constructible<Ref, int&&>::value));
   }
 
   return 0;

@@ -22,15 +22,17 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
-#include <stdexcept>
-#include <string>
+#if _CCCL_HOSTED()
+#  include <stdexcept>
+#  include <string>
+#endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 _CCCL_TEMPLATE(typename T)
 _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
-[[nodiscard]] _CCCL_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
 {
   if constexpr (::cuda::std::is_unsigned_v<T>)
   {
@@ -76,6 +78,11 @@ THRUST_NAMESPACE_END
 #  define THRUST_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)               \
     _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call, count, arguments)
+
+//! @brief Always dispatches to unsigned 64 bit offset version of an algorithm
+#  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                        \
+    _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call, count, arguments)
 
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH but with two counts
 #  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH(status, call, count1, count2, arguments) \
@@ -124,6 +131,12 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::int32_t, count)  \
     _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call, count, arguments)
 
+//! @brief Always dispatches to unsigned 32 bit offset version of an algorithm but throws if count would overflow
+#  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                        \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::uint32_t, count)          \
+    _THRUST_INDEX_TYPE_DISPATCH(std::uint32_t, status, call, count, arguments)
+
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH but with two counts
 #  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH(status, call, count1, count2, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                     \
@@ -160,6 +173,16 @@ THRUST_NAMESPACE_END
       _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call, count, arguments) \
     else                                                                        \
       _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call, count, arguments)
+
+//! Dispatch between unsigned 32-bit and 64-bit index_type based versions of the same algorithm implementation. This
+//! version assumes that callables for both branches consist of the same tokens, and is intended to be used with
+//! Thrust-style dispatch interfaces, that always deduce the size type from the arguments.
+#  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments)    \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                           \
+    if _THRUST_INDEX_TYPE_DISPATCH_SELECT (std::int32_t, count)                  \
+      _THRUST_INDEX_TYPE_DISPATCH(std::uint32_t, status, call, count, arguments) \
+    else                                                                         \
+      _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call, count, arguments)
 
 //! Dispatch between 32-bit and 64-bit index_type based versions of the same algorithm implementation. This version
 //! assumes that callables for both branches consist of the same tokens, and is intended to be used with Thrust-style

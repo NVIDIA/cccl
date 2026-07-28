@@ -12,11 +12,6 @@ macro(thrust_declare_test_restrictions test_name)
   list(APPEND ${test_name}_host.device_allowed ${ARGN})
 endmacro()
 
-# This test is incompatible with TBB and OMP, since it requires special per-device
-# handling to process exceptions in a device function, which is only implemented
-# for CUDA.
-thrust_declare_test_restrictions(unittest_static_assert CPP.CPP CPP.CUDA)
-
 # In the TBB backend, reduce_by_key does not currently work with transform_output_iterator
 # https://github.com/NVIDIA/thrust/issues/1811
 thrust_declare_test_restrictions(transform_output_iterator_reduce_by_key CPP.CPP CPP.OMP CPP.CUDA)
@@ -97,6 +92,21 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   set(config_systems ${config_host} ${config_device})
   if (("OMP" IN_LIST config_systems) OR ("TBB" IN_LIST config_systems))
     set_tests_properties(${test_target} PROPERTIES RUN_SERIAL ON)
+  endif()
+
+  # In some cases cudafe++ doesn't implement certain builtins that are used in <immintrin.h> which causes the
+  # compilation to fail. In tbb_nvcc_preinclude.h, we forward declare those functions, so cudafe++ has no problems.
+  get_target_property(lang ${test_target} LANGUAGE)
+  if (
+    "TBB" IN_LIST config_systems
+    AND "${lang}" STREQUAL "CUDA"
+    AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+    AND NOT MSVC
+  )
+    target_compile_options(
+      ${test_target}
+      PRIVATE "-include" "${Thrust_SOURCE_DIR}/testing/tbb_nvcc_preinclude.h"
+    )
   endif()
 
   # Check for per-test script. Script will be included in the current scope

@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   int v = 12;
 
@@ -49,13 +49,13 @@ template <bool Move, bool Assign>
 struct TestNoexcept
 {
   TestNoexcept() = default;
-  __host__ __device__ TestNoexcept(const TestNoexcept&);
-  __host__ __device__ TestNoexcept(TestNoexcept&&) noexcept(Move);
-  __host__ __device__ TestNoexcept& operator=(const TestNoexcept&);
-  __host__ __device__ TestNoexcept& operator=(TestNoexcept&&) noexcept(Assign);
+  TEST_FUNC TestNoexcept(const TestNoexcept&);
+  TEST_FUNC TestNoexcept(TestNoexcept&&) noexcept(Move);
+  TEST_FUNC TestNoexcept& operator=(const TestNoexcept&);
+  TEST_FUNC TestNoexcept& operator=(TestNoexcept&&) noexcept(Assign);
 };
 
-__host__ __device__ constexpr bool test_noexcept()
+TEST_FUNC constexpr bool test_noexcept()
 {
   {
     int x = 42;
@@ -123,9 +123,9 @@ int main(int, char**)
   }
 #endif
 
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
-  static_assert(test_noexcept(), "");
+  static_assert(test_noexcept());
 
   return 0;
 }

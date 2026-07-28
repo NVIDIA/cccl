@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_construction()
+TEST_FUNC constexpr void test_construction()
 {
   static_assert(noexcept(cuda::std::default_accessor<T>{}));
   cuda::std::default_accessor<T> acc{};
@@ -30,7 +30,7 @@ __host__ __device__ constexpr void test_construction()
   unused(acc);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_construction<int>();
   test_construction<const int>();
@@ -42,6 +42,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

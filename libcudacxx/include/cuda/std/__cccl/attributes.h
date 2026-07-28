@@ -84,6 +84,11 @@
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_ASSUME
+#  define _CCCL_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
+
 // _CCCL_CONST
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__const__)

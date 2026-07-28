@@ -31,15 +31,15 @@ vals_db = cuda.compute.DoubleBuffer(d_in_vals, d_tmp_vals)
 
 # Perform the segmented sort (descending within each segment).
 cuda.compute.segmented_sort(
-    keys_db,
-    None,
-    vals_db,
-    None,
-    d_in_keys.size,
-    start_offsets.size,
-    cp.asarray(start_offsets),
-    cp.asarray(end_offsets),
-    cuda.compute.SortOrder.DESCENDING,
+    d_in_keys=keys_db,
+    d_out_keys=None,
+    d_in_values=vals_db,
+    d_out_values=None,
+    num_items=d_in_keys.size,
+    num_segments=start_offsets.size,
+    start_offsets_in=cp.asarray(start_offsets),
+    end_offsets_in=cp.asarray(end_offsets),
+    order=cuda.compute.SortOrder.DESCENDING,
 )
 
 # Verify the result.

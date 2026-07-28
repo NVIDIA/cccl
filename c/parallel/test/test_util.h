@@ -46,7 +46,7 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
     throw std::runtime_error("Failed to create temporary file.");
   }
 
-  temp_in_file.write(static_cast<const char*>(cubin), cubin_size);
+  temp_in_file.write(static_cast<const char*>(cubin), static_cast<std::streamsize>(cubin_size));
   temp_in_file.close();
 
   std::string command = "nvdisasm -gi ";
@@ -83,15 +83,15 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
 
 inline std::string compile(const std::string& source)
 {
-  // compile source to LTO-IR using nvrtc
-
+  // Compile source to LTO-IR via NVRTC. v2 tests use the same path as v1;
+  // the v2 backend then routes the LTO-IR through nvJitLink at link time.
   nvrtcProgram prog;
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
   // TEST_CTK_PATH needed to include cuda_fp16.h
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
+  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", "-D__NV_NO_VECTOR_DEPRECATION_DIAG", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 5, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
@@ -110,6 +110,20 @@ inline std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
   return std::string(ltoir.data(), ltoir_size);
+}
+
+// Helper to construct a cccl_build_config that works for both v1 (4-field)
+// and v2 (6-field) struct layouts. Uses value-init + explicit assignments so
+// v2's enable_pch / verbose get zero-initialized rather than left undefined.
+inline cccl_build_config
+make_build_config(const char** extra_flags, size_t num_flags, const char** extra_dirs, size_t num_dirs)
+{
+  cccl_build_config config{};
+  config.extra_compile_flags     = extra_flags;
+  config.num_extra_compile_flags = num_flags;
+  config.extra_include_dirs      = extra_dirs;
+  config.num_extra_include_dirs  = num_dirs;
+  return config;
 }
 
 template <class T>
@@ -660,7 +674,7 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
 
 inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type_enum t, int compare_to)
 {
-  const std::string less_op_src = std::format(
+  std::string less_op_src = std::format(
     "#include <cuda_fp16.h>\n"
     "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
@@ -669,7 +683,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
     "}}",
     type_enum_to_name(t),
     compare_to);
-  const std::string greater_or_equal_op_src = std::format(
+  std::string greater_or_equal_op_src = std::format(
     "#include <cuda_fp16.h>\n"
     "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
@@ -700,10 +714,7 @@ struct pointer_t
     size = vec.size();
   }
 
-  pointer_t()
-      : ptr(nullptr)
-      , size(0)
-  {}
+  pointer_t() = default;
 
   ~pointer_t()
   {
@@ -741,6 +752,23 @@ struct pointer_t
     return vec;
   }
 };
+
+// std::vector<bool> cannot provide the contiguous storage needed by pointer_t.
+// Use byte storage for Boolean inputs and outputs while describing it to the C
+// API as its corresponding primitive type.
+inline cccl_iterator_t make_boolean_iterator(pointer_t<uint8_t>& storage)
+{
+  static_assert(sizeof(bool) == sizeof(uint8_t));
+  static_assert(alignof(bool) == alignof(uint8_t));
+
+  cccl_iterator_t iterator      = storage;
+  iterator.size                 = sizeof(bool);
+  iterator.alignment            = alignof(bool);
+  iterator.value_type.size      = sizeof(bool);
+  iterator.value_type.alignment = alignof(bool);
+  iterator.value_type.type      = cccl_type_enum::CCCL_BOOLEAN;
+  return iterator;
+}
 
 struct operation_t
 {
@@ -821,29 +849,97 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
   return {op, name, compile(code)};
 }
 
+// Designated initializers so this header builds against both v1's and v2's
+// cccl_op_t — v2 adds an extra_code_types field that v1 doesn't define, and
+// any unlisted field zero-inits (== nullptr for the pointer fields).
 static cccl_op_t make_well_known_unary_operation()
 {
-  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_NEGATE,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_binary_operation()
 {
-  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_PLUS,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_less_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_LESS,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_unique_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_EQUAL_TO,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_greater_equal_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_GREATER_EQUAL, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_GREATER_EQUAL,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 template <class ValueT, class StateT>

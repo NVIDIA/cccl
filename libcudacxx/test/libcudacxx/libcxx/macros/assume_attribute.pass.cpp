@@ -11,7 +11,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ bool f(int x)
+TEST_FUNC bool f(int x)
 {
   _CCCL_ASSUME(x > 3);
   return x > 3;

@@ -23,10 +23,9 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -114,24 +113,47 @@ enum WarpStoreAlgorithm
   WARP_STORE_TRANSPOSE
 };
 
-#if !_CCCL_COMPILER(NVRTC)
-inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algorithm)
+#if _CCCL_HOSTED()
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] _CCCL_API constexpr const char* to_string(WarpStoreAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case WARP_STORE_DIRECT:
-      return os << "WARP_STORE_DIRECT";
+      return "WARP_STORE_DIRECT";
     case WARP_STORE_STRIPED:
-      return os << "WARP_STORE_STRIPED";
+      return "WARP_STORE_STRIPED";
     case WARP_STORE_VECTORIZE:
-      return os << "WARP_STORE_VECTORIZE";
+      return "WARP_STORE_VECTORIZE";
     case WARP_STORE_TRANSPOSE:
-      return os << "WARP_STORE_TRANSPOSE";
-    default:
-      return os << "<unknown WarpStoreAlgorithm: " << static_cast<int>(algorithm) << ">";
+      return "WARP_STORE_TRANSPOSE";
   }
+  return "<unknown WarpStoreAlgorithm>";
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::WarpStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::WarpStoreAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The WarpStore class provides :ref:`collective <collective-primitives>`
@@ -179,7 +201,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algorit
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
+//!        constexpr int threads_per_block = 256;
 //!        constexpr int items_per_thread = 4;
 //!
 //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
@@ -188,7 +210,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algorit
 //!                                     cub::WARP_STORE_TRANSPOSE,
 //!                                     warp_threads>;
 //!
-//!        constexpr int warps_in_block = block_threads / warp_threads;
+//!        constexpr int warps_in_block = threads_per_block / warp_threads;
 //!        constexpr int tile_size = items_per_thread * warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
@@ -419,7 +441,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
@@ -428,7 +450,7 @@ public:
   //!                                     cub::WARP_STORE_TRANSPOSE,
   //!                                     warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -480,7 +502,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
@@ -489,7 +511,7 @@ public:
   //!                                     cub::WARP_STORE_TRANSPOSE,
   //!                                     warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!

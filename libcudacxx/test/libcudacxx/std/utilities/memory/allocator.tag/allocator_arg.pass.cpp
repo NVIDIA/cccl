@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test(cuda::std::allocator_arg_t) {}
+TEST_FUNC void test(cuda::std::allocator_arg_t) {}
 
 int main(int, char**)
 {

@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -37,18 +41,18 @@ using missing_stateless_property =
   resource<cuda::mr::host_accessible, property_with_value<int>, property_with_value<double>>;
 
 using cuda::std::is_constructible;
-static_assert(is_constructible<ref, matching_properties&>::value, "");
-static_assert(!is_constructible<ref, missing_stateful_property&>::value, "");
-static_assert(!is_constructible<ref, missing_stateless_property&>::value, "");
+static_assert(is_constructible<ref, matching_properties&>::value);
+static_assert(!is_constructible<ref, missing_stateful_property&>::value);
+static_assert(!is_constructible<ref, missing_stateless_property&>::value);
 
-static_assert(is_constructible<ref, ref&>::value, "");
+static_assert(is_constructible<ref, ref&>::value);
 
 // Ensure we require a mutable valid reference and do not bind against rvalues
-static_assert(!is_constructible<ref, matching_properties>::value, "");
-static_assert(!is_constructible<ref, const matching_properties&>::value, "");
+static_assert(!is_constructible<ref, matching_properties>::value);
+static_assert(!is_constructible<ref, const matching_properties&>::value);
 
-static_assert(cuda::std::is_copy_constructible<ref>::value, "");
-static_assert(cuda::std::is_move_constructible<ref>::value, "");
+static_assert(cuda::std::is_copy_constructible<ref>::value);
+static_assert(cuda::std::is_move_constructible<ref>::value);
 } // namespace constructible
 
 namespace assignable
@@ -71,11 +75,11 @@ using other_res =
            property_without_value<std::size_t>>;
 
 using cuda::std::is_assignable;
-static_assert(cuda::std::is_assignable<ref, res&>::value, "");
-static_assert(cuda::std::is_assignable<ref, other_res&>::value, "");
+static_assert(cuda::std::is_assignable<ref, res&>::value);
+static_assert(cuda::std::is_assignable<ref, other_res&>::value);
 
-static_assert(cuda::std::is_copy_assignable<ref>::value, "");
-static_assert(cuda::std::is_move_assignable<ref>::value, "");
+static_assert(cuda::std::is_copy_assignable<ref>::value);
+static_assert(cuda::std::is_move_assignable<ref>::value);
 } // namespace assignable
 
 int main(int, char**)

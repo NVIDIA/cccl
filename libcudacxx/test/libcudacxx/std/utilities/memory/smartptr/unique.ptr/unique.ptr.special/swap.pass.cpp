@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -30,7 +34,7 @@ TEST_GLOBAL_VARIABLE int A_count = 0;
 struct A
 {
   int state_;
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
       : state_(0)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -38,7 +42,7 @@ struct A
       ++A_count;
     }
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX23 explicit A(int i)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit A(int i)
       : state_(i)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -46,7 +50,7 @@ struct A
       ++A_count;
     }
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A(const A& a)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A(const A& a)
       : state_(a.state_)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -54,12 +58,12 @@ struct A
       ++A_count;
     }
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A& operator=(const A& a)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A& operator=(const A& a)
   {
     state_ = a.state_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX23 ~A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 ~A()
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
@@ -67,7 +71,7 @@ struct A
     }
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX23 bool operator==(const A& x, const A& y)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX23 bool operator==(const A& x, const A& y)
   {
     return x.state_ == y.state_;
   }
@@ -76,18 +80,18 @@ struct A
 template <class T>
 struct NonSwappableDeleter
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX23 explicit NonSwappableDeleter(int) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NonSwappableDeleter& operator=(NonSwappableDeleter const&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit NonSwappableDeleter(int) {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NonSwappableDeleter& operator=(NonSwappableDeleter const&)
   {
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 
 private:
-  __host__ __device__ NonSwappableDeleter(NonSwappableDeleter const&);
+  TEST_FUNC NonSwappableDeleter(NonSwappableDeleter const&);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     A* p1 = new A(1);

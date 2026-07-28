@@ -17,7 +17,7 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ constexpr void check(int* first, int* expected)
+TEST_FUNC constexpr void check(int* first, int* expected)
 {
   It it(first);
   decltype(auto) result = cuda::std::ranges::prev(cuda::std::move(it));
@@ -25,7 +25,7 @@ __host__ __device__ constexpr void check(int* first, int* expected)
   assert(base(result) == expected);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 

@@ -127,7 +127,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -158,7 +158,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -190,7 +190,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -219,22 +219,28 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
-    using init_t         = cub::detail::it_value_t<decltype(unwrap_it(d_values_out_it))>;
+    using init_value_t   = cub::detail::it_value_t<decltype(unwrap_it(d_values_out_it))>;
     device_exclusive_scan_by_key(
-      d_keys_it, unwrap_it(d_values_it), unwrap_it(d_values_out_it), scan_op, init_t{}, num_items, eq_op_t{});
+      d_keys_it, unwrap_it(d_values_it), unwrap_it(d_values_out_it), scan_op, init_value_t{}, num_items, eq_op_t{});
 
     // Verify result
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
       out_values            = in_values;
       auto values_in_out_it = thrust::raw_pointer_cast(out_values.data());
       device_exclusive_scan_by_key(
-        d_keys_it, unwrap_it(values_in_out_it), unwrap_it(values_in_out_it), scan_op, init_t{}, num_items, eq_op_t{});
+        d_keys_it,
+        unwrap_it(values_in_out_it),
+        unwrap_it(values_in_out_it),
+        scan_op,
+        init_value_t{},
+        num_items,
+        eq_op_t{});
 
       // Verify result
       REQUIRE(expected_result == out_values);
@@ -358,9 +364,9 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    using init_t         = value_t;
+    using init_value_t   = value_t;
     device_exclusive_scan_by_key(
-      d_keys_it, d_values_it, d_values_out_it, scan_op, init_t{}, num_items, cuda::std::equal_to<>{});
+      d_keys_it, d_values_it, d_values_out_it, scan_op, init_value_t{}, num_items, cuda::std::equal_to<>{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);

@@ -21,13 +21,13 @@
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Fun>
-__host__ __device__ void execute_on_main_thread(Fun&& fun)
+TEST_FUNC void execute_on_main_thread(Fun&& fun)
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (if (threadIdx.x == 0) { fun(); } __syncthreads();), (fun();))
 }
 
 template <typename... Fs>
-__host__ __device__ void concurrent_agents_launch(Fs... fs)
+TEST_FUNC void concurrent_agents_launch(Fs... fs)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,

@@ -20,6 +20,9 @@
 //   void
 //   return_temporary_buffer(T* p);
 
+// XFAIL: enable-tile
+// In tile mode dynamic memory allocation is unsupported
+
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/memory>

@@ -8,13 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: return in loop statement is not supported
+
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/devices>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-__device__ void test_current()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void test_current()
 {
   // 1. Test cuda::device::current_compute_capability() signature.
   static_assert(cuda::std::is_same_v<cuda::compute_capability, decltype(cuda::device::current_compute_capability())>);
@@ -71,7 +76,7 @@ __device__ void test_current()
   )
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // 1. Test default constructor.
   {
@@ -230,6 +235,14 @@ __host__ __device__ constexpr bool test()
     assert(cc2 >= cc2);
     assert(!(cc2 > cc1));
   }
+
+  // 12. Test that cuda::compute_capability is a structural type.
+#if _CCCL_STD_VER >= 2020
+  {
+    [[maybe_unused]] constexpr auto val =
+      cuda::std::integral_constant<cuda::compute_capability, cuda::compute_capability{100}>{};
+  }
+#endif // _CCCL_STD_VER >= 2020
 
   return true;
 }

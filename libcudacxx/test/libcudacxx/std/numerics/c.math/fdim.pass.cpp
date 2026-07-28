@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/__floating_point/fp.h>
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(T val)
+TEST_FUNC void test(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::fdim(val, T())), ret>);
@@ -89,7 +92,7 @@ __host__ __device__ void test(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-__host__ __device__ bool test(float val)
+TEST_FUNC bool test(float val)
 {
   test<float>(val);
   test<double>(val);

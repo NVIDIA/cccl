@@ -26,7 +26,7 @@ int main()
   // print D
   for (size_t i = 0; i < D.size(); i++)
   {
-    std::cout << "D[" << i << "] = " << D[i] << std::endl;
+    std::cout << "D[" << i << "] = " << D[i] << '\n';
   }
 
   return 0;

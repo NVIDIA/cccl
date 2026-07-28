@@ -10,12 +10,15 @@
 
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+// UNSUPPORTED: enable-tile
 
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 
-__device__ void test()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void test()
 {
 #if _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
   __float128 dummy_f128{};
@@ -55,8 +58,8 @@ __device__ void test()
   assert(__nv_fp128_fdim(1.q, 1.q) == 0.q);
   assert(__nv_fp128_fmod(1.q, 1.q) == 0.q);
   assert(__nv_fp128_remainder(1.q, 1.q) == 0.q);
-  assert(__nv_fp128_frexp(1.q, &dummy_int) == 1.q);
-  assert(__nv_fp128_modf(1.q, &dummy_f128) == 1.q);
+  assert(__nv_fp128_frexp(1.q, &dummy_int) == 0.5q);
+  assert(__nv_fp128_modf(1.q, &dummy_f128) == 0.q);
   assert(__nv_fp128_hypot(3.q, 4.q) == 5.q);
   assert(__nv_fp128_fma(1.q, 1.q, 1.q) == 2.q);
   assert(__nv_fp128_ldexp(1.q, 0) == 1.q);

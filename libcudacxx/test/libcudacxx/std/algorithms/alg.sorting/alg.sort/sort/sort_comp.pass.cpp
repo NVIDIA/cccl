@@ -30,7 +30,7 @@
 struct indirect_less
 {
   template <class P>
-  __host__ __device__ bool operator()(const P& x, const P& y) const noexcept
+  TEST_FUNC bool operator()(const P& x, const P& y) const noexcept
   {
     return *x < *y;
   }

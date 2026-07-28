@@ -5,7 +5,7 @@
 template <typename T>
 struct TestMin
 {
-  void operator()(void)
+  void operator()()
   {
     // 2 < 3
     T two(2), three(3);
@@ -38,7 +38,7 @@ SimpleUnitTest<TestMin, NumericTypes> TestMinInstance;
 template <typename T>
 struct TestMax
 {
-  void operator()(void)
+  void operator()()
   {
     // 2 < 3
     T two(2), three(3);

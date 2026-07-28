@@ -20,7 +20,7 @@ struct A
   float m3;
   double m4;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct B
@@ -30,7 +30,7 @@ struct B
   float m3;
   double m4;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct NonStandard
@@ -42,7 +42,7 @@ struct NonStandard
   int m;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
 #if defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
   // 1. Test struct A members to be corresponding with itself
@@ -71,8 +71,10 @@ __host__ __device__ constexpr bool test()
   assert(!cuda::std::is_corresponding_member(&A::m4, &A::m2));
   assert(!cuda::std::is_corresponding_member(&A::m4, &A::m3));
 
+#  if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
   // 4. Member functions should not be corresponding
   assert(!cuda::std::is_corresponding_member(&A::fn, &A::fn));
+#  endif // !_CCCL_TILE_COMPILATION()
 
   // 5. If nullptr is passed, it should not be corresponding
   assert(!cuda::std::is_corresponding_member(static_cast<int A::*>(nullptr), static_cast<int A::*>(nullptr)));

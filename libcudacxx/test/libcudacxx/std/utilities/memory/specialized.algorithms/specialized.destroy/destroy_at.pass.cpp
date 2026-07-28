@@ -9,6 +9,10 @@
 
 // UNSUPPORTED: gcc-6
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+// error: virtual function is unsupported in tile code
+
 // <memory>
 
 // template <class T>
@@ -24,42 +28,44 @@
 struct Counted
 {
   int* counter_;
-  __host__ __device__ constexpr Counted(int* counter)
+  TEST_FUNC constexpr Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~Counted()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~Counted()
   {
     --*counter_;
   }
-  __host__ __device__ friend void operator&(Counted) = delete;
+  TEST_FUNC friend void operator&(Counted) = delete;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualCounted
 {
   int* counter_;
-  __host__ __device__ constexpr VirtualCounted(int* counter)
+  TEST_FUNC constexpr VirtualCounted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 virtual ~VirtualCounted()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 virtual ~VirtualCounted()
   {
     --*counter_;
   }
-  __host__ __device__ void operator&() const = delete;
+  TEST_FUNC void operator&() const = delete;
 };
 
 struct DerivedCounted : VirtualCounted
 {
-  __host__ __device__ constexpr DerivedCounted(int* counter)
+  TEST_FUNC constexpr DerivedCounted(int* counter)
       : VirtualCounted(counter)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~DerivedCounted() override {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~DerivedCounted() override {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_arrays()
 {
   {
     int counter    = 0;
@@ -97,7 +103,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     int counter = 0;

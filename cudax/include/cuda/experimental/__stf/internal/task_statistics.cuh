@@ -33,8 +33,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/traits.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cmath>
 #include <cstdlib>
@@ -48,7 +48,7 @@ namespace cuda::experimental::stf::reserved
 /**
  * @brief This class stores statistics about task execution time
  */
-class task_statistics : public reserved::meyers_singleton<task_statistics>
+class task_statistics : public ::cuda::experimental::meyers_singleton<task_statistics>
 {
 protected:
   task_statistics()

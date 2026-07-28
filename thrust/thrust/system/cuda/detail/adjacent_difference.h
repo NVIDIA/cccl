@@ -30,6 +30,7 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/__memory/check_address.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
@@ -50,7 +51,7 @@ namespace cuda_cub
 {
 namespace __adjacent_difference
 {
-template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
+template <class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -65,49 +66,47 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaSuccess;
   }
 
-  cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (cub::detail::adjacent_difference::dispatch<AliasOpt, cub::ReadOption::Left>),
-    num_items,
-    (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
-  return status;
-}
+  using InputValueT                    = thrust::detail::it_value_t<InputIt>;
+  using OutputValueT                   = thrust::detail::it_value_t<OutputIt>;
+  constexpr bool can_compare_iterators = ::cuda::std::is_pointer_v<InputIt> && ::cuda::std::is_pointer_v<OutputIt>
+                                      && std::is_same_v<InputValueT, OutputValueT>;
 
-template <class InputIt, class OutputIt, class BinaryOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt result,
-  BinaryOp binary_op,
-  std::size_t num_items,
-  cudaStream_t stream,
-  thrust::detail::integral_constant<bool, false> /* comparable */)
-{
-  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
-}
-
-template <class InputIt, class OutputIt, class BinaryOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt result,
-  BinaryOp binary_op,
-  std::size_t num_items,
-  cudaStream_t stream,
-  thrust::detail::integral_constant<bool, true> /* comparable */)
-{
-  // The documentation states that pointers might be equal but can't alias in
-  // any other way. That is, the distance should be equal to zero or exceed
-  // `num_items`. In the latter case, we use an optimized version.
-  if (first != result)
+  if constexpr (can_compare_iterators)
   {
-    return doit_step<cub::MayAlias::No>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+    cudaError_t status;
+    // cub::DeviceAdjacentDifference only allows in-place (first and result iterator equal) or non-overlapping use cases
+    if (first == result)
+    {
+      // in-place
+      THRUST_INDEX_TYPE_DISPATCH(
+        status,
+        cub::DeviceAdjacentDifference::SubtractLeft,
+        num_items,
+        (d_temp_storage, temp_storage_bytes, result, num_items_fixed, binary_op, stream));
+    }
+    else
+    {
+      _CCCL_ASSERT(!::cuda::__are_ptrs_overlapping(first, result, num_items), "Ranges must not overlap");
+      THRUST_INDEX_TYPE_DISPATCH(
+        status,
+        cub::DeviceAdjacentDifference::SubtractLeftCopy,
+        num_items,
+        (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
+    }
+    return status;
   }
-
-  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  else
+  {
+    // when we cannot compare the iterators, we have to assume they could alias
+    // TODO(bgruber): expose a cub::DeviceAdjacentDifference::SubtractLeft with two different iterators
+    cudaError_t status;
+    THRUST_INDEX_TYPE_DISPATCH(
+      status,
+      (cub::detail::adjacent_difference::dispatch<cub::MayAlias::Yes, cub::ReadOption::Left>),
+      num_items,
+      (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
+    return status;
+  }
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename BinaryOp>
@@ -118,37 +117,17 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   std::size_t storage_size = 0;
   cudaStream_t stream      = cuda_cub::stream(policy);
 
-  using UnwrapInputIt  = thrust::try_unwrap_contiguous_iterator_t<InputIt>;
-  using UnwrapOutputIt = thrust::try_unwrap_contiguous_iterator_t<OutputIt>;
-
-  using InputValueT  = thrust::detail::it_value_t<UnwrapInputIt>;
-  using OutputValueT = thrust::detail::it_value_t<UnwrapOutputIt>;
-
-  constexpr bool can_compare_iterators =
-    ::cuda::std::is_pointer_v<UnwrapInputIt> && ::cuda::std::is_pointer_v<UnwrapOutputIt>
-    && std::is_same_v<InputValueT, OutputValueT>;
-
   auto first_unwrap  = thrust::try_unwrap_contiguous_iterator(first);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
-  thrust::detail::integral_constant<bool, can_compare_iterators> comparable;
-
-  cudaError_t status =
-    doit_step(nullptr, storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream, comparable);
+  cudaError_t status = doit_step(nullptr, storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream);
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 1st step");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
 
   status = doit_step(
-    static_cast<void*>(tmp.data().get()),
-    storage_size,
-    first_unwrap,
-    result_unwrap,
-    binary_op,
-    num_items,
-    stream,
-    comparable);
+    static_cast<void*>(tmp.data().get()), storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream);
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 2nd step");
 
   status = cuda_cub::synchronize_optional(policy);

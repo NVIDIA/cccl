@@ -151,7 +151,7 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //!   thrust::reduce(cuda::transform_iterator{v.begin(), square{}},
 //!                  cuda::transform_iterator{v.end(),   square{}});
 //!
-//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   std::cout << "sum of squares: " << sum_of_squares << '\n';
 //!   return 0;
 //! }
 //! @endcode

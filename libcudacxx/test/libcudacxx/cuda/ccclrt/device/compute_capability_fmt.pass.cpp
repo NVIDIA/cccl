@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: return in loop statement is not supported
+
 #include <cuda/devices>
 
 #if __cpp_lib_format >= 201907L

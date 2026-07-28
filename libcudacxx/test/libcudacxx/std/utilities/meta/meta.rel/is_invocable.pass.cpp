@@ -33,18 +33,18 @@ struct DerFromTag : Tag
 
 struct Implicit
 {
-  __host__ __device__ Implicit(int) {}
+  TEST_FUNC Implicit(int) {}
 };
 
 struct Explicit
 {
-  __host__ __device__ explicit Explicit(int) {}
+  TEST_FUNC explicit Explicit(int) {}
 };
 
 struct NotCallableWithInt
 {
-  __host__ __device__ int operator()(int) = delete;
-  __host__ __device__ int operator()(Tag)
+  TEST_FUNC int operator()(int) = delete;
+  TEST_FUNC int operator()(Tag)
   {
     return 42;
   }
@@ -53,7 +53,7 @@ struct NotCallableWithInt
 struct Sink
 {
   template <class... Args>
-  __host__ __device__ void operator()(Args&&...) const
+  TEST_FUNC void operator()(Args&&...) const
   {}
 };
 
@@ -63,71 +63,71 @@ int main(int, char**)
 
   //  Non-callable things
   {
-    static_assert(!cuda::std::is_invocable<void>::value, "");
-    static_assert(!cuda::std::is_invocable<const void>::value, "");
-    static_assert(!cuda::std::is_invocable<volatile void>::value, "");
-    static_assert(!cuda::std::is_invocable<const volatile void>::value, "");
-    static_assert(!cuda::std::is_invocable<cuda::std::nullptr_t>::value, "");
-    static_assert(!cuda::std::is_invocable<int>::value, "");
-    static_assert(!cuda::std::is_invocable<double>::value, "");
+    static_assert(!cuda::std::is_invocable<void>::value);
+    static_assert(!cuda::std::is_invocable<const void>::value);
+    static_assert(!cuda::std::is_invocable<volatile void>::value);
+    static_assert(!cuda::std::is_invocable<const volatile void>::value);
+    static_assert(!cuda::std::is_invocable<cuda::std::nullptr_t>::value);
+    static_assert(!cuda::std::is_invocable<int>::value);
+    static_assert(!cuda::std::is_invocable<double>::value);
 
-    static_assert(!cuda::std::is_invocable<int[]>::value, "");
-    static_assert(!cuda::std::is_invocable<int[3]>::value, "");
+    static_assert(!cuda::std::is_invocable<int[]>::value);
+    static_assert(!cuda::std::is_invocable<int[3]>::value);
 
-    static_assert(!cuda::std::is_invocable<int*>::value, "");
-    static_assert(!cuda::std::is_invocable<const int*>::value, "");
-    static_assert(!cuda::std::is_invocable<int const*>::value, "");
+    static_assert(!cuda::std::is_invocable<int*>::value);
+    static_assert(!cuda::std::is_invocable<const int*>::value);
+    static_assert(!cuda::std::is_invocable<int const*>::value);
 
-    static_assert(!cuda::std::is_invocable<int&>::value, "");
-    static_assert(!cuda::std::is_invocable<const int&>::value, "");
-    static_assert(!cuda::std::is_invocable<int&&>::value, "");
+    static_assert(!cuda::std::is_invocable<int&>::value);
+    static_assert(!cuda::std::is_invocable<const int&>::value);
+    static_assert(!cuda::std::is_invocable<int&&>::value);
 
-    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int, 3>>::value, "");
-    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int*, 3>>::value, "");
-    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int**, 3>>::value, "");
+    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int, 3>>::value);
+    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int*, 3>>::value);
+    static_assert(!cuda::std::is_invocable<cuda::std::inplace_vector<int**, 3>>::value);
 
-    static_assert(!cuda::std::is_invocable<AbominableFunc>::value, "");
-
-    //  with parameters
-    static_assert(!cuda::std::is_invocable<int, int>::value, "");
-    static_assert(!cuda::std::is_invocable<int, double, float>::value, "");
-    static_assert(!cuda::std::is_invocable<int, char, float, double>::value, "");
-    static_assert(!cuda::std::is_invocable<Sink, AbominableFunc>::value, "");
-    static_assert(!cuda::std::is_invocable<Sink, void>::value, "");
-    static_assert(!cuda::std::is_invocable<Sink, const volatile void>::value, "");
-
-    static_assert(!cuda::std::is_invocable_r<int, void>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, const void>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, volatile void>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, const volatile void>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::nullptr_t>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, int>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, double>::value, "");
-
-    static_assert(!cuda::std::is_invocable_r<int, int[]>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, int[3]>::value, "");
-
-    static_assert(!cuda::std::is_invocable_r<int, int*>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, const int*>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, int const*>::value, "");
-
-    static_assert(!cuda::std::is_invocable_r<int, int&>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, const int&>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, int&&>::value, "");
-
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int, 3>>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int*, 3>>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int**, 3>>::value, "");
-
-    static_assert(!cuda::std::is_invocable_r<void, AbominableFunc>::value, "");
+    static_assert(!cuda::std::is_invocable<AbominableFunc>::value);
 
     //  with parameters
-    static_assert(!cuda::std::is_invocable_r<int, int, int>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, int, double, float>::value, "");
-    static_assert(!cuda::std::is_invocable_r<int, int, char, float, double>::value, "");
-    static_assert(!cuda::std::is_invocable_r<void, Sink, AbominableFunc>::value, "");
-    static_assert(!cuda::std::is_invocable_r<void, Sink, void>::value, "");
-    static_assert(!cuda::std::is_invocable_r<void, Sink, const volatile void>::value, "");
+    static_assert(!cuda::std::is_invocable<int, int>::value);
+    static_assert(!cuda::std::is_invocable<int, double, float>::value);
+    static_assert(!cuda::std::is_invocable<int, char, float, double>::value);
+    static_assert(!cuda::std::is_invocable<Sink, AbominableFunc>::value);
+    static_assert(!cuda::std::is_invocable<Sink, void>::value);
+    static_assert(!cuda::std::is_invocable<Sink, const volatile void>::value);
+
+    static_assert(!cuda::std::is_invocable_r<int, void>::value);
+    static_assert(!cuda::std::is_invocable_r<int, const void>::value);
+    static_assert(!cuda::std::is_invocable_r<int, volatile void>::value);
+    static_assert(!cuda::std::is_invocable_r<int, const volatile void>::value);
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::nullptr_t>::value);
+    static_assert(!cuda::std::is_invocable_r<int, int>::value);
+    static_assert(!cuda::std::is_invocable_r<int, double>::value);
+
+    static_assert(!cuda::std::is_invocable_r<int, int[]>::value);
+    static_assert(!cuda::std::is_invocable_r<int, int[3]>::value);
+
+    static_assert(!cuda::std::is_invocable_r<int, int*>::value);
+    static_assert(!cuda::std::is_invocable_r<int, const int*>::value);
+    static_assert(!cuda::std::is_invocable_r<int, int const*>::value);
+
+    static_assert(!cuda::std::is_invocable_r<int, int&>::value);
+    static_assert(!cuda::std::is_invocable_r<int, const int&>::value);
+    static_assert(!cuda::std::is_invocable_r<int, int&&>::value);
+
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int, 3>>::value);
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int*, 3>>::value);
+    static_assert(!cuda::std::is_invocable_r<int, cuda::std::inplace_vector<int**, 3>>::value);
+
+    static_assert(!cuda::std::is_invocable_r<void, AbominableFunc>::value);
+
+    //  with parameters
+    static_assert(!cuda::std::is_invocable_r<int, int, int>::value);
+    static_assert(!cuda::std::is_invocable_r<int, int, double, float>::value);
+    static_assert(!cuda::std::is_invocable_r<int, int, char, float, double>::value);
+    static_assert(!cuda::std::is_invocable_r<void, Sink, AbominableFunc>::value);
+    static_assert(!cuda::std::is_invocable_r<void, Sink, void>::value);
+    static_assert(!cuda::std::is_invocable_r<void, Sink, const volatile void>::value);
   }
   {
     using Fn  = int (Tag::*)(int);
@@ -135,24 +135,24 @@ int main(int, char**)
     // INVOKE bullet 1, 2 and 3
     {
       // Bullet 1
-      static_assert(cuda::std::is_invocable<Fn, Tag&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, DerFromTag&, int>::value, "");
-      static_assert(cuda::std::is_invocable<RFn, Tag&&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<RFn, Tag&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<Fn, Tag&>::value, "");
-      static_assert(!cuda::std::is_invocable<Fn, Tag const&, int>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, Tag&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, DerFromTag&, int>::value);
+      static_assert(cuda::std::is_invocable<RFn, Tag&&, int>::value);
+      static_assert(!cuda::std::is_invocable<RFn, Tag&, int>::value);
+      static_assert(!cuda::std::is_invocable<Fn, Tag&>::value);
+      static_assert(!cuda::std::is_invocable<Fn, Tag const&, int>::value);
     }
     {
       // Bullet 2
       using T  = cuda::std::reference_wrapper<Tag>;
       using DT = cuda::std::reference_wrapper<DerFromTag>;
       using CT = cuda::std::reference_wrapper<const Tag>;
-      static_assert(cuda::std::is_invocable<Fn, T&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, DT&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, const T&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, T&&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<Fn, CT&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<RFn, T, int>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, T&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, DT&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, const T&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, T&&, int>::value);
+      static_assert(!cuda::std::is_invocable<Fn, CT&, int>::value);
+      static_assert(!cuda::std::is_invocable<RFn, T, int>::value);
     }
     {
       // Bullet 3
@@ -162,38 +162,38 @@ int main(int, char**)
 #ifdef _LIBCUDACXX_HAS_MEMORY
       using ST = cuda::std::unique_ptr<Tag>;
 #endif // _LIBCUDACXX_HAS_MEMORY
-      static_assert(cuda::std::is_invocable<Fn, T&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, DT&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, const T&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, T&&, int>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, T&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, DT&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, const T&, int>::value);
+      static_assert(cuda::std::is_invocable<Fn, T&&, int>::value);
 #ifdef _LIBCUDACXX_HAS_MEMORY
-      static_assert(cuda::std::is_invocable<Fn, ST, int>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, ST, int>::value);
 #endif // _LIBCUDACXX_HAS_MEMORY
-      static_assert(!cuda::std::is_invocable<Fn, CT&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<RFn, T, int>::value, "");
+      static_assert(!cuda::std::is_invocable<Fn, CT&, int>::value);
+      static_assert(!cuda::std::is_invocable<RFn, T, int>::value);
     }
   }
   {
     // Bullets 4, 5 and 6
     using Fn = int(Tag::*);
-    static_assert(!cuda::std::is_invocable<Fn>::value, "");
+    static_assert(!cuda::std::is_invocable<Fn>::value);
     {
       // Bullet 4
-      static_assert(cuda::std::is_invocable<Fn, Tag&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, DerFromTag&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, Tag&&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, Tag const&>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, Tag&>::value);
+      static_assert(cuda::std::is_invocable<Fn, DerFromTag&>::value);
+      static_assert(cuda::std::is_invocable<Fn, Tag&&>::value);
+      static_assert(cuda::std::is_invocable<Fn, Tag const&>::value);
     }
     {
       // Bullet 5
       using T  = cuda::std::reference_wrapper<Tag>;
       using DT = cuda::std::reference_wrapper<DerFromTag>;
       using CT = cuda::std::reference_wrapper<const Tag>;
-      static_assert(cuda::std::is_invocable<Fn, T&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, DT&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, const T&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, T&&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, CT&>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, T&>::value);
+      static_assert(cuda::std::is_invocable<Fn, DT&>::value);
+      static_assert(cuda::std::is_invocable<Fn, const T&>::value);
+      static_assert(cuda::std::is_invocable<Fn, T&&>::value);
+      static_assert(cuda::std::is_invocable<Fn, CT&>::value);
     }
     {
       // Bullet 6
@@ -203,60 +203,60 @@ int main(int, char**)
 #ifdef _LIBCUDACXX_HAS_MEMORY
       using ST = cuda::std::unique_ptr<Tag>;
 #endif // _LIBCUDACXX_HAS_MEMORY
-      static_assert(cuda::std::is_invocable<Fn, T&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, DT&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, const T&>::value, "");
-      static_assert(cuda::std::is_invocable<Fn, T&&>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, T&>::value);
+      static_assert(cuda::std::is_invocable<Fn, DT&>::value);
+      static_assert(cuda::std::is_invocable<Fn, const T&>::value);
+      static_assert(cuda::std::is_invocable<Fn, T&&>::value);
 #ifdef _LIBCUDACXX_HAS_MEMORY
-      static_assert(cuda::std::is_invocable<Fn, ST>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, ST>::value);
 #endif // _LIBCUDACXX_HAS_MEMORY
-      static_assert(cuda::std::is_invocable<Fn, CT&>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, CT&>::value);
     }
   }
   { // INVOKE bullet 7
     { // Function pointer
       using Fp = void (*)(Tag&, int);
-      static_assert(cuda::std::is_invocable<Fp, Tag&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fp, DerFromTag&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<Fp, const Tag&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<Fp>::value, "");
-      static_assert(!cuda::std::is_invocable<Fp, Tag&>::value, "");
+      static_assert(cuda::std::is_invocable<Fp, Tag&, int>::value);
+      static_assert(cuda::std::is_invocable<Fp, DerFromTag&, int>::value);
+      static_assert(!cuda::std::is_invocable<Fp, const Tag&, int>::value);
+      static_assert(!cuda::std::is_invocable<Fp>::value);
+      static_assert(!cuda::std::is_invocable<Fp, Tag&>::value);
     }
     {
       // Function reference
       using Fp = void (&)(Tag&, int);
-      static_assert(cuda::std::is_invocable<Fp, Tag&, int>::value, "");
-      static_assert(cuda::std::is_invocable<Fp, DerFromTag&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<Fp, const Tag&, int>::value, "");
-      static_assert(!cuda::std::is_invocable<Fp>::value, "");
-      static_assert(!cuda::std::is_invocable<Fp, Tag&>::value, "");
+      static_assert(cuda::std::is_invocable<Fp, Tag&, int>::value);
+      static_assert(cuda::std::is_invocable<Fp, DerFromTag&, int>::value);
+      static_assert(!cuda::std::is_invocable<Fp, const Tag&, int>::value);
+      static_assert(!cuda::std::is_invocable<Fp>::value);
+      static_assert(!cuda::std::is_invocable<Fp, Tag&>::value);
     }
     {
       // Function object
       using Fn = NotCallableWithInt;
-      static_assert(cuda::std::is_invocable<Fn, Tag>::value, "");
-      static_assert(!cuda::std::is_invocable<Fn, int>::value, "");
+      static_assert(cuda::std::is_invocable<Fn, Tag>::value);
+      static_assert(!cuda::std::is_invocable<Fn, int>::value);
     }
   }
   {
     // Check that the conversion to the return type is properly checked
     using Fn = int (*)();
-    static_assert(cuda::std::is_invocable_r<Implicit, Fn>::value, "");
-    static_assert(cuda::std::is_invocable_r<double, Fn>::value, "");
-    static_assert(cuda::std::is_invocable_r<const volatile void, Fn>::value, "");
-    static_assert(!cuda::std::is_invocable_r<Explicit, Fn>::value, "");
+    static_assert(cuda::std::is_invocable_r<Implicit, Fn>::value);
+    static_assert(cuda::std::is_invocable_r<double, Fn>::value);
+    static_assert(cuda::std::is_invocable_r<const volatile void, Fn>::value);
+    static_assert(!cuda::std::is_invocable_r<Explicit, Fn>::value);
   }
   {
     // Check for is_invocable_v
     using Fn = void (*)();
-    static_assert(cuda::std::is_invocable_v<Fn>, "");
-    static_assert(!cuda::std::is_invocable_v<Fn, int>, "");
+    static_assert(cuda::std::is_invocable_v<Fn>);
+    static_assert(!cuda::std::is_invocable_v<Fn, int>);
   }
   {
     // Check for is_invocable_r_v
     using Fn = void (*)();
-    static_assert(cuda::std::is_invocable_r_v<void, Fn>, "");
-    static_assert(!cuda::std::is_invocable_r_v<int, Fn>, "");
+    static_assert(cuda::std::is_invocable_r_v<void, Fn>);
+    static_assert(!cuda::std::is_invocable_r_v<int, Fn>);
   }
   return 0;
 }

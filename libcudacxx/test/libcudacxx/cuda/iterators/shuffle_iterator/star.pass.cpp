@@ -16,7 +16,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // taken from fake_bijection
   constexpr int random_indices[] = {4, 1, 2, 0, 3};

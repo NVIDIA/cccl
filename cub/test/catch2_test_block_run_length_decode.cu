@@ -408,7 +408,7 @@ void TestAlgorithmSpecialisation()
   {
     for (RunLengthT i = 0; i < d_run_lengths[run]; i++)
     {
-      host_golden.push_back({d_unique_items[run], i});
+      host_golden.emplace_back(d_unique_items[run], i);
     }
   }
 

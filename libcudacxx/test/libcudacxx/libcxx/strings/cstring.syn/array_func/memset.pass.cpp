@@ -10,15 +10,17 @@
 #include <cuda/std/__string/constexpr_c_functions.h>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test_memset(T* ptr, T c, cuda::std::size_t n, const T* ref)
+TEST_FUNC constexpr void test_memset(T* ptr, T c, cuda::std::size_t n, const T* ref)
 {
   assert(cuda::std::__cccl_memset(ptr, c, n) == ptr);
   assert(cuda::std::__cccl_memcmp(ptr, ref, n) == 0);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   {
     test_memset<T>(nullptr, 1, 0, nullptr);
@@ -55,7 +57,7 @@ __host__ __device__ constexpr void test_type()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_CHAR8_T()

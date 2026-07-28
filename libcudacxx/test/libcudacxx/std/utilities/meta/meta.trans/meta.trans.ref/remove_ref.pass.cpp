@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_remove_reference()
+TEST_FUNC void test_remove_reference()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::remove_reference<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::remove_reference_t<T>>);

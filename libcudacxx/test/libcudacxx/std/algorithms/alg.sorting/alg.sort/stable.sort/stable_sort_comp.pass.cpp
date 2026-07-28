@@ -31,43 +31,43 @@
 template <class T>
 struct nearly_vector
 {
-  __host__ __device__ nearly_vector(size_t N)
+  TEST_FUNC nearly_vector(size_t N)
       : size_(N)
       , ptr_(::new T[size_])
   {}
 
-  __host__ __device__ ~nearly_vector()
+  TEST_FUNC ~nearly_vector()
   {
     ::delete[] ptr_;
   }
 
-  __host__ __device__ T* begin() noexcept
+  TEST_FUNC T* begin() noexcept
   {
     return ptr_;
   }
-  __host__ __device__ const T* begin() const noexcept
+  TEST_FUNC const T* begin() const noexcept
   {
     return ptr_;
   }
-  __host__ __device__ T* end() noexcept
+  TEST_FUNC T* end() noexcept
   {
     return ptr_ + size_;
   }
-  __host__ __device__ const T* end() const noexcept
+  TEST_FUNC const T* end() const noexcept
   {
     return ptr_ + size_;
   }
 
-  __host__ __device__ size_t size() const noexcept
+  TEST_FUNC size_t size() const noexcept
   {
     return size_;
   }
 
-  __host__ __device__ T& operator[](size_t index) noexcept
+  TEST_FUNC T& operator[](size_t index) noexcept
   {
     return ptr_[index];
   }
-  __host__ __device__ const T& operator[](size_t index) const noexcept
+  TEST_FUNC const T& operator[](size_t index) const noexcept
   {
     return ptr_[index];
   }
@@ -79,7 +79,7 @@ struct nearly_vector
 struct indirect_less
 {
   template <class P>
-  __host__ __device__ bool operator()(const P& x, const P& y) const
+  TEST_FUNC bool operator()(const P& x, const P& y) const
   {
     return *x < *y;
   }
@@ -87,7 +87,7 @@ struct indirect_less
 
 struct first_only
 {
-  __host__ __device__ bool operator()(const cuda::std::pair<int, int>& x, const cuda::std::pair<int, int>& y) const
+  TEST_FUNC bool operator()(const cuda::std::pair<int, int>& x, const cuda::std::pair<int, int>& y) const
   {
     return x.first < y.first;
   }
@@ -95,7 +95,7 @@ struct first_only
 
 using Pair = cuda::std::pair<int, int>;
 
-__host__ __device__ nearly_vector<Pair> generate_sawtooth(int N, int M)
+TEST_FUNC nearly_vector<Pair> generate_sawtooth(int N, int M)
 {
   nearly_vector<Pair> v(N);
   int x   = 0;
@@ -112,7 +112,7 @@ __host__ __device__ nearly_vector<Pair> generate_sawtooth(int N, int M)
   return v;
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   int const N = 1000;
   int const M = 10;

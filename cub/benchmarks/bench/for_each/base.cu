@@ -41,14 +41,10 @@ void for_each(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   op_t<T> op{d_out};
 
-  std::size_t temp_size{};
-  cub::DeviceFor::ForEachN(nullptr, temp_size, d_in, elements, op);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::DeviceFor::ForEachN(temp_storage, temp_size, d_in, elements, op, launch.get_stream());
+    auto env = cub_bench_env(alloc, launch);
+    _CCCL_TRY_CUDA_API(cub::DeviceFor::ForEachN, "ForEachN failed", d_in, elements, op, env);
   });
 }
 

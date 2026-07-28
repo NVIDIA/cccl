@@ -1,6 +1,8 @@
 #include <thrust/extrema.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>
@@ -109,3 +111,10 @@ void TestMinElementWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestMinElementWithBigIndexes);
+
+void TestMinElementCudaIterator()
+{
+  auto pos = thrust::min_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
+  ASSERT_EQUAL(*pos, 0);
+}
+DECLARE_UNITTEST(TestMinElementCudaIterator);

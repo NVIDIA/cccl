@@ -332,7 +332,7 @@ using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 template <class _List, class... _Ts>
 using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_list, _Ts...>>;
 
-#  if _CCCL_CTK_BELOW(12, 9)
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
 
 namespace __detail
 {
@@ -361,7 +361,7 @@ _CCCL_API inline auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
 template <class _List>
 using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
-#  else // ^^^ _ CCCl_CTK_BELOW(12, 9) / vvv _CCCL_CTK_AT_LEAST(12, 9) vvv
+#  else // ^^^ if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9) / vvv if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) vvv
 
 namespace __detail
 {
@@ -393,7 +393,7 @@ extern __fn_ptr_t<__type_list<_Ret, _Args...>> __as_type_list_v<_Ret(_Args...)>;
 template <class _List>
 using __as_type_list = decltype(__detail::__as_type_list_v<_List>());
 
-#  endif // _CCCL_CTK_AT_LEAST(12, 9)
+#  endif // if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
 
 //! \brief Given a type that can be interpreted as a type list and a
 //! meta-callable, invoke the meta-callable with the types in the list.
@@ -486,16 +486,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 // Implementation for indexing into a list of types:
 #  if _CCCL_HAS_PACK_INDEXING()
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
-
 template <size_t _Ip, class... _Ts>
 using __type_index_c = _Ts...[_Ip];
 
 template <class _Ip, class... _Ts>
 using __type_index = _Ts...[_Ip::value];
-
-_CCCL_DIAG_POP
 
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back
@@ -755,7 +750,7 @@ struct __type_concat_fn
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
-  using __next_t _CCCL_NODEBUG_ALIAS = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
+  using __next_cpo _CCCL_NODEBUG_ALIAS = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
 
   template <class... _Ts,
             class... _As,
@@ -778,7 +773,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
     __type_list_ptr<_Gs...>, // 7
     __type_list_ptr<_Hs...>, // 8
     _Tail*... __tail) // rest
-    -> decltype(__next_t::__fn(
+    -> decltype(__next_cpo::__fn(
       __type_list_ptr<_Ts..., _As..., _Bs..., _Cs..., _Ds..., _Es..., _Fs..., _Gs..., _Hs...>{nullptr},
       __tail...,
       __type_list_ptr<>{nullptr},
