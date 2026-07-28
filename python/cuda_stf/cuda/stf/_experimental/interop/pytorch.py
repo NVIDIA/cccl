@@ -153,6 +153,17 @@ __all__ = ["pytorch_task", "tensor_arg", "tensor_arguments"]
 #     opaque to caching and compilation; for assignments the spec grammar
 #     cannot express (e.g. permuted expert->place tables).
 #
+# Two lifetimes (the interchange protocol picks it):
+#   * "pinned" — CAI import (torch.as_tensor): CAI describes memory but
+#     transfers no ownership, so the registry pins the allocation for the
+#     process and release() evicts explicitly.
+#   * "gc" — DLPack import (torch.from_dlpack): the tensor's STORAGE owns
+#     the allocation (module -> parameter -> storage -> deleter), freed when
+#     the last view dies; the registry holds metadata only, evicted by a
+#     finalizer that is reachable precisely because nothing pins the buffer.
+#     This is the idiomatic lifetime for nn.Parameter weights: unload paths
+#     (model swap, sleep mode) free the VMM with the module.
+#
 # Metadata is keyed by BASE STORAGE POINTER in a module registry so it
 # survives views, reshapes, and nn.Parameter wrapping (tensor attributes do
 # not) — the enabler for compiler-side detection in consumers.
@@ -216,6 +227,7 @@ class LocalizedMeta:
     grid: _Any
     partition: _Any = None  # structured tier: the cute_partition
     mapper: _Any = None  # callback tier: the Python mapper
+    lifetime: str = "pinned"  # "pinned" (CAI + registry) | "gc" (DLPack)
     _keepalive: list = _field(default_factory=list, repr=False)
 
 
@@ -224,12 +236,33 @@ class LocalizedMeta:
 _REGISTRY: dict = {}
 
 
-def localized_empty(shape, dtype, grid, *, spec=None, mapper=None):
+def _evict(base, meta):
+    """Registry eviction for gc-lifetime allocations (finalizer target).
+
+    Guarded on identity so a recycled base address can never evict a
+    successor's entry.
+    """
+    if _REGISTRY.get(base) is meta:
+        del _REGISTRY[base]
+
+
+def localized_empty(shape, dtype, grid, *, spec=None, mapper=None, lifetime="pinned"):
     """Allocate a ``torch.Tensor`` whose pages are placed by *grid*.
 
     Exactly one of ``spec`` (structured tier; defaults to blocked along
     axis 0 when both are ``None``) or ``mapper`` (callback tier over the
     flat byte domain) selects the placement policy.
+
+    ``lifetime`` selects the interchange protocol and with it who owns the
+    allocation:
+
+    * ``"pinned"`` (default): CAI import. CAI transfers no ownership, so
+      the registry pins the allocation for the process; free explicitly
+      with :func:`release`.
+    * ``"gc"``: DLPack import. The tensor's storage OWNS the allocation
+      (freed when the last view dies — the idiomatic lifetime for
+      ``nn.Parameter`` weights, where unloading the module frees the VMM);
+      the registry holds metadata only and self-evicts.
     """
     from .. import DeviceArray, cute_partition, data_place  # noqa: PLC0415
 
@@ -239,9 +272,11 @@ def localized_empty(shape, dtype, grid, *, spec=None, mapper=None):
     shape = tuple(int(s) for s in shape)
     if spec is not None and mapper is not None:
         raise ValueError("pass either spec= or mapper=, not both")
+    if lifetime not in ("pinned", "gc"):
+        raise ValueError(f'lifetime must be "pinned" or "gc", got {lifetime!r}')
 
     np_dtype = _np_dtype(dtype)
-    meta = LocalizedMeta(shape=shape, dtype=dtype, grid=grid)
+    meta = LocalizedMeta(shape=shape, dtype=dtype, grid=grid, lifetime=lifetime)
 
     if mapper is not None:
         numel = 1
@@ -260,29 +295,44 @@ def localized_empty(shape, dtype, grid, *, spec=None, mapper=None):
         buf = DeviceArray(shape, np_dtype, dplace)
         meta.partition = part
 
-    t = torch.as_tensor(buf)
+    if lifetime == "gc":
+        # DLPack: the tensor's storage takes ownership (the capsule holds
+        # the DeviceArray, which holds the data place). Nothing pins the
+        # buffer, so a finalizer on it is REACHABLE and evicts the
+        # metadata when the storage dies.
+        t = torch.from_dlpack(buf)
+    else:
+        t = torch.as_tensor(buf)
     _, storage_dtypes = _np_dtype_tables()
     if isinstance(dtype, torch.dtype) and dtype in storage_dtypes:
         t = t.view(dtype)
     t = t.view(shape)
 
-    # CAI carries no ownership: the DeviceArray owns the VMM allocation and
-    # the data place's mapper trampoline must outlive the buffer.
-    meta._keepalive.extend((buf, dplace))
     base = t.untyped_storage().data_ptr()
+    if lifetime == "gc":
+        _weakref.finalize(buf, _evict, base, meta)
+    else:
+        # CAI carries no ownership: the DeviceArray owns the VMM allocation
+        # and the data place's mapper trampoline must outlive the buffer.
+        meta._keepalive.extend((buf, dplace))
     _REGISTRY[base] = meta
     return t
 
 
-def localized_parameter(shape, dtype, grid, *, spec=None, mapper=None, requires_grad=False):
+def localized_parameter(
+    shape, dtype, grid, *, spec=None, mapper=None, requires_grad=False, lifetime="gc"
+):
     """:func:`localized_empty` wrapped as ``torch.nn.Parameter``.
 
     ``requires_grad`` defaults to ``False`` (the inference /
-    ``create_weights`` target).
+    ``create_weights`` target). ``lifetime`` defaults to ``"gc"`` here —
+    a parameter registered on a module IS the idiomatic owner (module ->
+    parameter -> storage -> allocation), so unloading the module frees the
+    VMM; pass ``lifetime="pinned"`` for the registry-pinned behavior.
     """
     torch = _import_torch()
     return torch.nn.Parameter(
-        localized_empty(shape, dtype, grid, spec=spec, mapper=mapper),
+        localized_empty(shape, dtype, grid, spec=spec, mapper=mapper, lifetime=lifetime),
         requires_grad=requires_grad,
     )
 
@@ -290,14 +340,18 @@ def localized_parameter(shape, dtype, grid, *, spec=None, mapper=None, requires_
 def release(tensor):
     """Explicitly release *tensor*'s localized allocation.
 
-    Localized allocations are REGISTRY-PINNED: the registry owns the
-    keepalive (DeviceArray + data place), matching the weights /
-    ``create_weights`` lifetime where allocations live for the process.
-    ``release`` evicts the entry; the VMM mapping is freed once no tensor
-    view references the storage either. (A garbage-collected lifetime tied
-    to "the last view" is not expressible with CAI imports — the consumer
-    prototypes' ``weakref.finalize(buf, ...)`` was unreachable for exactly
-    this reason: the registry itself kept the buffer alive.)
+    For ``lifetime="pinned"`` allocations the registry owns the keepalive
+    (DeviceArray + data place): ``release`` evicts the entry and the VMM
+    mapping is freed once no tensor view references the storage either.
+    (A garbage-collected lifetime tied to "the last view" is not
+    expressible with CAI imports — the consumer prototypes'
+    ``weakref.finalize(buf, ...)`` was unreachable for exactly this
+    reason: the registry itself kept the buffer alive. That is what
+    ``lifetime="gc"`` exists for.)
+
+    For ``lifetime="gc"`` allocations the storage already owns the
+    buffer; ``release`` merely drops the metadata early (harmless — it
+    would self-evict when the storage dies).
     """
     base = tensor.untyped_storage().data_ptr()
     meta = _REGISTRY.pop(base, None)

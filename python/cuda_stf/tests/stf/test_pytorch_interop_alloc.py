@@ -98,3 +98,88 @@ def test_parameter_and_spec_mapper_exclusive(grid):
         tp.localized_empty(SHAPE, torch.float16, grid,
                            spec=(("blocked", 0), None, None),
                            mapper=lambda c, d, g: (0,))
+
+
+# -- gc lifetime (DLPack tier) -------------------------------------------------
+
+
+@requires_cuda
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
+def test_gc_structured_roundtrip(grid, dtype):
+    """lifetime="gc" allocates through DLPack; the view chain (storage-dtype
+    for bf16, then shape) works identically to the pinned tier."""
+    t = tp.localized_empty(SHAPE, dtype, grid, lifetime="gc")
+    src = torch.randn(SHAPE, dtype=dtype, device="cuda")
+    t.copy_(src)
+    torch.cuda.synchronize()
+    assert torch.equal(t, src)
+    meta = tp.get_meta(t)
+    assert meta is not None and meta.lifetime == "gc" and meta.partition is not None
+    assert not meta._keepalive  # nothing pinned: the storage owns the buffer
+    tp.release(t)  # early metadata drop is allowed and harmless
+
+
+@requires_cuda
+def test_gc_callback_roundtrip(grid):
+    t = tp.localized_empty(
+        (4, 64, 16384), torch.float16, grid,
+        mapper=lambda c, d, g: (0,), lifetime="gc",
+    )
+    t.fill_(3.0)
+    torch.cuda.synchronize()
+    assert float(t.sum(dtype=torch.float64)) == 3.0 * t.numel()
+
+
+@requires_cuda
+def test_gc_registry_self_evicts(grid):
+    """The gc tier's registry finalizer is REACHABLE (nothing pins the
+    buffer): when the last tensor view dies, the storage frees the VMM and
+    the metadata evicts itself — no release() call, no leak on unload."""
+    import gc
+    import weakref
+
+    t = tp.localized_empty((4, 64, 16384), torch.float16, grid, lifetime="gc")
+    p = torch.nn.Parameter(t, requires_grad=False)
+    meta_ref = weakref.ref(tp.get_meta(t))
+    assert meta_ref() is not None and tp.get_meta(p) is meta_ref()
+    assert meta_ref() in tp.live_metas()
+    del t, p
+    gc.collect()
+    # the registry entry (the meta's only strong holder) is gone
+    assert meta_ref() is None
+
+
+@requires_cuda
+def test_gc_and_pinned_place_identically(grid):
+    """The lifetime choice is orthogonal to placement: both tiers produce
+    the same bytes-per-place decision."""
+    t_pin = tp.localized_empty(SHAPE, torch.float16, grid)
+    t_gc = tp.localized_empty(SHAPE, torch.float16, grid, lifetime="gc")
+    s1, s2 = tp.placement_report(t_pin), tp.placement_report(t_gc)
+    assert list(s1.bytes_per_grid_index) == list(s2.bytes_per_grid_index)
+    assert s1.accuracy == s2.accuracy == 1.0
+    tp.release(t_pin)
+
+
+@requires_cuda
+def test_localized_parameter_defaults_to_gc(grid):
+    """A parameter registered on a module is the idiomatic owner: dropping
+    the module frees the allocation and the metadata."""
+    import gc
+    import weakref
+
+    m = torch.nn.Module()
+    m.w = tp.localized_parameter((4, 64, 16384), torch.float16, grid)
+    meta_ref = weakref.ref(tp.get_meta(m.w))
+    assert meta_ref().lifetime == "gc"
+    m.w.data.fill_(1.0)
+    torch.cuda.synchronize()
+    del m
+    gc.collect()
+    assert meta_ref() is None  # module unload freed everything
+
+
+@requires_cuda
+def test_invalid_lifetime_rejected(grid):
+    with pytest.raises(ValueError, match="lifetime"):
+        tp.localized_empty(SHAPE, torch.float16, grid, lifetime="forever")
