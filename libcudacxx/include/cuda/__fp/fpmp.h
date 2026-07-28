@@ -155,11 +155,11 @@
       INTO fpmp2, which can drop precision at unintended conversions or introduce accidental
       round-trips / FP64 use (accuracy/perf) with no diagnostic; keep the default 1 unless the
       migration benefit outweighs that risk.
-    - _CCCL_FPMP_FP128_ENABLE: Automatically detected, following _CCCL_HAS_FLOAT128() for __float128
-      and falling back to a 128-bit long double on platforms that have one. Note that CCCL reports no
-      __float128 for GCC in strict-ANSI mode (so for nvcc, which always compiles strictly) unless you
-      define CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS and compile with -fext-numeric-literals.
-      Can be explicitly set to 0 to disable 128-bit float support (older compilers, compatibility).
+    - _CCCL_FPMP_FP128_ENABLE: Automatically detected: the __float128 type where the compiler provides
+      it, otherwise a 128-bit long double on platforms that have one (aarch64, s390x, PowerPC with IEEE
+      long double). Under CUDA it is device-only and limited to sm_100+; set it to 1 explicitly on a
+      toolchain that provides device fp128 on earlier architectures. Can be set to 0 to disable 128-bit
+      float support (older compilers, compatibility).
     - _CCCL_FPMP_FP128_MATH_FALLBACK: When 1, fp64mp2 math functions use quad-precision (__fpmp_fp128)
       for higher accuracy. Requires libquadmath linkage, slower compilation, larger code.
       When 0 (default), falls back to double precision—faster builds, smaller code, but
@@ -202,6 +202,7 @@
 #include <cuda/__fp/fpmp_impl_cvt.h>
 #include <cuda/__fp/fpmp_impl_divsqrt.h>
 #include <cuda/__fp/fpmp_impl_muladd.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -497,7 +498,7 @@ public:
 #if __cplusplus >= 202002L
   _CCCL_API constexpr _CCCL_FPMP_EXPLICIT fpmp2(double __d) noexcept
   {
-    if (_CCCL_FPMP_IS_CONSTEVAL())
+    if (::cuda::std::is_constant_evaluated())
     {
       __mp2_hi_ = (_FpType) __d;
       __mp2_lo_ = (_FpType) (__d - (double) (_FpType) __d);
@@ -525,7 +526,7 @@ public:
   _CCCL_API constexpr _CCCL_FPMP_EXPLICIT fpmp2(__fpmp_fp128 __d) noexcept
 #  if __cplusplus >= 202002L
   {
-    if (_CCCL_FPMP_IS_CONSTEVAL())
+    if (::cuda::std::is_constant_evaluated())
     {
       __mp2_hi_ = (_FpType) __d;
       __mp2_lo_ = (_FpType) (__d - (__fpmp_fp128) (_FpType) __d);
