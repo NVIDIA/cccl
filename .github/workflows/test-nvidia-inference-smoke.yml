@@ -114,6 +114,7 @@ jobs:
             --repository "${GITHUB_REPOSITORY}" \
             --run-id "${GITHUB_RUN_ID}" \
             --head-sha "${GITHUB_SHA}" \
+            --codex-home "${RUNNER_TEMP}/codex-home" \
             --output "${RUNNER_TEMP}/agent-summary.md"
 
       - name: Publish the failure analysis

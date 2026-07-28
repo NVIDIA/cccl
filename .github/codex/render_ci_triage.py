@@ -31,6 +31,36 @@ def load_json(path):
         fail(f"could not read JSON from {path}: {error}")
 
 
+def load_token_usage(codex_home):
+    total_tokens = None
+    session_dir = codex_home / "sessions"
+    for path in sorted(session_dir.rglob("rollout-*.jsonl")):
+        try:
+            with path.open(encoding="utf-8") as stream:
+                for line in stream:
+                    try:
+                        event = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    payload = event.get("payload", {})
+                    if payload.get("type") != "token_count":
+                        continue
+                    value = (
+                        (payload.get("info") or {})
+                        .get("total_token_usage", {})
+                        .get("total_tokens")
+                    )
+                    if (
+                        isinstance(value, int)
+                        and not isinstance(value, bool)
+                        and value >= 0
+                    ):
+                        total_tokens = value
+        except OSError:
+            continue
+    return total_tokens
+
+
 def validate_schema(value, schema, location="$"):
     expected_type = schema.get("type")
     checks = {
@@ -283,6 +313,7 @@ def parse_args():
     parser.add_argument("--repository", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--head-sha", required=True)
+    parser.add_argument("--codex-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -305,6 +336,9 @@ def main():
         args.run_id,
         args.head_sha,
     )
+    total_tokens = load_token_usage(args.codex_home)
+    token_count = f"{total_tokens:,}" if total_tokens is not None else "unavailable"
+    report += f"\n<sub>Tokens used: {token_count}</sub>\n"
     args.output.write_text(report, encoding="utf-8")
 
 
