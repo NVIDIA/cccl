@@ -21,7 +21,10 @@ fi
 gh api "repos/${repository}/actions/runs/${run_id}" > "${output_dir}/run.json"
 
 if [[ -n "${pr_number}" ]]; then
-  gh pr diff "${pr_number}" --repo "${repository}" > "${output_dir}/pr.diff"
+  if ! gh pr diff "${pr_number}" --repo "${repository}" > "${output_dir}/pr.diff"; then
+    echo "::warning::Unable to collect the pull request diff; continuing without it."
+    rm -f "${output_dir}/pr.diff"
+  fi
 fi
 
 gh api --paginate --slurp \

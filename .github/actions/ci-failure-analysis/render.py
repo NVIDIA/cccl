@@ -13,6 +13,7 @@ REPORT_LIMIT = 60000
 CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 INLINE_MARKDOWN = re.compile(r"([\\`*_\[\]])")
 URL_SCHEME = re.compile(r"(?i)\b(https?):/{2}")
+WWW_LINK = re.compile(r"(?i)\bwww\.")
 FAILED_CONCLUSIONS = {
     "action_required",
     "failure",
@@ -84,6 +85,7 @@ def sanitize_html(value, limit=1200):
     value = html.escape(value, quote=True)
     value = re.sub(r"#(?=\d)", "&#35;", value)
     value = URL_SCHEME.sub(lambda match: f"{match.group(1)}&#58;//", value)
+    value = WWW_LINK.sub(lambda match: f"{match.group(0)[:-1]}&#46;", value)
     value = value.replace("@", "&#64;")
     return value
 

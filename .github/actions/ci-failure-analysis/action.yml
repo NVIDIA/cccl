@@ -1,15 +1,20 @@
 name: "CCCL CI Failure Analysis"
 description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 
+# Caller contract:
+# - Grant `actions: read` and `contents: read`; add `pull-requests: read` when
+#   `pr_number` is provided.
+# - Finish the relevant target jobs before invoking the action.
+# - Check out the target source revision when repository inspection is desired.
 inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
     required: true
   run_id:
-    description: "Workflow run in this repository to analyze. All relevant jobs must be finished before this action starts."
+    description: "Workflow run in this repository to analyze."
     required: true
   pr_number:
-    description: "Optional pull request number for collecting its diff."
+    description: "Optional pull request corresponding to the run, for collecting its diff."
     required: false
     default: ""
 
