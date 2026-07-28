@@ -56,7 +56,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   // Get an estimate from *this->hi:
   _FpType __recip_hi = __fpmp_rcp_rn(__b_hi);
 
-  // Do a Newton-Rhapson iteration:
+  // Do a Newton-Raphson iteration:
   // This line can break for some uninvestigated reason,
   // Use the one below:
   // recip_hi = recip_hi*(2.0 - (x.get_hi())*recip_hi);
