@@ -54,44 +54,45 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
+#  include <cuda/std/limits>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 //! @brief Accumulator of the reduction, carrying the current first minimum and last maximum with their offsets
-template <class _Tp>
+template <class _Tp, class _Index>
 struct __minmax_element_result
 {
   _Tp __min_value_;
   _Tp __max_value_;
-  int64_t __min_index_;
-  int64_t __max_index_;
+  _Index __min_index_;
+  _Index __max_index_;
 };
 
 //! @brief Loads the element at the given offset and enters it into the reduction as both minimum and maximum
-template <class _Iter>
+template <class _Iter, class _Index>
 struct __minmax_element_transform_fn
 {
   _Iter __first_;
 
-  [[nodiscard]] _CCCL_API __minmax_element_result<iter_value_t<_Iter>> operator()(int64_t __index) const
+  [[nodiscard]] _CCCL_API __minmax_element_result<iter_value_t<_Iter>, _Index> operator()(_Index __index) const
   {
     const iter_value_t<_Iter> __value = __first_[static_cast<iter_difference_t<_Iter>>(__index)];
-    return __minmax_element_result<iter_value_t<_Iter>>{__value, __value, __index, __index};
+    return __minmax_element_result<iter_value_t<_Iter>, _Index>{__value, __value, __index, __index};
   }
 };
 
 //! @brief Combines two accumulators in a single pass: on equivalent values the minimum keeps the smaller offset and
 //!        the maximum keeps the larger offset, matching the first-minimum / last-maximum requirement of
 //!        cuda::std::minmax_element
-template <class _Tp, class _BinaryPred>
+template <class _Tp, class _Index, class _BinaryPred>
 struct __minmax_element_reduce_fn
 {
   _BinaryPred __pred_;
 
-  [[nodiscard]] _CCCL_API constexpr __minmax_element_result<_Tp>
-  operator()(const __minmax_element_result<_Tp>& __lhs, const __minmax_element_result<_Tp>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr __minmax_element_result<_Tp, _Index>
+  operator()(const __minmax_element_result<_Tp, _Index>& __lhs, const __minmax_element_result<_Tp, _Index>& __rhs) const
   {
     // The initial value of the reduction is flagged with offset -1 and loses against every element
     if (__lhs.__min_index_ < 0)
@@ -103,7 +104,7 @@ struct __minmax_element_reduce_fn
       return __lhs;
     }
 
-    __minmax_element_result<_Tp> __result = __lhs;
+    __minmax_element_result<_Tp, _Index> __result = __lhs;
     // first minimum: a strictly smaller value wins, equivalent values keep the smaller offset
     if (__pred_(__rhs.__min_value_, __lhs.__min_value_)
         || (!__pred_(__lhs.__min_value_, __rhs.__min_value_) && __rhs.__min_index_ < __lhs.__min_index_))
@@ -127,25 +128,22 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__minmax_element, __execution_backend::__cuda>
 {
-  template <class _Policy, class _InputIterator, class _BinaryPred>
-  [[nodiscard]] _CCCL_HOST_API static ::cuda::std::pair<_InputIterator, _InputIterator> __par_impl(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPred __pred)
+  template <class _IndexT, class _Policy, class _InputIterator, class _BinaryPred>
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::std::pair<_InputIterator, _InputIterator>
+  __reduce_impl(const _Policy& __policy, _InputIterator __first, const _IndexT __count, _BinaryPred __pred)
   {
     const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
-    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     using _ValueT  = iter_value_t<_InputIterator>;
-    using _ResultT = __minmax_element_result<_ValueT>;
-
-    const auto __count = static_cast<int64_t>(::cuda::std::distance(__first, __last));
+    using _ResultT = __minmax_element_result<_ValueT, _IndexT>;
 
     // cuda::std::minmax_element returns the *first* minimum and the *last* maximum. Both are found
     // in a single traversal of the range: every element enters the reduction as an accumulator
     // {value, value, index, index} and the reduction operator resolves ties via the offsets. The
     // initial value is flagged with offset -1 so that it loses against every element of the range.
-    __minmax_element_transform_fn<_InputIterator> __transform_op{__first};
-    __minmax_element_reduce_fn<_ValueT, _BinaryPred> __reduce_op{::cuda::std::move(__pred)};
-    _ResultT __init{_ValueT{}, _ValueT{}, -1, -1};
+    __minmax_element_transform_fn<_InputIterator, _IndexT> __transform_op{__first};
+    __minmax_element_reduce_fn<_ValueT, _IndexT, _BinaryPred> __reduce_op{::cuda::std::move(__pred)};
+    _ResultT __init{_ValueT{}, _ValueT{}, _IndexT{-1}, _IndexT{-1}};
 
     // Determine temporary device storage requirements for the reduction
     size_t __num_bytes = 0;
@@ -154,7 +152,7 @@ struct __pstl_dispatch<__pstl_algorithm::__minmax_element, __execution_backend::
       "__pstl_cuda_minmax_element: determination of device storage for cub::DeviceReduce::TransformReduce failed",
       static_cast<void*>(nullptr),
       __num_bytes,
-      ::cuda::counting_iterator<int64_t>{0},
+      ::cuda::counting_iterator<_IndexT>{0},
       static_cast<_ResultT*>(nullptr),
       __count,
       __reduce_op,
@@ -171,7 +169,7 @@ struct __pstl_dispatch<__pstl_algorithm::__minmax_element, __execution_backend::
         "__pstl_cuda_minmax_element: kernel launch of cub::DeviceReduce::TransformReduce failed",
         __storage.__get_temp_storage(),
         __num_bytes,
-        ::cuda::counting_iterator<int64_t>{0},
+        ::cuda::counting_iterator<_IndexT>{0},
         __storage.template __get_ptr<0, _ResultT>(),
         __count,
         ::cuda::std::move(__reduce_op),
@@ -195,6 +193,23 @@ struct __pstl_dispatch<__pstl_algorithm::__minmax_element, __execution_backend::
     using __diff_t = iter_difference_t<_InputIterator>;
     return ::cuda::std::pair<_InputIterator, _InputIterator>{
       __first + static_cast<__diff_t>(__result.__min_index_), __first + static_cast<__diff_t>(__result.__max_index_)};
+  }
+
+  template <class _Policy, class _InputIterator, class _BinaryPred>
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::std::pair<_InputIterator, _InputIterator>
+  __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPred __pred)
+  {
+    const auto __ctx = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
+    const auto __count = static_cast<int64_t>(::cuda::std::distance(__first, __last));
+
+    // Prefer 32 bit offsets: they shrink the accumulator and let cub select the 32 bit offset kernels
+    if (__count <= static_cast<int64_t>(::cuda::std::numeric_limits<int32_t>::max()))
+    {
+      return __reduce_impl(
+        __policy, ::cuda::std::move(__first), static_cast<int32_t>(__count), ::cuda::std::move(__pred));
+    }
+    return __reduce_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
   }
 
   template <class _Policy, class _InputIterator, class _BinaryPred>
