@@ -32,4 +32,3 @@
 #include <cuda/__fp/fpmp_limits.h>
 
 #endif // _CUDA_FPMP
-
