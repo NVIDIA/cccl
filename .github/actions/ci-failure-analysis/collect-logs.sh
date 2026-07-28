@@ -3,15 +3,22 @@
 set -euo pipefail
 
 output_dir="$1"
-pr_number="${2:-}"
+run_id="$2"
+pr_number="${3:-}"
 repository="${GITHUB_REPOSITORY:?}"
-run_id="${GITHUB_RUN_ID:?}"
 mkdir -p "${output_dir}"
+
+if [[ ! "${run_id}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Workflow run ID must be a positive integer" >&2
+  exit 1
+fi
 
 if [[ -n "${pr_number}" && ! "${pr_number}" =~ ^[1-9][0-9]*$ ]]; then
   echo "Pull request number must be a positive integer" >&2
   exit 1
 fi
+
+gh api "repos/${repository}/actions/runs/${run_id}" > "${output_dir}/run.json"
 
 if [[ -n "${pr_number}" ]]; then
   gh pr diff "${pr_number}" --repo "${repository}" > "${output_dir}/pr.diff"

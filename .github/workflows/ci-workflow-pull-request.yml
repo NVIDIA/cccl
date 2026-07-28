@@ -525,6 +525,8 @@ jobs:
             exit 1
           fi
 
+  # This analyzes the current run. Keep every job whose failures should be included in
+  # this job's direct or transitive `needs` so log collection starts after they finish.
   analyze-failures:
     name: Analyze CI failures
     if: >-
@@ -577,6 +579,7 @@ jobs:
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: ${{ github.run_id }}
           pr_number: ${{ steps.pull-request.outputs.pr_number }}
 
   publish-failure-analysis:

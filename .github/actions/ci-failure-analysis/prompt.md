@@ -1,6 +1,6 @@
 # CI failure triage
 
-Diagnose the current GitHub Actions run from the collected logs. Group equivalent
+Diagnose the target GitHub Actions run from the collected logs. Group equivalent
 actionable failures, inspect relevant source and changes where useful, and return the
 supplied JSON schema.
 

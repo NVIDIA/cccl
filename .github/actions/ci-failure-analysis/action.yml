@@ -1,9 +1,12 @@
 name: "CCCL CI Failure Analysis"
-description: "Collect failed GitHub Actions logs and produce a schema-validated AI analysis."
+description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 
 inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
+    required: true
+  run_id:
+    description: "Workflow run in this repository to analyze. All relevant jobs must be finished before this action starts."
     required: true
   pr_number:
     description: "Optional pull request number for collecting its diff."
@@ -22,10 +25,12 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ inputs.pr_number }}
+        RUN_ID: ${{ inputs.run_id }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         "${GITHUB_ACTION_PATH}/collect-logs.sh" \
           /tmp/ci-logs \
+          "${RUN_ID}" \
           "${PR_NUMBER}"
 
     - name: Configure agent permissions
@@ -61,8 +66,8 @@ runs:
           --schema "${GITHUB_ACTION_PATH}/output.schema.json" \
           --jobs /tmp/ci-logs/jobs.json \
           --repository "${GITHUB_REPOSITORY}" \
-          --run-id "${GITHUB_RUN_ID}" \
-          --head-sha "${GITHUB_SHA}" \
+          --run-id "$(jq -er '.id | tostring' /tmp/ci-logs/run.json)" \
+          --head-sha "$(jq -er '.head_sha' /tmp/ci-logs/run.json)" \
           --output "${RUNNER_TEMP}/agent-summary.md"
 
     - name: Export failure analysis
