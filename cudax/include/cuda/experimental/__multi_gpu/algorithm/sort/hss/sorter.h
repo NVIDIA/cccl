@@ -184,7 +184,7 @@ private:
     _CommRange&& __comms,
     _EnvRange&& __envs,
     _InputRange&& __local_inputs,
-    ::std::vector<__buffer_type<_Tp>>& __local_exchanged);
+    const ::std::vector<__buffer_type<_Tp>>& __local_exchanged);
 
 public:
   template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
