@@ -38,6 +38,7 @@ _BINDING_EXPORTS = (
     "cute_partition",
     "data_place",
     "dep",
+    "dlpack_export",
     "exec_place",
     "exec_place_grid",
     "exec_place_resources",
