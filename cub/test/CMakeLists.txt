@@ -162,11 +162,6 @@ function(
     )
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
 
-    set(_cub_allow_running_no_tests_arg)
-    if (has_large_tests)
-      set(_cub_allow_running_no_tests_arg "-DALLOW_RUNNING_NO_TESTS=ON")
-    endif()
-
     rapids_test_add(
       NAME ${test_target}
       # gersemi: off
@@ -175,7 +170,7 @@ function(
            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
            "-DARGS=~[large-mem]"
-           ${_cub_allow_running_no_tests_arg}
+           "-DALLOW_RUNNING_NO_TESTS=ON"
            "-DTYPE=Catch2"
            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
       # gersemi: on
@@ -196,7 +191,7 @@ function(
              "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
              "-DTEST=$<TARGET_FILE:${test_target}>"
              "-DARGS=[large-mem]"
-             ${_cub_allow_running_no_tests_arg}
+             "-DALLOW_RUNNING_NO_TESTS=ON"
              "-DTYPE=Catch2"
              -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         # gersemi: on
