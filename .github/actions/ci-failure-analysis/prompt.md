@@ -37,8 +37,6 @@ not run builds or tests.
 ## Return structured results
 
 Return only one JSON object matching the supplied schema, with no Markdown or commentary.
-Do not reproduce credentials or other sensitive values; replace them with `<redacted>`
-while preserving the surrounding diagnostic context.
 
 For each group:
 
