@@ -68,6 +68,20 @@ function(_cub_is_fail_test result_var test_src)
   endif()
 endfunction()
 
+## _cub_has_large_tests
+#
+# If the test source contains the "[large-mem]" tag, `result_var` will be set
+# to TRUE.
+function(_cub_has_large_tests result_var test_src)
+  file(READ "${CUB_SOURCE_DIR}/test/${test_src}" test_source)
+  string(FIND "${test_source}" "[large-mem]" idx)
+  if (idx EQUAL -1)
+    set(${result_var} FALSE PARENT_SCOPE)
+  else()
+    set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
 ## _cub_launcher_requires_rdc
 #
 # If given launcher id corresponds to a CDP launcher, set `out_var` to 1.
@@ -101,13 +115,8 @@ function(
   launcher_id
 )
   _cub_is_catch2_test(is_catch2_test "${test_src}")
+  _cub_has_large_tests(has_large_tests "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
-  file(READ "${CUB_SOURCE_DIR}/test/${test_src}" _cub_test_source)
-  string(FIND "${_cub_test_source}" "[large-mem]" _cub_large_test_position)
-  set(_cub_has_large_tests FALSE)
-  if (_cub_large_test_position GREATER_EQUAL 0)
-    set(_cub_has_large_tests TRUE)
-  endif()
 
   # The actual name of the test's target:
   set(test_target cub.test.${test_name}${variant_suffix})
@@ -154,7 +163,7 @@ function(
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
 
     set(_cub_allow_running_no_tests_arg)
-    if (_cub_has_large_tests)
+    if (has_large_tests)
       set(_cub_allow_running_no_tests_arg "-DALLOW_RUNNING_NO_TESTS=ON")
     endif()
 
@@ -178,7 +187,7 @@ function(
       PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
     )
 
-    if (_cub_has_large_tests)
+    if (has_large_tests)
       rapids_test_add(
         NAME ${test_target}.large
         # gersemi: off
@@ -316,7 +325,7 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      if (_cub_has_large_tests)
+      if (has_large_tests)
         set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_LARGE})
       else()
         set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_SMALL})
