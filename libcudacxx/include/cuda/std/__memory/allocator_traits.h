@@ -363,7 +363,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void deallocate(allocator_type& __a, pointer __p, size_type __n) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void deallocate( // NOLINT(bugprone-exception-escape)
+    allocator_type& __a,
+    pointer __p,
+    size_type __n) noexcept
   {
     __a.deallocate(__p, __n);
   }

@@ -210,7 +210,7 @@ struct DeviceMerge
     ::cuda::std::int64_t num_keys2,
     KeyIteratorOut keys_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
@@ -436,7 +436,7 @@ struct DeviceMerge
     KeyIteratorOut keys_out,
     ValueIteratorOut values_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
     using default_policy_selector = detail::merge::

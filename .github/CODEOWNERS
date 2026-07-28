@@ -5,7 +5,7 @@ libcudacxx/ @nvidia/cccl-libcudacxx-codeowners
 cudax/ @nvidia/cccl-cudax-codeowners
 c/ @nvidia/cccl-c-codeowners
 python/ @nvidia/cccl-python-codeowners
-cudax/include/cuda/experimental/__cuco @nvidia/cccl-cuco-codeowners 
+cudax/include/cuda/experimental/__cuco @nvidia/cccl-cuco-codeowners
 
 # Infrastructure
 .github/ @nvidia/cccl-infra-codeowners

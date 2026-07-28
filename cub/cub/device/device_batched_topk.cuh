@@ -70,7 +70,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   SegmentSizeParameterT segment_sizes,
   KParameterT k,
   NumSegmentsParameterT num_segments,
-  EnvT env)
+  const EnvT& env)
 {
   // ---------------------------------------------------------------------------
   // Execution requirements.

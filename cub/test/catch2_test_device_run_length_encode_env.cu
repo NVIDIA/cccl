@@ -45,7 +45,8 @@ struct rle_non_trivial_runs_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleNonTrivialRunsPolicy
   {
-    return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}};
+    return {cub::RleNonTrivialRunsAlgorithm::lookback,
+            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}}};
   }
 };
 
@@ -363,25 +364,28 @@ C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]
 
   // aggregate init
   constexpr auto p1 = cub::RleNonTrivialRunsPolicy{
-    128,
-    7,
-    cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
-    cub::CacheLoadModifier::LOAD_LDG,
-    false,
-    cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    cub::RleNonTrivialRunsAlgorithm::lookback,
+    {128,
+     7,
+     cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+     cub::CacheLoadModifier::LOAD_LDG,
+     false,
+     cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+     {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::RleNonTrivialRunsPolicy{
-    .threads_per_block       = 128,
-    .items_per_thread        = 7,
-    .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
-    .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
-    .store_with_time_slicing = false,
-    .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay          = cub::LookbackDelayPolicy{
-               .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+    .algorithm = cub::RleNonTrivialRunsAlgorithm::lookback,
+    .lookback  = cub::RleNonTrivialRunsLookbackPolicy{
+       .threads_per_block       = 128,
+       .items_per_thread        = 7,
+       .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+       .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
+       .store_with_time_slicing = false,
+       .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+       .lookback_delay          = cub::LookbackDelayPolicy{
+                  .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -396,10 +400,11 @@ C2H_TEST("Test RleNonTrivialRunsPolicy properties", "[run_length_encode][device]
     return os.str();
   };
   REQUIRE(to_string(p1)
-          == "RleNonTrivialRunsPolicy { .threads_per_block = 128, .items_per_thread = 7"
+          == "RleNonTrivialRunsPolicy { .algorithm = RleNonTrivialRunsAlgorithm::lookback"
+             ", .lookback = RleNonTrivialRunsLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
              ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_LDG"
              ", .store_with_time_slicing = 0, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 350, .l2_write_latency = 450 } }");
+             ", .delay = 350, .l2_write_latency = 450 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
