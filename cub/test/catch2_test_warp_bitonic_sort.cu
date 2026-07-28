@@ -4,6 +4,7 @@
 #include <cub/util_arch.cuh>
 #include <cub/warp/warp_bitonic_sort.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>

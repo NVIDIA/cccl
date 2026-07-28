@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -328,20 +329,12 @@ private:
       const int other_i = i + first_half_len;
       KeyT& key         = keys[i];
       KeyT& other_key   = keys[other_i];
-      bool should_swap;
-      if constexpr (Reverse)
-      {
-        should_swap = compare_op(key, other_key);
-      }
-      else
-      {
-        should_swap = compare_op(other_key, key);
-      }
+      bool should_swap  = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+
       if (should_swap)
       {
         using ::cuda::std::swap;
         swap(key, other_key);
-
         if constexpr (!keys_only)
         {
           swap(values[i], values[other_i]);
@@ -394,20 +387,12 @@ private:
       const int other_i = i + first_half_len;
       KeyT& key         = keys[i];
       KeyT& other_key   = keys[other_i];
-      bool should_swap;
-      if constexpr (Reverse)
-      {
-        should_swap = compare_op(key, other_key);
-      }
-      else
-      {
-        should_swap = compare_op(other_key, key);
-      }
+      bool should_swap  = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+
       if (should_swap && other_i * warp_threads + lane < valid_items)
       {
         using ::cuda::std::swap;
         swap(key, other_key);
-
         if constexpr (!keys_only)
         {
           swap(values[i], values[other_i]);
