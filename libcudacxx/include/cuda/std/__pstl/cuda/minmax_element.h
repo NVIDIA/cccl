@@ -35,7 +35,7 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__iterator/discard_iterator.h>
+#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -46,7 +46,6 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__iterator/reverse_iterator.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
@@ -54,11 +53,74 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/__utility/pair.h>
-#  include <cuda/std/tuple>
+#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
+
+//! @brief Accumulator of the reduction, carrying the current first minimum and last maximum with their offsets
+template <class _Tp>
+struct __minmax_element_result
+{
+  _Tp __min_value_;
+  _Tp __max_value_;
+  int64_t __min_index_;
+  int64_t __max_index_;
+};
+
+//! @brief Loads the element at the given offset and enters it into the reduction as both minimum and maximum
+template <class _Iter>
+struct __minmax_element_transform_fn
+{
+  _Iter __first_;
+
+  [[nodiscard]] _CCCL_API __minmax_element_result<iter_value_t<_Iter>> operator()(int64_t __index) const
+  {
+    const iter_value_t<_Iter> __value = __first_[static_cast<iter_difference_t<_Iter>>(__index)];
+    return __minmax_element_result<iter_value_t<_Iter>>{__value, __value, __index, __index};
+  }
+};
+
+//! @brief Combines two accumulators in a single pass: on equivalent values the minimum keeps the smaller offset and
+//!        the maximum keeps the larger offset, matching the first-minimum / last-maximum requirement of
+//!        cuda::std::minmax_element
+template <class _Tp, class _BinaryPred>
+struct __minmax_element_reduce_fn
+{
+  _BinaryPred __pred_;
+
+  [[nodiscard]] _CCCL_API constexpr __minmax_element_result<_Tp>
+  operator()(const __minmax_element_result<_Tp>& __lhs, const __minmax_element_result<_Tp>& __rhs) const
+  {
+    // The initial value of the reduction is flagged with offset -1 and loses against every element
+    if (__lhs.__min_index_ < 0)
+    {
+      return __rhs;
+    }
+    if (__rhs.__min_index_ < 0)
+    {
+      return __lhs;
+    }
+
+    __minmax_element_result<_Tp> __result = __lhs;
+    // first minimum: a strictly smaller value wins, equivalent values keep the smaller offset
+    if (__pred_(__rhs.__min_value_, __lhs.__min_value_)
+        || (!__pred_(__lhs.__min_value_, __rhs.__min_value_) && __rhs.__min_index_ < __lhs.__min_index_))
+    {
+      __result.__min_value_ = __rhs.__min_value_;
+      __result.__min_index_ = __rhs.__min_index_;
+    }
+    // last maximum: a strictly greater value wins, equivalent values keep the larger offset
+    if (__pred_(__lhs.__max_value_, __rhs.__max_value_)
+        || (!__pred_(__rhs.__max_value_, __lhs.__max_value_) && __rhs.__max_index_ > __lhs.__max_index_))
+    {
+      __result.__max_value_ = __rhs.__max_value_;
+      __result.__max_index_ = __rhs.__max_index_;
+    }
+    return __result;
+  }
+};
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -72,92 +134,58 @@ struct __pstl_dispatch<__pstl_algorithm::__minmax_element, __execution_backend::
     const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
+    using _ValueT  = iter_value_t<_InputIterator>;
+    using _ResultT = __minmax_element_result<_ValueT>;
+
     const auto __count = static_cast<int64_t>(::cuda::std::distance(__first, __last));
 
-    // cuda::std::minmax_element returns the *first* minimum and the *last* maximum.
-    // cub::DeviceReduce::ArgMin/ArgMax both keep the smaller offset on ties (i.e. the
-    // first extremum encountered). ArgMin over the forward range therefore yields the
-    // first minimum directly, while the last maximum is obtained by running ArgMax over
-    // the reversed range: the first maximum in reverse order is the last maximum in
-    // forward order. The reversed index __max_rev is mapped back via __count - 1 - __max_rev.
-    auto __rfirst = ::cuda::std::make_reverse_iterator(__last);
+    // cuda::std::minmax_element returns the *first* minimum and the *last* maximum. Both are found
+    // in a single traversal of the range: every element enters the reduction as an accumulator
+    // {value, value, index, index} and the reduction operator resolves ties via the offsets. The
+    // initial value is flagged with offset -1 so that it loses against every element of the range.
+    __minmax_element_transform_fn<_InputIterator> __transform_op{__first};
+    __minmax_element_reduce_fn<_ValueT, _BinaryPred> __reduce_op{::cuda::std::move(__pred)};
+    _ResultT __init{_ValueT{}, _ValueT{}, -1, -1};
 
-    // Determine the device storage requirements for both reductions. The two reductions run
-    // sequentially on the same stream, so they share a single scratch buffer and a single
-    // allocation that also holds both result slots.
-    size_t __min_bytes = 0;
+    // Determine temporary device storage requirements for the reduction
+    size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::DeviceReduce::ArgMin,
-      "__pstl_cuda_minmax_element: determination of device storage for cub::DeviceReduce::ArgMin failed",
+      CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
+      "__pstl_cuda_minmax_element: determination of device storage for cub::DeviceReduce::TransformReduce failed",
       static_cast<void*>(nullptr),
-      __min_bytes,
-      __first,
-      ::cuda::discard_iterator{},
-      static_cast<size_t*>(nullptr),
+      __num_bytes,
+      ::cuda::counting_iterator<int64_t>{0},
+      static_cast<_ResultT*>(nullptr),
       __count,
-      __pred,
-      __policy);
+      __reduce_op,
+      __transform_op,
+      __init);
 
-    size_t __max_bytes = 0;
-    _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::DeviceReduce::ArgMax,
-      "__pstl_cuda_minmax_element: determination of device storage for cub::DeviceReduce::ArgMax failed",
-      static_cast<void*>(nullptr),
-      __max_bytes,
-      __rfirst,
-      ::cuda::discard_iterator{},
-      static_cast<size_t*>(nullptr),
-      __count,
-      __pred,
-      __policy);
-
-    size_t __min_idx = 0ull;
-    size_t __max_rev = 0ull;
+    _ResultT __result;
     {
-      __temporary_storage<size_t, size_t> __storage{
-        __policy, (__min_bytes < __max_bytes ? __max_bytes : __min_bytes), 1, 1};
+      __temporary_storage<_ResultT> __storage{__policy, __num_bytes, 1};
 
-      // First minimum: ArgMin over [__first, __last)
+      // Run the reduction
       _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceReduce::ArgMin,
-        "__pstl_cuda_minmax_element: kernel launch of cub::DeviceReduce::ArgMin failed",
+        CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
+        "__pstl_cuda_minmax_element: kernel launch of cub::DeviceReduce::TransformReduce failed",
         __storage.__get_temp_storage(),
-        __min_bytes,
-        __first,
-        ::cuda::discard_iterator{},
-        __storage.template __get_raw_ptr<0>(),
+        __num_bytes,
+        ::cuda::counting_iterator<int64_t>{0},
+        __storage.template __get_ptr<0, _ResultT>(),
         __count,
-        __pred,
-        __policy);
-
-      // Last maximum: ArgMax over reverse([__first, __last))
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceReduce::ArgMax,
-        "__pstl_cuda_minmax_element: kernel launch of cub::DeviceReduce::ArgMax failed",
-        __storage.__get_temp_storage(),
-        __max_bytes,
-        __rfirst,
-        ::cuda::discard_iterator{},
-        __storage.template __get_raw_ptr<1>(),
-        __count,
-        ::cuda::std::move(__pred),
-        __policy);
-
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemcpyAsync,
-        "__pstl_cuda_minmax_element: copy of min result from device to host failed",
-        ::cuda::std::addressof(__min_idx),
-        __storage.template __get_raw_ptr<0>(),
-        sizeof(size_t),
-        ::cudaMemcpyDefault,
+        ::cuda::std::move(__reduce_op),
+        ::cuda::std::move(__transform_op),
+        ::cuda::std::move(__init),
         __stream.get());
 
+      // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
-        "__pstl_cuda_minmax_element: copy of max result from device to host failed",
-        ::cuda::std::addressof(__max_rev),
-        __storage.template __get_raw_ptr<1>(),
-        sizeof(size_t),
+        "__pstl_cuda_minmax_element: copy of result from device to host failed",
+        ::cuda::std::addressof(__result),
+        __storage.template __get_raw_ptr<0>(),
+        sizeof(_ResultT),
         ::cudaMemcpyDefault,
         __stream.get());
     }
@@ -166,8 +194,7 @@ struct __pstl_dispatch<__pstl_algorithm::__minmax_element, __execution_backend::
 
     using __diff_t = iter_difference_t<_InputIterator>;
     return ::cuda::std::pair<_InputIterator, _InputIterator>{
-      __first + static_cast<__diff_t>(__min_idx),
-      __first + static_cast<__diff_t>(__count - 1 - static_cast<int64_t>(__max_rev))};
+      __first + static_cast<__diff_t>(__result.__min_index_), __first + static_cast<__diff_t>(__result.__max_index_)};
   }
 
   template <class _Policy, class _InputIterator, class _BinaryPred>
