@@ -554,7 +554,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      analysis: ${{ steps.export-analysis.outputs.markdown }}
+      analysis: ${{ steps.failure-analysis.outputs.markdown }}
       pr_number: ${{ steps.pull-request.outputs.pr_number }}
     steps:
       - name: Check out CCCL
@@ -600,55 +600,12 @@ jobs:
             echo "pr_number=${pr_number}"
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Collect workflow logs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .github/codex/collect_ci_logs.sh /tmp/ci-logs
-
-      - name: Configure agent permissions
-        run: |
-          mkdir -p "${RUNNER_TEMP}/codex-home"
-          cp .github/codex/ci-triage.toml "${RUNNER_TEMP}/codex-home/config.toml"
-
-      - name: Investigate the workflow run
-        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1
-        env:
-          CI_LOG_DIR: /tmp/ci-logs
-          PR_BASE_SHA: ${{ steps.pull-request.outputs.base_sha }}
+      - name: Analyze failures
+        id: failure-analysis
+        uses: ./.github/actions/ci-failure-analysis
         with:
-          openai-api-key: ${{ secrets.NVINFERENCE_API_KEY }}
-          responses-api-endpoint: https://inference-api.nvidia.com/v1/responses
-          codex-version: 0.144.5
-          codex-home: ${{ runner.temp }}/codex-home
-          permission-profile: ci_triage
-          allow-bot-users: "copy-pr-bot[bot]"
-          model: openai/openai/gpt-5.5
-          codex-args: --ignore-rules
-          output-file: ${{ runner.temp }}/agent-analysis.json
-          output-schema-file: .github/codex/ci-triage-output.schema.json
-          prompt-file: .github/codex/ci-triage-prompt.md
-
-      - name: Validate and render failure analysis
-        run: |
-          python3 .github/codex/render_ci_triage.py \
-            --analysis "${RUNNER_TEMP}/agent-analysis.json" \
-            --schema .github/codex/ci-triage-output.schema.json \
-            --repository "${GITHUB_REPOSITORY}" \
-            --run-id "${GITHUB_RUN_ID}" \
-            --head-sha "${GITHUB_SHA}" \
-            --codex-home "${RUNNER_TEMP}/codex-home" \
-            --output "${RUNNER_TEMP}/agent-summary.md"
-
-      - name: Export failure analysis
-        id: export-analysis
-        run: |
-          test -s "${RUNNER_TEMP}/agent-summary.md"
-          delimiter="EOF_$(openssl rand -hex 16)"
-          {
-            echo "markdown<<${delimiter}"
-            cat "${RUNNER_TEMP}/agent-summary.md"
-            printf '\n%s\n' "${delimiter}"
-          } >> "${GITHUB_OUTPUT}"
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          base_sha: ${{ steps.pull-request.outputs.base_sha }}
 
   publish-failure-analysis:
     name: Add failure analysis to CI results

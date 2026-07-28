@@ -1,7 +1,7 @@
 # CI failure triage
 
 Diagnose the current GitHub Actions run from the collected logs. Group equivalent
-actionable failures, inspect the PR changes and source where useful, and return the
+actionable failures, inspect relevant source and changes where useful, and return the
 supplied JSON schema.
 
 ## Evidence
@@ -20,8 +20,8 @@ names, conclusions, and step numbers. If any required file is missing, return
 
 ## Diagnose and group
 
-Inspect `git diff "${PR_BASE_SHA}" HEAD` and relevant source when they can clarify the
-failure or connect it to the PR. Do not run builds or tests.
+When `BASE_SHA` is non-empty, inspect `git diff "${BASE_SHA}" HEAD`. Inspect relevant
+source when it can clarify the failure. Do not run builds or tests.
 
 - Use each job's earliest actionable failure; ignore subsequent cleanup, wrapper, and
   aggregation errors.
@@ -32,7 +32,8 @@ failure or connect it to the PR. Do not run builds or tests.
 - Put each non-derivative failed job in exactly one group. Omit gate jobs that failed only
   because another job failed, and list cancelled jobs only in `cancelled_job_ids`.
 - Keep failures separate when equivalence is uncertain. Order groups by developer value:
-  likely PR-caused failures first, then actionable environment or dependency failures.
+  likely code or configuration failures first, then actionable environment or dependency
+  failures.
 
 ## Return structured results
 
