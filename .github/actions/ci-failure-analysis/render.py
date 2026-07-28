@@ -65,6 +65,8 @@ def validate_schema(value, schema, location="$"):
                 validate_schema(item, properties[name], f"{location}.{name}")
 
     if expected_type == "array":
+        if len(value) < schema.get("minItems", 0):
+            fail(f"{location}: expected at least {schema['minItems']} items")
         for index, item in enumerate(value):
             validate_schema(item, schema["items"], f"{location}[{index}]")
 

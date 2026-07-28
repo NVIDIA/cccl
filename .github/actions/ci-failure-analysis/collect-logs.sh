@@ -48,7 +48,12 @@ gh api --paginate --slurp \
 mapfile -t failed_job_ids < <(jq -r '.[].id' "${output_dir}/jobs.json")
 
 for job_id in "${failed_job_ids[@]}"; do
-  gh api "repos/${repository}/actions/jobs/${job_id}/logs" \
-    > "${output_dir}/job-${job_id}.log"
-  test -s "${output_dir}/job-${job_id}.log"
+  log_path="${output_dir}/job-${job_id}.log"
+  if ! gh api "repos/${repository}/actions/jobs/${job_id}/logs" > "${log_path}"; then
+    echo "::warning::Unable to collect logs for job ${job_id}; continuing with job metadata."
+    rm -f "${log_path}"
+  elif [[ ! -s "${log_path}" ]]; then
+    echo "::warning::GitHub returned an empty log for job ${job_id}; continuing with job metadata."
+    rm -f "${log_path}"
+  fi
 done

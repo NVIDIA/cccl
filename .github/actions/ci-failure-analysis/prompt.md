@@ -6,17 +6,16 @@ supplied JSON schema.
 
 ## Evidence
 
-The workflow has already collected the complete failed-job manifest and all relevant
+The workflow has already collected the complete failed-job manifest and available
 failure logs in `CI_LOG_DIR`:
 
 - `jobs.json` contains the metadata for every failed job.
-- `job-JOB_ID.log` contains the complete log for each job concluded as `failure`,
-  `timed_out`, `startup_failure`, or `action_required`.
+- `job-JOB_ID.log`, when present, contains the complete log for that failed job.
 - `pr.diff`, when present, contains the pull request diff.
 
-Read every collected failure log before grouping. Use `jobs.json` for exact job IDs,
-names, conclusions, and step numbers. Log collection has already been validated. Ignore
-the analysis and publishing jobs.
+Read every available failure log before grouping. Use `jobs.json` for exact job IDs,
+names, conclusions, and step numbers, including jobs for which GitHub provided no log.
+Ignore the analysis and publishing jobs.
 
 ## Diagnose and group
 
@@ -38,6 +37,8 @@ not run builds or tests.
 ## Return structured results
 
 Return only one JSON object matching the supplied schema, with no Markdown or commentary.
+Do not reproduce credentials or other sensitive values; replace them with `<redacted>`
+while preserving the surrounding diagnostic context.
 
 For each group:
 
