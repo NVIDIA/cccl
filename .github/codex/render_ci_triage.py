@@ -32,32 +32,16 @@ def load_json(path):
 
 
 def load_token_usage(codex_home):
+    sessions = sorted((codex_home / "sessions").rglob("rollout-*.jsonl"))
+    if not sessions:
+        return None
+
     total_tokens = None
-    session_dir = codex_home / "sessions"
-    for path in sorted(session_dir.rglob("rollout-*.jsonl")):
-        try:
-            with path.open(encoding="utf-8") as stream:
-                for line in stream:
-                    try:
-                        event = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    payload = event.get("payload", {})
-                    if payload.get("type") != "token_count":
-                        continue
-                    value = (
-                        (payload.get("info") or {})
-                        .get("total_token_usage", {})
-                        .get("total_tokens")
-                    )
-                    if (
-                        isinstance(value, int)
-                        and not isinstance(value, bool)
-                        and value >= 0
-                    ):
-                        total_tokens = value
-        except OSError:
-            continue
+    with sessions[-1].open(encoding="utf-8") as stream:
+        for line in stream:
+            payload = json.loads(line).get("payload", {})
+            if payload.get("type") == "token_count" and payload.get("info"):
+                total_tokens = payload["info"]["total_token_usage"]["total_tokens"]
     return total_tokens
 
 
