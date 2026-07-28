@@ -114,20 +114,28 @@ struct smem_block_tile_layout
     return static_cast<::cuda::std::uint32_t>(slots * chunk_items);
   }
 
-  // Smallest chunk-granular dynamic-SMEM byte count whose per-CTA capacity (`max_resident_items_per_block`) reaches
-  // `items` keys: one chunk-sized slot per `chunk_items` keys, plus the base padding. Inverse of
-  // `max_resident_items_per_block`.
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr int min_smem_bytes_for(::cuda::std::uint64_t items) noexcept
+  // Number of chunk-sized slots spanned by `items` keys (the segment's chunk count). Encapsulates the `chunk_items`
+  // granularity so callers size segments/clusters without inlining chunk arithmetic.
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint64_t
+  chunks_from_items(::cuda::std::uint64_t items) noexcept
   {
-    const auto slots = ::cuda::ceil_div(items, static_cast<::cuda::std::uint64_t>(chunk_items));
-    return base_padding_bytes + static_cast<int>(slots) * chunk_bytes;
+    return ::cuda::ceil_div(items, chunk_items);
   }
 
-  // Minimum number of blocks so each holds at most `per_block_capacity` of `items` keys.
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint64_t
-  min_blocks_for(::cuda::std::uint64_t items, ::cuda::std::uint64_t per_block_capacity) noexcept
+  // Dynamic-SMEM byte count for `chunks` chunk-sized slots plus the base-alignment padding.
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr int min_smem_bytes_from_chunks(::cuda::std::uint64_t chunks) noexcept
   {
-    return ::cuda::ceil_div(items, per_block_capacity);
+    _CCCL_ASSERT(base_padding_bytes + chunks * static_cast<::cuda::std::uint64_t>(chunk_bytes)
+                   <= static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<int>::max)()),
+                 "dynamic SMEM byte count exceeds int range");
+    return base_padding_bytes + static_cast<int>(chunks) * chunk_bytes;
+  }
+
+  // Smallest dynamic-SMEM byte count whose per-CTA capacity (`max_resident_items_per_block`) reaches `items` keys
+  // (rounding up to whole chunks). Inverse of `max_resident_items_per_block`.
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr int min_smem_bytes_from_items(::cuda::std::uint64_t items) noexcept
+  {
+    return min_smem_bytes_from_chunks(chunks_from_items(items));
   }
 };
 
@@ -151,12 +159,11 @@ struct smem_block_tile_layout
 // `min_chunks_per_block` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only
 // the cap differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_block` is
 // `static_assert`ed positive, so the divide is well-defined. 32-bit: a segment holds at most 2^21 chunks.
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr unsigned effective_cluster_blocks_from_chunks(
-  ::cuda::std::uint32_t chunks, int min_chunks_per_block, unsigned cluster_blocks_cap) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::uint32_t effective_cluster_blocks_from_chunks(
+  ::cuda::std::uint32_t chunks, int min_chunks_per_block, ::cuda::std::uint32_t cluster_blocks_cap) noexcept
 {
   const auto blocks = chunks / static_cast<::cuda::std::uint32_t>(min_chunks_per_block);
-  return static_cast<unsigned>(
-    ::cuda::std::clamp(blocks, ::cuda::std::uint32_t{1}, static_cast<::cuda::std::uint32_t>(cluster_blocks_cap)));
+  return ::cuda::std::clamp(blocks, ::cuda::std::uint32_t{1}, cluster_blocks_cap);
 }
 
 // Cluster top-k agent
@@ -498,7 +505,7 @@ struct agent_batched_topk_cluster
     // worth doing (out-of-scope for now); N/A when the effective cluster is device-collapsed (deferred/sequence sizes).
     if constexpr (needs_set_determinism)
     {
-      const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, static_cast<offset_t>(cta_count_in_cluster));
+      const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, cta_count_in_cluster);
       const offset_t first          = static_cast<offset_t>(cta_rank_in_cluster) * chunks_per_cta;
       const offset_t count = (first < chunks) ? (::cuda::std::min) (chunks_per_cta, chunks - first) : offset_t{0};
       return {first, offset_t{1}, count};
@@ -2669,7 +2676,7 @@ private:
     // differently, but top-k only depends on the multiset of keys the cluster covers.
     _CCCL_ASSERT(layout.head_items <= layout.segment_size_off, "head prefix cannot exceed the segment");
     layout.chunks =
-      static_cast<offset_t>(::cuda::ceil_div(layout.segment_size_off - layout.head_items, offset_t{chunk_items}));
+      static_cast<offset_t>(smem_layout_t::chunks_from_items(layout.segment_size_off - layout.head_items));
 
     // Effective cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_block` each), <= the
     // launched `cta_count_in_cluster`. Ranks at or beyond it are idle -- they own no chunks, consume nothing, and never

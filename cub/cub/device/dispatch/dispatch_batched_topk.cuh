@@ -42,6 +42,7 @@
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__numeric/narrow.h>
 #include <cuda/argument>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__execution/env.h>
@@ -233,170 +234,198 @@ _CCCL_HOST_API cudaError_t max_dynamic_smem_size_for_fixed(int& max_dynamic_smem
   return cudaSuccess;
 }
 
-// Chooses the cluster launch shape for the statically-bounded max segment size: the number of cluster blocks
-// (`cluster_blocks`) and the dynamic shared-memory bytes (`dynamic_smem_sel`) to launch with. Probes occupancy through
-// `launcher_factory`; the caller has already set the kernel's dynamic-SMEM opt-in to the maximum, so every probed
-// config and the final launch run under one consistent opt-in. `max_segment_size` is the max segment size and
-// `num_segments` the segment count.
-template <class LayoutT, class KernelPtr, class KernelLauncherFactory>
-_CCCL_HOST_API cudaError_t select_cluster_launch_shape(
-  int& cluster_blocks,
-  int& dynamic_smem_sel,
+// Result of an occupancy probe: the queried count (`value`) and the CUDA status of the query.
+struct cluster_probe_result
+{
+  cudaError_t error;
+  int value;
+};
+
+// Largest number of CTA blocks per cluster the kernel/architecture admits at `dynamic_smem_bytes` of dynamic SMEM. The
+// config's cluster dimension is ignored by the query (placeholder here); the non-portable opt-in must already be set
+// for it to report sizes beyond the portable ceiling.
+template <class KernelPtr>
+_CCCL_HOST_API cluster_probe_result
+probe_max_cluster_blocks(KernelPtr kernel_ptr, cudaStream_t stream, int threads_per_block, int dynamic_smem_bytes)
+{
+  ::cudaLaunchAttribute cluster_attr{};
+  cluster_attr.id             = ::cudaLaunchAttributeClusterDimension;
+  cluster_attr.val.clusterDim = {1, 1, 1};
+
+  ::cudaLaunchConfig_t cfg{};
+  cfg.gridDim          = dim3(1);
+  cfg.blockDim         = dim3(static_cast<unsigned>(threads_per_block));
+  cfg.dynamicSmemBytes = static_cast<::cuda::std::size_t>(dynamic_smem_bytes);
+  cfg.stream           = stream;
+  cfg.attrs            = &cluster_attr;
+  cfg.numAttrs         = 1;
+
+  int cluster_blocks = 0;
+  const auto error =
+    CubDebug(::cudaOccupancyMaxPotentialClusterSize(&cluster_blocks, reinterpret_cast<const void*>(kernel_ptr), &cfg));
+  return {error, cluster_blocks};
+}
+
+// Device-wide count of `cluster_blocks`-CTA clusters that can be co-resident at `dynamic_smem_bytes` of dynamic SMEM
+// (clusters per wave). `cudaOccupancyMaxActiveClusters` rejects a grid that is not a multiple of the cluster, so the
+// grid is set to exactly one cluster; the returned capacity is independent of the actual grid size.
+template <class KernelPtr>
+_CCCL_HOST_API cluster_probe_result probe_clusters_per_wave(
+  KernelPtr kernel_ptr, cudaStream_t stream, int threads_per_block, int cluster_blocks, int dynamic_smem_bytes)
+{
+  ::cudaLaunchAttribute cluster_attr{};
+  cluster_attr.id             = ::cudaLaunchAttributeClusterDimension;
+  cluster_attr.val.clusterDim = {static_cast<unsigned>(cluster_blocks), 1, 1};
+
+  ::cudaLaunchConfig_t cfg{};
+  cfg.gridDim          = dim3(static_cast<unsigned>(cluster_blocks));
+  cfg.blockDim         = dim3(static_cast<unsigned>(threads_per_block));
+  cfg.dynamicSmemBytes = static_cast<::cuda::std::size_t>(dynamic_smem_bytes);
+  cfg.stream           = stream;
+  cfg.attrs            = &cluster_attr;
+  cfg.numAttrs         = 1;
+
+  int clusters_per_wave = 0;
+  const auto error =
+    CubDebug(::cudaOccupancyMaxActiveClusters(&clusters_per_wave, reinterpret_cast<const void*>(kernel_ptr), &cfg));
+  return {error, clusters_per_wave};
+}
+
+// Launch shape for the cluster backend: the number of CTA blocks per cluster and the dynamic shared-memory bytes to
+// launch with, plus the CUDA status of the occupancy probes used to derive them.
+struct cluster_launch_shape
+{
+  cudaError_t error      = cudaSuccess;
+  int cluster_blocks     = 0;
+  int dynamic_smem_bytes = 0;
+};
+
+// Chooses the cluster launch shape for the statically-bounded max segment size. Probes occupancy through the CUDA
+// runtime; the caller has already set the kernel's dynamic-SMEM opt-in to the maximum, so every probed config and the
+// final launch run under one consistent opt-in.
+template <class LayoutT, class KernelPtr>
+_CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
   ::cuda::std::uint64_t max_segment_size,
   ::cuda::std::uint64_t num_segments,
   int max_dynamic_smem_bytes,
   cluster_topk_policy policy,
   cudaStream_t stream,
-  KernelPtr kernel_ptr,
-  KernelLauncherFactory launcher_factory)
+  KernelPtr kernel_ptr)
 {
   using layout_t = LayoutT;
 
-  const int threads_per_block         = policy.threads_per_block;
-  const int single_block_max_seg_size = policy.single_block_max_seg_size;
-  const int max_blocks_per_cluster    = policy.max_blocks_per_cluster;
-  const int min_chunks_per_block      = policy.min_chunks_per_block;
+  const int threads_per_block = policy.threads_per_block;
 
-  // Config used only for the occupancy probes below; the final launch goes through `launcher_factory`. `clusterDim.x`
-  // is a placeholder since `cudaOccupancyMaxPotentialClusterSize` ignores it.
-  ::cudaLaunchAttribute cluster_attr{};
-  cluster_attr.id               = ::cudaLaunchAttributeClusterDimension;
-  cluster_attr.val.clusterDim.x = 1;
-  cluster_attr.val.clusterDim.y = 1;
-  cluster_attr.val.clusterDim.z = 1;
-
-  ::cudaLaunchConfig_t cfg{};
-  cfg.gridDim          = dim3(1, 1, 1);
-  cfg.blockDim         = dim3(static_cast<unsigned int>(threads_per_block), 1, 1);
-  cfg.dynamicSmemBytes = 0;
-  cfg.stream           = stream;
-  cfg.attrs            = &cluster_attr;
-  cfg.numAttrs         = 1;
-
-  // Segment/capacity basics that gate the launch shape. Computed before any occupancy query so the single-CTA fast
-  // path below can be taken without one -- that driver query otherwise dominates the runtime of tiny launches.
+  // Computed before any occupancy query so the single-CTA fast path below can skip one -- that driver query
+  // otherwise dominates the runtime of tiny launches.
   const int max_resident_items_per_block =
     static_cast<int>(layout_t::max_resident_items_per_block(max_dynamic_smem_bytes));
   if (max_resident_items_per_block <= 0)
   {
     // Not even one load-aligned chunk fits in the opt-in budget; the kernel cannot run.
-    return cudaErrorInvalidValue;
+    return {cudaErrorInvalidValue};
   }
 
-  // `min_blocks_per_segment`: at the largest SMEM each CTA holds `max_resident_items_per_block`, giving the smallest
-  // resident cluster width. `max_segment_size` is statically bounded (<= 2^21), so this is small; it stays 64-bit to
-  // match the launch-shape arithmetic below.
+  // Smallest cluster block count for full residency: at the largest SMEM each CTA holds `max_resident_items_per_block`
+  // items. 64-bit to match the launch-shape arithmetic below; the value is small (`max_segment_size <= 2^21`).
   const auto min_blocks_per_segment =
-    layout_t::min_blocks_for(max_segment_size, static_cast<::cuda::std::uint64_t>(max_resident_items_per_block));
+    ::cuda::ceil_div(max_segment_size, static_cast<::cuda::std::uint64_t>(max_resident_items_per_block));
 
-  cluster_blocks   = 0;
-  dynamic_smem_sel = 0;
+  int cluster_blocks     = 0;
+  int dynamic_smem_bytes = 0;
 
   if (batched_topk_cluster::is_single_cta_eligible(
         static_cast<::cuda::std::uint32_t>(max_segment_size),
         static_cast<::cuda::std::uint32_t>(max_resident_items_per_block),
-        single_block_max_seg_size))
+        policy.single_block_max_seg_size))
   {
     // Single-CTA fast path: the segment fits resident in one CTA and is small enough that the agent's
-    // cluster-barrier-free path beats spreading it across more CTAs. Its resident SMEM is within budget and one CTA is
-    // always launchable, so the occupancy probe is skipped (the caller has already set the opt-in to the maximum).
-    // Larger fully-resident segments fall through to the wave-aware search below.
-    cluster_blocks   = 1;
-    dynamic_smem_sel = layout_t::min_smem_bytes_for(max_segment_size);
+    // cluster-barrier-free path beats spreading it across more CTAs. One CTA at in-budget SMEM is always launchable,
+    // so the occupancy probe is skipped. Larger fully-resident segments fall through to the wave-aware search below.
+    cluster_blocks     = 1;
+    dynamic_smem_bytes = layout_t::min_smem_bytes_from_items(max_segment_size);
   }
   else
   {
-    // Hardware cluster-width ceiling, taken from the runtime rather than a compile-time constant so a future device
-    // with wider (non-portable) clusters is not artificially capped (the same reason the dynamic-SMEM budget above
-    // is queried, not hardcoded). Probed at zero dynamic SMEM to get the architectural/kernel ceiling independent
-    // of the per-width SMEM chosen below; each candidate width is still validated against its own SMEM by the
-    // resident scan's `max_active_clusters` probe, and the oversize branch re-probes at its (larger) launch SMEM.
-    // Requires the non-portable opt-in already set by the caller so the probe can report widths beyond the portable
-    // ceiling. `cfg`/`cluster_attr` still carry this probe's config from their initialization (grid 1, cluster 1,
-    // zero dynamic SMEM).
-    int hw_cluster_ceiling = 0;
-    if (const auto error = launcher_factory.max_potential_cluster_size(hw_cluster_ceiling, kernel_ptr, &cfg))
+    // Hardware cluster ceiling (max blocks per cluster), queried at runtime (not hardcoded) so a future device with
+    // larger non-portable clusters is not capped. Probed at zero dynamic SMEM for the arch/kernel ceiling alone; each
+    // candidate is re-validated against its own SMEM below.
+    const auto hw_cluster_ceiling_opt =
+      probe_max_cluster_blocks(kernel_ptr, stream, threads_per_block, /*dynamic_smem_bytes=*/0);
+    if (hw_cluster_ceiling_opt.error != cudaSuccess)
     {
-      return error;
+      return {hw_cluster_ceiling_opt.error};
     }
+    const int hw_cluster_ceiling = hw_cluster_ceiling_opt.value;
     if (hw_cluster_ceiling <= 0)
     {
-      return cudaErrorInvalidValue;
+      return {cudaErrorInvalidValue};
     }
     // `max_blocks_per_cluster == 0` -> the full hardware ceiling; a non-zero knob narrows it, clamped to that ceiling.
     // A cap narrower than a segment needs pushes it into the oversize/streaming fallback below.
-    const int effective_max_blocks_per_cluster =
-      (max_blocks_per_cluster == 0)
+    const int eff_max_blocks_per_cluster =
+      (policy.max_blocks_per_cluster == 0)
         ? hw_cluster_ceiling
-        : (::cuda::std::min) (max_blocks_per_cluster, hw_cluster_ceiling);
+        : (::cuda::std::min) (policy.max_blocks_per_cluster, hw_cluster_ceiling);
 
-    // Wave-aware cluster-blocks selection. The free variable is the cluster width (one cluster per segment); each
-    // width is paired with the smallest dynamic SMEM that keeps a segment fully resident. A smaller width needs more
-    // SMEM (fewer clusters-per-wave, less L1); a larger width needs less SMEM (more clusters-per-wave, more L1). We
-    // pick the width that minimizes waves, breaking ties toward the largest (= smallest SMEM = most L1), which matches
-    // the profiled fast configs. Widths are enumerated analytically rather than by discovering SMEM tiers via
-    // occupancy, so a register-limited occupancy (e.g. 1 CTA/SM) cannot collapse the candidate set.
-    if (min_blocks_per_segment <= static_cast<::cuda::std::uint64_t>(effective_max_blocks_per_cluster))
+    // Wave-aware selection: the free variable is the cluster block count (one cluster per segment), paired with the
+    // smallest SMEM that keeps the segment fully resident (fewer blocks = more SMEM/fewer clusters-per-wave, more =
+    // the reverse). Pick the count minimizing waves, ties toward the largest (smallest SMEM, most L1 -- the profiled
+    // fast configs). Enumerated analytically, so a register-limited occupancy cannot collapse the candidate set.
+    if (min_blocks_per_segment <= static_cast<::cuda::std::uint64_t>(eff_max_blocks_per_cluster))
     {
-      // Full residency is achievable. `max_segment_size <= min_blocks_per_segment * max_resident_items_per_block` with
-      // `min_blocks_per_segment <= effective_max_blocks_per_cluster`, so every per-CTA capacity (and thus its slot
-      // count and SMEM bytes) below stays well within `int` -- no overflow.
+      // Full residency achievable: `max_segment_size <= min_blocks_per_segment * max_resident_items_per_block` and
+      // `min_blocks_per_segment <= eff_max_blocks_per_cluster`, so every per-CTA capacity below fits `int`.
 
       // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
       // necessary). At `min_chunks_per_block == 1` this equals the segment's chunk count; a larger knob shrinks it.
-      const int desired_cluster_blocks = ::cuda::narrow<int>(batched_topk_cluster::effective_cluster_blocks_from_chunks(
-        static_cast<::cuda::std::uint32_t>(
-          layout_t::min_blocks_for(max_segment_size, static_cast<::cuda::std::uint64_t>(layout_t::chunk_items))),
-        min_chunks_per_block,
-        ::cuda::narrow<unsigned int>(effective_max_blocks_per_cluster)));
+      const auto desired_cluster_blocks =
+        ::cuda::narrow<int>(batched_topk_cluster::effective_cluster_blocks_from_chunks(
+          static_cast<::cuda::std::uint32_t>(layout_t::chunks_from_items(max_segment_size)),
+          policy.min_chunks_per_block,
+          ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster)));
 
-      // Scan widths in `[max(min_blocks_per_segment, 2), max_candidate_blocks]`, minimize waves, tie-break largest.
-      // `max_candidate_blocks = clamp(desired_cluster_blocks, min_candidate_blocks, effective_max_blocks_per_cluster)`:
-      // capped at what the segment needs (`desired_cluster_blocks`, always `<= segment chunk count <=
-      // effective_max_blocks_per_cluster` here) but never below `min_candidate_blocks`. The range empties only at
-      // `effective_max_blocks_per_cluster == 1` (`min_candidate_blocks == 2 > 1`), reachable for a one-CTA-resident
-      // segment whose single-CTA fast path is disabled; then `min_blocks_per_segment == 1` and the fallback below takes
-      // the single CTA.
-      const int min_candidate_blocks = (::cuda::std::max) (2, static_cast<int>(min_blocks_per_segment));
-      const int max_candidate_blocks =
-        (::cuda::std::min) (effective_max_blocks_per_cluster,
-                            (::cuda::std::max) (min_candidate_blocks, desired_cluster_blocks));
-      ::cuda::std::uint64_t best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
+      // Scan `[min_candidate_blocks, max_candidate_blocks]` for the min-waves block count, tie-breaking largest.
+      // `max_candidate_blocks == max(desired_cluster_blocks, min(min_candidate_blocks, eff_max_blocks_per_cluster))`:
+      // the segment-needed count `desired_cluster_blocks` (<= `eff_max_blocks_per_cluster`, capped in
+      // `effective_cluster_blocks_from_chunks`), floored at `min_candidate_blocks`. The `clamp` operands are ordered so
+      // `lo <= hi` holds even when `eff_max_blocks_per_cluster == 1` forces `min_candidate_blocks (== 2) > eff_max`;
+      // there `max_candidate_blocks == 1` empties the scan and the single-CTA fallback below runs (that edge is a
+      // one-CTA-resident segment with the single-CTA path disabled, so `min_blocks_per_segment == 1`).
+      const auto min_candidate_blocks = (::cuda::std::max) (2, static_cast<int>(min_blocks_per_segment));
+      const auto max_candidate_blocks =
+        ::cuda::std::clamp(min_candidate_blocks, desired_cluster_blocks, eff_max_blocks_per_cluster);
+      auto best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
       for (int candidate_blocks = min_candidate_blocks; candidate_blocks <= max_candidate_blocks; ++candidate_blocks)
       {
-        const auto per_block_items =
-          ::cuda::ceil_div(max_segment_size, static_cast<::cuda::std::uint64_t>(candidate_blocks));
-        const int s_res = layout_t::min_smem_bytes_for(per_block_items);
-        if (s_res > max_dynamic_smem_bytes)
+        const auto per_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);
+        const int resident_smem_bytes = layout_t::min_smem_bytes_from_items(per_block_items);
+        if (resident_smem_bytes > max_dynamic_smem_bytes)
         {
-          continue; // unreachable for candidate_blocks >= min_blocks_per_segment, but guards the SMEM budget
-                    // regardless.
+          // Unreachable for candidate_blocks >= min_blocks_per_segment, but guards the SMEM budget regardless.
+          continue;
         }
 
-        // `cudaOccupancyMaxActiveClusters` needs the cluster dimension and the matching dynamic SMEM; the grid must
-        // be a multiple of the cluster blocks. The returned value is the device-wide clusters-per-wave (capacity),
-        // independent of grid size, and accounts for the static footprint and register pressure internally.
-        cluster_attr.val.clusterDim.x = static_cast<unsigned int>(candidate_blocks);
-        cfg.gridDim                   = dim3(static_cast<unsigned int>(candidate_blocks), 1, 1);
-        cfg.dynamicSmemBytes          = static_cast<::cuda::std::size_t>(s_res);
-        int clusters_per_wave         = 0;
-        if (const auto error = launcher_factory.max_active_clusters(clusters_per_wave, kernel_ptr, &cfg))
+        const auto clusters_per_wave_opt =
+          probe_clusters_per_wave(kernel_ptr, stream, threads_per_block, candidate_blocks, resident_smem_bytes);
+        if (clusters_per_wave_opt.error != cudaSuccess)
         {
-          return error;
+          return {clusters_per_wave_opt.error};
         }
+        const int clusters_per_wave = clusters_per_wave_opt.value;
         if (clusters_per_wave <= 0)
         {
           continue; // cluster blocks not launchable at this SMEM.
         }
 
-        const auto waves = ::cuda::ceil_div(num_segments, static_cast<::cuda::std::uint64_t>(clusters_per_wave));
-        // Min waves; tie-break largest width. The loop ascends in width, so `<=` keeps the largest at equal waves
-        // (`best_waves` starts at `UINT64_MAX`, so the first launchable width always wins the initial comparison).
+        const auto waves = ::cuda::ceil_div(num_segments, clusters_per_wave);
+        // Min waves, tie-break largest count: the loop ascends, so `<=` keeps the largest at equal waves (`best_waves`
+        // starts at `UINT64_MAX`, so the first launchable count always wins).
         if (waves <= best_waves)
         {
-          best_waves       = waves;
-          cluster_blocks   = candidate_blocks;
-          dynamic_smem_sel = s_res;
+          best_waves         = waves;
+          cluster_blocks     = candidate_blocks;
+          dynamic_smem_bytes = resident_smem_bytes;
         }
       }
 
@@ -404,36 +433,34 @@ _CCCL_HOST_API cudaError_t select_cluster_launch_shape(
       {
         // No multi-CTA config was launchable; fall back to single-CTA full residency. Slower for large segments, but
         // `min_blocks_per_segment == 1` guarantees the resident SMEM fits the budget and one CTA is always launchable.
-        cluster_blocks   = 1;
-        dynamic_smem_sel = layout_t::min_smem_bytes_for(max_segment_size);
+        cluster_blocks     = 1;
+        dynamic_smem_bytes = layout_t::min_smem_bytes_from_items(max_segment_size);
       }
     }
 
     if (cluster_blocks == 0)
     {
-      // Oversize (`min_blocks_per_segment > effective_max_blocks_per_cluster`) or nothing launchable in range: full
-      // residency impossible, so maximize residency with the largest launchable cluster at the largest SMEM and let the
-      // agent stream the overflow. The scan above mutated `cfg`, so reset it to this max-cluster probe (grid 1, cluster
-      // 1 placeholder, launch SMEM).
-      cluster_attr.val.clusterDim.x = 1; // ignored by `max_potential_cluster_size`
-      cfg.gridDim                   = dim3(1, 1, 1);
-      cfg.dynamicSmemBytes          = static_cast<::cuda::std::size_t>(max_dynamic_smem_bytes);
-      int hw_max_cluster_blocks     = 0;
-      if (const auto error = launcher_factory.max_potential_cluster_size(hw_max_cluster_blocks, kernel_ptr, &cfg))
+      // Oversize (`min_blocks_per_segment > eff_max_blocks_per_cluster`) or nothing launchable: full residency
+      // is impossible, so maximize residency with the largest launchable cluster at the largest SMEM and stream the
+      // overflow.
+      const auto hw_max_cluster_blocks_opt =
+        probe_max_cluster_blocks(kernel_ptr, stream, threads_per_block, max_dynamic_smem_bytes);
+      if (hw_max_cluster_blocks_opt.error != cudaSuccess)
       {
-        return error;
+        return {hw_max_cluster_blocks_opt.error};
       }
-      hw_max_cluster_blocks = (::cuda::std::min) (hw_max_cluster_blocks, effective_max_blocks_per_cluster);
+      const int hw_max_cluster_blocks =
+        (::cuda::std::min) (hw_max_cluster_blocks_opt.value, eff_max_blocks_per_cluster);
       if (hw_max_cluster_blocks <= 0)
       {
-        return cudaErrorInvalidValue;
+        return {cudaErrorInvalidValue};
       }
-      cluster_blocks   = hw_max_cluster_blocks;
-      dynamic_smem_sel = max_dynamic_smem_bytes;
+      cluster_blocks     = hw_max_cluster_blocks;
+      dynamic_smem_bytes = max_dynamic_smem_bytes;
     }
   }
 
-  return cudaSuccess;
+  return {cudaSuccess, cluster_blocks, dynamic_smem_bytes};
 }
 
 // Cluster arm of the dispatch (host-only): after the shared query-pass / CC-guard setup, launches the single kernel
@@ -527,7 +554,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   constexpr int load_align_bytes          = policy.load_align_bytes;
   constexpr int max_chunk_slots_per_block = policy.max_chunk_slots_per_block;
   static_assert(policy.max_blocks_per_cluster >= 0,
-                "max_blocks_per_cluster must be 0 (unrestricted) or a positive cluster width");
+                "max_blocks_per_cluster must be 0 (unrestricted) or a positive cluster block count");
   static_assert(max_chunk_slots_per_block >= 0,
                 "max_chunk_slots_per_block must be 0 (unrestricted) or a positive count");
 
@@ -546,7 +573,8 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   const auto num_seg_val = detail::params::get_param(num_segments, num_segments_val_t{0});
 
   // Opt in to non-portable cluster blocks (>8 on Hopper).
-  if (const auto error = launcher_factory.set_non_portable_cluster_allowed(kernel_ptr))
+  if (const auto error = CubDebug(::cudaFuncSetAttribute(
+        reinterpret_cast<const void*>(kernel_ptr), cudaFuncAttributeNonPortableClusterSizeAllowed, 1)))
   {
     return error;
   }
@@ -580,24 +608,21 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
     return error;
   }
 
-  // Resolve the launch shape (cluster width + dynamic SMEM) for the max segment size.
-  int cluster_blocks   = 0;
-  int dynamic_smem_sel = 0;
-  if (const auto error = select_cluster_launch_shape<layout_t>(
-        cluster_blocks,
-        dynamic_smem_sel,
-        static_cast<::cuda::std::uint64_t>(max_seg_size),
-        static_cast<::cuda::std::uint64_t>(num_seg_val),
-        max_dynamic_smem_bytes,
-        policy,
-        stream,
-        kernel_ptr,
-        launcher_factory))
+  // Resolve the launch shape (cluster blocks + dynamic SMEM) for the max segment size.
+  const auto shape = select_cluster_launch_shape<layout_t>(
+    static_cast<::cuda::std::uint64_t>(max_seg_size),
+    static_cast<::cuda::std::uint64_t>(num_seg_val),
+    max_dynamic_smem_bytes,
+    policy,
+    stream,
+    kernel_ptr);
+  if (const auto error = shape.error)
   {
     return error;
   }
 
-  const int dynamic_smem_bytes            = dynamic_smem_sel;
+  const int cluster_blocks                = shape.cluster_blocks;
+  const int dynamic_smem_bytes            = shape.dynamic_smem_bytes;
   const auto max_resident_items_per_block = layout_t::max_resident_items_per_block(dynamic_smem_bytes);
 
   const auto grid_blocks =
@@ -609,12 +634,12 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
 
   // The cluster dimension routes the host launch through `cudaLaunchKernelEx`.
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<unsigned int>(grid_blocks),
-                         static_cast<unsigned int>(threads_per_block),
+        launcher_factory(static_cast<unsigned>(grid_blocks),
+                         static_cast<unsigned>(threads_per_block),
                          static_cast<::cuda::std::size_t>(dynamic_smem_bytes),
                          stream,
                          /*dependent_launch=*/false,
-                         static_cast<unsigned int>(cluster_blocks))
+                         static_cast<unsigned>(cluster_blocks))
           .doit(kernel_ptr,
                 d_key_segments_it,
                 d_key_segments_out_it,
