@@ -6,10 +6,10 @@ supplied JSON schema.
 
 ## Evidence
 
-The workflow has already collected the complete job manifest and all relevant failure
-logs in `CI_LOG_DIR`:
+The workflow has already collected the complete failed-job manifest and all relevant
+failure logs in `CI_LOG_DIR`:
 
-- `jobs.json` contains `total_count` and the metadata for every job.
+- `jobs.json` contains the metadata for every failed job.
 - `job-JOB_ID.log` contains the complete log for each job concluded as `failure`,
   `timed_out`, `startup_failure`, or `action_required`.
 

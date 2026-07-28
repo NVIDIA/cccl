@@ -123,26 +123,15 @@ def source_url(repository, head_sha, path, line):
 
 
 def load_job_manifest(path):
-    manifest = load_json(path)
-    if not isinstance(manifest, dict):
-        fail("job manifest must be an object")
-    job_items = manifest.get("jobs")
-    total_count = manifest.get("total_count")
+    job_items = load_json(path)
     if not isinstance(job_items, list):
-        fail("job manifest must contain a jobs array")
-    if (
-        not isinstance(total_count, int)
-        or isinstance(total_count, bool)
-        or total_count != len(job_items)
-    ):
-        fail("job manifest total_count does not match its jobs array")
+        fail("job manifest must be an array")
 
     jobs = {}
     step_numbers = {}
     failed_job_ids = set()
-    cancelled_job_ids = []
     for index, job in enumerate(job_items):
-        location = f"job manifest jobs[{index}]"
+        location = f"job manifest[{index}]"
         if not isinstance(job, dict):
             fail(f"{location} must be an object")
         job_id = job.get("id")
@@ -157,6 +146,8 @@ def load_job_manifest(path):
             fail(f"{location}.name must be a non-empty string")
         if conclusion is not None and not isinstance(conclusion, str):
             fail(f"{location}.conclusion must be a string or null")
+        if conclusion not in FAILED_CONCLUSIONS:
+            fail(f"{location}.conclusion is not a failed conclusion")
         if not isinstance(steps, list):
             fail(f"{location}.steps must be an array")
 
@@ -169,12 +160,9 @@ def load_job_manifest(path):
 
         jobs[job_id] = name
         step_numbers[job_id] = numbers
-        if conclusion in FAILED_CONCLUSIONS:
-            failed_job_ids.add(job_id)
-        elif conclusion == "cancelled":
-            cancelled_job_ids.append(job_id)
+        failed_job_ids.add(job_id)
 
-    return jobs, step_numbers, failed_job_ids, cancelled_job_ids
+    return jobs, step_numbers, failed_job_ids
 
 
 def validate_job_references(analysis, step_numbers, failed_job_ids):
@@ -319,35 +307,12 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
     return lines
 
 
-def render_report(
-    analysis,
-    jobs,
-    cancelled_job_ids,
-    repository,
-    run_id,
-    head_sha,
-):
+def render_report(analysis, jobs, repository, run_id, head_sha):
     lines = []
 
     for index, group in enumerate(analysis["groups"], start=1):
         lines.extend(render_group(index, group, jobs, repository, run_id, head_sha))
         lines.append("")
-
-    if cancelled_job_ids:
-        lines.extend(
-            [
-                "<details>",
-                "<summary><strong>Cancelled jobs</strong></summary>",
-                "",
-                *[
-                    f"- {job_link(job_id, jobs, repository, run_id)}"
-                    for job_id in cancelled_job_ids
-                ],
-                "",
-                "</details>",
-                "",
-            ]
-        )
 
     report = "\n".join(lines) + "\n"
     if len(report.encode("utf-8")) > REPORT_LIMIT:
@@ -381,12 +346,11 @@ def main():
     schema = load_json(args.schema)
     analysis = load_json(args.analysis)
     validate_schema(analysis, schema)
-    jobs, step_numbers, failed_job_ids, cancelled_job_ids = load_job_manifest(args.jobs)
+    jobs, step_numbers, failed_job_ids = load_job_manifest(args.jobs)
     validate_job_references(analysis, step_numbers, failed_job_ids)
     report = render_report(
         analysis,
         jobs,
-        cancelled_job_ids,
         args.repository,
         args.run_id,
         args.head_sha,

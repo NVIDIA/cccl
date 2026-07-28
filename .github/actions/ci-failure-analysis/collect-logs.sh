@@ -9,31 +9,23 @@ mkdir -p "${output_dir}"
 
 gh api --paginate --slurp \
   "repos/${repository}/actions/runs/${run_id}/jobs?filter=latest&per_page=100" \
-  | jq '{
-      total_count: (.[0].total_count // 0),
-      jobs: ([.[].jobs[]] | unique_by(.id))
-    }' \
+  | jq '
+      ([.[].jobs[]] | unique_by(.id)) as $jobs
+      | if ($jobs | length) != (.[0].total_count // 0) then
+          error("did not collect every workflow job")
+        else
+          $jobs
+          | map(select(
+              .conclusion == "failure"
+              or .conclusion == "timed_out"
+              or .conclusion == "startup_failure"
+              or .conclusion == "action_required"
+            ))
+        end
+    ' \
     > "${output_dir}/jobs.json"
 
-expected_jobs="$(jq '.total_count' "${output_dir}/jobs.json")"
-collected_jobs="$(jq '.jobs | length' "${output_dir}/jobs.json")"
-if [[ "${collected_jobs}" -ne "${expected_jobs}" ]]; then
-  echo "Collected ${collected_jobs} of ${expected_jobs} workflow jobs" >&2
-  exit 1
-fi
-
-mapfile -t failed_job_ids < <(
-  jq -r '
-    .jobs[]
-    | select(
-        .conclusion == "failure"
-        or .conclusion == "timed_out"
-        or .conclusion == "startup_failure"
-        or .conclusion == "action_required"
-      )
-    | .id
-  ' "${output_dir}/jobs.json"
-)
+mapfile -t failed_job_ids < <(jq -r '.[].id' "${output_dir}/jobs.json")
 
 for job_id in "${failed_job_ids[@]}"; do
   gh api "repos/${repository}/actions/jobs/${job_id}/logs" \
