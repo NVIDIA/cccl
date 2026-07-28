@@ -143,8 +143,7 @@ struct __validate_uniform_integral_param
   static_assert(!is_valid_type || !is_single_value || is_integral,
                 "cub: a uniform integer argument (e.g. cub::DeviceBatchedTopK num_segments) must have an integral "
                 "(non-bool) type.");
-  static_assert(!is_valid_type || !is_single_value || !is_integral || !is_deferred_single
-                  || __is_valid_deferred_handle_v<typename args_traits::value_type>,
+  static_assert(!is_valid_type || !is_single_value || !is_integral || handle_ok,
                 "cub: a uniform integer argument passed via cuda::args::deferred must wrap a pointer or other "
                 "dereferenceable handle to a single device-side integral value (it is read via *handle).");
 };
@@ -158,8 +157,7 @@ struct __validate_uniform_integral_param
 // bounds -- the intersection of its static `cuda::args::bounds` and any runtime bounds, as computed by
 // ::cuda::args::__lowest_/__highest_. A value outside them breaks the caller's promise and is otherwise undefined
 // behavior. Compiled out when assertions are disabled (the bounds are not even computed). Gated on the argument's
-// integer element type (not the read value type, which may be a proxy reference): `bool` and character types are
-// excluded, matching the `cmp_*` comparators.
+// integer element type: `bool` and character types are excluded, matching the `cmp_*` comparators.
 template <class _Arg, class _Value>
 _CCCL_HOST_DEVICE constexpr void
 __assert_param_in_bounds([[maybe_unused]] const _Arg& __arg, [[maybe_unused]] const _Value& __value) noexcept
@@ -216,8 +214,11 @@ template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 get_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
   // A single `deferred` wraps a handle to a device-side value (a pointer or input iterator), not the value itself;
-  // the value is read on the device by dereferencing the handle.
-  auto __value = *::cuda::args::__unwrap(__arg);
+  // the value is read on the device by dereferencing the handle. Materialize into the scalar element type: `*handle`
+  // may yield a proxy reference that must not leak into the deduced return type (downstream `max`/comparisons would
+  // otherwise bind to the proxy).
+  using __element_t = typename ::cuda::args::__traits<::cuda::args::deferred<_Arg, _StaticBounds>>::element_type;
+  const __element_t __value = *::cuda::args::__unwrap(__arg);
   __assert_param_in_bounds(__arg, __value);
   return __value;
 }
@@ -226,7 +227,11 @@ template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
 {
-  auto __value = ::cuda::args::__unwrap(__arg)[__index];
+  // Materialize into the scalar element type: `handle[index]` may yield a proxy reference that must not leak into the
+  // deduced return type.
+  using __element_t =
+    typename ::cuda::args::__traits<::cuda::args::deferred_sequence<_Arg, _StaticBounds>>::element_type;
+  const __element_t __value = ::cuda::args::__unwrap(__arg)[__index];
   __assert_param_in_bounds(__arg, __value);
   return __value;
 }
@@ -240,8 +245,9 @@ template <class _Arg, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 __get_and_clamp_param_to_nonnegative(const _Arg& __arg, _SegmentIndexT __index) noexcept
 {
-  // Materialize into the scalar element type: get_param yields a proxy reference for fancy iterators, and the clamp
-  // must act on a real value (a `static_cast<proxy>(0)` would form a null proxy that `max` then dereferences).
+  // Materialize into the scalar element type: the generic `get_param` may yield a proxy reference for fancy iterators,
+  // and the clamp must act on a real value (a `static_cast<proxy>(0)` would form a null proxy that `max` then
+  // dereferences).
   using __element_t         = typename ::cuda::args::__traits<_Arg>::element_type;
   const __element_t __value = get_param(__arg, __index);
   constexpr auto __lowest   = ::cuda::args::__traits<_Arg>::lowest;
