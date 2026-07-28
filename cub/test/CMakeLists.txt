@@ -103,7 +103,11 @@ function(
   _cub_is_catch2_test(is_catch2_test "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
   file(READ "${CUB_SOURCE_DIR}/test/${test_src}" _cub_test_source)
-  string(FIND "${_cub_test_source}" "[large-mem]" _cub_large_test)
+  string(FIND "${_cub_test_source}" "[large-mem]" _cub_large_test_position)
+  set(_cub_has_large_tests FALSE)
+  if (_cub_large_test_position GREATER_EQUAL 0)
+    set(_cub_has_large_tests TRUE)
+  endif()
 
   # The actual name of the test's target:
   set(test_target cub.test.${test_name}${variant_suffix})
@@ -150,7 +154,7 @@ function(
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
 
     set(_cub_allow_running_no_tests_arg)
-    if (NOT _cub_large_test EQUAL -1)
+    if (_cub_has_large_tests)
       set(_cub_allow_running_no_tests_arg "-DALLOW_RUNNING_NO_TESTS=ON")
     endif()
 
@@ -174,7 +178,7 @@ function(
       PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
     )
 
-    if (NOT _cub_large_test EQUAL -1)
+    if (_cub_has_large_tests)
       rapids_test_add(
         NAME ${test_target}.large
         # gersemi: off
@@ -312,10 +316,10 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      if (_cub_large_test EQUAL -1)
-        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_SMALL})
-      else()
+      if (_cub_has_large_tests)
         set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_LARGE})
+      else()
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_SMALL})
       endif()
       rapids_test_add(
         NAME ${test_target}
