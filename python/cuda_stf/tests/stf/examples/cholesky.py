@@ -697,7 +697,7 @@ def compute_norm(ctx, matrix):
     return np.sqrt(norm_sq)
 
 
-def main(N=1024, NB=128, check_result=False):
+def main(N=1024, NB=128, check_result=True):
     assert N % NB == 0, f"Matrix size {N} must be divisible by block size {NB}"
 
     print("=" * 60)
@@ -826,7 +826,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "NB", type=int, nargs="?", default=128, help="Block size (default: 128)"
     )
-    parser.add_argument("--check", action="store_true", help="Check result (slower)")
+    parser.add_argument(
+        "--no-check",
+        action="store_true",
+        help="Skip the (slower) result validation, e.g. for benchmarking",
+    )
     args = parser.parse_args()
 
-    sys.exit(main(N=args.N, NB=args.NB, check_result=args.check))
+    sys.exit(main(N=args.N, NB=args.NB, check_result=not args.no_check))

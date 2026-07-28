@@ -997,7 +997,7 @@ def compute_norm(ctx, matrix):
     return np.sqrt(norm_sq)
 
 
-def main(N=512, NB=128, check_result=False):
+def main(N=512, NB=128, check_result=True):
     assert N % NB == 0, f"Matrix size {N} must be divisible by block size {NB}"
 
     print("=" * 60)
@@ -1030,12 +1030,16 @@ def main(N=512, NB=128, check_result=False):
     if check_result:
         Aref.fill(hilbert)
 
-    # Measure performance
-    start_time = time.time()
-
     print("\n" + "=" * 60)
     print("Performing POTRI (inversion via Cholesky)...")
     print("=" * 60)
+
+    # Time the inversion with a host clock, as in cholesky.py: STF runs each
+    # task on its own managed stream, so we bracket the submission with device
+    # synchronizes to measure only the POTRI work, excluding verification and
+    # finalization.
+    cp.cuda.runtime.deviceSynchronize()
+    start_time = time.perf_counter()
 
     # Step 1: Cholesky factorization A = L*L^T
     PDPOTRF(ctx, A, uplo="L")
@@ -1045,6 +1049,10 @@ def main(N=512, NB=128, check_result=False):
 
     # Step 3: Compute A^(-1) = L^(-T) * L^(-1)
     PDLAUUM(ctx, A, uplo="L")
+
+    # Wait for the STF-scheduled work to complete before stopping the timer.
+    cp.cuda.runtime.deviceSynchronize()
+    elapsed_ms = (time.perf_counter() - start_time) * 1e3
 
     if check_result:
         print("\n" + "=" * 60)
@@ -1090,9 +1098,6 @@ def main(N=512, NB=128, check_result=False):
     print("=" * 60)
     ctx.finalize()
 
-    end_time = time.time()
-    elapsed_ms = (end_time - start_time) * 1000.0
-
     # Compute FLOPS for POTRI
     # POTRF: (1/3) * N^3
     # TRTRI: (1/3) * N^3
@@ -1136,7 +1141,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "NB", type=int, nargs="?", default=128, help="Block size (default: 128)"
     )
-    parser.add_argument("--check", action="store_true", help="Check result (slower)")
+    parser.add_argument(
+        "--no-check",
+        action="store_true",
+        help="Skip the (slower) result validation, e.g. for benchmarking",
+    )
     args = parser.parse_args()
 
-    sys.exit(main(N=args.N, NB=args.NB, check_result=args.check))
+    sys.exit(main(N=args.N, NB=args.NB, check_result=not args.no_check))

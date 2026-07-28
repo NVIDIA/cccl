@@ -139,6 +139,9 @@ def test_from_context_rejects_bad_input():
 
 def test_from_context_task_roundtrip():
     """Run an actual STF task on a green-context place and verify the result."""
+    # Skip before any device/context setup when cupy is unavailable.
+    cp = pytest.importorskip("cupy")
+
     stf.machine_init()
     dev = _require_cuda_core_device()
     ctx = _require_green_context(dev)
@@ -146,8 +149,6 @@ def test_from_context_task_roundtrip():
 
     X = np.arange(64, dtype=np.float64)
     expected = X * 2.0
-
-    cp = pytest.importorskip("cupy")
 
     sctx = stf.context()
     lX = sctx.logical_data(X, name="X")

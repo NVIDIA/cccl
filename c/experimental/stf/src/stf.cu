@@ -588,17 +588,104 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+stf_get_executor_fn stf_partition_fn_blocked(int dim)
+{
+  switch (dim)
+  {
+    case 0:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<0>::get_executor);
+    case 1:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<1>::get_executor);
+    case 2:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<2>::get_executor);
+    case 3:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<3>::get_executor);
+    default:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition::get_executor);
+  }
+}
+
+stf_get_executor_fn stf_partition_fn_cyclic(void)
+{
+  return reinterpret_cast<stf_get_executor_fn>(&cyclic_partition::get_executor);
+}
+
+stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(helper != nullptr, "green_context_helper handle must not be null");
+  auto* gc_helper = from_opaque(helper);
+  if (idx >= gc_helper->get_count())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([gc_helper, idx] {
+    return new data_place(data_place::green_ctx(gc_helper->get_view(idx)));
+  }));
+#else
+  (void) helper;
+  (void) idx;
+  return nullptr;
+#endif
+}
+
+stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  const auto* dp = from_opaque_const(h);
+  return to_opaque(stf_try_allocate([dp] {
+    return new data_place(*dp);
+  }));
+}
+
+void stf_data_place_destroy(stf_data_place_handle h)
+{
+  delete from_opaque(h);
+}
+
+int stf_data_place_get_device_ordinal(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  return device_ordinal(*from_opaque(h));
+}
+
+const char* stf_data_place_to_string(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  static thread_local ::std::string s;
+  s = from_opaque(h)->to_string();
+  return s.c_str();
+}
+
+void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  try
+  {
+    return from_opaque(h)->allocate(static_cast<::std::ptrdiff_t>(size), stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_allocate failed: %s\n", e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_allocate failed: unknown exception\n");
+    return nullptr;
+  }
+}
+
 void* stf_data_place_allocate_nd(
   stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
 {
-  _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
-  const auto* dp = from_opaque_const(h);
   dim4 dims;
   ::std::memcpy(&dims, data_dims, sizeof(dims));
   try
   {
-    return dp->allocate_nd(dims, elemsize, stream);
+    return from_opaque(h)->allocate_nd(dims, elemsize, stream);
   }
   catch (const ::std::exception& e)
   {
@@ -610,6 +697,29 @@ void* stf_data_place_allocate_nd(
     fprintf(stderr, "stf_data_place_allocate_nd failed: unknown exception\n");
     return nullptr;
   }
+}
+
+void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  try
+  {
+    from_opaque(h)->deallocate(ptr, size, stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_deallocate failed: %s\n", e.what());
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_deallocate failed: unknown exception\n");
+  }
+}
+
+int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
 }
 
 int stf_placement_evaluate(
@@ -822,6 +932,28 @@ void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* 
   }
 }
 
+int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  _CCCL_ASSERT(data_coords != nullptr, "data_coords must not be null");
+  _CCCL_ASSERT(out_grid_pos != nullptr, "out_grid_pos must not be null");
+  try
+  {
+    const pos4 coords(data_coords->x, data_coords->y, data_coords->z, data_coords->t);
+    const pos4 owner = from_opaque_const(h)->owner(coords);
+    out_grid_pos->x  = owner.x;
+    out_grid_pos->y  = owner.y;
+    out_grid_pos->z  = owner.z;
+    out_grid_pos->t  = owner.t;
+    return 0;
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_cute_partition_owner failed: %s\n", e.what());
+    return 1;
+  }
+}
+
 uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
 {
   _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
@@ -845,117 +977,6 @@ stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, 
   return to_opaque(stf_try_allocate([&] {
     return new data_place(make_composite_data_place(*grid_ptr, *part));
   }));
-}
-
-stf_get_executor_fn stf_partition_fn_blocked(int dim)
-{
-  switch (dim)
-  {
-    case 0:
-      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<0>::get_executor);
-    case 1:
-      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<1>::get_executor);
-    case 2:
-      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<2>::get_executor);
-    case 3:
-      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<3>::get_executor);
-    default:
-      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition::get_executor);
-  }
-}
-
-stf_get_executor_fn stf_partition_fn_cyclic(void)
-{
-  return reinterpret_cast<stf_get_executor_fn>(&cyclic_partition::get_executor);
-}
-
-stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
-{
-#if _CCCL_CTK_AT_LEAST(12, 4)
-  _CCCL_ASSERT(helper != nullptr, "green_context_helper handle must not be null");
-  auto* gc_helper = from_opaque(helper);
-  if (idx >= gc_helper->get_count())
-  {
-    return nullptr;
-  }
-  return to_opaque(stf_try_allocate([gc_helper, idx] {
-    return new data_place(data_place::green_ctx(gc_helper->get_view(idx)));
-  }));
-#else
-  (void) helper;
-  (void) idx;
-  return nullptr;
-#endif
-}
-
-stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
-{
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  const auto* dp = from_opaque_const(h);
-  return to_opaque(stf_try_allocate([dp] {
-    return new data_place(*dp);
-  }));
-}
-
-void stf_data_place_destroy(stf_data_place_handle h)
-{
-  delete from_opaque(h);
-}
-
-int stf_data_place_get_device_ordinal(stf_data_place_handle h)
-{
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  return device_ordinal(*from_opaque(h));
-}
-
-const char* stf_data_place_to_string(stf_data_place_handle h)
-{
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  static thread_local ::std::string s;
-  s = from_opaque(h)->to_string();
-  return s.c_str();
-}
-
-void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
-{
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  try
-  {
-    return from_opaque(h)->allocate(static_cast<::std::ptrdiff_t>(size), stream);
-  }
-  catch (const ::std::exception& e)
-  {
-    fprintf(stderr, "stf_data_place_allocate failed: %s\n", e.what());
-    return nullptr;
-  }
-  catch (...)
-  {
-    fprintf(stderr, "stf_data_place_allocate failed: unknown exception\n");
-    return nullptr;
-  }
-}
-
-void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
-{
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  try
-  {
-    from_opaque(h)->deallocate(ptr, size, stream);
-  }
-  catch (const ::std::exception& e)
-  {
-    fprintf(stderr, "stf_data_place_deallocate failed: %s\n", e.what());
-  }
-  catch (...)
-  {
-    fprintf(stderr, "stf_data_place_deallocate failed: unknown exception\n");
-  }
-}
-
-int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
-{
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
 }
 
 stf_ctx_handle stf_ctx_create(void)

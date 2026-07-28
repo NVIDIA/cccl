@@ -35,13 +35,19 @@ _CCCL_TEMPLATE(class _Up, class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Up> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Up> saturating_overflow_cast(_Tp __x) noexcept
 {
-  if (::cuda::std::cmp_less(__x, ::cuda::std::numeric_limits<_Up>::min()))
+  if constexpr (!::cuda::std::in_range<_Up>(::cuda::std::numeric_limits<_Tp>::min()))
   {
-    return {::cuda::std::numeric_limits<_Up>::min(), true};
+    if (::cuda::std::cmp_less(__x, ::cuda::std::numeric_limits<_Up>::min()))
+    {
+      return {::cuda::std::numeric_limits<_Up>::min(), true};
+    }
   }
-  if (::cuda::std::cmp_greater(__x, ::cuda::std::numeric_limits<_Up>::max()))
+  if constexpr (!::cuda::std::in_range<_Up>(::cuda::std::numeric_limits<_Tp>::max()))
   {
-    return {::cuda::std::numeric_limits<_Up>::max(), true};
+    if (::cuda::std::cmp_greater(__x, ::cuda::std::numeric_limits<_Up>::max()))
+    {
+      return {::cuda::std::numeric_limits<_Up>::max(), true};
+    }
   }
   return {static_cast<_Up>(__x), false};
 }

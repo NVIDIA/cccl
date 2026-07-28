@@ -195,7 +195,7 @@ private:
     TransformOpT transform_op,
     T init,
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
-    EnvT env)
+    const EnvT& env)
   {
     using args_traits_t = ::cuda::args::__traits<NumItemsT>;
     using offset_t      = detail::choose_offset_t<typename args_traits_t::element_type>;
@@ -284,7 +284,7 @@ private:
     ReductionOpT reduction_op,
     TransformOpT transform_op,
     T init,
-    EnvT env)
+    const EnvT& env)
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
@@ -366,7 +366,7 @@ private:
     NumItemsT num_items,
     ReductionOpT reduction_op,
     InitValueT init,
-    EnvT env)
+    const EnvT& env)
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
@@ -597,7 +597,12 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
-    InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, ReductionOpT reduction_op, T init, EnvT env = {})
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
     return __transform_reduce(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
@@ -671,7 +676,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Sum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  Sum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
@@ -950,7 +955,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Min(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  Min(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Min");
     using OutputT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
@@ -1597,7 +1602,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Max(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  Max(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Max");
     using OutputT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
@@ -2235,7 +2240,7 @@ public:
     ReductionOpT reduction_op,
     TransformOpT transform_op,
     T init,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::TransformReduce");
     return __transform_reduce(d_in, d_out, num_items, reduction_op, transform_op, init, env);
@@ -2346,7 +2351,7 @@ public:
     NumRunsOutputIteratorT d_num_runs_out,
     ReductionOpT reduction_op,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceByKey");
 

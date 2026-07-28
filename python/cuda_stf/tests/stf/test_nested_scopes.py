@@ -131,21 +131,20 @@ def test_graph_scope_with_repeat():
 
 def test_graph_scope_with_while_loop():
     """
-    Newton-like pattern: Python for loop > graph_scope > while_loop > tasks.
+    Newton-like pattern: graph_scope > while_loop > tasks.
 
     Simple iterative refinement: X += 0.1 until X > 1.0.
     Uses a scalar residual to control the while loop.
 
     Structure:
-      for outer in range(2):
-        graph_scope:
-          while_loop (residual > threshold):
-            X += 0.1
-            residual = max(|target - X|)
-          X *= -1    (after convergence, negate)
+      graph_scope:
+        while_loop (residual > tol):
+          X += 0.1
+          residual = max(|target - X|)
+        X *= 2    (after convergence, still inside graph_scope)
 
-    Starting from X=0, first loop: X reaches ~1.0, then negated to ~-1.0
-    Second loop: X reaches ~0.0, then negated to ~0.0
+    Starting from X=0, the loop converges X to ~1.0, then the final task
+    scales it to ~2.0.
     """
     n = 256
     X_host = np.zeros(n, dtype=np.float64)

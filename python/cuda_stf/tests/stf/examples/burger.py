@@ -197,8 +197,6 @@ def bicgstab_solver(ctx, lA_val, lX, lB, N, tol=1e-8, max_iter=100):
     tol_sq = tol * tol
 
     with ctx.while_loop() as loop:
-        lcond = ctx.logical_data_empty((1,), np.float64, name="bicg_cond")
-
         # rho = dot(rhat, r)
         stf_dot(ctx, lRhat, lR, lrho)
 
@@ -269,17 +267,10 @@ def bicgstab_solver(ctx, lA_val, lX, lB, N, tol=1e-8, max_iter=100):
 
         # Compound condition: continue if residual > tol and iter < max.
         stf_dot(ctx, lR, lR, ltmp)
-        with pytorch_task(ctx, ltmp.read(), liter.rw(), lcond.write()) as (
-            tRes,
-            tIter,
-            tCond,
-        ):
+        with pytorch_task(ctx, liter.rw()) as (tIter,):
             tIter += 1
-            not_converged = (tRes.squeeze() > tol_sq).to(torch.float64)
-            not_max = (tIter.squeeze() < max_iter).to(torch.float64)
-            tCond.copy_((not_converged * not_max).unsqueeze(0))
 
-        loop.continue_while(lcond, ">", 0.5)
+        loop.continue_while((ltmp > tol_sq) & (liter < float(max_iter)))
 
 
 # ---------------------------------------------------------------------------
@@ -317,7 +308,6 @@ def newton_solver(
         lresidual = ctx.logical_data_empty((N,), np.float64, name="residual")
         ldelta = ctx.logical_data_empty((N,), np.float64, name="delta")
         lrhs = ctx.logical_data_empty((N,), np.float64, name="rhs")
-        lnewton_cond = ctx.logical_data_empty((1,), np.float64, name="newton_cond")
 
         # Compute residual F(U) for the linear solve's right-hand side.
         compute_residual(ctx, lU, lU_prev, lresidual, N, h, dt, nu)
@@ -344,15 +334,12 @@ def newton_solver(
         stf_dot(ctx, lresidual, lresidual, lnewton_norm2)
 
         # Compound Newton condition
-        with pytorch_task(
-            ctx, lnewton_norm2.read(), lnewton_iter.rw(), lnewton_cond.write()
-        ) as (tNorm2, tIter, tCond):
+        with pytorch_task(ctx, lnewton_iter.rw()) as (tIter,):
             tIter += 1
-            not_converged = (tNorm2.squeeze() > newton_tol_sq).to(torch.float64)
-            not_max = (tIter.squeeze() < max_newton).to(torch.float64)
-            tCond.copy_((not_converged * not_max).unsqueeze(0))
 
-        loop.continue_while(lnewton_cond, ">", 0.5)
+        loop.continue_while(
+            (lnewton_norm2 > newton_tol_sq) & (lnewton_iter < float(max_newton))
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -7,10 +7,15 @@
 Implements ``__cuda_array_interface__`` (CAI v3) so it can be passed
 directly to ``cuda.compute`` algorithms, and provides ``copy_to_host`` /
 ``copy_to_device`` helpers that mirror the Numba DeviceNDArray API.
+
+Shapes follow the public C-order contract: a :class:`DeviceArray` stores its
+public shape, exposes it (with compact C-contiguous strides) through the CUDA
+Array Interface, and supports contiguous ``reshape()`` views.
 """
 
 from __future__ import annotations
 
+import math
 import weakref
 from typing import TYPE_CHECKING
 
@@ -60,13 +65,35 @@ def _finalizer(dplace, ptr: int, nbytes: int, stream_int: int, stream=None):
         print(f"DeviceArray: deallocation warning: {e}")
 
 
+def _normalize_shape(shape) -> tuple:
+    """Normalize an int or a sequence of ints into a C-order shape tuple.
+
+    Extents must be non-negative (a 0 extent yields an empty array); at most
+    4 dimensions are supported (the allocation geometry limit).
+    """
+    if isinstance(shape, bool):
+        raise TypeError("DeviceArray shape must be an int or a sequence of ints")
+    if isinstance(shape, (int, np.integer)):
+        shape = (int(shape),)
+    shape = tuple(int(e) for e in shape)
+    if not 1 <= len(shape) <= 4:
+        raise ValueError(
+            f"DeviceArray shape must have 1 to 4 dimensions, got {len(shape)}"
+        )
+    for e in shape:
+        if e < 0:
+            raise ValueError("DeviceArray size must be non-negative")
+    return shape
+
+
 class DeviceArray:
-    """1-D device array allocated through a :class:`data_place`.
+    """Device array allocated through a :class:`data_place`.
 
     Parameters
     ----------
-    size : int
-        Number of elements.
+    shape : int or sequence of int
+        Public C-order shape (like a NumPy shape). A plain int creates a 1-D
+        array.
     dtype : numpy dtype-like
         Element type.
     dplace : data_place
@@ -74,21 +101,20 @@ class DeviceArray:
     stream : optional
         CUDA stream for stream-ordered allocation.
     dims : sequence of int, optional
-        Tensor extents (C order, like a NumPy shape) describing the geometry
-        of the allocation, when the flat array backs a multi-dimensional
-        tensor.
-        Required for composite places backed by a structured partition,
-        whose extents must match the partition's tensor;
-        ``prod(dims) * elemsize`` must equal ``size * itemsize``. Defaults
-        to the flat byte geometry ``(size * itemsize,)`` with ``elemsize``
-        1, which distributes composite allocations with byte granularity
-        (and is equivalent to a plain byte allocation everywhere else).
+        Allocation geometry (C order) passed to ``data_place.allocate()``
+        when it should differ from ``shape`` -- for example when a composite
+        place's partition is expressed over different extents than the
+        element view. Defaults to ``shape`` with ``elemsize`` equal to the
+        dtype's item size, so a shaped allocation on a partitioned composite
+        place works with no extra argument. ``prod(dims) * elemsize`` must
+        equal ``prod(shape) * itemsize``.
     elemsize : int, optional
         Element size in bytes paired with ``dims``.
     """
 
     __slots__ = (
         "_ptr",
+        "_shape",
         "_size",
         "_dtype",
         "_nbytes",
@@ -102,7 +128,7 @@ class DeviceArray:
 
     def __init__(
         self,
-        size: int,
+        shape,
         dtype,
         dplace: "data_place",
         stream=None,
@@ -110,12 +136,10 @@ class DeviceArray:
         dims=None,
         elemsize=None,
     ):
-        if size < 0:
-            raise ValueError("DeviceArray size must be non-negative")
-
+        self._shape = _normalize_shape(shape)
         self._dtype = np.dtype(dtype)
-        self._size = size
-        self._nbytes = size * self._dtype.itemsize
+        self._size = math.prod(self._shape)
+        self._nbytes = self._size * self._dtype.itemsize
         self._dplace = dplace
         # Retain the stream object (not just its raw handle): a stream-ordered
         # allocation stays valid only while the owning stream is alive, and the
@@ -127,7 +151,7 @@ class DeviceArray:
         if dims is None:
             if elemsize is not None:
                 raise ValueError("DeviceArray: elemsize requires dims")
-            dims, elemsize = (self._nbytes,), 1
+            dims, elemsize = self._shape, self._dtype.itemsize
         else:
             dims = tuple(int(d) for d in dims)
             elemsize = int(elemsize) if elemsize is not None else self._dtype.itemsize
@@ -137,7 +161,7 @@ class DeviceArray:
             if geom != self._nbytes:
                 raise ValueError(
                     f"DeviceArray: dims {dims} x elemsize {elemsize} = {geom} bytes "
-                    f"!= size {size} x itemsize {self._dtype.itemsize}"
+                    f"!= shape {self._shape} x itemsize {self._dtype.itemsize}"
                 )
 
         if self._nbytes > 0:
@@ -161,34 +185,39 @@ class DeviceArray:
         dplace: "data_place",
         stream=None,
     ) -> "DeviceArray":
-        """Allocate on *dplace* and copy *host_array* to the device."""
-        host_array = np.ascontiguousarray(host_array)
-        if host_array.ndim != 1:
-            raise ValueError("DeviceArray.from_host only supports 1-D host arrays")
+        """Allocate on *dplace* and copy *host_array* to the device.
 
-        arr = DeviceArray(host_array.shape[0], host_array.dtype, dplace, stream)
+        The host array is made C-contiguous; its shape is preserved.
+        """
+        host_array = np.ascontiguousarray(host_array)
+        arr = DeviceArray(host_array.shape, host_array.dtype, dplace, stream)
         if arr._nbytes > 0:
             arr.copy_to_device(host_array)
         return arr
 
-    # -- views (slicing) ---------------------------------------------------
+    # -- views (slicing, reshape) --------------------------------------------
 
     @staticmethod
     def _view(
         base_or_owner: "DeviceArray",
         ptr: int,
-        size: int,
+        shape: tuple,
         dtype: np.dtype,
         dplace: "data_place",
         stream_int: int,
         stream=None,
     ) -> "DeviceArray":
-        """Create a non-owning view into an existing DeviceArray."""
+        """Create a non-owning view into an existing DeviceArray.
+
+        The view holds the owning (root) array through ``_base`` so the
+        allocation outlives every view.
+        """
         view = object.__new__(DeviceArray)
         view._ptr = ptr
-        view._size = size
+        view._shape = shape
+        view._size = math.prod(shape)
         view._dtype = dtype
-        view._nbytes = size * dtype.itemsize
+        view._nbytes = view._size * dtype.itemsize
         view._dplace = dplace
         view._stream = stream
         view._stream_int = stream_int
@@ -197,8 +226,51 @@ class DeviceArray:
         view._finalizer_ref = None
         return view
 
+    def reshape(self, *shape) -> "DeviceArray":
+        """Return a non-owning view with a new C-order shape.
+
+        The storage is C-contiguous, so any reshape preserving the element
+        count is valid (adjacent-axis collapse, splitting, flattening). One
+        dimension may be ``-1`` to be inferred, as in NumPy. The view keeps
+        the owning array alive.
+        """
+        if len(shape) == 1 and not isinstance(shape[0], (int, np.integer)):
+            shape = tuple(shape[0])
+        shape = tuple(int(e) for e in shape)
+        negatives = [i for i, e in enumerate(shape) if e == -1]
+        if len(negatives) > 1:
+            raise ValueError("DeviceArray.reshape: at most one dimension may be -1")
+        if negatives:
+            rest = math.prod(e for e in shape if e != -1)
+            if rest == 0 or self._size % rest != 0:
+                raise ValueError(
+                    f"DeviceArray.reshape: cannot infer dimension for shape {shape} "
+                    f"with {self._size} elements"
+                )
+            shape = tuple(self._size // rest if e == -1 else e for e in shape)
+        shape = _normalize_shape(shape)
+        if math.prod(shape) != self._size:
+            raise ValueError(
+                f"DeviceArray.reshape: shape {shape} has {math.prod(shape)} elements, "
+                f"expected {self._size}"
+            )
+        return DeviceArray._view(
+            self,
+            self._ptr,
+            shape,
+            self._dtype,
+            self._dplace,
+            self._stream_int,
+            self._stream,
+        )
+
     def __getitem__(self, key):
         if isinstance(key, slice):
+            if len(self._shape) != 1:
+                raise IndexError(
+                    "DeviceArray slicing is only supported on 1-D arrays; "
+                    "reshape(-1) first"
+                )
             start, stop, step = key.indices(self._size)
             if step != 1:
                 raise IndexError("DeviceArray only supports contiguous slices (step=1)")
@@ -207,7 +279,7 @@ class DeviceArray:
             return DeviceArray._view(
                 self,
                 new_ptr,
-                length,
+                (length,),
                 self._dtype,
                 self._dplace,
                 self._stream_int,
@@ -221,9 +293,11 @@ class DeviceArray:
     def __cuda_array_interface__(self):
         cai = {
             "version": 3,
-            "shape": (self._size,),
+            "shape": self._shape,
             "typestr": self._dtype.str,
             "data": (self._ptr, False),
+            # None means compact C-contiguous strides, which is exactly the
+            # storage layout: shaped views never introduce gaps.
             "strides": None,
             # Advertise the allocation stream so consumers order their work
             # after our (possibly stream-ordered) allocation. CAI v3 forbids a
@@ -241,8 +315,12 @@ class DeviceArray:
         return self._dtype
 
     @property
-    def shape(self):
-        return (self._size,)
+    def shape(self) -> tuple:
+        return self._shape
+
+    @property
+    def ndim(self) -> int:
+        return len(self._shape)
 
     @property
     def size(self) -> int:
@@ -260,8 +338,9 @@ class DeviceArray:
     # -- host <-> device transfers -----------------------------------------
 
     def copy_to_host(self) -> np.ndarray:
-        """Synchronous device-to-host copy.  Returns a new NumPy array."""
-        host = np.empty(self._size, dtype=self._dtype)
+        """Synchronous device-to-host copy.  Returns a new NumPy array of
+        this array's shape."""
+        host = np.empty(self._shape, dtype=self._dtype)
         if self._nbytes == 0:
             return host
         _memcpy_sync_on_stream(
@@ -292,6 +371,6 @@ class DeviceArray:
 
     def __repr__(self):
         return (
-            f"DeviceArray(size={self._size}, dtype={self._dtype}, "
+            f"DeviceArray(shape={self._shape}, dtype={self._dtype}, "
             f"ptr=0x{self._ptr:x}, place={self._dplace.kind})"
         )

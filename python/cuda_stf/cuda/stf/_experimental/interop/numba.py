@@ -113,12 +113,23 @@ def numba_task(ctx, *args, symbol=None):
                 else:
                     numba_args = (_to_numba(cais),)
             except Exception:
-                t.end()
+                # Preserve the original failure: a broken t.end() must not
+                # mask the exception that got us here.
+                try:
+                    t.end()
+                except Exception:
+                    pass
                 raise
             return (numba_args, stream)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            t.end()
+            # A failure in the body takes precedence over a cleanup failure;
+            # only surface t.end() errors when the body succeeded.
+            try:
+                t.end()
+            except BaseException:
+                if exc_type is None:
+                    raise
             return False
 
     return _NumbaTaskContext()
