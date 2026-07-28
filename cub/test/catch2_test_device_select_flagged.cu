@@ -302,7 +302,7 @@ struct flagged_prefetch_policy_selector
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
   {
-    auto policy                   = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
+    auto policy = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
     policy.lookback.load_prefetch = Prefetch;
     return policy;
   }

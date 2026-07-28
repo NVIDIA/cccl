@@ -1352,8 +1352,9 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
        .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
        .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
        .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
+       .lookback_delay =
+        cub::LookbackDelayPolicy{
+           .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
        .load_prefetch = cub::detail::LoadPrefetch::l2}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
@@ -1368,13 +1369,14 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
-             ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 350, .l2_write_latency = 450 }"
-             ", .load_prefetch = detail::LoadPrefetch::l2 } }");
+  REQUIRE(
+    to_string(p1)
+    == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
+       ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", .load_prefetch = detail::LoadPrefetch::l2 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

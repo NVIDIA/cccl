@@ -64,10 +64,10 @@ struct SelectLookbackPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
   {
     return os
-        << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay
-        << ", .load_prefetch = " << p.load_prefetch << " }";
+        << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .scan_algorithm = " << p.scan_algorithm
+        << ", .lookback_delay = " << p.lookback_delay << ", .load_prefetch = " << p.load_prefetch << " }";
   }
 #endif // _CCCL_HOSTED()
 };
