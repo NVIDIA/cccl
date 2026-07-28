@@ -533,6 +533,7 @@ jobs:
       ${{
         always() &&
         !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
         (
           needs.build-workflow.result == 'failure' ||
           needs.ci.result == 'failure' ||
