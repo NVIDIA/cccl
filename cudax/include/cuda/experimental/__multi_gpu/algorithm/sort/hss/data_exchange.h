@@ -26,11 +26,11 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__iterator/transform_iterator.h>
-#include <cuda/__iterator/zip_transform_iterator.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__ranges/zip_view.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -49,50 +49,88 @@
 
 namespace cuda::experimental::__detail::__hss_sort
 {
-//! @brief Splitter-selection functor that realizes the final splitter key from an `[L, U]`
-//!        bracket.
+//! @brief Realizes finalized splitter `i` from its `[L, U]` bracket, as either a key or a rank.
 //!
-//! Given a splitter's target rank `Ni/p` and its `L` / `U` brackets, it returns whichever
-//! bracket endpoint key is closest to the target rank, realizing an unset (unbounded) endpoint
-//! from the probe extrema (`__first_probe` / `__last_probe`).
+//! Picks whichever bracket endpoint is closest to the ideal rank `Ni/p`, ties to `L` (HSS
+//! Section 4.2.2 step (5)). `operator()` and `__rank` report the key and the global rank of that
+//! one choice.
 //!
-//! This is HSS Section 4.2.2 step (5): "Once the histogramming phase finishes, the key ranked
-//! closest to `Ni/p` among the keys seen so far is set as the `i`-th splitter." The `(L, U)`
-//! bracket is Table 1's `L(i)` / `U(i)` (ranks of the largest sample key below / smallest
-//! sample key above `Ni/p`), whose realized keys delimit the splitter interval `I(i)`.
+//! @tparam _Tp The key (value) type.
 template <class _Tp>
-struct __finalize_splitters_fn
+struct __bucket_to_splitter_key_fn
 {
-  const _Tp* __first_probe;
-  const _Tp* __last_probe;
+  const _Bracket<_Tp>* const __Ls;
+  const _Bracket<_Tp>* const __Us;
+  const _Tp* const __probes;
+  const ::cuda::std::uint64_t __num_probes;
+  const ::cuda::std::uint64_t* const __hist;
+  const __ideal_rank_fn __ideal_rank;
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp
-  operator()(::cuda::std::uint64_t __target_rank, _Bracket<_Tp> __L_i, _Bracket<_Tp> __U_i) const noexcept
+  // Indexable so that it can be handed to `__bucket_count_fn` as the search sequence directly,
+  // with no `transform_iterator` wrapper. `__bucket_count_fn` only ever subscripts it.
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp operator[](const ::cuda::std::uint64_t __i) const noexcept
   {
-    const bool __use_L = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
+    return __key(__i);
+  }
 
-    // Note that L_i and U_i might not have values if we never found any global splitters among
-    // our values. In this case the "closest" is simply our extrema.
-    if (__use_L)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __key(const ::cuda::std::uint64_t __i) const noexcept
+  {
+    if (__use_lower(__i))
     {
-      // Lower bound is closer to target
-      return __L_i.__key.has_value() ? *__L_i.__key : *__first_probe;
+      return __Ls[__i].__key.value_or(__probes[0]);
     }
-    // Upper bound is closer to target
-    return __U_i.__key.has_value() ? *__U_i.__key : *__last_probe;
+    return __Us[__i].__key.value_or(__probes[__num_probes - 1]);
+  }
+
+  // Returns the global rank of a bucket index
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint64_t
+  __rank(const ::cuda::std::uint64_t __bucket) const noexcept
+  {
+    // A keyless bracket means the splitter realizes to a probe extremum, whose rank is a histogram
+    // bucket rather than the bracket's 0 / N placeholder. Reporting the placeholder here hangs the
+    // exchange's all_to_all_v.
+    if (__use_lower(__bucket))
+    {
+      return __Ls[__bucket].__key.has_value() ? __Ls[__bucket].__rank : __hist[0];
+    }
+    return __Us[__bucket].__key.has_value() ? __Us[__bucket].__rank : (__ideal_rank.__N - __hist[__num_probes]);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool __use_lower(const ::cuda::std::uint64_t __i) const noexcept
+  {
+    const auto __target_rank = __ideal_rank(__i);
+
+    return (__target_rank - __Ls[__i].__rank) <= (__Us[__i].__rank - __target_rank);
+  }
+};
+
+//! @brief Emits, for one destination rank, both its send count and its post-exchange start offset.
+//!
+//! The ranks are read back out of the very `__bucket_to_splitter_key_fn` that `__count_fn`
+//! searches against rather than from a second copy of it, so both columns are guaranteed to
+//! describe the same splitter realization.
+//!
+//! `__count_fn` caches a cursor across calls, so it must be invoked exactly once per index,
+//! unconditionally. Do not branch around this call or repeat it.
+template <class _BucketCount>
+struct __send_count_and_offset_fn
+{
+  // some specialization of __bucket_count_fn
+  const _BucketCount __count_fn;
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::tuple<::cuda::std::size_t, ::cuda::std::uint64_t>
+  operator()(const ::cuda::std::uint64_t __bucket) const noexcept
+  {
+    // Rank 0's interval starts at 0; there is no splitter -1 to take a rank from.
+    const auto __offset = __bucket == 0 ? ::cuda::std::uint64_t{0} : __count_fn.__search_it.__rank(__bucket - 1);
+
+    return {static_cast<::cuda::std::size_t>(__count_fn(__bucket)), __offset};
   }
 };
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-//! @brief Route every rank's local keys to their destination ranks and merge the received runs.
-//!
-//! The HSS Data Exchange phase (Section 3.1 step (3), reused unchanged per Section 3.3): "a key
-//! in range `[S(i), S(i + 1))` goes to processor `i`". For each communicator it counts, per
-//! destination bucket, how many local keys fall between consecutive finalized splitters. The
-//! finalized splitters are reconstructed lazily on the fly by fusing `__finalize_splitters_fn`
-//! into a `transform_iterator` (`__splitter_it`) fed to a `__bucket_count_fn`, so one CUB
-//! `DeviceTransform` produces the send counts without a separate splitter buffer or launch.
+//! @brief Send the keys in `[S(d - 1), S(d))` to rank `d`, then merge the runs each rank receives.
 //!
 //! `__local_inputs` must be locally sorted and `__local_splitters` carry finalized brackets
 //! from `__histogramming_phase`.
@@ -107,18 +145,21 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in] __cmp The comparator defining the sorted order.
 //! @param[in] __local_splitters The per-comm splitter state supplying the finalized brackets and
 //!            probes.
+//! @param[in] __local_hists The per-comm all-reduced probe histograms from the histogramming
+//!            phase.
 //!
-//! @returns The per-rank exchanged-and-merged keys, one buffer per communicator.
+//! @returns The per-rank exchanged-and-merged keys alongside the per-rank starts of the
+//!          post-exchange intervals.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
-_CCCL_HOST_API ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __buffer_type<_Tp>>
+_CCCL_HOST_API typename _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange_result_type
 _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRange&& __local_inputs,
   const _BinaryOp& __cmp,
-  const ::std::vector<__per_comm_splitters_type>& __local_splitters)
+  const __histogramming_result_type& __hist_results)
 {
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
@@ -140,8 +181,16 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
     return __counts.__get().subspan(__comm_size, __comm_size);
   };
 
-  for (auto&& [__comm, __env, __resource, __input, __splitters] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs, __local_splitters))
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
+
+  __local_current_offsets.reserve(__num_local_inputs);
+  for (auto&& [__comm, __env, __resource, __input, __splitters, __hist] : ::cuda::std::ranges::views::zip(
+         __comms,
+         __envs,
+         __setup.__resources,
+         __local_inputs,
+         __hist_results.__local_splitters,
+         __hist_results.__local_hists))
   {
     const auto& __Ls     = __splitters.__Ls;
     const auto& __Us     = __splitters.__Us;
@@ -149,48 +198,65 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
 
     auto& __counts =
       __local_counts.emplace_back(__Ls.__get().stream(), __resource, 2 * __comm_size, ::cuda::no_init, __env);
+    auto& __offsets =
+      __local_current_offsets.emplace_back(__Ls.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
 
-    const auto __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
-
-    // Lazily reconstruct the finalized splitters (HSS Section 4.2.2 step (5), "the key
-    // ranked closest to Ni/p ... is set as the ith splitter") on the fly instead of
-    // materializing them. Rather than a separate Transform launch writing a splitter buffer
-    // that this kernel then reads, we fuse __finalize_splitters_fn into the data-exchange
-    // kernel through a transform_iterator: each __splitter_it[d] evaluates finalize on
-    // demand, eliminating one Transform launch and the splitter buffer. The ideal rank Ni/p
-    // (the center of the Section 2 / Table 1 target range Ti) is supplied per-splitter by
-    // __ideal_rank_fn.
     _CCCL_VERIFY(!__probes.__get().empty(), "Histogramming phase should have generated at least one probe");
+    _CCCL_VERIFY(__hist.size() == __probes.size() + 1, "The probe histogram must still describe the final probe set");
 
-    auto __splitter_it = ::cuda::make_zip_transform_iterator(
-      __finalize_splitters_fn<_Tp>{__probes.data(), ::cuda::std::to_address(__probes.end() - 1)},
-      ::cuda::make_transform_iterator(
-        ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm_size}),
-      __Ls.data(),
-      __Us.data());
+    // Everyone is sorted locally but nobody holds a globally correct slice yet, so each rank
+    // has to hand every key to whichever rank the splitters say owns it. Per destination d we
+    // need:
+    //
+    // - send count: how many of our keys belong to d. Sizes are all we have to agree on, since
+    //   we are sorted and d's keys are already a contiguous run of ours.
+    // - offset: d's position in the final order. The splitters divide by key value, not
+    //   evenly, so d ends up with more or fewer keys than it started with. The rebalance phase
+    //   reads these to put the original sizes back (note we should consider dropping rebalance).
+    //
+    // Both fall out of splitter d - 1, because a bracket endpoint carries a key *and* that
+    // key's global rank. The key bounds the search for the count; the rank is already the
+    // offset, since it counts exactly the keys ordered before d. There is one splitter object,
+    // held by the search iterator, so the two columns cannot describe different splitters.
+    //
+    // The reason for complexity here is that this is actually the fusion of 2 separate
+    // kernels. It used to be that the counts and offsets were computed separately, but they
+    // ultimately both ask the same question "for my particular bucket, how many keys and where
+    // are they?".
 
-    // Route this rank's local keys to destination ranks via the splitter keys: the Data
-    // Exchange phase, HSS Section 3.1 step (3), "a key in range [S(i), S(i + 1)) goes to
-    // processor i". HSS reuses this phase unchanged (Section 3.3), so bucket d receives the keys
-    // in [S(d - 1), S(d)) and its count becomes the send metadata. The send displacements are the
-    // exclusive prefix-sum of these counts (buckets are contiguous and non-overlapping), so we
-    // recompute them on the host below instead of emitting a second device column here.
-    auto __op = __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__input_begin)>,
-                                  ::cuda::std::remove_cvref_t<decltype(__splitter_it)>,
-                                  _BinaryOp>{
-      __input_begin,
-      ::cuda::std::to_address(::cuda::std::ranges::end(__input)),
-      ::cuda::std::move(__splitter_it),
-      __Ls.size(),
-      __cmp};
+    // TODO(jfaibussowit)
+    //
+    // This mess can probably be simplified greatly. __bucket_count_fn is shared with the
+    // histogramming phase, but ultimately it does something very similar here. I wonder if we
+    // can't just reuse the histogram directly here. There is a lot of repeated information
+    // here.
+    const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
+    using __input_it_t        = ::cuda::std::remove_cvref_t<decltype(__input_begin)>;
+
+    auto __op = __send_count_and_offset_fn<__bucket_count_fn<__input_it_t, __bucket_to_splitter_key_fn<_Tp>, _BinaryOp>>{
+      {__input_begin,
+       ::cuda::std::to_address(::cuda::std::ranges::end(__input)),
+       // This is doing double duty here. Not only do we use it to calculate the actual size
+       // of each bin, but we also use the __rank() function to calculate the offsets.
+       __bucket_to_splitter_key_fn<_Tp>{
+         __Ls.data(),
+         __Us.data(),
+         __probes.data(),
+         static_cast<::cuda::std::uint64_t>(__probes.size()),
+         __hist.data(),
+         __ideal_rank_fn{__N, static_cast<::cuda::std::uint64_t>(__comm_size)}},
+       __Ls.size(),
+       __cmp}};
 
     const auto __send_counts = __send_span(__counts);
+
+    auto __out = ::cuda::std::make_tuple(__send_counts.data(), __offsets.data());
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      __send_counts.data(),
+      ::cuda::std::move(__out),
       __send_counts.size(),
       ::cuda::std::move(__op),
       __env);
@@ -208,26 +274,12 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
     }
   }
 
-  ::std::vector<__buffer_type<_Tp>> __local_recvd;
-
-  // The count columns are adjacent and in the same order as the halves of the device-side
-  // allocation (send then recv), so the two count columns together form one contiguous
-  // destination that mirrors the device buffer exactly. The single D2H copy below relies on
-  // that; the displacement columns follow and are filled on the host.
   constexpr ::cuda::std::size_t __h_send_counts_column = 0;
   constexpr ::cuda::std::size_t __h_recv_counts_column = 1;
   constexpr ::cuda::std::size_t __h_send_displs_column = 2;
   constexpr ::cuda::std::size_t __h_recv_displs_column = 3;
   constexpr ::cuda::std::size_t __h_num_columns        = 4;
 
-  static_assert(__h_recv_counts_column == __h_send_counts_column + 1,
-                "The fused counts copy requires the send and recv count columns to be adjacent");
-
-  // Every rank's four columns have the same lifetime as well, so all ranks share one flat
-  // allocation instead of one per rank. The layout is rank-major: rank `i`'s four columns occupy
-  // `[i * __h_num_columns * __comm_size, (i + 1) * __h_num_columns * __comm_size)`, and
-  // `__h_column()` demarcates column `__col` within rank `__rank_idx`'s block. Sized up front so
-  // that every subspan below is valid immediately.
   ::std::vector<::cuda::std::size_t> __local_h_counts(__num_local_inputs * __h_num_columns * __comm_size);
 
   const auto __h_column =
@@ -237,50 +289,54 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
         ((__rank_idx * __h_num_columns) + __col) * __comm_size, __comm_size);
     };
 
+  ::std::vector<__buffer_type<_Tp>> __local_recvd;
+
   __local_recvd.reserve(__num_local_inputs);
-
-  ::cuda::std::size_t __idx = 0;
-  for (auto&& [__comm, __resource, __env, __counts] :
-       ::cuda::std::ranges::views::zip(__comms, __setup.__resources, __envs, __local_counts))
   {
-    const auto __h_send_counts = __h_column(__local_h_counts, __idx, __h_send_counts_column);
-    const auto __h_recv_counts = __h_column(__local_h_counts, __idx, __h_recv_counts_column);
-    const auto __h_send_displs = __h_column(__local_h_counts, __idx, __h_send_displs_column);
-    const auto __h_recv_displs = __h_column(__local_h_counts, __idx, __h_recv_displs_column);
+    auto __idx = 0;
 
-    // Both count halves come back in one transfer: the device allocation holds them back to back
-    // and the two host count columns mirror that layout, so the send and recv counts are a single
-    // contiguous `2 * __comm_size` range on either side.
-    ::cuda::copy_bytes(
-      __counts.__get().stream(),
-      __counts.__get(),
-      ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * static_cast<::cuda::std::size_t>(__comm_size)},
-      ::cuda::copy_configuration{
-        __comm.logical_device().underlying_device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
+    for (auto&& [__comm, __env, __counts] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_counts))
+    {
+      const auto __h_send_counts = __h_column(__local_h_counts, __idx, __h_send_counts_column);
 
-    // All streams are the same, so any suffices
-    __counts.__get().stream().sync();
+      static_assert(__h_recv_counts_column == __h_send_counts_column + 1,
+                    "The fused counts copy requires the send and recv count columns to be adjacent");
+      ::cuda::copy_bytes(
+        __counts.__get().stream(),
+        __counts.__get(),
+        ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * __h_send_counts.size()},
+        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+                                   ::cuda::host_memory_location,
+                                   ::cuda::source_access_order::stream});
 
-    // The send/recv displacements are just the exclusive prefix-sums of the corresponding
-    // counts, and both are consumed only on the host (below and in the all_to_all_v). counts is
-    // small (O(ranks)), so we scan on the host after the sync instead of paying a device scan
-    // plus a D2H copy of the result. Host counts are only valid post-sync, so scan here.
-    ::cuda::std::exclusive_scan(
-      __h_send_counts.begin(), __h_send_counts.end(), __h_send_displs.begin(), ::cuda::std::size_t{0});
-    ::cuda::std::exclusive_scan(
-      __h_recv_counts.begin(), __h_recv_counts.end(), __h_recv_displs.begin(), ::cuda::std::size_t{0});
+      // All streams are the same, so any suffices
+      __counts.__get().stream().sync();
 
-    const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
+      const auto __h_recv_counts = __h_column(__local_h_counts, __idx, __h_recv_counts_column);
+      const auto __h_send_displs = __h_column(__local_h_counts, __idx, __h_send_displs_column);
+      const auto __h_recv_displs = __h_column(__local_h_counts, __idx, __h_recv_displs_column);
+      // The send/recv displacements are just the exclusive prefix-sums of the corresponding
+      // counts, and both are consumed only on the host (below and in the all_to_all_v). counts
+      // is small (O(ranks)), so we scan on the host after the sync instead of paying a device
+      // scan plus a D2H copy of the result. Host counts are only valid post-sync, so scan here.
+      ::cuda::std::exclusive_scan(
+        __h_send_counts.begin(), __h_send_counts.end(), __h_send_displs.begin(), ::cuda::std::size_t{0});
+      ::cuda::std::exclusive_scan(
+        __h_recv_counts.begin(), __h_recv_counts.end(), __h_recv_displs.begin(), ::cuda::std::size_t{0});
 
-    __local_recvd.emplace_back(__counts.__get().stream(), __resource, __total_recv, ::cuda::no_init, __env);
+      const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
 
-    ++__idx;
+      __local_recvd.emplace_back(
+        __counts.__get().stream(), __counts.__get().memory_resource(), __total_recv, ::cuda::no_init, __env);
+
+      ++__idx;
+    }
   }
 
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __idx     = 0;
 
-    __idx = 0;
     for (auto&& [__comm, __input, __recvd] : ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_recvd))
     {
       __comm.all_to_all_v(
@@ -309,24 +365,27 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
 
   __local_merged.reserve(__num_local_inputs);
 
-  __idx = 0;
-  for (auto&& [__comm, __env, __recvd] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_recvd))
   {
-    auto& __merged = __local_merged.emplace_back(__recvd.__make_empty_like(0));
+    auto __idx = 0;
 
-    __merge_k_way(
-      __comm,
-      __env,
-      __recvd,
-      __h_column(__local_h_counts, __idx, __h_recv_counts_column),
-      __h_column(__local_h_counts, __idx, __h_recv_displs_column),
-      __cmp,
-      &__merged);
+    for (auto&& [__comm, __env, __recvd] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_recvd))
+    {
+      auto& __merged = __local_merged.emplace_back(__recvd.__make_empty_like(0));
 
-    ++__idx;
+      __merge_k_way(
+        __comm,
+        __env,
+        __recvd,
+        __h_column(__local_h_counts, __idx, __h_recv_counts_column),
+        __h_column(__local_h_counts, __idx, __h_recv_displs_column),
+        __cmp,
+        &__merged);
+
+      ++__idx;
+    }
   }
 
-  return __local_merged;
+  return __data_exchange_result_type{::cuda::std::move(__local_merged), ::cuda::std::move(__local_current_offsets)};
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT

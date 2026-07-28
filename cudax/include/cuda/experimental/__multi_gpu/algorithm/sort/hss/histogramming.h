@@ -198,13 +198,13 @@ _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 template <class _Tp>
 struct __update_intervals_fn
 {
-  const _Tp* __probes_begin;
-  const ::cuda::std::uint64_t* __hist_begin;
-  ::cuda::std::size_t __num_probes;
+  const _Tp* const __probes_begin;
+  const ::cuda::std::uint64_t* const __hist_begin;
+  const ::cuda::std::size_t __num_probes;
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::
     tuple<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Bracket<_Tp>, _Bracket<_Tp>>
-    operator()(::cuda::std::uint64_t __target, _Bracket<_Tp> __L_i, _Bracket<_Tp> __U_i) const noexcept
+    operator()(const ::cuda::std::uint64_t __target, _Bracket<_Tp> __L_i, _Bracket<_Tp> __U_i) const noexcept
   {
     // global_rank = number of input keys strictly less than probes[j]
     //             = prefix sum of per-bucket counts up to bucket j.
@@ -245,22 +245,23 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange>
 [[nodiscard]]
-_CCCL_HOST_API ::cuda::std::pair<
+_CCCL_HOST_API ::cuda::std::tuple<
   ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_splitters_type>,
-  ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_sampling_scratch_type>>
+  ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_sampling_scratch_type>,
+  ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __buffer_type<::cuda::std::uint64_t>>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
   const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs)
 {
   const auto __comm_size        = __setup.__comm_size;
   const auto __N                = __setup.__N;
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
-  // __per_comm_splitters (Ls/Us/probes) must survive the inner scratch block in __execute because
-  // __data_exchange consumes them after the sampling K-loop finishes.
   ::std::vector<__per_comm_splitters_type> __local_splitters;
   ::std::vector<__per_comm_sampling_scratch_type> __local_scratch;
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_hists;
 
   __local_splitters.reserve(__num_local_inputs);
   __local_scratch.reserve(__num_local_inputs);
+  __local_hists.reserve(__num_local_inputs);
 
   for (auto&& [__comm, __env, __resource] : ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources))
   {
@@ -298,12 +299,14 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
         /*__samples_size=*/
         __buffer_type<::cuda::std::size_t>{
           __stream, __resource, /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1, ::cuda::no_init, __env},
-        /*__hist=*/__buffer_type<::cuda::std::uint64_t>{__stream, __resource, __env},
         ::cuda::std::move(__probe_counts)});
     }
+
+    __local_hists.emplace_back(__stream, __resource, __env);
   }
 
-  return ::cuda::std::make_pair(::cuda::std::move(__local_splitters), ::cuda::std::move(__local_scratch));
+  return ::cuda::std::make_tuple(
+    ::cuda::std::move(__local_splitters), ::cuda::std::move(__local_scratch), ::cuda::std::move(__local_hists));
 }
 
 //! @brief Gather each rank's samples to the root, merge them, and broadcast the shared probes.
@@ -499,7 +502,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
 
 //! @brief Compute and globally reduce the per-probe histogram of the local keys.
 //!
-//! For each communicator it resizes `__scratch.__hist` to `num_probes + 1` buckets and runs one
+//! For each communicator it resizes `__hist` to `num_probes + 1` buckets and runs one
 //! CUB `DeviceTransform` over a counting iterator, driving a `__bucket_count_fn` seeded with the
 //! rank's sorted local keys and the shared probe set, so bucket `b` receives the count of local
 //! keys falling between consecutive probes. It then all-reduces the per-comm histograms
@@ -513,7 +516,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
 //! @param[in] __range_of_local_keys The range of per-rank sorted local key ranges.
 //! @param[in] __local_splitters The per-comm splitter state supplying the probe keys.
 //! @param[in] __cmp The comparator defining the sorted order.
-//! @param[in,out] __local_scratch The per-comm scratch whose `__hist` is filled and all-reduced.
+//! @param[in,out] __local_hists The per-comm probe histograms, filled and all-reduced.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
@@ -522,13 +525,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   _InputRange&& __range_of_local_keys,
   const ::std::vector<__per_comm_splitters_type>& __local_splitters,
   const _BinaryOp& __cmp,
-  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch)
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>>* __local_hists)
 {
-  for (auto&& [__comm, __env, __keys, __splitters, __scratch] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __range_of_local_keys, __local_splitters, *__local_scratch))
+  for (auto&& [__comm, __env, __keys, __splitters, __hist] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __range_of_local_keys, __local_splitters, *__local_hists))
   {
     auto& __probes             = __splitters.__probes;
-    auto& __hist               = __scratch.__hist;
     const auto __num_probes    = __probes.size();
     const auto __num_buckets   = __num_probes + 1;
     const auto* __keys_first   = ::cuda::std::to_address(::cuda::std::ranges::begin(__keys));
@@ -554,9 +556,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-    for (auto&& [__comm, __scratch] : ::cuda::std::ranges::views::zip(__comms, *__local_scratch))
+    for (auto&& [__comm, __hist] : ::cuda::std::ranges::views::zip(__comms, *__local_hists))
     {
-      auto&& __hist     = __scratch.__hist;
       auto* const __ptr = __hist.data();
 
       __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __hist.__get().stream());
@@ -578,6 +579,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
 //! @param[in] __comms The range of per-rank communicators.
 //! @param[in] __envs The range of per-rank execution environments (one stream each).
 //! @param[in] __N The global key count.
+//! @param[in] __local_hists The per-comm all-reduced probe histograms the brackets are narrowed
+//!            from.
 //! @param[in,out] __local_splitters The per-comm bracket state whose `__Ls` / `__Us` / `__I_j`
 //!                are tightened.
 //! @param[in,out] __local_scratch The per-comm scratch whose `__I_j` interval column is
@@ -588,11 +591,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
   _CommRange&& __comms,
   _EnvRange&& __envs,
   ::cuda::std::uint64_t __N,
+  const ::std::vector<__buffer_type<::cuda::std::uint64_t>>& __local_hists,
   ::std::vector<__per_comm_splitters_type>* __local_splitters,
   ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch)
 {
-  for (auto&& [__comm, __env, __splitters, __scratch] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, *__local_splitters, *__local_scratch))
+  for (auto&& [__comm, __env, __splitters, __scratch, __hist] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, *__local_splitters, *__local_scratch, __local_hists))
   {
     const auto __comm_size     = __comm.size();
     const auto __num_splitters = __scratch.__I_j.size();
@@ -606,8 +610,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
       __Ls_begin,
       __Us_begin);
     auto __out = ::cuda::std::make_tuple(__I_j_begin, __Ls_begin, __Us_begin);
-    auto __op =
-      __update_intervals_fn<_Tp>{__splitters.__probes.data(), __scratch.__hist.data(), __splitters.__probes.size()};
+    auto __op  = __update_intervals_fn<_Tp>{__splitters.__probes.data(), __hist.data(), __splitters.__probes.size()};
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
@@ -622,6 +625,11 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
 
 //! @brief Run the full HSS histogramming (sampling) phase and return the finalized brackets.
 //!
+//! Also returns the final round's all-reduced probe histogram per comm. The data-exchange phase
+//! reads its two extremal buckets when a splitter's selected bracket carries no key: the splitter
+//! then realizes to a probe extremum, whose global rank is that bucket rather than the bracket's
+//! `0` / `N` placeholder. Everything else in the sampling scratch dies with this function.
+//!
 //! @tparam _Traits The `__hss_traits` instantiation carrying the value, bracket, and buffer
 //!                 types.
 //!
@@ -631,10 +639,11 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
 //! @param[in] __local_inputs The range of per-rank sorted local key ranges.
 //! @param[in] __cmp The comparator defining the sorted order.
 //!
-//! @return The per-comm splitter-state vector with finalized brackets and shared probe sets.
+//! @return The per-comm splitter-state vector with finalized brackets and shared probe sets,
+//!         alongside the per-comm all-reduced probe histograms of the final sampling round.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
-[[nodiscard]] _CCCL_HOST_API ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_splitters_type>
+[[nodiscard]] _CCCL_HOST_API typename _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_result_type
 _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
@@ -642,9 +651,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
   _InputRange&& __local_inputs,
   const _BinaryOp& __cmp)
 {
-  const auto __comm_size                    = __setup.__comm_size;
-  const auto __N                            = __setup.__N;
-  auto [__local_splitters, __local_scratch] = __allocate_histogramming_buffers(__setup, __comms, __envs);
+  const auto __comm_size                                   = __setup.__comm_size;
+  const auto __N                                           = __setup.__N;
+  auto [__local_splitters, __local_scratch, __local_hists] = __allocate_histogramming_buffers(__setup, __comms, __envs);
 
   // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so their
   // allocations are paid once per sort instead of once per round.
@@ -706,13 +715,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
       &__root_displs,
       &__root_all_samples);
 
-    __compute_histogram(__comms, __envs, __local_inputs, __local_splitters, __cmp, &__local_scratch);
+    __compute_histogram(__comms, __envs, __local_inputs, __local_splitters, __cmp, &__local_hists);
 
     // Tighten brackets and rebuild intervals
-    __update_intervals(__comms, __envs, __N, &__local_splitters, &__local_scratch);
+    __update_intervals(__comms, __envs, __N, __local_hists, &__local_splitters, &__local_scratch);
   }
 
-  return __local_splitters;
+  return __histogramming_result_type{::cuda::std::move(__local_splitters), ::cuda::std::move(__local_hists)};
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT

@@ -22,12 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/device_scan.cuh>
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__ranges/zip_view.h>
@@ -106,9 +104,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //!
 //! Final HSS phase. The data-exchange phase leaves a globally sorted but only approximately
 //! balanced distribution; this phase corrects the rank ranges back to the exact original per-rank
-//! sizes. Because duplicate splitter keys can route an unpredictable share of records to one
-//! rank, the current distribution is measured rather than predicted: each rank's current input
-//! size is all-gathered and exclusive-scanned into current offsets.
+//! sizes. It needs each rank's current global offset, which the data-exchange phase derived from
+//! the all-reduced probe histogram and hands in, so no collective measures the distribution here.
 //!
 //! The desired offsets are the setup's exclusive scan of the original sizes. One CUB
 //! `DeviceTransform` intersects each rank's current global interval with each peer's desired
@@ -125,6 +122,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //!             caller's ranges are resized, and it happens with no collective in flight.
 //! @param[in] __local_exchanged The per-rank output of the data-exchange phase, used as the send
 //!            buffer of the rebalance exchange.
+//! @param[in] __local_current_offsets The per-rank starts of the post-exchange rank intervals,
+//!            derived by the data-exchange phase.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_counts(
@@ -132,76 +131,42 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputRange&& __local_inputs,
-  const ::std::vector<__buffer_type<_Tp>>& __local_exchanged)
+  const __data_exchange_result_type& __exchange_results)
 {
+  // At this point we have sorted a huge pile of numbers across several GPUs. Near the end,
+  // every GPU holds a correctly-sorted *chunk*, but the chunks are the wrong sizes. GPU 0
+  // might be holding 1.2 million items when it's supposed to end up with exactly 1
+  // million. So there's a final shuffle to hand the excess around until everyone's chunk is
+  // the size it started as.
+  //
+  // To run that shuffle, each GPU needs to know where its chunk currently begins in the global
+  // order - "I'm currently holding items 0 through 1,199,999." Equivalently: how much
+  // *everyone else* is holding, so it can work out its own starting position.
+  //
+  // The naive solution is to just ask via an all-gather. Every GPU announces its current size
+  // to every other GPU, then they add them up. It works, but it's a synchronization point -
+  // all GPUs have to stop and wait for each other.
+  //
+  // But we don't actually need this because we can deduce everyone else's sizes based on what
+  // we have already:
+  //
+  // Earlier in the algorithm the GPUs agreed on a set of splitters - dividing lines in the
+  // sorted order. "Everything below 500 goes to GPU 0, 500-999 to GPU 1," etc. That agreement
+  // is what drove the shuffle in the first place.
+  //
+  // It's tempting to think you'd need to track the actual traffic - who sent how many items to
+  // whom - but this isn't necessary. We already have this information from... the splitters!
+  // GPU N ends up holding *exactly the items that fall between splitter N-1 and splitter N*,
+  // which is encoded in the histogram.
+  //
+  // Even better, the histogram is broadcasted equally to all ranks during the histogramming
+  // phase so we know that everyone has the same information.
   const auto __comm_size        = __setup.__comm_size;
   const auto __N                = __setup.__N;
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  // The splitter exchange already produced a globally sorted, approximately balanced
-  // distribution. Rebalance only corrects the rank ranges from that current distribution back
-  // to the original per-rank sizes. Desired offsets are the exclusive scan of the original
-  // sizes; the CURRENT offsets are measured here -- the actual post-exchange per-rank sizes,
-  // all-gathered and exclusive-scanned -- exactly as the reference does. (Duplicate splitter
-  // keys can route an unpredictable share of records to a single rank, so the current
-  // distribution must be measured, not predicted from the splitter positions.)
-  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_sizes;
-
-  __local_current_sizes.reserve(__num_local_inputs);
-  for (auto&& [__comm, __env, __resource, __exchanged] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_exchanged))
-  {
-    const auto __n_current = static_cast<::cuda::std::uint64_t>(__exchanged.size());
-    auto& __sizes =
-      __local_current_sizes.emplace_back(::cuda::get_stream(__env), __resource, __comm_size, ::cuda::no_init, __env);
-
-    ::cuda::copy_bytes(
-      __sizes.__get().stream(),
-      ::cuda::std::span{&__n_current, ::cuda::std::size_t{1}},
-      __sizes.__get().subspan(__comm.rank(), 1),
-      ::cuda::copy_configuration{::cuda::host_memory_location,
-                                 __comm.logical_device().underlying_device(),
-                                 ::cuda::source_access_order::during_api_call});
-  }
-
-  {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
-
-    for (auto&& [__comm, __sizes] : ::cuda::std::ranges::views::zip(__comms, __local_current_sizes))
-    {
-      auto* const __ptr = __sizes.data();
-
-      __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, 1, __sizes.__get().stream());
-    }
-  }
-
-  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
-
-  __local_current_offsets.reserve(__num_local_inputs);
-  for (auto&& [__comm, __env, __resource, __sizes] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_current_sizes))
-  {
-    auto& __offsets =
-      __local_current_offsets.emplace_back(__sizes.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
-
-    __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
-      CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
-      __sizes.begin(),
-      __offsets.begin(),
-      __comm_size,
-      __env);
-  }
-
-  // The four count/displacement columns are all `__comm_size` elements of the same type, live on
-  // the same device, and are used on the same stream, so each rank gets one flat device
-  // allocation holding them back to back instead of four. `__column()` demarcates column `__col`
-  // within a rank's device block; the same layout is mirrored on the host below.
   ::std::vector<__buffer_type<_Tp>> __local_rebalanced;
 
-  // The column order is dictated by the tuple `__rebalance_counts_fn` returns: the
-  // `DeviceTransform` writes its four outputs into these columns in this order, and the host
-  // columns repeat it so the whole block transfers in one copy.
   constexpr ::cuda::std::size_t __send_counts_column = 0;
   constexpr ::cuda::std::size_t __send_displs_column = 1;
   constexpr ::cuda::std::size_t __recv_counts_column = 2;
@@ -213,11 +178,6 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     "The fused D2H copy requires the device and host columns to be contiguous and in "
     "the same order on both sides");
 
-  // Every rank's host columns have the same lifetime too, so all ranks share one flat allocation
-  // instead of one per rank. The layout is rank-major: rank `i`'s four columns occupy
-  // `[i * __num_columns * __comm_size, (i + 1) * __num_columns * __comm_size)`, and `__h_column()`
-  // demarcates column `__col` within rank `__rank_idx`'s block. Sized up front so that every
-  // subspan below is valid immediately.
   ::std::vector<::cuda::std::size_t> __local_h_counts(__num_local_inputs * __num_columns * __comm_size);
 
   const auto __column = [__comm_size](auto& __counts, ::cuda::std::size_t __col) {
@@ -232,79 +192,72 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
 
   __local_rebalanced.reserve(__num_local_inputs);
 
-  ::cuda::std::size_t __idx = 0;
-  for (auto&& [__comm, __env, __resource, __current_offsets, __desired_offsets, __original_size] :
-       ::cuda::std::ranges::views::zip(
-         __comms,
-         __envs,
-         __setup.__resources,
-         __local_current_offsets,
-         __setup.__all_local_offsets,
-         __setup.__local_original_sizes))
   {
-    auto __counts = ::cuda::make_buffer<::cuda::std::size_t>(
-      __current_offsets.__get().stream(),
-      __resource,
-      __num_columns * __comm_size,
-      ::cuda::no_init,
-      ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
+    auto __idx = 0;
 
-    auto __out = ::cuda::std::make_tuple(
-      __column(__counts, __send_counts_column).data(),
-      __column(__counts, __send_displs_column).data(),
-      __column(__counts, __recv_counts_column).data(),
-      __column(__counts, __recv_displs_column).data());
+    for (auto&& [__comm, __env, __resource, __current_offsets, __desired_offsets, __original_size] :
+         ::cuda::std::ranges::views::zip(
+           __comms,
+           __envs,
+           __setup.__resources,
+           __exchange_results.__local_current_offsets,
+           __setup.__all_local_offsets,
+           __setup.__local_original_sizes))
+    {
+      auto __counts = ::cuda::make_buffer<::cuda::std::size_t>(
+        __current_offsets.__get().stream(),
+        __resource,
+        __num_columns * __comm_size,
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
 
-    auto __op = __rebalance_counts_fn{
-      static_cast<::cuda::std::uint64_t>(__comm.rank()),
-      static_cast<::cuda::std::uint64_t>(__comm_size),
-      __N,
-      __current_offsets.data(),
-      __desired_offsets.data()};
+      auto __out = ::cuda::std::make_tuple(
+        __column(__counts, __send_counts_column).data(),
+        __column(__counts, __send_displs_column).data(),
+        __column(__counts, __recv_counts_column).data(),
+        __column(__counts, __recv_displs_column).data());
 
-    __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
-      CUB_NS_QUALIFIER::DeviceTransform::Transform,
-      ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      ::cuda::std::move(__out),
-      __comm_size,
-      __op,
-      __env);
+      auto __op = __rebalance_counts_fn{
+        static_cast<::cuda::std::uint64_t>(__comm.rank()),
+        static_cast<::cuda::std::uint64_t>(__comm_size),
+        __N,
+        __current_offsets.data(),
+        __desired_offsets.data()};
 
-    // All four columns come back in one transfer: the device allocation holds them back to back
-    // and this rank's four host columns are contiguous within the rank-major flat allocation, so
-    // either side is a single contiguous `__num_columns * __comm_size` range starting at the
-    // rank's first column.
-    ::cuda::copy_bytes(
-      __counts.stream(),
-      __counts,
-      ::cuda::std::span<::cuda::std::size_t>{__h_column(__local_h_counts, __idx, __send_counts_column).data(),
-                                             __num_columns * static_cast<::cuda::std::size_t>(__comm_size)},
-      ::cuda::copy_configuration{
-        __comm.logical_device().underlying_device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm.logical_device(),
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
+        ::cuda::counting_iterator<::cuda::std::uint64_t>{},
+        ::cuda::std::move(__out),
+        __comm_size,
+        __op,
+        __env);
 
-    __local_rebalanced.emplace_back(__counts.stream(), __resource, __original_size, ::cuda::no_init, __env);
+      ::cuda::copy_bytes(
+        __counts.stream(),
+        __counts,
+        ::cuda::std::span<::cuda::std::size_t>{__h_column(__local_h_counts, __idx, __send_counts_column).data(),
+                                               __num_columns * static_cast<::cuda::std::size_t>(__comm_size)},
+        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+                                   ::cuda::host_memory_location,
+                                   ::cuda::source_access_order::stream});
 
-    ++__idx;
-  }
+      __local_rebalanced.emplace_back(__counts.stream(), __resource, __original_size, ::cuda::no_init, __env);
 
-  // The transfers above are device to host, and the all_to_all_v below reads the host columns as
-  // its count and displacement arguments. Drain every stream first so those columns are populated
-  // before any rank enters the collective.
-  for (auto&& __local : __local_rebalanced)
-  {
-    __local.__get().stream().sync();
+      ++__idx;
+    }
   }
 
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __idx     = 0;
 
-    // The rebalance exchange is the only communication in this phase. It moves already
-    // globally sorted contiguous rank intervals into the exact original per-rank sizes.
-    __idx = 0;
     for (auto&& [__comm, __exchanged, __out] :
-         ::cuda::std::ranges::views::zip(__comms, __local_exchanged, __local_rebalanced))
+         ::cuda::std::ranges::views::zip(__comms, __exchange_results.__local_merged, __local_rebalanced))
     {
+      // Wait for DtoH above to finish
+      __out.__get().stream().sync();
+
       __comm.all_to_all_v(
         __guard,
         __exchanged.data(),
@@ -319,19 +272,13 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     }
   }
 
-  // Drain every rank's stream before touching the caller's ranges. The rebalance exchange above
-  // is only submitted by closing the group guard, and resizing a caller range may reallocate
-  // through an allocator that is neither stream-ordered nor able to make progress while a
-  // collective is pending. Syncing first means the resize below runs with nothing in flight, so
-  // it can neither alias the exchange's buffers nor block a peer that is waiting to join a
-  // collective this rank has not yet reached.
-  for (auto&& __out : __local_rebalanced)
-  {
-    __out.__get().stream().sync();
-  }
-
   for (auto&& [__comm, __input, __out] : ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_rebalanced))
   {
+    const ::cuda::device_ref __device = __comm.logical_device().underlying_device();
+    // We cannot assume the user will set their device properly if they need to reallocate/move
+    // elements in the resize, so we do this for them
+    const auto _ = ::cuda::__ensure_current_context{__device};
+
     // This resize is safe only so long as the user promises to free their allocation on the
     // stream that they passed us. For thrust/cuda containers, this is vacuously true.
     ::cuda::experimental::__detail::__hss_sort::__resize_for_overwrite(__input, __out.size());
@@ -340,9 +287,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
       __out.__get().stream(),
       __out.__get(),
       ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(__input)), __out.size()},
-      ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                 __comm.logical_device().underlying_device(),
-                                 ::cuda::source_access_order::stream});
+      ::cuda::copy_configuration{__device, __device, ::cuda::source_access_order::stream});
   }
 }
 
