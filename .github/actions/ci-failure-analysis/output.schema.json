@@ -2,35 +2,6 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ok",
-        "log_retrieval_failed"
-      ]
-    },
-    "error": {
-      "type": "string"
-    },
-    "jobs": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ]
-      }
-    },
     "groups": {
       "type": "array",
       "items": {
@@ -115,19 +86,9 @@
           "job_ids"
         ]
       }
-    },
-    "cancelled_job_ids": {
-      "type": "array",
-      "items": {
-        "type": "integer"
-      }
     }
   },
   "required": [
-    "status",
-    "error",
-    "jobs",
-    "groups",
-    "cancelled_job_ids"
+    "groups"
   ]
 }

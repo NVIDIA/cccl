@@ -30,6 +30,7 @@ runs:
       run: |
         mkdir -p "${RUNNER_TEMP}/codex-home"
         cp "${GITHUB_ACTION_PATH}/config.toml" "${RUNNER_TEMP}/codex-home/config.toml"
+        cp "${GITHUB_ACTION_PATH}/model-catalog.json" /tmp/ci-logs/model-catalog.json
 
     - name: Investigate the workflow run
       uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1
@@ -44,7 +45,8 @@ runs:
         permission-profile: ci_triage
         allow-bot-users: "copy-pr-bot[bot]"
         model: openai/openai/gpt-5.5
-        codex-args: --ignore-rules
+        effort: medium
+        codex-args: --ignore-rules --ephemeral
         output-file: ${{ runner.temp }}/agent-analysis.json
         output-schema-file: ${{ github.action_path }}/output.schema.json
         prompt-file: ${{ github.action_path }}/prompt.md
@@ -55,10 +57,10 @@ runs:
         python3 "${GITHUB_ACTION_PATH}/render.py" \
           --analysis "${RUNNER_TEMP}/agent-analysis.json" \
           --schema "${GITHUB_ACTION_PATH}/output.schema.json" \
+          --jobs /tmp/ci-logs/jobs.json \
           --repository "${GITHUB_REPOSITORY}" \
           --run-id "${GITHUB_RUN_ID}" \
           --head-sha "${GITHUB_SHA}" \
-          --codex-home "${RUNNER_TEMP}/codex-home" \
           --output "${RUNNER_TEMP}/agent-summary.md"
 
     - name: Export failure analysis

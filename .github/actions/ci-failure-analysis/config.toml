@@ -1,3 +1,5 @@
+model_catalog_json = "/tmp/ci-logs/model-catalog.json"
+
 [permissions.ci_triage.filesystem]
 ":minimal" = "read"
 ":slash_tmp" = "write"

@@ -38,4 +38,5 @@ mapfile -t failed_job_ids < <(
 for job_id in "${failed_job_ids[@]}"; do
   gh api "repos/${repository}/actions/jobs/${job_id}/logs" \
     > "${output_dir}/job-${job_id}.log"
+  test -s "${output_dir}/job-${job_id}.log"
 done

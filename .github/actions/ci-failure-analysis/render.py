@@ -13,6 +13,12 @@ REPORT_LIMIT = 60000
 CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 INLINE_MARKDOWN = re.compile(r"([\\`*_\[\]])")
 URL_SCHEME = re.compile(r"(?i)\b(https?):/{2}")
+FAILED_CONCLUSIONS = {
+    "action_required",
+    "failure",
+    "startup_failure",
+    "timed_out",
+}
 
 
 class ValidationError(ValueError):
@@ -29,20 +35,6 @@ def load_json(path):
             return json.load(stream)
     except (OSError, json.JSONDecodeError) as error:
         fail(f"could not read JSON from {path}: {error}")
-
-
-def load_token_usage(codex_home):
-    sessions = sorted((codex_home / "sessions").rglob("rollout-*.jsonl"))
-    if not sessions:
-        return None
-
-    total_tokens = None
-    with sessions[-1].open(encoding="utf-8") as stream:
-        for line in stream:
-            payload = json.loads(line).get("payload", {})
-            if payload.get("type") == "token_count" and payload.get("info"):
-                total_tokens = payload["info"]["total_token_usage"]["total_tokens"]
-    return total_tokens
 
 
 def validate_schema(value, schema, location="$"):
@@ -130,12 +122,86 @@ def source_url(repository, head_sha, path, line):
     return f"https://github.com/{repository}/blob/{head_sha}/{encoded_path}#L{line}"
 
 
-def build_job_index(job_items):
+def load_job_manifest(path):
+    manifest = load_json(path)
+    if not isinstance(manifest, dict):
+        fail("job manifest must be an object")
+    job_items = manifest.get("jobs")
+    total_count = manifest.get("total_count")
+    if not isinstance(job_items, list):
+        fail("job manifest must contain a jobs array")
+    if (
+        not isinstance(total_count, int)
+        or isinstance(total_count, bool)
+        or total_count != len(job_items)
+    ):
+        fail("job manifest total_count does not match its jobs array")
+
     jobs = {}
-    for job in job_items:
-        if job["id"] > 0 and job["id"] not in jobs:
-            jobs[job["id"]] = job["name"]
-    return jobs
+    step_numbers = {}
+    failed_job_ids = set()
+    cancelled_job_ids = []
+    for index, job in enumerate(job_items):
+        location = f"job manifest jobs[{index}]"
+        if not isinstance(job, dict):
+            fail(f"{location} must be an object")
+        job_id = job.get("id")
+        name = job.get("name")
+        conclusion = job.get("conclusion")
+        steps = job.get("steps", [])
+        if not isinstance(job_id, int) or isinstance(job_id, bool) or job_id <= 0:
+            fail(f"{location}.id must be a positive integer")
+        if job_id in jobs:
+            fail(f"{location}.id duplicates job {job_id}")
+        if not isinstance(name, str) or not name:
+            fail(f"{location}.name must be a non-empty string")
+        if conclusion is not None and not isinstance(conclusion, str):
+            fail(f"{location}.conclusion must be a string or null")
+        if not isinstance(steps, list):
+            fail(f"{location}.steps must be an array")
+
+        numbers = set()
+        for step_index, step in enumerate(steps):
+            number = step.get("number") if isinstance(step, dict) else None
+            if not isinstance(number, int) or isinstance(number, bool) or number <= 0:
+                fail(f"{location}.steps[{step_index}].number must be positive")
+            numbers.add(number)
+
+        jobs[job_id] = name
+        step_numbers[job_id] = numbers
+        if conclusion in FAILED_CONCLUSIONS:
+            failed_job_ids.add(job_id)
+        elif conclusion == "cancelled":
+            cancelled_job_ids.append(job_id)
+
+    return jobs, step_numbers, failed_job_ids, cancelled_job_ids
+
+
+def validate_job_references(analysis, step_numbers, failed_job_ids):
+    grouped_job_ids = set()
+    for group_index, group in enumerate(analysis["groups"]):
+        location = f"$.groups[{group_index}]"
+        job_ids = group["job_ids"]
+        if not job_ids:
+            fail(f"{location}.job_ids must not be empty")
+        if len(job_ids) != len(set(job_ids)):
+            fail(f"{location}.job_ids contains duplicates")
+        for job_id in job_ids:
+            if job_id not in failed_job_ids:
+                fail(f"{location}.job_ids references non-failed job {job_id}")
+            if job_id in grouped_job_ids:
+                fail(f"job {job_id} appears in more than one failure group")
+            grouped_job_ids.add(job_id)
+
+        group_job_ids = set(job_ids)
+        for evidence_index, evidence in enumerate(group["evidence"]):
+            evidence_location = f"{location}.evidence[{evidence_index}]"
+            job_id = evidence["job_id"]
+            step_number = evidence["step_number"]
+            if job_id not in group_job_ids:
+                fail(f"{evidence_location}.job_id is not in the failure group")
+            if step_number != 0 and step_number not in step_numbers[job_id]:
+                fail(f"{evidence_location}.step_number does not exist for job {job_id}")
 
 
 def job_link(job_id, jobs, repository, run_id, step_number=0):
@@ -253,13 +319,14 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
     return lines
 
 
-def render_report(analysis, repository, run_id, head_sha):
-    if analysis["status"] != "ok":
-        error = sanitize_inline(analysis["error"] or "GitHub logs were unavailable")
-        return f"**AI failure analysis unavailable:** {error}\n"
-
-    jobs = build_job_index(analysis["jobs"])
-    cancelled_job_ids = unique(analysis["cancelled_job_ids"])
+def render_report(
+    analysis,
+    jobs,
+    cancelled_job_ids,
+    repository,
+    run_id,
+    head_sha,
+):
     lines = []
 
     for index, group in enumerate(analysis["groups"], start=1):
@@ -294,10 +361,10 @@ def parse_args():
     )
     parser.add_argument("--analysis", type=Path, required=True)
     parser.add_argument("--schema", type=Path, required=True)
+    parser.add_argument("--jobs", type=Path, required=True)
     parser.add_argument("--repository", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--head-sha", required=True)
-    parser.add_argument("--codex-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -314,15 +381,16 @@ def main():
     schema = load_json(args.schema)
     analysis = load_json(args.analysis)
     validate_schema(analysis, schema)
+    jobs, step_numbers, failed_job_ids, cancelled_job_ids = load_job_manifest(args.jobs)
+    validate_job_references(analysis, step_numbers, failed_job_ids)
     report = render_report(
         analysis,
+        jobs,
+        cancelled_job_ids,
         args.repository,
         args.run_id,
         args.head_sha,
     )
-    total_tokens = load_token_usage(args.codex_home)
-    token_count = f"{total_tokens:,}" if total_tokens is not None else "unavailable"
-    report += f"\n<sub>Tokens used: {token_count}</sub>\n"
     args.output.write_text(report, encoding="utf-8")
 
 

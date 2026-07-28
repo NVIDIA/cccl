@@ -14,9 +14,8 @@ logs in `CI_LOG_DIR`:
   `timed_out`, `startup_failure`, or `action_required`.
 
 Read every collected failure log before grouping. Use `jobs.json` for exact job IDs,
-names, conclusions, and step numbers. If any required file is missing, return
-`status: log_retrieval_failed`, briefly explain the error, and leave `jobs`, `groups`, and
-`cancelled_job_ids` empty. Ignore the analysis and publishing jobs.
+names, conclusions, and step numbers. Log collection has already been validated. Ignore
+the analysis and publishing jobs.
 
 ## Diagnose and group
 
@@ -30,7 +29,7 @@ source when it can clarify the failure. Do not run builds or tests.
 - Normalize timestamps, runner paths, generated IDs, and matrix parameters. A shared
   tool, step, or exit code alone does not establish equivalence.
 - Put each non-derivative failed job in exactly one group. Omit gate jobs that failed only
-  because another job failed, and list cancelled jobs only in `cancelled_job_ids`.
+  because another job failed.
 - Keep failures separate when equivalence is uncertain. Order groups by developer value:
   likely code or configuration failures first, then actionable environment or dependency
   failures.
@@ -38,7 +37,6 @@ source when it can clarify the failure. Do not run builds or tests.
 ## Return structured results
 
 Return only one JSON object matching the supplied schema, with no Markdown or commentary.
-On success, use `status: ok` and an empty `error`.
 
 For each group:
 
@@ -59,6 +57,4 @@ For each group:
   renderer adds them.
 - `job_ids`: every primary job in the group.
 
-In `jobs`, provide the exact numeric ID and name of every job referenced by a group,
-evidence record, or `cancelled_job_ids`. Do not invent log lines, IDs, names, step
-numbers, or source locations.
+Do not invent log lines, IDs, step numbers, or source locations.
