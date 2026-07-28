@@ -111,16 +111,10 @@ macro(cccl_get_nvtx)
 endmacro()
 
 macro(cccl_get_rapids_test)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage(
-    NAME rapids-cmake
-    GITHUB_REPOSITORY rapidsai/rapids-cmake
-    GIT_TAG v26.06.00
-    DOWNLOAD_ONLY ON
-    SYSTEM ON
-  )
-  set(rapids-cmake-dir "${rapids-cmake_SOURCE_DIR}/rapids-cmake")
-  include("${rapids-cmake-dir}/rapids-test.cmake")
+  set(rapids-cmake-version "26.06")
+  set(rapids-cmake-tag "v26.06.00")
+  include("${CCCL_SOURCE_DIR}/cmake/RAPIDS.cmake")
+  include(rapids-test)
 endmacro()
 
 macro(cccl_get_thrust)
