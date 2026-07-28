@@ -1695,6 +1695,18 @@ CUDACompiler::~CUDACompiler()
   delete impl_;
 }
 
+// The compile stages are thread-safe: each build runs clang codegen with its own
+// CompilerInstance and LLVMContext, so concurrent compiles do not race. The link
+// stage is not. lld::elf::link() keeps its state in a process-global
+// (CommonLinkerContext, a plain `static`, not `thread_local`), so concurrent links
+// from multiple threads clobber that shared context and corrupt LLD's bump
+// allocator. cuda.compute releases the GIL around native builds, so distinct ops
+// built from multiple threads -- on a GIL or free-threaded interpreter -- can
+// otherwise link concurrently. Serialize just the link step through one
+// process-wide mutex. This guards only the (cached, one-time) build path; kernel
+// launches are unaffected.
+static std::mutex g_link_mutex;
+
 BitcodeResult CUDACompiler::compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config)
 {
   return impl_->compileToDeviceBitcode(source_code, config);
@@ -1709,6 +1721,7 @@ CompilationResult CUDACompiler::compileToObject(
 LinkResult CUDACompiler::linkToSharedLibrary(
   const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config)
 {
+  const std::lock_guard<std::mutex> lock(g_link_mutex);
   return impl_->linkToSharedLibrary(object_files, output_path, config);
 }
 } // namespace hostjit

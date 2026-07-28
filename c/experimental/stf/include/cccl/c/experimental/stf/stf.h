@@ -284,6 +284,19 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Native blocked partition function for a given dimension,
+//! usable wherever an stf_get_executor_fn is expected without any FFI
+//! callback cost.
+//!
+//! The requested dimension is clamped to the highest axis whose extent is
+//! greater than one: values outside [0, 3] (like -1) always select that
+//! axis, and an in-range \p dim beyond it is clamped down to it (e.g.
+//! \p dim 2 on extents {n, 1, 1, 1} partitions along axis 0).
+stf_get_executor_fn stf_partition_fn_blocked(int dim);
+
+//! \brief Native cyclic (round-robin) partition function.
+stf_get_executor_fn stf_partition_fn_cyclic(void);
+
 //! \brief Create a data_place from green-context helper \p helper and view index \p idx.
 //! Returns NULL on failure or if \p idx is out of range.
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx);
@@ -349,6 +362,11 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
 //! Extents follow the dimension-0-fastest linearization convention; row-major
 //! callers should present reversed extents (and a coordinate-reversing
 //! partitioner).
+//!
+//! The product of the extents and \p elemsize is validated before the
+//! allocation is attempted: if it overflows uint64_t (or exceeds
+//! PTRDIFF_MAX), the call fails and returns NULL instead of silently
+//! wrapping to a smaller byte count.
 //!
 //! \param h         Data place handle (must not be NULL)
 //! \param data_dims Extents of the tensor (must not be NULL)
@@ -521,15 +539,6 @@ int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_c
 //! \param partition Structured partition (must not be NULL; copied)
 //! \return New data place handle, or NULL on failure
 stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition);
-
-//! \brief Native blocked partition function for a given dimension
-//! (values outside [0, 3] select the highest-rank dimension, like -1),
-//! usable wherever an stf_get_executor_fn is expected without any FFI
-//! callback cost.
-stf_get_executor_fn stf_partition_fn_blocked(int dim);
-
-//! \brief Native cyclic (round-robin) partition function.
-stf_get_executor_fn stf_partition_fn_cyclic(void);
 
 //! \}
 

@@ -1,0 +1,9 @@
+=============== memory_resource.device begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
+=============== memory_resource.device end ===============
+=============== memory_resource.host_device begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible> @ <address>
+=============== memory_resource.host_device end ===============
+=============== memory_resource.alias begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
+=============== memory_resource.alias end ===============

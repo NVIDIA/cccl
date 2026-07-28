@@ -106,31 +106,28 @@
 #  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 #endif
 
+// Include <intrin.h> for _ReadWriteBarrier.
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
-template <class Tp>
-inline void DoNotOptimize(Tp const& value)
-{
-  [[maybe_unused]] const volatile void* volatile unused = __builtin_addressof(value);
-  _ReadWriteBarrier();
-}
-#else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
-template <class Tp>
-TEST_FUNC inline void DoNotOptimize(Tp const& value)
-{
-  asm volatile("" : : "r,m"(value) : "memory");
-}
+#endif // TEST_COMPILER(MSVC)
 
 template <class Tp>
 TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
-#  if TEST_COMPILER(CLANG)
-  asm volatile("" : "+r,m"(value) : : "memory");
-#  else
-  asm volatile("" : "+m,r"(value) : : "memory");
-#  endif
+  [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
+
+  // Device path.
+  NV_IF_TARGET(NV_IS_DEVICE, ({ asm volatile("" ::"l"(ptr) : "memory"); }))
+
+  // Host path.
+#if TEST_COMPILER(CLANG)
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+r,m"(value) : : "memory"); }))
+#elif TEST_COMPILER(MSVC)
+  NV_IF_TARGET(NV_IS_HOST, ({ _ReadWriteBarrier(); }))
+#else
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+m,r"(value) : : "memory"); }))
+#endif
 }
-#endif // !TEST_COMPILER(MSVC)
 
 // NVCC can't handle static member variables, so with a little care
 // a function returning a reference will result in the same thing

@@ -1,0 +1,63 @@
+=============== buffer.normal begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=10, align=4, data=<address> (device) {
+  [0] = -56
+  [1] = 22
+  [2] = 94
+  [3] = -13
+  [4] = 7
+  [5] = 41
+  [6] = -82
+  [7] = 0
+  [8] = 63
+  [9] = -5
+}
+=============== buffer.normal end ===============
+=============== buffer.alias begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=4, align=4, data=<address> (device) {
+  [0] = 17
+  [1] = -31
+  [2] = 8
+  [3] = 55
+}
+=============== buffer.alias end ===============
+=============== buffer.vector.0 begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=3, align=4, data=<address> (device) {
+  [0] = -2
+  [1] = 4
+  [2] = 6
+}
+=============== buffer.vector.0 end ===============
+=============== buffer.vector.1 begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=3, align=4, data=<address> (device) {
+  [0] = 11
+  [1] = -9
+  [2] = 27
+}
+=============== buffer.vector.1 end ===============
+=============== buffer.host_device begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible, cuda::mr::host_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible> @ <address>, stream=<address>, size=4, align=4, data=<address> (host/device) {
+  [0] = 3
+  [1] = 14
+  [2] = -15
+  [3] = 92
+}
+=============== buffer.host_device end ===============
+=============== buffer.empty begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=0, align=4, data=0x0 (device)
+=============== buffer.empty end ===============
+=============== buffer.update.before begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=4, align=4, data=<address> (device) {
+  [0] = 1
+  [1] = 2
+  [2] = 3
+  [3] = 4
+}
+=============== buffer.update.before end ===============
+=============== buffer.update.after begin ===============
+(cuda::buffer<int, cuda::mr::device_accessible>) mr=cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>, stream=<address>, size=4, align=4, data=<address> (device) {
+  [0] = -8
+  [1] = 13
+  [2] = 21
+  [3] = -34
+}
+=============== buffer.update.after end ===============

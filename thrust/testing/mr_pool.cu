@@ -101,7 +101,7 @@ class tracked_resource final : public thrust::mr::memory_resource<tracked_pointe
 public:
   tracked_resource() = default;
 
-  ~tracked_resource() override
+  ~tracked_resource() override // NOLINT(bugprone-exception-escape)
   {
     ASSERT_EQUAL(id_to_allocate, 0u);
     ASSERT_EQUAL(id_to_deallocate, 0u);
