@@ -18,19 +18,8 @@ cccl_get_nvtx()
 cccl_get_rapids_test()
 rapids_test_init()
 
-set(
-  CCCL_TEST_GPU_PERCENT_SMALL
-  15
-  CACHE STRING
-  "GPU percentage claimed by small CUB tests."
-)
-set(
-  CCCL_TEST_GPU_PERCENT_LARGE
-  100
-  CACHE STRING
-  "GPU percentage claimed by large CUB tests."
-)
-mark_as_advanced(CCCL_TEST_GPU_PERCENT_SMALL CCCL_TEST_GPU_PERCENT_LARGE)
+set(CCCL_TEST_GPU_PERCENT_SMALL 15)
+set(CCCL_TEST_GPU_PERCENT_LARGE 100)
 
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
