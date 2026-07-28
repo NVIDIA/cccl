@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && c++17
-// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
-
 // <mdspan>
 
 // constexpr mdspan(mdspan&&) = default;
@@ -37,9 +34,8 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
   MDS m(cuda::std::move(m_org));
   static_assert(
     cuda::std::is_trivially_move_constructible<MDS>::value
-      == (cuda::std::is_trivially_move_constructible<H>::value && cuda::std::is_trivially_move_constructible<M>::value
-          && cuda::std::is_trivially_move_constructible<A>::value),
-    "");
+    == (cuda::std::is_trivially_move_constructible<H>::value && cuda::std::is_trivially_move_constructible<M>::value
+        && cuda::std::is_trivially_move_constructible<A>::value));
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
   test_equality_mapping(m, map);
@@ -63,14 +59,12 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially copyable mapping
   static_assert(cuda::std::is_trivially_move_constructible<
-                  typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>::value,
-                "");
+                typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>::value);
   mixin_extents(handle, cuda::std::layout_left(), acc);
   mixin_extents(handle, cuda::std::layout_right(), acc);
   // make sure we test a not trivially copyable mapping
   static_assert(!cuda::std::is_trivially_move_constructible<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>::value,
-                "");
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>::value);
   mixin_extents(handle, layout_wrapping_integral<4>(), acc);
 }
 
@@ -81,7 +75,7 @@ TEST_FUNC constexpr void mixin_accessor()
   // make sure we test trivially constructible accessor and data_handle
   static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
-    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
+    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value);
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
 
   // Using weird accessor/data_handle
@@ -89,8 +83,7 @@ TEST_FUNC constexpr void mixin_accessor()
   // checked_accessor is noexcept copy constructible except for const double
   checked_accessor<T> acc(1024);
   static_assert(cuda::std::is_trivially_move_constructible<typename checked_accessor<T>::data_handle_type>::value
-                  == cuda::std::is_same<T, double>::value,
-                "");
+                == cuda::std::is_same<T, double>::value);
   mixin_layout(typename checked_accessor<T>::data_handle_type(elements.data()), acc);
 }
 
@@ -101,7 +94,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // make sure we test trivially constructible accessor and data_handle
   static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
-    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
+    cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value);
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
 
   // Using weird accessor/data_handle
@@ -109,8 +102,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // checked_accessor is noexcept copy constructible except for const double
   checked_accessor<T> acc(1024);
   static_assert(cuda::std::is_trivially_move_constructible<typename checked_accessor<T>::data_handle_type>::value
-                  == cuda::std::is_same<T, double>::value,
-                "");
+                == cuda::std::is_same<T, double>::value);
   mixin_layout(typename checked_accessor<T>::data_handle_type(elements.get_ptr()), acc);
 }
 

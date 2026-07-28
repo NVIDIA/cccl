@@ -80,6 +80,10 @@ __global__ void __copy_optimized_kernel(
   {
     const auto __coord = __coord_iter(__i);
     __dst(__coord)     = __src(__coord);
+    if constexpr (sizeof(_ExtentT) <= 4)
+    {
+      return;
+    }
   }
 }
 

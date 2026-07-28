@@ -23,8 +23,7 @@ template <class Iter, class T>
 TEST_FUNC constexpr void test(Iter first, Iter last, T x)
 {
   static_assert(cuda::std::is_same<typename cuda::std::iterator_traits<decltype(first)>::value_type,
-                                   decltype(cuda::std::reduce(first, last))>::value,
-                "");
+                                   decltype(cuda::std::reduce(first, last))>::value);
   assert(cuda::std::reduce(first, last) == x);
 }
 

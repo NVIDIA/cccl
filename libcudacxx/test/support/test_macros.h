@@ -26,8 +26,10 @@
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
 
 // Use the CCCL host device function
-#define TEST_FUNC        _CCCL_HOST_DEVICE _CCCL_TILE
-#define TEST_DEVICE_FUNC _CCCL_DEVICE _CCCL_TILE
+#define TEST_FUNC             _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC      _CCCL_DEVICE
+#define TEST_TILE_FUNC        _CCCL_TILE
+#define TEST_TILE_DEVICE_FUNC _CCCL_TILE _CCCL_DEVICE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -104,31 +106,28 @@
 #  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 #endif
 
+// Include <intrin.h> for _ReadWriteBarrier.
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
-template <class Tp>
-inline void DoNotOptimize(Tp const& value)
-{
-  [[maybe_unused]] const volatile void* volatile unused = __builtin_addressof(value);
-  _ReadWriteBarrier();
-}
-#else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
-template <class Tp>
-TEST_FUNC inline void DoNotOptimize(Tp const& value)
-{
-  asm volatile("" : : "r,m"(value) : "memory");
-}
+#endif // TEST_COMPILER(MSVC)
 
 template <class Tp>
 TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
-#  if TEST_COMPILER(CLANG)
-  asm volatile("" : "+r,m"(value) : : "memory");
-#  else
-  asm volatile("" : "+m,r"(value) : : "memory");
-#  endif
+  [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
+
+  // Device path.
+  NV_IF_TARGET(NV_IS_DEVICE, ({ asm volatile("" ::"l"(ptr) : "memory"); }))
+
+  // Host path.
+#if TEST_COMPILER(CLANG)
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+r,m"(value) : : "memory"); }))
+#elif TEST_COMPILER(MSVC)
+  NV_IF_TARGET(NV_IS_HOST, ({ _ReadWriteBarrier(); }))
+#else
+  NV_IF_TARGET(NV_IS_HOST, ({ asm volatile("" : "+m,r"(value) : : "memory"); }))
+#endif
 }
-#endif // !TEST_COMPILER(MSVC)
 
 // NVCC can't handle static member variables, so with a little care
 // a function returning a reference will result in the same thing
@@ -150,5 +149,13 @@ TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }
+
+// Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
+  && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)
+#  define TEST_HAS_CLASS_NTTP 1
+#else
+#  define TEST_HAS_CLASS_NTTP 0
+#endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

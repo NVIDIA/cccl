@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // filter_view() requires cuda::std::default_initializable<View> &&
 //                        cuda::std::default_initializable<Pred> = default;
 

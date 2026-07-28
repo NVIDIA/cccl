@@ -18,6 +18,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
+
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query1_t
 {
 } query1{};
@@ -55,8 +57,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
   [[maybe_unused]] auto&& env = cuda::std::execution::get_env(provider);
 
   static_assert(cuda::std::is_same_v<decltype(env), an_env_t&&>);
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::execution::get_env), const cuda::std::execution::get_env_t>,
-                "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::execution::get_env), const cuda::std::execution::get_env_t>);
   static_assert(noexcept(cuda::std::execution::get_env(provider)));
 
   [[maybe_unused]] auto&& env2 = cuda::std::execution::get_env(none_such_t{});

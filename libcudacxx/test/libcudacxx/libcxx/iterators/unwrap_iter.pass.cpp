@@ -43,18 +43,15 @@ static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<int*>>, int*>::value);
 static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<cuda::std::__wrap_iter<int*>>>, int*>::value);
 #endif // _LIBCUDACXX_ENABLE_DEBUG_MODE
 static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<cuda::std::__wrap_iter<int*>>>>,
-                                 rev_iter<cuda::std::__wrap_iter<int*>>>::value,
-              "");
+                                 rev_iter<cuda::std::__wrap_iter<int*>>>::value);
 
 static_assert(cuda::std::is_same<UnwrapT<random_access_iterator<int*>>, random_access_iterator<int*>>::value);
 static_assert(
-  cuda::std::is_same<UnwrapT<rev_iter<random_access_iterator<int*>>>, rev_iter<random_access_iterator<int*>>>::value,
-  "");
+  cuda::std::is_same<UnwrapT<rev_iter<random_access_iterator<int*>>>, rev_iter<random_access_iterator<int*>>>::value);
 static_assert(
-  cuda::std::is_same<UnwrapT<rev_rev_iter<random_access_iterator<int*>>>, random_access_iterator<int*>>::value, "");
+  cuda::std::is_same<UnwrapT<rev_rev_iter<random_access_iterator<int*>>>, random_access_iterator<int*>>::value);
 static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<random_access_iterator<int*>>>>,
-                                 rev_iter<random_access_iterator<int*>>>::value,
-              "");
+                                 rev_iter<random_access_iterator<int*>>>::value);
 
 #ifdef _LIBCUDACXX_HAS_STRING
 TEST_CONSTEXPR_CXX20 bool test()

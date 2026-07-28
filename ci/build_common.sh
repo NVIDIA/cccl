@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -eo pipefail
 
@@ -52,7 +52,7 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
@@ -154,7 +154,9 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
+N_CPUS="$(nproc --all --ignore=1)"
+readonly N_CPUS
+readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
@@ -185,7 +187,7 @@ function symlink_latest_preset {
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
-export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
+export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
 export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
@@ -282,6 +284,53 @@ fail_if_no_gpu() {
     fi
 }
 
+function cccl_configure_preset_for_test() {
+    local test_preset=$1
+    local presets_file="${BUILD_ROOT}/../CMakePresets.json"
+    local configure_preset
+
+    if [[ ! -f "${presets_file}" ]]; then
+        echo "Error: CMakePresets.json not found: ${presets_file}" >&2
+        return 1
+    fi
+
+    configure_preset=$(
+        jq -r --arg t "${test_preset}" '
+            .testPresets[] | select(.name == $t) | .configurePreset // empty
+        ' "${presets_file}"
+    )
+
+    if [[ -z "${configure_preset}" ]]; then
+        configure_preset="${test_preset}"
+    fi
+
+    echo "${configure_preset}"
+}
+
+function cccl_smoke_tests_enabled() {
+    local configure_preset=$1
+    local cache_file="${BUILD_DIR}/${configure_preset}/CMakeCache.txt"
+
+    [[ -f "${cache_file}" ]] \
+        && grep -q '^CCCL_ENABLE_CUDA_SMOKE_TESTS:BOOL=ON' "${cache_file}"
+}
+
+function run_cuda_smoke_test() {
+    local BUILD_NAME=$1
+    local test_preset=$2
+
+    local configure_preset
+    configure_preset="$(cccl_configure_preset_for_test "${test_preset}")"
+    local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
+
+    if [[ -x "${smoke_bin}" ]]; then
+        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
+    elif cccl_smoke_tests_enabled "${configure_preset}"; then
+        echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but smoke binary not found: ${smoke_bin}" >&2
+        return 1
+    fi
+}
+
 function print_test_time_summary()
 {
     ctest_log=${1}
@@ -317,7 +366,7 @@ function configure_preset()
       export RUN_COMMAND_RETRY_PARAMS=(5 30)
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    SCCACHE_NO_DIST_COMPILE=1 run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -370,7 +419,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v "${BUILD_COMMANDS[@]}" || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
@@ -413,6 +462,9 @@ function test_preset()
 
     if $GPU_REQUIRED; then
         fail_if_no_gpu
+        if [[ -z "${CCCL_SKIP_CI_SMOKE:-}" ]]; then
+            run_cuda_smoke_test "${BUILD_NAME}" "${PRESET}" || return $?
+        fi
     fi
 
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
@@ -422,7 +474,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset="$PRESET" || status=$?
+    run_ci_timed_command "$GROUP_NAME" ctest --output-on-failure --output-log "${ctest_log}" --preset="$PRESET" || status=$?
     popd > /dev/null
 
     print_test_time_summary "${ctest_log}"

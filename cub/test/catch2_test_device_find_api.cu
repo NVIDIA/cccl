@@ -118,3 +118,46 @@ C2H_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][dev
 
   REQUIRE(d_output == expected);
 }
+
+// Guard: the legacy memory-size query call with all defaults (no explicit stream)
+// must resolve unambiguously to the legacy temp-storage overload when the env
+// passthrough overload is also visible. If the env overload's SFINAE is too loose,
+// this becomes "ambiguous overload" or silently dispatches to env.
+
+C2H_TEST("DeviceFind::FindIf legacy size-query is unambiguous", "[find][device]")
+{
+  int* d_in    = nullptr;
+  int* d_out   = nullptr;
+  size_t bytes = 0;
+  int n        = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceFind::FindIf(nullptr, bytes, d_in, d_out, is_greater_than_t{0}, n));
+}
+
+C2H_TEST("DeviceFind::LowerBound legacy size-query is unambiguous", "[find][device]")
+{
+  int* d_range  = nullptr;
+  int* d_values = nullptr;
+  int* d_output = nullptr;
+  size_t bytes  = 0;
+  int range_n   = 0;
+  int values_n  = 0;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::LowerBound(nullptr, bytes, d_range, range_n, d_values, values_n, d_output, cuda::std::less{}));
+}
+
+C2H_TEST("DeviceFind::UpperBound legacy size-query is unambiguous", "[find][device]")
+{
+  int* d_range  = nullptr;
+  int* d_values = nullptr;
+  int* d_output = nullptr;
+  size_t bytes  = 0;
+  int range_n   = 0;
+  int values_n  = 0;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::UpperBound(nullptr, bytes, d_range, range_n, d_values, values_n, d_output, cuda::std::less{}));
+}

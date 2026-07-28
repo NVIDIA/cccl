@@ -14,6 +14,12 @@
 
 #include "test_macros.h"
 
+// denorm_style has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 using one = char;
 struct two
 {

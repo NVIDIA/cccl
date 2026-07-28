@@ -218,13 +218,13 @@ using pstl_numerics_types =
 #if _LIBCUDACXX_HAS_NVFP16()
 TEST_FUNC __half operator*(const __half lhs, const size_t rhs) noexcept
 {
-  return ::__float2half(::__half2float(lhs) * rhs);
+  return ::__float2half(::__half2float(lhs) * static_cast<float>(rhs));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 #if _LIBCUDACXX_HAS_NVBF16()
 TEST_FUNC __nv_bfloat16 operator*(const __nv_bfloat16 lhs, const size_t rhs) noexcept
 {
-  return ::__float2bfloat16(::__bfloat162float(lhs) * rhs);
+  return ::__float2bfloat16(::__bfloat162float(lhs) * static_cast<float>(rhs));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

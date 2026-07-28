@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
@@ -32,16 +32,19 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
+inline constexpr size_t __optimal_cuda_alignment = _CCCL_CTK_AT_LEAST(12, 9) ? 32 : 16;
+
+// The best alignment for a pointer to a SIMD type is the maximum of the type's alignment and the optimal CUDA
+// alignment.
+template <typename _Tp>
+inline constexpr size_t __simd_pointer_alignment_v = ::cuda::std::max(alignof(_Tp), __optimal_cuda_alignment);
+
 // [simd.traits], alignment
 template <typename _Tp, typename _Up = typename _Tp::value_type>
 struct alignment;
 
 template <typename _Tp, typename _Abi, typename _Up>
-struct alignment<basic_vec<_Tp, _Abi>, _Up>
-    : integral_constant<size_t,
-                        ::cuda::__is_valid_alignment(__simd_size_v<_Tp, _Abi> * alignof(_Up))
-                          ? __simd_size_v<_Tp, _Abi> * alignof(_Up)
-                          : alignof(_Up)>
+struct alignment<basic_vec<_Tp, _Abi>, _Up> : integral_constant<size_t, __simd_pointer_alignment_v<_Up>>
 {
   static_assert(__is_vectorizable_v<_Up>, "U must be a vectorizable type");
 };

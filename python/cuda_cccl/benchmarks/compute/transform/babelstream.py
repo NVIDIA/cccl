@@ -65,14 +65,16 @@ def bench_mul(state: bench.State):
     def mul_op(ci):
         return ci * scalar
 
-    transform = cuda.compute.make_unary_transform(c, b, mul_op)
+    transform = cuda.compute.make_unary_transform(d_in=c, d_out=b, op=mul_op)
 
     state.add_element_count(num_items)
     state.add_global_memory_reads(num_items * c.dtype.itemsize)
     state.add_global_memory_writes(num_items * b.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transform(c, b, mul_op, num_items, launch.get_stream())
+        transform(
+            d_in=c, d_out=b, op=mul_op, num_items=num_items, stream=launch.get_stream()
+        )
 
     state.exec(launcher, batched=False)
 
@@ -101,14 +103,21 @@ def bench_add(state: bench.State):
     def add_op(ai, bi):
         return ai + bi
 
-    transform = cuda.compute.make_binary_transform(a, b, c, add_op)
+    transform = cuda.compute.make_binary_transform(d_in1=a, d_in2=b, d_out=c, op=add_op)
 
     state.add_element_count(num_items)
     state.add_global_memory_reads(2 * num_items * a.dtype.itemsize)
     state.add_global_memory_writes(num_items * c.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transform(a, b, c, add_op, num_items, launch.get_stream())
+        transform(
+            d_in1=a,
+            d_in2=b,
+            d_out=c,
+            op=add_op,
+            num_items=num_items,
+            stream=launch.get_stream(),
+        )
 
     state.exec(launcher, batched=False)
 
@@ -139,14 +148,23 @@ def bench_triad(state: bench.State):
     def triad_op(bi, ci):
         return bi + scalar * ci
 
-    transform = cuda.compute.make_binary_transform(b, c, a, triad_op)
+    transform = cuda.compute.make_binary_transform(
+        d_in1=b, d_in2=c, d_out=a, op=triad_op
+    )
 
     state.add_element_count(num_items)
     state.add_global_memory_reads(2 * num_items * a.dtype.itemsize)
     state.add_global_memory_writes(num_items * a.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transform(b, c, a, triad_op, num_items, launch.get_stream())
+        transform(
+            d_in1=b,
+            d_in2=c,
+            d_out=a,
+            op=triad_op,
+            num_items=num_items,
+            stream=launch.get_stream(),
+        )
 
     state.exec(launcher, batched=False)
 
@@ -180,7 +198,7 @@ def bench_nstream(state: bench.State):
     def nstream_op(abc):
         return abc[0] + abc[1] + scalar * abc[2]
 
-    transform = cuda.compute.make_unary_transform(zip_in, a, nstream_op)
+    transform = cuda.compute.make_unary_transform(d_in=zip_in, d_out=a, op=nstream_op)
 
     state.add_element_count(num_items)
     state.add_global_memory_reads(3 * num_items * a.dtype.itemsize)
@@ -189,7 +207,13 @@ def bench_nstream(state: bench.State):
     def launcher(launch: bench.Launch):
         # Update ZipIterator state for each iteration
         zip_in_iter = ZipIterator(a, b, c)
-        transform(zip_in_iter, a, nstream_op, num_items, launch.get_stream())
+        transform(
+            d_in=zip_in_iter,
+            d_out=a,
+            op=nstream_op,
+            num_items=num_items,
+            stream=launch.get_stream(),
+        )
 
     state.exec(launcher, batched=False)
 

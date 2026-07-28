@@ -33,7 +33,7 @@ TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 static_assert(false, "Insufficient CUDA Compute Capability: cuda::device::memcpy_async_tx is not available.");
 #endif // __CUDA_MINIMUM_ARCH__
 
-alignas(16) TEST_GLOBAL_VARIABLE int gmem_x[2048];
+[[maybe_unused]] alignas(16) TEST_GLOBAL_VARIABLE int gmem_x[2048];
 
 int main(int, char**)
 {

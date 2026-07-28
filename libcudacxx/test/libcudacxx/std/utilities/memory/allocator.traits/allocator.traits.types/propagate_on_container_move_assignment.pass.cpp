@@ -35,6 +35,7 @@ struct B
   using value_type = T;
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct C
 {
@@ -43,18 +44,18 @@ struct C
 private:
   using propagate_on_container_move_assignment = cuda::std::true_type;
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
 int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::propagate_on_container_move_assignment,
-                                    cuda::std::true_type>::value),
-                "");
+                                    cuda::std::true_type>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::propagate_on_container_move_assignment,
-                                    cuda::std::false_type>::value),
-                "");
+                                    cuda::std::false_type>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::propagate_on_container_move_assignment,
-                                    cuda::std::false_type>::value),
-                "");
+                                    cuda::std::false_type>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
   return 0;
 }

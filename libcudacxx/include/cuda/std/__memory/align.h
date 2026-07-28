@@ -35,7 +35,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type,
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
+_CCCL_HOST_DEVICE_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
   _CCCL_ASSERT(::cuda::__is_valid_alignment(__alignment), "cuda::std::align: invalid alignment");
   if (__space < __size)

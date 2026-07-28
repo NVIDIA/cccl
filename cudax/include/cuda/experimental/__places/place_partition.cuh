@@ -246,7 +246,7 @@ private:
         sub_places.push_back(mv(place));
         return;
       }
-      auto& pool = scalar_place.get_stream_pool(true);
+      auto& pool = scalar_place.get_stream_pool(true, handle.get_place_resources());
       for (size_t i = 0; i < pool.size(); i++)
       {
         sub_places.push_back(exec_place::cuda_stream(pool.next(scalar_place)));

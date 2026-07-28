@@ -9,6 +9,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/std/__execution/env.h>
 #include <cuda/stream>
@@ -293,7 +294,8 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts run_to_run determinism requirements"
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  auto error = cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << '\n';
@@ -317,7 +319,8 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts not_guaranteed determinism requireme
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error = cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << '\n';
@@ -342,8 +345,12 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts stream", "[reduce][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error =
-    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(),
+    min_output.begin(),
+    index_output.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << '\n';
@@ -368,7 +375,8 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts run_to_run determinism requirements"
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error = cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << '\n';
@@ -392,7 +400,8 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts not_guaranteed determinism requireme
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error = cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << '\n';
@@ -417,8 +426,12 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts stream", "[reduce][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error =
-    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(),
+    max_output.begin(),
+    index_output.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << '\n';
@@ -644,3 +657,43 @@ C2H_TEST("cub::DeviceReduce::Sum queries both stream and resource from composed 
   REQUIRE(bytes_allocated > 0);
   REQUIRE(bytes_deallocated == bytes_allocated);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin reduce-policy-selector
+struct ReducePolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ReducePolicy
+  {
+    auto pass = cub::ReducePassPolicy{
+      .threads_per_block = 256,
+      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 20 : 16,
+      .vec_size          = 4,
+      .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .load_modifier     = cub::LOAD_LDG};
+    return {.multi_tile = pass, .single_tile = pass};
+  }
+};
+// example-end reduce-policy-selector
+
+C2H_TEST("cub::DeviceReduce::Reduce accepts a custom policy selector", "[reduce][env]")
+{
+  // example-begin reduce-tuning
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1, thrust::no_init);
+
+  const auto error = cub::DeviceReduce::Reduce(
+    input.begin(), output.begin(), input.size(), cuda::std::plus{}, 0, cuda::execution::tune(ReducePolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::Reduce failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{15};
+  // example-end reduce-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

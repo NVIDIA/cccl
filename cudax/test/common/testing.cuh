@@ -30,59 +30,6 @@ namespace cuda::experimental::execution
 namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
 namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-alias-decls
 
-#define CUDART(call) REQUIRE((call) == cudaSuccess)
-
-// Unlike nvcc, when clang parses CUDA, both the host and device sections are present (see
-// https://llvm.org/docs/CompileCudaWithLLVM.html#compilation-models). The upshot here is that
-// certain calls of CUDAX_REQUIRE() from host code will try to use device calls because
-// NV_IS_DEVICE is true.
-#if _CCCL_CUDA_COMPILER(CLANG)
-__host__
-#endif
-  __device__ inline void
-  cudax_require_impl(bool condition,
-                     [[maybe_unused]] const char* condition_text,
-                     [[maybe_unused]] const char* filename,
-                     [[maybe_unused]] unsigned int linenum,
-                     [[maybe_unused]] const char* funcname)
-{
-  if (!condition)
-  {
-#if !_CCCL_CUDA_COMPILER(CLANG)
-    // TODO do warp aggregate prints for easier readability?
-    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
-           filename,
-           linenum,
-           funcname,
-           blockIdx.x,
-           blockIdx.y,
-           blockIdx.z,
-           threadIdx.x,
-           threadIdx.y,
-           threadIdx.z,
-           condition_text);
-#endif
-    ::cuda::std::terminate();
-  }
-}
-
-#define CUDAX_REQUIRE(condition)                                                                           \
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                          \
-                    (cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                    (REQUIRE(condition);))
-
-#define CUDAX_CHECK(condition)                                                                             \
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                          \
-                    (cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                    (CHECK(condition);))
-
-#define CUDAX_FAIL(message) /*                                                                   */ \
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, /*                                                             */ \
-                    (cudax_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                    (FAIL(message);))
-
-#define CUDAX_CHECK_FALSE(condition) CUDAX_CHECK(!(condition))
-
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
@@ -144,7 +91,7 @@ struct ccclrt_test_fixture
   }
   ~ccclrt_test_fixture()
   {
-    CUDAX_CHECK(count_driver_stack() == 0);
+    CHECK(count_driver_stack() == 0);
   }
 };
 } // namespace test
@@ -153,7 +100,7 @@ struct ccclrt_test_fixture
 // Test macro that should be used in all cccl-rt tests
 // It first empties the driver stack in case some other test has left it non-empty
 // and then runs the test. At the end it checks if it remained empty, which ensures
-// we don't accidentally initialize device 0 through CUDART usage and makes sure
+// we don't accidentally initialize device 0 through REQUIRE_CUDART usage and makes sure
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 

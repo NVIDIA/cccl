@@ -36,15 +36,13 @@ TEST_FUNC void test_iterators()
 {
   using ItT  = cuda::std::iterator_traits<typename C::iterator>;
   using CItT = cuda::std::iterator_traits<typename C::const_iterator>;
-  static_assert((cuda::std::is_same<typename ItT::iterator_category, cuda::std::random_access_iterator_tag>::value),
-                "");
+  static_assert((cuda::std::is_same<typename ItT::iterator_category, cuda::std::random_access_iterator_tag>::value));
   static_assert((cuda::std::is_same<typename ItT::value_type, typename C::value_type>::value));
   static_assert((cuda::std::is_same<typename ItT::reference, typename C::reference>::value));
   static_assert((cuda::std::is_same<typename ItT::pointer, typename C::pointer>::value));
   static_assert((cuda::std::is_same<typename ItT::difference_type, typename C::difference_type>::value));
 
-  static_assert((cuda::std::is_same<typename CItT::iterator_category, cuda::std::random_access_iterator_tag>::value),
-                "");
+  static_assert((cuda::std::is_same<typename CItT::iterator_category, cuda::std::random_access_iterator_tag>::value));
   static_assert((cuda::std::is_same<typename CItT::value_type, typename C::value_type>::value));
   static_assert((cuda::std::is_same<typename CItT::reference, typename C::const_reference>::value));
   static_assert((cuda::std::is_same<typename CItT::pointer, typename C::const_pointer>::value));
@@ -67,18 +65,16 @@ int main(int, char**)
     static_assert((cuda::std::is_same<C::difference_type, cuda::std::ptrdiff_t>::value));
     static_assert((cuda::std::is_same<C::reverse_iterator, cuda::std::reverse_iterator<C::iterator>>::value));
     static_assert(
-      (cuda::std::is_same<C::const_reverse_iterator, cuda::std::reverse_iterator<C::const_iterator>>::value), "");
+      (cuda::std::is_same<C::const_reverse_iterator, cuda::std::reverse_iterator<C::const_iterator>>::value));
 
     static_assert((cuda::std::is_signed<typename C::difference_type>::value));
     static_assert((cuda::std::is_unsigned<typename C::size_type>::value));
     static_assert(
       (cuda::std::is_same<typename C::difference_type,
-                          typename cuda::std::iterator_traits<typename C::iterator>::difference_type>::value),
-      "");
+                          typename cuda::std::iterator_traits<typename C::iterator>::difference_type>::value));
     static_assert(
       (cuda::std::is_same<typename C::difference_type,
-                          typename cuda::std::iterator_traits<typename C::const_iterator>::difference_type>::value),
-      "");
+                          typename cuda::std::iterator_traits<typename C::const_iterator>::difference_type>::value));
   }
   {
     using T = int*;
@@ -94,18 +90,16 @@ int main(int, char**)
     static_assert((cuda::std::is_same<C::difference_type, cuda::std::ptrdiff_t>::value));
     static_assert((cuda::std::is_same<C::reverse_iterator, cuda::std::reverse_iterator<C::iterator>>::value));
     static_assert(
-      (cuda::std::is_same<C::const_reverse_iterator, cuda::std::reverse_iterator<C::const_iterator>>::value), "");
+      (cuda::std::is_same<C::const_reverse_iterator, cuda::std::reverse_iterator<C::const_iterator>>::value));
 
     static_assert((cuda::std::is_signed<typename C::difference_type>::value));
     static_assert((cuda::std::is_unsigned<typename C::size_type>::value));
     static_assert(
       (cuda::std::is_same<typename C::difference_type,
-                          typename cuda::std::iterator_traits<typename C::iterator>::difference_type>::value),
-      "");
+                          typename cuda::std::iterator_traits<typename C::iterator>::difference_type>::value));
     static_assert(
       (cuda::std::is_same<typename C::difference_type,
-                          typename cuda::std::iterator_traits<typename C::const_iterator>::difference_type>::value),
-      "");
+                          typename cuda::std::iterator_traits<typename C::const_iterator>::difference_type>::value));
   }
 
   return 0;

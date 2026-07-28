@@ -243,8 +243,11 @@ try
 
   if (it_pair.first != h_gpu_results.cend())
   {
-    std::cout << "Mismatch at index " << std::distance(h_gpu_results.cbegin(), it_pair.first)
-              << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
+    std::cout
+      << "Mismatch at index "
+      << std::distance(h_gpu_results.cbegin(), it_pair.first)
+      // NOLINTNEXTLINE(bugprone-unintended-char-ostream-output)
+      << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
@@ -258,6 +261,7 @@ catch ([[maybe_unused]] std::bad_alloc& e)
     << TestDataGenToString(output_gen) << ")" //
     << "' due to insufficient memory: " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
+  return;
 }
 
 struct object_with_non_trivial_ctor

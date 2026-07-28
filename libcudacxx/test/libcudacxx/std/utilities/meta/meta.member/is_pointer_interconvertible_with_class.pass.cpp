@@ -62,9 +62,11 @@ TEST_FUNC constexpr bool test()
   // 4. Non-standard layout class members are not pointer interconvertible with the class itself
   assert(!cuda::std::is_pointer_interconvertible_with_class(&NonStandard::mns1));
 
+#  if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
   // 5. Member functions are not pointer interconvertible with the class itself
   assert(!cuda::std::is_pointer_interconvertible_with_class(&A::fn));
   assert(!cuda::std::is_pointer_interconvertible_with_class(&B::fn));
+#  endif // !_CCCL_TILE_COMPILATION()
 
   // 7. is_pointer_interconvertible_with_class always returns false for nullptr
   assert(!cuda::std::is_pointer_interconvertible_with_class(static_cast<int A::*>(nullptr)));

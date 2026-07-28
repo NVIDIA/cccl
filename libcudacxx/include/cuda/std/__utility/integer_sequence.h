@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,8 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -242,7 +245,63 @@ using make_index_sequence = make_integer_sequence<size_t, _Np>;
 template <class... _Tp>
 using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::integer_sequence
+
+template <class _Tp, _Tp... _Indices>
+struct tuple_size<integer_sequence<_Tp, _Indices...>> : integral_constant<size_t, sizeof...(_Indices)>
+{};
+
+template <size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices),
+                "Index out of bounds in cuda::std::tuple_element<> (cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+template <size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, const integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices),
+                "Index out of bounds in cuda::std::tuple_element<> (const cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+template <size_t _Ip, class _Tp, _Tp... _Indices>
+[[nodiscard]] _CCCL_API constexpr _Tp get(integer_sequence<_Tp, _Indices...>) noexcept
+{
+  static_assert(_Ip < sizeof...(_Indices), "Index out of bounds in cuda::std::get<> (cuda::std::integer_sequence)");
+  constexpr _Tp __indices[]{_Indices...};
+  return __indices[_Ip];
+}
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::integer_sequence
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Tp, _Tp... _Indices>
+struct tuple_size<::cuda::std::integer_sequence<_Tp, _Indices...>>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, sizeof...(_Indices)>
+{};
+
+template <::cuda::std::size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, ::cuda::std::integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices), "Index out of bounds in std::tuple_element<> (cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+template <::cuda::std::size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, const ::cuda::std::integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices),
+                "Index out of bounds in std::tuple_element<> (const cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

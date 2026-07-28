@@ -364,13 +364,14 @@ public:
       {
         case __variant_like_state::__holds_first:
           this->__first_ = __other.__first_;
-          return *this;
+          break;
         case __variant_like_state::__holds_second:
           this->__second_ = __other.__second_;
-          return *this;
+          break;
         case __variant_like_state::__nothing:
-          return *this;
+          break;
       }
+      return *this;
     }
 
     this->__clear();
@@ -405,10 +406,10 @@ public:
       switch (__x.__contains_)
       {
         case __variant_like_state::__holds_first:
-          ::cuda::std::ranges::swap(__x.__first_, __y.__first_);
+          ::cuda::std::ranges::__swap_cpo{}(__x.__first_, __y.__first_);
           break;
         case __variant_like_state::__holds_second:
-          ::cuda::std::ranges::swap(__x.__second_, __y.__second_);
+          ::cuda::std::ranges::__swap_cpo{}(__x.__second_, __y.__second_);
           break;
         case __variant_like_state::__nothing:
           break;

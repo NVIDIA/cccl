@@ -80,8 +80,8 @@ TEST_FUNC constexpr void test_return_type()
   T* p = nullptr;
   unused(p);
   static_assert(
-    cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, Init{}, cuda::std::plus<>(), identity()))>::value,
-    "");
+    cuda::std::is_same<Init,
+                       decltype(cuda::std::transform_reduce(p, p, Init{}, cuda::std::plus<>(), identity()))>::value);
 }
 
 struct SumMoveOnly

@@ -51,50 +51,68 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{partition}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DevicePartition, except @p If with three partitions, that accept an environment can be tuned by
+//! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::PartitionPolicy`, as
+//! shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin partition-if-policy-selector
+//!      :end-before: example-end partition-if-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin partition-if-tuning
+//!      :end-before: example-end partition-if-tuning
+//!
+//! The environment overload of the three-way @p If algorithm can be tuned using a
+//! :cpp:struct:`cub::ThreeWayPartitionPolicy` instead:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin partition-three-way-policy-selector
+//!      :end-before: example-end partition-three-way-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin partition-three-way-tuning
+//!      :end-before: example-end partition-three-way-tuning
+//!
 //! @endrst
 struct DevicePartition
 {
-private:
-  template <typename TuningEnvT,
-            typename InputIteratorT,
-            typename FlagIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOpT,
-            typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t partition_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FlagIteratorT d_flags,
-    OutputIteratorT d_out,
-    NumSelectedIteratorT d_num_selected_out,
-    OffsetT num_items,
-    SelectOpT select_op,
-    cudaStream_t stream)
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // Several algorithms dispatch to DeviceSelect, but we want to have a dedicated PartitionPolicy, so we need to adapt
+  // the policy selector to convert the tuning policy
+  template <typename PolicySelector>
+  struct __policy_selector_adapter
   {
-    using default_policy_selector = detail::select::
-      policy_selector_from_types<InputIteratorT, FlagIteratorT, OutputIteratorT, OffsetT, SelectImpl::Partition>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::select::select_if_policy, default_policy_selector>;
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
+    {
+      // the user-provided policy selector returns a PartitionPolicy, the default one a SelectPolicy
+      using policy_t = ::cuda::std::remove_cvref_t<decltype(PolicySelector{}(cc))>;
+      static_assert(
+        ::cuda::std::is_same_v<policy_t, PartitionPolicy> || ::cuda::std::is_same_v<policy_t, SelectPolicy>);
+      const auto policy = PolicySelector{}(cc);
+      return SelectPolicy{
+        SelectAlgorithm::lookback,
+        {policy.lookback.threads_per_block,
+         policy.lookback.items_per_thread,
+         policy.lookback.load_algorithm,
+         policy.lookback.load_modifier,
+         policy.lookback.scan_algorithm,
+         policy.lookback.lookback_delay}};
+    }
+  };
+#endif // _CCCL_DOXYGEN_INVOKED
 
-    using EqualityOp = NullType;
-
-    return detail::select::dispatch<SelectImpl::Partition>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_selected_out,
-      select_op,
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream,
-      policy_selector{});
-  }
-
-public:
   //! @rst
   //! Uses the ``d_flags`` sequence to split the corresponding items from
   //! ``d_in`` into a partitioned sequence ``d_out``.
@@ -166,9 +184,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -189,15 +209,14 @@ public:
   //! @param[in] num_items
   //!   Total number of items to select from
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -206,37 +225,50 @@ public:
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
-    using SelectOp      = NullType; // Selection op (not used)
-    using EqualityOp    = NullType; // Equality operator (not used)
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    return detail::select::dispatch<SelectImpl::Partition>(
+    // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
+    return detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_selected_out,
-      SelectOp{},
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        using default_policy_selector = detail::select::
+          policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
+        using policy_selector_t =
+          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+        return detail::select::dispatch<SelectImpl::Partition>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          static_cast<offset_t>(num_items),
+          stream,
+          __policy_selector_adapter<policy_selector_t>{});
+      });
   }
 
   //! @rst
   //! Uses the ``d_flags`` sequence to split the corresponding items from
   //! ``d_in`` into a partitioned sequence ``d_out``.
   //! The total number of items copied into the first partition is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -306,29 +338,46 @@ public:
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<
-              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-              int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::Flagged");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return partition_impl<tuning_t>(
-        storage, bytes, d_in, d_flags, d_out, d_num_selected_out, static_cast<offset_t>(num_items), NullType{}, stream);
-    });
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
+    {
+      return error;
+    }
+
+    // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        using default_policy_selector = detail::select::
+          policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
+        using policy_selector_t =
+          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+        return detail::select::dispatch<SelectImpl::Partition>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          static_cast<offset_t>(num_items),
+          stream,
+          __policy_selector_adapter<policy_selector_t>{});
+      });
   }
 
   //! @rst
@@ -415,9 +464,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -437,15 +488,14 @@ public:
   //! @param[in] select_op
   //!   Unary selection operator
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      size_t& temp_storage_bytes,
@@ -454,37 +504,50 @@ public:
      NumSelectedIteratorT d_num_selected_out,
      NumItemsT num_items,
      SelectOp select_op,
-     cudaStream_t stream = nullptr)
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
-    using FlagIterator  = NullType*; // FlagT iterator type (not used)
-    using EqualityOp    = NullType; // Equality operator (not used)
+
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    return detail::select::dispatch<SelectImpl::Partition>(
+    return detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_in,
-      FlagIterator{nullptr},
-      d_out,
-      d_num_selected_out,
-      select_op,
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        using default_policy_selector = detail::select::
+          policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
+        using policy_selector_t =
+          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+        return detail::select::dispatch<SelectImpl::Partition>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          static_cast<offset_t>(num_items),
+          stream,
+          __policy_selector_adapter<policy_selector_t>{});
+      });
   }
 
   //! @rst
   //! Uses the ``select_op`` functor to split the corresponding items from ``d_in`` into
   //! a partitioned sequence ``d_out``. The total number of items copied into the first partition is written
   //! to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -546,104 +609,53 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    typename ::cuda::std::
-      enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
      NumItemsT num_items,
      SelectOp select_op,
-     EnvT env = {})
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::If");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return partition_impl<tuning_t>(
-        storage,
-        bytes,
-        d_in,
-        static_cast<NullType*>(nullptr),
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        stream);
-    });
-  }
-
-private:
-  template <SortOrder Order,
-            typename KeyT,
-            typename ValueT,
-            typename OffsetT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT,
-            typename PolicyHub,
-            typename KernelSource,
-            typename KernelLauncherFactory,
-            typename PartitionPolicyHub,
-            typename PartitionKernelSource>
-  friend class DispatchSegmentedSort;
-
-  // Internal version without NVTX range
-  template <typename InputIteratorT,
-            typename FirstOutputIteratorT,
-            typename SecondOutputIteratorT,
-            typename UnselectedOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectFirstPartOp,
-            typename SelectSecondPartOp,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t IfNoNVTX(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
-    SelectFirstPartOp select_first_part_op,
-    SelectSecondPartOp select_second_part_op,
-    cudaStream_t stream = nullptr)
-  {
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type;
-
-    // Signed integer type for global offsets
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const auto error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    return detail::three_way_partition::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_first_part_out,
-      d_second_part_out,
-      d_unselected_out,
-      d_num_selected_out,
-      select_first_part_op,
-      select_second_part_op,
-      static_cast<OffsetT>(num_items),
-      stream);
+    // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        using default_policy_selector = detail::select::
+          policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
+        using policy_selector_t =
+          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+        return detail::select::dispatch<SelectImpl::Partition>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          static_cast<offset_t>(num_items),
+          stream,
+          __policy_selector_adapter<policy_selector_t>{});
+      });
   }
 
-public:
   //! @rst
   //! Uses two functors to split the corresponding items from ``d_in`` into a three partitioned sequences
   //! ``d_first_part_out``, ``d_second_part_out``, and ``d_unselected_out``.
@@ -790,9 +802,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -825,10 +839,8 @@ public:
   //! @param[in] select_second_part_op
   //!   Unary selection operator to select `d_second_part_out`
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename FirstOutputIteratorT,
             typename SecondOutputIteratorT,
@@ -836,7 +848,8 @@ public:
             typename NumSelectedIteratorT,
             typename SelectFirstPartOp,
             typename SelectSecondPartOp,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      size_t& temp_storage_bytes,
@@ -848,26 +861,46 @@ public:
      NumItemsT num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
-     cudaStream_t stream = nullptr)
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
-    return IfNoNVTX(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_first_part_out,
-      d_second_part_out,
-      d_unselected_out,
-      d_num_selected_out,
-      num_items,
-      select_first_part_op,
-      select_second_part_op,
-      stream);
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
+    {
+      return error;
+    }
+
+    using offset_t = typename choose_offset_t::type;
+    using default_policy_selector =
+      detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
+                                                              detail::three_way_partition::per_partition_offset_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::three_way_partition::dispatch(
+          storage,
+          bytes,
+          d_in,
+          d_first_part_out,
+          d_second_part_out,
+          d_unselected_out,
+          d_num_selected_out,
+          select_first_part_op,
+          select_second_part_op,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
   //! Uses two functors to split the corresponding items from ``d_in`` into three partitioned sequences
   //! ``d_first_part_out``, ``d_second_part_out``, and ``d_unselected_out``.
+  //! The total number of items copied into the first partition is written
+  //! to ``d_num_selected_out[0]``, while the total number of items copied into the second partition is written
+  //! to ``d_num_selected_out[1]``.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -882,9 +915,11 @@ public:
   //! - Copies of the items selected by ``select_second_part_op`` are compacted
   //!   into ``d_second_part_out`` and maintain their original relative ordering.
   //! - Copies of the unselected items are compacted into the ``d_unselected_out`` in reverse order.
-  //! - The total number of items copied into the first partition is written
-  //!   to ``d_num_selected_out[0]``, while the total number of items copied into the second partition is written
-  //!   to ``d_num_selected_out[1]``.
+  //! - The ranges ``[d_out, d_out + num_items)``,
+  //!   ``[d_first_part_out, d_first_part_out + d_num_selected_out[0])``,
+  //!   ``[d_second_part_out, d_second_part_out + d_num_selected_out[1])``,
+  //!   ``[d_unselected_out, d_unselected_out + num_items - d_num_selected_out[0] - d_num_selected_out[1])``,
+  //!   shall not overlap in any way.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -971,7 +1006,7 @@ public:
             typename SelectSecondPartOp,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_arithmetic_v<FirstOutputIteratorT>, int> = 0>
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<FirstOutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      FirstOutputIteratorT d_first_part_out,
@@ -981,24 +1016,37 @@ public:
      NumItemsT num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
-     EnvT env = {})
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::If");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return IfNoNVTX(
-        storage,
-        bytes,
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        num_items,
-        select_first_part_op,
-        select_second_part_op,
-        stream);
-    });
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
+    {
+      return error;
+    }
+
+    using offset_t = typename choose_offset_t::type;
+    using default_policy_selector =
+      detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
+                                                              detail::three_way_partition::per_partition_offset_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::three_way_partition::dispatch(
+          storage,
+          bytes,
+          d_in,
+          d_first_part_out,
+          d_second_part_out,
+          d_unselected_out,
+          d_num_selected_out,
+          select_first_part_op,
+          select_second_part_op,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 };
 

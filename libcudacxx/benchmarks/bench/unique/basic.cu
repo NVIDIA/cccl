@@ -29,7 +29,9 @@ static void make_unique_input(thrust::device_vector<T>& in, std::size_t elements
     thrust::counting_iterator<std::size_t>(elements),
     in.begin(),
     [] __device__(std::size_t i) {
-      return static_cast<T>(i / 2);
+      // This seems like a clang-tidy bug. Yes we end up converting to double, but the division
+      // is done entirely in integer land...
+      return static_cast<T>(i / 2ULL); // NOLINT(bugprone-integer-division)
     });
 }
 

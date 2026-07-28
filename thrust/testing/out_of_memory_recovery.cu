@@ -31,6 +31,8 @@ void test_out_of_memory_recovery()
     thrust::device_vector<std::uint32_t> y(0x00ffffffffffffff);
   }
   catch (...)
-  {}
+  {
+    return;
+  }
 }
 DECLARE_UNITTEST(test_out_of_memory_recovery);

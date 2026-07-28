@@ -83,7 +83,10 @@ public:
 
   _CCCL_HOST_DEVICE constexpr custom_numeric& operator=(const custom_numeric& other)
   {
-    fill(other.value[0]);
+    if (this != &other)
+    {
+      fill(other.value[0]);
+    }
     return *this;
   }
 

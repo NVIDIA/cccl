@@ -10,7 +10,9 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
+#include <cuda/devices>
 #include <cuda/std/array>
+#include <cuda/std/execution>
 #include <cuda/std/mdspan>
 
 #include <c2h/catch2_test_helper.h>
@@ -57,6 +59,93 @@ C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][md
   device_copy_mdspan(mdspan_in3, mdspan_out3);
   REQUIRE(d_input == d_output);
 }
+
+#if TEST_LAUNCH == 0
+C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user provided memory", "[copy][mdspan]")
+{
+  constexpr size_t num_items = 10000;
+  c2h::device_vector<int> d_input(num_items, thrust::no_init);
+  c2h::device_vector<int> d_output(num_items, thrust::no_init);
+  thrust::sequence(d_input.begin(), d_input.end(), 0);
+  thrust::fill(d_output.begin(), d_output.end(), 42);
+
+  // We do not really need any device storage
+  auto d_temp        = c2h::device_vector<uint8_t>(1, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+  size_t num_bytes   = 1;
+
+  auto test_mdspan_copy = [&](const auto& env) {
+    auto mdspan_in1  = cuda::std::mdspan{thrust::raw_pointer_cast(d_input.data()), dims_1d_t{num_items}};
+    auto mdspan_out1 = cuda::std::mdspan{thrust::raw_pointer_cast(d_output.data()), dims_1d_t{num_items}};
+    auto error       = cub::DeviceCopy::Copy(temp_storage, num_bytes, mdspan_in1, mdspan_out1, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(d_input == d_output);
+    thrust::fill(d_output.begin(), d_output.end(), 42);
+
+    using mdspan_2d_left_t = cuda::std::mdspan<int, dims_2d_t, cuda::std::layout_left>;
+    auto d_mdspan_in2      = mdspan_2d_left_t(thrust::raw_pointer_cast(d_input.data()), dims_2d_t{100, 100});
+    auto d_mdspan_out2     = mdspan_2d_left_t(thrust::raw_pointer_cast(d_output.data()), dims_2d_t{100, 100});
+    error                  = cub::DeviceCopy::Copy(temp_storage, num_bytes, d_mdspan_in2, d_mdspan_out2, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(d_input == d_output);
+    thrust::fill(d_output.begin(), d_output.end(), 42);
+
+    auto mdspan_in3  = cuda::std::mdspan(thrust::raw_pointer_cast(d_input.data()), dims_4d_t{10, 10, 10, 10});
+    auto mdspan_out3 = cuda::std::mdspan(thrust::raw_pointer_cast(d_output.data()), dims_4d_t{10, 10, 10, 10});
+    error            = cub::DeviceCopy::Copy(temp_storage, num_bytes, mdspan_in3, mdspan_out3, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(d_input == d_output);
+  };
+
+  int current_device;
+  auto error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceCopy::Copy works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_mdspan_copy(stream.get());
+  }
+
+  SECTION("DeviceCopy::Copy works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_mdspan_copy(stream);
+  }
+
+  SECTION("DeviceCopy::Copy works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_mdspan_copy(stream_ref);
+  }
+
+  SECTION("DeviceCopy::Copy works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_mdspan_copy(env);
+  }
+
+  SECTION("DeviceCopy::Copy works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_mdspan_copy(policy);
+  }
+
+  SECTION("DeviceCopy::Copy works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_mdspan_copy(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
 
 C2H_TEST("DeviceCopy::Copy: 2D, 4D mdspan with compatible layouts", "[copy][mdspan]")
 {

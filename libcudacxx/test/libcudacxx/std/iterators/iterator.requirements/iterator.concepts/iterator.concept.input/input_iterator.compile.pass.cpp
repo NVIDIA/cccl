@@ -66,8 +66,7 @@ struct not_weakly_incrementable
 #endif // !TEST_COMPILER(MSVC)
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>
-                && !cuda::std::input_iterator<not_weakly_incrementable>,
-              "");
+              && !cuda::std::input_iterator<not_weakly_incrementable>);
 
 struct not_indirectly_readable
 {
@@ -87,8 +86,8 @@ struct not_indirectly_readable
   TEST_FUNC not_indirectly_readable& operator++();
   TEST_FUNC void operator++(int);
 };
-static_assert(
-  !cuda::std::indirectly_readable<not_indirectly_readable> && !cuda::std::input_iterator<not_indirectly_readable>, "");
+static_assert(!cuda::std::indirectly_readable<not_indirectly_readable>
+              && !cuda::std::input_iterator<not_indirectly_readable>);
 
 struct bad_iterator_category
 {

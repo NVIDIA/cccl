@@ -63,7 +63,8 @@ struct __swap_ranges_iter_swap_fn
   template <class _DifferenceType>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr void operator()(const _DifferenceType __index) const
   {
-    ::cuda::std::iter_swap(__first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
+    ::cuda::std::__iter_swap_cpo{}(
+      __first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
   }
 };
 

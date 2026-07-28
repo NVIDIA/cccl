@@ -39,9 +39,9 @@
 
 #include <nv/target>
 
-#if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 #  include <intrin.h>
-#endif // _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#endif // _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -162,7 +162,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API overflow_result<_Tp> __add_overflow_host(_Tp __lhs, _Tp __rhs) noexcept
 {
-#  if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#  if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
   if constexpr (sizeof(_Tp) <= 8)
   {
 #    if _CCCL_COMPILER(MSVC, >=, 19, 37)
@@ -216,7 +216,7 @@ template <class _Tp>
       }
   }
   else
-#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_ARCH(X86_64) ^^^
+#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_HOST_ARCH(X86_64) ^^^
   {
     return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
   }
@@ -346,11 +346,11 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
-    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Lhs>)
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__rhs < 0);
     }
-    else if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Rhs>)
+    if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Lhs>)
     {
       _CCCL_ASSUME(__lhs < 0);
     }

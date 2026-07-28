@@ -25,7 +25,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 
@@ -150,23 +152,46 @@ enum BlockReduceAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
+namespace detail
 {
-  switch (alg)
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
+{
+  switch (algo)
   {
-    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
-      return os << "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING:
-      return os << "BLOCK_REDUCE_RAKING";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS:
-      return os << "BLOCK_REDUCE_WARP_REDUCTIONS";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
-      return os << "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
-    default:
-      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
+    case BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
+      return "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
+    case BLOCK_REDUCE_RAKING:
+      return "BLOCK_REDUCE_RAKING";
+    case BLOCK_REDUCE_WARP_REDUCTIONS:
+      return "BLOCK_REDUCE_WARP_REDUCTIONS";
+    case BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
+      return "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
   }
+  return "<unknown BlockReduceAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a

@@ -111,12 +111,6 @@
 #  define _CCCL_CUDA_COMPILATION() 0
 #endif // ^^^ not compiling .cu file ^^^
 
-#ifdef __CUDACC_TILE__
-#  define _CCCL_TILE_COMPILATION() 1
-#else // ^^^ compiling .cu file in tile mode ^^^ / vvv not compiling in tile mode vvv
-#  define _CCCL_TILE_COMPILATION() 0
-#endif // ^^^ not compiling .cu file ^^^
-
 // The CUDA compiler version shares the implementation with the C++ compiler
 #define _CCCL_CUDA_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR)
 #define _CCCL_CUDA_COMPILER(...)                         _CCCL_VERSION_COMPARE(_CCCL_CUDA_COMPILER_, _CCCL_CUDA_COMPILER_##__VA_ARGS__)
@@ -156,6 +150,12 @@
 #else // ^^^ compiling device code ^^^ / vvv not compiling device code vvv
 #  define _CCCL_DEVICE_COMPILATION() 0
 #endif // ^^^ not compiling device code ^^^
+
+#if defined(__CUDACC_TILE__) && _CCCL_CUDA_COMPILER(NVCC, >, 13, 3)
+#  define _CCCL_TILE_COMPILATION() 1
+#else // ^^^ compiling .cu file in tile mode ^^^ / vvv not compiling in tile mode vvv
+#  define _CCCL_TILE_COMPILATION() 0
+#endif // ^^^ not compiling .cu file ^^^
 
 #define _CCCL_CUDACC_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
 

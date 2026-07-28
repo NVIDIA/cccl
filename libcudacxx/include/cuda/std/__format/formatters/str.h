@@ -3,12 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD__FORMAT_FORMATERS_STR_H
-#define _CUDA_STD__FORMAT_FORMATERS_STR_H
+#ifndef _CUDA_STD___FORMAT_FORMATERS_STR_H
+#define _CUDA_STD___FORMAT_FORMATERS_STR_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,14 +33,67 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+template <class _CharT>
+[[nodiscard]] _CCCL_API constexpr __fmt_spec_parser<_CharT> __fmt_formatter_str_make_parser() noexcept
+{
+  __fmt_spec_parser<_CharT> __parser{};
+  __parser.__alignment_ = ::cuda::std::to_underlying(__fmt_spec_alignment::__left);
+  return __parser;
+}
+
 //!
 //! @brief Formatter for string types.
 //!
 //! @tparam _CharT The character type used for formatting.
 //!
 template <class _CharT>
-struct __fmt_formatter_str
+class __fmt_formatter_str
 {
+  //!
+  //! @brief Formats a C-string according to the parsed specifications.
+  //!
+  //! @param __str The C-string to format.
+  //! @param __ctx The formatting context where the formatted output will be stored.
+  //! @return An iterator pointing to the end of the formatted output.
+  //!
+  template <class _FmtCtx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator __format(const _CharT* __str, _FmtCtx& __ctx) const
+  {
+    return __format(basic_string_view{__str}, __ctx);
+  }
+
+  //!
+  //! @brief Formats a fixed-size array of characters according to the parsed specifications.
+  //!
+  //! @param __str The fixed-size array of characters to format.
+  //! @param __ctx The formatting context where the formatted output will be stored.
+  //! @return An iterator pointing to the end of the formatted output.
+  //!
+  template <class _FmtCtx, size_t _Size>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator
+  __format(const _CharT (&__str)[_Size], _FmtCtx& __ctx) const
+  {
+    const _CharT* const __pzero = char_traits<_CharT>::find(__str, _Size, _CharT{});
+    _CCCL_ASSERT(__pzero != nullptr, "formatting a non-null-terminated array");
+    return __format(basic_string_view{__str, static_cast<size_t>(__pzero - __str)}, __ctx);
+  }
+
+  //!
+  //! @brief Formats a `basic_string_view` according to the parsed specifications.
+  //!
+  //! @param __str The `basic_string_view` to format.
+  //! @param __ctx The formatting context where the formatted output will be stored.
+  //! @return An iterator pointing to the end of the formatted output.
+  //!
+  template <class _FmtCtx, class _Traits>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator
+  __format(basic_string_view<_CharT, _Traits> __str, _FmtCtx& __ctx) const
+  {
+    basic_string_view __str2{__str.data(), __str.size()};
+    return ::cuda::std::__fmt_write_string(__str2, __ctx.out(), __parser_.__get_parsed_std_spec(__ctx));
+  }
+
+public:
   //!
   //! @brief Parses the formatting specifications for string types.
   //!
@@ -68,61 +121,8 @@ struct __fmt_formatter_str
     return __format(__value, __ctx);
   }
 
-private:
-  //!
-  //! @brief Creates a parser for string formatting specifications.
-  //!
-  [[nodiscard]] _CCCL_API static constexpr __fmt_spec_parser<_CharT> __make_parser()
-  {
-    __fmt_spec_parser<_CharT> __parser{};
-    __parser.__alignment_ = ::cuda::std::to_underlying(__fmt_spec_alignment::__left);
-    return __parser;
-  }
-
-  //!
-  //! @brief Formats a C-string according to the parsed specifications.
-  //!
-  //! @param __str The C-string to format.
-  //! @param __ctx The formatting context where the formatted output will be stored.
-  //! @return An iterator pointing to the end of the formatted output.
-  //!
-  template <class _FmtCtx>
-  [[nodiscard]] _CCCL_API typename _FmtCtx::iterator __format(const _CharT* __str, _FmtCtx& __ctx) const
-  {
-    return __format(basic_string_view{__str}, __ctx);
-  }
-
-  //!
-  //! @brief Formats a fixed-size array of characters according to the parsed specifications.
-  //!
-  //! @param __str The fixed-size array of characters to format.
-  //! @param __ctx The formatting context where the formatted output will be stored.
-  //! @return An iterator pointing to the end of the formatted output.
-  //!
-  template <class _FmtCtx, size_t _Size>
-  [[nodiscard]] _CCCL_API typename _FmtCtx::iterator __format(const _CharT (&__str)[_Size], _FmtCtx& __ctx) const
-  {
-    const _CharT* const __pzero = char_traits<_CharT>::find(__str, _Size, _CharT{});
-    _CCCL_ASSERT(__pzero != nullptr, "formatting a non-null-terminated array");
-    return __format(basic_string_view{__str, static_cast<size_t>(__pzero - __str)}, __ctx);
-  }
-
-  //!
-  //! @brief Formats a `basic_string_view` according to the parsed specifications.
-  //!
-  //! @param __str The `basic_string_view` to format.
-  //! @param __ctx The formatting context where the formatted output will be stored.
-  //! @return An iterator pointing to the end of the formatted output.
-  //!
-  template <class _FmtCtx, class _Traits>
-  [[nodiscard]] _CCCL_API typename _FmtCtx::iterator
-  __format(basic_string_view<_CharT, _Traits> __str, _FmtCtx& __ctx) const
-  {
-    basic_string_view __str2{__str.data(), __str.size()};
-    return ::cuda::std::__fmt_write_string(__str2, __ctx.out(), __parser_.__get_parsed_std_spec(__ctx));
-  }
-
-  __fmt_spec_parser<_CharT> __parser_ = __make_parser(); //!< The parser for format specifications.
+  //!< The parser for format specifications.
+  __fmt_spec_parser<_CharT> __parser_ = ::cuda::std::__fmt_formatter_str_make_parser<_CharT>();
 };
 
 template <>

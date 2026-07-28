@@ -38,8 +38,7 @@ TEST_FUNC constexpr void test_stride(cuda::std::array<typename E::index_type, E:
 
   static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
-  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<typename E::index_type, E::rank()>>::value,
-                "");
+  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<typename E::index_type, E::rank()>>::value);
   for (size_t r = 0; r < E::rank(); r++)
   {
     assert(strides[r] == strides_out[r]);

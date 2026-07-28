@@ -64,7 +64,7 @@ struct __reverse_fn
 
   _CCCL_DEVICE_API constexpr void operator()(const iter_difference_t<_InputIterator> __index) const noexcept
   {
-    ::cuda::std::iter_swap(__first_ + __index, __last_ + __index);
+    ::cuda::std::__iter_swap_cpo{}(__first_ + __index, __last_ + __index);
   }
 };
 

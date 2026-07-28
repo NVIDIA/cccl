@@ -447,7 +447,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
   using sender_concept = execution::sender_t;
 
   template <class _Self>
-  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr auto get_completion_signatures() noexcept
   {
     return execution::completion_signatures<execution::set_value_t(), execution::set_error_t(cudaError_t)>();
   }
@@ -457,7 +457,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
 };
 
 template <class _Dimensions, class... _Config, class _Fn, class... _Args>
-_CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config, _Fn __fn, _Args... __args)
+_CCCL_HOST_DEVICE_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config, _Fn __fn, _Args... __args)
   -> __kernel_t::__sndr_t<kernel_config<_Dimensions, _Config...>, _Fn, _Args...>
 {
   return {{}, {_CCCL_MOVE(__config), _CCCL_MOVE(__fn), _CCCL_MOVE(__args)...}};

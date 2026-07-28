@@ -27,7 +27,7 @@ TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value);
   static_assert(
-    cuda::std::is_trivially_destructible<optional<T>>::value == cuda::std::is_trivially_destructible<T>::value, "");
+    cuda::std::is_trivially_destructible<optional<T>>::value == cuda::std::is_trivially_destructible<T>::value);
   {
     optional<T> opt{nullopt};
     assert(static_cast<bool>(opt) == false);

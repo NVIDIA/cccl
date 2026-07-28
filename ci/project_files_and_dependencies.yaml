@@ -114,15 +114,44 @@ projects:
     include_regexes: ["c/parallel/"]
     exclude_project_files: [cccl_c_parallel_public]
 
-  cccl_c_parallel_hostjit:
-    name: "CCCL C Parallel Library (HostJIT)"
-    matrix_project: "cccl_c_parallel_hostjit"
-    lite_dependencies: [libcudacxx_public]
-    full_dependencies: [cccl_c_parallel_public]
+  cccl_c_parallel_v2:
+    name: "CCCL C Parallel Library v2 (HostJIT)"
+    matrix_project: "cccl_c_parallel_v2"
+    # v2 depends on libcudacxx, cub, and thrust headers (it JIT-compiles
+    # CUB's host+device code via HostJIT). Any change to those should trigger
+    # v2 to run.
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public, c2h]
+    full_dependencies: []
     include_regexes:
-      - "c/parallel/src/hostjit/"
-      - "ci/build_cccl_c_parallel_hostjit\\.sh"
-      - "ci/test_cccl_c_parallel_hostjit\\.sh"
+      - "c/parallel\\.v2/"
+
+  python_v2:
+    name: "Python (cuda.compute on v2/HostJIT)"
+    matrix_project: "python_v2"
+    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust, so listing
+    # it here transitively triggers python_v2 on any of those upstream
+    # changes too. Direct includes catch Python-only edits.
+    lite_dependencies: [cccl_c_parallel_v2]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "pyproject\\.toml"
+
+  python_tsan:
+    name: "Python (cuda.compute free-threaded ThreadSanitizer)"
+    matrix_project: "python_tsan"
+    # Same v1 sources as `python`, rebuilt with ThreadSanitizer. Must be listed
+    # here or the per-PR python_tsan job is pruned as never-dirty and never runs.
+    # cccl_c_parallel_public covers c/parallel/{src,include}; c/parallel/CMakeLists.txt
+    # is listed directly because the TSan build config (the -fsanitize=thread option)
+    # lives there and is owned by cccl_c_parallel_internal, which this lane otherwise
+    # does not depend on -- without it a change to the TSan flags would skip this lane.
+    lite_dependencies: [cccl_c_parallel_public]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "pyproject\\.toml"
+      - "c/parallel/CMakeLists\\.txt"
 
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
@@ -207,6 +236,7 @@ projects:
       - cudax_internal
       - cccl_c_parallel_public
       - cccl_c_parallel_internal
+      - cccl_c_parallel_v2
       - cccl_c_stf
       - stdpar
       - c2h
@@ -217,6 +247,7 @@ projects:
 ignore_regexes:
   - '.+\.md$'
   - '\.branch_notes/'
+  - '\.coderabbit\.yaml'
   - '\.clang-format'
   - '\.clangd'
   # Do not add .clang-tidy to this list. If we modify .clang-tidy to either add or remove

@@ -29,7 +29,7 @@ public:
   }
 
   stateful_allocator(stateful_allocator&& other) noexcept
-      : BaseAlloc(std::move(other))
+      : BaseAlloc(static_cast<BaseAlloc&&>(other))
       , state(other.state)
   {
     other.state = 0;

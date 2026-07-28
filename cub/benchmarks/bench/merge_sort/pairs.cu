@@ -19,10 +19,9 @@
 template <typename KeyT>
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::merge_sort::merge_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::MergeSortPolicy
   {
-    return cub::detail::merge_sort::merge_sort_policy{
+    return cub::MergeSortPolicy{
       TUNE_THREADS_PER_BLOCK,
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
       (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),

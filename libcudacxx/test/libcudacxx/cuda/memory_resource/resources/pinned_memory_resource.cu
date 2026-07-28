@@ -17,7 +17,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
@@ -76,13 +76,11 @@ static void ensure_pinned_ptr(void* ptr)
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-
-#if _CCCL_CTK_AT_LEAST(12, 9)
-  if (!cuda::__is_host_memory_pool_supported() && cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<pinned_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<pinned_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 9)
+
   pinned_resource res = get_resource<pinned_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
@@ -202,6 +200,11 @@ static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>);
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
+  if constexpr (test::is_memory_pool_type<pinned_resource>)
+  {
+    test::skip_if_unsupported_memory_pool<pinned_resource>();
+  }
+
   pinned_resource first = get_resource<pinned_resource>();
   { // comparison against a plain pinned_memory_resource
     pinned_resource second = get_resource<pinned_resource>();
@@ -234,6 +237,8 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
 #if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
+  test::skip_if_unsupported_memory_pool<cuda::pinned_memory_pool_ref>();
+
   cuda::pinned_memory_pool_ref resource = cuda::pinned_default_memory_pool();
   test_deallocate_async(resource);
 }

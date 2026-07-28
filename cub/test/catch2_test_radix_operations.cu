@@ -340,7 +340,7 @@ C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
 
   for (std::size_t i = 0; i < input_buffer_mem.size(); i++)
   {
-    input_buffer[i] = ~input_buffer[i];
+    input_buffer[i] = static_cast<char>(~input_buffer[i]);
   }
 
   key_t inv = traits::bit_ordered_inversion_policy::inverse(decomposer, val);
@@ -380,7 +380,7 @@ C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
 
   for (std::size_t i = 0; i < input_buffer_mem.size(); i++)
   {
-    input_buffer[i] = ~input_buffer[i];
+    input_buffer[i] = static_cast<char>(~input_buffer[i]);
   }
 
   c2h::host_vector<char> output_buffer_mem = input_buffer_mem;

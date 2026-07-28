@@ -28,7 +28,7 @@ template <class Iter1, class Iter2, class T, class Op1, class Op2>
 TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, Op1 op1, Op2 op2, T x)
 {
   static_assert(
-    cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init, op1, op2))>::value, "");
+    cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init, op1, op2))>::value);
   assert(cuda::std::transform_reduce(first1, last1, first2, init, op1, op2) == x);
 }
 
@@ -58,8 +58,7 @@ TEST_FUNC constexpr void test_return_type()
   static_assert(
     cuda::std::is_same<
       Init,
-      decltype(cuda::std::transform_reduce(p, p, p, Init{}, cuda::std::plus<>(), cuda::std::multiplies<>()))>::value,
-    "");
+      decltype(cuda::std::transform_reduce(p, p, p, Init{}, cuda::std::plus<>(), cuda::std::multiplies<>()))>::value);
 }
 
 struct SumMoveOnly

@@ -29,9 +29,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_API inline void __cccl_thread_yield() {}
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield() {}
 
-_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns){
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns){
   NV_IF_TARGET(NV_PROVIDES_SM_70, ({
                  auto const __step = __ns.count();
                  _CCCL_ASSERT(__step < numeric_limits<unsigned>::max(), "invalid nanoseconds count");

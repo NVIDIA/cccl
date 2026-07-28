@@ -86,7 +86,7 @@ template <class Derived, class InputIt1, class InputIt2, class BinaryPred>
 {
   const auto n1           = ::cuda::std::distance(first1, last1);
   const auto n2           = ::cuda::std::distance(first2, last2);
-  const auto n            = ::cuda::std::min(n1, n2);
+  const auto n            = (::cuda::std::min) (n1, n2);
   const auto first        = ::cuda::make_zip_iterator(first1, first2);
   const auto last         = ::cuda::make_zip_iterator(first1 + n, first2 + n);
   const auto mismatch_pos = cuda_cub::find_if_not(policy, first, last, ::cuda::zip_function(binary_pred));

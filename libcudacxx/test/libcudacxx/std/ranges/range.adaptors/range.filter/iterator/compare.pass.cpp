@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr bool operator==(iterator const&, iterator const&)
 //  requires equality_comparable<iterator_t<V>>
 

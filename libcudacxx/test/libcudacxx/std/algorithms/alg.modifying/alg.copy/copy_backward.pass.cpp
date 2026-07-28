@@ -174,9 +174,9 @@ TEST_CONSTEXPR_CXX20 TEST_FUNC bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
   NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 
   return true;
 }

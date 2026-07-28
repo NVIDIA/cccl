@@ -48,13 +48,13 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __shared_ptr;
 
 template <class _Ty, class... _Args>
-_CCCL_API __shared_ptr<_Ty> __make_shared(_Args&&... __args)
+_CCCL_HOST_DEVICE_API __shared_ptr<_Ty> __make_shared(_Args&&... __args)
 {
   return __shared_ptr<_Ty>::__make_shared(static_cast<_Args&&>(__args)...);
 }
 
 template <class _Ty, class _Alloc, class... _Args>
-_CCCL_API __shared_ptr<_Ty> __allocate_shared(const _Alloc& __alloc, _Args&&... __args)
+_CCCL_HOST_DEVICE_API __shared_ptr<_Ty> __allocate_shared(const _Alloc& __alloc, _Args&&... __args)
 {
   return __shared_ptr<_Ty>::__allocate_shared(__alloc, static_cast<_Args&&>(__args)...);
 }
@@ -87,16 +87,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
 
   _CCCL_HIDE_FROM_ABI __shared_ptr() noexcept = default;
 
-  _CCCL_API __shared_ptr(::cuda::std::nullptr_t) noexcept {}
+  _CCCL_HOST_DEVICE_API __shared_ptr(::cuda::std::nullptr_t) noexcept {}
 
   // move constructor
-  _CCCL_API __shared_ptr(__shared_ptr&& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr(__shared_ptr&& __other) noexcept
       : __detail::__shared_ptr_base{::cuda::std::exchange(__other.__cb_ptr_, nullptr)}
       , __val_ptr_{::cuda::std::exchange(__other.__val_ptr_, nullptr)}
   {}
 
   // copy constructor
-  _CCCL_API __shared_ptr(const __shared_ptr& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr(const __shared_ptr& __other) noexcept
       : __detail::__shared_ptr_base{__other.__cb_ptr_}
       , __val_ptr_{__other.__val_ptr_}
   {
@@ -109,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
   // converting move constructor
   _CCCL_TEMPLATE(class _Other)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Other*, _Ty*>)
-  _CCCL_API __shared_ptr(__shared_ptr<_Other>&& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr(__shared_ptr<_Other>&& __other) noexcept
       : __detail::__shared_ptr_base{::cuda::std::exchange(__other.__cb_ptr_, nullptr)}
       , __val_ptr_{::cuda::std::exchange(__other.__val_ptr_, nullptr)}
   {}
@@ -117,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
   // converting copy constructor
   _CCCL_TEMPLATE(class _Other)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Other*, _Ty*>)
-  _CCCL_API __shared_ptr(const __shared_ptr<_Other>& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr(const __shared_ptr<_Other>& __other) noexcept
       : __detail::__shared_ptr_base{__other.__cb_ptr_}
       , __val_ptr_{__other.__val_ptr_}
   {
@@ -127,13 +127,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
     }
   }
 
-  _CCCL_API __shared_ptr& operator=(__shared_ptr&& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr& operator=(__shared_ptr&& __other) noexcept
   {
     __shared_ptr(_CCCL_MOVE(__other)).swap(*this);
     return *this;
   }
 
-  _CCCL_API __shared_ptr& operator=(const __shared_ptr& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr& operator=(const __shared_ptr& __other) noexcept
   {
     __shared_ptr(__other).swap(*this);
     return *this;
@@ -141,7 +141,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
 
   _CCCL_TEMPLATE(class _Other)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Other*, _Ty*>)
-  _CCCL_API __shared_ptr& operator=(__shared_ptr<_Other>&& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr& operator=(__shared_ptr<_Other>&& __other) noexcept
   {
     __shared_ptr(_CCCL_MOVE(__other)).swap(*this);
     return *this;
@@ -149,44 +149,44 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
 
   _CCCL_TEMPLATE(class _Other)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Other*, _Ty*>)
-  _CCCL_API __shared_ptr& operator=(const __shared_ptr<_Other>& __other) noexcept
+  _CCCL_HOST_DEVICE_API __shared_ptr& operator=(const __shared_ptr<_Other>& __other) noexcept
   {
     __shared_ptr(__other).swap(*this);
     return *this;
   }
 
-  _CCCL_API ~__shared_ptr()
+  _CCCL_HOST_DEVICE_API ~__shared_ptr()
   {
     reset();
   }
 
-  _CCCL_API void swap(__shared_ptr& __other) noexcept
+  _CCCL_HOST_DEVICE_API void swap(__shared_ptr& __other) noexcept
   {
     ::cuda::std::swap(__cb_ptr_, __other.__cb_ptr_);
     ::cuda::std::swap(__val_ptr_, __other.__val_ptr_);
   }
 
-  _CCCL_API friend void swap(__shared_ptr& __lhs, __shared_ptr& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend void swap(__shared_ptr& __lhs, __shared_ptr& __rhs) noexcept
   {
     __lhs.swap(__rhs);
   }
 
-  [[nodiscard]] _CCCL_API _Ty* operator->() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Ty* operator->() const noexcept
   {
     return __val_ptr_;
   }
 
-  [[nodiscard]] _CCCL_API _Ty& operator*() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Ty& operator*() const noexcept
   {
     return *__val_ptr_;
   }
 
-  [[nodiscard]] _CCCL_API _Ty* get() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Ty* get() const noexcept
   {
     return __val_ptr_;
   }
 
-  _CCCL_API void reset() noexcept
+  _CCCL_HOST_DEVICE_API void reset() noexcept
   {
     if (__cb_ptr_)
     {
@@ -199,27 +199,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
     }
   }
 
-  [[nodiscard]] _CCCL_API size_t use_count() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t use_count() const noexcept
   {
     return __cb_ptr_ ? __cb_ptr_->__ref_count_.load(::cuda::std::memory_order_acquire) : 0;
   }
 
-  [[nodiscard]] _CCCL_API explicit operator bool() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API explicit operator bool() const noexcept
   {
     return __cb_ptr_ != nullptr;
   }
 
-  [[nodiscard]] _CCCL_API bool operator!() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator!() const noexcept
   {
     return __cb_ptr_ == nullptr;
   }
 
-  [[nodiscard]] _CCCL_API bool operator==(const __shared_ptr& __other) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator==(const __shared_ptr& __other) const noexcept
   {
     return __cb_ptr_ == __other.__cb_ptr_;
   }
 
-  [[nodiscard]] _CCCL_API bool operator!=(const __shared_ptr& __other) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator!=(const __shared_ptr& __other) const noexcept
   {
     return !(*this == __other);
   }
@@ -229,12 +229,12 @@ private:
   friend struct __shared_ptr;
 
   template <class _Ty2, class... _Args>
-  _CCCL_API friend __shared_ptr<_Ty2> __make_shared(_Args&&...);
+  _CCCL_HOST_DEVICE_API friend __shared_ptr<_Ty2> __make_shared(_Args&&...);
 
   template <class _Ty2, class _Alloc, class... _Args>
-  _CCCL_API friend __shared_ptr<_Ty2> __allocate_shared(const _Alloc&, _Args&&...);
+  _CCCL_HOST_DEVICE_API friend __shared_ptr<_Ty2> __allocate_shared(const _Alloc&, _Args&&...);
 
-  _CCCL_API explicit __shared_ptr(__shared_ptr_base::__control_block* __cb_ptr, _Ty* __val_ptr) noexcept
+  _CCCL_HOST_DEVICE_API explicit __shared_ptr(__shared_ptr_base::__control_block* __cb_ptr, _Ty* __val_ptr) noexcept
       : __detail::__shared_ptr_base{__cb_ptr}
       , __val_ptr_{__val_ptr}
   {}
@@ -242,11 +242,11 @@ private:
   template <class _Deleter>
   struct __deleter_wrapper
   {
-    _CCCL_API __deleter_wrapper(_Deleter __deleter) noexcept
+    _CCCL_HOST_DEVICE_API __deleter_wrapper(_Deleter __deleter) noexcept
         : __deleter_{static_cast<_Deleter&&>(__deleter)}
     {}
 
-    _CCCL_API void operator()(_Ty* __ptr) noexcept
+    _CCCL_HOST_DEVICE_API void operator()(_Ty* __ptr) noexcept
     {
       __deleter_(__ptr);
     }
@@ -259,13 +259,13 @@ private:
     using __destroy_vfn_t = void(__control_block*) noexcept;
 
     template <class... _Args>
-    _CCCL_API explicit __control_block(_Args&&... __args) noexcept(
+    _CCCL_HOST_DEVICE_API explicit __control_block(_Args&&... __args) noexcept(
       ::cuda::std::is_nothrow_constructible_v<_Ty, _Args...>)
         : __shared_ptr_base::__control_block{&__control_block::__destroy}
         , __value_(static_cast<_Args&&>(__args)...)
     {}
 
-    _CCCL_API static void __destroy(__shared_ptr_base::__control_block* __cp_ptr, void*) noexcept
+    _CCCL_HOST_DEVICE_API static void __destroy(__shared_ptr_base::__control_block* __cp_ptr, void*) noexcept
     {
       delete static_cast<__control_block*>(__cp_ptr);
     }
@@ -285,7 +285,7 @@ private:
     static_assert(::cuda::std::is_nothrow_move_constructible_v<_Deleter>, "Deleter must be nothrow movable");
 
     template <class... _Args>
-    _CCCL_API explicit __control_block_with_deleter(_Deleter __deleter, _Args&&... __args) noexcept(
+    _CCCL_HOST_DEVICE_API explicit __control_block_with_deleter(_Deleter __deleter, _Args&&... __args) noexcept(
       ::cuda::std::is_nothrow_constructible_v<_Ty, _Args...>)
         : __control_block(static_cast<_Args&&>(__args)...)
         , _Deleter{static_cast<_Deleter&&>(__deleter)}
@@ -293,7 +293,7 @@ private:
       this->__destroy_vfn_ = &__control_block_with_deleter::__destroy;
     }
 
-    _CCCL_API static void __destroy(__shared_ptr_base::__control_block* __cb_ptr, void* __val_ptr) noexcept
+    _CCCL_HOST_DEVICE_API static void __destroy(__shared_ptr_base::__control_block* __cb_ptr, void* __val_ptr) noexcept
     {
       _Deleter& __deleter = *static_cast<__control_block_with_deleter*>(__cb_ptr);
       __deleter(static_cast<_Ty*>(__val_ptr));
@@ -312,11 +312,11 @@ private:
     using __control_block_t = __control_block_with_deleter<__allocator_deleter>;
     static_assert(::cuda::std::is_nothrow_copy_constructible_v<_Alloc>, "Allocator must be nothrow copyable");
 
-    _CCCL_API explicit __allocator_deleter(const _Alloc& __alloc) noexcept
+    _CCCL_HOST_DEVICE_API explicit __allocator_deleter(const _Alloc& __alloc) noexcept
         : _Alloc{__alloc}
     {}
 
-    _CCCL_API void operator()([[maybe_unused]] _Ty* __ptr) noexcept
+    _CCCL_HOST_DEVICE_API void operator()([[maybe_unused]] _Ty* __ptr) noexcept
     {
       __control_block_t* __cb_ptr = static_cast<__control_block_t*>(this);
       _CCCL_ASSERT(::cuda::std::addressof(__cb_ptr->__value_) == __ptr, "Pointer mismatch in allocator deleter");
@@ -331,14 +331,14 @@ private:
   };
 
   template <class... _Args>
-  _CCCL_API static __shared_ptr __make_shared(_Args&&... __args)
+  _CCCL_HOST_DEVICE_API static __shared_ptr __make_shared(_Args&&... __args)
   {
     auto* __cb_ptr = ::new __control_block(static_cast<_Args&&>(__args)...);
     return __shared_ptr{__cb_ptr, ::cuda::std::addressof(__cb_ptr->__value_)};
   }
 
   template <class _Alloc, class... _Args>
-  _CCCL_API static __shared_ptr __allocate_shared(const _Alloc& __alloc, _Args&&... __args)
+  _CCCL_HOST_DEVICE_API static __shared_ptr __allocate_shared(const _Alloc& __alloc, _Args&&... __args)
   {
     using __control_block_t = __control_block_with_deleter<__allocator_deleter<_Alloc>>;
     using __cb_alloc_t      = __detail::__rebind_alloc_t<_Alloc, __control_block_t>;

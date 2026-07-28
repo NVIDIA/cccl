@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6076227: ICE when validating tile MLIR
-
 // <cuda/std/string_view>
 
 // constexpr bool ends_with(basic_string_view x) const noexcept;

@@ -23,7 +23,7 @@
 
 __global__ void scale_inplace(int n, float* data, float factor)
 {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (i < n)
   {
     data[i] *= factor;
@@ -71,11 +71,9 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* A_raw    = nullptr;
-  cudaError_t err = cudaMallocHost(&A_raw, N * sizeof(float));
+  float* A        = nullptr;
+  cudaError_t err = cudaMallocHost(&A, N * sizeof(float));
   REQUIRE(err == cudaSuccess);
-  std::unique_ptr<void, decltype(&cudaFreeHost)> A_owner(A_raw, cudaFreeHost);
-  float* A = static_cast<float*>(A_owner.get());
   for (size_t i = 0; i < N; ++i)
   {
     A[i] = static_cast<float>(i);
@@ -100,6 +98,8 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
   {
     REQUIRE(A[i] == static_cast<float>(i));
   }
+
+  REQUIRE(cudaFreeHost(A) == cudaSuccess);
 }
 
 C2H_TEST("stf_logical_data_with_place - device place (data on current device)", "[logical_data_with_place]")

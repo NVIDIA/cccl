@@ -14,7 +14,14 @@
 
 #include <cuda/std/cstdint>
 
+#include <cstring>
+#include <memory>
 #include <string>
+#include <string_view>
+
+#if defined(_WIN32)
+#  include <mutex>
+#endif // _WIN32
 
 #include "errors.h"
 #include <cccl/c/types.h>
@@ -30,9 +37,25 @@ struct items_storage_t; // Used in merge_sort
 // for these unsupported types and converts them to nvcc-compatible types.
 // The method signature is kept identical to `nvrtcGetTypeName` so that this
 // helper can be used as a drop-in replacement.
+#if defined(_WIN32)
+// The Windows nvrtcGetTypeName path demangles through DbgHelp's
+// UnDecorateSymbolName, which Microsoft documents as single-threaded: concurrent
+// calls "will likely result in unexpected behavior or memory corruption." Under
+// free-threaded Python, distinct-key build storms resolve type names on multiple
+// threads at once, and the returned names get swapped/corrupted, producing bogus
+// NVRTC name expressions (e.g. a transform kernel instantiated with a reduce
+// policy). Serialize every call through one process-wide mutex; the `inline`
+// variable is a single instance shared across all `cccl_type_name_from_nvrtc<T>`
+// instantiations and translation units.
+inline std::mutex nvrtc_type_name_mutex;
+#endif // _WIN32
+
 template <typename T>
 nvrtcResult cccl_type_name_from_nvrtc(std::string* result)
 {
+#if defined(_WIN32)
+  const std::lock_guard<std::mutex> lock(nvrtc_type_name_mutex);
+#endif // _WIN32
   if (const nvrtcResult res = nvrtcGetTypeName<T>(result); res != NVRTC_SUCCESS)
   {
     return res;
@@ -141,6 +164,20 @@ inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum t
     default:
       return cub::detail::type_t::other;
   }
+}
+
+inline char* duplicate_c_string(std::string_view s)
+{
+  auto p = std::make_unique<char[]>(s.size() + 1);
+  std::memcpy(p.get(), s.data(), s.size());
+  p[s.size()] = '\0';
+  return p.release();
+}
+
+// A custom op has a name but no LTOIR — kernel-only compile mode leaves the op unresolved.
+inline bool is_custom_op(cccl_op_t op)
+{
+  return op.code_size == 0 && op.name != nullptr && op.name[0] != '\0';
 }
 
 inline constexpr cub::detail::op_kind_t cccl_op_kind_to_cub_op(cccl_op_kind_t type)

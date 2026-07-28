@@ -94,8 +94,7 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Use weird layout, make sure it has the properties we want to test
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   static_assert(!cuda::std::is_default_constructible<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<signed char, D>>>::value,
-                "");
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<signed char, D>>>::value);
   mixin_extents<hc, false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
-//
-
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/numeric>

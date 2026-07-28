@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
 
 #include <cuda/memory>
 #include <cuda/std/cassert>

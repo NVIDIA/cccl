@@ -135,7 +135,7 @@ private:
 
 //! @brief Constructs a strided_iterator from an iterator @param it with a given @param stride
 template <typename Iterator, typename Stride>
-CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead") _CCCL_API auto
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead") _CCCL_HOST_DEVICE_API auto
 make_strided_iterator(Iterator it, Stride stride)
 {
   return strided_iterator<Iterator, runtime_value<Stride>>(it, {stride});
@@ -143,7 +143,8 @@ make_strided_iterator(Iterator it, Stride stride)
 
 //! @brief Constructs a strided_iterator from an iterator @param it with a value-initialized compile-time @tparam Stride
 template <auto Stride, typename Iterator>
-CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead") _CCCL_API auto make_strided_iterator(Iterator it)
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead") _CCCL_HOST_DEVICE_API auto
+make_strided_iterator(Iterator it)
 {
   return strided_iterator<Iterator, compile_time_value<Stride>>(it, {});
 }

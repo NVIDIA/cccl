@@ -387,23 +387,24 @@ public:
 
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(input_iterator<_Iter2>)
-  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter2>
-  iter_move(const common_iterator& __i) noexcept(noexcept(::cuda::std::ranges::iter_move(declval<const _Iter&>())))
+  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter2> iter_move(const common_iterator& __i) noexcept(
+    noexcept(::cuda::std::ranges::__iter_move_cpo{}(declval<const _Iter&>())))
   {
     _CCCL_ASSERT(__i.__hold_.__holds_first(), "Attempted to iter_move a non-dereferenceable common_iterator");
-    return ::cuda::std::ranges::iter_move(__i.__hold_.__first_);
+    return ::cuda::std::ranges::__iter_move_cpo{}(__i.__hold_.__first_);
   }
 
   _CCCL_TEMPLATE(class _I2, class _S2)
   _CCCL_REQUIRES(indirectly_swappable<_I2, _Iter>)
-  _CCCL_API friend constexpr void iter_swap(const common_iterator& __x, const common_iterator<_I2, _S2>& __y) noexcept(
-    noexcept(::cuda::std::ranges::iter_swap(::cuda::std::declval<const _Iter&>(), ::cuda::std::declval<const _I2&>())))
+  _CCCL_API friend constexpr void
+  iter_swap(const common_iterator& __x, const common_iterator<_I2, _S2>& __y) noexcept(noexcept(
+    ::cuda::std::ranges::__iter_swap_cpo{}(::cuda::std::declval<const _Iter&>(), ::cuda::std::declval<const _I2&>())))
   {
     const auto& __y_hold = __y.__get_hold();
 
     _CCCL_ASSERT(__x.__hold_.__holds_first(), "Attempted to iter_swap a non-dereferenceable common_iterator");
     _CCCL_ASSERT(__y_hold.__holds_first(), "Attempted to iter_swap a non-dereferenceable common_iterator");
-    return ::cuda::std::ranges::iter_swap(__x.__hold_.__first_, __y_hold.__first_);
+    return ::cuda::std::ranges::__iter_swap_cpo{}(__x.__hold_.__first_, __y_hold.__first_);
   }
 
   [[nodiscard]] _CCCL_API constexpr __variant_like<_Iter, _Sent>& __get_hold() noexcept

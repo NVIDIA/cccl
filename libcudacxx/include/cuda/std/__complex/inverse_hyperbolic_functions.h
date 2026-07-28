@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // It can happen that the double 1/sqrt() on device gets optimized better than CUDA rsqrt(),
 // but it depends on the calling function. We needs to optimize on an individual basis.
 template <class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
 {
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
@@ -68,7 +68,7 @@ struct _CCCL_ALIGNAS(2 * sizeof(_Tp)) __cccl_asinh_sqrt_return_hilo
 
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
-[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE __cccl_asinh_sqrt_return_hilo<_Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE __cccl_asinh_sqrt_return_hilo<_Tp>
 __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 {
   // rsqrt
@@ -109,7 +109,7 @@ __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 // asinh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> asinh(const complex<_Tp>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> asinh(const complex<_Tp>& __x) noexcept
 {
   // Uint of the same size as our fp type.
   using __uint_t = __fp_storage_of_t<_Tp>;
@@ -380,26 +380,26 @@ template <class _Tp>
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x) noexcept
-{
-  return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> asinh(const complex<__half>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__half> asinh(const complex<__half>& __x) noexcept
 {
   return complex<__half>{::cuda::std::asinh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x) noexcept
+{
+  return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 // acosh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> acosh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> acosh(const complex<_Tp>& __x)
 {
   // Uint of the same size as our fp type.
   using __uint_t = __fp_storage_of_t<_Tp>;
@@ -669,26 +669,26 @@ template <class _Tp>
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::acosh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::acosh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::acosh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 // atanh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
 {
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
@@ -798,21 +798,21 @@ template <class _Tp>
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::atanh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> atanh(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::atanh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::atanh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -19,6 +19,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
+
 TEST_FUNC void test()
 {
   ::cudaStream_t invalid_stream = reinterpret_cast<::cudaStream_t>(1337);

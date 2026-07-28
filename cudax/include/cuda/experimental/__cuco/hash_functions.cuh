@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_HASH_FUNCTIONS_CUH
 #define _CUDAX___CUCO_HASH_FUNCTIONS_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__cuco/__hash_functions/murmurhash3.cuh>
-#include <cuda/experimental/__cuco/__hash_functions/xxhash.cuh>
+#include <cuda/experimental/__cuco/detail/hash_functions/murmurhash3.cuh>
+#include <cuda/experimental/__cuco/detail/hash_functions/xxhash.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 

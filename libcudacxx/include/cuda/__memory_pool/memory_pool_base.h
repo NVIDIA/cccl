@@ -37,6 +37,10 @@
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/cstddef>
 
+#  if _CCCL_HOSTED()
+#    include <vector>
+#  endif // _CCCL_HOSTED()
+
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -553,19 +557,9 @@ public:
   }
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
-  [[nodiscard]] _CCCL_API constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
-  }
-
-  //! @brief Retrieve the native `cudaMemPool_t` handle and give up ownership.
-  //!
-  //! @return cudaMemPool_t The native handle being held by the `memory_pool_base` object.
-  //!
-  //! @post The memory pool object is in a moved-from state.
-  _CCCL_HOST_API constexpr cudaMemPool_t release() noexcept
-  {
-    return ::cuda::std::exchange(__pool_, nullptr);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.

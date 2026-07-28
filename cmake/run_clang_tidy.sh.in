@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-set -xeou pipefail
+set -eou pipefail
 
 clang_tidy_args=()
 if test -n "${CCCL_CLANG_TIDY_ARGS:+x}"; then
     mapfile -t clang_tidy_args < <(echo "${CCCL_CLANG_TIDY_ARGS}" | tr ' ' '\n' | sort -u)
 fi
+
+set -x
 
 "@CCCL_CLANG_TIDY@" \
   --use-color \

@@ -166,7 +166,7 @@ _CCCL_API constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
   }
   else if constexpr (is_array_v<_Tp>)
   {
-    ::cuda::std::__destroy(::cuda::std::begin(*__loc), ::cuda::std::end(*__loc));
+    ::cuda::std::__destroy(::cuda::std::__begin_cpo{}(*__loc), ::cuda::std::__end_cpo{}(*__loc));
   }
   else
   {
@@ -209,7 +209,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at([[maybe_unused]] _Tp* __l
   }
   else if constexpr (is_array_v<_Tp>)
   {
-    ::cuda::std::__destroy(::cuda::std::begin(*__loc), ::cuda::std::end(*__loc));
+    ::cuda::std::__destroy(::cuda::std::__begin_cpo{}(*__loc), ::cuda::std::__end_cpo{}(*__loc));
   }
   else
   {

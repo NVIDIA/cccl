@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -66,9 +67,11 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
   [[nodiscard]] _CCCL_HOST_API static _InputIterator __par_impl(
     [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPred __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     size_t __ret       = 0ull;
     const auto __count = static_cast<int64_t>(::cuda::std::distance(__first, __last));
-    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     // Determine temporary device storage requirements for max_element
     size_t __num_bytes = 0;
@@ -82,7 +85,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
       static_cast<size_t*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<size_t> __storage{__policy, __num_bytes, 1};
@@ -98,7 +101,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
         __storage.template __get_raw_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
@@ -121,11 +124,11 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -133,9 +136,10 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

@@ -65,7 +65,11 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(!cuda::std::isnan(res));
       assert(!cuda::std::isinf(res));
       assert(cuda::std::isfinite(res));
+      // NVHPC flushes subnormals to 0 by default on some architectures. That causes this check to fail, because we use
+      // __builtin_fpclassify to implement fpclassify. Re-enable once nvbug 6303102 is resolved.
+#if !TEST_COMPILER(NVHPC)
       assert(cuda::std::fpclassify(res) == FP_SUBNORMAL);
+#endif // !TEST_COMPILER(NVHPC)
     }
 
     if constexpr (cuda::std::__fp_has_denorm_v<fmt> && cuda::std::__fp_is_signed_v<fmt>)
@@ -75,7 +79,11 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(!cuda::std::isnan(res));
       assert(!cuda::std::isinf(res));
       assert(cuda::std::isfinite(res));
+      // NVHPC flushes subnormals to 0 by default on some architectures. That causes this check to fail, because we use
+      // __builtin_fpclassify to implement fpclassify. Re-enable once nvbug 6303102 is resolved.
+#if !TEST_COMPILER(NVHPC)
       assert(cuda::std::fpclassify(res) == FP_SUBNORMAL);
+#endif // !TEST_COMPILER(NVHPC)
     }
   }
 

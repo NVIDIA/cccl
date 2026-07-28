@@ -53,7 +53,7 @@ TEST_FUNC void test()
 {
   static_assert((cuda::std::uses_allocator<T, A>::value == Expected));
   static_assert(
-    cuda::std::is_base_of<cuda::std::integral_constant<bool, Expected>, cuda::std::uses_allocator<T, A>>::value, "");
+    cuda::std::is_base_of<cuda::std::integral_constant<bool, Expected>, cuda::std::uses_allocator<T, A>>::value);
 
   static_assert(cuda::std::is_same_v<decltype(cuda::std::uses_allocator_v<T, A>), const bool>);
   static_assert((cuda::std::uses_allocator_v<T, A> == Expected));

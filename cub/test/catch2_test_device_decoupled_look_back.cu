@@ -3,10 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#undef NDEBUG
 #include <cub/device/device_scan.cuh>
-
-#include <cassert>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -68,8 +65,8 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
     }
     __syncthreads();
 
-    assert(tile_data[tile_idx] == prefix.GetInclusivePrefix());
-    assert(tile_aggregate == prefix.GetBlockAggregate());
+    REQUIRE_DEVICE(tile_data[tile_idx] == prefix.GetInclusivePrefix());
+    REQUIRE_DEVICE(tile_aggregate == prefix.GetBlockAggregate());
   }
 }
 

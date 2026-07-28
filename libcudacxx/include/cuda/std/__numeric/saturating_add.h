@@ -60,7 +60,7 @@ template <class _Tp>
 #  else // ^^^ _CCCL_BUILTIN_ELEMENTWISE_ADD_SAT ^^^ / vvv !_CCCL_BUILTIN_ELEMENTWISE_ADD_SAT vvv
   if constexpr (is_signed_v<_Tp>)
   {
-#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
     {
       return ::_sat_add_i8(__x, __y);
@@ -78,14 +78,14 @@ template <class _Tp>
       return ::_sat_add_i64(__x, __y);
     }
     else
-#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     {
       return ::cuda::saturating_add_overflow(__x, __y).value;
     }
   }
   else
   {
-#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(uint8_t))
     {
       return ::_sat_add_u8(__x, __y);
@@ -103,7 +103,7 @@ template <class _Tp>
       return ::_sat_add_u64(__x, __y);
     }
     else
-#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     {
       return ::cuda::saturating_add_overflow(__x, __y).value;
     }
@@ -116,6 +116,8 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __saturating_add_impl_device(_Tp __x, _Tp __y) noexcept
 {
+  // Narrow branches differ only when target-specific inline PTX is available.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_signed_v<_Tp>)
   {
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
@@ -197,6 +199,7 @@ template <class _Tp>
       return ::cuda::saturating_add_overflow(__x, __y).value;
     }
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

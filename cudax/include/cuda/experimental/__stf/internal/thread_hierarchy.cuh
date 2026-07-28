@@ -442,7 +442,7 @@ UNITTEST("thread hierarchy indexing")
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy<<<config[1], config[2]>>>(h);
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 namespace reserved
@@ -473,7 +473,7 @@ UNITTEST("thread hierarchy sync")
   auto config = p.get_config();
 
   void* args[] = {&h};
-  cuda_safe_call(cudaLaunchCooperativeKernel(
+  cuda_try(cudaLaunchCooperativeKernel(
     (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
     config[1],
     config[2],
@@ -481,7 +481,7 @@ UNITTEST("thread hierarchy sync")
     0,
     0));
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 namespace reserved
@@ -511,7 +511,7 @@ UNITTEST("thread hierarchy inner sync")
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy_inner_sync<false, size_t(0), true, size_t(0)><<<config[1], config[2]>>>(h);
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()

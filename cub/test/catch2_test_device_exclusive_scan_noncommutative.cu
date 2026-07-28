@@ -49,7 +49,7 @@
  *         op({write_B}, {write_A}) == {write_A}, which differ when A != B.
  *
  * This operator is used in applications such as stack-symbol propagation
- * during JSON or bracket parsing. A regression was found in the warpspeed
+ * during JSON or bracket parsing. A regression was found in the lookahead
  * ExclusiveScan kernel (sm_100+) introduced in CCCL 3.4, where the
  * inter-tile prefix was combined with the intra-tile prefix in the wrong
  * order, producing incorrect results for non-commutative operators.
@@ -122,8 +122,8 @@ struct populate_sparse_write_input
 } // namespace impl
 
 // Sizes chosen to cover: single-element, small, medium, the original bug-report size (8160),
-// and large enough to span multiple warpspeed tiles on any supported architecture.
-// On sm_100+ the warpspeed tile size is num_scan_stor_threads * items_per_thread, which is
+// and large enough to span multiple lookahead tiles on any supported architecture.
+// On sm_100+ the lookahead tile size is num_scan_stor_threads * items_per_thread, which is
 // ~4000–32000 elements depending on element size, so 50'000 guarantees multiple tiles for all types.
 
 C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid operator", "[scan][device]")
@@ -172,8 +172,8 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
 C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan][device]")
 {
   // PropagateLastWrite<char> uses char values: contiguous, trivially copyable, arithmetic —
-  // all conditions that enable the warpspeed kernel on sm_100+.
-  // The bug (CCCL 3.4 regression) was that the warpspeed kernel applied scan_op with operands
+  // all conditions that enable the lookahead kernel on sm_100+.
+  // The bug (CCCL 3.4 regression) was that the lookahead kernel applied scan_op with operands
   // in the wrong order when combining the inter-tile exclusive prefix with the intra-tile prefix,
   // producing incorrect results for non-commutative operators like this one.
 

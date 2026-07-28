@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 #include <cuda/std/algorithm.find_first_of.h>
 #include <cuda/std/cassert>
 
@@ -15,13 +18,13 @@
 
 struct equal_to
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a == b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {0, 1, 2};
   constexpr int b[] = {3, 1};

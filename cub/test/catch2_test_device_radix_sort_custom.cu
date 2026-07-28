@@ -499,12 +499,12 @@ struct decomposer_t
 };
 // example-end custom-type
 
-static __host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
+__host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
 {
   return os << "{ " << self.f << ", " << self.lli << " }";
 }
 
-static __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }

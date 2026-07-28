@@ -34,12 +34,18 @@ The following factory methods create the most common execution places:
 - ``exec_place::device(id)`` -- a specific CUDA device
 - ``exec_place::host()`` -- the host CPU
 - ``exec_place::current_device()`` -- the CUDA device that is currently active
+- ``exec_place::cuda_context(ctx, devid)`` -- an externally-owned CUDA driver
+  context; the device ordinal is derived from the context when ``devid`` is
+  omitted
 
 When an execution place is activated, it sets the appropriate CUDA context
 (e.g. calls ``cudaSetDevice``). Each execution place also has an *affine*
 data place: the memory location naturally associated with it. For a device
 execution place the affine data place is the device's global memory; for
 the host it is pinned host memory (RAM).
+
+A CUDA-context execution place is non-owning. The caller must keep the
+``CUcontext`` alive while the place and any streams obtained from it are in use.
 
 .. _places-data-places:
 
@@ -198,8 +204,11 @@ streams in a structured way. This is useful when you want to use place
 abstractions (devices, green contexts) for stream management without the full
 task-based programming model.
 
-Each execution place owns a pool of CUDA streams. The
-``exec_place::pick_stream`` method returns a CUDA stream from that pool.
+Stream pools for pooled places (``device(N)``, ``host()``) live in an
+``exec_place_resources`` registry that the caller owns. Pass the registry to
+``exec_place::pick_stream`` to get a CUDA stream; the per-place pool inside the
+registry is created lazily on first request and is destroyed when the registry
+is destroyed.
 
 The method accepts an optional ``for_computation`` hint (defaults to ``true``)
 that may select between computation and data transfer stream pools to improve
@@ -211,19 +220,34 @@ correctness. Not all execution places enforce it.
     #include <cuda/experimental/places.cuh>
     using namespace cuda::experimental::places;
 
+    // Standalone use: own the registry yourself.
+    exec_place_resources resources;
+
     // Get a stream from the current device
     exec_place place = exec_place::current_device();
-    cudaStream_t stream = place.pick_stream();
+    cudaStream_t stream = place.pick_stream(resources);
 
     // Use the stream for CUDA operations
     myKernel<<<grid, block, 0, stream>>>(d_data);
 
-    // Get streams from specific devices
-    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream();
-    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream();
+    // Get streams from specific devices (sharing the same registry)
+    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream(resources);
+    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream(resources);
+
+Inside a CUDASTF context, the context's ``async_resources_handle`` already
+holds an ``exec_place_resources`` registry. Convenience overloads accept the
+handle directly so call sites do not have to dereference it:
+
+.. code:: cpp
+
+    cudaStream_t stream = place.pick_stream(ctx.async_resources());
 
 Stream pools are populated lazily -- CUDA streams are only created when first
-requested via ``pick_stream()``.
+requested via ``pick_stream(resources)`` (or ``pick_stream(ctx.async_resources())``
+inside CUDASTF). Self-contained places (``exec_place::cuda_stream(s)``,
+green-context places) ignore the registry and return their own embedded pool
+instead, so the user-provided ``cudaStream_t`` / ``CUgreenCtx`` must outlive
+any place that wraps it.
 
 .. _places-memory-allocation:
 
@@ -293,6 +317,32 @@ You can query whether a place uses stream-ordered allocation with
 
 This abstraction is particularly useful when writing generic code that needs to
 work with different types of places, including custom place extensions.
+
+Geometry-aware allocation with allocate_nd
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some places need to know the shape of the tensor being allocated, not just its
+size: a composite data place distributes the allocation according to a
+partitioner that maps *element coordinates* to places. ``allocate_nd()`` takes
+the tensor extents (dimension 0 varying fastest) and the element size:
+
+.. code:: cpp
+
+    // 2-D tensor of nx x ny doubles, distributed by the place's partitioner
+    void* ptr = place.allocate_nd(dim4(nx, ny), sizeof(double));
+    // ...
+    place.deallocate(ptr, nx * ny * sizeof(double));
+
+For most places this is equivalent to ``allocate(prod(dims) * elemsize)``. For
+composite places it is required: the byte-count ``allocate()`` throws there,
+since a byte count alone cannot carry the geometry the partitioner needs. A
+caller that genuinely has untyped bytes states that explicitly with
+``allocate_nd(dim4(nbytes), 1)``, which distributes the buffer with byte
+granularity. This raw-byte form applies to composite places built from
+scale-free partitioners only; a composite place backed by a structured
+partition (see :ref:`places-structured-partitions`) accepts exactly the
+extents of the tensor the partition was built for and rejects anything else,
+including a flat byte count.
 
 .. _places-vmm:
 
@@ -407,6 +457,39 @@ It is possible to query the *shape* of the grid using ``get_dims()``,
 which returns a ``dim4`` object. Individual places can be accessed by
 multi-dimensional position using ``get_place(pos4)``.
 
+Reshaping and collapsing grid axes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An existing grid can be viewed with different dimensions using
+``reshape()``. The new dimensions must contain exactly the same number of
+places:
+
+.. code:: c++
+
+   exec_place cube = make_grid(my_places, dim4(2, 3, 4));
+   exec_place flat = cube.reshape(dim4(24));
+
+Reshaping changes only the grid coordinate system. It preserves dimension-0-
+fastest linear order, so ``flat.get_place(i) == cube.get_place(i)`` for every
+linear index ``i``. It does not reorder, replicate, or remove places.
+
+``collapse_axes(first, last)`` is a convenience operation that combines a
+contiguous inclusive range of axes. The collapsed extent is the product of
+the selected extents; later axes shift left and trailing extents become one:
+
+.. code:: c++
+
+   exec_place grid = make_grid(my_places, dim4(2, 3, 4));
+
+   exec_place grid_6x4 = grid.collapse_axes(0, 1); // dim4(6, 4)
+   exec_place grid_2x12 = grid.collapse_axes(1, 2); // dim4(2, 12)
+   exec_place grid_24 = grid.collapse_axes(0, 3); // dim4(24)
+
+These operations are useful when a partition should consume several axes of
+a processor grid as one logical axis. They are coordinate transformations,
+not :ref:`places-partitioning`: the latter decomposes a place into constituent
+resources.
+
 .. _places-partitioning:
 
 Partitioning grids
@@ -460,7 +543,7 @@ over the different places of a grid.
        template <typename S_out, typename S_in>
        static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
 
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
+       void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims);
    };
 
 A partitioning class must implement an ``apply`` method which takes:
@@ -486,8 +569,8 @@ method which allows localized data allocators. This
 method indicates, for each entry of a shape, on which place this entry
 should *preferably* be allocated.
 
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are:
+``get_executor`` writes a ``pos4`` coordinate in the execution place
+grid into ``*result``, and its input arguments are:
 
 - a coordinate within the shape described as a ``pos4`` object
 - the dimension of the shape expressed as a ``dim4`` object
@@ -539,3 +622,157 @@ tiled layout, where the dimension of the tiles is indicated by the
    |     |     |     |     |     |  |
    |     |     |     |     |     |  |
    |_____|_____|_____|_____|_____|__|
+
+.. _places-structured-partitions:
+
+Structured partitions
+---------------------
+
+The classic partitioning policies above are *scale-free*: ``blocked_partition``
+splits whatever shape it is handed, knows nothing about the tensor it will be
+applied to, and always dispatches along the outermost dimension. A
+*structured partition* (``cute_partition``) is the complementary tool: it
+describes, dimension by dimension, how **one specific tensor** maps onto a
+grid of places.
+
+.. code:: c++
+
+   using namespace cuda::experimental::places;
+
+   // A 3-D tensor: dimension 1 blocked over the places of the grid,
+   // dimensions 0 and 2 not distributed
+   auto part = make_partition(
+       dim4(nx, ny, nz),
+       partition_spec{whole, blocked<0>, whole},
+       grid.get_dims());
+
+Each entry in ``partition_spec`` selects a policy for the corresponding
+tensor dimension: ``whole`` (not distributed), ``blocked<axis>``,
+``cyclic<axis>``, or ``block_cyclic<axis>(block_size)``. Rank, policy,
+mesh-axis, and leaf counts are preserved in the C++ type; tensor extents,
+strides, and block sizes remain runtime values. This is strictly more
+expressive than the classic policies -- splitting dimension 1 of a 3-D
+tensor, or mixing policies across dimensions, cannot be stated with
+``blocked_partition``.
+
+The reference shape, padding, and predication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The first argument of ``make_partition`` is the tensor's extents: unlike a
+classic policy, a structured partition is **bound to one reference shape**,
+and remains the authority on it. This is a deliberate trade, and the source
+of most of the type's properties:
+
+- Split dimensions are *padded up to divisibility* (a 10-element dimension
+  blocked over 3 places is treated as 12, in chunks of 4). Padding makes the
+  underlying layout exact and bijective, which is what keeps every query
+  closed-form: validation is a linear pass over the layout, and the owner of
+  a coordinate is a chain of divisions and modulos.
+- Coordinates beyond the true extents (the *padding phantoms*) own no bytes
+  and do no work: consumers discard them by comparing coordinates against
+  the true extents. This is the *predication* idiom of CUTLASS/CuTe
+  ("partition the rounded-up shape, predicate the boundary") rather than
+  per-place clamping, which would break the layout's uniformity.
+
+Ownership can be queried directly, and -- more importantly -- a candidate
+mapping can be **scored before any memory is committed**:
+
+.. code:: c++
+
+   pos4 owner = part.owner(pos4(x, y, z));   // grid position owning (x,y,z)
+
+   // Dry run: same block-majority decision procedure as a real allocation
+   localized_stats stats = evaluate_localized_placement(grid, part, sizeof(double));
+   // stats.bytes_per_place, stats.accuracy() (estimated fraction of local bytes),
+   // stats.nallocs, ... -- tune the spec, then allocate
+
+Placement through a structured partition
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A structured partition can back a composite data place. Because the
+partition is bound to one tensor, such a place is *per-tensor* -- allocate
+with the partition's exact extents (compare with the classic composite
+place, which is a reusable shape-free policy):
+
+.. code:: c++
+
+   data_place dp = make_composite_data_place(grid, part);
+   void* ptr     = dp.allocate_nd(dim4(nx, ny, nz), sizeof(double));
+   // physical pages land on the place owning them, per the partition
+   dp.deallocate(ptr, nx * ny * nz * sizeof(double));
+
+Two structured composite places built from equal partitions compare equal,
+so they denote the same data placement wherever data places are compared.
+
+Conventions and limits
+^^^^^^^^^^^^^^^^^^^^^^
+
+- Extents follow the **dimension-0-fastest** linearization of
+  ``dim4::get_index()`` (the convention of STF slices). A row-major front-end
+  must present its *whole* description in this order -- the extents, the
+  per-dimension ``partition_spec``, and any coordinates passed to ``owner()``
+  reverse together, since reversing only the extents would silently re-target
+  each policy at the wrong axis.
+- At most 4 tensor dimensions (the ``pos4``/``dim4`` domain).
+- Typed partitions and their kernel-facing sub-shapes store exactly their
+  layout leaves. Runtime interfaces (including C/Python opaque handles) erase
+  them to a canonical descriptor only at the data-place boundary.
+- The partition object is trivially copyable and its queries are host/device
+  callable.
+
+The ``partitioned_axpy`` example shows the intended workflow end to end:
+express the partition once, evaluate it, run tasks over data placed by it,
+and perform a raw geometry-aware allocation.
+
+Computing over structured partitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same ``parallel_for`` entry point that accepts the classic policies
+accepts a structured partition instance, which then decides **both** the
+per-place kernel decomposition and (through the task's affine data place)
+the placement of the data those kernels touch -- one object, both sides:
+
+.. code:: c++
+
+   // Every place computes exactly the coordinates it owns
+   ctx.parallel_for(part, grid, lX.shape(), lX.write())
+       ->*[] __device__(size_t x, size_t y, size_t z, auto X) { ... };
+
+The shape argument may also be a ``box`` describing a *region within the
+tensor the partition was built for* (validated by containment) -- e.g. the
+interior of a stencil domain. Each place still enumerates its own
+coordinates; those outside the region (like the padding phantoms of uneven
+extents) are skipped by a per-coordinate predicate, so iteration stays
+aligned with data ownership rather than re-splitting the region:
+
+.. code:: c++
+
+   box interior({1ul, nx - 1}, {1ul, ny - 1}, {1ul, nz - 1});
+   ctx.parallel_for(part, grid, interior, lX.rw())->*...;
+
+Predication has a cost proportional to the *rejected* fraction of the
+enumerated coordinates, which makes it the right tool for regions that are
+dense in their bounds (interiors: the rejected boundary shell is a
+surface-to-volume fraction) and the wrong tool for thin regions. For
+boundary-style updates -- a face of the domain, say -- prefer one of:
+
+- **fuse** the boundary handling into the volumetric kernel's body when the
+  condition is cheap (application-dependent);
+- iterate the face with a **classic scale-free policy** (tight, no rejected
+  coordinates) while an explicit dependency keeps placement on the
+  partition's composite place:
+
+  .. code:: c++
+
+     auto dist = make_composite_data_place(grid, part);
+     box face({0ul, nx}, {0ul, ny}, {0ul, 1ul});
+     ctx.parallel_for(blocked_partition(), grid, face, lX.rw(dist))->*...;
+
+  The face's few remote writes (places computing parts of a face another
+  place owns) are typically negligible against the volumetric traffic.
+
+The ``fdtd_mgpu`` example demonstrates the full pattern: a single
+``make_partition`` call decides which dimension splits for every task --
+initialization over the full shape, updates over interior boxes, a point
+source -- and places the fields' data, so changing the distribution of the
+whole simulation is editing one ``partition_spec`` entry.

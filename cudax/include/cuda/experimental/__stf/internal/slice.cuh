@@ -25,12 +25,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/array>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <iostream>
 
@@ -361,7 +364,7 @@ class shape_of<mdspan<T, P...>>
 {
 public:
   using described_type = mdspan<T, P...>;
-  using coords_t       = array_tuple<size_t, described_type::rank()>;
+  using coords_t       = ::cuda::std::array<size_t, described_type::rank()>;
 
   /**
    * @brief Dimensionality of the slice.
@@ -425,13 +428,13 @@ public:
    * This constructor is optional.
    */
   explicit shape_of(const coords_t& sizes)
-      : extents(reserved::to_cuda_array(sizes))
+      : extents(sizes)
   {
     size_t product_sizes = 1;
     unroll<rank()>([&](auto i) {
       if (i == 0)
       {
-        strides[i] = ::std::get<0>(sizes) != 0;
+        strides[i] = sizes[0] != 0;
       }
       else
       {
@@ -452,7 +455,7 @@ public:
    */
   template <typename... Sizes>
   explicit shape_of(size_t size0, Sizes&&... sizes)
-      : extents(size0, ::std::forward<Sizes>(sizes)...)
+      : extents(size0, ::cuda::std::forward<Sizes>(sizes)...)
   {
     static_assert(sizeof...(sizes) + 1 == rank(), "Wrong number of arguments passed to shape_of.");
 
@@ -466,11 +469,7 @@ public:
   }
 
   ///@{ @name Constructors
-  explicit shape_of(const ::std::array<size_t, rank()>& sizes)
-      : extents(reserved::convert_to_cuda_array(sizes))
-  {}
-
-  explicit shape_of(const ::std::array<size_t, rank()>& sizes, const ::std::array<size_t, rank()>& _strides)
+  explicit shape_of(const ::cuda::std::array<size_t, rank()>& sizes, const ::cuda::std::array<size_t, rank()>& _strides)
       : shape_of(sizes)
   {
     if constexpr (rank() > 1)
@@ -603,7 +602,7 @@ public:
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-    ::std::array<size_t, shape_of::rank()> coordinates{};
+    coords_t coordinates{};
     // for (::std::ptrdiff_t i = _dimensions - 1; i >= 0; i--)
     for (auto i : each(0, shape_of::rank()))
     {
@@ -611,11 +610,7 @@ public:
       index /= extent(i);
     }
 
-    return ::std::apply(
-      [](const auto&... e) {
-        return ::std::make_tuple(e...);
-      },
-      coordinates);
+    return coordinates;
   }
 
 private:
@@ -803,83 +798,46 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
 #endif // UNITTESTED_FILE
 
 /**
- * @brief Pins a slice in host memory for efficient use with CUDA primitives
+ * @brief Invokes `f(base, n)` once for each maximal contiguous hunk of `s`.
  *
- * @tparam T memory type
- * @tparam dimensions slice dimension
- * @param s slice to pin
+ * `base` points to the first element of the hunk and `n` is the number of
+ * contiguous elements in it. The leading `contiguous_dims(s)` dimensions form a
+ * single contiguous run; the remaining dimensions are enumerated recursively,
+ * yielding one hunk per index tuple. Together the hunks cover every element of
+ * `s` exactly once, assuming the STF slice convention that dimension 0 is
+ * unit-stride.
  */
-template <typename T, typename... P>
-bool pin(mdspan<T, P...>& s)
+namespace reserved
 {
-  // We need the rank as a constexpr value
+template <typename T, typename... P, typename F>
+void for_each_contiguous_hunk(const mdspan<T, P...>& s, F&& f)
+{
   constexpr auto rank = mdspan<T, P...>::extents_type::rank();
+  const size_t c      = contiguous_dims(s);
 
-  if (address_is_pinned(s.data_handle()))
+  // The contiguous prefix [0, c) is a single run of this many elements.
+  size_t hunk = 1;
+  for (size_t d = 0; d < c; ++d)
   {
-    return false;
+    hunk *= s.extent(d);
   }
 
-  if constexpr (rank == 0)
-  {
-    cuda_safe_call(pin_memory(s.data_handle(), 1));
-  }
-  else if constexpr (rank == 1)
-  {
-    cuda_safe_call(pin_memory(s.data_handle(), s.extent(0)));
-  }
-  else if constexpr (rank == 2)
-  {
-    switch (contiguous_dims(s))
+  // Walk the Cartesian product of the trailing, non-contiguous dims [c, rank);
+  // each index tuple is the base of one contiguous hunk.
+  auto rec = [&](auto&& self, T* base, size_t dim) -> void {
+    if (dim == rank)
     {
-      case 1:
-        for (size_t index_1 = 0; index_1 < s.extent(1); index_1++)
-        {
-          cuda_safe_call(pin_memory(&s(0, index_1) + index_1 * s.stride(1), s.extent(0)));
-        }
-        break;
-      case 2:
-        // fprintf(stderr, "PIN 2D - contiguous\n");
-        cuda_safe_call(pin_memory(s.data_handle(), s.extent(0) * s.extent(1)));
-        break;
-      default:
-        assert(false);
-        abort();
+      f(base, hunk);
+      return;
     }
-  }
-  else
-  {
-    static_assert(rank == 3, "Dimensionality not supported.");
-    switch (contiguous_dims(s))
+    for (size_t i = 0; i < s.extent(dim); ++i)
     {
-      case 1:
-        for (size_t index_2 = 0; index_2 < s.extent(2); index_2++)
-        {
-          for (size_t index_1 = 0; index_1 < s.extent(1); index_1++)
-          {
-            // fprintf(stderr, "ADDR %d,%d,0 = %p \n", index_2, index_1, &s(index_2, index_1, 0));
-            cuda_safe_call(pin_memory(&s(0, index_1, index_2), s.extent(0)));
-          }
-        }
-        break;
-      case 2:
-        for (size_t index_2 = 0; index_2 < s.extent(2); index_2++)
-        {
-          cuda_safe_call(pin_memory(&s(0, 0, index_2), s.extent(0) * s.extent(1)));
-        }
-        break;
-      case 3:
-        // fprintf(stderr, "PIN 3D - contiguous\n");
-        cuda_safe_call(pin_memory(s.data_handle(), s.extent(0) * s.extent(1) * s.extent(2)));
-        break;
-      default:
-        assert(false);
-        abort();
+      self(self, base + i * s.stride(dim), dim + 1);
     }
-  }
-
-  return true;
+  };
+  rec(rec, s.data_handle(), c);
 }
+} // namespace reserved
 
 /**
  * @brief Unpin the memory associated with an mdspan object.
@@ -887,70 +845,48 @@ bool pin(mdspan<T, P...>& s)
  * @tparam T The type of elements in the mdspan.
  * @tparam P The properties of the mdspan.
  * @param s The mdspan object to unpin memory for.
+ *
+ * `unpin_memory` silently ignores regions that are not currently registered, so
+ * this is safe on fully- *or* partially-pinned slices (e.g. a `pin()` that
+ * failed partway and rolled back, or an already-unpinned slice).
  */
 template <typename T, typename... P>
 void unpin(mdspan<T, P...>& s)
 {
-  // We need the rank as a constexpr value
-  constexpr auto rank = mdspan<T, P...>::extents_type::rank();
+  reserved::for_each_contiguous_hunk(s, [](T* base, size_t /*n*/) {
+    unpin_memory(base);
+  });
+}
 
-  if constexpr (rank == 0)
+/**
+ * @brief Pins a slice in host memory for efficient use with CUDA primitives
+ *
+ * @tparam T memory type
+ * @tparam P slice properties
+ * @param s slice to pin
+ * @return true if the slice was newly pinned, false if it was already pinned
+ */
+template <typename T, typename... P>
+bool pin(mdspan<T, P...>& s)
+{
+  if (address_is_pinned(s.data_handle()))
   {
-    unpin_memory(s.data_handle());
+    return false;
   }
-  else if constexpr (rank == 1)
+
+  // Roll back on any failure. unpin() tolerates hunks that were never pinned
+  // (the one that threw, plus the ones we never reached), so this leaves the
+  // slice fully unpinned -- consistent with the address_is_pinned() proxy above.
+  SCOPE(fail)
   {
-    unpin_memory(s.data_handle());
-  }
-  else if constexpr (rank == 2)
-  {
-    switch (contiguous_dims(s))
-    {
-      case 1:
-        for (size_t index_1 = 0; index_1 < s.extent(1); index_1++)
-        {
-          unpin_memory(&s(0, index_1) + index_1 * s.extent(0));
-        }
-        break;
-      case 2:
-        // fprintf(stderr, "PIN 2D - contiguous\n");
-        unpin_memory(s.data_handle());
-        break;
-      default:
-        assert(false);
-        abort();
-    }
-  }
-  else
-  {
-    static_assert(rank == 3, "Dimensionality not supported.");
-    switch (contiguous_dims(s))
-    {
-      case 1:
-        for (size_t index_2 = 0; index_2 < s.extent(2); index_2++)
-        {
-          for (size_t index_1 = 0; index_1 < s.extent(1); index_1++)
-          {
-            // fprintf(stderr, "ADDR %d,%d,0 = %p \n", index_2, index_1, &s(index_2, index_1, 0));
-            unpin_memory(&s(0, index_1, index_2));
-          }
-        }
-        break;
-      case 2:
-        for (size_t index_2 = 0; index_2 < s.extent(2); index_2++)
-        {
-          unpin_memory(&s(0, 0, index_2));
-        }
-        break;
-      case 3:
-        // fprintf(stderr, "PIN 3D - contiguous\n");
-        unpin_memory(s.data_handle());
-        break;
-      default:
-        assert(false);
-        abort();
-    }
-  }
+    unpin(s);
+  };
+
+  reserved::for_each_contiguous_hunk(s, [](T* base, size_t n) {
+    cuda_try(pin_memory(base, n));
+  });
+
+  return true;
 }
 
 _CCCL_DIAG_PUSH
@@ -1205,7 +1141,7 @@ UNITTEST("shape_of<slice> basics")
 {
   using namespace cuda::experimental::stf;
   auto s1 = shape_of<slice<double, 3>>(1, 2, 3);
-  auto s2 = shape_of<slice<double, 3>>(::std::tuple(1, 2, 3));
+  auto s2 = shape_of<slice<double, 3>>(::cuda::std::array<size_t, 3>{1, 2, 3});
   EXPECT(s1 == s2);
 };
 

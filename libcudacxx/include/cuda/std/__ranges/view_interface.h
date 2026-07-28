@@ -41,10 +41,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
-concept __can_empty = requires(_Tp& __t) { ::cuda::std::ranges::empty(__t); };
+concept __can_empty = requires(_Tp& __t) { ::cuda::std::ranges::__empty_cpo{}(__t); };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(::cuda::std::ranges::empty(__t)))));
+_CCCL_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(::cuda::std::ranges::__empty_cpo{}(__t)))));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_empty = _CCCL_FRAGMENT(__can_empty_, _Tp);
@@ -75,42 +75,42 @@ public:
   _CCCL_REQUIRES(forward_range<_D2>)
   [[nodiscard]] _CCCL_API constexpr bool empty()
   {
-    return ::cuda::std::ranges::begin(__derived()) == ::cuda::std::ranges::end(__derived());
+    return ::cuda::std::ranges::__begin_cpo{}(__derived()) == ::cuda::std::ranges::__end_cpo{}(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(forward_range<const _D2>)
   [[nodiscard]] _CCCL_API constexpr bool empty() const
   {
-    return ::cuda::std::ranges::begin(__derived()) == ::cuda::std::ranges::end(__derived());
+    return ::cuda::std::ranges::__begin_cpo{}(__derived()) == ::cuda::std::ranges::__end_cpo{}(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(__can_empty<_D2>)
   _CCCL_API constexpr explicit operator bool()
   {
-    return !::cuda::std::ranges::empty(__derived());
+    return !::cuda::std::ranges::__empty_cpo{}(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(__can_empty<const _D2>)
   _CCCL_API constexpr explicit operator bool() const
   {
-    return !::cuda::std::ranges::empty(__derived());
+    return !::cuda::std::ranges::__empty_cpo{}(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(contiguous_iterator<iterator_t<_D2>>)
   _CCCL_API constexpr auto data()
   {
-    return ::cuda::std::to_address(::cuda::std::ranges::begin(__derived()));
+    return ::cuda::std::to_address(::cuda::std::ranges::__begin_cpo{}(__derived()));
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(range<const _D2> _CCCL_AND contiguous_iterator<iterator_t<const _D2>>)
   _CCCL_API constexpr auto data() const
   {
-    return ::cuda::std::to_address(::cuda::std::ranges::begin(__derived()));
+    return ::cuda::std::to_address(::cuda::std::ranges::__begin_cpo{}(__derived()));
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
@@ -118,7 +118,7 @@ public:
   _CCCL_API constexpr auto size()
   {
     return ::cuda::std::__to_unsigned_like(
-      ::cuda::std::ranges::end(__derived()) - ::cuda::std::ranges::begin(__derived()));
+      ::cuda::std::ranges::__end_cpo{}(__derived()) - ::cuda::std::ranges::__begin_cpo{}(__derived()));
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
@@ -126,7 +126,7 @@ public:
   _CCCL_API constexpr auto size() const
   {
     return ::cuda::std::__to_unsigned_like(
-      ::cuda::std::ranges::end(__derived()) - ::cuda::std::ranges::begin(__derived()));
+      ::cuda::std::ranges::__end_cpo{}(__derived()) - ::cuda::std::ranges::__begin_cpo{}(__derived()));
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
@@ -134,7 +134,7 @@ public:
   _CCCL_API constexpr decltype(auto) front()
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
-    return *::cuda::std::ranges::begin(__derived());
+    return *::cuda::std::ranges::__begin_cpo{}(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
@@ -142,7 +142,7 @@ public:
   _CCCL_API constexpr decltype(auto) front() const
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
-    return *::cuda::std::ranges::begin(__derived());
+    return *::cuda::std::ranges::__begin_cpo{}(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
@@ -150,7 +150,7 @@ public:
   _CCCL_API constexpr decltype(auto) back()
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
-    return *::cuda::std::ranges::prev(::cuda::std::ranges::end(__derived()));
+    return *::cuda::std::ranges::__prev_cpo{}(::cuda::std::ranges::__end_cpo{}(__derived()));
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
@@ -158,21 +158,21 @@ public:
   _CCCL_API constexpr decltype(auto) back() const
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
-    return *::cuda::std::ranges::prev(::cuda::std::ranges::end(__derived()));
+    return *::cuda::std::ranges::__prev_cpo{}(::cuda::std::ranges::__end_cpo{}(__derived()));
   }
 
   _CCCL_TEMPLATE(class _RARange = _Derived)
   _CCCL_REQUIRES(random_access_range<_RARange>)
   _CCCL_API constexpr decltype(auto) operator[](range_difference_t<_RARange> __index)
   {
-    return ::cuda::std::ranges::begin(__derived())[__index];
+    return ::cuda::std::ranges::__begin_cpo{}(__derived())[__index];
   }
 
   _CCCL_TEMPLATE(class _RARange = const _Derived)
   _CCCL_REQUIRES(random_access_range<_RARange>)
   _CCCL_API constexpr decltype(auto) operator[](range_difference_t<_RARange> __index) const
   {
-    return ::cuda::std::ranges::begin(__derived())[__index];
+    return ::cuda::std::ranges::__begin_cpo{}(__derived())[__index];
   }
 };
 

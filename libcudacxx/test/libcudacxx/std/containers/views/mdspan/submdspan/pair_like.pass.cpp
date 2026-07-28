@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <mdspan>
 
 #include <cuda/std/array>
@@ -27,7 +30,7 @@
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class Tuple>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   constexpr char data[] = {'H', 'O', 'P', 'P', 'E', 'R'};
 
@@ -239,7 +242,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cuda::std::array<int, 2>>();
   test<cuda::std::pair<int, int>>();

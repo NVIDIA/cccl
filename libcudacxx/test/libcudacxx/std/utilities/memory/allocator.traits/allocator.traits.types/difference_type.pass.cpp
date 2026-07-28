@@ -49,6 +49,7 @@ struct C
   {};
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct D
 {
@@ -57,6 +58,7 @@ struct D
 private:
   using difference_type = void;
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
 namespace cuda::std
 {
@@ -73,10 +75,12 @@ int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::difference_type, short>::value));
   static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<B<char>>::difference_type, cuda::std::ptrdiff_t>::value), "");
+    (cuda::std::is_same<cuda::std::allocator_traits<B<char>>::difference_type, cuda::std::ptrdiff_t>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::difference_type, signed char>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
   static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<D<char>>::difference_type, cuda::std::ptrdiff_t>::value), "");
+    (cuda::std::is_same<cuda::std::allocator_traits<D<char>>::difference_type, cuda::std::ptrdiff_t>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
   return 0;
 }

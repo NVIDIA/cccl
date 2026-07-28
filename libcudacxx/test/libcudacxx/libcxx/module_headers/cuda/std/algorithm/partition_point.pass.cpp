@@ -15,13 +15,13 @@
 
 struct partition_point_is_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 5, 7};
   auto p            = cuda::std::partition_point(a, a + 4, partition_point_is_even{});

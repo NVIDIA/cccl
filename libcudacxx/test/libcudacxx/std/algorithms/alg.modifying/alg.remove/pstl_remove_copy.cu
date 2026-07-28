@@ -82,6 +82,7 @@ void test_remove_copy(const Policy& policy,
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);
   }
 
+#if !TEST_COMPILER(GCC, <, 8) // GCC7 complains bitterly about signed unsignned comparisons
   if constexpr (::cuda::std::__is_cpp17_equality_comparable_v<T, int>)
   {
     cuda::std::fill(policy, output.begin(), output.end(), 0);
@@ -101,6 +102,7 @@ void test_remove_copy(const Policy& policy,
       CHECK(cuda::std::distance(output.begin(), res) == size - 1);
     }
   }
+#endif // !TEST_COMPILER(GCC, <, 8)
 
   cuda::std::fill(policy, output.begin(), output.end(), 0);
   { // contiguous iterator, converting input sequence

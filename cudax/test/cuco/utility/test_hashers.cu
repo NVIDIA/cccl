@@ -49,8 +49,8 @@ struct hash_test
 
     cuda::std::array<Key, 1> arr_keys = {key};
 
-    CUDAX_REQUIRE(hasher(key) == expected);
-    CUDAX_REQUIRE(hasher(cuda::std::span<Key>(thrust::raw_pointer_cast(arr_keys.data()), arr_keys.size())) == expected);
+    REQUIRE(hasher(key) == expected);
+    REQUIRE(hasher(cuda::std::span<Key>(thrust::raw_pointer_cast(arr_keys.data()), arr_keys.size())) == expected);
   }
 };
 
@@ -214,7 +214,7 @@ template <typename TestFn>
 void test_hasher_on_device(TestFn test_fn)
 {
   test_hasher_kernel<<<1, 1>>>(test_fn);
-  CUDAX_REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 TEST_CASE("Test Hasher's on host and device", "")

@@ -55,7 +55,7 @@ struct sync_wait_t
   template <class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
   {
-    _CCCL_API constexpr explicit __state_base_t(_Env __env) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit __state_base_t(_Env __env) noexcept
         : __loop_(static_cast<_Env&&>(__env))
     {}
 
@@ -70,14 +70,14 @@ public:
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
       noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
     {
       return get_env(__state_->__loop_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_scheduler_t>)
       {
@@ -91,7 +91,7 @@ public:
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr auto query(get_delegation_scheduler_t) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_delegation_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_delegation_scheduler_t>)
       {
@@ -114,7 +114,7 @@ public:
   template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
-    _CCCL_API constexpr explicit __state_t(_Env __env, ::cuda::std::optional<_Values>* __values) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit __state_t(_Env __env, ::cuda::std::optional<_Values>* __values) noexcept
         : __state_base_t<_Env>{static_cast<_Env&&>(__env)}
         , __values_{__values}
     {}
@@ -129,7 +129,7 @@ public:
     using receiver_concept = receiver_t;
 
     template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_As&&... __as) noexcept
     {
       _CCCL_TRY
       {
@@ -147,7 +147,7 @@ public:
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __err) noexcept
+    _CCCL_HOST_DEVICE_API void set_error(_Error&& __err) noexcept
     {
       _CCCL_TRY
       {
@@ -164,12 +164,12 @@ public:
       __state_->__loop_.finish();
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       __state_->__loop_.finish();
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t<_Env>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<_Env>
     {
       return __env_t<_Env>{__state_};
     }
@@ -181,7 +181,7 @@ public:
   {
     template <class _Error>
     [[noreturn]]
-    _CCCL_API void operator()(_Error __err) const
+    _CCCL_HOST_DEVICE_API void operator()(_Error __err) const
     {
       NV_IF_ELSE_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
     }
@@ -227,7 +227,7 @@ public:
     // Attempt to suppress follow-on errors about non-convertibility after the one already
     // reported.
     template <class _Ty>
-    _CCCL_API operator _Ty&&() const noexcept;
+    _CCCL_HOST_DEVICE_API operator _Ty&&() const noexcept;
 
     int i{}; // so that structured bindings kinda work
   };
@@ -235,7 +235,7 @@ public:
 public:
   // This is the actual default sync_wait implementation.
   template <class _Sndr, class _Env>
-  _CCCL_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
+  _CCCL_HOST_DEVICE_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
   {
     using __partial_completions_t = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
     using __all_nothrow_t =
@@ -267,7 +267,7 @@ public:
   }
 
   template <class _Sndr>
-  _CCCL_API static auto apply_sender(_Sndr&& __sndr)
+  _CCCL_HOST_DEVICE_API static auto apply_sender(_Sndr&& __sndr)
   {
     return apply_sender(static_cast<_Sndr&&>(__sndr), env{});
   }
@@ -300,7 +300,7 @@ public:
   /// @throws error otherwise
   // clang-format on
   template <class _Sndr, class _Env = env<>>
-  _CCCL_API auto operator()(_Sndr&& __sndr, _Env&& __env = {}) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr&& __sndr, _Env&& __env = {}) const
   {
     using __env_t                = sync_wait_t::__env_t<_Env>;
     constexpr auto __completions = get_completion_signatures<_Sndr, __env_t>();

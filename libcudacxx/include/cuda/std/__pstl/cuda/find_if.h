@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -47,10 +48,12 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -66,25 +69,25 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
   [[nodiscard]] _CCCL_HOST_API static _Iter
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     const auto __num_items = ::cuda::std::distance(__first, __last);
-    using _OffsetType      = remove_cvref_t<decltype(__num_items)>;
+    using _OffsetType      = CUB_NS_QUALIFIER::detail::choose_offset_t<remove_cvref_t<decltype(__num_items)>>;
     _OffsetType __ret;
 
     // Determine temporary device storage requirements for find_if
-    void* __temp_storage = nullptr;
-    size_t __num_bytes   = 0;
+    size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_find_if: determining temporary storage failed",
-      __temp_storage,
+      static_cast<void*>(nullptr),
       __num_bytes,
       __first,
       static_cast<_OffsetType*>(nullptr),
       __pred,
-      __num_items);
-
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+      __num_items,
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
@@ -96,17 +99,17 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         ::cuda::std::move(__pred),
         __num_items,
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_find_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());
@@ -123,11 +126,11 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -135,9 +138,10 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

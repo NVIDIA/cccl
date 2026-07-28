@@ -65,6 +65,7 @@ void test_remove(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(cuda::std::distance(random_access_iterator{raw_pointer}, res) == size - 1);
   }
 
+#if !TEST_COMPILER(GCC, <, 8) // GCC7 complains bitterly about signed unsignned comparisons
   if constexpr (::cuda::std::__is_cpp17_equality_comparable_v<T, int>)
   {
     thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
@@ -84,6 +85,7 @@ void test_remove(const Policy& policy, c2h::device_vector<T>& input)
       CHECK(cuda::std::distance(random_access_iterator{raw_pointer}, res) == size - 1);
     }
   }
+#endif // ! TEST_COMPILER(GCC , <, 8)
 }
 
 C2H_TEST("cuda::std::remove", "[parallel algorithm]", all_types)

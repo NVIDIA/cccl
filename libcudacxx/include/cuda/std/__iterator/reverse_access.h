@@ -62,6 +62,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto rbegin = __rbegin::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __rbegin_cpo = __rbegin::__fn;
 } // namespace __cpo
 
 namespace __rend
@@ -97,6 +100,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto rend = __rend::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __rend_cpo = __rend::__fn;
 } // namespace __cpo
 
 namespace __crbegin
@@ -104,10 +110,10 @@ namespace __crbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::rbegin(__c)))
-    -> decltype(::cuda::std::rbegin(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::__rbegin_cpo{}(__c)))
+    -> decltype(::cuda::std::__rbegin_cpo{}(__c))
   {
-    return ::cuda::std::rbegin(__c);
+    return ::cuda::std::__rbegin_cpo{}(__c);
   }
 };
 } // namespace __crbegin
@@ -115,6 +121,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crbegin = __crbegin::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __crbegin_cpo = __crbegin::__fn;
 } // namespace __cpo
 
 namespace __crend
@@ -122,10 +131,10 @@ namespace __crend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::rend(__c)))
-    -> decltype(::cuda::std::rend(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::__rend_cpo{}(__c)))
+    -> decltype(::cuda::std::__rend_cpo{}(__c))
   {
-    return ::cuda::std::rend(__c);
+    return ::cuda::std::__rend_cpo{}(__c);
   }
 };
 } // namespace __crend
@@ -133,6 +142,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __crend_cpo = __crend::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD

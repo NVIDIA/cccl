@@ -43,7 +43,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API inline _Tp* align_up(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _Tp* align_up(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
   using ::cuda::std::uintptr_t;
   _CCCL_ASSERT(::cuda::__is_valid_alignment<_Tp>(__alignment), "invalid alignment");

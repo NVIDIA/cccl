@@ -37,8 +37,8 @@ struct MoveAssignable
   MoveAssignable& operator=(MoveAssignable&&)      = default;
 };
 
-TEST_GLOBAL_VARIABLE int copied = 0;
-TEST_GLOBAL_VARIABLE int moved  = 0;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE int copied = 0;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE int moved  = 0;
 
 struct CountAssign
 {
@@ -58,7 +58,9 @@ struct CountAssign
   }
   TEST_FUNC CountAssign& operator=(CountAssign&&)
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     ++moved;
+#endif // !_CCCL_TILE_COMPILATION()
     return *this;
   }
 };
@@ -141,6 +143,8 @@ int main(int, char**)
     assert(moved == 0);
 #endif // !_CCCL_TILE_COMPILATION()
   }
+
+  static_assert(cuda::std::is_trivially_move_assignable_v<cuda::std::tuple<>>);
 
   return 0;
 }

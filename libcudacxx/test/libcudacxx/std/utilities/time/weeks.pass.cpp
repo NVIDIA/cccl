@@ -25,7 +25,7 @@ int main(int, char**)
   static_assert(cuda::std::is_integral<Rep>::value);
   static_assert(cuda::std::numeric_limits<Rep>::digits >= 22);
   static_assert(
-    cuda::std::is_same_v<Period, cuda::std::ratio_multiply<cuda::std::ratio<7>, cuda::std::chrono::days::period>>, "");
+    cuda::std::is_same_v<Period, cuda::std::ratio_multiply<cuda::std::ratio<7>, cuda::std::chrono::days::period>>);
 
   return 0;
 }

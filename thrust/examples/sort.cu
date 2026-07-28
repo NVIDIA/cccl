@@ -31,7 +31,7 @@ void initialize(thrust::device_vector<float>& v)
   thrust::host_vector<float> host_data(v.size());
   for (auto& e : host_data)
   {
-    e = dist(rng) / 2.0f;
+    e = static_cast<float>(dist(rng)) / 2.0f;
   }
   v = host_data;
 }

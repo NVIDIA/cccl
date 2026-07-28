@@ -28,9 +28,8 @@ TEST_FUNC constexpr void test_offset()
   cuda::std::default_accessor<T> acc;
   for (int i = 0; i < 10; i++)
   {
-    static_assert(
-      cuda::std::is_same<decltype(acc.offset(ptr, i)), typename cuda::std::default_accessor<T>::data_handle_type>::value,
-      "");
+    static_assert(cuda::std::is_same<decltype(acc.offset(ptr, i)),
+                                     typename cuda::std::default_accessor<T>::data_handle_type>::value);
     static_assert(noexcept(acc.offset(ptr, i)));
     assert(acc.offset(ptr, i) == ptr + i);
   }

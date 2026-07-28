@@ -47,8 +47,7 @@ template <class It,
 TEST_FUNC constexpr void test_iter_category()
 {
   static_assert((cuda::std::is_same<typename cuda::std::move_iterator<It>::iterator_category,
-                                    cuda::std::random_access_iterator_tag>::value),
-                "");
+                                    cuda::std::random_access_iterator_tag>::value));
 }
 
 template <class It,
@@ -58,8 +57,7 @@ template <class It,
 TEST_FUNC constexpr void test_iter_category()
 {
   static_assert((cuda::std::is_same<typename cuda::std::move_iterator<It>::iterator_category,
-                                    typename cuda::std::iterator_traits<It>::iterator_category>::value),
-                "");
+                                    typename cuda::std::iterator_traits<It>::iterator_category>::value));
 }
 
 template <class It>
@@ -136,22 +134,17 @@ TEST_FUNC void test_all()
   test<contiguous_iterator<char*>>();
   static_assert(
     cuda::std::is_same_v<typename cuda::std::reverse_iterator<bidirectional_iterator<char*>>::iterator_concept,
-                         cuda::std::bidirectional_iterator_tag>,
-    "");
+                         cuda::std::bidirectional_iterator_tag>);
   static_assert(
     cuda::std::is_same_v<typename cuda::std::reverse_iterator<random_access_iterator<char*>>::iterator_concept,
-                         cuda::std::random_access_iterator_tag>,
-    "");
+                         cuda::std::random_access_iterator_tag>);
   static_assert(
     cuda::std::is_same_v<typename cuda::std::reverse_iterator<cpp20_random_access_iterator<char*>>::iterator_concept,
-                         cuda::std::random_access_iterator_tag>,
-    "");
+                         cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<contiguous_iterator<char*>>::iterator_concept,
-                                     cuda::std::random_access_iterator_tag>,
-                "");
+                                     cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<char*>::iterator_concept,
-                                     cuda::std::random_access_iterator_tag>,
-                "");
+                                     cuda::std::random_access_iterator_tag>);
 }
 
 int main(int, char**)

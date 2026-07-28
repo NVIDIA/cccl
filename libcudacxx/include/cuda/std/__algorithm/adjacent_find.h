@@ -38,7 +38,8 @@ adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicat
     {
       if (__pred(*__first, *__i))
       {
-        return __first;
+        __last = __first;
+        break;
       }
       __first = __i;
     }

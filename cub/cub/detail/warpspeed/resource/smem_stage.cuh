@@ -16,7 +16,8 @@
 #include <cub/detail/warpspeed/resource/smem_phase.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 
-#include <cuda/std/__tuple_dir/structured_bindings.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN

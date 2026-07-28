@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr iterator& operator--() requires bidirectional_range<V>;
 // constexpr iterator operator--(int) requires bidirectional_range<V>;
 

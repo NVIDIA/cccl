@@ -55,10 +55,8 @@ TEST_FUNC void test_return_type()
     V v(42);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(obj, v)), ReturnType>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cobj, v)), ReturnType>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v)), ReturnType>,
-                  "");
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v)), ReturnType>,
-                  "");
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v)), ReturnType>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v)), ReturnType>);
     unused(v);
   }
   { // test call operator forwarding - single variant, multi arg
@@ -66,10 +64,8 @@ TEST_FUNC void test_return_type()
     V v(42l);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(obj, v)), ReturnType>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cobj, v)), ReturnType>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v)), ReturnType>,
-                  "");
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v)), ReturnType>,
-                  "");
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v)), ReturnType>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v)), ReturnType>);
     unused(v);
   }
   { // test call operator forwarding - multi variant, multi arg
@@ -79,10 +75,10 @@ TEST_FUNC void test_return_type()
     V2 v2("hello");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(obj, v, v2)), ReturnType>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cobj, v, v2)), ReturnType>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v, v2)), ReturnType>,
-                  "");
     static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v, v2)), ReturnType>, "");
+      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v, v2)), ReturnType>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v, v2)), ReturnType>);
     unused(v, v2);
   }
   {
@@ -91,11 +87,9 @@ TEST_FUNC void test_return_type()
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(obj, v1, v2, v3, v4)), ReturnType>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cobj, v1, v2, v3, v4)), ReturnType>);
     static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v1, v2, v3, v4)), ReturnType>,
-      "");
+      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v1, v2, v3, v4)), ReturnType>);
     static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v1, v2, v3, v4)), ReturnType>,
-      "");
+      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v1, v2, v3, v4)), ReturnType>);
     unused(v1, v2, v3, v4);
   }
   {
@@ -104,11 +98,9 @@ TEST_FUNC void test_return_type()
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(obj, v1, v2, v3, v4)), ReturnType>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cobj, v1, v2, v3, v4)), ReturnType>);
     static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v1, v2, v3, v4)), ReturnType>,
-      "");
+      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(obj), v1, v2, v3, v4)), ReturnType>);
     static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v1, v2, v3, v4)), ReturnType>,
-      "");
+      cuda::std::is_same_v<decltype(cuda::std::visit<ReturnType>(cuda::std::move(cobj), v1, v2, v3, v4)), ReturnType>);
     unused(v1, v2, v3, v4);
   }
 }

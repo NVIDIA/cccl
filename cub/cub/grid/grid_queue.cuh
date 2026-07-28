@@ -191,7 +191,7 @@ public:
  * Reset grid queue (call with 1 block of 1 thread)
  */
 template <typename OffsetT>
-__global__ void FillAndResetDrainKernel(GridQueue<OffsetT> grid_queue, OffsetT num_items)
+_CCCL_KERNEL_ATTRIBUTES void FillAndResetDrainKernel(GridQueue<OffsetT> grid_queue, OffsetT num_items)
 {
   grid_queue.FillAndResetDrain(num_items);
 }

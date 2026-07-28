@@ -58,7 +58,7 @@ template <class MDS, class... Args>
 _CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Args...>(0))::value;
 
 template <bool mec, bool ac, class H, class M, class A, class... Idxs, cuda::std::enable_if_t<mec && ac, int> = 0>
-TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
+TEST_TILE_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -80,7 +80,7 @@ TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map,
   test_equality_accessor(m, A{});
 }
 template <bool mec, bool ac, class H, class M, class A, class... Idxs, cuda::std::enable_if_t<!(mec && ac), int> = 0>
-TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
+TEST_TILE_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -91,7 +91,7 @@ TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map,
 }
 
 template <bool mec, bool ac, class H, class L, class A>
-TEST_DEVICE_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+TEST_TILE_DEVICE_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // construct from just dynamic extents
@@ -114,7 +114,7 @@ TEST_DEVICE_FUNC constexpr void mixin_extents(const H& handle, const L& layout, 
 }
 
 template <bool ac, class H, class A>
-TEST_DEVICE_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
+TEST_TILE_DEVICE_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   mixin_extents<true, ac>(handle, cuda::std::layout_left(), acc);
   mixin_extents<true, ac>(handle, cuda::std::layout_right(), acc);
@@ -139,20 +139,20 @@ TEST_DEVICE_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-TEST_DEVICE_FUNC constexpr void mixin_accessor()
+TEST_TILE_DEVICE_FUNC constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   mixin_layout<true>(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
-TEST_DEVICE_FUNC void mixin_accessor()
+TEST_TILE_DEVICE_FUNC void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   mixin_layout<true>(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_DEVICE_FUNC void test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -175,7 +175,7 @@ TEST_DEVICE_FUNC void test()
   static_assert(!cuda::std::is_constructible_v<mds_t, const float*, int, int>);
 }
 
-TEST_DEVICE_FUNC void test_evil()
+TEST_TILE_DEVICE_FUNC void test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();

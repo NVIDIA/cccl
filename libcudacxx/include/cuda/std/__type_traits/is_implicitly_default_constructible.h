@@ -25,6 +25,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // First of all, we can't implement this check in C++03 mode because the {}
@@ -51,6 +53,8 @@ struct __is_implicitly_default_constructible<_Tp,
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

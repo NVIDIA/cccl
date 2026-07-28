@@ -156,7 +156,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr explicit philox_engine(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr explicit philox_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
@@ -177,7 +177,7 @@ public:
   // Prevent this overload if Sseq is convertible to result_type
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr void seed(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __seq)
   {
     __x_                                            = {};
     __y_                                            = {};

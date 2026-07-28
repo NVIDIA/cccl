@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6076227: ICE when validating tile MLIR
-
 // <cuda/std/string_view>
 
 // constexpr string_view operator""sv(const char* str, size_t len) noexcept;

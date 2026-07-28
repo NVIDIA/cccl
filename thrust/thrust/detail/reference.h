@@ -491,7 +491,7 @@ std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, reference<Element, Pointer, Derived> const& r)
 {
   using value_type = typename reference<Element, Pointer, Derived>::value_type;
-  return os << static_cast<value_type>(r);
+  return os << static_cast<value_type>(r); // NOLINT(bugprone-unintended-char-ostream-output)
 }
 
 template <typename Element, typename Tag>

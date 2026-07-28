@@ -70,7 +70,7 @@ struct strided_slice
 };
 
 template <class _OffsetType, class _ExtentType, class _StrideType>
-_CCCL_HOST_DEVICE strided_slice(_OffsetType, _ExtentType, _StrideType)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES strided_slice(_OffsetType, _ExtentType, _StrideType)
   -> strided_slice<_OffsetType, _ExtentType, _StrideType>;
 
 template <typename>

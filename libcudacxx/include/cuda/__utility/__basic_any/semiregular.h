@@ -126,12 +126,12 @@ struct __imovable : __basic_interface<__imovable>
   template <class _Tp>
   using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
 
-  _CCCL_API auto __move_to(void* __pv) noexcept -> void
+  _CCCL_HOST_DEVICE_API auto __move_to(void* __pv) noexcept -> void
   {
     return ::cuda::__virtcall<&::cuda::__move_fn<__imovable>>(this, __pv);
   }
 
-  [[nodiscard]] _CCCL_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
   {
     return ::cuda::__virtcall<&::cuda::__try_move_fn<__imovable>>(this, __pv, __size, __align);
   }
@@ -143,7 +143,7 @@ struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
   template <class _Tp>
   using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
 
-  [[nodiscard]] _CCCL_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
     return ::cuda::__virtcall<&::cuda::__copy_fn<__icopyable>>(this, __pv, __size, __align);
   }
@@ -177,7 +177,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_ILeft> const&, __basic_any<_IRight> const&>
                  || __any_convertible_to<__basic_any<_IRight> const&, __basic_any<_ILeft> const&>)
-  [[nodiscard]] _CCCL_API friend auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(__iequality_comparable<_ILeft> const& __lhs, __iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     auto const& __other = ::cuda::__basic_any_from(__rhs);
@@ -207,8 +207,8 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = __basic_any_from_t<__iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!::cuda::std::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_API friend auto operator==(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs)
-    -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
+  operator==(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), ::cuda::std::addressof(__rhs));
@@ -217,7 +217,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = __basic_any_from_t<__iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!::cuda::std::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_API friend auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(_Object const& __lhs, __iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
@@ -273,7 +273,7 @@ struct __iconvertible_to_<__self, _To>
   template <class...>
   struct __interface_ : __basic_interface<__interface_>
   {
-    [[nodiscard]] _CCCL_API operator _To()
+    [[nodiscard]] _CCCL_HOST_DEVICE_API operator _To()
     {
       return ::cuda::__virtcall<::cuda::__conversion_fn<__interface_, _To>>(this);
     }
@@ -289,7 +289,7 @@ struct __iconvertible_to_<__self&, _To>
   template <class...>
   struct __interface_ : __basic_interface<__interface_>
   {
-    [[nodiscard]] _CCCL_API operator _To() &
+    [[nodiscard]] _CCCL_HOST_DEVICE_API operator _To() &
     {
       return ::cuda::__virtcall<&::cuda::__conversion_fn<__interface_&, _To>>(this);
     }
@@ -305,7 +305,7 @@ struct __iconvertible_to_<__self const&, _To>
   template <class...>
   struct __interface_ : __basic_interface<__interface_>
   {
-    [[nodiscard]] _CCCL_API operator _To() const&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API operator _To() const&
     {
       return ::cuda::__virtcall<&::cuda::__conversion_fn<__interface_ const&, _To>>(this);
     }

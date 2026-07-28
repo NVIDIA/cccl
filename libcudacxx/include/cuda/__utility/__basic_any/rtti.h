@@ -62,12 +62,12 @@ struct __bad_any_cast : ::std::bad_cast
   }
 };
 
-[[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
+[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_bad_any_cast()
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (::cuda::std::terminate();))
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-[[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
+[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_bad_any_cast()
 {
   ::cuda::std::terminate();
 }
@@ -75,7 +75,7 @@ struct __bad_any_cast : ::std::bad_cast
 
 struct __rtti_base : __immovable
 {
-  _CCCL_API constexpr __rtti_base(
+  _CCCL_HOST_DEVICE_API constexpr __rtti_base(
     __vtable_kind __kind, uint16_t __nbr_interfaces, ::cuda::std::__type_info_ref __self) noexcept
       : __kind_(__kind)
       , __nbr_interfaces_(__nbr_interfaces)
@@ -103,13 +103,14 @@ struct __base_info
     __base_vptr __vptr_v0_; // used when __basic_any_version == 0
   };
 
-  [[nodiscard]] _CCCL_API auto __get_vptr(__rtti const* __rtti_ptr, uint8_t __version) const noexcept -> __base_vptr
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_vptr(__rtti const* __rtti_ptr, uint8_t __version) const noexcept
+    -> __base_vptr
   {
     return __version >= 1 ? __cast_fn_(__rtti_ptr) : __vptr_v0_;
   }
 
   template <class _VTable, class _Interface>
-  [[nodiscard]] _CCCL_API static auto __cast_fn_impl(__rtti const* __rtti_ptr) noexcept -> __base_vptr
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static auto __cast_fn_impl(__rtti const* __rtti_ptr) noexcept -> __base_vptr
   {
     return {static_cast<__vptr_for<_Interface>>(static_cast<_VTable const*>(__rtti_ptr))};
   }
@@ -133,7 +134,7 @@ _CCCL_GLOBAL_CONSTANT __object_metadata __object_metadata_v = {
   sizeof(_Tp), alignof(_Tp), &_CCCL_TYPEID(_Tp), &_CCCL_TYPEID(_Tp*), &_CCCL_TYPEID(_Tp const*)};
 
 template <class _Tp>
-_CCCL_API void __dtor_fn(void* __pv, bool __small) noexcept
+_CCCL_HOST_DEVICE_API void __dtor_fn(void* __pv, bool __small) noexcept
 {
   __small ? static_cast<_Tp*>(__pv)->~_Tp() //
           : delete *static_cast<_Tp**>(__pv);
@@ -157,7 +158,7 @@ struct __rtti : __rtti_base
   {}
 
   template <class... _Interfaces>
-  [[nodiscard]] _CCCL_API auto __query_interface(__iset_<_Interfaces...>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __query_interface(__iset_<_Interfaces...>) const noexcept
     -> __vptr_for<__iset_<_Interfaces...>>
   {
     // Verify that every sub-interface in the requested set exists in the vtable.
@@ -173,7 +174,7 @@ struct __rtti : __rtti_base
   // comparing typeids. If the requested interface is found, return a pointer to
   // its vtable; otherwise, return nullptr.
   template <class _Interface>
-  [[nodiscard]] _CCCL_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     // On sane implementations, comparing type_info objects first compares their
     // addresses and, if that fails, it does a string comparison. What we want is
@@ -210,7 +211,8 @@ template <size_t _NbrInterfaces>
 struct __rtti_ex : __rtti
 {
   template <class _Tp, class _Super, class... _Interfaces, class _VTable>
-  _CCCL_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VTable const*) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __rtti_ex(
+    __tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VTable const*) noexcept
       : __rtti{__type, __ibases, __base_vptr_array}
       , __base_vptr_array{{&_CCCL_TYPEID(_Interfaces), {&__base_info::__cast_fn_impl<_VTable, _Interfaces>}}...}
   {}
@@ -225,7 +227,8 @@ struct __rtti_ex : __rtti
 //! interfaces.
 //!
 template <class _SrcInterface, class _DstInterface>
-[[nodiscard]] _CCCL_API auto __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept -> __vptr_for<_DstInterface>
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept
+  -> __vptr_for<_DstInterface>
 {
   static_assert(::cuda::std::is_class_v<_SrcInterface> && ::cuda::std::is_class_v<_DstInterface>,
                 "expected class types");
@@ -251,7 +254,7 @@ template <class _SrcInterface, class _DstInterface>
 }
 
 template <class _SrcInterface, class _DstInterface>
-[[nodiscard]] _CCCL_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
   noexcept(::cuda::std::is_same_v<_SrcInterface, _DstInterface>) //
   -> __vptr_for<_DstInterface>
 {

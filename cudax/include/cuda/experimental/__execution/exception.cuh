@@ -63,39 +63,41 @@ public:
   //! @endcode
   //!
   //! works as expected.
-  _CCCL_API constexpr exception_ptr(const __nullptr_t* __ptr) noexcept
+  _CCCL_HOST_DEVICE_API constexpr exception_ptr(const __nullptr_t* __ptr) noexcept
       : exception_ptr()
   {
     _CCCL_ASSERT(__ptr == nullptr, "Can only construct exception_ptr from nullptr");
   }
 
-  [[nodiscard]] _CCCL_API explicit constexpr operator bool() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API explicit constexpr operator bool() const noexcept
   {
     return false;
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool operator!() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator!() const noexcept
   {
     return true;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const exception_ptr&, const exception_ptr&) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const exception_ptr&, const exception_ptr&) noexcept
   {
     return true;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const exception_ptr&, const exception_ptr&) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const exception_ptr&, const exception_ptr&) noexcept
   {
     return false;
   }
 };
 
-[[nodiscard]] _CCCL_API inline exception_ptr current_exception() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline exception_ptr current_exception() noexcept
 {
   return exception_ptr{};
 }
 
-[[noreturn]] _CCCL_API inline void rethrow_exception(const exception_ptr&)
+[[noreturn]] _CCCL_HOST_DEVICE_API inline void rethrow_exception(const exception_ptr&)
 {
   _CCCL_THROW(::cuda::cuda_error, cudaErrorUnknown, "unknown exception");
 }

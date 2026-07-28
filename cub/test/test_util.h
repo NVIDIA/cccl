@@ -101,9 +101,9 @@ struct CommandLineArgs
         continue;
       }
 
-      string::size_type pos;
       string key, val;
-      if ((pos = arg.find('=')) == string::npos)
+      string::size_type pos = arg.find('=');
+      if (pos == string::npos)
       {
         key = string(arg, 2, arg.length() - 2);
         val = "";
@@ -142,7 +142,7 @@ struct CommandLineArgs
   template <typename T>
   int NumNakedArgs()
   {
-    return args.size();
+    return static_cast<int>(args.size());
   }
 
   /**
@@ -206,7 +206,7 @@ struct CommandLineArgs
           {
             if (new_pos != old_pos)
             {
-              str_stream.width(new_pos - old_pos);
+              str_stream.width(static_cast<std::streamsize>(new_pos - old_pos));
               str_stream >> val;
               vals.push_back(val);
             }
@@ -303,7 +303,7 @@ struct CommandLineArgs
         break;
       }
 
-      device_giga_bandwidth = float(memoryBusWidth) * memoryClockRate * 2 / 8 / 1000 / 1000;
+      device_giga_bandwidth = float(memoryBusWidth) * static_cast<float>(memoryClockRate) * 2 / 8 / 1000 / 1000;
 
       if (!CheckCmdLineFlag("quiet"))
       {
@@ -741,6 +741,7 @@ CUB_VEC_OVERLOAD_OLD(char)
 CUB_VEC_OVERLOAD_OLD(short)
 CUB_VEC_OVERLOAD_OLD(int)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(long)
 CUB_VEC_OVERLOAD_OLD(longlong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -754,6 +755,7 @@ CUB_VEC_OVERLOAD_OLD(uchar)
 CUB_VEC_OVERLOAD_OLD(ushort)
 CUB_VEC_OVERLOAD_OLD(uint)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(ulong)
 CUB_VEC_OVERLOAD_OLD(ulonglong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -765,6 +767,7 @@ CUB_VEC_OVERLOAD_4_OLD(ulonglong4_32a)
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 CUB_VEC_OVERLOAD_OLD(float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -811,7 +814,7 @@ struct TestFoo
   // Summation operator
   __host__ __device__ __forceinline__ TestFoo operator+(const TestFoo& b) const
   {
-    return MakeTestFoo(x + b.x, y + b.y, z + b.z, w + b.w);
+    return MakeTestFoo(x + b.x, y + b.y, static_cast<short>(z + b.z), static_cast<char>(w + b.w));
   }
 
   // Inequality operator
@@ -1391,8 +1394,8 @@ struct CpuTimer
 
   float ElapsedMillis()
   {
-    float sec  = stop.ru_utime.tv_sec - start.ru_utime.tv_sec;
-    float usec = stop.ru_utime.tv_usec - start.ru_utime.tv_usec;
+    float sec  = static_cast<float>(stop.ru_utime.tv_sec - start.ru_utime.tv_sec);
+    float usec = static_cast<float>(stop.ru_utime.tv_usec - start.ru_utime.tv_usec);
 
     return (sec * 1000) + (usec / 1000);
   }

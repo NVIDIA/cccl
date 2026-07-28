@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
-
 // <random>
 //
 // Verify that distributions and engines accept signed char / unsigned char as

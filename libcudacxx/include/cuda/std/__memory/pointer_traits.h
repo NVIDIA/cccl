@@ -233,6 +233,13 @@ _CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(::
   return ::cuda::std::__to_address(__p);
 }
 
+template <class _Iter, class = void>
+inline constexpr bool __can_to_address = false;
+
+template <class _Iter>
+inline constexpr bool
+  __can_to_address<_Iter, void_t<decltype(::cuda::std::to_address(::cuda::std::declval<_Iter&>()))>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

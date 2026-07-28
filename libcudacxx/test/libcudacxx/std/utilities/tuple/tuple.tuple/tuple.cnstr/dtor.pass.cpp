@@ -37,9 +37,9 @@ int main(int, char**)
   // cuda::std::string is not supported
   /*
   static_assert(!cuda::std::is_trivially_destructible<
-      cuda::std::tuple<not_trivially_destructible> >::value, "");
+      cuda::std::tuple<not_trivially_destructible> >::value);
   static_assert(!cuda::std::is_trivially_destructible<
-      cuda::std::tuple<int, not_trivially_destructible> >::value, "");
+      cuda::std::tuple<int, not_trivially_destructible> >::value);
   */
   // non-string check
 

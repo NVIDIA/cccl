@@ -25,7 +25,7 @@
 
 #if _CCCL_HOSTED()
 #  include <cstdint>
-#elif _CCCL_COMPILER(NVRTC)
+#elif _CCCL_COMPILER(NVRTC) || (_CCCL_HOSTJIT() && _CCCL_OS(WINDOWS))
 #  include <cuda/std/climits>
 
 using int8_t   = signed char;
@@ -37,6 +37,16 @@ using uint16_t = unsigned short;
 using uint32_t = unsigned int;
 using uint64_t = unsigned long long;
 
+#  if _CCCL_OS(WINDOWS) // See https://learn.microsoft.com/en-us/cpp/c-runtime-library/standard-types?view=msvc-170
+using int_fast8_t   = signed char;
+using int_fast16_t  = int;
+using int_fast32_t  = int;
+using int_fast64_t  = long long;
+using uint_fast8_t  = unsigned char;
+using uint_fast16_t = unsigned int;
+using uint_fast32_t = unsigned int;
+using uint_fast64_t = unsigned long long;
+#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
 using int_fast8_t   = int8_t;
 using int_fast16_t  = int16_t;
 using int_fast32_t  = int32_t;
@@ -45,6 +55,7 @@ using uint_fast8_t  = uint8_t;
 using uint_fast16_t = uint16_t;
 using uint_fast32_t = uint32_t;
 using uint_fast64_t = uint64_t;
+#  endif // !_CCCL_OS(WINDOWS)
 
 using int_least8_t   = int8_t;
 using int_least16_t  = int16_t;
@@ -74,18 +85,33 @@ using uintmax_t = uint64_t;
 #  define UINT32_MAX UINT_MAX
 #  define UINT64_MAX ULLONG_MAX
 
-#  define INT_FAST8_MIN   INT8_MIN
-#  define INT_FAST16_MIN  INT16_MIN
-#  define INT_FAST32_MIN  INT32_MIN
-#  define INT_FAST64_MIN  INT64_MIN
-#  define INT_FAST8_MAX   INT8_MAX
-#  define INT_FAST16_MAX  INT16_MAX
-#  define INT_FAST32_MAX  INT32_MAX
-#  define INT_FAST64_MAX  INT64_MAX
-#  define UINT_FAST8_MAX  UINT8_MAX
-#  define UINT_FAST16_MAX UINT16_MAX
-#  define UINT_FAST32_MAX UINT32_MAX
-#  define UINT_FAST64_MAX UINT64_MAX
+#  if _CCCL_OS(WINDOWS) // See https://learn.microsoft.com/en-us/cpp/c-runtime-library/standard-types?view=msvc-170
+#    define INT_FAST8_MIN   INT8_MIN
+#    define INT_FAST16_MIN  INT32_MIN
+#    define INT_FAST32_MIN  INT32_MIN
+#    define INT_FAST64_MIN  INT64_MIN
+#    define INT_FAST8_MAX   INT8_MAX
+#    define INT_FAST16_MAX  INT32_MAX
+#    define INT_FAST32_MAX  INT32_MAX
+#    define INT_FAST64_MAX  INT64_MAX
+#    define UINT_FAST8_MAX  UINT8_MAX
+#    define UINT_FAST16_MAX UINT32_MAX
+#    define UINT_FAST32_MAX UINT32_MAX
+#    define UINT_FAST64_MAX UINT64_MAX
+#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
+#    define INT_FAST8_MIN   INT8_MIN
+#    define INT_FAST16_MIN  INT16_MIN
+#    define INT_FAST32_MIN  INT32_MIN
+#    define INT_FAST64_MIN  INT64_MIN
+#    define INT_FAST8_MAX   INT8_MAX
+#    define INT_FAST16_MAX  INT16_MAX
+#    define INT_FAST32_MAX  INT32_MAX
+#    define INT_FAST64_MAX  INT64_MAX
+#    define UINT_FAST8_MAX  UINT8_MAX
+#    define UINT_FAST16_MAX UINT16_MAX
+#    define UINT_FAST32_MAX UINT32_MAX
+#    define UINT_FAST64_MAX UINT64_MAX
+#  endif // !_CCCL_OS(WINDOWS)
 
 #  define INT_LEAST8_MIN   INT8_MIN
 #  define INT_LEAST16_MIN  INT16_MIN
@@ -124,7 +150,7 @@ using uintmax_t = uint64_t;
 
 #  define INTMAX_C(X)  ((::intmax_t) (X))
 #  define UINTMAX_C(X) ((::uintmax_t) (X))
-#endif // ^^^ _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_COMPILER(NVRTC) || (_CCCL_HOSTJIT() && _CCCL_OS(WINDOWS))
 
 #include <cuda/std/__cccl/prologue.h>
 

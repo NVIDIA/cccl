@@ -16,13 +16,13 @@
 struct acc
 {
   int* ps;
-  __host__ __device__ void operator()(int x) const
+  TEST_FUNC void operator()(int x) const
   {
     *ps += x;
   }
 };
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   int a[] = {1, 2, 3, 4};
   int s   = 0;

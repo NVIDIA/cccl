@@ -43,14 +43,12 @@ struct CtorFromInitalizerList
   TEST_FUNC CtorFromInitalizerList(cuda::std::initializer_list<int>&, int) noexcept(Noexcept);
 };
 
-static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>,
-              "");
-static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&>,
-              "");
+static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>);
+static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&>);
 static_assert(
-  CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&, int>, "");
+  CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&, int>);
 static_assert(
-  !CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&, int>, "");
+  !CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&, int>);
 
 struct Data
 {

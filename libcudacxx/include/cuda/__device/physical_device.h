@@ -27,13 +27,14 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__host_stdlib/memory>
+#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/cassert>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
-#  include <cassert>
-#  include <mutex>
-#  include <vector>
+#  if _CCCL_HOSTED()
+#    include <mutex>
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -47,21 +48,69 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief An immovable "owning" representation of a CUDA device.
 class __physical_device
 {
-  friend _CCCL_HOST_API inline ::std::unique_ptr<__physical_device[]>
+  friend _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
   __make_physical_devices(::cuda::std::size_t __device_count);
 
   ::CUdevice __device_{};
 
+#  if _CCCL_HOSTED()
   ::std::once_flag __primary_ctx_once_flag_{};
+#  endif // _CCCL_HOSTED()
   ::CUcontext __primary_ctx_{};
 
   static constexpr ::cuda::std::size_t __max_name_length{256};
+#  if _CCCL_HOSTED()
   ::std::once_flag __name_once_flag_{};
+#  endif // _CCCL_HOSTED()
   char __name_[__max_name_length]{};
   ::cuda::std::size_t __name_length_{};
 
+#  if _CCCL_HOSTED()
   ::std::once_flag __peers_once_flag_{};
-  ::std::vector<device_ref> __peers_{};
+#  endif // _CCCL_HOSTED()
+  ::cuda::std::unique_ptr<device_ref[]> __peers_{};
+  ::cuda::std::size_t __num_peers_{};
+
+  _CCCL_HOST_API void __set_name()
+  {
+    const auto __id = ::cuda::__driver::__cudevice_to_ordinal(__device_);
+    ::cuda::__driver::__deviceGetName(__name_, __max_name_length, __id);
+    __name_length_ = ::cuda::std::char_traits<char>::length(__name_);
+  }
+
+  _CCCL_HOST_API void __set_peers()
+  {
+    const auto __count = static_cast<int>(::cuda::__physical_devices().size());
+    const auto __id    = ::cuda::__driver::__cudevice_to_ordinal(__device_);
+
+    // This overallocates, but given that we are talking about `device_ref` this is fine
+    __peers_.reset(static_cast<device_ref*>(::operator new[](sizeof(device_ref) * __count)));
+    size_t __num_peers = 0;
+    for (int __other_id = 0; __other_id < __count; ++__other_id)
+    {
+      // Exclude the device this API is called on. The main use case for this API
+      // is enable/disable peer access. While enable peer access can be called on
+      // device on which memory resides, disable peer access will error-out.
+      // Usage of the peer access control is smoother when *this is excluded,
+      // while it can be easily added with .push_back() on the vector if a full
+      // group of peers is needed (for cases other than peer access control)
+      if (__other_id != __id)
+      {
+        device_ref __dev{__id};
+        device_ref __other_dev{__other_id};
+
+        // While in almost all practical applications peer access should be symmetrical,
+        // it is possible to build a system with one directional peer access, check
+        // both ways here just to be safe
+        if (__dev.has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(__dev))
+        {
+          __peers_[__num_peers] = __other_dev;
+          ++__num_peers;
+        }
+      }
+    }
+    __num_peers_ = __num_peers;
+  }
 
 public:
   _CCCL_HIDE_FROM_ABI __physical_device() = default;
@@ -79,59 +128,54 @@ public:
   //! @return A reference to the primary context for this device.
   [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context()
   {
+#  if _CCCL_HOSTED()
     ::std::call_once(__primary_ctx_once_flag_, [this]() {
       __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
     });
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+    if (!__primary_ctx_)
+    {
+      __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
+    }
+#  endif // _CCCL_FREESTANDING()
     return __primary_ctx_;
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view __name()
   {
+#  if _CCCL_HOSTED()
     ::std::call_once(__name_once_flag_, [this]() {
-      const auto __id = ::cuda::__driver::__cudevice_to_ordinal(__device_);
-      ::cuda::__driver::__deviceGetName(__name_, __max_name_length, __id);
-      __name_length_ = ::cuda::std::char_traits<char>::length(__name_);
+      this->__set_name();
     });
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+    if (__name_length_ != 0)
+    {
+      this->__set_name();
+    }
+#  endif // _CCCL_FREESTANDING()
     return ::cuda::std::string_view{__name_, __name_length_};
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> __peers()
   {
+#  if _CCCL_HOSTED()
     ::std::call_once(__peers_once_flag_, [this]() {
-      const auto __count = static_cast<int>(::cuda::__physical_devices().size());
-      const auto __id    = ::cuda::__driver::__cudevice_to_ordinal(__device_);
-      __peers_.reserve(__count);
-      for (int __other_id = 0; __other_id < __count; ++__other_id)
-      {
-        // Exclude the device this API is called on. The main use case for this API
-        // is enable/disable peer access. While enable peer access can be called on
-        // device on which memory resides, disable peer access will error-out.
-        // Usage of the peer access control is smoother when *this is excluded,
-        // while it can be easily added with .push_back() on the vector if a full
-        // group of peers is needed (for cases other than peer access control)
-        if (__other_id != __id)
-        {
-          device_ref __dev{__id};
-          device_ref __other_dev{__other_id};
-
-          // While in almost all practical applications peer access should be symmetrical,
-          // it is possible to build a system with one directional peer access, check
-          // both ways here just to be safe
-          if (__dev.has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(__dev))
-          {
-            __peers_.push_back(__other_dev);
-          }
-        }
-      }
+      this->__set_peers();
     });
-    return ::cuda::std::span<const device_ref>{__peers_};
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+    if (!__peers_)
+    {
+      this->__set_peers();
+    }
+#  endif //  _CCCL_FREESTANDING()
+    return ::cuda::std::span<const device_ref>{__peers_.get(), __num_peers_};
   }
 };
 
-[[nodiscard]] _CCCL_HOST_API inline ::std::unique_ptr<__physical_device[]>
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
 __make_physical_devices(::cuda::std::size_t __device_count)
 {
-  ::std::unique_ptr<__physical_device[]> __devices{::new __physical_device[__device_count]};
+  ::cuda::std::unique_ptr<__physical_device[]> __devices{::new __physical_device[__device_count]};
   for (::cuda::std::size_t __i = 0; __i < __device_count; ++__i)
   {
     __devices[__i].__device_ = static_cast<int>(__i);

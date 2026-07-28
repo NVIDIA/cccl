@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Similar to getopt, but only extracts recognized switches and leaves all other arguments in place.
 #

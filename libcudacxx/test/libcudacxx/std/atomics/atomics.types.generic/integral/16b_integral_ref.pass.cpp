@@ -10,6 +10,9 @@
 // UNSUPPORTED: windows
 // UNSUPPORTED: aarch64-unknown-linux-gnu
 
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/atomic>
 
 // template <>

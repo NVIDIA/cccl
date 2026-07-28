@@ -25,8 +25,8 @@
 
 namespace cuda::experimental::stf
 {
+using ::cuda::experimental::places::augmented_stream;
 using ::cuda::experimental::places::data_place;
-using ::cuda::experimental::places::decorated_stream;
 using ::cuda::experimental::places::device_ordinal;
 using ::cuda::experimental::places::exec_place;
 using ::cuda::experimental::places::exec_place_scope;

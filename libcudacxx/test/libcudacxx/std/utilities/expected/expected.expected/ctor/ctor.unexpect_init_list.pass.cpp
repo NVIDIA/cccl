@@ -34,13 +34,11 @@
 // Test Constraints:
 static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, cuda::std::inplace_vector<int, 3>>,
                                             cuda::std::unexpect_t,
-                                            cuda::std::initializer_list<int>>,
-              "");
+                                            cuda::std::initializer_list<int>>);
 
 // !is_constructible_v<T, initializer_list<U>&, Args...>
 static_assert(
-  !cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>,
-  "");
+  !cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>);
 
 // test explicit
 template <class T>
@@ -53,8 +51,7 @@ static_assert(ImplicitlyConstructible<int, int>);
 
 static_assert(!ImplicitlyConstructible<cuda::std::expected<int, cuda::std::inplace_vector<int, 3>>,
                                        cuda::std::unexpect_t,
-                                       cuda::std::initializer_list<int>>,
-              "");
+                                       cuda::std::initializer_list<int>>);
 
 template <size_t N, class... Ts>
 struct Data

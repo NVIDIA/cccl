@@ -151,8 +151,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API constexpr friend bool
-  operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API constexpr friend bool operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -252,7 +252,7 @@ public:
   //! @param __seq The seed sequence used to initialize the internal state.
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
-  _CCCL_API constexpr explicit pcg64_engine(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr explicit pcg64_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
@@ -268,7 +268,7 @@ public:
   //! @param __seq A SeedSequence-like object providing 128 bits of entropy.
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
-  _CCCL_API constexpr void seed(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __seq)
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> data = {};
     __seq.generate(data.begin(), data.end());

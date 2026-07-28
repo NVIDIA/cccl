@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && c++17
-// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
-
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;
@@ -61,10 +58,9 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
   test_equality_accessor(m, acc);
 
   static_assert(cuda::std::is_trivially_assignable<MDS, const MDS&>::value
-                  == ((!cuda::std::is_class<H>::value || cuda::std::is_trivially_assignable<H, const H&>::value)
-                      && cuda::std::is_trivially_assignable<M, const M&>::value
-                      && cuda::std::is_trivially_assignable<A, const A&>::value),
-                "");
+                == ((!cuda::std::is_class<H>::value || cuda::std::is_trivially_assignable<H, const H&>::value)
+                    && cuda::std::is_trivially_assignable<M, const M&>::value
+                    && cuda::std::is_trivially_assignable<A, const A&>::value));
 }
 
 template <class H, class L, class A>
@@ -84,16 +80,14 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially assignable mapping
   static_assert(cuda::std::is_trivially_assignable<
-                  typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>,
-                  const typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>&>::value,
-                "");
+                typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>,
+                const typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>&>::value);
   mixin_extents(handle, cuda::std::layout_left(), acc);
   mixin_extents(handle, cuda::std::layout_right(), acc);
   // make sure we test a not trivially assignable mapping
   static_assert(!cuda::std::is_trivially_assignable<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                  const typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>&>::value,
-                "");
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
+                const typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>&>::value);
   mixin_extents(handle, layout_wrapping_integral<4>(), acc);
 }
 

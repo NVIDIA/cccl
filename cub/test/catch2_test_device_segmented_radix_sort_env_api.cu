@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -25,7 +26,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortPairs(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -38,7 +38,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortPairs failed with status: " << error << '\n';
@@ -65,7 +65,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortPairsDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -78,7 +77,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortPairsDescending failed with status: " << error << '\n';
@@ -103,7 +102,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -114,7 +112,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys failed with status: " << error << '\n';
@@ -137,7 +135,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -148,7 +145,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortKeysDescending failed with status: " << error << '\n';
@@ -317,3 +314,71 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer env wi
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// nvcc turns the `.member = value,` C++ syntax into GNU's `member: value,` when clang (14 - 21) is used
+_CCCL_DIAG_PUSH
+#  if _CCCL_COMPILER(CLANG)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
+#  endif // _CCCL_COMPILER(CLANG)
+
+// example-begin segmented-radix-sort-policy-selector
+struct SegmentedRadixSortPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedRadixSortPolicy
+  {
+    return {
+      .regular_pass =
+        cub::RadixSortDownsweepPolicy{
+          .threads_per_block = 192,
+          .items_per_thread  = 15,
+          .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+          .radix_bits        = 6},
+      .alternate_pass = cub::RadixSortDownsweepPolicy{
+        .threads_per_block = 384,
+        .items_per_thread  = 11,
+        .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .radix_bits        = 5}};
+  }
+};
+// example-end segmented-radix-sort-policy-selector
+
+_CCCL_DIAG_POP
+
+C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys accepts a custom policy selector", "[segmented_radix_sort][env]")
+{
+  // example-begin segmented-radix-sort-keys-tuning
+  auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = thrust::device_vector<int>(7, thrust::no_init);
+  auto offsets  = thrust::device_vector<int>{0, 3, 3, 7};
+
+  const auto error = cub::DeviceSegmentedRadixSort::SortKeys(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
+    cuda::std::int64_t{3},
+    offsets.begin(),
+    offsets.begin() + 1,
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    cuda::execution::tune(SegmentedRadixSortPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
+  // example-end segmented-radix-sort-keys-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == expected_keys);
+}
+
+#endif // _CCCL_STD_VER >= 2020

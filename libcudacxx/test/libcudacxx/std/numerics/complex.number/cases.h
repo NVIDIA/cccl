@@ -321,18 +321,18 @@ TEST_FUNC void is_about(long double x, long double y)
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 TEST_FUNC void is_about(__half x, __half y)
 {
   assert(cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 TEST_FUNC void is_about(__nv_bfloat16 x, __nv_bfloat16 y)
 {
   assert(cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
 #endif // CASES_H

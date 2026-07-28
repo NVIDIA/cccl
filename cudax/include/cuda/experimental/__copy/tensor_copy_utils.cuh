@@ -23,7 +23,6 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__mdspan/traits.h>
 #  include <cuda/__memory/ptr_alignment.h>
 #  include <cuda/__memory/ranges_overlap.h>
 #  include <cuda/__utility/in_range.h>

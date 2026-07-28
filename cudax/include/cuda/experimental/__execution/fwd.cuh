@@ -131,17 +131,17 @@ template <class... _Sigs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures;
 
 template <class _Sndr, class... _Env>
-_CCCL_API _CCCL_CONSTEVAL auto get_completion_signatures();
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
 
 #if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 template <class... _What, class... _Values>
-_CCCL_API consteval auto invalid_completion_signature(_Values... __values) -> completion_signatures<>;
+_CCCL_HOST_DEVICE_API consteval auto invalid_completion_signature(_Values... __values) -> completion_signatures<>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 template <class... _What, class... _Values>
-_CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...);
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...);
 #endif // ^^^ !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^
 
 // handy enumerations for keeping type names readable
@@ -251,7 +251,7 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }
@@ -318,14 +318,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __receiver_archetype
   using receiver_concept = receiver_t;
 
   template <class... _As>
-  _CCCL_API constexpr void set_value(_As&&...) noexcept;
+  _CCCL_HOST_DEVICE_API constexpr void set_value(_As&&...) noexcept;
 
   template <class _Error>
-  _CCCL_API constexpr void set_error(_Error&&) noexcept;
+  _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&&) noexcept;
 
-  _CCCL_API constexpr void set_stopped() noexcept;
+  _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept;
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> _Env;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> _Env;
 };
 } // namespace execution
 } // namespace cuda::experimental

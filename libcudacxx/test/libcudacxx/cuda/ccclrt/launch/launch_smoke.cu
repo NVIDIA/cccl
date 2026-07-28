@@ -366,6 +366,43 @@ C2H_CCCLRT_TEST("Launch functor with __restrict__ pointer arg", "[launch]")
   CCCLRT_CHECK(*val == 42);
 }
 
+C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[launch][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  cuda::stream stream{explicit_device};
+
+  int* device_value{};
+  {
+    cuda::__ensure_current_context guard(explicit_device);
+    CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
+    CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
+  }
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    auto config = cuda::make_config(cuda::grid_dims(1), cuda::block_dims<1>());
+    cuda::launch(stream, config, test::assign_42{}, device_value);
+  }
+
+  stream.sync();
+
+  int value{};
+  {
+    cuda::__ensure_current_context guard(explicit_device);
+    CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
+    CUDART(cudaFree(device_value));
+  }
+
+  CCCLRT_CHECK(value == 42);
+}
+
 __managed__ cuda::std::size_t launched_nthreads;
 __managed__ cuda::std::size_t launched_nblocks;
 __managed__ cuda::std::size_t launched_nclusters;

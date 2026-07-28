@@ -15,13 +15,13 @@
 
 struct is_partitioned_is_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 1, 3};
   assert(cuda::std::is_partitioned(a, a + 4, is_partitioned_is_even{}));

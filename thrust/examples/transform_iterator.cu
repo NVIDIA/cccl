@@ -85,7 +85,7 @@ int main()
 
   // create a transform_iterator that applies clamp() to the values array
   ClampedVectorIterator cv_begin = thrust::make_transform_iterator(values.begin(), clamp<int>(lo, hi));
-  ClampedVectorIterator cv_end   = cv_begin + values.size();
+  ClampedVectorIterator cv_end   = cv_begin + static_cast<std::ptrdiff_t>(values.size());
 
   // now [clamped_begin, clamped_end) defines a sequence of clamped values
   print_range("clamped values ", cv_begin, cv_end);

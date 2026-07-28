@@ -131,8 +131,8 @@ public:
 
   // This is movable, but we don't need to call clear anymore after moving
   stream_adapter(stream_adapter&& other) noexcept
-      : adapter_state(other.adapter_state)
-      , alloc(other.alloc)
+      : adapter_state(mv(other.adapter_state))
+      , alloc(mv(other.alloc))
       , cleared_or_moved(other.cleared_or_moved)
   {
     // No need to clear this now that it was moved
@@ -170,24 +170,42 @@ public:
     _CCCL_ASSERT(adapter_state, "Invalid state");
     _CCCL_ASSERT(!cleared_or_moved, "clear() was already called, or the object was moved.");
 
-    cudaStream_t stream = adapter_state->stream;
+    const cudaStream_t stream = adapter_state->stream;
 
-    // Deallocate all buffers, synchronizing lazily on the first blocking deallocation.
-    // This allows stream-ordered deallocations (cudaFreeAsync) that appear before any
-    // blocking ones (cudaFreeHost, cudaFree) to proceed without waiting for the sync.
-    bool stream_synchronized = false;
-    for (auto& b : adapter_state->to_free)
+    // Deallocate buffers one at a time, popping from the back. If any CUDA
+    // call below throws, ``to_free`` still holds the un-deallocated entries
+    // and ``cleared_or_moved`` stays false, so the caller can recover (catch
+    // and retry, or let the destructor's assertion fire with accurate state).
+    // Order across buffers does not matter because each ``raw_buffer`` is
+    // independent.
+    //
+    // Subtlety: we do not call ``cuda_try(cudaStreamSynchronize(...))`` here
+    // because we want the just-popped buffer's ``deallocate`` to run even on
+    // sync failure -- losing the descriptor without freeing would leak. We
+    // capture the sync status, do the deallocation, then surface the sync
+    // error via ``cuda_try(cudaStreamSynchronize_result)`` afterwards. We
+    // deliberately do not wrap that in a SCOPE guard: ``data_place_*::
+    // deallocate`` itself can throw (it uses ``cuda_try`` internally for
+    // ``cudaFreeHost`` / ``cudaFree`` / ``cudaFreeAsync``), and SCOPE bodies
+    // are ``noexcept``, so a deallocate-throw during unwinding would call
+    // ``std::terminate``.
+    bool cudaStreamSynchronize_was_called = false;
+    while (!adapter_state->to_free.empty())
     {
-      // Sync stream once before the first blocking deallocation
-      if (!b.memory_node.allocation_is_stream_ordered() && !stream_synchronized)
-      {
-        cuda_safe_call(cudaStreamSynchronize(stream));
-        stream_synchronized = true;
-      }
-      b.memory_node.deallocate(b.ptr, b.sz, stream);
-    }
+      const auto b = mv(adapter_state->to_free.back());
+      adapter_state->to_free.pop_back();
 
-    adapter_state->to_free.clear();
+      cudaError_t cudaStreamSynchronize_result = cudaSuccess;
+      if (!cudaStreamSynchronize_was_called && !b.memory_node.allocation_is_stream_ordered())
+      {
+        cudaStreamSynchronize_result     = cudaStreamSynchronize(stream);
+        cudaStreamSynchronize_was_called = true;
+      }
+
+      // The following two lines may throw, in which case we're left in steady state
+      b.memory_node.deallocate(b.ptr, b.sz, stream);
+      cuda_try(cudaStreamSynchronize_result);
+    }
 
     cleared_or_moved = true;
   }

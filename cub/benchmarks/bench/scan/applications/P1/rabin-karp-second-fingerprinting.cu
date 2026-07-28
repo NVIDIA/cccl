@@ -280,15 +280,13 @@ template <typename InputT, typename OutputT>
 template <typename BitsetT, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
 {
-  using wrapped_init_t = cub::NullType;
-  using op_t           = impl::RabinKarpOp;
-  using input_t        = BitsetT;
-  using raw_it_t       = const input_t*;
-  using input_it_t     = cuda::transform_iterator<impl::ChunkToMat<input_t>, raw_it_t>;
-  using accum_t        = impl::MatT;
-  using output_ptr_t   = impl::MatT*;
-  using output_it_t    = impl::write_at_specific_index_or_discard<OffsetT, output_ptr_t>;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+  using op_t         = impl::RabinKarpOp;
+  using input_t      = BitsetT;
+  using raw_it_t     = const input_t*;
+  using input_it_t   = cuda::transform_iterator<impl::ChunkToMat<input_t>, raw_it_t>;
+  using accum_t      = impl::MatT;
+  using output_ptr_t = impl::MatT*;
+  using output_it_t  = impl::write_at_specific_index_or_discard<OffsetT, output_ptr_t>;
 
   using ZpT = impl::ZpT;
 
@@ -310,42 +308,24 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   state.add_global_memory_reads<input_t>(elements, "Sequence Size");
   state.add_global_memory_writes<accum_t>(1, "Hash Size");
 
-  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
-
-  size_t tmp_size;
-  cub::detail::scan::dispatch_with_accum<accum_t>(
-    nullptr,
-    tmp_size,
-    inp_it,
-    out_it,
-    op_t{p},
-    wrapped_init_t{},
-    input.size(),
-    bench_stream
-#if !TUNE_BASE
-    ,
-    policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::scan::dispatch_with_accum<accum_t>(
-      d_tmp,
-      tmp_size,
-      inp_it,
-      out_it, // iterator that only writes the last element of inclusive prefix scan sequence,
-      op_t{p},
-      wrapped_init_t{},
-      input.size(),
-      launch.get_stream()
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-        ,
-      policy_selector<accum_t>{}
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::InclusiveScan,
+      "InclusiveScan failed",
+      inp_it,
+      out_it, // iterator that only writes the last element of inclusive prefix scan sequence
+      op_t{p},
+      static_cast<OffsetT>(input.size()),
+      env);
   });
 
   // for validation uncomment these two lines

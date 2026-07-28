@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -40,6 +40,13 @@
 #  define _CCCL_TILE
 #endif // ^^^ !_CCCL_TILE_COMPILATION() ^^^
 
+// clang-cuda before version 22 requires __host__ __device__ annotations on deduction guides
+#if _CCCL_CUDA_COMPILER(CLANG, <, 22)
+#  define _CCCL_DEDUCTION_GUIDE_ATTRIBUTES _CCCL_HOST_DEVICE
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG, <, 22) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG, <, 22) vvv
+#  define _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+#endif // ^^ !_CCCL_CUDA_COMPILER(CLANG, <, 22) ^^^
+
 // Global variables of non builtin types are only device accessible if they are marked as `__device__`
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_GLOBAL_VARIABLE _CCCL_DEVICE
@@ -72,7 +79,7 @@
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
 //! @brief List of all known PTX architectures supported by this CCCL version.
-#define _CCCL_KNOWN_CUDA_ARCH_LIST 60, 61, 62, 70, 75, 80, 86, 87, 88, 89, 90, 100, 103, 110, 120, 121
+#define _CCCL_KNOWN_CUDA_ARCH_LIST 50, 52, 53, 60, 61, 62, 70, 75, 80, 86, 87, 88, 89, 90, 100, 103, 110, 120, 121
 
 //! @brief List of all known architecture specific architectures supported by this CCCL version.
 #define _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST 90, 100, 103, 110, 120, 121

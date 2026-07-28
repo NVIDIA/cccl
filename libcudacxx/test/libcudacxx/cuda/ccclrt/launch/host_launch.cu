@@ -10,6 +10,7 @@
 #include <cuda/__launch/host_launch.h>
 #include <cuda/__stream/stream.h>
 #include <cuda/atomic>
+#include <cuda/devices>
 #include <cuda/memory>
 
 #include <cooperative_groups.h>
@@ -279,4 +280,28 @@ C2H_CCCLRT_TEST("Host launch", "")
     cuda::host_launch(stream, MoveOnlyCallable::make(), MoveOnlyArg::make());
     stream.sync();
   }
+}
+
+C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs", "[launch][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  cuda::stream stream{explicit_device};
+  int value = 0;
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    cuda::host_launch(stream, [&value]() {
+      value = 42;
+    });
+  }
+
+  stream.sync();
+  CCCLRT_REQUIRE(value == 42);
 }
