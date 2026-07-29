@@ -23,6 +23,7 @@
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 

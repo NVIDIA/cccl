@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__tuple_dir/tie.h>
+#include <cuda/std/__tuple_dir/make_tuple.h>
 
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 
