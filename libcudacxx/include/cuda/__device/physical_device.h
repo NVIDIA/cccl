@@ -27,14 +27,11 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__host_stdlib/mutex>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
-
-#  if _CCCL_HOSTED()
-#    include <mutex>
-#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
