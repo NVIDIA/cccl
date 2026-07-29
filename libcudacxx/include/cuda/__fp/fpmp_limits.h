@@ -27,7 +27,7 @@
     fpmp2<FpType, met> (fp32mp2 = double-float, fp64mp2 = double-double), mirroring the standard
     std::numeric_limits interface.
 
-    Conventions (see docs/libcudacxx/fp/fpmp_spec.rst):
+    Conventions:
     -------------------------------------------------------------------------
     A value is stored as a non-overlapping pair (hi, lo) of the underlying IEEE-754 FpType. The
     reported characteristics are therefore derived from numeric_limits<FpType>:

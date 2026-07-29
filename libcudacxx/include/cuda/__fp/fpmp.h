@@ -30,7 +30,7 @@
     Linkage note:
     - In header mode (default, CCCL_FPMP_INLINE=1), built-in entry points are defined as inline/static.
     - In library mode (CCCL_FPMP_LIB=1), built-in entry points are provided by a
-      separately compiled object/library (see `src/fpmp_lib.cpp`), while the C++ API remains header-based.
+      separately compiled object/library, while the C++ API remains header-based.
 
     Supported Formats:
     -------------------------------------------------------------------------
@@ -54,15 +54,14 @@
         * Basic Arithmetic: Addition, subtraction, multiplication, negation, and division for double-float.
         * Accuracy-Explicit Arithmetic: Free functions add<m>, sub<m>, mul<m>, div<m>, fma<m>, mad<m>
           that override the arithmetic method for a single operation without changing the type.
-        * Advanced: Square root, reciprocal square root, fused multiply-add (FMA), multiply-add (MAD), exponential
-   function (exp).
+        * Advanced: Square root, reciprocal square root, fused multiply-add (FMA), multiply-add (MAD).
         * Utility: Renormalization, error-aware summation and multiplication with or without FMA.
         * Comparison: Supports all common relational operators (==, !=, <, <=, >, >=).
         * Bit-casting: Supports reinterpretation of the value as a 64-bit integer (IEEE-754 format).
         * Atomic Operations: Supports atomic addition and subtraction on multi-precision floating point numbers (CUDA
    only).
         * Warp Shuffle: Overloads of CUDA's __shfl_sync family for fpmp2 pairs (CUDA only, header-only,
-          declared in fpmp_math.h; not exposed via fpmp_lib).
+          declared in this header; not exposed as library ABI symbols).
         * GPU & Host Compatibility: All operations and members are decorated for both device and host use.
 
     - Implementation Aspects
@@ -82,8 +81,7 @@
 
     Example Usage:
     -------------------------------------------------------------------------
-        #include "fpmp.h"
-        #include "fpmp_math.h"
+        #include <cuda/fpmp>
 
         // Basic arithmetic with double-float precision
         fp32mp2 a = 1.23456789123456789;       // double-float precision from double value
@@ -92,7 +90,6 @@
         auto product = a * b;                    // High-precision multiplication
         auto result  = fma(a, b, sum);           // Fused multiply-add: a*b + sum
         auto root = sqrt(a);                     // High-precision square root
-        auto exponential = exp(a);               // High-precision exponential
         double d = static_cast<double>(result);  // Convert to double
         float f  = static_cast<float>(result);   // Convert to float (high part only)
         uint64_t bits = bit_cast<uint64_t>(result); // Bit-cast to 64-bit integer (IEEE-754 format)
@@ -109,12 +106,11 @@
         * __fpmp2_low_add, __fpmp2_high_add : Method-specific variants
         * __fpmp2_fma, __fpmp2_mad : Fused multiply-add and multiply-add operations
         * __fpmp2_sqrt, __fpmp2_rsqrt : Square root and reciprocal square root
-        * __fpmp2_exp : Exponential function
         * __fpmp2_from_double, __fpmp2_to_double : Type conversions
         * __fpmp2_cmp_eq, __fpmp2_cmp_lt, etc. : Comparison operations
         * __fpmp2_atomicAdd, __fpmp2_atomicSub : Atomic operations (CUDA only, slower than hardware atomics)
         * __shfl_sync, __shfl_xor_sync, __shfl_down_sync, __shfl_up_sync :
-          Warp shuffle overloads for fpmp2 pairs (CUDA only, header-only via fpmp_math.h).
+          Warp shuffle overloads for fpmp2 pairs (CUDA only, header-only).
 
     - C++ class template:
         * fpmp2<FpType, fpmp2_accuracy> : Template class with operator overloading
@@ -1329,16 +1325,17 @@ _CCCL_API inline auto mad(const _T1& __x, const _T2& __y, const _T3& __z) noexce
  *   __shfl_down_sync(mask, var, delta,    width = warpSize)
  *   __shfl_up_sync  (mask, var, delta,    width = warpSize)
  *
- * Defined as overloads in the global namespace (matching CUDA's convention)
- * so the same call site works for built-in scalars and fpmp2.  The
- * recursive `::__shfl_sync(mask, var.hi(), ...)` resolves to CUDA's
- * float/double overload (our template only matches fpmp2 arguments).
+ * Declared in cuda::experimental next to fpmp2, so ADL on an fpmp2 argument
+ * finds them at an unqualified call site, exactly as it finds CUDA's built-in
+ * scalar overloads for float/double.  The recursive calls are spelled
+ * `::__shfl_sync(mask, var.hi(), ...)` to reach CUDA's global-namespace
+ * overload rather than recursing into this template.
  *
  * Defined only for CUDA compilation (NVCC); the warp shuffle primitives have
  * no host counterpart, so host-only translation units never see them.
  *
  * These are thread-cooperation primitives (not math), so they live in the core
- * header and are available via <cuda/fpmp> without pulling in <cuda/fpmp_math>.
+ * header and are available via <cuda/fpmp>.
  * ============================================================================
  */
 

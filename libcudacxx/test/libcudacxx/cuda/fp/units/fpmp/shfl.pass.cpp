@@ -76,7 +76,11 @@ __global__ void test_kernel()
 int main(int, char**)
 {
 #if _CCCL_CUDA_COMPILATION()
-  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 32>>>();))
+  // test_kernel is not a template, so the launch can stay inside NV_IF_TARGET: it is
+  // instantiated for the device regardless of the host-only block being discarded.
+  NV_IF_TARGET(NV_IS_HOST,
+               (test_kernel<<<1, 32>>>(); assert(cudaGetLastError() == cudaSuccess);
+                assert(cudaDeviceSynchronize() == cudaSuccess);))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }

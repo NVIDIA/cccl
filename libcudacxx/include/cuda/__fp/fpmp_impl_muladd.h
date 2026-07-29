@@ -165,40 +165,6 @@ _CCCL_FPMP_CORE_API void __internal_nv_fpmp2_add_fpan(
   *__res_lo       = __fpmp_sub_rn(__w, __r_tmp);
 } // __fpmp2_add_fpan
 
-/*
- * Thall addition operation via expansion series
- * This implementation is based on: Andrew Thall, Extended-Precision
- * Floating-Point Numbers for GPU Computation. Retrieved on 7/12/2011
- * from http://andrewthall.org/papers/df64_qf128.pdf.
- */
-template <typename _FpType = float>
-_CCCL_FPMP_CORE_API void __internal_nv_fpmp2_add_exp(
-  const _FpType __a_hi,
-  const _FpType __a_lo,
-  const _FpType __b_hi,
-  const _FpType __b_lo,
-  _FpType* __res_hi,
-  _FpType* __res_lo) noexcept
-{
-  _FpType __t1, __t2, __t3, __t4, __t5, __e;
-  __t1 = __fpmp_add_rn(__a_hi, __b_hi);
-  __t2 = __fpmp_sub_rn(__t1, __a_hi);
-  __t3 = __fpmp_add_rn(__fpmp_add_rn(__a_hi, __fpmp_sub_rn(__t2, __t1)), __fpmp_sub_rn(__b_hi, __t2));
-  __t4 = __fpmp_add_rn(__a_lo, __b_lo);
-  __t2 = __fpmp_sub_rn(__t4, __a_lo);
-  __t5 = __fpmp_add_rn(__fpmp_add_rn(__a_lo, __fpmp_sub_rn(__t2, __t4)), __fpmp_sub_rn(__b_lo, __t2));
-  __t3 = __fpmp_add_rn(__t3, __t4);
-  __t4 = __fpmp_add_rn(__t1, __t3);
-  __t3 = __fpmp_add_rn(__fpmp_sub_rn(__t1, __t4), __t3);
-  __t3 = __fpmp_add_rn(__t3, __t5);
-  __e  = __fpmp_add_rn(__t4, __t3);
-
-  *__res_lo = __fpmp_add_rn(__fpmp_sub_rn(__t4, __e), __t3);
-  *__res_hi = __e;
-} // __fpmp2_high_add
-
-#  define _CCCL_FPMP_FPAN_METHOD
-
 template <typename _FpType = float>
 _CCCL_FPMP_CORE_API void __fpmp2_high_add(
   const _FpType __a_hi,
@@ -208,11 +174,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_add(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-#  if defined _CCCL_FPMP_FPAN_METHOD
   __internal_nv_fpmp2_add_fpan(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
-#  else
-  __internal_nv_fpmp2_add_exp(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
-#  endif
 }
 
 /*
