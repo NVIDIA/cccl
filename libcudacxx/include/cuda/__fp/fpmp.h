@@ -1293,7 +1293,7 @@ _CCCL_API inline auto mad(const _T1& __x, const _T2& __y, const _T3& __z) noexce
   return mad<_Acc>(mp2(__x), mp2(__y), mp2(__z));
 }
 
-#if defined(__CUDACC__)
+#if _CCCL_CUDA_COMPILATION()
 /*
  * ============================================================================
  * Warp Shuffle Helpers (CUDA-only, header-only)
@@ -1315,8 +1315,8 @@ _CCCL_API inline auto mad(const _T1& __x, const _T2& __y, const _T3& __z) noexce
  * `::__shfl_sync(mask, var.hi(), ...)` to reach CUDA's global-namespace
  * overload rather than recursing into this template.
  *
- * Defined only for CUDA compilation (NVCC); the warp shuffle primitives have
- * no host counterpart, so host-only translation units never see them.
+ * Defined only for CUDA compilation; the warp shuffle primitives have no host
+ * counterpart, so host-only translation units never see them.
  *
  * These are thread-cooperation primitives (not math), so they live in the core
  * header and are available via <cuda/fpmp>.
@@ -1425,7 +1425,7 @@ atomicSub(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   return result;
 }
 
-#endif // __CUDACC__
+#endif // _CCCL_CUDA_COMPILATION()
 
 /*********************************************************************
  * Aliases for the most common use cases

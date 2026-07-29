@@ -108,6 +108,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -231,7 +233,7 @@ namespace cuda::experimental
 // earlier architectures can opt in with -D_CCCL_FPMP_FP128_ENABLE=1, which this respects.
 */
 #ifndef _CCCL_FPMP_FP128_ENABLE
-#  if defined(__CUDACC__)
+#  if _CCCL_CUDA_COMPILATION()
 #    if _CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_HAS_FLOAT128_TYPE == 1) && (_CCCL_PTX_ARCH() >= 1000)
 #      define _CCCL_FPMP_FP128_ENABLE 1
 #    else
@@ -389,114 +391,6 @@ inline constexpr bool __fpmp2_is_supported_fp_v = __fpmp2_is_fp32_v<_Tp> || __fp
 // if not available, use the appropriate fallback
 // the fallback is the appropriate arithmetic operation
 */
-#ifdef __CUDA_ARCH__
-_CCCL_TRIVIAL_API float __fpmp_internal_fabs(float __x) noexcept
-{
-  return fabsf(__x);
-}
-_CCCL_TRIVIAL_API bool __fpmp_internal_isnan(float __x) noexcept
-{
-  return ::isnan(__x);
-}
-_CCCL_TRIVIAL_API float __fpmp_add_rn(float __x, float __y) noexcept
-{
-  return __fadd_rn(__x, __y);
-}
-_CCCL_TRIVIAL_API float __fpmp_add_rz(float __x, float __y) noexcept
-{
-  return __fadd_rz(__x, __y);
-}
-_CCCL_TRIVIAL_API float __fpmp_sub_rn(float __x, float __y) noexcept
-{
-  return __fsub_rn(__x, __y);
-}
-_CCCL_TRIVIAL_API float __fpmp_mul_rn(float __x, float __y) noexcept
-{
-  return __fmul_rn(__x, __y);
-}
-_CCCL_TRIVIAL_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
-{
-  return __fmaf_ieee_rn(__x, __y, __z);
-}
-// The approximate SFU reciprocal / reciprocal square root are emitted as inline asm
-// rather than through __frcp_rn / __frsqrt_rn: they are the fastest option and only
-// ever feed Newton refinement, at the cost of accuracy in subtle domains close to
-// denormals or large numbers.
-_CCCL_TRIVIAL_API float __fpmp_rcp_rn(float __x) noexcept
-{
-  float __r;
-  asm("rcp.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
-  return __r;
-}
-_CCCL_TRIVIAL_API float __fpmp_rsqrt_rn(float __x) noexcept
-{
-  float __r;
-  asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
-  return __r;
-}
-// Fast single-precision base-2 exp / log mapped to the FP32 SFU
-// approximation units (ex2.approx / lg2.approx). These are not
-// correctly rounded; they are used as initial estimates for
-// higher-precision Newton/Halley refinement.
-_CCCL_TRIVIAL_API float __fpmp_fast_exp2(float __x) noexcept
-{
-  float __r;
-  asm("ex2.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
-  return __r;
-}
-_CCCL_TRIVIAL_API float __fpmp_fast_log2(float __x) noexcept
-{
-  float __r;
-  asm("lg2.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
-  return __r;
-}
-_CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rz(float __x) noexcept
-{
-  return __float2int_rz(__x);
-}
-_CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rn(float __x) noexcept
-{
-  return __float2int_rn(__x);
-}
-_CCCL_TRIVIAL_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
-{
-  return __float2uint_rz(__x);
-}
-_CCCL_TRIVIAL_API int64_t __fpmp_fp2ll_rz(float __x) noexcept
-{
-  return __float2ll_rz(__x);
-}
-_CCCL_TRIVIAL_API uint64_t __fpmp_fp2ull_rz(float __x) noexcept
-{
-  return __float2ull_rz(__x);
-}
-
-template <typename _FpType = float>
-_CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
-{
-  return static_cast<_FpType>(__int2float_rn(__x));
-}
-template <typename _FpType = float>
-_CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
-{
-  return static_cast<_FpType>(__int2float_rz(__x));
-}
-template <typename _FpType = float>
-_CCCL_TRIVIAL_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
-{
-  return static_cast<_FpType>(__uint2float_rz(__x));
-}
-template <typename _FpType = float>
-_CCCL_TRIVIAL_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
-{
-  return static_cast<_FpType>(__ll2float_rz(__x));
-}
-template <typename _FpType = float>
-_CCCL_TRIVIAL_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
-{
-  return static_cast<_FpType>(__ull2float_rz(__x));
-}
-#else // !__CUDA_ARCH__
 _CCCL_TRIVIAL_API float __fpmp_internal_fabs(float __x) noexcept
 {
   return fabsf(__x);
@@ -507,231 +401,292 @@ _CCCL_TRIVIAL_API bool __fpmp_internal_isnan(float __x) noexcept
 }
 _CCCL_TRIVIAL_API float __fpmp_add_rn(float __x, float __y) noexcept
 {
-  return __x + __y;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __fadd_rn(__x, __y);), (return __x + __y;))
 }
+// The host has no round-toward-zero add, so round to nearest and step one ULP toward
+// zero when the exact residual shows the sum was rounded away from zero.
 _CCCL_TRIVIAL_API float __fpmp_add_rz(float __x, float __y) noexcept
 {
-  float __sum = __x + __y;
-  if (__sum == 0.0f)
-  {
-    return __sum;
-  }
-  float __error = fmaf(-1.0f, __sum, __x) + __y;
-  if (__error == 0.0f)
-  {
-    return __sum;
-  }
-  if ((__sum > 0.0f && __error < 0.0f) || (__sum < 0.0f && __error > 0.0f))
-  {
-    // Rounded away from zero - need to adjust mantissa toward zero
-    uint32_t __bits = ::cuda::std::bit_cast<uint32_t>(__sum);
-    // Decrement mantissa (moves toward zero for both positive and negative)
-    __bits--;
-    __sum = ::cuda::std::bit_cast<float>(__bits);
-  }
-  return __sum;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __fadd_rz(__x, __y);), ({
+                      float __sum = __x + __y;
+                      if (__sum == 0.0f)
+                      {
+                        return __sum;
+                      }
+                      float __error = fmaf(-1.0f, __sum, __x) + __y;
+                      if (__error == 0.0f)
+                      {
+                        return __sum;
+                      }
+                      if ((__sum > 0.0f && __error < 0.0f) || (__sum < 0.0f && __error > 0.0f))
+                      {
+                        // Rounded away from zero: decrementing the mantissa moves the magnitude
+                        // toward zero for both signs.
+                        uint32_t __bits = ::cuda::std::bit_cast<uint32_t>(__sum);
+                        __bits--;
+                        __sum = ::cuda::std::bit_cast<float>(__bits);
+                      }
+                      return __sum;
+                    }))
 }
 _CCCL_TRIVIAL_API float __fpmp_sub_rn(float __x, float __y) noexcept
 {
-  return __x - __y;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __fsub_rn(__x, __y);), (return __x - __y;))
 }
 _CCCL_TRIVIAL_API float __fpmp_mul_rn(float __x, float __y) noexcept
 {
-  return __x * __y;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __fmul_rn(__x, __y);), (return __x * __y;))
 }
 _CCCL_TRIVIAL_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
 {
-  return fmaf(__x, __y, __z);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __fmaf_ieee_rn(__x, __y, __z);), (return fmaf(__x, __y, __z);))
 }
+// On device the approximate SFU reciprocal / reciprocal square root are emitted as
+// inline asm rather than through __frcp_rn / __frsqrt_rn: they are the fastest option
+// and only ever feed Newton refinement, at the cost of accuracy in subtle domains
+// close to denormals or large numbers. The host divides instead.
 _CCCL_TRIVIAL_API float __fpmp_rcp_rn(float __x) noexcept
 {
-  return 1.0f / __x;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      float __r;
+                      asm("rcp.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
+                      return __r;
+                    }),
+                    (return 1.0f / __x;))
 }
 _CCCL_TRIVIAL_API float __fpmp_rsqrt_rn(float __x) noexcept
 {
-  return 1.0f / sqrtf(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      float __r;
+                      asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
+                      return __r;
+                    }),
+                    (return 1.0f / sqrtf(__x);))
 }
-// Host fallback for the fast SFU-style exp2 / log2; uses the libm
-// single-precision routines.  Same use case as the device path:
-// a low-cost initial estimate for Newton/Halley refinement.
+// Fast single-precision base-2 exp / log mapped to the FP32 SFU approximation units
+// (ex2.approx / lg2.approx) on device and to the libm single-precision routines on the
+// host. Neither is correctly rounded; both only serve as the initial estimate for
+// higher-precision Newton/Halley refinement.
 _CCCL_TRIVIAL_API float __fpmp_fast_exp2(float __x) noexcept
 {
-  return ::exp2f(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      float __r;
+                      asm("ex2.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
+                      return __r;
+                    }),
+                    (return ::exp2f(__x);))
 }
 _CCCL_TRIVIAL_API float __fpmp_fast_log2(float __x) noexcept
 {
-  return ::log2f(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    ({
+                      float __r;
+                      asm("lg2.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
+                      return __r;
+                    }),
+                    (return ::log2f(__x);))
 }
 _CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 {
-  return static_cast<int32_t>(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __float2int_rz(__x);), (return static_cast<int32_t>(__x);))
 }
 _CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  return static_cast<int32_t>(roundf(__x));
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __float2int_rn(__x);), (return static_cast<int32_t>(roundf(__x));))
 }
 _CCCL_TRIVIAL_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
-  return static_cast<uint32_t>(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __float2uint_rz(__x);), (return static_cast<uint32_t>(__x);))
 }
 _CCCL_TRIVIAL_API int64_t __fpmp_fp2ll_rz(float __x) noexcept
 {
-  return static_cast<int64_t>(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __float2ll_rz(__x);), (return static_cast<int64_t>(__x);))
 }
 _CCCL_TRIVIAL_API uint64_t __fpmp_fp2ull_rz(float __x) noexcept
 {
-  return static_cast<uint64_t>(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __float2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
 }
 
 template <typename _FpType = float>
 _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
 {
-  return static_cast<_FpType>(roundf(__x));
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, (return static_cast<_FpType>(__int2float_rn(__x));), (return static_cast<_FpType>(roundf(__x));))
 }
 
 /*
-// Round-toward-zero (truncation) versions for integer constructors
-// For CPU: implement round-to-zero by checking if round-to-nearest went away from zero,
-// then use nextafter to get the next representable float toward zero
-// Using double for exact comparison (double has 53 bits, enough for int32_t's 32 bits)
-// Template versions for both float and double
+// Round-toward-zero (truncation) versions for the integer constructors.
+// The device has rz conversion intrinsics. The host rounds to nearest, then checks
+// whether that went away from zero -- comparing against double, which holds int32_t
+// exactly -- and if so steps one representable value back toward zero via nextafter.
+// The templates serve both float and double.
 */
 template <typename _FpType = float>
 _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
 {
-  _FpType __f    = static_cast<_FpType>(__x);
-  double __exact = static_cast<double>(__x);
-  if ((__x > 0 && __f > __exact) || (__x < 0 && __f < __exact))
-  {
-    if constexpr (__fpmp2_is_fp32_v<_FpType>)
-    {
-      __f = nextafterf(__f, 0.0f);
-    }
-    else
-    {
-      __f = nextafter(__f, 0.0);
-    }
-  }
-  return __f;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(__int2float_rz(__x));), ({
+                      _FpType __f    = static_cast<_FpType>(__x);
+                      double __exact = static_cast<double>(__x);
+                      if ((__x > 0 && __f > __exact) || (__x < 0 && __f < __exact))
+                      {
+                        if constexpr (__fpmp2_is_fp32_v<_FpType>)
+                        {
+                          __f = nextafterf(__f, 0.0f);
+                        }
+                        else
+                        {
+                          __f = nextafter(__f, 0.0);
+                        }
+                      }
+                      return __f;
+                    }))
 }
 template <typename _FpType = float>
 _CCCL_TRIVIAL_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
 {
-  _FpType __f    = static_cast<_FpType>(__x);
-  double __exact = static_cast<double>(__x);
-  if (__f > __exact)
-  {
-    if constexpr (__fpmp2_is_fp32_v<_FpType>)
-    {
-      __f = nextafterf(__f, 0.0f);
-    }
-    else
-    {
-      __f = nextafter(__f, 0.0);
-    }
-  }
-  return __f;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(__uint2float_rz(__x));), ({
+                      _FpType __f    = static_cast<_FpType>(__x);
+                      double __exact = static_cast<double>(__x);
+                      if (__f > __exact)
+                      {
+                        if constexpr (__fpmp2_is_fp32_v<_FpType>)
+                        {
+                          __f = nextafterf(__f, 0.0f);
+                        }
+                        else
+                        {
+                          __f = nextafter(__f, 0.0);
+                        }
+                      }
+                      return __f;
+                    }))
 }
 template <typename _FpType = float>
 _CCCL_TRIVIAL_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
 {
-  _FpType __f    = static_cast<_FpType>(__x);
-  double __exact = static_cast<double>(__x);
-  if ((__x > 0 && __f > __exact) || (__x < 0 && __f < __exact))
-  {
-    if constexpr (__fpmp2_is_fp32_v<_FpType>)
-    {
-      __f = nextafterf(__f, 0.0f);
-    }
-    else
-    {
-      __f = nextafter(__f, 0.0);
-    }
-  }
-  return __f;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(__ll2float_rz(__x));), ({
+                      _FpType __f    = static_cast<_FpType>(__x);
+                      double __exact = static_cast<double>(__x);
+                      if ((__x > 0 && __f > __exact) || (__x < 0 && __f < __exact))
+                      {
+                        if constexpr (__fpmp2_is_fp32_v<_FpType>)
+                        {
+                          __f = nextafterf(__f, 0.0f);
+                        }
+                        else
+                        {
+                          __f = nextafter(__f, 0.0);
+                        }
+                      }
+                      return __f;
+                    }))
 }
 template <typename _FpType = float>
 _CCCL_TRIVIAL_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
 {
-  _FpType __f    = static_cast<_FpType>(__x);
-  double __exact = static_cast<double>(__x);
-  if (__f > __exact)
-  {
-    if constexpr (__fpmp2_is_fp32_v<_FpType>)
-    {
-      __f = nextafterf(__f, 0.0f);
-    }
-    else
-    {
-      __f = nextafter(__f, 0.0);
-    }
-  }
-  return __f;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(__ull2float_rz(__x));), ({
+                      _FpType __f    = static_cast<_FpType>(__x);
+                      double __exact = static_cast<double>(__x);
+                      if (__f > __exact)
+                      {
+                        if constexpr (__fpmp2_is_fp32_v<_FpType>)
+                        {
+                          __f = nextafterf(__f, 0.0f);
+                        }
+                        else
+                        {
+                          __f = nextafter(__f, 0.0);
+                        }
+                      }
+                      return __f;
+                    }))
 }
-#endif // __CUDA_ARCH__
-
-#ifdef __CUDA_ARCH__
 _CCCL_TRIVIAL_API double __fpmp_internal_fabs(double __x) noexcept
 {
   return ::fabs(__x);
 }
 _CCCL_TRIVIAL_API bool __fpmp_internal_isnan(double __x) noexcept
 {
-  return ::isnan(__x);
+  return ::cuda::std::isnan(__x);
 }
 _CCCL_TRIVIAL_API double __fpmp_add_rn(double __x, double __y) noexcept
 {
-  return __dadd_rn(__x, __y);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __dadd_rn(__x, __y);), (return __x + __y;))
 }
+// As in the fp32 case, the host emulates round-toward-zero from the round-to-nearest
+// sum plus the exact residual.
 _CCCL_TRIVIAL_API double __fpmp_add_rz(double __x, double __y) noexcept
 {
-  return __dadd_rz(__x, __y);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __dadd_rz(__x, __y);), ({
+                      double __sum = __x + __y;
+                      if (__sum == 0.0)
+                      {
+                        return __sum;
+                      }
+                      double __error = fma(-1.0, __sum, __x) + __y;
+                      if (__error == 0.0)
+                      {
+                        return __sum;
+                      }
+                      if ((__sum > 0.0 && __error < 0.0) || (__sum < 0.0 && __error > 0.0))
+                      {
+                        // Rounded away from zero: decrementing the mantissa moves the magnitude
+                        // toward zero for both signs.
+                        uint64_t __bits = ::cuda::std::bit_cast<uint64_t>(__sum);
+                        __bits--;
+                        __sum = ::cuda::std::bit_cast<double>(__bits);
+                      }
+                      return __sum;
+                    }))
 }
 _CCCL_TRIVIAL_API double __fpmp_sub_rn(double __x, double __y) noexcept
 {
-  return __dsub_rn(__x, __y);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __dsub_rn(__x, __y);), (return __x - __y;))
 }
 _CCCL_TRIVIAL_API double __fpmp_mul_rn(double __x, double __y) noexcept
 {
-  return __dmul_rn(__x, __y);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __dmul_rn(__x, __y);), (return __x * __y;))
 }
 _CCCL_TRIVIAL_API double __fpmp_fma_rn(double __x, double __y, double __z) noexcept
 {
-  return __fma_rn(__x, __y, __z);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __fma_rn(__x, __y, __z);), (return fma(__x, __y, __z);))
 }
 _CCCL_TRIVIAL_API double __fpmp_rcp_rn(double __x) noexcept
 {
-  return __drcp_rn(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __drcp_rn(__x);), (return 1.0 / __x;))
 }
 _CCCL_TRIVIAL_API double __fpmp_rsqrt_rn(double __x) noexcept
 {
-  return rsqrt(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return rsqrt(__x);), (return 1.0 / sqrt(__x);))
 }
 _CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 {
-  return __double2int_rz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __double2int_rz(__x);), (return static_cast<int32_t>(__x);))
 }
 _CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rn(double __x) noexcept
 {
-  return __double2int_rn(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __double2int_rn(__x);), (return static_cast<int32_t>(round(__x));))
 }
 _CCCL_TRIVIAL_API uint32_t __fpmp_fp2uint_rz(double __x) noexcept
 {
-  return __double2uint_rz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __double2uint_rz(__x);), (return static_cast<uint32_t>(__x);))
 }
 _CCCL_TRIVIAL_API int64_t __fpmp_fp2ll_rz(double __x) noexcept
 {
-  return __double2ll_rz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __double2ll_rz(__x);), (return static_cast<int64_t>(__x);))
 }
 _CCCL_TRIVIAL_API uint64_t __fpmp_fp2ull_rz(double __x) noexcept
 {
-  return __double2ull_rz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __double2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
 }
 // int32_t and uint32_t always fit exactly in double (52-bit mantissa vs 32-bit values)
 template <>
 _CCCL_API inline double __fpmp_int2fp_rn<double>(int32_t __x) noexcept
 {
-  return __int2double_rn(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __int2double_rn(__x);), (return round(__x);))
 }
 template <>
 _CCCL_API inline double __fpmp_int2fp_rz<double>(int32_t __x) noexcept
@@ -743,137 +698,35 @@ _CCCL_API inline double __fpmp_uint2fp_rz<double>(uint32_t __x) noexcept
 {
   return static_cast<double>(__x);
 }
-// int64_t and uint64_t: use CUDA intrinsics for round-toward-zero
+// int64_t and uint64_t may not fit exactly in double: the device has round-toward-zero
+// conversion intrinsics, while the host detects a round away from zero by comparing
+// against long double and steps one value back.
 template <>
 _CCCL_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcept
 {
-  return __ll2double_rz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __ll2double_rz(__x);), ({
+                      double __d          = static_cast<double>(__x);
+                      long double __exact = static_cast<long double>(__x);
+                      if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
+                      {
+                        __d = nextafter(__d, 0.0);
+                      }
+                      return __d;
+                    }))
 }
 template <>
 _CCCL_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexcept
 {
-  return __ull2double_rz(__x);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __ull2double_rz(__x);), ({
+                      double __d          = static_cast<double>(__x);
+                      long double __exact = static_cast<long double>(__x);
+                      if (__d > __exact)
+                      {
+                        __d = nextafter(__d, 0.0);
+                      }
+                      return __d;
+                    }))
 }
-#else // !__CUDA_ARCH__
-_CCCL_TRIVIAL_API double __fpmp_internal_fabs(double __x) noexcept
-{
-  return ::fabs(__x);
-}
-_CCCL_TRIVIAL_API bool __fpmp_internal_isnan(double __x) noexcept
-{
-  return ::cuda::std::isnan(__x);
-}
-_CCCL_TRIVIAL_API double __fpmp_add_rn(double __x, double __y) noexcept
-{
-  return __x + __y;
-}
-_CCCL_TRIVIAL_API double __fpmp_add_rz(double __x, double __y) noexcept
-{
-  double __sum = __x + __y;
-  if (__sum == 0.0)
-  {
-    return __sum;
-  }
-  double __error = fma(-1.0, __sum, __x) + __y;
-  if (__error == 0.0)
-  {
-    return __sum;
-  }
-  if ((__sum > 0.0 && __error < 0.0) || (__sum < 0.0 && __error > 0.0))
-  {
-    // Rounded away from zero - need to adjust mantissa toward zero
-    uint64_t __bits = ::cuda::std::bit_cast<uint64_t>(__sum);
-    // Decrement mantissa (moves toward zero for both positive and negative)
-    __bits--;
-    __sum = ::cuda::std::bit_cast<double>(__bits);
-  }
-  return __sum;
-}
-_CCCL_TRIVIAL_API double __fpmp_sub_rn(double __x, double __y) noexcept
-{
-  return __x - __y;
-}
-_CCCL_TRIVIAL_API double __fpmp_mul_rn(double __x, double __y) noexcept
-{
-  return __x * __y;
-}
-_CCCL_TRIVIAL_API double __fpmp_fma_rn(double __x, double __y, double __z) noexcept
-{
-  return fma(__x, __y, __z);
-}
-_CCCL_TRIVIAL_API double __fpmp_rcp_rn(double __x) noexcept
-{
-  return 1.0 / __x;
-}
-_CCCL_TRIVIAL_API double __fpmp_rsqrt_rn(double __x) noexcept
-{
-  return 1.0 / sqrt(__x);
-}
-_CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rz(double __x) noexcept
-{
-  return static_cast<int32_t>(__x);
-}
-_CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rn(double __x) noexcept
-{
-  return static_cast<int32_t>(round(__x));
-}
-_CCCL_TRIVIAL_API uint32_t __fpmp_fp2uint_rz(double __x) noexcept
-{
-  return static_cast<uint32_t>(__x);
-}
-_CCCL_TRIVIAL_API int64_t __fpmp_fp2ll_rz(double __x) noexcept
-{
-  return static_cast<int64_t>(__x);
-}
-_CCCL_TRIVIAL_API uint64_t __fpmp_fp2ull_rz(double __x) noexcept
-{
-  return static_cast<uint64_t>(__x);
-}
-/*
-// Round-toward-zero (truncation) versions for integer-to-double constructors
-// For double, we need to use long double for exact comparison where possible
-// Template specializations for double type
-*/
-template <>
-_CCCL_API inline double __fpmp_int2fp_rn<double>(int32_t __x) noexcept
-{
-  return round(__x);
-}
-template <>
-_CCCL_API inline double __fpmp_int2fp_rz<double>(int32_t __x) noexcept
-{
-  return static_cast<double>(__x);
-}
-template <>
-_CCCL_API inline double __fpmp_uint2fp_rz<double>(uint32_t __x) noexcept
-{
-  return static_cast<double>(__x);
-}
-template <>
-_CCCL_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcept
-{
-  // int64_t may not fit exactly in double
-  double __d          = static_cast<double>(__x);
-  long double __exact = static_cast<long double>(__x);
-  if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
-  {
-    __d = nextafter(__d, 0.0);
-  }
-  return __d;
-}
-template <>
-_CCCL_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexcept
-{
-  // uint64_t may not fit exactly in double
-  double __d          = static_cast<double>(__x);
-  long double __exact = static_cast<long double>(__x);
-  if (__d > __exact)
-  {
-    __d = nextafter(__d, 0.0);
-  }
-  return __d;
-}
-#endif // __CUDA_ARCH__
 
 /*
 // Scalar rounding helpers (host + device)
@@ -890,13 +743,16 @@ _CCCL_TRIVIAL_API _FpType __fpmp_internal_trunc(const _FpType __x) noexcept
     {
       return __x;
     }
-#if defined(__CUDA_ARCH__)
-    const int32_t __xi = __float2int_rz(__x);
-    return __int2float_rz(__xi);
-#else
-    const int32_t __xi = __fpmp_fp2int_rz(__x);
-    return __fpmp_int2fp_rz<_FpType>(__xi);
-#endif
+    NV_IF_ELSE_TARGET(
+      NV_IS_DEVICE,
+      ({
+        const int32_t __xi = __float2int_rz(__x);
+        return __int2float_rz(__xi);
+      }),
+      ({
+        const int32_t __xi = __fpmp_fp2int_rz(__x);
+        return __fpmp_int2fp_rz<_FpType>(__xi);
+      }))
   }
   else
   {
@@ -914,12 +770,12 @@ _CCCL_TRIVIAL_API _FpType __fpmp_internal_floor(const _FpType __x) noexcept
     {
       return __x;
     }
-#if defined(__CUDA_ARCH__)
-    const int32_t __xi = __float2int_rd(__x);
-    return __int2float_rn(__xi);
-#else
-    return floorf(__x);
-#endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      ({
+                        const int32_t __xi = __float2int_rd(__x);
+                        return __int2float_rn(__xi);
+                      }),
+                      (return floorf(__x);))
   }
   else
   {
@@ -937,12 +793,12 @@ _CCCL_TRIVIAL_API _FpType __fpmp_internal_ceil(const _FpType __x) noexcept
     {
       return __x;
     }
-#if defined(__CUDA_ARCH__)
-    const int32_t __xi = __float2int_ru(__x);
-    return __int2float_rn(__xi);
-#else
-    return ceilf(__x);
-#endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      ({
+                        const int32_t __xi = __float2int_ru(__x);
+                        return __int2float_rn(__xi);
+                      }),
+                      (return ceilf(__x);))
   }
   else
   {
