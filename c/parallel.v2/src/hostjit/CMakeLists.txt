@@ -25,6 +25,20 @@ endif()
 
 add_subdirectory(libnvcc)
 
+# Windows does not have an RPATH equivalent. Keep libnvcc.dll in the same
+# runtime directory as CCCL's tests/executables so the loader can find it at
+# process startup when no explicit library output directory was requested.
+if (
+  WIN32
+  AND NOT CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY
+  AND DEFINED CCCL_EXECUTABLE_OUTPUT_DIR
+)
+  set_target_properties(
+    libnvcc
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CCCL_EXECUTABLE_OUTPUT_DIR}"
+  )
+endif()
+
 # --------------------------------------------------------------------------
 # hostjit library
 # --------------------------------------------------------------------------

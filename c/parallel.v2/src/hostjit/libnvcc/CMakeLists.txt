@@ -204,14 +204,6 @@ if (LIBNVCC_LIBRARY_OUTPUT_DIRECTORY)
       ARCHIVE_OUTPUT_DIRECTORY "${LIBNVCC_LIBRARY_OUTPUT_DIRECTORY}"
       RUNTIME_OUTPUT_DIRECTORY "${LIBNVCC_LIBRARY_OUTPUT_DIRECTORY}"
   )
-elseif (WIN32 AND DEFINED CCCL_EXECUTABLE_OUTPUT_DIR)
-  # Windows does not have an RPATH equivalent. Keep libnvcc.dll in the same
-  # runtime directory as CCCL's tests/executables so the loader can find it at
-  # process startup.
-  set_target_properties(
-    libnvcc
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CCCL_EXECUTABLE_OUTPUT_DIR}"
-  )
 endif()
 
 # On Windows with multi-config generators (Visual Studio), exclude libnvcc from
@@ -236,7 +228,7 @@ install(
 )
 
 # --------------------------------------------------------------------------
-# Install clang headers into wheel (for self-sufficient packaging)
+# Install the Clang headers required by libnvcc consumers.
 # --------------------------------------------------------------------------
 # Clang CUDA headers we still use from the LLVM source tree.
 # We DON'T install device_functions, math, or libdevice_declares — our local

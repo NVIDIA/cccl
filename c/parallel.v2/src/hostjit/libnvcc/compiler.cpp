@@ -1171,13 +1171,13 @@ public:
                     break;
                 }
 
-                // Raise LLVM's loop-unroll thresholds (once) so the user op's
-                // small, constant-trip-count loops -- e.g. Numba `local.array`
-                // loops -- get FULLY unrolled. Without full unroll the backing
-                // alloca keeps a dynamic index, SROA can't promote it, and it
-                // lands in local memory (a per-thread stack frame + LDL/STL
-                // traffic). ptxas does this promotion on the v1/LTO path; the
-                // LLVM-NVPTX path needs full-unroll-then-SROA at the IR level.
+                // Raise LLVM's loop-unroll thresholds (once) so small,
+                // constant-trip-count loops in linked bitcode get fully
+                // unrolled. Without full unroll the backing alloca keeps a
+                // dynamic index, SROA can't promote it, and it lands in local
+                // memory (a per-thread stack frame + LDL/STL traffic). ptxas
+                // performs this promotion on the LTO path; the LLVM-NVPTX path
+                // needs full-unroll-then-SROA at the IR level.
                 static const bool unroll_tuned = [] {
                   auto& opts   = llvm::cl::getRegisteredOptions();
                   auto set_opt = [&](llvm::StringRef name, llvm::StringRef value) {
@@ -1752,10 +1752,10 @@ public:
       }
 
       // Feed LTO-IR inputs to nvJitLink alongside the device PTX. This is the
-      // escape-hatch path for callers with pre-built nvcc -dlto artifacts;
-      // Python-emitted user ops travel as LLVM bitcode through the path above
-      // and are already inlined into the PTX by the time we get here.
-      // nvJitLink resolves any remaining extern symbol(s) from these modules.
+      // path for callers with pre-built nvcc -dlto artifacts. LLVM bitcode
+      // inputs travel through the path above and are already inlined into the
+      // PTX by the time we get here. nvJitLink resolves any remaining extern
+      // symbols from these modules.
       for (const auto& ltoir_path : config.device_ltoir_files)
       {
         std::ifstream f(ltoir_path, std::ios::binary);
@@ -2342,13 +2342,13 @@ extern "C" const char* libnvccGetErrorString(libnvccResult result)
   return "LIBNVCC_ERROR_UNKNOWN";
 }
 
-// clang, LLVM, LLD, and the CUDA codegen helpers used below are embedded
-// in-process and are not thread-safe for concurrent compilation/linking
-// (shared global registries, cl::opt state, allocator use). cuda.compute can
-// release the GIL around native builds, so distinct operations built from
-// multiple threads must serialize the native compiler pipeline. Program handle
-// creation/destruction and log reads remain outside this lock.
-static std::mutex g_native_compile_mutex;
+// The compile stages are thread-safe: each build runs clang codegen with its own
+// CompilerInstance and LLVMContext, so concurrent compiles do not race. The link
+// stage is not. lld::elf::link() keeps its state in a process-global
+// (CommonLinkerContext, a plain `static`, not `thread_local`), so concurrent links
+// clobber that shared context and corrupt LLD's bump allocator. Serialize just
+// the link step through one process-wide mutex.
+static std::mutex g_link_mutex;
 
 extern "C" libnvccResult libnvccCreateProgram(libnvccProgram* prog, const char* src, const char* name)
 {
@@ -2395,7 +2395,6 @@ extern "C" libnvccResult libnvccCompileProgramToDeviceBitcode(
     return LIBNVCC_ERROR_INVALID_OPTION;
   }
 
-  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   auto result = prog->compiler.compileToDeviceBitcode(prog->source, prog->name, outputBitcodePath, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
@@ -2425,7 +2424,6 @@ extern "C" libnvccResult libnvccCompileProgramToObject(
   }
 
   const std::string cubin_path = outputCubinPath ? outputCubinPath : "";
-  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   auto result = prog->compiler.compileToObject(prog->source, prog->name, outputObjectPath, cubin_path, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
@@ -2467,7 +2465,7 @@ extern "C" libnvccResult libnvccLinkToSharedLibrary(
     object_files.emplace_back(objectFiles[i]);
   }
 
-  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
+  const std::lock_guard<std::mutex> lock(g_link_mutex);
   auto result = prog->compiler.linkToSharedLibrary(object_files, outputLibraryPath, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_LINKING;
@@ -2498,7 +2496,6 @@ extern "C" libnvccResult libnvccCreatePCH(
   }
 
   std::string diagnostics;
-  const std::lock_guard<std::mutex> lock(g_native_compile_mutex);
   bool success =
     prog->compiler.createPCH(prog->source, kind, pchSourcePath, pchOutputPath, parsed_options, diagnostics);
   setProgramLog(prog, diagnostics);

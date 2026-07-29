@@ -137,14 +137,16 @@ struct ScanByKeyPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanByKeyPolicy
   {
-    return {.threads_per_block = 256,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
-            .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{
-                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+    return {.algorithm = cub::ScanByKeyAlgorithm::lookback,
+            .lookback  = {
+               .threads_per_block = 256,
+               .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
+               .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+               .load_modifier     = cub::LOAD_DEFAULT,
+               .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+               .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+               .lookback_delay    = cub::LookbackDelayPolicy{
+                    .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
   }
 };
 // example-end exclusive-sum-by-key-policy-selector
