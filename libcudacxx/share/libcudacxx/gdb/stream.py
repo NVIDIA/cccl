@@ -153,8 +153,8 @@ def _stream_info(handle_value: gdb.Value) -> StreamInfo:
         if capture_status is not None
         else None
     )
-    # The other stream queries can invalidate active graph capture. If capture
-    # state is active, invalidated, or unavailable, preserve the inferior state.
+    # Invoking the metadata query paths below as inferior calls invalidates
+    # global graph capture in GDB and LLDB. Preserve it until capture ends.
     if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
         return StreamInfo(handle, description, None, None, None, is_capturing, None)
 

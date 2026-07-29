@@ -52,6 +52,23 @@
 =============== stream.moved_from begin ===============
 (cuda::stream) handle=invalid, unique_id=unavailable
 =============== stream.moved_from end ===============
+=============== stream.summary begin ===============
+(const std::vector<cuda::stream_ref>) size=3 {
+  [0] = handle=<address>, unique_id=<id> {
+    device = 0
+    priority = 0
+    is_capturing = false
+    flags = 1
+  }
+  [1] = handle=default, unique_id=<id> {
+    device = 0
+    priority = 0
+    is_capturing = false
+    flags = 0
+  }
+  [2] = handle=invalid, unique_id=unavailable
+}
+=============== stream.summary end ===============
 =============== stream.update.before begin ===============
 (cuda::stream_ref) handle=default, unique_id=<id> {
   device = 0

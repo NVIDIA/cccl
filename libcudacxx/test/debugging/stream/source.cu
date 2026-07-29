@@ -5,6 +5,8 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <vector>
+
 #include <cuda_runtime_api.h>
 
 template <class T>
@@ -55,6 +57,11 @@ using stream_ref_alias = cuda::stream_ref;
   keep_for_debugger(value);
 }
 
+[[gnu::noinline]] void inspect_summary(const std::vector<cuda::stream_ref>& values)
+{
+  keep_for_debugger(values);
+}
+
 [[gnu::noinline]] void inspect_before_update(const cuda::stream_ref& value)
 {
   keep_for_debugger(value);
@@ -87,6 +94,7 @@ int main()
   const cuda::stream_ref invalid_stream{cuda::invalid_stream};
   cuda::stream moved_from_stream{device};
   const cuda::stream moved_to_stream{cuda::std::move(moved_from_stream)};
+  const std::vector<cuda::stream_ref> summarized_streams{stream_reference, default_stream, invalid_stream};
   cuda::stream_ref updated_stream{default_stream};
   const cuda::stream capture_stream{device};
 
@@ -98,6 +106,7 @@ int main()
   inspect_per_thread(per_thread_stream);
   inspect_invalid(invalid_stream);
   inspect_moved_from(moved_from_stream);
+  inspect_summary(summarized_streams);
   inspect_before_update(updated_stream);
   updated_stream = owning_stream;
   inspect_after_update(updated_stream);
@@ -106,9 +115,14 @@ int main()
   {
     return 1;
   }
+
+  // Printing at this breakpoint exercises the pretty-printers during global
+  // capture. A successful cudaStreamEndCapture below verifies that debugger
+  // inferior calls did not invalidate the capture.
   inspect_capturing(capture_stream);
   cudaGraph_t graph{};
-  if (cudaStreamEndCapture(capture_stream.get(), &graph) != cudaSuccess)
+  const cudaError_t end_capture_status = cudaStreamEndCapture(capture_stream.get(), &graph);
+  if (end_capture_status != cudaSuccess)
   {
     return 1;
   }
