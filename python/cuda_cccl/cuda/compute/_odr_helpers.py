@@ -145,7 +145,7 @@ def create_op_void_ptr_wrapper(op, sig):
     return wrapper_func, wrapper_sig
 
 
-def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes):
+def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     """Create a wrapper for a stateful operator.
 
     A stateful operator captures one or more device arrays as state.  The
@@ -157,6 +157,15 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes):
     - ``states``: pointer to the packed array of state data pointers,
     - ``K`` regular inputs (one per non-state argument of ``op``),
     - ``result``: pointer to the result storage.
+
+    Each packed pointer is a raw ``T*``.  The wrapper rebuilds it into a real
+    device ``Array`` with ``cuda.carray(ptr, shape)`` before handing it to the
+    operator, so the operator can use array operations on its captured state --
+    indexing (``state[i]``), ``len``, ``.shape`` and ``cuda.atomic.*`` all
+    require a shaped ``Array`` and do not work on a bare pointer.  ``state_shapes``
+    gives the (compile-time constant) shape of each state array; a distinct shape
+    produces a distinct wrapper, so the state shape must be part of the op cache
+    key (see ``_jit._JitOpState.get_cache_key``).
 
     ``state_dtypes`` is the list of numba-cuda-mlir scalar types of the state
     arrays.  All state arrays must share a dtype: the packed pointers are read
@@ -170,6 +179,8 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes):
     num_states = len(state_dtypes)
     if num_states == 0:
         raise ValueError("stateful op wrapper requires at least one state array")
+    if len(state_shapes) != num_states:
+        raise ValueError("state_shapes and state_dtypes must have the same length")
 
     unique_state_dtypes = set(state_dtypes)
     if len(unique_state_dtypes) > 1:
@@ -189,14 +200,20 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes):
     wrapper_name = _make_wrapper_name(op.__name__)
     input_names = [f"arg_{i}" for i in range(len(input_types))]
 
-    # states[j] reinterprets the j-th packed pointer as CPointer(state_dtype).
-    state_args = ", ".join(f"states[{j}]" for j in range(num_states))
+    # Rebuild the j-th packed pointer -- a CPointer(state_dtype) -- into a shaped
+    # device Array via carray so the operator can use array operations on it.
+    state_args = ", ".join(
+        f"cuda.carray(states[{j}], {tuple(state_shapes[j])!r})"
+        for j in range(num_states)
+    )
     input_args = ", ".join(f"{name}[0]" for name in input_names)
     call_args = ", ".join(a for a in (state_args, input_args) if a)
     reconstruct = _is_gpu_struct_type(return_type) and _op_returns_tuple(
         op_device, sig.args
     )
     body, extra_namespace = _result_store_body(call_args, return_type, reconstruct)
+    # carray is called through ``cuda`` inside the generated device function.
+    extra_namespace = {**extra_namespace, "cuda": cuda}
 
     wrapper_func = _build_wrapper(
         wrapper_name,

@@ -5,7 +5,7 @@
 
 # example-begin
 import cupy as cp
-from numba import cuda as numba_cuda
+from numba_cuda_mlir import cuda as numba_cuda
 
 from cuda.compute.algorithms import select
 
