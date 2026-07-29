@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented_radix_sort][env]", CUB_SMALL)
 {
   // example-begin segmented-radix-sort-pairs-env
   auto keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -54,7 +54,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "[segmented_radix_sort][env]", CUB_SMALL)
 {
   // example-begin segmented-radix-sort-pairs-descending-env
   auto keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -93,7 +93,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_radix_sort][env]", CUB_SMALL)
 {
   // example-begin segmented-radix-sort-keys-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -126,7 +126,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
   REQUIRE(keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[segmented_radix_sort][env]", CUB_SMALL)
 {
   // example-begin segmented-radix-sort-keys-descending-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -159,7 +159,9 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
   REQUIRE(keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys DoubleBuffer env with stream", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortKeys DoubleBuffer env with stream",
+         "[segmented_radix_sort][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-radix-sort-keys-db-env
   auto keys_buf = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -189,8 +191,9 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys DoubleBuffer env with stream",
   REQUIRE(result_keys == expected_keys);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer env with stream",
-         "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer env with stream",
+         "[segmented_radix_sort][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-radix-sort-keys-descending-db-env
   auto keys_buf = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -221,7 +224,9 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer env wit
   REQUIRE(result_keys == expected_keys);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs DoubleBuffer env with stream", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortPairs DoubleBuffer env with stream",
+         "[segmented_radix_sort][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-radix-sort-pairs-db-env
   auto keys_buf   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -267,8 +272,9 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs DoubleBuffer env with stream"
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer env with stream",
-         "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer env with stream",
+         "[segmented_radix_sort][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-radix-sort-pairs-descending-db-env
   auto keys_buf   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -352,7 +358,9 @@ struct SegmentedRadixSortPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys accepts a custom policy selector", "[segmented_radix_sort][env]")
+CUB_TEST("cub::DeviceSegmentedRadixSort::SortKeys accepts a custom policy selector",
+         "[segmented_radix_sort][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-radix-sort-keys-tuning
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};

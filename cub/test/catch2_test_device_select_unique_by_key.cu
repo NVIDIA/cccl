@@ -12,7 +12,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -112,7 +112,7 @@ using huge_types = c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t>;
 
-C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_unique_by_key]", types)
+CUB_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_unique_by_key]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -128,7 +128,7 @@ C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", types)
+CUB_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -155,7 +155,7 @@ C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
   REQUIRE(vals_in == vals_out);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", types)
+CUB_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", CUB_SMALL, types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -182,7 +182,7 @@ C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
   REQUIRE(vals_in[0] == vals_out[0]);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_unique_by_key]", types)
+CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_unique_by_key]", CUB_SMALL, types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -234,7 +234,7 @@ struct custom_equality_op
   }
 };
 
-C2H_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_unique_by_key]", all_types)
+CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_unique_by_key]", CUB_SMALL, all_types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -270,7 +270,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   REQUIRE(reference_vals == vals_out);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_unique_by_key]", types)
+CUB_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_unique_by_key]", CUB_SMALL, types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -331,7 +331,8 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DeviceSelect::UniqueByKey works with a different output type", "[device][select_unique_by_key]", types)
+CUB_TEST(
+  "DeviceSelect::UniqueByKey works with a different output type", "[device][select_unique_by_key]", CUB_SMALL, types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -367,8 +368,9 @@ C2H_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   REQUIRE(reference_vals == vals_out);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
+CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
          "[device][select_unique_by_key][vsmem]",
+         CUB_SMALL,
          huge_types)
 {
   using type     = std::uint32_t;
@@ -412,8 +414,9 @@ C2H_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
   REQUIRE(reference_vals == vals_out);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit offset types",
-         "[device][select_unique_by_key]")
+CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit offset types",
+         "[device][select_unique_by_key]",
+         CUB_SMALL)
 {
   using type       = std::int32_t;
   using index_type = std::int64_t;
@@ -440,8 +443,9 @@ C2H_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit 
   REQUIRE(reference_values == values_out);
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-bit offset types",
-         "[device][select_unique_by_key]")
+CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-bit offset types",
+         "[device][select_unique_by_key]",
+         CUB_SMALL)
 {
   using type       = std::int32_t;
   using index_type = std::int64_t;
@@ -463,7 +467,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-b
   REQUIRE(num_items == static_cast<std::size_t>(num_selected_out[0]));
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey works with a custom equality operator", "[device][select_unique_by_key]")
+CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator", "[device][select_unique_by_key]", CUB_SMALL)
 {
   using type        = std::int32_t;
   using custom_op_t = custom_equality_op<type>;

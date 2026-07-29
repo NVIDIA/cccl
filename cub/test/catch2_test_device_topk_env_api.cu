@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // Simple user-defined key type for the decomposer-based examples.
 struct topk_custom_t
@@ -42,7 +42,7 @@ struct topk_custom_decomposer_t
   }
 };
 
-C2H_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-keys-env
   auto d_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
@@ -72,7 +72,7 @@ C2H_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]")
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceTopK::MinKeys env-alloc accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MinKeys env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-keys-env
   auto d_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
@@ -101,7 +101,7 @@ C2H_TEST("cub::DeviceTopK::MinKeys env-alloc accepts stream_ref", "[topk][env]")
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceTopK::MaxPairs env-alloc accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-pairs-env
   auto d_keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
@@ -139,7 +139,7 @@ C2H_TEST("cub::DeviceTopK::MaxPairs env-alloc accepts stream_ref", "[topk][env]"
   REQUIRE(d_keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-pairs-env
   auto d_keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
@@ -177,7 +177,7 @@ C2H_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]"
   REQUIRE(d_keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-keys-decomposer-env
   thrust::host_vector<topk_custom_t> h_in{
@@ -213,7 +213,7 @@ C2H_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref"
   REQUIRE(actual_ranks == expected_ranks);
 }
 
-C2H_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-keys-decomposer-env
   thrust::host_vector<topk_custom_t> h_in{
@@ -249,7 +249,7 @@ C2H_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref"
   REQUIRE(actual_ranks == expected_ranks);
 }
 
-C2H_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-pairs-decomposer-env
   thrust::host_vector<topk_custom_t> h_keys_in{
@@ -294,7 +294,7 @@ C2H_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref
   REQUIRE(actual_ranks == expected_ranks);
 }
 
-C2H_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref", "[topk][env]")
+CUB_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-pairs-decomposer-env
   thrust::host_vector<topk_custom_t> h_keys_in{
