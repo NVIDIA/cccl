@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+// [large-mem]
+
 #include <cub/device/device_copy.cuh>
 #include <cub/util_ptx.cuh>
 

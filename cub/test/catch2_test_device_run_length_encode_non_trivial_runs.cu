@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+// [medium-mem]
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_run_length_encode.cuh>

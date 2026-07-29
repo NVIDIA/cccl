@@ -72,7 +72,7 @@ struct div_op
   }
 };
 
-C2H_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", offset_types)
+C2H_TEST("DeviceScan::ScanByKey works for very large number of items", "[large-mem][by_key][scan][device]", offset_types)
 try
 {
   using op_t     = cuda::std::plus<>;

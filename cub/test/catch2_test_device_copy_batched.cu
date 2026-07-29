@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// [medium-mem]
 
 #include <cub/device/device_copy.cuh>
 #include <cub/util_macro.cuh>

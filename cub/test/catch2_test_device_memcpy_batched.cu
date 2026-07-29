@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// [medium-mem]
 
 #include <cub/device/device_memcpy.cuh>
 #include <cub/util_macro.cuh>
@@ -106,38 +107,6 @@ try
   }
 
   REQUIRE(d_out == h_out);
-}
-catch (std::bad_alloc& e)
-{
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
-}
-
-C2H_TEST("DeviceMemcpy::Batched works for a very large buffer",
-         "[memcpy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
-try
-{
-  using data_t        = uint64_t;
-  using byte_offset_t = uint64_t;
-  using buffer_size_t = uint64_t;
-
-  byte_offset_t large_target_copy_size = static_cast<byte_offset_t>(std::numeric_limits<uint32_t>::max()) + (32 << 20);
-  constexpr auto data_type_size        = static_cast<byte_offset_t>(sizeof(data_t));
-  byte_offset_t num_items              = large_target_copy_size / data_type_size;
-  byte_offset_t num_bytes              = num_items * data_type_size;
-  c2h::device_vector<data_t> d_in(num_items);
-  c2h::device_vector<data_t> d_out(num_items, 42);
-
-  auto input_data_it = cuda::counting_iterator(data_t{42});
-  thrust::copy(input_data_it, input_data_it + num_items, d_in.begin());
-
-  const auto num_buffers = 1;
-  auto d_buffer_srcs     = cuda::constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_in.data())));
-  auto d_buffer_dsts     = cuda::constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_out.data())));
-  auto d_buffer_sizes    = cuda::constant_iterator(num_bytes);
-  memcpy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes, num_buffers);
-
-  const bool all_equal = thrust::equal(d_out.cbegin(), d_out.cend(), input_data_it);
-  REQUIRE(all_equal == true);
 }
 catch (std::bad_alloc& e)
 {

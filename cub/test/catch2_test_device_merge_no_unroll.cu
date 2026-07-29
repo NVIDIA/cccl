@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// [medium-mem]
 
 // Define this to enable compile-time optimizations that avoid unrolling
 // some loops in the merge kernels. This reduces the compile time for this
