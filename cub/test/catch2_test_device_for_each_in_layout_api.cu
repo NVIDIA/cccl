@@ -22,7 +22,7 @@
 #  include <cstdlib>
 #  include <iostream>
 
-#  include "catch2_test_macros.h"
+#  include "cub_test_macros.h"
 
 // example-begin for-each-in-layout-op
 struct layout_store_3D

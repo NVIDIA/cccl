@@ -18,7 +18,7 @@
 #  include <limits>
 #  include <numeric>
 
-#  include "../catch2_test_macros.h"
+#  include "../cub_test_macros.h"
 #  include "c2h/extended_types.h"
 #  include "c2h/generators.h"
 #  include <catch2/matchers/catch_matchers_floating_point.hpp>

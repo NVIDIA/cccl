@@ -24,7 +24,7 @@
 #  include <cstdlib>
 #  include <iostream>
 
-#  include "catch2_test_macros.h"
+#  include "cub_test_macros.h"
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
