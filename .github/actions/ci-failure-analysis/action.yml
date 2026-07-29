@@ -5,7 +5,7 @@ description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 # - Grant `actions: read` and `contents: read`; add `pull-requests: read` when
 #   `pr_number` is provided.
 # - Finish the relevant target jobs before invoking the action.
-# - Check out the target source revision when repository inspection is desired.
+# - Check out the target run's source revision before invoking the action.
 inputs:
   inference_api_key:
     description: "NVIDIA Inference Hub API key."
@@ -37,6 +37,16 @@ runs:
           /tmp/ci-logs \
           "${RUN_ID}" \
           "${PR_NUMBER}"
+
+    - name: Verify source revision
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        expected_sha="$(jq -er '.head_sha | select(test("^[0-9a-f]{40}$"))' /tmp/ci-logs/run.json)"
+        actual_sha="$(git -C "${GITHUB_WORKSPACE}" rev-parse HEAD)"
+        if [[ "${actual_sha}" != "${expected_sha}" ]]; then
+          echo "Checked out revision ${actual_sha} does not match target run revision ${expected_sha}." >&2
+          exit 1
+        fi
 
     - name: Configure agent permissions
       shell: bash --noprofile --norc -euo pipefail {0}
