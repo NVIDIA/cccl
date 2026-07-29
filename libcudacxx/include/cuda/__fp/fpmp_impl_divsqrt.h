@@ -113,7 +113,6 @@ _CCCL_FPMP_CORE_API void __fpmp2_div(
   *__res_hi = __e;
 } // __fpmp2_div
 
-#  if _CCCL_FPMP_USE_ACCURATE_DIV == 1
 /*
  * --------------------------------------------------------------------
  * Accurate Division with Conditional Scaling
@@ -132,6 +131,12 @@ _CCCL_FPMP_CORE_API void __fpmp2_div(
  *   2. Scale the small operand up before division
  *   3. Perform division using the Nagai et al. algorithm
  *   4. Scale the result back
+ *
+ * The scaling keeps the reciprocal in range at BOTH ends of the exponent axis:
+ * small operands near denormal, and large divisors whose reciprocal would
+ * otherwise underflow to a denormal and be flushed to zero by FTZ. It costs
+ * about 1.5x over the plain Nagai division and is the path taken by
+ * fpmp2_accuracy::high; def/low are unaffected.
  *
  * Reference:
  *   Nagai, Yoshida, Kuroda, Kanada (2008). Fast Quadruple Precision
@@ -243,7 +248,6 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_div(
   // Final normalization to ensure (hi, lo) invariant after scaling
   *__res_hi = __fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
 } // __fpmp2_high_div
-#  endif // _CCCL_FPMP_USE_ACCURATE_DIV == 1
 
 /*
  * --------------------------------------------------------------------
@@ -344,7 +348,6 @@ _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_low_div(
   const float __b_lo,
   float* __res_hi,
   float* __res_lo) noexcept;
-#  if _CCCL_FPMP_USE_ACCURATE_DIV == 1
 _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_high_div(
   const float __a_hi,
   const float __a_lo,
@@ -352,7 +355,6 @@ _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_high_div(
   const float __b_lo,
   float* __res_hi,
   float* __res_lo) noexcept;
-#  endif // _CCCL_FPMP_USE_ACCURATE_DIV == 1
 _CCCL_FPMP_BUILTIN_DECL void
 __fp32mp2_sqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void
@@ -380,7 +382,6 @@ _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_low_div(
   const double __b_lo,
   double* __res_hi,
   double* __res_lo) noexcept;
-#  if _CCCL_FPMP_USE_ACCURATE_DIV == 1
 _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_high_div(
   const double __a_hi,
   const double __a_lo,
@@ -388,7 +389,6 @@ _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_high_div(
   const double __b_lo,
   double* __res_hi,
   double* __res_lo) noexcept;
-#  endif // _CCCL_FPMP_USE_ACCURATE_DIV == 1
 _CCCL_FPMP_BUILTIN_DECL void
 __fp64mp2_sqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void
@@ -404,11 +404,9 @@ _CCCL_API inline void __fpmp2_mid_div(
 template <typename _Tp>
 _CCCL_API inline void __fpmp2_low_div(
   const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
-#  if _CCCL_FPMP_USE_ACCURATE_DIV == 1
 template <typename T>
 _CCCL_API inline void
 __fpmp2_high_div(const T __a_hi, const T __a_lo, const T __b_hi, const T __b_lo, T* __res_hi, T* __res_lo) noexcept;
-#  endif // _CCCL_FPMP_USE_ACCURATE_DIV == 1
 template <typename _Tp>
 _CCCL_API inline void __fpmp2_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
@@ -448,7 +446,6 @@ _CCCL_API inline void __fpmp2_low_div<float>(
 {
   __fp32mp2_low_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
-#  if _CCCL_FPMP_USE_ACCURATE_DIV == 1
 template <>
 _CCCL_API inline void __fpmp2_high_div<float>(
   const float __a_hi,
@@ -460,7 +457,6 @@ _CCCL_API inline void __fpmp2_high_div<float>(
 {
   __fp32mp2_high_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
-#  endif // _CCCL_FPMP_USE_ACCURATE_DIV == 1
 template <>
 _CCCL_API inline void
 __fpmp2_sqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
@@ -508,7 +504,6 @@ _CCCL_API inline void __fpmp2_low_div<double>(
 {
   __fp64mp2_low_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
-#  if _CCCL_FPMP_USE_ACCURATE_DIV == 1
 template <>
 _CCCL_API inline void __fpmp2_high_div<double>(
   const double __a_hi,
@@ -520,7 +515,6 @@ _CCCL_API inline void __fpmp2_high_div<double>(
 {
   __fp64mp2_high_div(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
-#  endif // _CCCL_FPMP_USE_ACCURATE_DIV == 1
 template <>
 _CCCL_API inline void
 __fpmp2_sqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept

@@ -42,8 +42,8 @@
         * Addition: __fpmp2_add, __fpmp2_low_add, __fpmp2_high_add
         * Subtraction: __fpmp2_sub, __fpmp2_low_sub, __fpmp2_high_sub
         * Accumulate: __fpmp2_acc, __fpmp2_low_acc, __fpmp2_high_acc (optimized single-component add)
-        * Multiplication: __fpmp2_mul, __fpmp2_low_mul, __fpmp2_high_mul (if _CCCL_FPMP_USE_ACCURATE_MUL == 1)
-        * Division: __fpmp2_div, __fpmp2_low_div, __fpmp2_high_div (if _CCCL_FPMP_USE_ACCURATE_DIV == 1)
+        * Multiplication: __fpmp2_mul, __fpmp2_low_mul
+        * Division: __fpmp2_div, __fpmp2_low_div, __fpmp2_high_div
         * Negation: __fpmp2_neg
         * Renormalization: __fpmp2_renormalize
 
@@ -356,72 +356,6 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 #  define _CCCL_FPMP_CORE_DEVICE_API _CCCL_DEVICE_API
 #endif
 
-/*
-// Optional function qualifiers for portable API annotation.
-// _CCCL_FPMP_CONSTEXPR can be used only on functions whose bodies are valid
-// constant-evaluation code across all supported toolchains.
-*/
-#ifndef _CCCL_FPMP_CONSTEXPR
-#  define _CCCL_FPMP_CONSTEXPR constexpr
-#endif
-
-#ifndef _CCCL_FPMP_NOEXCEPT
-#  define _CCCL_FPMP_NOEXCEPT noexcept
-#endif
-
-/*
-// fp32mp2 large-argument trig: fallback to system fp64 sin/cos (1) or use dedicated Payne-Hanek reduction (0)
-*/
-#ifndef _CCCL_FPMP_LARGE_TRIG_FP64_FALLBACK
-#  define _CCCL_FPMP_LARGE_TRIG_FP64_FALLBACK 0
-#endif
-
-/*
-// Internal macro for inline assembly support
-// for reciprocal and reciprocal square root operations when available (CUDA)
-// When _CCCL_FPMP_USE_INLINE_ASM_RSQRT is 1, the inline assembly is used
-// When _CCCL_FPMP_USE_INLINE_ASM_RSQRT is 0, the inline assembly is not used
-// When _CCCL_FPMP_USE_INLINE_ASM_RCP is 1, the inline assembly is used
-// When _CCCL_FPMP_USE_INLINE_ASM_RCP is 0, the inline assembly is not used
-// The default is to use inline assembly
-// This is the fastest option, but may cause accuracy loss in subtle domains
-// close to denormals or large numbers.
-*/
-#ifndef _CCCL_FPMP_USE_INLINE_ASM_RSQRT
-#  define _CCCL_FPMP_USE_INLINE_ASM_RSQRT 1
-#endif
-#ifndef _CCCL_FPMP_USE_INLINE_ASM_RCP
-#  define _CCCL_FPMP_USE_INLINE_ASM_RCP 1
-#endif
-/*
-// _CCCL_FPMP_USE_INLINE_ASM_EX2_LG2 controls the implementation of the single-precision
-// fast exp2 / log2 helpers used by the fp32mp2 transcendental kernels (cbrt, ...).
-// When 1 (default on CUDA): emit ex2.approx.ftz.f32 / lg2.approx.ftz.f32 inline asm.
-// When 0: fall back to the __exp2f / __log2f device intrinsics.
-*/
-#ifndef _CCCL_FPMP_USE_INLINE_ASM_EX2_LG2
-#  define _CCCL_FPMP_USE_INLINE_ASM_EX2_LG2 1
-#endif
-/*
-// Internal macro for accurate multiplication & division support
-// When _CCCL_FPMP_USE_ACCURATE_MUL is 1, the accurate multiplication is used
-// When _CCCL_FPMP_USE_ACCURATE_MUL is 0, the accurate multiplication is not used
-// When _CCCL_FPMP_USE_ACCURATE_DIV is 1, the accurate division is used
-// When _CCCL_FPMP_USE_ACCURATE_DIV is 0, the accurate division is not used
-// Defaults: accurate multiplication is OFF, accurate division is ON. The
-// accurate division routes fpmp2_accuracy::high through __fpmp2_high_div, whose
-// branch-free exponent scaling keeps the reciprocal in range at BOTH ends of
-// the exponent axis (small operands near denormal AND large divisors whose
-// reciprocal would otherwise underflow to a denormal and be flushed to 0 by
-// FTZ). It costs about 1.5x over the plain Nagai division; def/low are unaffected.
-*/
-#ifndef _CCCL_FPMP_USE_ACCURATE_MUL
-#  define _CCCL_FPMP_USE_ACCURATE_MUL 0
-#endif
-#ifndef _CCCL_FPMP_USE_ACCURATE_DIV
-#  define _CCCL_FPMP_USE_ACCURATE_DIV 1
-#endif
-
 /*********************************************************************
  * Internal utilities
  *********************************************************************/
@@ -484,37 +418,26 @@ _CCCL_TRIVIAL_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
 {
   return __fmaf_ieee_rn(__x, __y, __z);
 }
-#  if _CCCL_FPMP_USE_INLINE_ASM_RCP == 1
+// The approximate SFU reciprocal / reciprocal square root are emitted as inline asm
+// rather than through __frcp_rn / __frsqrt_rn: they are the fastest option and only
+// ever feed Newton refinement, at the cost of accuracy in subtle domains close to
+// denormals or large numbers.
 _CCCL_TRIVIAL_API float __fpmp_rcp_rn(float __x) noexcept
 {
   float __r;
   asm("rcp.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
   return __r;
 }
-#  else
-_CCCL_TRIVIAL_API float __fpmp_rcp_rn(float __x) noexcept
-{
-  return __frcp_rn(__x);
-}
-#  endif
-#  if _CCCL_FPMP_USE_INLINE_ASM_RSQRT == 1
 _CCCL_TRIVIAL_API float __fpmp_rsqrt_rn(float __x) noexcept
 {
   float __r;
   asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
   return __r;
 }
-#  else
-_CCCL_TRIVIAL_API float __fpmp_rsqrt_rn(float __x) noexcept
-{
-  return __frsqrt_rn(__x);
-}
-#  endif
 // Fast single-precision base-2 exp / log mapped to the FP32 SFU
 // approximation units (ex2.approx / lg2.approx). These are not
 // correctly rounded; they are used as initial estimates for
 // higher-precision Newton/Halley refinement.
-#  if _CCCL_FPMP_USE_INLINE_ASM_EX2_LG2 == 1
 _CCCL_TRIVIAL_API float __fpmp_fast_exp2(float __x) noexcept
 {
   float __r;
@@ -527,16 +450,6 @@ _CCCL_TRIVIAL_API float __fpmp_fast_log2(float __x) noexcept
   asm("lg2.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
   return __r;
 }
-#  else
-_CCCL_TRIVIAL_API float __fpmp_fast_exp2(float __x) noexcept
-{
-  return __exp2f(__x);
-}
-_CCCL_TRIVIAL_API float __fpmp_fast_log2(float __x) noexcept
-{
-  return __log2f(__x);
-}
-#  endif
 _CCCL_TRIVIAL_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 {
   return __float2int_rz(__x);
@@ -1078,8 +991,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_two_sum(const _FpType __x, const _FpType __y, _
 
 // double -> (hi, lo) conversions (plain versions)
 // only for the C++ class below to be optimized in compile-time
-_CCCL_API _CCCL_FPMP_CONSTEXPR void
-__fpmp_from_double(const double __x, float* __res_hi, float* __res_lo) _CCCL_FPMP_NOEXCEPT
+_CCCL_API constexpr void __fpmp_from_double(const double __x, float* __res_hi, float* __res_lo) noexcept
 {
   *__res_hi = (float) __x;
   *__res_lo = (float) (__x - (double) (float) __x);

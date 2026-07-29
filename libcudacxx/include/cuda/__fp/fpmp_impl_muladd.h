@@ -352,112 +352,6 @@ _CCCL_FPMP_CORE_API void __fpmp2_mul(
   *__res_lo = __res_lo_tmp;
 } // __fpmp2_mul
 
-#  if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-/*
- * Dekker multiplication with branch-free conditional scaling
- * ===========================================================
- *
- * This implementation uses the standard Dekker multiplication algorithm
- * with branch-free conditional scaling to handle subnormal results accurately.
- *
- * The standard Dekker algorithm fails when the product approaches the
- * subnormal range because the error term from two_mult_fma loses precision
- * due to gradual underflow. This implementation detects such cases using
- * bit manipulation and applies scaling to ensure all intermediate computations
- * happen in the normal range where error-free transformations are exact.
- *
- * ALGORITHM:
- *   1. Compute conditional scale factor based on operand exponents (branch-free).
- *   2. Scale first operand if product would be small.
- *   3. Perform standard Dekker multiplication.
- *   4. Scale result back with inverse factor.
- *
- * CONDITIONAL SCALE COMPUTATION (branch-free):
- *   - Extract sum of exponents from x_hi and y_hi.
- *   - If sum < threshold: scale = 2^64 (float) or 2^512 (double), else scale = 1.0
- *   - Use bit manipulation to select between scale values without branches.
- *
- * PERFORMANCE:
- *   - Normal case: scale = 1.0, minimal overhead (MUL by 1.0 is fast).
- *   - Subnormal case: full scaling applied for accuracy.
- *   - Branch-free: no GPU warp divergence.
- *   - Overhead vs __fpmp2_mul: ~6 integer ops + 4 MUL (often identity) + 1 fast_two_sum.
- *
- * REFERENCE:
- *   Dekker, T. (1971). A floating-point technique for extending available precision.
- *   Conditional scaling adapted from QD library techniques.
- */
-template <typename _FpType = float>
-_CCCL_FPMP_CORE_API void __fpmp2_high_mul(
-  const _FpType __x_hi,
-  const _FpType __x_lo,
-  const _FpType __y_hi,
-  const _FpType __y_lo,
-  _FpType* __res_hi,
-  _FpType* __res_lo) noexcept
-{
-  // Type-specific constants for conditional scaling
-  using UintType = ::cuda::std::conditional_t<__fpmp2_is_fp32_v<_FpType>, uint32_t, uint64_t>;
-
-  constexpr int __exp_bits      = __fpmp2_is_fp32_v<_FpType> ? 8 : 11;
-  constexpr int __mant_bits     = __fpmp2_is_fp32_v<_FpType> ? 23 : 52;
-  constexpr int __exp_bias      = __fpmp2_is_fp32_v<_FpType> ? 127 : 1023;
-  constexpr UintType __exp_mask = ((UintType(1) << __exp_bits) - 1) << __mant_bits;
-
-  // Threshold: if combined exponent < this, we need scaling
-  // For float: scale_shift=64, threshold=190 (2*127-64)
-  // For double: scale_shift=512, threshold=1534 (2*1023-512)
-  constexpr int __scale_shift   = __fpmp2_is_fp32_v<_FpType> ? 64 : 512;
-  constexpr int __exp_threshold = 2 * __exp_bias - __scale_shift;
-
-  // Scale factors
-  constexpr _FpType __scale_up   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p64f) : _FpType(0x1.0p512);
-  constexpr _FpType __scale_down = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-64f) : _FpType(0x1.0p-512);
-
-  // Extract exponents and compute conditional scale (branch-free)
-  UintType __x_bits = ::cuda::std::bit_cast<UintType>(__x_hi);
-  UintType __y_bits = ::cuda::std::bit_cast<UintType>(__y_hi);
-  int __x_exp       = static_cast<int>((__x_bits & __exp_mask) >> __mant_bits);
-  int __y_exp       = static_cast<int>((__y_bits & __exp_mask) >> __mant_bits);
-  int __result_exp  = __x_exp + __y_exp;
-
-  // Create mask: -1 (all 1s) if needs scaling, 0 otherwise
-  int __needs_scale = (__result_exp - __exp_threshold) >> 31;
-
-  // Select scale factor using bit manipulation (branch-free)
-  UintType __scale_up_bits = ::cuda::std::bit_cast<UintType>(__scale_up);
-  UintType __one_bits      = ::cuda::std::bit_cast<UintType>(_FpType(1.0));
-  UintType __scale_bits    = (__scale_up_bits & UintType(__needs_scale)) | (__one_bits & UintType(~__needs_scale));
-  _FpType __scale          = ::cuda::std::bit_cast<_FpType>(__scale_bits);
-
-  UintType __scale_down_bits = ::cuda::std::bit_cast<UintType>(__scale_down);
-  UintType __inv_scale_bits  = (__scale_down_bits & UintType(__needs_scale)) | (__one_bits & UintType(~__needs_scale));
-  _FpType __inv_scale        = ::cuda::std::bit_cast<_FpType>(__inv_scale_bits);
-
-  // Scale first operand
-  _FpType __a_hi = __fpmp_mul_rn(__x_hi, __scale);
-  _FpType __a_lo = __fpmp_mul_rn(__x_lo, __scale);
-
-  // Standard Dekker multiplication
-  _FpType __c_lo;
-  _FpType __c_hi = __fpmp_two_mult_fma(__a_hi, __y_hi, &__c_lo);
-  _FpType __p1   = __fpmp_mul_rn(__a_hi, __y_lo);
-  _FpType __p2   = __fpmp_mul_rn(__a_lo, __y_hi);
-  __c_lo         = __fpmp_add_rn(__c_lo, __fpmp_add_rn(__p1, __p2));
-
-  // Normalize
-  _FpType __r_lo;
-  _FpType __r_hi = __fpmp_fast_two_sum(__c_hi, __c_lo, &__r_lo);
-
-  // Scale back
-  __r_hi = __fpmp_mul_rn(__r_hi, __inv_scale);
-  __r_lo = __fpmp_mul_rn(__r_lo, __inv_scale);
-
-  // Final normalization to ensure (hi, lo) invariant after scaling
-  *__res_hi = __fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
-} // __fpmp2_high_mul
-#  endif // _CCCL_FPMP_USE_ACCURATE_MUL == 1
-
 /* Compute fast fused multiply-add: x*y+z  (16 ops, no normalization)
     Uses hardware FMA for the main term (single rounding), then recovers
     the exact error via the Boldo-Muller EFT:
@@ -734,15 +628,6 @@ _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_low_mul(
   const float __y_lo,
   float* __res_hi,
   float* __res_lo) noexcept;
-#  if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-_CCCL_FPMP_BUILTIN_DECL void __fp32mp2_high_mul(
-  const float __x_hi,
-  const float __x_lo,
-  const float __y_hi,
-  const float __y_lo,
-  float* __res_hi,
-  float* __res_lo) noexcept;
-#  endif // _CCCL_FPMP_USE_ACCURATE_MUL == 1
 _CCCL_FPMP_BUILTIN_DECL void
 __fp32mp2_renormalize(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void __fp32mp2_mad(
@@ -902,15 +787,6 @@ _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_low_mul(
   const double __y_lo,
   double* __res_hi,
   double* __res_lo) noexcept;
-#  if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-_CCCL_FPMP_BUILTIN_DECL void __fp64mp2_high_mul(
-  const double __x_hi,
-  const double __x_lo,
-  const double __y_hi,
-  const double __y_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept;
-#  endif // _CCCL_FPMP_USE_ACCURATE_MUL == 1
 _CCCL_FPMP_BUILTIN_DECL void
 __fp64mp2_renormalize(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_mad(
@@ -1030,11 +906,6 @@ _CCCL_API inline void __fpmp2_mid_mul(
 template <typename _Tp>
 _CCCL_API inline void __fpmp2_low_mul(
   const _Tp __x_hi, const _Tp __x_lo, const _Tp __y_hi, const _Tp __y_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
-#  if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-template <typename T>
-_CCCL_API inline void
-__fpmp2_high_mul(const T __x_hi, const T __x_lo, const T __y_hi, const T __y_lo, T* __res_hi, T* __res_lo) noexcept;
-#  endif // _CCCL_FPMP_USE_ACCURATE_MUL == 1
 template <typename _Tp>
 _CCCL_API inline void __fpmp2_renormalize(const _Tp __x_hi, const _Tp __x_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
@@ -1272,19 +1143,6 @@ _CCCL_API inline void __fpmp2_low_mul<float>(
 {
   __fp32mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
-#  if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-template <>
-_CCCL_API inline void __fpmp2_high_mul<float>(
-  const float __x_hi,
-  const float __x_lo,
-  const float __y_hi,
-  const float __y_lo,
-  float* __res_hi,
-  float* __res_lo) noexcept
-{
-  __fp32mp2_high_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
-}
-#  endif // _CCCL_FPMP_USE_ACCURATE_MUL == 1
 template <>
 _CCCL_API inline void
 __fpmp2_renormalize<float>(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
@@ -1544,19 +1402,6 @@ _CCCL_API inline void __fpmp2_low_mul<double>(
 {
   __fp64mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
-#  if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-template <>
-_CCCL_API inline void __fpmp2_high_mul<double>(
-  const double __x_hi,
-  const double __x_lo,
-  const double __y_hi,
-  const double __y_lo,
-  double* __res_hi,
-  double* __res_lo) noexcept
-{
-  __fp64mp2_high_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
-}
-#  endif // _CCCL_FPMP_USE_ACCURATE_MUL == 1
 template <>
 _CCCL_API inline void
 __fpmp2_renormalize<double>(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept

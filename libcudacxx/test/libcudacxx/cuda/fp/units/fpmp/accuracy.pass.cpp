@@ -50,20 +50,13 @@ _CCCL_HOST_DEVICE bool run_test()
   // mul<m> vs operator*.
   ok = ok && ((double) mul<fpmp2_accuracy::def>(xd, yd) == (double) (xd * yd));
   ok = ok && ((double) mul<fpmp2_accuracy::low>(xd, yd) == (double) (xf * yf));
-#if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-  ok = ok && ((double) mul<fpmp2_accuracy::high>(xd, yd) == (double) (xa * ya));
-#else
+  // There is no dedicated accurate multiplication, so high resolves to the default path.
   ok = ok && ((double) mul<fpmp2_accuracy::high>(xd, yd) == (double) (xd * yd));
-#endif
 
   // div<m> vs operator/.
   ok = ok && ((double) div<fpmp2_accuracy::def>(xd, yd) == (double) (xd / yd));
   ok = ok && ((double) div<fpmp2_accuracy::low>(xd, yd) == (double) (xf / yf));
-#if _CCCL_FPMP_USE_ACCURATE_DIV == 1
   ok = ok && ((double) div<fpmp2_accuracy::high>(xd, yd) == (double) (xa / ya));
-#else
-  ok = ok && ((double) div<fpmp2_accuracy::high>(xd, yd) == (double) (xd / yd));
-#endif
 
   // fma<m> vs fma().
   ok = ok && ((double) fma<fpmp2_accuracy::def>(xd, yd, zd) == (double) fma(xd, yd, zd));

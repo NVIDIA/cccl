@@ -694,12 +694,6 @@ public:
     {
       __fpmp2_low_mul(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
-#if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-    else if constexpr (_TypeAcc == fpmp2_accuracy::high)
-    {
-      __fpmp2_high_mul(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
-    }
-#endif
     else
     {
       __fpmp2_mul(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
@@ -715,12 +709,10 @@ public:
     {
       __fpmp2_low_div(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
-#if _CCCL_FPMP_USE_ACCURATE_DIV == 1
     else if constexpr (_TypeAcc == fpmp2_accuracy::high)
     {
       __fpmp2_high_div(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
-#endif
     else
     {
       __fpmp2_div(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
@@ -1190,12 +1182,6 @@ mul(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   {
     __fpmp2_low_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
-#if _CCCL_FPMP_USE_ACCURATE_MUL == 1
-  else if constexpr (_Acc == fpmp2_accuracy::high)
-  {
-    __fpmp2_high_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
-  }
-#endif
   else
   {
     __fpmp2_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
@@ -1221,12 +1207,10 @@ div(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   {
     __fpmp2_low_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
-#if _CCCL_FPMP_USE_ACCURATE_DIV == 1
   else if constexpr (_Acc == fpmp2_accuracy::high)
   {
     __fpmp2_high_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
-#endif
   else
   {
     __fpmp2_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
