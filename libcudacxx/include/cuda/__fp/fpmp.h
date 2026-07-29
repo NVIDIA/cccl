@@ -495,7 +495,7 @@ public:
   */
   _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
-#if __cplusplus >= 202002L
+#if _CCCL_STD_VER >= 2020
   _CCCL_API constexpr _CCCL_FPMP_EXPLICIT fpmp2(double __d) noexcept
   {
     if (::cuda::std::is_constant_evaluated())
@@ -524,7 +524,7 @@ public:
   _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
   _CCCL_API constexpr _CCCL_FPMP_EXPLICIT fpmp2(__fpmp_fp128 __d) noexcept
-#  if __cplusplus >= 202002L
+#  if _CCCL_STD_VER >= 2020
   {
     if (::cuda::std::is_constant_evaluated())
     {

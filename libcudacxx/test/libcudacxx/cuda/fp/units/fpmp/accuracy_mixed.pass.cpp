@@ -15,9 +15,8 @@
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
-
-#include <type_traits>
-#include <utility>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -25,17 +24,21 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 
 // Result type must match the participating fpmp2 type, regardless of operand
 // order or which argument is the scalar.
-static_assert(std::is_same<decltype(add<fpmp2_accuracy::high>(std::declval<fp32mp2>(), 1.0f)), fp32mp2>::value,
-              "add(mp2_def, float) must return mp2_def");
-static_assert(std::is_same<decltype(sub<fpmp2_accuracy::low>(1.0f, std::declval<fp32mp2_low>())), fp32mp2_low>::value,
-              "sub(float, mp2_low) must return mp2_low");
-static_assert(std::is_same<decltype(mul<fpmp2_accuracy::high>(std::declval<fp32mp2_high>(), 2)), fp32mp2_high>::value,
-              "mul(mp2_high, int) must return mp2_high");
 static_assert(
-  std::is_same<decltype(fma<fpmp2_accuracy::low>(1.0f, std::declval<fp32mp2_low>(), 2.0f)), fp32mp2_low>::value,
-  "fma(float, mp2_low, float) must return mp2_low");
-static_assert(std::is_same<decltype(mad<fpmp2_accuracy::def>(1.0f, 2.0f, std::declval<fp32mp2>())), fp32mp2>::value,
-              "mad(float, float, mp2_def) must return mp2_def");
+  ::cuda::std::is_same<decltype(add<fpmp2_accuracy::high>(::cuda::std::declval<fp32mp2>(), 1.0f)), fp32mp2>::value,
+  "add(mp2_def, float) must return mp2_def");
+static_assert(::cuda::std::is_same<decltype(sub<fpmp2_accuracy::low>(1.0f, ::cuda::std::declval<fp32mp2_low>())),
+                                   fp32mp2_low>::value,
+              "sub(float, mp2_low) must return mp2_low");
+static_assert(::cuda::std::is_same<decltype(mul<fpmp2_accuracy::high>(::cuda::std::declval<fp32mp2_high>(), 2)),
+                                   fp32mp2_high>::value,
+              "mul(mp2_high, int) must return mp2_high");
+static_assert(::cuda::std::is_same<decltype(fma<fpmp2_accuracy::low>(1.0f, ::cuda::std::declval<fp32mp2_low>(), 2.0f)),
+                                   fp32mp2_low>::value,
+              "fma(float, mp2_low, float) must return mp2_low");
+static_assert(
+  ::cuda::std::is_same<decltype(mad<fpmp2_accuracy::def>(1.0f, 2.0f, ::cuda::std::declval<fp32mp2>())), fp32mp2>::value,
+  "mad(float, float, mp2_def) must return mp2_def");
 
 // Each mixed-type call must equal the strict form (scalars wrapped in the fpmp2
 // type) bit-for-bit.

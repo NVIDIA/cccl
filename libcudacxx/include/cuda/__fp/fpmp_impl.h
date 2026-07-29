@@ -117,17 +117,12 @@ namespace cuda::experimental
 // fpmp_common.h now carries only the public API surface).
 // ===================================================================
 /*
-// Require C++11 minimum for alignas support
+// Require C++17: the dispatch below is written with if constexpr throughout.
+// Asked through _CCCL_STD_VER rather than __cplusplus, which MSVC pins at 199711L
+// unless /Zc:__cplusplus is passed; _CCCL_STD_VER reads _MSVC_LANG there.
 */
-#if !defined(__cplusplus) || __cplusplus < 201103L
-#  error "This header requires C++11 or later (for alignas, constexpr, etc.)"
-#endif
-
-/*
-// Check for if constexpr support (C++17)
-*/
-#if __cplusplus < 201703L
-#  warning "This header works best with C++17 or later for if constexpr support"
+#if _CCCL_STD_VER < 2017
+#  error "This header requires C++17 or later (for if constexpr, alignas, etc.)"
 #endif
 
 /*
@@ -696,7 +691,14 @@ _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
   double __exact = static_cast<double>(__x);
   if ((__x > 0 && __f > __exact) || (__x < 0 && __f < __exact))
   {
-    __f = __fpmp2_is_fp32_v<_FpType> ? nextafterf(__f, 0.0f) : nextafter(__f, 0.0);
+    if constexpr (__fpmp2_is_fp32_v<_FpType>)
+    {
+      __f = nextafterf(__f, 0.0f);
+    }
+    else
+    {
+      __f = nextafter(__f, 0.0);
+    }
   }
   return __f;
 }
@@ -707,7 +709,14 @@ _CCCL_TRIVIAL_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
   double __exact = static_cast<double>(__x);
   if (__f > __exact)
   {
-    __f = __fpmp2_is_fp32_v<_FpType> ? nextafterf(__f, 0.0f) : nextafter(__f, 0.0);
+    if constexpr (__fpmp2_is_fp32_v<_FpType>)
+    {
+      __f = nextafterf(__f, 0.0f);
+    }
+    else
+    {
+      __f = nextafter(__f, 0.0);
+    }
   }
   return __f;
 }
@@ -718,7 +727,14 @@ _CCCL_TRIVIAL_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
   double __exact = static_cast<double>(__x);
   if ((__x > 0 && __f > __exact) || (__x < 0 && __f < __exact))
   {
-    __f = __fpmp2_is_fp32_v<_FpType> ? nextafterf(__f, 0.0f) : nextafter(__f, 0.0);
+    if constexpr (__fpmp2_is_fp32_v<_FpType>)
+    {
+      __f = nextafterf(__f, 0.0f);
+    }
+    else
+    {
+      __f = nextafter(__f, 0.0);
+    }
   }
   return __f;
 }
@@ -729,7 +745,14 @@ _CCCL_TRIVIAL_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
   double __exact = static_cast<double>(__x);
   if (__f > __exact)
   {
-    __f = __fpmp2_is_fp32_v<_FpType> ? nextafterf(__f, 0.0f) : nextafter(__f, 0.0);
+    if constexpr (__fpmp2_is_fp32_v<_FpType>)
+    {
+      __f = nextafterf(__f, 0.0f);
+    }
+    else
+    {
+      __f = nextafter(__f, 0.0);
+    }
   }
   return __f;
 }

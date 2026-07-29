@@ -3,6 +3,9 @@
 
 // UNSUPPORTED: enable-tile
 // error: atomic operations are unsupported in tile code
+// UNSUPPORTED: nvrtc
+// note: the host half of this test launches the kernels through the CUDA runtime API,
+// which is not available in NVRTC's device-only translation unit
 // UNSUPPORTED: pre-sm-90
 // note: the 128-bit compare-exchange (needed by the double-double atomics) requires
 // compute capability >= 9.0 (Hopper) and PTX ISA 8.4+; the architecture half is checked

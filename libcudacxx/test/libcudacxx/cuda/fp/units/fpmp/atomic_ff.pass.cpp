@@ -3,6 +3,9 @@
 
 // UNSUPPORTED: enable-tile
 // error: atomic operations are unsupported in tile code
+// UNSUPPORTED: nvrtc
+// note: the host half of this test launches the kernels through the CUDA runtime API,
+// which is not available in NVRTC's device-only translation unit
 
 //===----------------------------------------------------------------------===//
 //

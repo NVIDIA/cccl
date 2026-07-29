@@ -21,8 +21,8 @@
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
-
-#include <type_traits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -32,34 +32,39 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Compile-time contract.
 // ---------------------------------------------------------------------------
 // Upconvert (fp32mp2 -> fp64mp2): implicit, lossless.
-static_assert(std::is_constructible<fp64mp2, fp32mp2>::value, "");
-static_assert(std::is_constructible<fp64mp2, fp32mp2_low>::value, "");
-static_assert(std::is_constructible<fp64mp2, fp32mp2_high>::value, "");
-static_assert(std::is_constructible<fp64mp2_low, fp32mp2>::value, "");
-static_assert(std::is_constructible<fp64mp2_high, fp32mp2>::value, "");
-static_assert(std::is_convertible<fp32mp2, fp64mp2>::value, "fp32mp2 -> fp64mp2 must be implicit");
-static_assert(std::is_convertible<fp32mp2_low, fp64mp2_high>::value, "cross-accuracy upconvert must be implicit");
-static_assert(std::is_convertible<fp32mp2_high, fp64mp2_low>::value, "cross-accuracy upconvert must be implicit");
-static_assert(std::is_assignable<fp64mp2&, fp32mp2>::value, "");
-static_assert(std::is_assignable<fp64mp2_low&, fp32mp2_high>::value, "");
-static_assert(std::is_assignable<fp64mp2_high&, fp32mp2_low>::value, "");
-static_assert(std::is_same<decltype(fp64mp2_low(std::declval<fp32mp2_high>())), fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2_low, fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2_high, fp32mp2>::value, "");
+static_assert(::cuda::std::is_convertible<fp32mp2, fp64mp2>::value, "fp32mp2 -> fp64mp2 must be implicit");
+static_assert(::cuda::std::is_convertible<fp32mp2_low, fp64mp2_high>::value,
+              "cross-accuracy upconvert must be implicit");
+static_assert(::cuda::std::is_convertible<fp32mp2_high, fp64mp2_low>::value,
+              "cross-accuracy upconvert must be implicit");
+static_assert(::cuda::std::is_assignable<fp64mp2&, fp32mp2>::value, "");
+static_assert(::cuda::std::is_assignable<fp64mp2_low&, fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_same<decltype(fp64mp2_low(::cuda::std::declval<fp32mp2_high>())), fp64mp2_low>::value,
+              "");
 
 // Downconvert (fp64mp2 -> fp32mp2): explicit-macro-driven.
-static_assert(std::is_constructible<fp32mp2, fp64mp2>::value, "");
-static_assert(std::is_constructible<fp32mp2, fp64mp2_low>::value, "");
-static_assert(std::is_constructible<fp32mp2, fp64mp2_high>::value, "");
-static_assert(std::is_constructible<fp32mp2_low, fp64mp2>::value, "");
-static_assert(std::is_constructible<fp32mp2_high, fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_low, fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_high, fp64mp2>::value, "");
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
-static_assert(!std::is_convertible<fp64mp2, fp32mp2>::value, "downconvert must NOT be implicit under EXPLICIT_CASTS=1");
+static_assert(!::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
+              "downconvert must NOT be implicit under EXPLICIT_CASTS=1");
 #else
-static_assert(std::is_convertible<fp64mp2, fp32mp2>::value, "downconvert is implicit under EXPLICIT_CASTS=0");
+static_assert(::cuda::std::is_convertible<fp64mp2, fp32mp2>::value, "downconvert is implicit under EXPLICIT_CASTS=0");
 #endif
-static_assert(std::is_assignable<fp32mp2&, fp64mp2>::value, "");
-static_assert(std::is_assignable<fp32mp2_low&, fp64mp2_high>::value, "");
-static_assert(std::is_assignable<fp32mp2_high&, fp64mp2_low>::value, "");
-static_assert(std::is_same<decltype(fp32mp2_high(std::declval<fp64mp2_low>())), fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2&, fp64mp2>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2_high&, fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_same<decltype(fp32mp2_high(::cuda::std::declval<fp64mp2_low>())), fp32mp2_high>::value,
+              "");
 
 // ---------------------------------------------------------------------------
 // Runtime checks.

@@ -3,6 +3,9 @@
 
 // UNSUPPORTED: enable-tile
 // error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+// UNSUPPORTED: nvrtc
+// note: the host half of this test launches the kernel through the CUDA runtime API,
+// which is not available in NVRTC's device-only translation unit
 
 //===----------------------------------------------------------------------===//
 //

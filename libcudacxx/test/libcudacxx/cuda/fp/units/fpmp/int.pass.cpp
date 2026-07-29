@@ -56,10 +56,12 @@ _CCCL_HOST_DEVICE bool run_test()
 
   bool ok = true;
 
-  // int32_t round-trip: exact, and lo carries the sign of the input.
+  // int32_t round-trip: exact, and lo carries the sign of the input. INT32_MIN is spelled
+  // -2147483647 - 1 because -2147483648 is unary minus on a literal too large for int,
+  // which MSVC types as unsigned long and then rejects as a narrowing conversion.
   {
     const int32_t vals[] = {
-      0, 1, -1, 42, -42, 16777215, 16777216, 16777217, -16777215, -16777216, -16777217, 2147483647, -2147483648};
+      0, 1, -1, 42, -42, 16777215, 16777216, 16777217, -16777215, -16777216, -16777217, 2147483647, -2147483647 - 1};
     for (int32_t v : vals)
     {
       ffloat x(v);

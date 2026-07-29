@@ -19,7 +19,7 @@
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-static_assert(std::is_trivially_copyable<fp32mp2>::value, "fp32mp2 must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<fp32mp2>::value, "fp32mp2 must be trivially copyable");
 
 // Assign through a volatile object and confirm the value is preserved.
 _CCCL_HOST_DEVICE bool run_test()

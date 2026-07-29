@@ -17,8 +17,8 @@
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
-
-#include <type_traits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -28,61 +28,63 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Compile-time contract for fp32mp2 (FpType == float).
 // ---------------------------------------------------------------------------
 // explicit construction across accuracy levels is allowed ...
-static_assert(std::is_constructible<fp32mp2_low, fp32mp2_high>::value, "");
-static_assert(std::is_constructible<fp32mp2_low, fp32mp2>::value, "");
-static_assert(std::is_constructible<fp32mp2, fp32mp2_low>::value, "");
-static_assert(std::is_constructible<fp32mp2, fp32mp2_high>::value, "");
-static_assert(std::is_constructible<fp32mp2_high, fp32mp2>::value, "");
-static_assert(std::is_constructible<fp32mp2_high, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_low, fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_low, fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2, fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_high, fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_high, fp32mp2_low>::value, "");
 
 // ... but implicit conversion across accuracy levels is NOT.
-static_assert(!std::is_convertible<fp32mp2_high, fp32mp2_low>::value, "");
-static_assert(!std::is_convertible<fp32mp2, fp32mp2_low>::value, "");
-static_assert(!std::is_convertible<fp32mp2_low, fp32mp2>::value, "");
-static_assert(!std::is_convertible<fp32mp2_high, fp32mp2>::value, "");
-static_assert(!std::is_convertible<fp32mp2, fp32mp2_high>::value, "");
-static_assert(!std::is_convertible<fp32mp2_low, fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2_high, fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2, fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp32mp2>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2_high, fp32mp2>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2, fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp32mp2_high>::value, "");
 
 // Same-type implicit conversion (copy) is unaffected.
-static_assert(std::is_convertible<fp32mp2_low, fp32mp2_low>::value, "");
-static_assert(std::is_convertible<fp32mp2, fp32mp2>::value, "");
-static_assert(std::is_convertible<fp32mp2_high, fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_convertible<fp32mp2_low, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_convertible<fp32mp2, fp32mp2>::value, "");
+static_assert(::cuda::std::is_convertible<fp32mp2_high, fp32mp2_high>::value, "");
 
 // Cross-FpType conversion contract: upconvert implicit, downconvert honors the
 // CCCL_FPMP_EXPLICIT_CASTS knob.
-static_assert(std::is_convertible<fp32mp2, fp64mp2>::value, "fp32mp2 -> fp64mp2 must be implicit (lossless upconvert)");
+static_assert(::cuda::std::is_convertible<fp32mp2, fp64mp2>::value,
+              "fp32mp2 -> fp64mp2 must be implicit (lossless upconvert)");
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
-static_assert(!std::is_convertible<fp64mp2, fp32mp2>::value,
+static_assert(!::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
               "fp64mp2 -> fp32mp2 must be explicit under EXPLICIT_CASTS=1");
 #else
-static_assert(std::is_convertible<fp64mp2, fp32mp2>::value,
+static_assert(::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
               "fp64mp2 -> fp32mp2 implicit by default (matches double -> fp32mp2)");
 #endif
 
 // Assignment side of the contract: cross-accuracy assignment must fail (the
 // explicit ctor is not visible to copy-assignment); same-type assignment works.
-static_assert(!std::is_assignable<fp32mp2_low&, fp32mp2_high>::value, "");
-static_assert(!std::is_assignable<fp32mp2_low&, fp32mp2>::value, "");
-static_assert(!std::is_assignable<fp32mp2&, fp32mp2_low>::value, "");
-static_assert(!std::is_assignable<fp32mp2&, fp32mp2_high>::value, "");
-static_assert(!std::is_assignable<fp32mp2_high&, fp32mp2>::value, "");
-static_assert(!std::is_assignable<fp32mp2_high&, fp32mp2_low>::value, "");
-static_assert(std::is_assignable<fp32mp2_low&, fp32mp2_low>::value, "");
-static_assert(std::is_assignable<fp32mp2&, fp32mp2>::value, "");
-static_assert(std::is_assignable<fp32mp2_high&, fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_low&, fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_low&, fp32mp2>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2&, fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2&, fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_high&, fp32mp2>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_high&, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2_low&, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2&, fp32mp2>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2_high&, fp32mp2_high>::value, "");
 
 // The new ctor preserves result type (no type inference surprises).
-static_assert(std::is_same<decltype(fp32mp2_low(std::declval<fp32mp2_high>())), fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_same<decltype(fp32mp2_low(::cuda::std::declval<fp32mp2_high>())), fp32mp2_low>::value,
+              "");
 
 // ---------------------------------------------------------------------------
 // Compile-time contract for fp64mp2 (FpType == double).
 // ---------------------------------------------------------------------------
-static_assert(std::is_constructible<fp64mp2_low, fp64mp2_high>::value, "");
-static_assert(std::is_constructible<fp64mp2_high, fp64mp2>::value, "");
-static_assert(!std::is_convertible<fp64mp2_high, fp64mp2_low>::value, "");
-static_assert(!std::is_convertible<fp64mp2, fp64mp2_low>::value, "");
-static_assert(!std::is_assignable<fp64mp2_low&, fp64mp2_high>::value, "");
-static_assert(!std::is_assignable<fp64mp2_low&, fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2_low, fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<fp64mp2_high, fp64mp2>::value, "");
+static_assert(!::cuda::std::is_convertible<fp64mp2_high, fp64mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<fp64mp2, fp64mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<fp64mp2_low&, fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<fp64mp2_low&, fp64mp2>::value, "");
 
 // ---------------------------------------------------------------------------
 // Runtime bit-equality check.
