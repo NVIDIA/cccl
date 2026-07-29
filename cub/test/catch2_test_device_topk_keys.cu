@@ -269,7 +269,7 @@ CUB_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
 
 CUB_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
          "[keys][topk][device]",
-         CUB_SMALL,
+         CUB_LARGE,
          k_items_types)
 try
 {
