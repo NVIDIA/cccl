@@ -23,7 +23,7 @@ static_assert(cuda::std::is_trivially_copyable_v<fp64emu>, "fp64emu must be triv
 static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked>, "fp64emu_unpacked must be trivially copyable");
 
 // Round-trip both the packed and unpacked types through a volatile object.
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Packed type (fp64emu).
   {
