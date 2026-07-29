@@ -431,14 +431,12 @@ public:
   {
     // Create a new buffer with a reference to the stored memory resource and
     // swap allocation information
-    const auto __old_stream = __stream_;
     __uninitialized_async_buffer __ret{
       __fake_resource_ref{::cuda::std::addressof(__mr_)}, __stream, __count, __alignment_};
     ::cuda::std::swap(__count_, __ret.__count_);
     ::cuda::std::swap(__alignment_, __ret.__alignment_);
     ::cuda::std::swap(__buf_, __ret.__buf_);
-    __stream_       = __stream;
-    __ret.__stream_ = __old_stream;
+    __ret.__stream_ = ::cuda::std::exchange(__stream_, __stream);
     return __ret;
   }
 
