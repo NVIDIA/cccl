@@ -430,7 +430,7 @@ def test_binary_transform_struct_type_with_annotations():
 
 def test_unary_transform_stateful_counting():
     """Test unary_transform with state that counts even numbers."""
-    from numba import cuda as numba_cuda
+    from numba_cuda_mlir import cuda as numba_cuda
 
     h_in = np.arange(100, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h_in)

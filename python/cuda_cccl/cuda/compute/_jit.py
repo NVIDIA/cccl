@@ -39,6 +39,7 @@ from ._utils import sanitize_identifier
 from ._utils.protocols import (
     get_data_pointer,
     get_dtype,
+    get_shape,
     is_contiguous,
     is_device_array,
 )
@@ -1015,18 +1016,23 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Convert input types to numba-cuda-mlir types
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
-    # State arrays are passed to the (transformed) op as typed pointers; the op
-    # body indexes them (``state[i]``), which works on a CPointer.  See
-    # _odr_helpers.create_stateful_op_void_ptr_wrapper for how the packed state
-    # void* is unpacked into one CPointer per state array.
+    # State arrays are passed to the (transformed) op as real device Arrays: the
+    # wrapper rebuilds each packed pointer with carray so the op body can use
+    # array operations (state[i], len, .shape, cuda.atomic).  The array shape is
+    # baked into the wrapper, so it is also part of the op cache key (see
+    # _JitOpState.get_cache_key).  See _odr_helpers.create_stateful_op_void_ptr_wrapper.
     state_dtypes = [_mlir.from_numpy_dtype(get_dtype(s)) for s in state_arrays]
-    state_ptr_types = [_mlir.types.CPointer(dt) for dt in state_dtypes]
+    state_shapes = [tuple(get_shape(s)) for s in state_arrays]
+    state_array_types = [
+        _mlir.types.Array(dt, len(shape), "C")
+        for dt, shape in zip(state_dtypes, state_shapes)
+    ]
 
     # Infer output type if needed
     if output_type is None:
         # Compile to infer return type.
         # The transformed function expects (state_arrays..., regular_args...)
-        all_numba_input_types = tuple(state_ptr_types) + numba_input_types
+        all_numba_input_types = tuple(state_array_types) + numba_input_types
         sanitized_name = sanitize_identifier(op.__name__)
         unique_suffix = hex(id(op))[2:]
         abi_name = f"{sanitized_name}_{unique_suffix}"
@@ -1044,7 +1050,7 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     numba_output_type = type_descriptor_to_numba(output_type)
 
     # Build full signature: output_type(state_arrays..., regular_args...)
-    sig = numba_output_type(*state_ptr_types, *numba_input_types)
+    sig = numba_output_type(*state_array_types, *numba_input_types)
 
     # Get state pointers - pointers to the device array data
     state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
@@ -1053,7 +1059,9 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     state_alignment = np.dtype(np.intp).alignment
 
     # Create the stateful wrapper (unpacks the packed state pointers).
-    wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes)
+    wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(
+        op, sig, state_dtypes, state_shapes
+    )
 
     # Compile the wrapper — LLVM bitcode for v2 (HostJIT), LTO-IR for v1 (NVRTC).
     from ._device_code import DeviceCode
@@ -1096,7 +1104,14 @@ class _JitOpState:
         self.arrays = arrays
 
     def get_cache_key(self) -> Hashable:
-        return (tuple(self.names), tuple(get_dtype(s) for s in self.arrays))
+        # Include shapes: the stateful wrapper bakes each state array's shape
+        # into a carray(...) call, so two otherwise-identical ops that capture
+        # differently-shaped state compile to different device code.
+        return (
+            tuple(self.names),
+            tuple(get_dtype(s) for s in self.arrays),
+            tuple(tuple(get_shape(s)) for s in self.arrays),
+        )
 
     def to_bytes(self):
         state_ptrs = [get_data_pointer(arr) for arr in self.arrays]
