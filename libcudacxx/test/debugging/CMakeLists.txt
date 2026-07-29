@@ -197,6 +197,7 @@ function(libcudacxx_add_pretty_printer_test)
   endforeach()
 endfunction()
 
+add_subdirectory(array)
 add_subdirectory(buffer)
 add_subdirectory(memory_resource)
 add_subdirectory(stream)
