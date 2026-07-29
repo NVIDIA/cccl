@@ -12,11 +12,12 @@ from __future__ import annotations
 import buffer
 import memory_resource
 import std_array
+import tuple
 
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer, std_array)
+_FORMATTERS = (memory_resource, buffer, std_array, tuple)
 InternalDict = dict[str, object]
 
 
