@@ -51,6 +51,8 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/__bit/countl.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -135,9 +137,8 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) no
   int32_t __exponent  = __e > 0 ? __e : 0;
 
   int __shift = __e > 0 ? 0 : -__e;
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0; }))
+
   if (__shift > 0)
   {
     const uint64_t __mask                 = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
