@@ -102,12 +102,13 @@ struct DevicePartition
         ::cuda::std::is_same_v<policy_t, PartitionPolicy> || ::cuda::std::is_same_v<policy_t, SelectPolicy>);
       const auto policy = PolicySelector{}(cc);
       return SelectPolicy{
-        policy.threads_per_block,
-        policy.items_per_thread,
-        policy.load_algorithm,
-        policy.load_modifier,
-        policy.scan_algorithm,
-        policy.lookback_delay};
+        SelectAlgorithm::lookback,
+        {policy.lookback.threads_per_block,
+         policy.lookback.items_per_thread,
+         policy.lookback.load_algorithm,
+         policy.lookback.load_modifier,
+         policy.lookback.scan_algorithm,
+         policy.lookback.lookback_delay}};
     }
   };
 #endif // _CCCL_DOXYGEN_INVOKED
