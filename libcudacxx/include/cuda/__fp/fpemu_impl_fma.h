@@ -37,11 +37,13 @@
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-#if !(defined(__CUDA_ARCH__))
+#if _CCCL_HOST_COMPILATION()
 // Host seed: the libm symbol. The exception spec must match the platform's
 // <math.h> prototype exactly, otherwise this extern-"C" redeclaration conflicts
 // with ::fma when <cmath> is also in the TU (in C++17+ the exception spec is
@@ -50,12 +52,12 @@ namespace cuda::experimental
 //   - MSVC's CRT/CUDA prototype carries no exception specification, so a
 //     noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
 //     under C++20); declare it without noexcept to match.
-#  if defined(_MSC_VER)
+#  if _CCCL_COMPILER(MSVC)
 extern "C" double fma(double __x, double __y, double __z);
-#  else
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 extern "C" double fma(double __x, double __y, double __z) noexcept;
-#  endif
-#endif
+#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif // _CCCL_HOST_COMPILATION()
 
 //! @brief Pure FMA core operating on the unpacked representation.
 //!
@@ -135,10 +137,11 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   int32_t __delta_a = __exponent_r - __exponent_ab_new;
   int32_t __delta_b = __exponent_r - __exponent_c;
 
-#ifndef __CUDA_ARCH__
-  __delta_a = (__delta_a > 127) ? 127 : __delta_a;
-  __delta_b = (__delta_b > 127) ? 127 : __delta_b;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 __delta_a = (__delta_a > 127) ? 127 : __delta_a;
+                 __delta_b = (__delta_b > 127) ? 127 : __delta_b;
+               }))
+
   // Shift mantissas with jam only (SoftFloat shiftRightJam*); round at pack
   __mantissa_ab = __shr_128_jam(__mantissa_ab, __delta_a);
   __mantissa_c  = __shr_128_jam(__mantissa_c << 64, __delta_b);
