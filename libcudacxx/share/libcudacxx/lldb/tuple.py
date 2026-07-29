@@ -22,6 +22,15 @@ def is_cuda_tuple(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool
     return _TUPLE_PATTERN.fullmatch(type_name) is not None
 
 
+def tuple_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
+    # An explicit (empty) summary, combined with --expand at registration,
+    # gives every tuple a consistent "(type) {\n  [i] = ...\n}" rendering.
+    # Without one, LLDB falls back to a heuristic default that varies between
+    # a single-line "(...)" and a multi-line "{...}" depending on whether any
+    # element itself carries a summary (e.g. a nested tuple or a char*).
+    return ""
+
+
 def _leaf_bases(base_type: lldb.SBType) -> list[tuple[int, lldb.SBTypeMember]]:
     """Return each ``__tuple_leaf`` base class paired with its tuple index.
 
@@ -129,6 +138,10 @@ class TupleSyntheticProvider:
 
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
     """Register the cuda::std::tuple formatter in an LLDB category."""
+    debugger.HandleCommand(
+        f"type summary add --category {category} --expand --python-function {module}.tuple_summary "
+        f"--recognizer-function {module}.is_cuda_tuple"
+    )
     debugger.HandleCommand(
         f"type synthetic add --category {category} --python-class {module}.TupleSyntheticProvider "
         f"--recognizer-function {module}.is_cuda_tuple"

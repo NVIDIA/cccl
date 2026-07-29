@@ -37,6 +37,36 @@ struct empty_type
   keep_for_debugger(values);
 }
 
+// An empty leading element shares its storage offset with the element that
+// follows it, and an empty trailing element shares the offset of whatever
+// precedes it. Two adjacent empty elements share that same offset with each
+// other too. Debuggers that build per-element values by (parent, offset) can
+// mix these up unless every case is exercised on its own.
+[[gnu::noinline]] void inspect_ebco_first(const cuda::std::tuple<empty_type, int>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_ebco_last(const cuda::std::tuple<int, empty_type>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_ebco_adjacent(const cuda::std::tuple<empty_type, empty_type, int>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_pointer(const cuda::std::tuple<int*, const char*>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_nested_empty(const cuda::std::tuple<int, cuda::std::tuple<>, double>& values)
+{
+  keep_for_debugger(values);
+}
+
 [[gnu::noinline]] void inspect_nested(const cuda::std::tuple<int, cuda::std::tuple<double, char>>& values)
 {
   keep_for_debugger(values);
@@ -81,6 +111,22 @@ int main()
 
   const cuda::std::tuple<int, empty_type, double> ebco_values{9, empty_type{}, 2.5};
   inspect_ebco(ebco_values);
+
+  const cuda::std::tuple<empty_type, int> ebco_first_values{empty_type{}, 21};
+  inspect_ebco_first(ebco_first_values);
+
+  const cuda::std::tuple<int, empty_type> ebco_last_values{22, empty_type{}};
+  inspect_ebco_last(ebco_last_values);
+
+  const cuda::std::tuple<empty_type, empty_type, int> ebco_adjacent_values{empty_type{}, empty_type{}, 23};
+  inspect_ebco_adjacent(ebco_adjacent_values);
+
+  int pointee = 13;
+  const cuda::std::tuple<int*, const char*> pointer_values{&pointee, "tuple"};
+  inspect_pointer(pointer_values);
+
+  const cuda::std::tuple<int, cuda::std::tuple<>, double> nested_empty_values{1, cuda::std::tuple<>{}, 2.5};
+  inspect_nested_empty(nested_empty_values);
 
   const cuda::std::tuple<int, cuda::std::tuple<double, char>> nested_values{1, cuda::std::tuple<double, char>{2.5, 'z'}};
   inspect_nested(nested_values);
