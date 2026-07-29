@@ -28,3 +28,17 @@ cuda::std::array<int, 4> = {
   [3] = -64
 }
 =============== array.alias end ===============
+=============== array.update.before begin ===============
+cuda::std::array<int, 3> = {
+  [0] = 6,
+  [1] = -91,
+  [2] = 52
+}
+=============== array.update.before end ===============
+=============== array.update.after begin ===============
+cuda::std::array<int, 3> = {
+  [0] = 3,
+  [1] = 85,
+  [2] = -12
+}
+=============== array.update.after end ===============

@@ -32,15 +32,29 @@ using array_alias = cuda::std::array<int, 4>;
   keep_for_debugger(values);
 }
 
+[[gnu::noinline]] void inspect_before_update(const cuda::std::array<int, 3>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_after_update(const cuda::std::array<int, 3>& values)
+{
+  keep_for_debugger(values);
+}
+
 int main()
 {
   const cuda::std::array<int, 3> normal                      = {-7, 0, 42};
   const cuda::std::array<int, 0> empty                       = {};
   const cuda::std::array<cuda::std::array<int, 2>, 2> nested = {{{13, -5}, {0, 88}}};
   const array_alias alias                                    = {-31, 17, 8, -64};
+  cuda::std::array<int, 3> updated_values                    = {6, -91, 52};
 
   inspect_normal(normal);
   inspect_empty(empty);
   inspect_nested(nested);
   inspect_alias(alias);
+  inspect_before_update(updated_values);
+  updated_values = {3, 85, -12};
+  inspect_after_update(updated_values);
 }
