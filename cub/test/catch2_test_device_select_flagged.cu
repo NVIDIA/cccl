@@ -303,15 +303,25 @@ struct flagged_prefetch_policy_selector
   [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
   {
     auto policy = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
-    policy.lookback.load_prefetch = Prefetch;
+    policy.lookback._load_prefetch = Prefetch;
     return policy;
   }
 };
 
-template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
-void test_explicit_prefetch_policy()
+using prefetch_policies =
+  c2h::enum_type_list<cub::detail::LoadPrefetch, cub::detail::LoadPrefetch::l2, cub::detail::LoadPrefetch::bulk_l2>;
+
+using selection_policies =
+  c2h::enum_type_list<cub::SelectImpl, cub::SelectImpl::Select, cub::SelectImpl::SelectPotentiallyInPlace>;
+
+C2H_TEST("DeviceSelect::Flagged works with explicit prefetch policies",
+         "[device][select_flagged][prefetch]",
+         prefetch_policies,
+         selection_policies)
 {
-  constexpr int num_items = 100003;
+  constexpr auto prefetch     = c2h::get<0, TestType>::value;
+  constexpr auto selection_op = c2h::get<1, TestType>::value;
+  constexpr int num_items     = 100003;
 
   c2h::device_vector<int> in(num_items);
   c2h::gen(C2H_SEED(2), in);
@@ -327,9 +337,9 @@ void test_explicit_prefetch_policy()
   int* const d_in               = thrust::raw_pointer_cast(in.data());
   int* const d_flags            = thrust::raw_pointer_cast(flags.data());
   int* const d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
-  const auto tuned_execution    = cuda::execution::tune(flagged_prefetch_policy_selector<Prefetch, SelectionOpt>{});
+  const auto tuned_execution    = cuda::execution::tune(flagged_prefetch_policy_selector<prefetch, selection_op>{});
 
-  if constexpr (SelectionOpt == cub::SelectImpl::SelectPotentiallyInPlace)
+  if constexpr (selection_op == cub::SelectImpl::SelectPotentiallyInPlace)
   {
     REQUIRE(cudaSuccess == cub::DeviceSelect::Flagged(d_in, d_flags, d_num_selected_out, num_items, tuned_execution));
     REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -350,29 +360,6 @@ void test_explicit_prefetch_policy()
     out.resize(num_selected_out[0]);
     REQUIRE(num_selected == num_selected_out[0]);
     REQUIRE(reference == out);
-  }
-}
-
-C2H_TEST("DeviceSelect::Flagged works with explicit prefetch policies", "[device][select_flagged][prefetch]")
-{
-  SECTION("out-of-place L2")
-  {
-    test_explicit_prefetch_policy<cub::detail::LoadPrefetch::l2, cub::SelectImpl::Select>();
-  }
-
-  SECTION("out-of-place bulk L2")
-  {
-    test_explicit_prefetch_policy<cub::detail::LoadPrefetch::bulk_l2, cub::SelectImpl::Select>();
-  }
-
-  SECTION("in-place L2")
-  {
-    test_explicit_prefetch_policy<cub::detail::LoadPrefetch::l2, cub::SelectImpl::SelectPotentiallyInPlace>();
-  }
-
-  SECTION("in-place bulk L2")
-  {
-    test_explicit_prefetch_policy<cub::detail::LoadPrefetch::bulk_l2, cub::SelectImpl::SelectPotentiallyInPlace>();
   }
 }
 #endif // TEST_LAUNCH == 0

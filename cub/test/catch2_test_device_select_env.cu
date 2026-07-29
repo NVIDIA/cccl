@@ -1355,7 +1355,7 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
        .lookback_delay =
         cub::LookbackDelayPolicy{
            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
-       .load_prefetch = cub::detail::LoadPrefetch::l2}};
+       ._load_prefetch = cub::detail::LoadPrefetch::l2}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1377,6 +1377,6 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
        ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
        ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
        ", .delay = 350, .l2_write_latency = 450 }"
-       ", .load_prefetch = detail::LoadPrefetch::l2 } }");
+       ", ._load_prefetch = detail::LoadPrefetch::l2 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

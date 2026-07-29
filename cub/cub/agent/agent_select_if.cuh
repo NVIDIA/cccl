@@ -389,7 +389,7 @@ struct AgentSelectIf
   // Utility methods for initializing the selections
   //---------------------------------------------------------------------
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE InputIteratorT GetInputIterator() const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto GetInputIterator() const
   {
     if constexpr (::cuda::std::is_pointer_v<InputIteratorT>)
     {
@@ -429,7 +429,12 @@ struct AgentSelectIf
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD])
   {
-    if constexpr (AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none)
+    constexpr bool can_initialize_before_items =
+      SELECT_METHOD == USE_SELECT_FLAGS || SELECT_METHOD == USE_STENCIL_WITH_OP;
+    constexpr bool prefetch_before_items =
+      can_initialize_before_items && AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none;
+
+    if constexpr (prefetch_before_items)
     {
       BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
         (GetInputIterator() + streaming_context.input_offset()) + tile_offset, num_tile_items);
@@ -444,7 +449,15 @@ struct AgentSelectIf
     }
     else
     {
+      // Preserve the legacy item-before-selection load order so benchmarks measure only prefetching, not a separate
+      // load-order change. This ordering is not known to be faster when prefetching is disabled.
       LoadItems<IS_LAST_TILE>(tile_offset, num_tile_items, items);
+
+      if constexpr (can_initialize_before_items)
+      {
+        // Ensure temporary storage used to load items can be reused to load flags.
+        __syncthreads();
+      }
 
       InitializeSelections<IS_FIRST_TILE, IS_LAST_TILE>(
         tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
@@ -486,8 +499,6 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
   {
-    __syncthreads();
-
     FlagT flags[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
     {
@@ -528,12 +539,6 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_SELECT_FLAGS> /*select_method*/)
   {
-    if constexpr (AgentSelectIfPolicyT::LOAD_PREFETCH == LoadPrefetch::none)
-    {
-      // Ensure temporary storage used to load items can be reused to load flags.
-      __syncthreads();
-    }
-
     FlagT flags[ITEMS_PER_THREAD];
 
     if (IS_LAST_TILE)
