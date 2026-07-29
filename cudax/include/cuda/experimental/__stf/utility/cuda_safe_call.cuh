@@ -325,6 +325,42 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
 }
 
 /**
+ * @brief Value (or reference) plus the call-site `source_location` of its construction.
+ *
+ * Intended as a function parameter type: write `with_location<widget>` instead of `widget`
+ * so the callee can report file/line. Construction from an argument captures
+ * `source_location::current()` at that call site (overloaded operators cannot take
+ * defaulted `source_location` parameters themselves).
+ *
+ * Move-only: may be constructed as a temporary and moved into a by-value parameter,
+ * but not copied. `T` may be a value, lvalue reference, or rvalue reference.
+ */
+template <class T>
+struct with_location
+{
+  with_location(const with_location&)            = delete;
+  with_location& operator=(const with_location&) = delete;
+  with_location& operator=(with_location&&)      = delete;
+
+  // Required so a converting temporary can initialize a by-value parameter.
+  with_location(with_location&&) = default;
+
+  // Constrained so that ill-formed reference bindings are detected by
+  // `is_constructible_v` instead of erroring inside the mem-initializer, and so
+  // that this template does not hijack the move constructor.
+  template <typename U,
+            ::std::enable_if_t<!::std::is_same_v<::std::decay_t<U>, with_location> && ::std::is_constructible_v<T, U&&>,
+                               int> = 0>
+  constexpr with_location(U&& payload, ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+      : payload(::std::forward<U>(payload))
+      , loc(loc)
+  {}
+
+  T payload;
+  ::cuda::std::source_location loc;
+};
+
+/**
  * @brief Invokes a callable and aborts if it throws.
  *
  * Use around code that must not let an exception escape into backend state
@@ -339,18 +375,10 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
  */
 struct throwproof_t
 {
-  struct with_location
-  {
-    constexpr with_location(throwproof_t,
-                            ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
-        : loc(loc)
-    {}
-    const ::cuda::std::source_location loc;
-  };
 } inline constexpr throwproof{};
 
 template <class F>
-decltype(auto) operator->*(throwproof_t::with_location s, F&& f) noexcept
+decltype(auto) operator->*(with_location<throwproof_t> s, F&& f) noexcept
 {
   _CCCL_TRY
   {
@@ -369,6 +397,65 @@ decltype(auto) operator->*(throwproof_t::with_location s, F&& f) noexcept
 }
 
 #ifdef UNITTESTED_FILE
+UNITTEST("with_location")
+{
+  struct widget
+  {
+    int x = 0;
+  };
+
+  // Move-only wrapper (independent of whether T is copyable).
+  static_assert(!::std::is_copy_constructible_v<with_location<widget>>);
+  static_assert(!::std::is_copy_assignable_v<with_location<widget>>);
+  static_assert(::std::is_move_constructible_v<with_location<widget>>);
+  static_assert(!::std::is_move_assignable_v<with_location<widget>>);
+  static_assert(!::std::is_default_constructible_v<with_location<widget>>);
+
+  // Value T: takes lvalues (copy) or rvalues (move).
+  static_assert(::std::is_constructible_v<with_location<widget>, widget>);
+  static_assert(::std::is_constructible_v<with_location<widget>, widget&>);
+  static_assert(::std::is_constructible_v<with_location<widget>, const widget&>);
+  static_assert(::std::is_constructible_v<with_location<widget>, widget&&>);
+
+  // Lvalue-reference T: binds only to lvalues.
+  static_assert(::std::is_constructible_v<with_location<widget&>, widget&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&>, widget>);
+  static_assert(!::std::is_constructible_v<with_location<widget&>, widget&&>);
+  static_assert(::std::is_move_constructible_v<with_location<widget&>>);
+
+  // Rvalue-reference T: binds only to rvalues.
+  static_assert(::std::is_constructible_v<with_location<widget&&>, widget>);
+  static_assert(::std::is_constructible_v<with_location<widget&&>, widget&&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&&>, widget&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&&>, const widget&>);
+  static_assert(::std::is_move_constructible_v<with_location<widget&&>>);
+
+  // Empty tag lvalues (e.g. throwproof) must remain convertible — that is how
+  // `throwproof->*f` captures source_location.
+  static_assert(::std::is_constructible_v<with_location<throwproof_t>, throwproof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throwproof_t>, const throwproof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throwproof_t>, throwproof_t>);
+
+  auto consume_value = [](with_location<widget> w) {
+    EXPECT(w.payload.x == 42);
+    EXPECT(w.loc.line() != 0);
+  };
+  consume_value(widget{42});
+
+  widget live{7};
+  auto consume_lref = [](with_location<widget&> w) {
+    EXPECT(w.payload.x == 7);
+    w.payload.x = 9;
+  };
+  consume_lref(live);
+  EXPECT(live.x == 9);
+
+  auto consume_rref = [](with_location<widget&&> w) {
+    EXPECT(w.payload.x == 3);
+  };
+  consume_rref(widget{3});
+};
+
 UNITTEST("throwproof")
 {
   //! [throwproof]
