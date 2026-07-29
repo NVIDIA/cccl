@@ -355,12 +355,7 @@ public:
 
     // cudaEvent_t start_event, end_event;
 
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     start();
 
@@ -702,12 +697,7 @@ public:
 
     // cudaEvent_t start_event, end_event;
 
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     start();
 
