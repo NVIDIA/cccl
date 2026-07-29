@@ -97,9 +97,10 @@ class fpemu_unpacked;
 template <typename _Tp>
 inline constexpr bool __fpemu_is_supported_fp_v =
   ::cuda::std::is_same_v<_Tp, double>
-#if defined(__STDCPP_FLOAT64_T__) && (__STDCPP_FLOAT64_T__ == 1)
+// nvcc currently doesn't support _Float64 in device code.
+#if __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
   || ::cuda::std::is_same_v<_Tp, _Float64>
-#endif // __STDCPP_FLOAT64_T__
+#endif // __STDCPP_FLOAT64_T__ == 1  && !_CCCL_CUDA_COMPILER(NVCC)
   ;
 
 //! @brief Primary emulated double-precision floating-point class template
