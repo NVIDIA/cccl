@@ -485,8 +485,8 @@ host_compilers:
     exe: nvc++
     versions:
       # !! Update the ctk_versions 'nvhpc*' aliases when updating NVHPC versions:
-      26.1: { stds: [17, 20], alias: 'prev' }
-      26.3: { stds: [17, 20] }
+      26.3: { stds: [17, 20], alias: 'prev' }
+      26.5: { stds: [17, 20] }
 
 # Jobs support the following properties:
 #
