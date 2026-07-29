@@ -6,15 +6,15 @@
 import re
 import struct
 
-import cupy as cp
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import types
 from cuda.compute._cpp_compile import _get_include_paths
 from cuda.compute.op import RawOp
-from cuda.core import Device, Program, ProgramOptions
+from cuda.core import Program, ProgramOptions
 
 # Mark all tests in this module as no_numba
 pytestmark = pytest.mark.no_numba
@@ -22,9 +22,7 @@ pytestmark = pytest.mark.no_numba
 
 def get_arch():
     """Get the SM architecture string for the current device."""
-    device = Device()
-    device.set_current()
-    cc_major, cc_minor = device.compute_capability
+    cc_major, cc_minor = get_compute_capability()
     return f"sm_{cc_major}{cc_minor}"
 
 
@@ -115,8 +113,8 @@ def test_cpp_op_basic_add():
     # Create test data
     num_items = 100
     h_input = np.arange(num_items, dtype=np.int32)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Use the custom op with reduce_into
     h_init = np.array(0, dtype=np.int32)
@@ -125,7 +123,7 @@ def test_cpp_op_basic_add():
     )
 
     # Verify result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = np.sum(h_input)
     assert result == expected, f"Expected {expected}, got {result}"
 
@@ -148,8 +146,8 @@ def test_cpp_op_max():
     # Create test data
     num_items = 100
     h_input = np.random.randn(num_items).astype(np.float32)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.float32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.float32)
 
     # Use the custom op with reduce_into
     h_init = np.array(-np.inf, dtype=np.float32)
@@ -158,7 +156,7 @@ def test_cpp_op_max():
     )
 
     # Verify result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = np.max(h_input)
     assert np.isclose(result, expected), f"Expected {expected}, got {result}"
 
@@ -176,8 +174,8 @@ def test_cpp_op_multiply():
     # Create test data - use small numbers to avoid overflow
     num_items = 5
     h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Use the custom op with reduce_into
     h_init = np.array(1, dtype=np.int32)
@@ -186,7 +184,7 @@ def test_cpp_op_multiply():
     )
 
     # Verify result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = np.prod(h_input)
     assert result == expected, f"Expected {expected}, got {result}"
 
@@ -207,8 +205,8 @@ def test_cpp_op_complex_logic():
     # Create test data with specific bit patterns
     num_items = 5
     h_input = np.array([1, 2, 4, 8, 16], dtype=np.int32)  # Powers of 2
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Use the custom op with reduce_into
     h_init = np.array(0, dtype=np.int32)
@@ -217,7 +215,7 @@ def test_cpp_op_complex_logic():
     )
 
     # Expected: 1 | 2 | 4 | 8 | 16 = 31 (all bits set)
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = 31
     assert result == expected, f"Expected {expected}, got {result}"
 
@@ -235,8 +233,8 @@ def test_cpp_op_different_types():
     # Create test data
     num_items = 50
     h_input = np.random.randn(num_items).astype(np.float64)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.float64)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.float64)
 
     # Use the custom op with reduce_into
     h_init = np.array(0.0, dtype=np.float64)
@@ -245,7 +243,7 @@ def test_cpp_op_different_types():
     )
 
     # Verify result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = np.sum(h_input)
     assert np.isclose(result, expected), f"Expected {expected}, got {result}"
 
@@ -264,8 +262,8 @@ def test_cpp_op_name_extraction():
     # Create test data
     num_items = 10
     h_input = np.arange(num_items, dtype=np.int32)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Use the custom op with reduce_into
     h_init = np.array(0, dtype=np.int32)
@@ -274,7 +272,7 @@ def test_cpp_op_name_extraction():
     )
 
     # Verify result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = np.sum(h_input)
     assert result == expected, f"Expected {expected}, got {result}"
 
@@ -294,8 +292,8 @@ def test_cpp_op_min():
     # Create test data
     num_items = 100
     h_input = np.random.randint(-1000, 1000, num_items, dtype=np.int32)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Use the custom op with reduce_into
     h_init = np.array(np.iinfo(np.int32).max, dtype=np.int32)
@@ -304,7 +302,7 @@ def test_cpp_op_min():
     )
 
     # Verify result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = np.min(h_input)
     assert result == expected, f"Expected {expected}, got {result}"
 
@@ -341,14 +339,8 @@ def test_cpp_op_with_struct():
         h_data[i]["x"] = i
         h_data[i]["y"] = i * 2
 
-    # Convert to device arrays using uint8 view
-    itemsize = h_data.dtype.itemsize
-    d_input = cp.empty(num_items * itemsize, dtype=np.uint8)
-    d_input.set(h_data.view(np.uint8))
-    d_input = d_input.view(Point.dtype)
-
-    d_output = cp.empty(itemsize, dtype=np.uint8)
-    d_output = d_output.view(Point.dtype)
+    d_input = DeviceArray.from_numpy(h_data)
+    d_output = DeviceArray.empty(1, Point.dtype)
 
     # Initial point (0, 0)
     h_init = Point(0, 0)
@@ -359,7 +351,7 @@ def test_cpp_op_with_struct():
     )
 
     # Verify result
-    result = d_output.view(np.uint8).get().view(Point.dtype)[0]
+    result = d_output.copy_to_host()[0]
     expected_x = sum(range(num_items))  # 0+1+2+...+9 = 45
     expected_y = sum(i * 2 for i in range(num_items))  # 0+2+4+...+18 = 90
 
@@ -383,13 +375,13 @@ def test_cpp_op_with_transform_iterator():
     # Create input data
     num_items = 10
     h_input = np.arange(num_items, dtype=np.int32)
-    d_input = cp.array(h_input)
+    d_input = DeviceArray.from_numpy(h_input)
 
     # Create transform iterator with RawOp
     transform_iter = TransformIterator(d_input, op, value_type=types.int32)
 
     # Use the transform iterator with reduce
-    d_output = cp.empty(1, dtype=np.int32)
+    d_output = DeviceArray.empty(1, np.int32)
     h_init = np.array(0, dtype=np.int32)
 
     # Sum the doubled values using built-in PLUS operator
@@ -402,7 +394,7 @@ def test_cpp_op_with_transform_iterator():
     )
 
     # Verify result: sum of (0*2, 1*2, 2*2, ..., 9*2) = 2 * sum(0..9) = 2 * 45 = 90
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     expected = 2 * np.sum(h_input)
     assert result == expected, f"Expected {expected}, got {result}"
 
@@ -410,7 +402,7 @@ def test_cpp_op_with_transform_iterator():
 def test_cpp_stateful_op_reduce_with_constant():
     """Test stateful RawOp with a simple stateful reduce."""
     # State: a single int32 constant value (10) on device
-    d_constant = cp.array([10], dtype=np.int32)
+    d_constant = DeviceArray.from_numpy(np.array([10], dtype=np.int32))
     constant_ptr = d_constant.__cuda_array_interface__["data"][0]
     state_data = struct.pack("P", constant_ptr)
     state_alignment = np.dtype(np.intp).alignment
@@ -435,8 +427,8 @@ def test_cpp_stateful_op_reduce_with_constant():
     # Create test data
     num_items = 5
     h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
-    d_input = cp.array(h_input)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Use the stateful op with reduce_into
     h_init = np.array(0, dtype=np.int32)
@@ -445,7 +437,7 @@ def test_cpp_stateful_op_reduce_with_constant():
     )
 
     # Get result
-    result = d_output.get()[0]
+    result = d_output.copy_to_host()[0]
     # Each reduction adds 10, so we expect input sum + some multiple of 10
     # The exact value depends on tree structure, but should be > sum(inputs)
     sum_inputs = np.sum(h_input)
@@ -455,7 +447,7 @@ def test_cpp_stateful_op_reduce_with_constant():
 def test_cpp_stateful_op_select_with_counter():
     """Test stateful RawOp with select_if that atomically updates a counter."""
     # Create a device counter initialized to 0
-    d_counter = cp.zeros(1, dtype=np.int32)
+    d_counter = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
 
     # State: pointer to the counter
     counter_ptr = d_counter.__cuda_array_interface__["data"][0]
@@ -497,11 +489,11 @@ def test_cpp_stateful_op_select_with_counter():
     # Create test data: 0 to 19
     num_items = 20
     h_input = np.arange(num_items, dtype=np.int32)
-    d_input = cp.array(h_input)
+    d_input = DeviceArray.from_numpy(h_input)
 
     # Allocate output arrays
-    d_output = cp.empty(num_items, dtype=np.int32)
-    d_num_selected = cp.empty(1, dtype=np.int32)
+    d_output = DeviceArray.empty(num_items, np.int32)
+    d_num_selected = DeviceArray.empty(1, np.int32)
 
     # Run select
     cuda.compute.select(
@@ -513,8 +505,8 @@ def test_cpp_stateful_op_select_with_counter():
     )
 
     # Get results
-    num_selected = d_num_selected.get()[0]
-    counter_value = d_counter.get()[0]
+    num_selected = d_num_selected.copy_to_host()[0]
+    counter_value = d_counter.copy_to_host()[0]
 
     # Verify: should have selected 10 even numbers (0, 2, 4, ..., 18)
     expected_count = 10
@@ -526,7 +518,7 @@ def test_cpp_stateful_op_select_with_counter():
     )
 
     # Verify the selected values are correct
-    selected_values = d_output.get()[:num_selected]
+    selected_values = d_output.copy_to_host()[:num_selected]
     expected_selected = np.arange(0, 20, 2, dtype=np.int32)
     assert np.array_equal(selected_values, expected_selected), (
         "Selected values don't match"

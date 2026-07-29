@@ -49,7 +49,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceHistogram that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref HistogramPolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::HistogramPolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu

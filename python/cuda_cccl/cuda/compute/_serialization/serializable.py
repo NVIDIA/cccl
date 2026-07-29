@@ -132,6 +132,65 @@ def BUILD_RESULT(cls: type) -> _SubObject:
     return _SubObject(cls)
 
 
+class _BuildResults(_Kind):
+    """A ``{cc: Device<Algo>BuildResult}`` mapping — one compiled build result per
+    target compute capability.
+
+    Wire form: ``u32`` count, then for each entry a ``u32`` cc key
+    (``cc_major * 10 + cc_minor``) followed by the length-prefixed build_result
+    blob. Entries are written in sorted-key order so the encoding is
+    deterministic. On read, each build_result is deserialized *without* loading
+    (``load=False``); the matching build result is loaded lazily on first call, so a
+    multi-arch artifact stays portable across GPUs and needs no live device to
+    deserialize.
+    """
+
+    __slots__ = ("cls",)
+
+    def __init__(self, cls: Any) -> None:
+        self.cls = cls
+
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
+        from .._caching import _PerCCBuildResults
+
+        # Wrappers always hold a _PerCCBuildResults (build_for_ccs and
+        # read() below both produce one). serialize_build_result takes the
+        # per-cc source lock, so serialization cannot observe a source whose
+        # first device load is still in progress; a plain dict here would
+        # silently bypass that lock.
+        assert isinstance(value, _PerCCBuildResults)
+        ccs = sorted(value)
+        w.u32(len(ccs))
+        for cc in ccs:
+            w.u32(int(cc))
+            w.blob(value.serialize_build_result(cc))
+
+    def read(self, r: codec.Reader, obj: Any) -> Any:
+        count = r.u32()
+        # A single-target blob must match this device, so validate its cc-major
+        # eagerly (clear error at deserialize). A multi-arch blob legitimately
+        # carries build results for other archs, so defer the cc check — resolve_build_result
+        # picks the matching one at call time. Kernel load stays lazy either way.
+        check_cc = count == 1
+        entries = [(r.u32(), r.blob()) for _ in range(count)]
+        result: dict[int, Any] = {}
+        for cc, blob in entries:
+            if cc in result:
+                raise ValueError(
+                    f"duplicate compute-capability key {cc} in build_results blob"
+                )
+            result[cc] = self.cls.deserialize(blob, load=False, check_cc=check_cc)
+
+        from .._caching import _PerCCBuildResults
+
+        return _PerCCBuildResults(result)
+
+
+def BUILD_RESULTS(cls: type) -> _BuildResults:
+    """Schema kind for a ``{cc: Device<Algo>BuildResult}`` build result mapping."""
+    return _BuildResults(cls)
+
+
 def NESTED(cls: type) -> _SubObject:
     """Schema kind for a nested ``Serializable`` member (its blob is embedded)."""
     return _SubObject(cls)
@@ -183,6 +242,11 @@ class Serializable:
     # Subclasses declare their serialized members here.
     __serialization_schema__: tuple = ()
 
+    # Construction-time binding of a default-build wrapper's loaded result
+    # (see cache_build_results). Annotation only: storage comes from each
+    # subclass's __slots__; __init__ or deserialize() below assigns it.
+    _bound_build_result: Any
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         Serializable._registry[cls.__qualname__] = cls
@@ -211,6 +275,10 @@ class Serializable:
         """
         r = codec.open(blob, cls.__qualname__)
         obj = cls.__new__(cls)
+        # deserialize() bypasses __init__, which is where default-build
+        # wrappers bind their loaded result (see cache_build_results); an
+        # unbound wrapper resolves per call instead.
+        obj._bound_build_result = None
         for attr, kind in cls.__serialization_schema__:
             setattr(obj, attr, kind.read(r, obj))
         obj._after_deserialize()

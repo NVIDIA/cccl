@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 /**
@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/choose_offset.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
@@ -32,9 +34,14 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::it_value_t
 
+#include <cuda/argument>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
@@ -48,6 +55,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename InitValueT,
           typename AccumT,
@@ -79,6 +87,7 @@ struct DeviceReduceKernelSource
                        InputIteratorT,
                        reduce_kernel_output_t,
                        OffsetT,
+                       KernelNumItemsT,
                        ReductionOpT,
                        AccumT,
                        InitValueT,
@@ -93,6 +102,18 @@ struct DeviceReduceKernelSource
                                  ReductionOpT,
                                  InitValueT,
                                  AccumT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    DeferredSingleTileSecondKernel,
+    DeviceReduceDeferredSingleTileKernel<
+      PolicySelector,
+      AccumT*,
+      OutputIteratorT,
+      OffsetT,
+      KernelNumItemsT,
+      ReductionOpT,
+      InitValueT,
+      AccumT>)
 
   CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
@@ -143,6 +164,8 @@ struct policy_selector_from_hub
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
@@ -173,12 +196,13 @@ template <
     InputIteratorT,
     OutputIteratorT,
     OffsetT,
+    OffsetT,
     ReductionOpT,
     InitValueT,
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") DispatchReduce
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -534,6 +558,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") DispatchReduce
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide transform reduce
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
@@ -572,12 +598,13 @@ template <
     InputIteratorT,
     OutputIteratorT,
     OffsetT,
+    OffsetT,
     ReductionOpT,
     InitValueT,
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
+using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,
@@ -600,6 +627,32 @@ namespace detail::reduce
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* get_device_ptr(void* ptr)
 {
   return *reinterpret_cast<void**>(ptr);
+}
+
+//! Preserve caller-selected immediate offset types; select a concrete offset type for deferred arguments.
+template <typename OffsetT>
+using num_items_offset_t =
+  ::cuda::std::conditional_t<::cuda::args::__traits<OffsetT>::is_deferred,
+                             detail::choose_offset_t<typename ::cuda::args::__traits<OffsetT>::element_type>,
+                             typename ::cuda::args::__traits<OffsetT>::element_type>;
+
+//! Creates the kernel argument for an immediate or deferred problem size without reading a deferred source.
+//! Immediate values are cast to the selected offset type; deferred arguments are stripped to their source.
+template <typename OffsetT>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto make_num_items_kernel_arg(OffsetT num_items) noexcept
+{
+  using args_traits_t = ::cuda::args::__traits<OffsetT>;
+  using element_t     = typename args_traits_t::element_type;
+
+  if constexpr (args_traits_t::is_deferred)
+  {
+    static_assert(args_traits_t::is_single_value, "num_items must be a single value wrapped in cuda::args::deferred");
+    static_assert(::cuda::std::__cccl_is_integer_v<element_t>, "the num_items element type must be an integer");
+    static_assert(
+      sizeof(element_t) == sizeof(::cuda::std::int32_t) || sizeof(element_t) == sizeof(::cuda::std::int64_t));
+  }
+
+  return CUB_NS_QUALIFIER::detail::parameter_from_host<num_items_offset_t<OffsetT>>(num_items);
 }
 
 template <bool StableReductionOrder,
@@ -626,6 +679,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
+  using offset_t = num_items_offset_t<OffsetT>;
+
+  const auto kernel_num_items = make_num_items_kernel_arg(num_items);
+
   // Get SM count
   int sm_count = 0;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
@@ -634,8 +691,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   // Init regular kernel configuration
-  const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
-  int sm_occupancy     = 0;
+  int sm_occupancy = 0;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
         sm_occupancy, kernel_source.ReductionKernel(), active_policy.multi_tile.threads_per_block)))
   {
@@ -643,11 +699,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   const int reduce_device_occupancy = sm_occupancy * sm_count;
-
-  // Even-share work distribution
-  const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
-  GridEvenShare<OffsetT> even_share;
-  even_share.DispatchInit(num_items, max_blocks, tile_size);
+  const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
 
   [[maybe_unused]] AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path
   if constexpr (!StableReductionOrder)
@@ -684,13 +736,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     d_block_reductions = static_cast<AccumT*>(allocations[0]);
   }
 
-  // The grid size for DeviceReduceKernel can be zero if the input size is zero. Since the atomic code path does not run
-  // a second kernel, we need to handle the empty grid in first kernel already
-  int reduce_grid_size = even_share.grid_size;
-  if constexpr (!StableReductionOrder)
+  GridEvenShare<offset_t> even_share;
+  if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
-    reduce_grid_size = ::cuda::std::max(1, reduce_grid_size);
+    const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
+    even_share.DispatchInit(kernel_num_items, max_blocks, tile_size);
   }
+
+  const int reduce_grid_size = [&] {
+    if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
+    {
+      return max_blocks;
+    }
+    else if constexpr (!StableReductionOrder)
+    {
+      // The grid size for DeviceReduceKernel can be zero if the input size is zero.
+      // The atomic code path does not run a second kernel, so block zero handles an empty input.
+      return ::cuda::std::max(1, even_share.grid_size);
+    }
+    else
+    {
+      return even_share.grid_size;
+    }
+  }();
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -719,7 +787,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
           .doit(kernel_source.ReductionKernel(),
                 d_in,
                 reduce_kernel_output,
-                num_items,
+                kernel_num_items,
                 even_share,
                 reduction_op,
                 init,
@@ -751,18 +819,37 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
             active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
-    // Invoke DeviceReduceSingleTileKernel
-    if (const auto error = CubDebug(
-          launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-            .doit(kernel_source.SingleTileSecondKernel(),
-                  d_block_reductions,
-                  d_out,
-                  reduce_grid_size,
-                  reduction_op,
-                  init,
-                  ::cuda::std::identity{})))
+    // Invoke DeviceReduceSingleTileKernel/DeviceReduceDeferredSingleTileKernel
+    if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
     {
-      return error;
+      if (const auto error = CubDebug(
+            launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
+              .doit(kernel_source.DeferredSingleTileSecondKernel(),
+                    d_block_reductions,
+                    d_out,
+                    kernel_num_items,
+                    reduce_grid_size,
+                    reduction_op,
+                    init,
+                    ::cuda::std::identity{})))
+      {
+        return error;
+      }
+    }
+    else
+    {
+      if (const auto error = CubDebug(
+            launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
+              .doit(kernel_source.SingleTileSecondKernel(),
+                    d_block_reductions,
+                    d_out,
+                    reduce_grid_size,
+                    reduction_op,
+                    init,
+                    ::cuda::std::identity{})))
+      {
+        return error;
+      }
     }
 
     // Check for failure to launch
@@ -814,14 +901,15 @@ template <
     static_cast<OverrideAccumT*>(nullptr))),
   typename PolicySelector = policy_selector_from_types<
     AccumT,
-    OffsetT,
+    num_items_offset_t<OffsetT>,
     ReductionOpT,
     StableReductionOrder ? __determinism_t::__run_to_run : __determinism_t::__not_guaranteed>,
   typename KernelSource = DeviceReduceKernelSource<
     PolicySelector,
     InputIteratorT,
     OutputIteratorT,
-    OffsetT,
+    num_items_offset_t<OffsetT>,
+    CUB_NS_QUALIFIER::detail::parameter_from_host_t<num_items_offset_t<OffsetT>, OffsetT>,
     ReductionOpT,
     InitValueT,
     AccumT,
@@ -845,11 +933,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using offset_t = num_items_offset_t<OffsetT>;
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
+
+  // TODO: Remove this workaround once nvcc versions older than 12.4 are no longer supported.
+  // Older nvcc versions eagerly instantiate discarded statements in generic lambdas, so perform this conversion here.
+  // Both suppressions are needed for "never referenced" and "set but never used" diagnostics across supported nvcc
+  // and MSVC combinations.
+  [[maybe_unused]] offset_t offset_num_items{};
+  if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
+  {
+    offset_num_items = static_cast<offset_t>(num_items);
+  }
+  (void) offset_num_items;
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
@@ -877,10 +978,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    if constexpr (StableReductionOrder)
+    if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {
-      const bool single_tile_problem = num_items <= (static_cast<OffsetT>(active_policy.single_tile.threads_per_block)
-                                                     * active_policy.single_tile.items_per_thread);
+      const bool single_tile_problem =
+        offset_num_items <= (static_cast<offset_t>(active_policy.single_tile.threads_per_block)
+                             * active_policy.single_tile.items_per_thread);
 
       // if the problem is small enough to fit into a single tile, just handle it and return early
       if (single_tile_problem)
@@ -903,7 +1005,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         // Invoke single_reduce_sweep_kernel
         if (const auto error = CubDebug(
               launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-                .doit(kernel_source.SingleTileKernel(), d_in, d_out, num_items, reduction_op, init, transform_op)))
+                .doit(
+                  kernel_source.SingleTileKernel(), d_in, d_out, offset_num_items, reduction_op, init, transform_op)))
         {
           return error;
         }
@@ -923,7 +1026,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return cudaSuccess;
       }
     }
-    else
+    else if constexpr (!StableReductionOrder)
     {
       // Return if the caller is simply requesting the size of the storage allocation
       if (d_temp_storage == nullptr)

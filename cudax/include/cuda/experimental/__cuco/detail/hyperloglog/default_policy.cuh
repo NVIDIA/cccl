@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__bit/countl.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/declval.h>
@@ -74,7 +73,7 @@ struct default_hll_policy
   //! @return The hash value of `__k`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hash_result_type hash(const _Key& __k) const noexcept
   {
-    return this->hasher_(__k);
+    return hasher_(__k);
   }
 
   //! @brief Extracts the register index from the hash.
@@ -114,7 +113,7 @@ struct default_hll_policy
   //! @param[in] __v Count of zero registers.
   //! @param[in] __precision HLL precision parameter.
   //! @return The bias-corrected cardinality estimate.
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr double
   finalize(double __z, ::cuda::std::int32_t __v, ::cuda::std::int32_t __precision) noexcept
   {
     return __hyperloglog_ns::hllpp_finalizer{__precision}(__z, __v);

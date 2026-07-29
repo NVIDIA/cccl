@@ -163,6 +163,8 @@ void __global__ __launch_bounds__(
   vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
+// TODO(bgruber): rewrite the below test to use policy selectors
+
 //----------------------------------------------------------------------------
 // Tuning policy chain
 //----------------------------------------------------------------------------
@@ -173,7 +175,7 @@ struct device_dummy_algorithm_policy_t
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
-  struct policy_500 : cub::ChainedPolicy<500, policy_500, policy_500>
+  struct policy_500 : cub::detail::chained_policy<500, policy_500, policy_500>
   {
     using DummyAlgorithmPolicy = agent_dummy_algorithm_policy_t<256, cub::Nominal4BItemsToItems<item_t>(17)>;
 

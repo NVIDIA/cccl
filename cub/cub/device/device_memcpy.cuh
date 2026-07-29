@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceMemcpy that accept an environment can be tuned by passing a custom :ref:`policy selector
-//! <cub-policy-selectors>` that returns a @ref BatchedCopyPolicy, as shown in the example below:
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::BatchedCopyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
 //!      :language: c++
@@ -262,7 +262,7 @@ struct DeviceMemcpy
           OutputBufferIt output_buffer_it,
           BufferSizeIteratorT buffer_sizes,
           ::cuda::std::int64_t num_buffers,
-          EnvT env = {})
+          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,

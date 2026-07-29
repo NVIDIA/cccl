@@ -21,7 +21,7 @@ template <class KeyT, class ValueT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB unique-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using UniqueByKeyPolicyT =
       AgentUniqueByKeyPolicy<128,

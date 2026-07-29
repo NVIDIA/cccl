@@ -107,7 +107,8 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! All algorithms in DeviceSegmentedSort that accept an environment can be tuned by passing a custom :ref:`policy
-//! selector <cub-policy-selectors>` that returns a @ref SegmentedSortPolicy, as shown in the example below:
+//! selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedSortPolicy`, as shown in the example
+//! below:
 //!
 //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
 //!    :language: c++
@@ -466,7 +467,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -711,7 +712,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -964,7 +965,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -1218,7 +1219,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -1467,7 +1468,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -1717,7 +1718,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -1975,7 +1976,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -2232,7 +2233,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -2593,7 +2594,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -2881,7 +2882,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -3179,7 +3180,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -3475,7 +3476,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -3763,7 +3764,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -4051,7 +4052,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -4350,7 +4351,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
@@ -4647,7 +4648,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(

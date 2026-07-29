@@ -130,22 +130,91 @@ template <typename _Void, typename... _Args>
 struct __simd_math_result
 {};
 
+// the following code to deduce the result type of a SIMD math function doesn't work with NVRTC (13.3) with
+// expression like basic_vec<__half> + __half
+//   struct __simd_math_result<void_t<decltype((::cuda::std::declval<const _Args&>() + ...))>, _Args...>
+// This requires the following workaround:
+// 1. Find the first vector argument (__simd_math_first_vec)
+// 2. Uses that vector as the starting result type
+// 3. If there are multiple SIMD vector arguments, combines only vector-with-vector expressions to compute the final
+// result type. Treats scalar arguments as broadcast operands, not as participants in result-type arithmetic
+
+// Find the first vector argument
 template <typename... _Args>
-struct __simd_math_result<void_t<decltype((::cuda::std::declval<const _Args&>() + ...))>, _Args...>
+struct __simd_math_first_vec
+{};
+
+template <bool _IsVec, typename... _Args>
+struct __simd_math_first_vec_impl;
+
+template <typename _Arg, typename... _Args>
+struct __simd_math_first_vec_impl<true, _Arg, _Args...>
 {
-  using type = decltype((::cuda::std::declval<const _Args&>() + ...));
+  using type = __deduced_vec_t<_Arg>;
 };
+
+template <typename _Arg, typename... _Args>
+struct __simd_math_first_vec_impl<false, _Arg, _Args...> : __simd_math_first_vec<_Args...>
+{};
+
+template <typename _Arg, typename... _Args>
+struct __simd_math_first_vec<_Arg, _Args...>
+    : __simd_math_first_vec_impl<__is_simd_math_floating_point_v<_Arg>, _Arg, _Args...>
+{};
+
+// Derive the result type (no arguments)
+template <typename _Result, typename... _Args>
+struct __simd_math_result_impl
+{
+  using type = _Result;
+};
+
+// Accumulate the result type
+// - no vector argument -> keep the result type
+// - vector argument -> combine with the result type
+template <bool _IsVec, typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result;
+
+template <typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result<false, _Result, _Arg, _Args...> : __simd_math_result_impl<_Result, _Args...>
+{};
+
+template <typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result<true, _Result, _Arg, _Args...>
+    : __simd_math_result_impl<
+        decltype(::cuda::std::declval<const _Result&>() + ::cuda::std::declval<const __deduced_vec_t<_Arg>&>()),
+        _Args...>
+{};
+
+// Derive the result type (with arguments)
+template <typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_result_impl<_Result, _Arg, _Args...>
+    : __simd_math_accumulate_vec_result<__is_simd_math_floating_point_v<_Arg>, _Result, _Arg, _Args...>
+{};
+
+// there is at least one vector argument, invalid otherwise
+template <typename... _Args>
+struct __simd_math_result<void_t<typename __simd_math_first_vec<_Args...>::type>, _Args...>
+    : __simd_math_result_impl<typename __simd_math_first_vec<_Args...>::type, _Args...>
+{};
 
 template <typename... _Args>
 using __simd_math_result_t = typename __simd_math_result<void, _Args...>::type;
 
-template <typename _Arg, typename _Result>
-inline constexpr bool __is_simd_math_same_vec_arg_v = is_same_v<__deduced_vec_t<_Arg>, _Result>;
+// Check if the argument is a vector argument and the same as the result type
+template <typename _Arg, typename _Result, typename = void>
+inline constexpr bool __is_simd_math_same_vec_arg_v = false;
 
+template <typename _Arg, typename _Result>
+inline constexpr bool __is_simd_math_same_vec_arg_v<_Arg, _Result, void_t<__deduced_vec_t<_Arg>>> =
+  is_same_v<__deduced_vec_t<_Arg>, _Result>;
+
+// Check if the argument is a valid SIMD math argument: same vector argument or convertible to the result type
 template <typename _Arg, typename _Result>
 inline constexpr bool __is_simd_math_arg_v =
   __is_simd_math_same_vec_arg_v<_Arg, _Result>
-  || (!__is_simd_math_floating_point_v<_Arg> && is_convertible_v<const _Arg&, _Result>);
+  || (!__is_simd_math_floating_point_v<_Arg>
+      && (is_same_v<remove_cvref_t<_Arg>, typename _Result::value_type> || is_convertible_v<const _Arg&, _Result>) );
 
 template <typename _Result, typename... _Args>
 inline constexpr bool __is_simd_math_v =
@@ -176,9 +245,9 @@ inline constexpr bool __is_simd_math_v =
   _CCCL_REQUIRES(__is_simd_math_v<__simd_math_result_t<_Vp0, _Vp1>, _Vp0, _Vp1>)                              \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp0& __x, const _Vp1& __y) noexcept        \
   {                                                                                                           \
-    using __result_t         = __simd_math_result_t<_Vp0, _Vp1>;                                              \
-    const __result_t __x_vec = __x;                                                                           \
-    const __result_t __y_vec = __y;                                                                           \
+    using __result_t = __simd_math_result_t<_Vp0, _Vp1>;                                                      \
+    const __result_t __x_vec{__x};                                                                            \
+    const __result_t __y_vec{__y};                                                                            \
     return __result_t{__simd_##_GENERATOR##_generator<__result_t, __result_t, __result_t>{__x_vec, __y_vec}}; \
   }
 
@@ -207,10 +276,10 @@ inline constexpr bool __is_simd_math_v =
   _CCCL_REQUIRES(__is_simd_math_v<__simd_math_result_t<_Vp0, _Vp1, _Vp2>, _Vp0, _Vp1, _Vp2>)                            \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp0& __x, const _Vp1& __y, const _Vp2& __z) noexcept \
   {                                                                                                                     \
-    using __result_t         = __simd_math_result_t<_Vp0, _Vp1, _Vp2>;                                                  \
-    const __result_t __x_vec = __x;                                                                                     \
-    const __result_t __y_vec = __y;                                                                                     \
-    const __result_t __z_vec = __z;                                                                                     \
+    using __result_t = __simd_math_result_t<_Vp0, _Vp1, _Vp2>;                                                          \
+    const __result_t __x_vec{__x};                                                                                      \
+    const __result_t __y_vec{__y};                                                                                      \
+    const __result_t __z_vec{__z};                                                                                      \
     return __result_t{                                                                                                  \
       __simd_##_GENERATOR##_generator<__result_t, __result_t, __result_t, __result_t>{__x_vec, __y_vec, __z_vec}};      \
   }

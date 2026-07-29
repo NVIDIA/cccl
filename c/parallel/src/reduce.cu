@@ -126,11 +126,12 @@ std::string get_device_reduce_kernel_name(
   check(cccl_type_name_from_nvrtc<cuda::std::identity>(&transform_op_t));
 
   return std::format(
-    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
     policy_selector_t,
     stable_reduction_order ? "true" : "false",
     input_iterator_t,
     stable_reduction_order ? std::string(accum_t) + "*" : output_iterator_t,
+    offset_t,
     offset_t,
     reduction_op_t,
     accum_t,

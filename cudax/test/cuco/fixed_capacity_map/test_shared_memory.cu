@@ -13,12 +13,15 @@
 #  pragma nv_diag_suppress 20011
 #endif
 
-#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/logical.h>
 
+#include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/memory>
+#include <cuda/memory_pool>
 #include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -30,27 +33,34 @@ namespace cudax = cuda::experimental;
 constexpr int empty_key   = -1;
 constexpr int empty_value = -1;
 
-// A static-capacity map. `_Capacity` must be a valid slot count, so it is computed from the probing
-// scheme and bucket size (the map's defaults: linear probing, cg_size 1, bucket_size 1) rather than
-// hand-written.
-using default_probing               = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
-inline constexpr int default_bucket = 1;
+// A static-capacity map with cg_size 1 so the test can use scalar device inserts.
+using probing               = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
+inline constexpr int bucket = 1;
 inline constexpr ::cuda::std::size_t static_capacity =
-  cudax::cuco::make_valid_capacity<default_probing, default_bucket>(::cuda::std::size_t{512});
-using fixed_capacity_map_512_type = cudax::cuco::fixed_capacity_map<int, int, static_capacity>;
+  cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{512});
+using fixed_capacity_map_512_type = cudax::cuco::
+  fixed_capacity_map<int, int, static_capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing>;
 
-template <class _Pair>
+template <class Pair>
 struct iota_pair
 {
-  __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
+  __host__ __device__ Pair operator()(typename Pair::first_type key) const noexcept
   {
-    return _Pair{__i, __i};
+    return Pair{key, key};
+  }
+};
+
+struct is_nonzero
+{
+  __device__ bool operator()(int v) const noexcept
+  {
+    return v != 0;
   }
 };
 
 // Demonstrates compile-time __shared__ sizing via ref_type::capacity_v.
-template <class _PairIt>
-__global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global_ref, _PairIt pairs, int n)
+template <class PairIt>
+__global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global_ref, PairIt pairs, int num_keys)
 {
   using ref_t = fixed_capacity_map_512_type::ref_type;
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
@@ -59,9 +69,9 @@ __global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global
   __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v> smem;
 
   const auto idx    = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
-  smem[threadIdx.x] = (idx < n) ? pairs[idx] : ref_t::value_type{};
+  smem[threadIdx.x] = (idx < num_keys) ? pairs[idx] : ref_t::value_type{};
   __syncthreads();
-  if (idx < n)
+  if (idx < num_keys)
   {
     global_ref.insert(smem[threadIdx.x]);
   }
@@ -71,22 +81,22 @@ C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity
 {
   constexpr int num_keys = 64;
 
-  fixed_capacity_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  fixed_capacity_map_512_type map{stream, mr, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   const int block_size = 128;
   const int grid_size  = (num_keys + block_size - 1) / block_size;
 
-  insert_shmem_kernel<<<grid_size, block_size>>>(
+  insert_shmem_kernel<<<grid_size, block_size, 0, stream.get()>>>(
     map.ref(),
     cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<fixed_capacity_map_512_type::value_type>{}),
     num_keys);
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE(cudaGetLastError() == cudaSuccess);
 
   // Verify the insertions actually landed in the global map
-  ::thrust::device_vector<int> found(num_keys, 0);
-  map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-  REQUIRE(::thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
-    return v != 0;
-  }));
+  auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
+  map.contains(stream, cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
+  REQUIRE(::thrust::all_of(::thrust::cuda::par.on(stream.get()), found.data(), found.data() + num_keys, is_nonzero{}));
 }

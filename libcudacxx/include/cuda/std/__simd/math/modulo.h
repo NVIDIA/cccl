@@ -75,8 +75,8 @@ _CCCL_REQUIRES(__is_simd_math_v<_Result, _Vp0, _Vp1>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Result
 remquo(const _Vp0& __x, const _Vp1& __y, rebind_t<int, _Result>* __quo) noexcept
 {
-  const _Result __x_vec = __x;
-  const _Result __y_vec = __y;
+  const _Result __x_vec{__x};
+  const _Result __y_vec{__y};
   return ::cuda::std::simd::__simd_remquo_impl<_Result, _Result, _Result>(__x_vec, __y_vec, __quo);
 }
 

@@ -21,7 +21,7 @@ template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels,
 struct my_policy_hub
 {
   // simplified from Policy500 of the CUB histogram tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;

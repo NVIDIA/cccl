@@ -112,7 +112,7 @@ enum WarpLoadAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(WarpLoadAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_API constexpr const char* to_string(WarpLoadAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -124,9 +124,8 @@ namespace detail
       return "WARP_LOAD_VECTORIZE";
     case WARP_LOAD_TRANSPOSE:
       return "WARP_LOAD_TRANSPOSE";
-    default:
-      return "<unknown WarpLoadAlgorithm>";
   }
+  return "<unknown WarpLoadAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

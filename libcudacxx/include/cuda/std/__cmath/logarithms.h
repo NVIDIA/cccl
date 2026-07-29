@@ -232,6 +232,8 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr int __ilogb_impl(_Tp __x) noexcept
 {
   const auto __fp = ::cuda::std::fpclassify(__x);
+  // FP_ILOGB0 and FP_ILOGBNAN may have the same value, but the cases are semantically distinct.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if (__fp == FP_ZERO)
   {
     return FP_ILOGB0;
@@ -240,6 +242,7 @@ template <class _Tp>
   {
     return FP_ILOGBNAN;
   }
+  // NOLINTEND(bugprone-branch-clone)
   else if (__fp == FP_INFINITE)
   {
     return numeric_limits<int>::max();

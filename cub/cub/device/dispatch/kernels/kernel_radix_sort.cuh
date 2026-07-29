@@ -83,13 +83,13 @@ template <typename PolicySelector,
 __launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsweep.threads_per_block
                                      : current_policy<PolicySelector>().upsweep.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
-    _CCCL_GRID_CONSTANT const KeyT* const d_keys,
-    _CCCL_GRID_CONSTANT OffsetT* const d_spine,
-    _CCCL_GRID_CONSTANT const OffsetT /*num_items*/,
-    _CCCL_GRID_CONSTANT const int current_bit,
-    _CCCL_GRID_CONSTANT const int num_bits,
+    const KeyT* const d_keys,
+    OffsetT* const d_spine,
+    const OffsetT /*num_items*/,
+    const int current_bit,
+    const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+    const DecomposerT decomposer = {})
 {
   static constexpr RadixSortPolicy policy                       = current_policy<PolicySelector>();
   static constexpr RadixSortUpsweepPolicy active_upsweep_policy = ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
@@ -144,8 +144,7 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsw
  */
 template <typename PolicySelector, typename OffsetT>
 __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_block, 1)
-  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
-    _CCCL_GRID_CONSTANT OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
+  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* const d_spine, const int num_counts)
 {
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>().scan;
   static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
@@ -243,16 +242,16 @@ template <typename PolicySelector,
 __launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_downsweep.threads_per_block
                                      : current_policy<PolicySelector>().downsweep.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
-    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
-    _CCCL_GRID_CONSTANT OffsetT* const d_spine,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int current_bit,
-    _CCCL_GRID_CONSTANT const int num_bits,
+    const KeyT* const d_keys_in,
+    KeyT* const d_keys_out,
+    const ValueT* const d_values_in,
+    ValueT* const d_values_out,
+    OffsetT* const d_spine,
+    const OffsetT num_items,
+    const int current_bit,
+    const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+    const DecomposerT decomposer = {})
 {
   static constexpr RadixSortPolicy policy = current_policy<PolicySelector>();
 
@@ -336,14 +335,14 @@ template <typename PolicySelector,
           typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block, 1)
   _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
-    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
+    const KeyT* const d_keys_in,
+    KeyT* const d_keys_out,
+    const ValueT* const d_values_in,
+    ValueT* const d_values_out,
     OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int current_bit,
-    _CCCL_GRID_CONSTANT const int end_bit,
-    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+    const int current_bit,
+    const int end_bit,
+    const DecomposerT decomposer = {})
 {
   // Constants
   static constexpr RadixSortPolicy policy = current_policy<PolicySelector>();
@@ -452,12 +451,12 @@ template <typename PolicySelector,
           typename DecomposerT = identity_decomposer_t>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) void DeviceRadixSortHistogramKernel(
-  _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
-  _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
-  _CCCL_GRID_CONSTANT const int start_bit,
-  _CCCL_GRID_CONSTANT const int end_bit,
-  _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+  OffsetT* const d_bins_out,
+  const KeyT* const d_keys_in,
+  const OffsetT num_items,
+  const int start_bit,
+  const int end_bit,
+  const DecomposerT decomposer = {})
 {
   static constexpr RadixSortHistogramPolicy policy = current_policy<PolicySelector>().histogram;
 
@@ -475,10 +474,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
 
 template <typename PolicySelector, typename InitT0, typename InitT1>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
-  _CCCL_GRID_CONSTANT InitT0* const d_items0,
-  _CCCL_GRID_CONSTANT const size_t num_items0,
-  _CCCL_GRID_CONSTANT InitT1* const d_items1,
-  _CCCL_GRID_CONSTANT const size_t num_items1)
+  InitT0* const d_items0, const size_t num_items0, InitT1* const d_items1, const size_t num_items1)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -509,18 +505,18 @@ template <typename PolicySelector,
           typename DecomposerT   = identity_decomposer_t>
 _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().onesweep.threads_per_block)
   DeviceRadixSortOnesweepKernel(
-    _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
-    _CCCL_GRID_CONSTANT AtomicOffsetT* const d_ctrs,
-    _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
-    _CCCL_GRID_CONSTANT const OffsetT* const d_bins_in,
-    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
-    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
-    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    _CCCL_GRID_CONSTANT const PortionOffsetT num_items,
-    _CCCL_GRID_CONSTANT const int current_bit,
-    _CCCL_GRID_CONSTANT const int num_bits,
-    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+    AtomicOffsetT* const d_lookback,
+    AtomicOffsetT* const d_ctrs,
+    OffsetT* const d_bins_out,
+    const OffsetT* const d_bins_in,
+    KeyT* const d_keys_out,
+    const KeyT* const d_keys_in,
+    ValueT* const d_values_out,
+    const ValueT* const d_values_in,
+    const PortionOffsetT num_items,
+    const int current_bit,
+    const int num_bits,
+    const DecomposerT decomposer = {})
 {
   static constexpr RadixSortOnesweepPolicy policy = current_policy<PolicySelector>().onesweep;
   using OnesweepPolicyT                           = detail::agent_radix_sort_onesweep_policy<
@@ -565,7 +561,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
  * Exclusive sum kernel
  */
 template <typename PolicySelector, typename OffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_bins)
 {
   static constexpr RadixSortExclusiveSumPolicy policy = current_policy<PolicySelector>().exclusive_sum;
   constexpr int RADIX_BITS                            = policy.radix_bits;

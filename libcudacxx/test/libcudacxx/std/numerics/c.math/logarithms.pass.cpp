@@ -126,6 +126,9 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test_constexpr<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   test_constexpr<unsigned short>();
   test_constexpr<int>();

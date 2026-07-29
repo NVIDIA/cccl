@@ -288,18 +288,18 @@ struct SegmentedSortPolicySelector
           .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
           .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
           .radix_bits        = 6},
-      .small_segment =
-        cub::SegmentedSortSubWarpMergeSortPolicy{
-          .threads_per_block = 256,
-          .threads_per_warp  = 4,
-          .items_per_thread  = 7,
-          .load_algorithm    = cub::WARP_LOAD_DIRECT,
-          .load_modifier     = cub::LOAD_DEFAULT,
-          .store_algorithm   = cub::WARP_STORE_DIRECT},
       .medium_segment =
         cub::SegmentedSortSubWarpMergeSortPolicy{
           .threads_per_block = 256,
           .threads_per_warp  = 32,
+          .items_per_thread  = 7,
+          .load_algorithm    = cub::WARP_LOAD_DIRECT,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .store_algorithm   = cub::WARP_STORE_DIRECT},
+      .small_segment =
+        cub::SegmentedSortSubWarpMergeSortPolicy{
+          .threads_per_block = 256,
+          .threads_per_warp  = 4,
           .items_per_thread  = 7,
           .load_algorithm    = cub::WARP_LOAD_DIRECT,
           .load_modifier     = cub::LOAD_DEFAULT,

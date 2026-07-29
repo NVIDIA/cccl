@@ -43,8 +43,8 @@ _CCCL_SIMD_MATH_BINARY_GENERATOR(isunordered, isunordered);
   _CCCL_REQUIRES(__is_simd_math_v<_Vec, _Vp0, _Vp1>)                                                      \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp0& __x, const _Vp1& __y) noexcept \
   {                                                                                                       \
-    const _Vec __x_vec = __x;                                                                             \
-    const _Vec __y_vec = __y;                                                                             \
+    const _Vec __x_vec{__x};                                                                              \
+    const _Vec __y_vec{__y};                                                                              \
     return _Result{__simd_##_NAME##_generator<_Result, _Vec, _Vec>{__x_vec, __y_vec}};                    \
   }
 
