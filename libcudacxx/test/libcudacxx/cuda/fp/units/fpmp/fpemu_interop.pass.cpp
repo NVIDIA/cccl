@@ -1,0 +1,145 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+//===----------------------------------------------------------------------===//
+//
+//  Unit test: <cuda/fpemu> and <cuda/fpmp> used in one translation unit.
+//
+//  Both libraries live in namespace cuda::experimental, and fpemu declares
+//  overloads named after the CUDA rounding intrinsics (__dadd_rn, __dmul_rn,
+//  __double2int_rz, ...) for its own emulated types. fpmp's device paths call the
+//  global intrinsics of the same name, so an unqualified call from inside
+//  cuda::experimental finds fpemu's overload set, stops there, and never reaches
+//  the global scope -- every such call fails to compile the moment both headers
+//  are included. fpmp therefore spells them ::__dadd_rn.
+//
+//  This test is primarily a compile-time guard, which is why fpemu is included
+//  first (the order that puts its declarations in scope before fpmp's bodies) and
+//  why the fpmp arithmetic runs in a TEST_FUNC: the shadowed calls only exist in
+//  the device paths, so they have to be instantiated to be checked. The runtime
+//  assertions catch the quieter failure mode where a wrong-but-viable overload is
+//  selected and the arithmetic silently changes.
+//
+//===----------------------------------------------------------------------===//
+
+// Include order is load-bearing here; see above.
+#include <cuda/fpemu>
+#include <cuda/fpmp>
+#include <cuda/std/cassert>
+#include <cuda/std/cmath>
+#include <cuda/std/type_traits>
+
+#include "test_macros.h"
+
+using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+
+// fpmp arithmetic and conversions. The calls fpemu can capture are the fp64 ones
+// (__dadd_rn, __dadd_rz, __dsub_rn, __dmul_rn) and the __double2* converters, since
+// those are the names it declares; the fp32 paths are covered too because fpmp
+// qualifies every intrinsic uniformly.
+template <class _Tp>
+TEST_FUNC bool check_fpmp()
+{
+  using T = _Tp;
+
+  const T a(3.0);
+  const T b(4.0);
+  const T c(0.5);
+
+  bool ok = true;
+
+  ok = ok && static_cast<double>(a + b) == 7.0;
+  ok = ok && static_cast<double>(a - b) == -1.0;
+  ok = ok && static_cast<double>(a * b) == 12.0;
+  ok = ok && static_cast<double>(b / T(2.0)) == 2.0;
+  ok = ok && static_cast<double>(fma(a, b, c)) == 12.5;
+  ok = ok && static_cast<double>(sqrt(T(16.0))) == 4.0;
+
+  // Round-off sensitive: 2^-30 added to 1 survives in the low word, which native
+  // single precision could not hold. A wrong add would collapse this to 1.
+  if constexpr (::cuda::std::is_same_v<T, fp32mp2>)
+  {
+    const T eps(1.0 / 1073741824.0); // 2^-30
+    ok = ok && static_cast<double>((T(1.0) + eps) - T(1.0)) == 1.0 / 1073741824.0;
+  }
+
+  // Float-to-integer conversions: the __double2int_rz / __float2int_rz family.
+  ok = ok && static_cast<int>(T(-2.75)) == -2;
+  ok = ok && static_cast<int>(T(7.9)) == 7;
+  ok = ok && static_cast<unsigned>(T(7.9)) == 7u;
+  ok = ok && static_cast<long long>(T(-7.9)) == -7ll;
+  ok = ok && static_cast<unsigned long long>(T(7.9)) == 7ull;
+
+  // Integer-to-float conversions: the __int2float_rn / __ll2double_rz family.
+  ok = ok && static_cast<double>(T(-9)) == -9.0;
+  ok = ok && static_cast<double>(T(123456789ll)) == 123456789.0;
+
+  return ok;
+}
+
+// The other direction: fpemu's intrinsic-named overloads must still be found for
+// fpemu's own types, exactly as fpemu/api.pass.cpp calls them.
+TEST_FUNC bool check_fpemu()
+{
+  const double dx = 1.2345;
+  const double dy = 2.3456;
+  const double dz = 3.4567;
+
+  fp64emu ex = dx;
+  fp64emu ey = dy;
+  fp64emu ez = dz;
+
+  // Unqualified, so these resolve to cuda::experimental::__dadd_rn and friends.
+  // Division is left out because __ddiv_rn is not one of the names that can capture
+  // an fpmp call. Note that nvc++ 26.3 cannot compile these fpemu paths at all: it
+  // hits "Unhandled builtin function" on the __umul64hi in cuda::mul_hi and in
+  // fpemu's __mul_128, which reaches fma and div alike.
+  static_assert(::cuda::std::is_same_v<decltype(__dadd_rn(ex, ey)), fp64emu>);
+  static_assert(::cuda::std::is_same_v<decltype(__dmul_rn(ex, ey)), fp64emu>);
+  static_assert(::cuda::std::is_same_v<decltype(__fma_rn(ex, ey, ez)), fp64emu>);
+
+  const double tol = 1e-10;
+
+  bool ok = true;
+  ok      = ok && ::cuda::std::fabs(static_cast<double>(__dadd_rn(ex, ey)) - (dx + dy)) <= tol;
+  ok      = ok && ::cuda::std::fabs(static_cast<double>(__dsub_rn(ex, ey)) - (dx - dy)) <= tol;
+  ok      = ok && ::cuda::std::fabs(static_cast<double>(__dmul_rn(ex, ey)) - (dx * dy)) <= tol;
+  ok      = ok && ::cuda::std::fabs(static_cast<double>(__fma_rn(ex, ey, ez)) - (dx * dy + dz)) <= tol;
+
+  return ok;
+}
+
+// Values crossing between the two libraries, so both are live in one expression.
+TEST_FUNC bool check_mixed()
+{
+  const double dx = 6.25;
+  const double dy = 1.5;
+
+  const fp64emu emu_sum = fp64emu(dx) + fp64emu(dy);
+  const fp64mp2 mp_sum  = fp64mp2(dx) + fp64mp2(dy);
+
+  bool ok = static_cast<double>(emu_sum) == dx + dy;
+  ok      = ok && static_cast<double>(mp_sum) == dx + dy;
+  ok      = ok && static_cast<double>(mp_sum) == static_cast<double>(emu_sum);
+
+  // Feed an fpemu result into fpmp and back.
+  const fp64mp2 round_trip = fp64mp2(static_cast<double>(emu_sum)) * fp64mp2(2.0);
+  ok                       = ok && static_cast<double>(round_trip) == 2.0 * (dx + dy);
+
+  return ok;
+}
+
+TEST_FUNC void test()
+{
+  assert(check_fpmp<fp32mp2>());
+  assert(check_fpmp<fp64mp2>());
+  assert(check_fpemu());
+  assert(check_mixed());
+}
+
+int main(int, char**)
+{
+  test();
+
+  return 0;
+}
