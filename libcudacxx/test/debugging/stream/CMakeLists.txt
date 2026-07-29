@@ -11,5 +11,9 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_per_thread 1 stream.per_thread per_thread_stream
     --case inspect_invalid 1 stream.invalid invalid_stream
     --case inspect_moved_from 1 stream.moved_from moved_from_stream
+    --case inspect_before_update 1 stream.update.before updated_stream
+    --case inspect_after_update 1 stream.update.after updated_stream
+    --case inspect_capturing 1 stream.capturing capture_stream
+    --case inspect_after_capture 1 stream.after_capture capture_stream
     # gersemi: on
 )

@@ -55,6 +55,26 @@ using stream_ref_alias = cuda::stream_ref;
   keep_for_debugger(value);
 }
 
+[[gnu::noinline]] void inspect_before_update(const cuda::stream_ref& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_after_update(const cuda::stream_ref& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_capturing(const cuda::stream& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_after_capture(const cuda::stream& value)
+{
+  keep_for_debugger(value);
+}
+
 int main()
 {
   constexpr cuda::device_ref device{0};
@@ -67,6 +87,8 @@ int main()
   const cuda::stream_ref invalid_stream{cuda::invalid_stream};
   cuda::stream moved_from_stream{device};
   const cuda::stream moved_to_stream{cuda::std::move(moved_from_stream)};
+  cuda::stream_ref updated_stream{default_stream};
+  const cuda::stream capture_stream{device};
 
   inspect_owning(owning_stream);
   inspect_ref(stream_reference);
@@ -76,5 +98,26 @@ int main()
   inspect_per_thread(per_thread_stream);
   inspect_invalid(invalid_stream);
   inspect_moved_from(moved_from_stream);
+  inspect_before_update(updated_stream);
+  updated_stream = owning_stream;
+  inspect_after_update(updated_stream);
+
+  if (cudaStreamBeginCapture(capture_stream.get(), cudaStreamCaptureModeGlobal) != cudaSuccess)
+  {
+    return 1;
+  }
+  inspect_capturing(capture_stream);
+  cudaGraph_t graph{};
+  if (cudaStreamEndCapture(capture_stream.get(), &graph) != cudaSuccess)
+  {
+    return 1;
+  }
+  if (cudaGraphDestroy(graph) != cudaSuccess)
+  {
+    return 1;
+  }
+  inspect_after_capture(capture_stream);
+
   keep_for_debugger(moved_to_stream);
+  return 0;
 }
