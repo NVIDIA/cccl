@@ -108,9 +108,6 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
-#include <iostream>
-#include <string>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
