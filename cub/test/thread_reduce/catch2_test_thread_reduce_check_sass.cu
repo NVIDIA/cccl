@@ -201,7 +201,7 @@ CUB_TEST("ThreadReduce Narrow PrecisionType Tests",
 
 #else
 
-#  include "c2h/catch2_test_helper.h"
+#  include "../cub_test_macros.h"
 
 CUB_TEST("ThreadReduce Empty Test", "[reduce][thread][empty]", CUB_SMALL) {}
 
