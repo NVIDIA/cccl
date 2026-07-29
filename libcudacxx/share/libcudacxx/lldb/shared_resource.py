@@ -47,6 +47,15 @@ def _payload(value: lldb.SBValue) -> lldb.SBValue:
     return block_pointer.Dereference().GetChildMemberWithName("__payload")
 
 
+def _resource_pointer(payload: lldb.SBValue) -> lldb.SBValue:
+    """Return the pointer both formatters report as the owned resource.
+
+    The summary reports the address only when this is invalid and there is no
+    child to carry it, so both have to read the same signal.
+    """
+    return payload.AddressOf() if payload.IsValid() else payload
+
+
 def shared_resource_summary(
     value: lldb.SBValue, _internal_dict: InternalDict
 ) -> str | None:
@@ -59,7 +68,7 @@ def shared_resource_summary(
         return f"{type_name} use_count=0, resource=nullptr"
 
     block = block_pointer.Dereference()
-    payload = block.GetChildMemberWithName("__payload")
+    payload = _payload(value)
     # cuda::std::atomic<int> keeps its value in __a.__a_value.
     reference_count = (
         block.GetChildMemberWithName("__ref_count")
@@ -70,14 +79,15 @@ def shared_resource_summary(
         return None
 
     use_count = reference_count.GetValueAsSigned(0)
-    # A control block reached through a live pointer always has a load address,
-    # so the fallback below guards against an unreadable frame rather than
-    # against any state the scenario can reach.
-    address = payload.GetLoadAddress()
-    location = (
-        "<invalid address>" if address == lldb.LLDB_INVALID_ADDRESS else f"{address:#x}"
-    )
-    return f"{type_name} use_count={use_count}, resource={location}"
+    # The address of a readable resource belongs to the resource child, the way
+    # std::shared_ptr keeps strong=/weak= in its summary and the pointer in its
+    # child. Only report it here when there is no child to carry it: a control
+    # block reached through a live pointer always has a readable resource, so
+    # the branch below guards against an unreadable frame rather than against
+    # any state the scenario can reach.
+    if not _resource_pointer(payload).IsValid():
+        return f"{type_name} use_count={use_count}, resource=<invalid address>"
+    return f"{type_name} use_count={use_count}"
 
 
 class SharedResourceSyntheticProvider:
@@ -92,15 +102,14 @@ class SharedResourceSyntheticProvider:
         # Present the owned resource the way std::shared_ptr presents its
         # pointer: one step away, so that expanding a handle does not print the
         # implementation details of the resource itself.
-        payload = _payload(self.value)
-        pointer = payload.AddressOf() if payload.IsValid() else payload
+        pointer = _resource_pointer(_payload(self.value))
         self.resource = pointer.Clone("resource") if pointer.IsValid() else pointer
         # Report no caching: a copy or a move changes which resource, if any,
         # this handle owns, and LLDB must ask again after every stop.
         return False
 
     def num_children(self) -> int:
-        return 1 if self.resource.IsValid() else 0
+        return 1 if self.has_children() else 0
 
     def has_children(self) -> bool:
         return self.resource.IsValid()
