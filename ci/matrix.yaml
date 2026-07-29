@@ -405,7 +405,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.08'
+devcontainer_version: '26.10'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 15
