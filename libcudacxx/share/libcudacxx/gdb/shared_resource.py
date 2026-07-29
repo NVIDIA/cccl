@@ -54,12 +54,15 @@ class SharedResourcePrinter:
 
         # cuda::std::atomic<int> keeps its value in __a.__a_value.
         use_count = int(block["__ref_count"]["__a"]["__a_value"])
-        # A control block reached through a live pointer always has an address,
-        # so the fallback below guards against an unreadable frame rather than
+        # The address of a readable resource belongs to the resource child, the
+        # way std::shared_ptr keeps strong=/weak= in its summary and the pointer
+        # in its child. Only report it here when there is no child to carry it:
+        # a control block reached through a live pointer always has an address,
+        # so the branch below guards against an unreadable frame rather than
         # against any state the scenario can reach.
-        address = block["__payload"].address
-        location = "<invalid address>" if address is None else f"{int(address):#x}"
-        return f"{type_name} use_count={use_count}, resource={location}"
+        if block["__payload"].address is None:
+            return f"{type_name} use_count={use_count}, resource=<invalid address>"
+        return f"{type_name} use_count={use_count}"
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
         # Present the owned resource the way std::shared_ptr presents its
