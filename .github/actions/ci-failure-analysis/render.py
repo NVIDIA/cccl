@@ -300,7 +300,7 @@ def render_group(index, group, jobs, repository, run_id, head_sha):
 
 
 def render_report(analysis, jobs, repository, run_id, head_sha):
-    lines = []
+    lines = ["### AI failure analysis", ""]
 
     for index, group in enumerate(analysis["groups"], start=1):
         lines.extend(render_group(index, group, jobs, repository, run_id, head_sha))

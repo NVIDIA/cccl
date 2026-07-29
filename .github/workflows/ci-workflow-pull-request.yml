@@ -591,22 +591,11 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Create failure analysis
-        env:
-          FAILURE_ANALYSIS: ${{ needs.analyze-failures.outputs.analysis }}
-        run: |
-          {
-            echo
-            echo "### AI failure analysis"
-            echo
-            printf '%s\n' "${FAILURE_ANALYSIS}"
-          } > failure-analysis-comment.md
-
       - name: Append to CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           header: ci-results
           number: ${{ needs.analyze-failures.outputs.pr_number }}
-          path: failure-analysis-comment.md
+          message: ${{ needs.analyze-failures.outputs.analysis }}
           append: true
