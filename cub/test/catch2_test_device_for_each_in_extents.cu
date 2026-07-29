@@ -14,6 +14,7 @@
 #include <cuda/std/span>
 
 #include <c2h/catch2_test_helper.h>
+#include <c2h/operator.cuh>
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 
@@ -169,17 +170,6 @@ C2H_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][
 
 //----------------------------------------------------------------------------------------------------------------------
 //
-
-struct incrementer_t
-{
-  int* d_counts;
-
-  template <class OffsetT>
-  __device__ void operator()(OffsetT i, OffsetT)
-  {
-    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
-  }
-};
 
 C2H_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]")
 {

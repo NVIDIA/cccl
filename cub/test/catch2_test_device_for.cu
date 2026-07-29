@@ -14,22 +14,12 @@
 
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/operator.cuh>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEach, device_for_each);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachN, device_for_each_n);
-
-struct incrementer_t
-{
-  int* d_counts;
-
-  template <class OffsetT>
-  __device__ void operator()(OffsetT i)
-  {
-    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
-  }
-};
 
 template <class OffsetT>
 class offset_proxy_t

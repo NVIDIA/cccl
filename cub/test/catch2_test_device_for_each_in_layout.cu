@@ -14,6 +14,7 @@
 #include <cuda/std/span>
 
 #include <c2h/catch2_test_helper.h>
+#include <c2h/operator.cuh>
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 
@@ -193,17 +194,6 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
 
 //----------------------------------------------------------------------------------------------------------------------
 // No duplicates
-
-struct incrementer_t
-{
-  int* d_counts;
-
-  template <typename IndexType, class OffsetT>
-  __device__ void operator()(IndexType i, OffsetT)
-  {
-    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
-  }
-};
 
 C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", layouts)
 {
