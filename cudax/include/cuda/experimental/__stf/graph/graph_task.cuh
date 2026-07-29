@@ -81,28 +81,6 @@ public:
 
   graph_task& start()
   {
-    // If we begin a stream capture and then throw before returning, end the
-    // capture so the stream is not left in the capturing state. On the success
-    // path this SCOPE(fail) no-ops and end_uncleared() ends the capture later.
-    bool capture_begun = false;
-    SCOPE(fail)
-    {
-      if (capture_begun)
-      {
-        cudaGraph_t discarded = nullptr;
-        cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
-#if !_CCCL_CTK_AT_LEAST(12, 3)
-        // Legacy BeginCapture owns the returned graph; destroy it.
-        if (discarded)
-        {
-          cuda_safe_call(cudaGraphDestroy(discarded));
-        }
-#endif // !_CCCL_CTK_AT_LEAST(12, 3)
-       // CTK 12.3+: BeginCaptureToGraph returns the caller-supplied ctx_graph;
-       // do not destroy it.
-      }
-    };
-
     auto lock = lock_ctx_graph();
 
     event_list ready_prereqs = acquire(ctx);
@@ -122,16 +100,19 @@ public:
       }
     }
 
+    auto& dot              = *ctx.get_dot();
+    const bool dot_tracing = dot.is_tracing();
+
     if (is_capture_enabled())
     {
       // Select a stream from the pool
-      capture_stream = get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
+      const cudaStream_t stream = get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph via cudaStreamBeginCaptureToGraph.
       // ctx_graph is mutated for the full capture interval, so graph_mutex must
       // stay held across the start()/end_uncleared() boundary; transfer ownership
       // into the task-owned capture_lock_ member here.
-      begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
+      begin_capture_into_ctx_graph(stream, ctx_graph, ready_dependencies);
       capture_lock_ = mv(lock);
 #else // _CCCL_CTK_AT_LEAST(12, 3)
       // Legacy path (CTK 12.0-12.2): capture into a fresh per-task graph and
@@ -141,13 +122,35 @@ public:
       // keep ordinary STF capture working.
       // Use relaxed capture mode to allow capturing workloads that lazily
       // initialize resources (e.g., set up memory pools)
-      cuda_try<cudaStreamBeginCapture>(capture_stream, cudaStreamCaptureModeRelaxed);
+      cuda_try<cudaStreamBeginCapture>(stream, cudaStreamCaptureModeRelaxed);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
-      capture_begun = true;
+      // Publish only after BeginCapture succeeds so a non-null capture_stream
+      // means an active capture (used by the SCOPE(fail) guard below).
+      capture_stream = stream;
     }
 
-    auto& dot = *ctx.get_dot();
-    if (dot.is_tracing())
+    // If we began a stream capture and then throw before returning, end the
+    // capture so the stream is not left capturing. On the success path this
+    // no-ops and end_uncleared() ends the capture later.
+    SCOPE(fail)
+    {
+      if (capture_stream)
+      {
+        cudaGraph_t discarded = nullptr;
+        cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
+#if !_CCCL_CTK_AT_LEAST(12, 3)
+        // Legacy BeginCapture owns the returned graph; destroy it.
+        if (discarded)
+        {
+          cuda_safe_call(cudaGraphDestroy(discarded));
+        }
+#endif // !_CCCL_CTK_AT_LEAST(12, 3)
+       // CTK 12.3+: BeginCaptureToGraph returns the caller-supplied ctx_graph;
+       // do not destroy it.
+      }
+    };
+
+    if (dot_tracing)
     {
       dot.template add_vertex<task, logical_data_untyped>(*this);
     }
