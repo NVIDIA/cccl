@@ -55,9 +55,6 @@ template <>
 class graph_task<> : public task
 {
 public:
-  // A cudaGraph_t is needed
-  graph_task() = delete;
-
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
@@ -100,8 +97,7 @@ public:
       }
     }
 
-    auto& dot              = *ctx.get_dot();
-    const bool dot_tracing = dot.is_tracing();
+    auto& dot = *ctx.get_dot();
 
     if (is_capture_enabled())
     {
@@ -125,37 +121,20 @@ public:
       cuda_try<cudaStreamBeginCapture>(stream, cudaStreamCaptureModeRelaxed);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
       // Publish only after BeginCapture succeeds so a non-null capture_stream
-      // means an active capture (used by the SCOPE(fail) guard below).
+      // means an active capture.
       capture_stream = stream;
     }
 
-    // If we began a stream capture and then throw before returning, end the
-    // capture so the stream is not left capturing. On the success path this
-    // no-ops and end_uncleared() ends the capture later.
-    SCOPE(fail)
-    {
-      if (capture_stream)
+    // DOT tracing and set_ready_prereqs must not throw after capture has begun,
+    // or the stream would be left capturing. Abort instead.
+    throwproof->*[&] {
+      if (dot.is_tracing())
       {
-        cudaGraph_t discarded = nullptr;
-        cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
-#if !_CCCL_CTK_AT_LEAST(12, 3)
-        // Legacy BeginCapture owns the returned graph; destroy it.
-        if (discarded)
-        {
-          cuda_safe_call(cudaGraphDestroy(discarded));
-        }
-#endif // !_CCCL_CTK_AT_LEAST(12, 3)
-       // CTK 12.3+: BeginCaptureToGraph returns the caller-supplied ctx_graph;
-       // do not destroy it.
+        dot.template add_vertex<task, logical_data_untyped>(*this);
       }
+
+      set_ready_prereqs(mv(ready_prereqs));
     };
-
-    if (dot_tracing)
-    {
-      dot.template add_vertex<task, logical_data_untyped>(*this);
-    }
-
-    set_ready_prereqs(mv(ready_prereqs));
 
     return *this;
   }
@@ -183,15 +162,13 @@ public:
 #else // _CCCL_CTK_AT_LEAST(12, 3)
       // Legacy path: end capture into a fresh per-task graph and let the
       // child-graph embed branch below splice it into ctx_graph.
-      cudaGraph_t childGraph = nullptr;
-      childGraph             = cuda_try<cudaStreamEndCapture>(capture_stream);
-      set_child_graph(childGraph);
+      set_child_graph(cuda_try<cudaStreamEndCapture>(capture_stream));
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
     }
 
     auto done_prereqs = event_list();
 
-    if (done_nodes.size() > 0)
+    if (!done_nodes.empty())
     {
       // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
       // done_prereqs
@@ -214,21 +191,21 @@ public:
         {
 #ifndef NDEBUG
           // Ensure the node does not have dependencies yet
-          size_t num_deps;
+          const size_t num_deps =
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-          num_deps = cuda_try<cudaGraphNodeGetDependencies>(node, nullptr, nullptr);
+            cuda_try<cudaGraphNodeGetDependencies>(node, nullptr, nullptr);
 #  else // _CCCL_CTK_AT_LEAST(13, 0)
-          num_deps = cuda_try<cudaGraphNodeGetDependencies>(node, nullptr);
+            cuda_try<cudaGraphNodeGetDependencies>(node, nullptr);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps == 0);
 
           // Ensure there are no output dependencies either (or we could not
           // add input dependencies later)
-          size_t num_deps_out;
+          const size_t num_deps_out =
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-          num_deps_out = cuda_try<cudaGraphNodeGetDependentNodes>(node, nullptr, nullptr);
+            cuda_try<cudaGraphNodeGetDependentNodes>(node, nullptr, nullptr);
 #  else // _CCCL_CTK_AT_LEAST(13, 0)
-          num_deps_out = cuda_try<cudaGraphNodeGetDependentNodes>(node, nullptr);
+            cuda_try<cudaGraphNodeGetDependentNodes>(node, nullptr);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps_out == 0);
 #endif

@@ -30,9 +30,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <cstdlib>
+#include <exception>
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
@@ -320,7 +324,67 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
   abort();
 }
 
+/**
+ * @brief Invokes a callable and aborts if it throws.
+ *
+ * Use around code that must not let an exception escape into backend state
+ * that cannot recover (e.g. after a CUDA stream capture has begun).
+ *
+ * Usage: `throwproof->*[&] { ... };`
+ *
+ * `throwproof` converts to `with_location`, which captures the call-site
+ * `source_location` (overloaded operators cannot take default arguments).
+ *
+ * @snippet this throwproof
+ */
+struct throwproof_t
+{
+  struct with_location
+  {
+    constexpr with_location(throwproof_t,
+                            ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
+        : loc(loc)
+    {}
+    const ::cuda::std::source_location loc;
+  };
+} inline constexpr throwproof{};
+
+template <class F>
+decltype(auto) operator->*(throwproof_t::with_location s, F&& f) noexcept
+{
+  _CCCL_TRY
+  {
+    return ::std::forward<F>(f)();
+  }
+  _CCCL_CATCH (const ::std::exception& e)
+  {
+    fprintf(stderr, "%s(%u) throwproof in %s: %s\n", s.loc.file_name(), s.loc.line(), s.loc.function_name(), e.what());
+  }
+  _CCCL_CATCH_ALL
+  {
+    fprintf(
+      stderr, "%s(%u) throwproof in %s: unknown exception\n", s.loc.file_name(), s.loc.line(), s.loc.function_name());
+  }
+  ::std::abort();
+}
+
 #ifdef UNITTESTED_FILE
+UNITTEST("throwproof")
+{
+  //! [throwproof]
+  int value = 0;
+  throwproof->*[&] {
+    value = 42; // would abort the application if this code threw
+  };
+  EXPECT(value == 42);
+  //! [throwproof]
+  EXPECT((throwproof->*
+          [] {
+            return 7;
+          })
+         == 7);
+};
+
 UNITTEST("cuda_safe_call")
 {
   //! [cuda_safe_call]
