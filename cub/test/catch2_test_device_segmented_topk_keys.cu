@@ -701,15 +701,15 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through
 
 // Cluster-width cap (`cluster_cap_list`) plus a resident-slot cap force a tiny segment to overflow and stream: cap 1
 // streams inside one CTA (barrier-free), cap 2 across a fixed 2-CTA cluster (cross-CTA scan while streaming). The
-// resident capacity is `slots * chunk_items` (host-known), so 4 slots x 128 floats = 512 resident floats and the ~1.5 K
-// segment spills several overflow chunks. Both `stream_stages` and `prologue` are `min(PipelineStages, .)` (of the
-// per-CTA overflow count and the 4 resident chunks respectively), so sweeping `PipelineStages` {2,4,8} across the two
-// caps (cap 1 -> ~8 overflow chunks/CTA, cap 2 -> ~2) spans the `stream_stages` <, ==, > `prologue` trichotomy and
-// reaches the `stage_base` up-front prime (the `>` case). The 4-slot cap leaves an aligned resident tail here; the
-// complementary misaligned-tail `stage_rot` reorder is covered by the dedicated test below (reached through the slot
-// cap, not a distinct `PipelineStages`). An unaligned size (`- 31`) + `pad` also covers the peeled overflow tail edge.
-// Non-deterministic (forward first wave only); the pairs schedule test streams the deterministic combos, which
-// additionally reach the reverse first wave. Verified against a sorted reference.
+// resident capacity is `slots * max_chunk_items` (host-known), so 4 slots x 128 floats = 512 resident floats and the
+// ~1.5 K segment spills several overflow chunks. Both `num_stream_stages` and `prologue` are `min(PipelineStages, .)`
+// (of the per-CTA overflow count and the 4 resident chunks respectively), so sweeping `PipelineStages` {2,4,8} across
+// the two caps (cap 1 -> ~8 overflow chunks/CTA, cap 2 -> ~2) spans the `num_stream_stages` <, ==, > `prologue`
+// trichotomy and reaches the `stage_base` up-front prime (the `>` case). The 4-slot cap leaves an aligned resident tail
+// here; the complementary misaligned-tail `stage_rot` reorder is covered by the dedicated test below (reached through
+// the slot cap, not a distinct `PipelineStages`). An unaligned size (`- 31`) + `pad` also covers the peeled overflow
+// tail edge. Non-deterministic (forward first wave only); the pairs schedule test streams the deterministic combos,
+// which additionally reach the reverse first wave. Verified against a sorted reference.
 using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
 using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
 
@@ -1514,7 +1514,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 #if TEST_TYPES == 2
 // Heavy-tie stress/regression: collapse the keys to only a handful of distinct values so the k-th key's bucket holds a
 // large set of tied candidates. Exercises the cluster agent's candidate path and, on a deterministic requirement, the
-// cross-CTA tie-break scan (cand_prefix + BlockScan ranks); the boundary value counts must be exact in either mode.
+// cross-CTA tie-break scan (tie_prefix + BlockScan ranks); the boundary value counts must be exact in either mode.
 //
 // The tie-break path is key-type-independent (the 8 small values twiddle trivially), so we fix the key type and build
 // this only in the matching `TEST_TYPES` variant. Float keys and per-type behavior are covered by the tests above.

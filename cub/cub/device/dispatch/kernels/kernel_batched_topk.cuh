@@ -183,7 +183,7 @@ struct baseline_kernel_args
 
 struct cluster_kernel_args
 {
-  ::cuda::std::uint32_t max_resident_items_per_block = 0;
+  ::cuda::std::uint32_t max_block_resident_items = 0;
 };
 
 // -----------------------------------------------------------------------------
@@ -402,7 +402,7 @@ device_batched_topk_kernel(
          select_directions,
          num_segments,
          key_slots,
-         clus_args.max_resident_items_per_block);
+         clus_args.max_block_resident_items);
 
        agent.Process();),
       // Cluster-policy kernels are only ever launched on SM90+, so the sub-SM90 device pass is unreachable at runtime.

@@ -94,7 +94,8 @@ void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
 //   * `MaxBlocksPerCluster`   -- cap on the launched cluster width. A cap narrower than a segment needs forces the
 //                                oversize/streaming fallback (cap 1 -> single-CTA streaming; cap 2 -> a fixed 2-CTA
 //                                cluster with a real cross-CTA scan / barriers) instead of the hardware-derived width.
-//   * `MaxChunkSlotsPerBlock` -- cap on resident chunk slots per block. Resident capacity is then `slots * chunk_items`
+//   * `MaxChunkSlotsPerBlock` -- cap on resident chunk slots per block. Resident capacity is then `slots *
+//   max_chunk_items`
 //                                (host-known), so a tiny segment above it overflows into streaming -- how a test
 //                                reaches the streaming / stage-schedule paths at a racecheck-tiny footprint. Combined
 //                                with a segment size that overflows to a non-divisor resident-chunk count, it also
@@ -103,8 +104,8 @@ void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
 //                                segment fans out across the cluster (multi-CTA scan / idle-rank paths).
 //   * `ChunkBytes`            -- shrink the chunk (== slot) stride so a small segment still spans several chunks.
 //   * `PipelineStages`        -- vary the streaming pipeline depth relative to the resident chunk count, sweeping the
-//                                `stream_stages` <, ==, > `prologue` stage-schedule trichotomy.
-//   * `MinChunksPerBlock`     -- raise the chunks-per-block divisor to collapse the effective cluster below the
+//                                `num_stream_stages` <, ==, > `prologue` stage-schedule trichotomy.
+//   * `MinChunksPerBlock`     -- raise the chunks-per-block divisor to collapse the logical cluster below the
 //                                physical width (idle-rank early-out).
 template <int MaxBlocksPerCluster,
           int MaxChunkSlotsPerBlock = 0,

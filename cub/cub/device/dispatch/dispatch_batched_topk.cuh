@@ -318,32 +318,31 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
 
   // Computed before any occupancy query so the single-CTA fast path below can skip one -- that driver query
   // otherwise dominates the runtime of tiny launches.
-  const int max_resident_items_per_block =
-    static_cast<int>(layout_t::max_resident_items_per_block(max_dynamic_smem_bytes));
-  if (max_resident_items_per_block <= 0)
+  const int max_block_resident_items = static_cast<int>(layout_t::max_block_resident_items(max_dynamic_smem_bytes));
+  if (max_block_resident_items <= 0)
   {
     // Not even one load-aligned chunk fits in the opt-in budget; the kernel cannot run.
     return {cudaErrorInvalidValue};
   }
 
-  // Smallest cluster block count for full residency: at the largest SMEM each CTA holds `max_resident_items_per_block`
+  // Smallest cluster block count for full residency: at the largest SMEM each CTA holds `max_block_resident_items`
   // items. 64-bit to match the launch-shape arithmetic below; the value is small (`max_segment_size <= 2^21`).
   const auto min_blocks_per_segment =
-    ::cuda::ceil_div(max_segment_size, static_cast<::cuda::std::uint64_t>(max_resident_items_per_block));
+    ::cuda::ceil_div(max_segment_size, static_cast<::cuda::std::uint64_t>(max_block_resident_items));
 
   int cluster_blocks     = 0;
   int dynamic_smem_bytes = 0;
 
   if (batched_topk_cluster::is_single_cta_eligible(
         static_cast<::cuda::std::uint32_t>(max_segment_size),
-        static_cast<::cuda::std::uint32_t>(max_resident_items_per_block),
+        static_cast<::cuda::std::uint32_t>(max_block_resident_items),
         policy.single_block_max_seg_size))
   {
     // Single-CTA fast path: the segment fits resident in one CTA and is small enough that the agent's
     // cluster-barrier-free path beats spreading it across more CTAs. One CTA at in-budget SMEM is always launchable,
     // so the occupancy probe is skipped. Larger fully-resident segments fall through to the wave-aware search below.
     cluster_blocks     = 1;
-    dynamic_smem_bytes = layout_t::min_smem_bytes_from_items(max_segment_size);
+    dynamic_smem_bytes = layout_t::min_smem_bytes_from_num_items(max_segment_size);
   }
   else
   {
@@ -374,21 +373,20 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
     // fast configs). Enumerated analytically, so a register-limited occupancy cannot collapse the candidate set.
     if (min_blocks_per_segment <= static_cast<::cuda::std::uint64_t>(eff_max_blocks_per_cluster))
     {
-      // Full residency achievable: `max_segment_size <= min_blocks_per_segment * max_resident_items_per_block` and
+      // Full residency achievable: `max_segment_size <= min_blocks_per_segment * max_block_resident_items` and
       // `min_blocks_per_segment <= eff_max_blocks_per_cluster`, so every per-CTA capacity below fits `int`.
 
       // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
       // necessary). At `min_chunks_per_block == 1` this equals the segment's chunk count; a larger knob shrinks it.
-      const auto desired_cluster_blocks =
-        ::cuda::narrow<int>(batched_topk_cluster::effective_cluster_blocks_from_chunks(
-          static_cast<::cuda::std::uint32_t>(layout_t::chunks_from_items(max_segment_size)),
-          policy.min_chunks_per_block,
-          ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster)));
+      const auto desired_cluster_blocks = ::cuda::narrow<int>(batched_topk_cluster::compute_num_logical_cluster_blocks(
+        static_cast<::cuda::std::uint32_t>(layout_t::num_chunks_from_num_items(max_segment_size)),
+        policy.min_chunks_per_block,
+        ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster)));
 
       // Scan `[min_candidate_blocks, max_candidate_blocks]` for the min-waves block count, tie-breaking largest.
       // `max_candidate_blocks == max(desired_cluster_blocks, min(min_candidate_blocks, eff_max_blocks_per_cluster))`:
       // the segment-needed count `desired_cluster_blocks` (<= `eff_max_blocks_per_cluster`, capped in
-      // `effective_cluster_blocks_from_chunks`), floored at `min_candidate_blocks`. The `clamp` operands are ordered so
+      // `compute_num_logical_cluster_blocks`), floored at `min_candidate_blocks`. The `clamp` operands are ordered so
       // `lo <= hi` holds even when `eff_max_blocks_per_cluster == 1` forces `min_candidate_blocks (== 2) > eff_max`;
       // there `max_candidate_blocks == 1` empties the scan and the single-CTA fallback below runs (that edge is a
       // one-CTA-resident segment with the single-CTA path disabled, so `min_blocks_per_segment == 1`).
@@ -398,8 +396,8 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
       auto best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
       for (int candidate_blocks = min_candidate_blocks; candidate_blocks <= max_candidate_blocks; ++candidate_blocks)
       {
-        const auto per_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);
-        const int resident_smem_bytes = layout_t::min_smem_bytes_from_items(per_block_items);
+        const auto num_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);
+        const int resident_smem_bytes = layout_t::min_smem_bytes_from_num_items(num_block_items);
         if (resident_smem_bytes > max_dynamic_smem_bytes)
         {
           // Unreachable for candidate_blocks >= min_blocks_per_segment, but guards the SMEM budget regardless.
@@ -434,7 +432,7 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
         // No multi-CTA config was launchable; fall back to single-CTA full residency. Slower for large segments, but
         // `min_blocks_per_segment == 1` guarantees the resident SMEM fits the budget and one CTA is always launchable.
         cluster_blocks     = 1;
-        dynamic_smem_bytes = layout_t::min_smem_bytes_from_items(max_segment_size);
+        dynamic_smem_bytes = layout_t::min_smem_bytes_from_num_items(max_segment_size);
       }
     }
 
@@ -591,7 +589,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   // clamped to the hardware budget: a cap the hardware cannot satisfy is a no-op (hardware wins). Fewer slots
   // lowers every CTA's resident dynamic shared-memory request, so a smaller segment overflows into streaming --
   // useful to leave shared memory free for a concurrent kernel (or to reach the streaming / schedule paths at a
-  // small footprint in tests). A cap below one slot trips the `max_resident_items_per_block <= 0` guard below.
+  // small footprint in tests). A cap below one slot trips the `max_block_resident_items <= 0` guard below.
   const int max_dynamic_smem_bytes =
     (max_chunk_slots_per_block == 0)
       ? hw_dynamic_smem_bytes
@@ -621,9 +619,9 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
     return error;
   }
 
-  const int cluster_blocks                = shape.cluster_blocks;
-  const int dynamic_smem_bytes            = shape.dynamic_smem_bytes;
-  const auto max_resident_items_per_block = layout_t::max_resident_items_per_block(dynamic_smem_bytes);
+  const int cluster_blocks            = shape.cluster_blocks;
+  const int dynamic_smem_bytes        = shape.dynamic_smem_bytes;
+  const auto max_block_resident_items = layout_t::max_block_resident_items(dynamic_smem_bytes);
 
   const auto grid_blocks =
     static_cast<::cuda::std::uint64_t>(num_seg_val) * static_cast<::cuda::std::uint64_t>(cluster_blocks);
@@ -650,7 +648,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
                 select_directions,
                 num_segments,
                 baseline_kernel_args<num_segments_val_t, LargeSegmentTileOffsetT>{},
-                cluster_kernel_args{static_cast<::cuda::std::uint32_t>(max_resident_items_per_block)})))
+                cluster_kernel_args{static_cast<::cuda::std::uint32_t>(max_block_resident_items)})))
   {
     return error;
   }

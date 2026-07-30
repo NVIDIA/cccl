@@ -754,7 +754,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
 // block-load path with an unaligned head edge, and the 1 Mi-element segments stream, so the value payloads exercise
 // the boundary-edge value writes that the small and non-contiguous pair tests above do not. An unaligned tail suffix
 // is always peeled into `edge_keys` (like the head prefix), so every launch config that owns such a tail exercises the
-// head edge plus the persistent `tail_edge_len_items`/`process_tail_edge` value writes.
+// head edge plus the persistent `num_local_tail_edge_items`/`process_tail_edge` value writes.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned segments",
          "[pairs][segmented][topk][device][cluster]",
          select_direction_list)
@@ -1461,13 +1461,13 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
 // Cluster-width cap + tiny streaming (pairs): force the cluster backend, cap the launch to 1 or 2 CTAs, and cap the
 // resident slots so a tiny segment overflows and streams -- deterministically reaching the overflow/streaming path
 // (single-CTA at cap 1, a fixed 2-CTA cluster at cap 2) with the value payload carried along, at a small footprint
-// rather than the 1 Mi a hardware-derived wide cluster would otherwise need. Both `stream_stages` and `prologue` are
-// `min(PipelineStages, .)`, so sweeping `PipelineStages` {2,4,8} across the two caps (cap 1 -> ~8 overflow chunks/CTA,
-// cap 2 -> ~2) spans the `stream_stages` <, ==, > `prologue` trichotomy and reaches the `stage_base` up-front prime
-// (the `>` case). The 4-slot cap leaves an aligned resident tail here; the complementary misaligned-tail `stage_rot`
-// reorder is covered by the dedicated test below (reached through the slot cap, not a distinct `PipelineStages`).
-// Swept over `det_tie_pair_combos` (both drivers); the deterministic combos additionally reach the reverse first-wave
-// direction. Direct-API, so built once for `TEST_LAUNCH == 0`.
+// rather than the 1 Mi a hardware-derived wide cluster would otherwise need. Both `num_stream_stages` and `prologue`
+// are `min(PipelineStages, .)`, so sweeping `PipelineStages` {2,4,8} across the two caps (cap 1 -> ~8 overflow
+// chunks/CTA, cap 2 -> ~2) spans the `num_stream_stages` <, ==, > `prologue` trichotomy and reaches the `stage_base`
+// up-front prime (the `>` case). The 4-slot cap leaves an aligned resident tail here; the complementary misaligned-tail
+// `stage_rot` reorder is covered by the dedicated test below (reached through the slot cap, not a distinct
+// `PipelineStages`). Swept over `det_tie_pair_combos` (both drivers); the deterministic combos additionally reach the
+// reverse first-wave direction. Direct-API, so built once for `TEST_LAUNCH == 0`.
 using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
 using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
 
@@ -1615,15 +1615,15 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-// Forward first-wave `stage_base` prime (`stream_stages > prologue` *with* a resident chunk present). Reuses the
+// Forward first-wave `stage_base` prime (`num_stream_stages > prologue` *with* a resident chunk present). Reuses the
 // schedule sweep's cap-1 / stages-4 kernel (same `cluster_tuning_selector<1, 4, 0, .., 4>` type and static bounds -> no
 // new instantiation); only the runtime segment size differs. Sized to 7 chunks so, at 4 slots, streaming reserves 3 (=
-// min(stages, excess=3)) and 1 resident chunk remains: `stream_stages(3) > prologue(1)` yet `my_resident > 0`, so a
+// min(stages, excess=3)) and 1 resident chunk remains: `num_stream_stages(3) > prologue(1)` yet `my_resident > 0`, so a
 // forward wave sets `stage_base = 2` and the merged loop's stream re-arm must seed its ring counter at
 // `fw(stage_base)`, not `fw(0)`. The schedule sweep never reaches this (its `>` configs all collapse to `my_resident ==
 // 0` pure streaming, which guards `stage_base` back to 0). The combos that select a forward first wave drive the new
-// coverage; the reverse ones here land on `stage_base == 0` (`overflow_chunks(6) % stream_stages(3) == 0`), the
-// simplest reverse case (the wrapping non-zero reverse `stage_base` is pinned by the C = 5 test below).
+// coverage; the reverse ones here land on `stage_base == 0` (`num_local_overflow_chunks(6) % num_stream_stages(3) ==
+// 0`), the simplest reverse case (the wrapping non-zero reverse `stage_base` is pinned by the C = 5 test below).
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a resident chunk below a wider stream",
          "[pairs][segmented][topk][device][cluster][determinism]",
          det_tie_pair_combos)
@@ -1691,13 +1691,13 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 
 // Reverse first-wave with a non-zero cyclic `stage_base` and a wrapping resident window. Reuses the schedule sweep's
 // cap-1 / slots-4 / stages-4 kernel (no new instantiation); only the runtime segment size differs. Sized to 5 chunks so
-// the single CTA reserves 1 stream slot (`excess = 1`), leaving 3 resident chunks: sub-case B (`stream_stages(1) <=
-// prologue(3)`) with `overflow_chunks = 2`, so a reverse first wave (`first_wave_is_forward == false`) sets
-// `stage_base = (s0+1) % stage_cycle = 1` over `stage_cycle = 3`, giving the cyclic window `[1,4) mod 3`. Resident
-// chunks 0,1,2 then map to stages 0,2,1 (descending cycle position from `reverse_cycle_seed`), and the `-1` re-arm must
-// free stream stage 0 in consume order. The `stage_base == 0` reverse case is covered by the wider-stream test above (C
-// = 7); this pins the wrapping, non-zero-`stage_base` reverse path. Only the deterministic combos whose (tie-break,
-// pass-parity) select a reverse first wave exercise it; the rest re-drive forward paths.
+// the single CTA reserves 1 stream slot (`excess = 1`), leaving 3 resident chunks: sub-case B (`num_stream_stages(1) <=
+// prologue(3)`) with `num_local_overflow_chunks = 2`, so a reverse first wave (`first_wave_is_forward == false`) sets
+// `stage_base = (s0+1) % num_cycle_stages = 1` over `num_cycle_stages = 3`, giving the cyclic window `[1,4) mod 3`.
+// Resident chunks 0,1,2 then map to stages 0,2,1 (descending cycle position from `reverse_cycle_seed`), and the `-1`
+// re-arm must free stream stage 0 in consume order. The `stage_base == 0` reverse case is covered by the wider-stream
+// test above (C = 7); this pins the wrapping, non-zero-`stage_base` reverse path. Only the deterministic combos whose
+// (tie-break, pass-parity) select a reverse first wave exercise it; the rest re-drive forward paths.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a wrapping reverse resident window",
          "[pairs][segmented][topk][device][cluster][determinism]",
          det_tie_pair_combos)
@@ -1763,12 +1763,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-// Partial final wave: `overflow_chunks % stream_stages != 0`, so the streaming reload branch wraps its ring on an
-// uneven tail. Reuses the misaligned-tail test's cap-1 / slots-4 / stages-2 kernel (no new instantiation). Sized to 7
-// chunks so, at 4 slots / 2 stages, streaming reserves 2 (`excess = 3`, `min(stages,excess) = 2`) and 2 resident chunks
-// remain: sub-case B with `overflow_chunks = 5`, `stream_stages = 2` -> `5 % 2 == 1`. The other tune tests all keep
-// `overflow_chunks` a multiple of `stream_stages`, so this is the only tiny check of the uneven-tail reload for both
-// directions (deterministic combos drive reverse, non-deterministic forward).
+// Partial final wave: `num_local_overflow_chunks % num_stream_stages != 0`, so the streaming reload branch wraps its
+// ring on an uneven tail. Reuses the misaligned-tail test's cap-1 / slots-4 / stages-2 kernel (no new instantiation).
+// Sized to 7 chunks so, at 4 slots / 2 stages, streaming reserves 2 (`excess = 3`, `min(stages,excess) = 2`) and 2
+// resident chunks remain: sub-case B with `num_local_overflow_chunks = 5`, `num_stream_stages = 2` -> `5 % 2 == 1`. The
+// other tune tests all keep `num_local_overflow_chunks` a multiple of `num_stream_stages`, so this is the only tiny
+// check of the uneven-tail reload for both directions (deterministic combos drive reverse, non-deterministic forward).
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a partial final overflow wave",
          "[pairs][segmented][topk][device][cluster][determinism]",
          det_tie_pair_combos)
