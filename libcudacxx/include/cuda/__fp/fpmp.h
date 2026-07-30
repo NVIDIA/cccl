@@ -1323,7 +1323,7 @@ _CCCL_REQUIRES(
  */
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __shfl_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, int srcLane, int width = warpSize) noexcept
 {
   return fpmp2<_FpType, _TypeAcc>(
@@ -1331,7 +1331,7 @@ __shfl_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, int srcLane, int
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __shfl_xor_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, int laneMask, int width = warpSize) noexcept
 {
   return fpmp2<_FpType, _TypeAcc>(
@@ -1339,7 +1339,7 @@ __shfl_xor_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, int laneMask
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __shfl_down_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, unsigned int delta, int width = warpSize) noexcept
 {
   return fpmp2<_FpType, _TypeAcc>(
@@ -1347,7 +1347,7 @@ __shfl_down_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, unsigned in
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 __shfl_up_sync(unsigned mask, const fpmp2<_FpType, _TypeAcc>& var, unsigned int delta, int width = warpSize) noexcept
 {
   return fpmp2<_FpType, _TypeAcc>(
