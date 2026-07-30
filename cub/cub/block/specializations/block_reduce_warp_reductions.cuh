@@ -22,6 +22,7 @@
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -197,15 +198,40 @@ struct BlockReduceWarpReductions
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
     {
-      // Sequential reduction in linear_tid == 0 (legacy path for small blocks).
       if (linear_tid == 0)
       {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+        if constexpr (FullTile)
         {
-          if (FullTile || (warp_idx * logical_warp_size < num_valid))
+          T arr[warps];
+          arr[0] = warp_aggregate;
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 1; i < warps; ++i)
           {
-            warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
+            arr[i] = temp_storage.warp_aggregates[i];
+          }
+          warp_aggregate = cub::ThreadReduce(arr, reduction_op);
+        }
+        else if constexpr (::cuda::has_identity_element_v<ReductionOp, T>)
+        {
+          const T id = ::cuda::identity_element<ReductionOp, T>();
+          T arr[warps];
+          arr[0] = warp_aggregate;
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 1; i < warps; ++i)
+          {
+            arr[i] = (i * logical_warp_size < num_valid) ? temp_storage.warp_aggregates[i] : id;
+          }
+          warp_aggregate = cub::ThreadReduce(arr, reduction_op);
+        }
+        else
+        {
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+          {
+            if (warp_idx * logical_warp_size < num_valid)
+            {
+              warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
+            }
           }
         }
       }
