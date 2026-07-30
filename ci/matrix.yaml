@@ -22,6 +22,7 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['test_lid0'], project: 'cub', std: 17, ctk: '13.X', cxx: 'gcc', gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -534,7 +535,7 @@ jobs:
   test_nolid: { name: 'TestNoLaunch',      gpu: true, needs: 'build_nolid', invoke: { prefix: 'test', args: '-no-lid'} }
   # CUB uses `lid` to indicate launch strategies: whether CUB algorithms are:
   # - launched from the host (lid0):
-  test_lid0:  { name: 'HostLaunch',   gpu: true, needs: 'build_lid0', invoke: { prefix: 'test', args: '-lid0'} }
+  test_lid0:  { name: 'HostLaunch',   gpu: true, needs: 'build_lid0', invoke: { prefix: 'test', args: '-lid0 --test-par 8'} }
   # - launched from the device (lid1):
   test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build_lid1', invoke: { prefix: 'test', args: '-lid1'} }
   # - captured in a CUDA graph for deferred launch (lid2):
