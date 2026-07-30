@@ -22,6 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/bit_compress.h>
+#include <cuda/std/__bit/bit_expand.h>
+#include <cuda/std/__bit/bit_repeat.h>
+#include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>

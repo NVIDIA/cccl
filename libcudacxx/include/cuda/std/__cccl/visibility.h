@@ -155,9 +155,10 @@
 //! and causes debuggers to skip it. This is useful for trivial internal functions that do
 //! dispatching or other plumbing work. It is particularly useful in the definition of
 //! customization point objects.
-#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
-#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
-#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_API             _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_HOST_API        _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_DEVICE_API      _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_HOST_DEVICE_API _CCCL_HOST_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
 
 // Some functions have their addresses appear in public types (e.g., in
 // `cuda::__overrides_for` specializations). If the function is declared
