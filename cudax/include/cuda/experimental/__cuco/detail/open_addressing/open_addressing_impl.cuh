@@ -33,6 +33,7 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -391,33 +392,17 @@ public:
     const auto __input_begin = ::cuda::make_transform_iterator(
       ::cuda::counting_iterator<__size_type>{0}, __get_slot<__has_payload, __storage_ref_type>{storage_ref()});
     const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
-
-    ::cuda::std::size_t __temp_storage_bytes = 0;
-    _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::DeviceSelect::If,
-      "cuco: failed to determine temporary storage for retrieve_all",
-      static_cast<void*>(nullptr),
-      __temp_storage_bytes,
-      __input_begin,
-      __output_begin,
-      __counter.data(),
-      capacity(),
-      __is_filled,
-      __stream);
-
-    ::cuda::device_buffer<char> __temp_storage{__stream, __memory_resource, __temp_storage_bytes, ::cuda::no_init};
+    const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
 
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceSelect::If,
       "cuco: failed to retrieve all elements",
-      __temp_storage.data(),
-      __temp_storage_bytes,
       __input_begin,
       __output_begin,
       __counter.data(),
       capacity(),
       __is_filled,
-      __stream);
+      __env);
 
     return __output_begin + __read_counter(__counter, __stream);
   }
