@@ -41,7 +41,8 @@
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__random/philox_engine.h>
-#include <cuda/std/__ranges/zip_view.h>
+#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
@@ -134,38 +135,83 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
   *__samples_size = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin());
 }
 
-//! @brief Launch the sampling kernel to draw sample keys from a rank's local input.
+//! @brief Launch the sampling kernel to draw sample keys from each rank's local input.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _InputRange>
-_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__sample_probes(
-  _InputRange&& __input,
-  const __buffer_type<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>& __I_j,
+template <class _CommRange, class _InputRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
+  _CommRange&& __comms,
+  _InputRange&& __local_inputs,
+  ::cuda::std::int32_t __j,
   double __sampling_probability,
-  ::cuda::std::uint64_t __sample_seed,
   const _BinaryOp& __cmp,
-  __buffer_type<_Tp>* __samples,
-  __buffer_type<::cuda::std::size_t>* __sample_size)
+  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch)
 {
-  constexpr auto __config =
+  constexpr auto __launch_config =
     ::cuda::make_config(::cuda::make_hierarchy(::cuda::block_dims<1>(), ::cuda::grid_dims<1>()));
 
   _CCCL_VERIFY(__sampling_probability > 0, "Cannot have 0 probably of picking elements");
   _CCCL_VERIFY(__sampling_probability <= 1., "Cannot have >1 probably of picking elements");
 
-  ::cuda::launch(
-    // All inputs should be on the same stream here
-    __I_j.stream(),
-    __config,
-    ::cuda::experimental::__detail::__hss_sort::
-      __sample_probes_kernel<::cuda::std::remove_cvref_t<decltype(__config)>, _Tp, _BinaryOp>,
-    ::cuda::std::philox4x64{__sample_seed},
-    __sampling_probability,
-    ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
-    ::cuda::std::to_address(::cuda::std::ranges::end(__input)),
-    __I_j,
-    __cmp,
-    ::cuda::std::span<_Tp>{*__samples},
-    __sample_size->data());
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+  auto __comm_it                = ::cuda::std::ranges::begin(__comms);
+  auto __input_it               = ::cuda::std::ranges::begin(__local_inputs);
+  auto& __scratch               = *__local_scratch;
+
+  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+       (void) ++__idx, (void) ++__comm_it, (void) ++__input_it)
+  {
+    // Each iteration we sample the union of splitter intervals, \gamma_j with a probability of
+    // __sampling_probability. For the first iteration, \gamma_j is the entire array, but for
+    // previous iterations it's impossible for us to tell what \gamma_j is on the host,
+    // because:
+    //
+    // 1. We can't inspect the updated intervals __I_j, and
+    // 2. We can't count how many of our elements actually lie within those updated
+    //    intervals.
+    //
+    // So instead we use the fact that each round the number of samples must decrease,
+    // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
+    // the high-water mark for the samples is the previous round's sample vector size.
+    const auto __estimate = [&] {
+      ::cuda::std::size_t __count{};
+
+      if (__j == 1)
+      {
+        __count = static_cast<::cuda::std::size_t>(
+          ::cuda::std::ceil(::cuda::std::ranges::size(*__input_it) * __sampling_probability));
+      }
+      else
+      {
+        __count = __scratch[__idx].__sample_sendcount;
+      }
+
+      return ::cuda::std::max(__count, ::cuda::std::size_t{1});
+    }();
+
+    // 0x129381294235245ULL chosen randomly, by random dice roll
+    const auto __seed = (static_cast<::cuda::std::uint64_t>(__j) * 0x129381294235245ULL)
+                      ^ static_cast<::cuda::std::uint64_t>(__comm_it->rank());
+
+    auto& __samples   = __scratch[__idx].__samples;
+    const auto& __I_j = __scratch[__idx].__I_j;
+
+    __samples.resize_discard(__samples.stream(), __estimate, ::cuda::no_init);
+
+    ::cuda::launch(
+      // All inputs should be on the same stream here
+      __I_j.stream(),
+      __launch_config,
+      ::cuda::experimental::__detail::__hss_sort::
+        __sample_probes_kernel<::cuda::std::remove_cvref_t<decltype(__launch_config)>, _Tp, _BinaryOp>,
+      ::cuda::std::philox4x64{__seed},
+      __sampling_probability,
+      ::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)),
+      ::cuda::std::to_address(::cuda::std::ranges::end(*__input_it)),
+      __I_j,
+      __cmp,
+      __samples,
+      __scratch[__idx].__samples_size.data());
+  }
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
@@ -237,14 +283,17 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
   __local_scratch.reserve(__num_local_inputs);
   __local_hist_results.reserve(__num_local_inputs);
 
-  for (auto&& [__comm, __env] : ::cuda::std::ranges::views::zip(__comms, __envs))
+  auto __comm_it = ::cuda::std::ranges::begin(__comms);
+  auto __env_it  = ::cuda::std::ranges::begin(__envs);
+
+  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
-    const auto __stream  = ::cuda::get_stream(__env);
+    const auto __stream  = ::cuda::get_stream(*__env_it);
     const auto __n_split = __comm_size - 1;
 
     auto&& __resource =
-      ::cuda::experimental::__detail::__resource_from_env(__env, __comm.logical_device().underlying_device());
-    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(__env);
+      ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device().underlying_device());
+    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it);
 
     {
 #if _CCCL_CTK_AT_LEAST(12, 9)
@@ -273,7 +322,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
         __buffer_type<::cuda::std::size_t>{
           __stream,
           __resource,
-          /*__size=*/::cuda::std::size_t{__comm.rank() == __ROOT_RANK ? __comm_size : 1},
+          /*__size=*/::cuda::std::size_t{__comm_it->rank() == __ROOT_RANK ? __comm_size : 1},
           ::cuda::no_init,
           __buffer_env},
         ::cuda::std::move(__probe_counts)});
@@ -295,152 +344,197 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
   return ::cuda::std::make_pair(::cuda::std::move(__local_scratch), ::cuda::std::move(__local_hist_results));
 }
 
-//! @brief Gather each rank's samples to the root, merge them, and broadcast the shared probes.
+//! @brief Gather every rank's sample count to the root and size the root's gather buffers.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange>
-_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
+  _CommRange&& __comms,
+  _EnvRange&& __envs,
+  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
+  ::std::vector<::cuda::std::size_t>* __root_recvcounts,
+  ::std::vector<::cuda::std::size_t>* __root_displs,
+  ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples)
+{
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+
+  // The root needs to know how big everyones sample vectors are so it can build its combined
+  // sample vector
+  {
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
+
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
+    {
+      auto* const __ptr = (*__local_scratch)[__idx].__samples_size.data();
+
+      __comm_it->gather(
+        __guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, (*__local_scratch)[__idx].__samples_size.stream());
+    }
+  }
+
+  {
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto __env_it  = ::cuda::std::ranges::begin(__envs);
+
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
+    {
+      auto& __samples_size               = (*__local_scratch)[__idx].__samples_size;
+      ::cuda::std::uint64_t& __sendcount = (*__local_scratch)[__idx].__sample_sendcount;
+
+      if (__comm_it->rank() == __ROOT_RANK)
+      {
+        // __root_recvcounts, __root_displs, and __root_all_samples are hoisted out of the
+        // sampling loop and passed in by pointer so their allocations are paid once per sort
+        // rather than once per round. __root_displs is filled via back_inserter, so it must
+        // start each round empty; the recvcounts resize and the all_samples resize below reuse
+        // the existing storage (sizes are invariant / monotonically shrinking across rounds, so
+        // neither reallocates after round one).
+        __root_recvcounts->resize(__samples_size.size());
+
+        ::cuda::copy_bytes(
+          __samples_size.stream(),
+          __samples_size,
+          *__root_recvcounts,
+          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
+                                     ::cuda::host_memory_location,
+                                     ::cuda::source_access_order::stream});
+
+        __root_displs->resize(__root_recvcounts->size());
+
+        // Defer until the last possible moment
+        __samples_size.stream().sync();
+
+        __sendcount = (*__root_recvcounts)[__ROOT_RANK];
+
+        // recvcounts is likely relatively small (it is on the order of O(ranks)).
+        ::cuda::std::exclusive_scan(
+          __root_recvcounts->begin(), __root_recvcounts->end(), __root_displs->begin(), ::cuda::std::size_t{0});
+
+        const auto __all_recv = __root_displs->back() + __root_recvcounts->back();
+        // First round engages the optional; later rounds reuse the allocation via resize
+        // (samples shrink monotonically, so this never grows after round one).
+        if (__root_all_samples->has_value())
+        {
+          (*__root_all_samples)->resize_discard(__samples_size.stream(), __all_recv, ::cuda::no_init);
+        }
+        else
+        {
+          __root_all_samples->emplace(
+            __samples_size.stream(),
+            __samples_size.memory_resource(),
+            __all_recv,
+            ::cuda::no_init,
+            ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        }
+      }
+      else
+      {
+        // Non-root, __samples_size.size() should be == 1
+        ::cuda::copy_bytes(
+          __samples_size.stream(),
+          __samples_size,
+          ::cuda::std::span{&__sendcount, ::cuda::std::size_t{1}},
+          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
+                                     ::cuda::host_memory_location,
+                                     ::cuda::source_access_order::stream});
+
+        __samples_size.stream().sync();
+      }
+    }
+  }
+}
+
+//! @brief Gather the sample keys to the root and merge them into the root's probe set.
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _CommRange, class _EnvRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
   _CommRange&& __comms,
   _EnvRange&& __envs,
   const _BinaryOp& __cmp,
   ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
   ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
-  ::std::vector<::cuda::std::size_t>* __root_recvcounts,
-  ::std::vector<::cuda::std::size_t>* __root_displs,
+  const ::std::vector<::cuda::std::size_t>& __root_recvcounts,
+  const ::std::vector<::cuda::std::size_t>& __root_displs,
   ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples)
 {
-  // The root needs to know how big everyones sample vectors are so it can build its combined
-  // sample vector
-  {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
-
-    for (auto&& [__comm, __scratch] : ::cuda::std::ranges::views::zip(__comms, *__local_scratch))
-    {
-      auto* const __ptr = __scratch.__samples_size.data();
-
-      __comm.gather(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__samples_size.stream());
-    }
-  }
-
-  for (auto&& [__comm, __env, __scratch] : ::cuda::std::ranges::views::zip(__comms, __envs, *__local_scratch))
-  {
-    auto& __samples_size               = __scratch.__samples_size;
-    ::cuda::std::uint64_t& __sendcount = __scratch.__sample_sendcount;
-
-    if (__comm.rank() == __ROOT_RANK)
-    {
-      // __root_recvcounts, __root_displs, and __root_all_samples are hoisted out of the
-      // sampling loop and passed in by pointer so their allocations are paid once per sort
-      // rather than once per round. __root_displs is filled via back_inserter, so it must
-      // start each round empty; the recvcounts resize and the all_samples resize below reuse
-      // the existing storage (sizes are invariant / monotonically shrinking across rounds, so
-      // neither reallocates after round one).
-      __root_recvcounts->resize(__samples_size.size());
-
-      ::cuda::copy_bytes(
-        __samples_size.stream(),
-        __samples_size,
-        *__root_recvcounts,
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
-
-      __root_displs->resize(__root_recvcounts->size());
-
-      // Defer until the last possible moment
-      __samples_size.stream().sync();
-
-      __sendcount = (*__root_recvcounts)[__ROOT_RANK];
-
-      // recvcounts is likely relatively small (it is on the order of O(ranks)).
-      ::cuda::std::exclusive_scan(
-        __root_recvcounts->begin(), __root_recvcounts->end(), __root_displs->begin(), ::cuda::std::size_t{0});
-
-      const auto __all_recv = __root_displs->back() + __root_recvcounts->back();
-      // First round engages the optional; later rounds reuse the allocation via resize
-      // (samples shrink monotonically, so this never grows after round one).
-      if (__root_all_samples->has_value())
-      {
-        (*__root_all_samples)->resize_discard(__samples_size.stream(), __all_recv, ::cuda::no_init);
-      }
-      else
-      {
-        __root_all_samples->emplace(
-          __samples_size.stream(),
-          __samples_size.memory_resource(),
-          __all_recv,
-          ::cuda::no_init,
-          ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
-      }
-    }
-    else
-    {
-      // Non-root, __samples_size.size() should be == 1
-      ::cuda::copy_bytes(
-        __samples_size.stream(),
-        __samples_size,
-        ::cuda::std::span{&__sendcount, ::cuda::std::size_t{1}},
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
-
-      __samples_size.stream().sync();
-    }
-  }
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   // Gather all samples to the root so it can build the global sampling vector
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __scratch] : ::cuda::std::ranges::views::zip(__comms, *__local_scratch))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      __comm.gather_v(
+      __comm_it->gather_v(
         __guard,
-        __scratch.__samples.data(),
-        __scratch.__sample_sendcount,
-        __comm.rank() == __ROOT_RANK ? __root_all_samples->value().data() : nullptr,
-        __root_recvcounts->data(),
-        __root_displs->data(),
+        (*__local_scratch)[__idx].__samples.data(),
+        (*__local_scratch)[__idx].__sample_sendcount,
+        __comm_it->rank() == __ROOT_RANK ? __root_all_samples->value().data() : nullptr,
+        __root_recvcounts.data(),
+        __root_displs.data(),
         __ROOT_RANK,
-        __scratch.__samples.stream());
+        (*__local_scratch)[__idx].__samples.stream());
     }
   }
 
   // Root merges the p sorted runs into one sorted probe set
-  for (auto&& [__comm, __env, __hist_result, __scratch] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, *__local_hist_results, *__local_scratch))
   {
-    if (__comm.rank() == __ROOT_RANK)
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto __env_it  = ::cuda::std::ranges::begin(__envs);
+
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
     {
-      auto& __probes = __hist_result.__splitters.__probes;
+      if (__comm_it->rank() == __ROOT_RANK)
+      {
+        auto& __probes = (*__local_hist_results)[__idx].__splitters.__probes;
 
-      __merge_k_way(__comm, __env, __root_all_samples->value(), *__root_recvcounts, *__root_displs, __cmp, &__probes);
+        __merge_k_way(
+          *__comm_it, *__env_it, __root_all_samples->value(), __root_recvcounts, __root_displs, __cmp, &__probes);
 
-      __scratch.__probe_counts.front() = __probes.size();
-      break;
+        (*__local_scratch)[__idx].__probe_counts.front() = __probes.size();
+        break;
+      }
     }
   }
+}
+
+//! @brief Broadcast the root's probe count and probes to every rank.
+template <class _Tp, class _Env, class _BinaryOp>
+template <class _CommRange>
+_CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__distribute_probes(
+  _CommRange&& __comms,
+  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
+  ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results)
+{
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   // Extremely painful stuff here. We need to send the probe count, but we can only use NCCL,
   // and NCCL only provides device transport (even though they definitely have host-host
   // transport available internally).
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __scratch] : ::cuda::std::ranges::views::zip(__comms, *__local_scratch))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto* const __ptr = __scratch.__probe_counts.data();
+      auto* const __ptr = (*__local_scratch)[__idx].__probe_counts.data();
 
-      __comm.broadcast(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__probe_counts.stream());
+      __comm_it->broadcast(
+        __guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, (*__local_scratch)[__idx].__probe_counts.stream());
     }
   }
 
   {
     ::cuda::std::optional<::cuda::std::size_t> __probe_count = ::cuda::std::nullopt;
 
-    for (auto&& [__comm, __hist_result, __scratch] :
-         ::cuda::std::ranges::views::zip(__comms, *__local_hist_results, *__local_scratch))
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto& __probes = __hist_result.__splitters.__probes;
+      auto& __probes = (*__local_hist_results)[__idx].__splitters.__probes;
 
       // Slight set of micro-optimizations here: the probe counts are all the same and are
       // broadcast by the root.
@@ -451,7 +545,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
       //    rest can reuse it.
       // 2. Only the first of the local GPUs actuallys needs to synchronize to get the count on
       //    the host, the rest can just reuse it.
-      if (__comm.rank() == __ROOT_RANK)
+      if (__comm_it->rank() == __ROOT_RANK)
       {
         __probe_count = __probes.size();
         continue;
@@ -459,8 +553,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
 
       if (!__probe_count.has_value())
       {
-        __scratch.__probe_counts.stream().sync();
-        __probe_count = __scratch.__probe_counts.front();
+        (*__local_scratch)[__idx].__probe_counts.stream().sync();
+        __probe_count = (*__local_scratch)[__idx].__probe_counts.front();
       }
 
       __probes.resize_discard(__probes.stream(), *__probe_count, ::cuda::no_init);
@@ -468,14 +562,15 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
   }
 
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __hist_result] : ::cuda::std::ranges::views::zip(__comms, *__local_hist_results))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto& __probes    = __hist_result.__splitters.__probes;
+      auto& __probes    = (*__local_hist_results)[__idx].__splitters.__probes;
       auto* const __ptr = __probes.data();
 
-      __comm.broadcast(__guard, __ptr, __ptr, __probes.size(), __ROOT_RANK, __probes.stream());
+      __comm_it->broadcast(__guard, __ptr, __ptr, __probes.size(), __ROOT_RANK, __probes.stream());
     }
   }
 }
@@ -490,42 +585,55 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   const _BinaryOp& __cmp,
   ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results)
 {
-  for (auto&& [__comm, __env, __keys, __hist_result] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __range_of_local_keys, *__local_hist_results))
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+
   {
-    auto& __hist               = __hist_result.__hist;
-    auto& __probes             = __hist_result.__splitters.__probes;
-    const auto __num_probes    = __probes.size();
-    const auto __num_buckets   = __num_probes + 1;
-    const auto* __keys_first   = ::cuda::std::to_address(::cuda::std::ranges::begin(__keys));
-    const auto* __probes_first = __probes.data();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto __env_it  = ::cuda::std::ranges::begin(__envs);
+    auto __keys_it = ::cuda::std::ranges::begin(__range_of_local_keys);
 
-    __hist.resize_discard(__hist.stream(), __num_buckets, ::cuda::no_init);
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__keys_it)
+    {
+      auto& __hist               = (*__local_hist_results)[__idx].__hist;
+      auto& __probes             = (*__local_hist_results)[__idx].__splitters.__probes;
+      const auto __num_probes    = __probes.size();
+      const auto __num_buckets   = __num_probes + 1;
+      const auto* __keys_first   = ::cuda::std::to_address(::cuda::std::ranges::begin(*__keys_it));
+      const auto* __probes_first = __probes.data();
 
-    auto __op = __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__keys_first)>,
-                                  ::cuda::std::remove_cvref_t<decltype(__probes_first)>,
-                                  _BinaryOp>{
-      __keys_first, ::cuda::std::to_address(::cuda::std::ranges::end(__keys)), __probes_first, __num_probes, __cmp};
+      __hist.resize_discard(__hist.stream(), __num_buckets, ::cuda::no_init);
 
-    __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
-      CUB_NS_QUALIFIER::DeviceTransform::Transform,
-      ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      __hist.data(),
-      __num_buckets,
-      ::cuda::std::move(__op),
-      __env);
+      auto __op = __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__keys_first)>,
+                                    ::cuda::std::remove_cvref_t<decltype(__probes_first)>,
+                                    _BinaryOp>{
+        __keys_first,
+        ::cuda::std::to_address(::cuda::std::ranges::end(*__keys_it)),
+        __probes_first,
+        __num_probes,
+        __cmp};
+
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm_it->logical_device(),
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
+        ::cuda::counting_iterator<::cuda::std::uint64_t>{},
+        __hist.data(),
+        __num_buckets,
+        ::cuda::std::move(__op),
+        *__env_it);
+    }
   }
 
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __hist_result] : ::cuda::std::ranges::views::zip(__comms, *__local_hist_results))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto& __hist      = __hist_result.__hist;
+      auto& __hist      = (*__local_hist_results)[__idx].__hist;
       auto* const __ptr = __hist.data();
 
-      __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __hist.stream());
+      __comm_it->all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __hist.stream());
     }
   }
 }
@@ -540,14 +648,18 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
   ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
   ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch)
 {
-  for (auto&& [__comm, __env, __hist_result, __scratch] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, *__local_hist_results, *__local_scratch))
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+
+  auto __comm_it = ::cuda::std::ranges::begin(__comms);
+  auto __env_it  = ::cuda::std::ranges::begin(__envs);
+
+  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
-    auto& __splitters          = __hist_result.__splitters;
-    const auto& __hist         = __hist_result.__hist;
-    const auto __comm_size     = __comm.size();
-    const auto __num_splitters = __scratch.__I_j.size();
-    auto* const __I_j_begin    = __scratch.__I_j.data();
+    auto& __splitters          = (*__local_hist_results)[__idx].__splitters;
+    const auto& __hist         = (*__local_hist_results)[__idx].__hist;
+    const auto __comm_size     = __comm_it->size();
+    const auto __num_splitters = (*__local_scratch)[__idx].__I_j.size();
+    auto* const __I_j_begin    = (*__local_scratch)[__idx].__I_j.data();
     auto* const __Ls_begin     = __splitters.__Ls.data();
     auto* const __Us_begin     = __splitters.__Us.data();
 
@@ -560,13 +672,13 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
     auto __op  = __update_intervals_fn<_Tp>{__splitters.__probes.data(), __hist.data(), __splitters.__probes.size()};
 
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __comm_it->logical_device(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::std::move(__in),
       ::cuda::std::move(__out),
       __num_splitters,
       ::cuda::std::move(__op),
-      __env);
+      *__env_it);
   }
 }
 
@@ -585,7 +697,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
   const auto __N                               = __setup.__N;
   auto [__local_scratch, __local_hist_results] = __allocate_histogramming_buffers(__setup, __comms, __envs);
 
-  // Root-only scratch for __gather_merge_broadcast, hoisted out of the sampling loop so their
+  // Root-only scratch for the sample gather, hoisted out of the sampling loop so their
   // allocations are paid once per sort instead of once per round.
   //
   // recvcounts/displs are O(comm_size) host vectors of invariant size; all_samples is the
@@ -608,41 +720,21 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
     const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
     const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
 
-    for (auto&& [__comm, __input, __scratch, __n_local] :
-         ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_scratch, __setup.__local_original_sizes))
-    {
-      // Each iteration we sample the union of splitter intervals, \gamma_j with a probability
-      // of __prob. For the first iteration, \gamma_j is the entire array, but for previous
-      // iterations it's impossible for us to tell (on the host), because:
-      //
-      // 1. We can't inspect the updated intervals __I_j, and
-      // 2. We can't count how many of our elements actually lie within those updated
-      //    intervals.
-      //
-      // So instead we use the fact that each round the number of samples must decrease,
-      // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
-      // the high-water mark for the samples is the previous round's sample vector size.
-      const auto __estimate = ::cuda::std::max(
-        __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
-                 : __scratch.__sample_sendcount,
-        ::cuda::std::size_t{1});
-      // 0x129381294235245ULL chosen randomly, by random dice roll
-      const auto __seed = (static_cast<::cuda::std::uint64_t>(__j) * 0x129381294235245ULL)
-                        ^ static_cast<::cuda::std::uint64_t>(__comm.rank());
+    __local_sampling(__comms, __local_inputs, __j, __prob, __cmp, &__local_scratch);
 
-      __scratch.__samples.resize_discard(__scratch.__samples.stream(), __estimate, ::cuda::no_init);
-      __sample_probes(__input, __scratch.__I_j, __prob, __seed, __cmp, &__scratch.__samples, &__scratch.__samples_size);
-    }
+    __exchange_sample_counts(__comms, __envs, &__local_scratch, &__root_recvcounts, &__root_displs, &__root_all_samples);
 
-    __gather_merge_broadcast(
+    __gather_and_merge_probes(
       __comms,
       __envs,
       __cmp,
       &__local_scratch,
       &__local_hist_results,
-      &__root_recvcounts,
-      &__root_displs,
+      __root_recvcounts,
+      __root_displs,
       &__root_all_samples);
+
+    __distribute_probes(__comms, &__local_scratch, &__local_hist_results);
 
     __compute_histogram(__comms, __envs, __local_inputs, __cmp, &__local_hist_results);
 

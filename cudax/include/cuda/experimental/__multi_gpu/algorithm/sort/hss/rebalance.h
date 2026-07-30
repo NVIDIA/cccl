@@ -160,9 +160,6 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
 
   __local_rebalanced.reserve(__num_local_inputs);
 
-  // The vectors walked alongside the caller's ranges hold `__buffer_type`s, whose operations are
-  // host-only. `views::zip` would instantiate its `__host__ __device__` iterator members over
-  // them, so the per-rank walks in this function step the ranges in lockstep by hand instead.
   {
     auto __comm_it  = ::cuda::std::ranges::begin(__comms);
     auto __input_it = ::cuda::std::ranges::begin(__local_inputs);

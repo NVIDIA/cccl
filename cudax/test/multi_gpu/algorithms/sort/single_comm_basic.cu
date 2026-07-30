@@ -8,7 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/algorithm>
+#include <cuda/buffer>
+#include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -16,6 +17,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
 
+#include <algorithm>
 #include <exception>
 #include <future>
 #include <string>
@@ -27,7 +29,6 @@
 
 #include "sort_common.cuh"
 #include <c2h/catch2_test_helper.h>
-#include <c2h/vector.h>
 
 namespace
 {
@@ -42,38 +43,30 @@ using sort_test_util::sort_types;
 // assertion macros are not safe to fire concurrently.
 template <class T, class Compare>
 void check_sort_case(
-  cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<c2h::host_vector<T>>& host_inputs, Compare cmp)
+  cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<std::vector<T>>& host_inputs, Compare cmp)
 {
   REQUIRE(host_inputs.size() == comms.size());
 
   const auto expected = sort_test_util::sorted_reference(host_inputs, cmp);
   auto streams        = nccl_test_util::make_streams();
   auto environments   = std::vector<cuda::stream_ref>{streams.begin(), streams.end()};
-  auto device_vec     = sort_test_util::make_device_inputs(comms, host_inputs);
+  auto device_vec     = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
     cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i], cmp);
   });
 
-  // Since we are using c2h vectors instead of cuda buffers (which remember what stream they
-  // are on), we need to sync here before doing the checks because the internal copy stream
-  // wont know to wait on the data.
-  for (auto& stream : streams)
-  {
-    stream.sync();
-  }
-
   sort_test_util::check_rank_sizes(comms, device_vec, host_inputs);
 
   const auto output = sort_test_util::gather_outputs(comms, device_vec);
 
-  REQUIRE(cuda::std::is_sorted(output.begin(), output.end(), cmp));
-  REQUIRE_THAT(output, Equals(expected));
+  REQUIRE(std::is_sorted(output.begin(), output.end(), cmp));
+  sort_test_util::check_matches(streams.front(), output, expected);
 }
 
 template <class T>
 void check_sort_case_sections(cuda::std::span<cudax::nccl_communicator_ref> comms,
-                              const std::vector<c2h::host_vector<T>>& host_inputs)
+                              const std::vector<std::vector<T>>& host_inputs)
 {
   SECTION("ascending comparator")
   {
@@ -111,28 +104,30 @@ MULTI_GPU_TEST("sort single-comm documentation example", c2h::type_list<int>)
 
     //! [sort_single_range]
     // Rank r contributes the descending pair {2 * (size - r), 2 * (size - r) - 1}, so the ranks
-    // together hold the values 1 through 2 * size in reverse rank order. The input range must be
-    // resizable, since the sort re-partitions the keys across the ranks before restoring the
-    // original per-rank sizes.
-    const auto rank = communicator.rank();
-    const auto high = 2 * (communicator.size() - rank);
+    // together hold the values 1 through 2 * size in reverse rank order. The input range keeps
+    // its original size: the sort re-partitions the keys across the ranks and restores the
+    // per-rank sizes before it writes the results back.
+    const auto rank   = communicator.rank();
+    const auto high   = 2 * (communicator.size() - rank);
+    const auto device = communicator.logical_device().underlying_device();
 
-    c2h::device_vector<int> input{high, high - 1};
+    auto input = cuda::make_device_buffer<int>(environment, device, {high, high - 1});
 
     cudax::sort(cudax::distributed, communicator, environment, input);
 
     // The sort is in place and each rank keeps its original element count, so rank r ends up with
     // its two-element slice of the globally sorted sequence.
-    const c2h::device_vector<int> expected{2 * rank + 1, 2 * rank + 2};
+    const auto expected =
+      cuda::make_buffer<int>(environment, cuda::mr::legacy_pinned_memory_resource{}, {2 * rank + 1, 2 * rank + 2});
     //! [sort_single_range]
 
     environment.sync();
 
     // catch2 isn't thread safe by default, so we can't use the usual requires expression. So
     // we roll a hacky version of it ourselves
-    if (input != expected)
+    if (const auto matcher = Equals(expected); !matcher.match(input))
     {
-      failed[rank] = "rank slice does not match the expected sorted values";
+      failed[rank] = matcher.describe();
     }
   });
 
@@ -153,7 +148,7 @@ MULTI_GPU_TEST("sort single-comm, random inputs", sort_types)
   auto comms = this->communicators();
   auto rng   = sort_test_util::make_rng(C2H_SEED(2));
 
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
   for (auto& local : input)
   {
     sort_test_util::fill_random(local, 100, rng);
@@ -169,7 +164,7 @@ MULTI_GPU_TEST("sort single-comm, uneven rank sizes", sort_types)
   auto comms = this->communicators();
   auto rng   = sort_test_util::make_rng(C2H_SEED(2));
 
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     sort_test_util::fill_random(input[rank], (rank * 10) + 1, rng);
@@ -185,7 +180,7 @@ MULTI_GPU_TEST("sort single-comm, inputs with some empty ranks", sort_types)
   auto comms = this->communicators();
   auto rng   = sort_test_util::make_rng(C2H_SEED(2));
 
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 1; rank < input.size(); rank += 2)
   {
     sort_test_util::fill_random(input[rank], 1'000, rng);
@@ -199,7 +194,7 @@ MULTI_GPU_TEST("sort single-comm, all ranks empty", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   check_sort_case_sections(comms, input);
 }
@@ -209,7 +204,7 @@ MULTI_GPU_TEST("sort single-comm, a single global item", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   if (!input.empty())
   {
@@ -224,7 +219,7 @@ MULTI_GPU_TEST("sort single-comm, one item per rank", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
@@ -240,7 +235,7 @@ MULTI_GPU_TEST("sort single-comm, all equal inputs", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   for (auto& local : input)
   {
@@ -255,7 +250,7 @@ MULTI_GPU_TEST("sort single-comm, inputs with many equal keys", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
@@ -277,7 +272,7 @@ MULTI_GPU_TEST("sort single-comm, presorted inputs", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
@@ -299,7 +294,7 @@ MULTI_GPU_TEST("sort single-comm, reverse-sorted inputs", sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
@@ -323,7 +318,7 @@ MULTI_GPU_TEST("sort single-comm, skewed rank sizes", sort_types)
   auto comms = this->communicators();
   auto rng   = sort_test_util::make_rng(C2H_SEED(2));
 
-  std::vector<c2h::host_vector<T>> input(comms.size());
+  std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     sort_test_util::fill_random(input[rank], rank == 0 ? 1'000 : 1, rng);
@@ -335,7 +330,7 @@ MULTI_GPU_TEST("sort single-comm, skewed rank sizes", sort_types)
 MULTI_GPU_TEST("sort single-comm, nonstandard comparator", )
 {
   auto comms = this->communicators();
-  std::vector<c2h::host_vector<int>> input(comms.size());
+  std::vector<std::vector<int>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {

@@ -48,7 +48,7 @@ struct _Bracket
   ::cuda::std::optional<_Tp> __key; // < the key, if found. If nullopt means either +/- inf
 };
 
-template <template <class> class _Buffer, class _Tp>
+template <class _Tp, template <class> class _Buffer>
 struct _PerCommSplitters
 {
   _Buffer<_Bracket<_Tp>> __Ls;
@@ -56,7 +56,7 @@ struct _PerCommSplitters
   _Buffer<_Tp> __probes;
 };
 
-template <template <class> class _Buffer, class _Tp>
+template <class _Tp, template <class> class _Buffer>
 struct _PerCommSamplingScratch
 {
   _Buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>> __I_j;
@@ -70,19 +70,18 @@ template <template <class> class _Buffer>
 struct _LocalSetupResult
 {
   ::std::vector<_Buffer<::cuda::std::uint64_t>> __all_local_offsets{};
-  ::std::vector<::cuda::std::size_t> __local_original_sizes{};
   ::cuda::std::uint64_t __N{};
   ::cuda::std::int32_t __comm_size{};
 };
 
-template <template <class> class _Buffer, class _Tp>
+template <class _Tp, template <class> class _Buffer>
 struct _PerCommHistogrammingResult
 {
-  _PerCommSplitters<_Buffer, _Tp> __splitters{};
+  _PerCommSplitters<_Tp, _Buffer> __splitters{};
   _Buffer<::cuda::std::uint64_t> __hist{};
 };
 
-template <template <class> class _Buffer, class _Tp>
+template <class _Tp, template <class> class _Buffer>
 struct _DataExchangeResult
 {
   ::std::vector<_Buffer<_Tp>> __local_merged{};
@@ -102,11 +101,11 @@ public:
   using __buffer_type _CCCL_NODEBUG =
     typename __resource_type::default_queries::template rebind<::cuda::__resizable_buffer, _Up>;
 
-  using __per_comm_splitters_type _CCCL_NODEBUG            = _PerCommSplitters<__buffer_type, _Tp>;
-  using __per_comm_sampling_scratch_type _CCCL_NODEBUG     = _PerCommSamplingScratch<__buffer_type, _Tp>;
+  using __per_comm_splitters_type _CCCL_NODEBUG            = _PerCommSplitters<_Tp, __buffer_type>;
+  using __per_comm_sampling_scratch_type _CCCL_NODEBUG     = _PerCommSamplingScratch<_Tp, __buffer_type>;
   using __local_setup_result_type _CCCL_NODEBUG            = _LocalSetupResult<__buffer_type>;
-  using __per_comm_histogramming_result_type _CCCL_NODEBUG = _PerCommHistogrammingResult<__buffer_type, _Tp>;
-  using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<__buffer_type, _Tp>;
+  using __per_comm_histogramming_result_type _CCCL_NODEBUG = _PerCommHistogrammingResult<_Tp, __buffer_type>;
+  using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<_Tp, __buffer_type>;
 
 private:
   template <class _CommRange, class _EnvRange, class _InputRange>
@@ -124,15 +123,14 @@ private:
     _InputRange&& __local_inputs,
     const _BinaryOp& __cmp);
 
-  template <class _InputRange>
-  _CCCL_HOST_API static void __sample_probes(
-    _InputRange&& __input,
-    const __buffer_type<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>& __I_j,
+  template <class _CommRange, class _InputRange>
+  _CCCL_HOST_API static void __local_sampling(
+    _CommRange&& __comms,
+    _InputRange&& __local_inputs,
+    ::cuda::std::int32_t __j,
     double __sampling_probability,
-    ::cuda::std::uint64_t __sample_seed,
     const _BinaryOp& __cmp,
-    __buffer_type<_Tp>* __samples,
-    __buffer_type<::cuda::std::size_t>* __sample_size);
+    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   template <class _CommRange, class _EnvRange>
   [[nodiscard]]
@@ -141,15 +139,30 @@ private:
   __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs);
 
   template <class _CommRange, class _EnvRange>
-  _CCCL_HOST_API static void __gather_merge_broadcast(
+  _CCCL_HOST_API static void __exchange_sample_counts(
+    _CommRange&& __comms,
+    _EnvRange&& __envs,
+    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
+    ::std::vector<::cuda::std::size_t>* __root_recvcounts,
+    ::std::vector<::cuda::std::size_t>* __root_displs,
+    ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples);
+
+  template <class _CommRange, class _EnvRange>
+  _CCCL_HOST_API static void __gather_and_merge_probes(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     const _BinaryOp& __cmp,
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
     ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
-    ::std::vector<::cuda::std::size_t>* __root_recvcounts,
-    ::std::vector<::cuda::std::size_t>* __root_displs,
+    const ::std::vector<::cuda::std::size_t>& __root_recvcounts,
+    const ::std::vector<::cuda::std::size_t>& __root_displs,
     ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples);
+
+  template <class _CommRange>
+  _CCCL_HOST_API static void __distribute_probes(
+    _CommRange&& __comms,
+    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
+    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
   template <class _CommRange, class _EnvRange, class _InputRange>
   _CCCL_HOST_API static void __compute_histogram(
@@ -168,6 +181,25 @@ private:
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   // ------------------------------------------------------------------------------------------
+
+  template <class _CommRange, class _EnvRange, class _InputRange>
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__buffer_type<::cuda::std::size_t>>
+  __compute_send_counts_and_offsets(
+    const __local_setup_result_type& __setup,
+    _CommRange&& __comms,
+    _EnvRange&& __envs,
+    _InputRange&& __local_inputs,
+    const _BinaryOp& __cmp,
+    const ::std::vector<__per_comm_histogramming_result_type>& __hist_results,
+    ::std::vector<__buffer_type<::cuda::std::uint64_t>>* __local_current_offsets);
+
+  template <class _CommRange, class _EnvRange>
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__buffer_type<_Tp>> __make_recv_buffers(
+    _CommRange&& __comms,
+    _EnvRange&& __envs,
+    ::cuda::std::size_t __comm_size,
+    const ::std::vector<__buffer_type<::cuda::std::size_t>>& __local_counts,
+    ::std::vector<::cuda::std::size_t>* __h_counts);
 
   template <class _CommRange, class _EnvRange, class _InputRange>
   [[nodiscard]] _CCCL_HOST_API static __data_exchange_result_type __data_exchange(

@@ -28,7 +28,6 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
-#include <cuda/std/__ranges/zip_view.h>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/data_exchange.h>
@@ -80,15 +79,24 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
 #endif
 
   // First and foremost, kick off the local sorts...
-  for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
+  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+
   {
-    __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
-      CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
-      ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
-      ::cuda::std::ranges::size(__input),
-      __cmp,
-      __env);
+    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __env_it   = ::cuda::std::ranges::begin(__envs);
+    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+    {
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm_it->logical_device(),
+        CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
+        ::cuda::std::ranges::begin(*__input_it),
+        ::cuda::std::ranges::size(*__input_it),
+        __cmp,
+        *__env_it);
+    }
   }
 
   const auto __comm_size = ::cuda::std::ranges::begin(__comms)->size();

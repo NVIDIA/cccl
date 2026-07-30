@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -16,6 +15,7 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
 
+#include <algorithm>
 #include <exception>
 #include <future>
 #include <vector>
@@ -26,7 +26,6 @@
 
 #include "sort_common.cuh"
 #include <c2h/catch2_test_helper.h>
-#include <c2h/vector.h>
 
 namespace
 {
@@ -48,13 +47,16 @@ MULTI_GPU_TEST("sort single-comm, overloads default values", )
   // A shape with a bit of everything: unequal rank sizes and duplicate keys, so a defaulted
   // comparator that silently differed from `less` would show up in the comparison.
   constexpr auto values_per_rank = 100;
-  std::vector<c2h::host_vector<T>> host_inputs(comms.size());
+  std::vector<std::vector<T>> host_inputs(comms.size());
   for (cuda::std::size_t rank = 0; rank < host_inputs.size(); ++rank)
   {
     sort_test_util::fill_random(host_inputs[rank], values_per_rank + rank, rng);
   }
 
   const auto expected = sort_test_util::sorted_reference(host_inputs, cmp);
+
+  auto streams      = nccl_test_util::make_streams();
+  auto environments = std::vector<cuda::stream_ref>{streams.begin(), streams.end()};
 
   // Both overloads must land on the same global order, so they share one checker. `device_vec` is
   // rebuilt per section because `sort` permutes it in place.
@@ -63,44 +65,31 @@ MULTI_GPU_TEST("sort single-comm, overloads default values", )
 
     const auto output = sort_test_util::gather_outputs(comms, device_vec);
 
-    REQUIRE(cuda::std::is_sorted(output.begin(), output.end(), cmp));
-    REQUIRE_THAT(output, Equals(expected));
+    REQUIRE(std::is_sorted(output.begin(), output.end(), cmp));
+    sort_test_util::check_matches(streams.front(), output, expected);
   };
-
-  auto streams      = nccl_test_util::make_streams();
-  auto environments = std::vector<cuda::stream_ref>{streams.begin(), streams.end()};
 
   // See the note in single_comm_basic.cu: the per-rank calls must rendezvous in their collective,
-  // so they are issued one thread per rank, and the c2h vectors need an explicit sync before the
-  // host reads them back.
-  const auto sync_streams = [&] {
-    for (auto& stream : streams)
-    {
-      stream.sync();
-    }
-  };
-
+  // so they are issued one thread per rank.
   SECTION("Default comparator")
   {
-    auto device_vec = sort_test_util::make_device_inputs(comms, host_inputs);
+    auto device_vec = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
       cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i]);
     });
 
-    sync_streams();
     check_sorted(device_vec);
   }
 
   SECTION("Default none")
   {
-    auto device_vec = sort_test_util::make_device_inputs(comms, host_inputs);
+    auto device_vec = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
       cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i], cmp);
     });
 
-    sync_streams();
     check_sorted(device_vec);
   }
 }

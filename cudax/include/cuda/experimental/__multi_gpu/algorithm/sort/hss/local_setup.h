@@ -26,8 +26,8 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/size.h>
-#include <cuda/std/__ranges/zip_view.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
@@ -55,46 +55,51 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
-  ::std::vector<::cuda::std::size_t> __local_original_sizes;
   ::cuda::std::uint64_t __N = 0;
 
   // TODO (jfaibussowit): maybe can combine some of these
   __all_local_offsets.reserve(__num_local_inputs);
-  __local_original_sizes.reserve(__num_local_inputs);
 
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_sizes;
 
   __all_local_sizes.reserve(__num_local_inputs);
 
-  for (auto&& [__comm, __env, __input] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs))
   {
-    const auto __n_local = static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(__input));
+    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __env_it   = ::cuda::std::ranges::begin(__envs);
+    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
 
-    auto& __sizes = __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
-      ::cuda::get_stream(__env),
-      ::cuda::experimental::__detail::__resource_from_env(__env, __comm.logical_device().underlying_device()),
-      __comm_size,
-      ::cuda::no_init,
-      ::cuda::experimental::__detail::__sanitize_buffer_env(__env)));
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+    {
+      auto& __sizes = __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
+        ::cuda::get_stream(*__env_it),
+        ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device().underlying_device()),
+        __comm_size,
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it)));
 
-    __local_original_sizes.push_back(__n_local);
-    ::cuda::copy_bytes(
-      __sizes.stream(),
-      ::cuda::std::span{&__n_local, ::cuda::std::size_t{1}},
-      __sizes.subspan(__comm.rank(), 1),
-      ::cuda::copy_configuration{::cuda::host_memory_location,
-                                 __comm.logical_device().underlying_device(),
-                                 ::cuda::source_access_order::during_api_call});
+      const auto __n_local = static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(*__input_it));
+
+      ::cuda::copy_bytes(
+        __sizes.stream(),
+        ::cuda::std::span{&__n_local, ::cuda::std::size_t{1}},
+        __sizes.subspan(__comm_it->rank(), 1),
+        ::cuda::copy_configuration{::cuda::host_memory_location,
+                                   __comm_it->logical_device().underlying_device(),
+                                   ::cuda::source_access_order::during_api_call});
+    }
   }
 
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __sizes] : ::cuda::std::ranges::views::zip(__comms, __all_local_sizes))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto* const __ptr = __sizes.data();
+      auto* const __ptr = __all_local_sizes[__idx].data();
 
-      __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, /*__count=*/1, __sizes.stream());
+      __comm_it->all_gather(__guard, __ptr + __comm_it->rank(), __ptr, /*__count=*/1, __all_local_sizes[__idx].stream());
     }
   }
 
@@ -104,23 +109,25 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   // and could potentially merge it there.
   bool __N_computed = false;
 
-  for (auto&& [__comm, __env, __input, __sizes] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs, __all_local_sizes))
+  auto __comm_it = ::cuda::std::ranges::begin(__comms);
+  auto __env_it  = ::cuda::std::ranges::begin(__envs);
+
+  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
     auto& __offsets = __all_local_offsets.emplace_back(
-      __sizes.stream(),
-      __sizes.memory_resource(),
+      __all_local_sizes[__idx].stream(),
+      __all_local_sizes[__idx].memory_resource(),
       __comm_size,
       ::cuda::no_init,
-      ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
+      ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __comm_it->logical_device(),
       CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
-      __sizes.begin(),
+      __all_local_sizes[__idx].begin(),
       __offsets.begin(),
-      __sizes.size(),
-      __env);
+      __all_local_sizes[__idx].size(),
+      *__env_it);
 
     if (!__N_computed)
     {
@@ -133,25 +140,24 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
         __offsets.stream(),
         __offsets.subspan(__comm_size - 1, 1),
         ::cuda::std::span{&__last_offset, ::cuda::std::size_t{1}},
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
-        __sizes.stream(),
-        __sizes.subspan(__comm_size - 1, 1),
+        __all_local_sizes[__idx].stream(),
+        __all_local_sizes[__idx].subspan(__comm_size - 1, 1),
         ::cuda::std::span{&__last_size, ::cuda::std::size_t{1}},
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
 
-      __sizes.stream().sync();
+      __all_local_sizes[__idx].stream().sync();
       __N          = __last_offset + __last_size;
       __N_computed = true;
     }
   }
 
-  return __local_setup_result_type{
-    ::cuda::std::move(__all_local_offsets), ::cuda::std::move(__local_original_sizes), __N, __comm_size};
+  return __local_setup_result_type{::cuda::std::move(__all_local_offsets), __N, __comm_size};
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT

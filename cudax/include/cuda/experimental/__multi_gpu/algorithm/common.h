@@ -67,8 +67,9 @@ _CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, :
 }
 
 template <class _Env>
-using __resource_type_for = ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
-  ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
+using __resource_type_for _CCCL_NODEBUG =
+  ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
+    ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::device_ref>()))>;
 
 template <typename _Env>
 [[nodiscard]] _CCCL_HOST_API constexpr decltype(auto) __sanitize_buffer_env(const _Env& __env)

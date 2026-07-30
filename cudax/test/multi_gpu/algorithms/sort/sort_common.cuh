@@ -11,19 +11,21 @@
 #ifndef CUDAX_TEST_MULTI_GPU_ALGORITHMS_SORT_SORT_COMMON_CUH
 #define CUDAX_TEST_MULTI_GPU_ALGORITHMS_SORT_SORT_COMMON_CUH
 
-#include <cuda/std/__algorithm/sort.h>
+#include <cuda/buffer>
+#include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/numeric>
 #include <cuda/std/random>
 #include <cuda/std/span>
 
+#include <algorithm>
 #include <vector>
 
 #include <nccl_test_common.h>
 
 #include <c2h/catch2_test_helper.h>
-#include <c2h/vector.h>
 
 namespace sort_test_util
 {
@@ -59,40 +61,40 @@ template <>
 }
 
 template <class T, class RNG>
-void fill_random(c2h::host_vector<T>& local, cuda::std::size_t count, RNG& rng)
+void fill_random(std::vector<T>& local, cuda::std::size_t count, RNG& rng)
 {
-  cuda::std::uniform_int_distribution<cuda::std::int64_t> dist{0, 1000};
+  cuda::std::uniform_int_distribution<cuda::std::int64_t> dist{
+    cuda::std::numeric_limits<cuda::std::int64_t>::lowest(), cuda::std::numeric_limits<cuda::std::int64_t>::max()};
 
   local.resize(count);
-  for (cuda::std::size_t item = 0; item < local.size(); ++item)
-  {
-    const auto key = dist(rng);
-
-    local[item] = make_value<T>(key, key + static_cast<cuda::std::int64_t>(item));
-  }
+  std::generate(local.begin(), local.end(), [&] {
+    return make_value<T>(dist(rng), dist(rng));
+  });
 }
 
 template <class T>
-[[nodiscard]] cuda::std::size_t total_size(const std::vector<c2h::host_vector<T>>& inputs)
+[[nodiscard]] cuda::std::size_t total_size(const T& vec_of_inputs)
 {
   return cuda::std::accumulate(
-    inputs.begin(), inputs.end(), cuda::std::size_t{}, [](cuda::std::size_t ret, const auto& vec) {
+    vec_of_inputs.begin(), vec_of_inputs.end(), cuda::std::size_t{}, [](cuda::std::size_t ret, const auto& vec) {
       return ret + vec.size();
     });
 }
 
-// One device vector per local rank, each allocated while that rank's device is current.
+// One device buffer per local rank, each allocated on that rank's device and stream.
 template <class T>
-[[nodiscard]] std::vector<c2h::device_vector<T>>
-make_device_inputs(cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<c2h::host_vector<T>>& inputs)
+[[nodiscard]] std::vector<cuda::device_buffer<T>> make_device_inputs(
+  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<const cuda::stream_ref> streams,
+  const std::vector<std::vector<T>>& inputs)
 {
-  std::vector<c2h::device_vector<T>> ret;
+  std::vector<cuda::device_buffer<T>> ret;
 
   ret.reserve(comms.size());
   for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
   {
-    REQUIRE_CUDART(cudaSetDevice(comms[rank].logical_device().underlying_device().get()));
-    ret.emplace_back(inputs[rank]);
+    ret.emplace_back(
+      cuda::make_device_buffer<T>(streams[rank], comms[rank].logical_device().underlying_device(), inputs[rank]));
   }
   return ret;
 }
@@ -100,29 +102,33 @@ make_device_inputs(cuda::std::span<cudax::nccl_communicator_ref> comms, const st
 // Concatenate the per-rank results in rank order. `sort` leaves the global sequence sorted when
 // the ranks are read back to back, so the concatenation is what we compare against the reference.
 template <class T>
-[[nodiscard]] c2h::host_vector<T>
-gather_outputs(cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<c2h::device_vector<T>>& inputs)
+[[nodiscard]] std::vector<T>
+gather_outputs(cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<cuda::device_buffer<T>>& inputs)
 {
-  c2h::host_vector<T> ret;
+  std::vector<T> ret(total_size(inputs));
 
-  ret.reserve(cuda::std::accumulate(
-    inputs.begin(), inputs.end(), cuda::std::size_t{}, [](cuda::std::size_t ret, const auto& vec) {
-      return ret + vec.size();
-    }));
+  cuda::std::size_t offset = 0;
   for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
   {
-    REQUIRE_CUDART(cudaSetDevice(comms[rank].logical_device().underlying_device().get()));
-
     const auto& local = inputs[rank];
-    ret.insert(ret.end(), local.begin(), local.end());
+
+    cuda::copy_bytes(
+      local.stream(),
+      local,
+      cuda::std::span<T>{ret.data() + offset, local.size()},
+      cuda::copy_configuration{comms[rank].logical_device().underlying_device(),
+                               cuda::host_memory_location,
+                               cuda::source_access_order::stream});
+    offset += local.size();
+    local.stream().sync();
   }
   return ret;
 }
 
 template <class T, class Compare>
-[[nodiscard]] c2h::host_vector<T> sorted_reference(const std::vector<c2h::host_vector<T>>& inputs, Compare cmp)
+[[nodiscard]] std::vector<T> sorted_reference(const std::vector<std::vector<T>>& inputs, Compare cmp)
 {
-  c2h::host_vector<T> ret;
+  std::vector<T> ret;
 
   ret.reserve(total_size(inputs));
   for (const auto& local : inputs)
@@ -130,15 +136,15 @@ template <class T, class Compare>
     ret.insert(ret.end(), local.begin(), local.end());
   }
 
-  cuda::std::sort(ret.begin(), ret.end(), cmp);
+  std::sort(ret.begin(), ret.end(), cmp);
   return ret;
 }
 
 // `sort` must not change how many elements a rank owns, only which elements those are.
 template <class T>
 void check_rank_sizes(cuda::std::span<cudax::nccl_communicator_ref> comms,
-                      const std::vector<c2h::device_vector<T>>& device_vec,
-                      const std::vector<c2h::host_vector<T>>& host_inputs)
+                      const std::vector<cuda::device_buffer<T>>& device_vec,
+                      const std::vector<std::vector<T>>& host_inputs)
 {
   REQUIRE(device_vec.size() == host_inputs.size());
   for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
@@ -146,6 +152,25 @@ void check_rank_sizes(cuda::std::span<cudax::nccl_communicator_ref> comms,
     CAPTURE(rank);
     REQUIRE(device_vec[rank].size() == host_inputs[rank].size());
   }
+}
+
+// `Equals` only has overloads for thrust vectors and `cuda::buffer`, so the two host-side
+// sequences are staged into pinned buffers to get the element-level mismatch reporting.
+template <class T>
+void check_matches(cuda::stream_ref stream, const std::vector<T>& actual, const std::vector<T>& expected)
+{
+  REQUIRE(actual.size() == expected.size());
+  if (actual.empty())
+  {
+    return;
+  }
+
+  const auto to_buffer = [stream](const std::vector<T>& values) {
+    return cuda::make_buffer<T, cuda::mr::host_accessible>(
+      stream, cuda::mr::legacy_pinned_memory_resource{}, cuda::std::span<const T>{values});
+  };
+
+  REQUIRE_THAT(to_buffer(actual), Equals(to_buffer(expected)));
 }
 
 // A comparator that is neither `less` nor `greater`, to make sure nothing along the way assumes
