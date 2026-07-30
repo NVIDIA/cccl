@@ -1626,7 +1626,7 @@ struct histogram_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
-    return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
+    return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0, 0};
   }
 };
 
@@ -1750,7 +1750,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
 
   // aggregate init
   constexpr auto p1 = cub::HistogramPolicy{
-    128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, cub::SMEM, false, 2048};
+    128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, cub::SMEM, false, 2048, 12345, 96, 3};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -1763,7 +1763,10 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     .rle_compress                     = false,
     .mem_preference                   = cub::SMEM,
     .use_work_stealing                = false,
-    .init_kernel_pdl_trigger_max_bins = 2048};
+    .init_kernel_pdl_trigger_max_bins = 2048,
+    .dynamic_smem_bytes               = 12345,
+    .static_smem_threads_per_block    = 96,
+    .static_smem_items_per_thread     = 3};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1780,6 +1783,28 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   REQUIRE(to_string(p1)
           == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+             ", .dynamic_smem_bytes = 12345, .static_smem_threads_per_block = 96"
+             ", .static_smem_items_per_thread = 3 }");
+}
+
+C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget", "[histogram][device]")
+{
+  using selector_t = cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>;
+
+  constexpr auto sm90_policy  = selector_t{}(cuda::compute_capability{9, 0});
+  constexpr auto sm100_policy = selector_t{}(cuda::compute_capability{10, 0});
+  constexpr auto sm100_wide_counter_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, true>{}(
+      cuda::compute_capability{10, 0});
+
+  STATIC_REQUIRE(sm90_policy.dynamic_smem_bytes == 0);
+  STATIC_REQUIRE(sm100_policy.dynamic_smem_bytes == 228352);
+  STATIC_REQUIRE(sm100_wide_counter_policy.dynamic_smem_bytes == 228352);
+
+  using max_policy_t = typename cub::detail::histogram::policy_hub<int, unsigned int, 1, 1, true>::MaxPolicy;
+  const auto legacy_sm100_policy =
+    cub::detail::histogram::policy_selector_from_max_policy<max_policy_t>{}(cuda::compute_capability{10, 0});
+  REQUIRE(legacy_sm100_policy.dynamic_smem_bytes == 228352);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

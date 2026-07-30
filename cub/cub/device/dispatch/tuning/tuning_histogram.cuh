@@ -39,6 +39,19 @@ struct HistogramPolicy
   bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
+  int dynamic_smem_bytes            = 0; //!< Tuned byte budget for a runtime-sized privatized histogram; 0 disables it
+  int static_smem_threads_per_block = 0; //!< Static shared-memory tier threads; 0 inherits threads_per_block
+  int static_smem_items_per_thread  = 0; //!< Static shared-memory tier items; 0 inherits pixels_per_thread
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
+  {
+    return static_smem_threads_per_block != 0 ? static_smem_threads_per_block : threads_per_block;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_items() const
+  {
+    return static_smem_items_per_thread != 0 ? static_smem_items_per_thread : pixels_per_thread;
+  }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
@@ -47,7 +60,10 @@ struct HistogramPolicy
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
         && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
-        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
+        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
+        && lhs.dynamic_smem_bytes == rhs.dynamic_smem_bytes
+        && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
+        && lhs.static_smem_items_per_thread == rhs.static_smem_items_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -64,13 +80,20 @@ struct HistogramPolicy
         << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
-        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
+        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = "
+        << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
+        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
 namespace detail::histogram
 {
+// B200 exposes 232448 bytes of opt-in shared memory per block. Autoresearch
+// retained 4096 bytes for static kernel storage and driver bookkeeping, leaving
+// 228352 bytes for the runtime-sized privatized histogram.
+static constexpr int sm100_dynamic_smem_bytes = 232448 - 4096;
+
 // TODO(bgruber): drop in CCCL 4.0
 enum class primitive_sample
 {
@@ -113,7 +136,12 @@ _CCCL_HOST_DEVICE_API constexpr counter_size classify_counter_size()
 template <class SampleT>
 _CCCL_HOST_DEVICE_API constexpr sample_size classify_sample_size()
 {
-  return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
+  return sizeof(SampleT) == 1 ? sample_size::_1
+       : sizeof(SampleT) == 2 ? sample_size::_2
+       : sizeof(SampleT) == 4 ? sample_size::_4
+       : sizeof(SampleT) == 8
+         ? sample_size::_8
+         : sample_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -180,8 +208,6 @@ struct sm100_tuning<true, SampleT, 1, 1, counter_size::_4, primitive_sample::yes
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
-
 // range
 template <class SampleT>
 struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_1>
@@ -197,7 +223,33 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
+template <bool IsEven, class SampleT>
+struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
+{
+  static constexpr int items                                     = 12;
+  static constexpr int threads                                   = 768;
+  static constexpr bool rle_compress                             = true;
+  static constexpr bool use_work_stealing                        = false;
+  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_VECTORIZE;
+  static constexpr int vec_size                                  = 1 << 2;
+};
+
+template <bool IsEven, class SampleT>
+struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
+{
+  static constexpr int items                                     = 8;
+  static constexpr int threads                                   = 512;
+  static constexpr bool rle_compress                             = true;
+  static constexpr bool use_work_stealing                        = false;
+  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_VECTORIZE;
+  static constexpr int vec_size                                  = 1 << 2;
+};
+
+// sample_size 2 showed no benefit over SM90 during verification benchmarks
 
 // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
 
@@ -268,6 +320,7 @@ struct policy_hub
         0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
+    static constexpr int dynamic_smem_bytes               = sm100_dynamic_smem_bytes;
   };
 
   using MaxPolicy = Policy1000;
@@ -295,6 +348,12 @@ private:
     return (::cuda::std::max) (nominal_items_per_thread / num_active_channels / sample_scale, 1);
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto sm100_policy(HistogramPolicy policy) const -> HistogramPolicy
+  {
+    policy.dynamic_smem_bytes = sm100_dynamic_smem_bytes;
+    return policy;
+  }
+
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
@@ -305,17 +364,59 @@ public:
         if (is_even)
         {
           // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-          return HistogramPolicy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 2048};
+          return sm100_policy(HistogramPolicy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 2048});
         }
         else
         {
           // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+          return sm100_policy(HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048});
         }
       }
 
-      // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
-      // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive
+          && (sample_size == 4 || sample_size == 8))
+      {
+        if (is_even)
+        {
+          return sm100_policy(
+            HistogramPolicy{768, t_scale(12), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 2048});
+        }
+
+        const int static_threads = sample_size_bytes >= 8 ? 384 : 768;
+        const int static_items   = sample_size_bytes >= 8 ? t_scale(16) : 0;
+        return sm100_policy(HistogramPolicy{
+          768,
+          t_scale(12),
+          1 << 2,
+          BLOCK_LOAD_DIRECT,
+          LOAD_LDG,
+          true,
+          SMEM,
+          false,
+          2048,
+          0,
+          static_threads,
+          static_items});
+      }
+
+      if (num_channels >= 2 && counter_size == 4 && sample_is_primitive)
+      {
+        if (is_even)
+        {
+          return sm100_policy(HistogramPolicy{1024, t_scale(8), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0});
+        }
+        return sm100_policy(
+          HistogramPolicy{1024, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0, 0, 384});
+      }
+
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 2)
+      {
+        return sm100_policy(HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048});
+      }
+
+      // Even when no SM100 launch-shape specialization applies, retain the
+      // architecture's dynamic shared-memory budget on the inherited fallback.
+      return sm100_policy(HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0});
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
