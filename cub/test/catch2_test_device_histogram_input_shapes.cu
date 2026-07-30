@@ -20,12 +20,10 @@
 // The generator header lives in the benchmarks tree; include it by relative
 // path. It is self-contained (thrust + cuda/std only), so this is safe.
 #include "../benchmarks/bench/histogram/histogram_inputs.cuh"
-
 #include <c2h/catch2_test_helper.h>
 
 namespace
 {
-
 // Generate an EVEN input for `spec` and return the per-bin counts, recomputed
 // from the sample values with the same formula CUB uses.
 template <class SampleT>
@@ -89,10 +87,9 @@ long long top_count(const std::vector<long long>& counts)
   return *std::max_element(counts.begin(), counts.end());
 }
 
-constexpr int64_t N = 200000;
+constexpr int64_t N  = 200000;
 constexpr int32_t LO = 0;
 constexpr int32_t HI = 4096; // bin width 1 at B=4096; >1 below that
-
 } // namespace
 
 C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input_shapes]")
@@ -101,8 +98,8 @@ C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
 
   // entropy 1.0 -> uniform: every bin within a few % of N/num_bins.
   {
-    auto counts        = bin_counts_even<int32_t>(parse_input_shape("concentrated:1.0"), N, num_bins, LO, HI);
-    const double mean  = static_cast<double>(N) / num_bins;
+    auto counts       = bin_counts_even<int32_t>(parse_input_shape("concentrated:1.0"), N, num_bins, LO, HI);
+    const double mean = static_cast<double>(N) / num_bins;
     REQUIRE(nonzero_bins(counts) == num_bins);
     for (long long c : counts)
     {
@@ -126,7 +123,7 @@ C2H_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][
   double prev_share = -1.0;
   for (double e : {1.0, 0.75, 0.5, 0.25, 0.0})
   {
-    auto counts        = bin_counts_even<int32_t>(parse_input_shape("concentrated:" + std::to_string(e)), N, num_bins, LO, HI);
+    auto counts = bin_counts_even<int32_t>(parse_input_shape("concentrated:" + std::to_string(e)), N, num_bins, LO, HI);
     const double share = static_cast<double>(top_count(counts)) / N;
     if (prev_share >= 0.0)
     {
@@ -181,7 +178,7 @@ C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
   double prev_top = -1.0;
   for (double e : {0.8, 0.6, 0.4, 0.2})
   {
-    auto counts        = bin_counts_even<int32_t>(parse_input_shape("powerlaw:" + std::to_string(e)), N, num_bins, LO, HI);
+    auto counts = bin_counts_even<int32_t>(parse_input_shape("powerlaw:" + std::to_string(e)), N, num_bins, LO, HI);
     std::vector<long long> sorted(counts);
     std::sort(sorted.rbegin(), sorted.rend());
     const double top1 = static_cast<double>(sorted[0]) / N;
@@ -205,7 +202,7 @@ C2H_TEST("histogram input: capacity_cliff active set tracks the knob", "[histogr
   // Knob 0.25 => ~1024 active bins (a quarter of capacity).
   {
     const int num_bins2 = 4096;
-    auto counts = bin_counts_even<int32_t>(parse_input_shape("capacity_cliff:0.25"), N * 4, num_bins2, LO, 4096);
+    auto counts  = bin_counts_even<int32_t>(parse_input_shape("capacity_cliff:0.25"), N * 4, num_bins2, LO, 4096);
     const int nz = nonzero_bins(counts);
     REQUIRE(nz > 256);
     REQUIRE(nz <= 1100);
@@ -226,10 +223,10 @@ C2H_TEST("histogram input: stale_resident has a cold prefix and a dominant hot b
 
 C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]")
 {
-  const int num_bins = 256;
-  const int phases   = 4;
-  thrust::device_vector<int32_t> d_input =
-    generate_histogram_input_even<int32_t>(parse_input_shape("temporal_phases:" + std::to_string(phases)), N, num_bins, LO, HI);
+  const int num_bins                     = 256;
+  const int phases                       = 4;
+  thrust::device_vector<int32_t> d_input = generate_histogram_input_even<int32_t>(
+    parse_input_shape("temporal_phases:" + std::to_string(phases)), N, num_bins, LO, HI);
   thrust::host_vector<int32_t> h = d_input;
 
   const double scale = static_cast<double>(num_bins) / (static_cast<double>(HI) - static_cast<double>(LO));
@@ -241,11 +238,22 @@ C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "
     for (int64_t i = p * per; i < (p + 1) * per; ++i)
     {
       int bin = static_cast<int>(static_cast<double>(h[i]) * scale);
-      if (bin >= num_bins) bin = num_bins - 1;
+      if (bin >= num_bins)
+      {
+        bin = num_bins - 1;
+      }
       ++c[bin];
     }
-    int best = -1; long long bestc = -1;
-    for (auto& kv : c) { if (kv.second > bestc) { bestc = kv.second; best = kv.first; } }
+    int best        = -1;
+    long long bestc = -1;
+    for (auto& kv : c)
+    {
+      if (kv.second > bestc)
+      {
+        bestc = kv.second;
+        best  = kv.first;
+      }
+    }
     phase_mode.push_back(best);
   }
   // Adjacent phases must have different hot bins.
