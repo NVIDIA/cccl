@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_BIT
-#define _CUDA_STD_BIT
+#ifndef _CUDA_STD___BIT_BIT_REVERSE_H
+#define _CUDA_STD___BIT_BIT_REVERSE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,21 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/bit_compress.h>
-#include <cuda/std/__bit/bit_expand.h>
-#include <cuda/std/__bit/bit_repeat.h>
-#include <cuda/std/__bit/bit_reverse.h>
-#include <cuda/std/__bit/byteswap.h>
-#include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/countr.h>
-#include <cuda/std/__bit/endian.h>
-#include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__bit/integral.h>
-#include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__bit/rotate.h>
-#include <cuda/std/__bit/shl.h>
-#include <cuda/std/__bit/shr.h>
-#include <cuda/std/version>
+#include <cuda/__bit/bit_reverse.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_unsigned_integer.h>
 
-#endif // _CUDA_STD_BIT
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr _Tp bit_reverse(_Tp __v) noexcept
+{
+  return ::cuda::bit_reverse(__v);
+}
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___BIT_BIT_REVERSE_H
