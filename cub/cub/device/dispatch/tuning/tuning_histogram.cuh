@@ -42,9 +42,11 @@ struct HistogramPolicy
   int dynamic_smem_bytes             = 0; //!< Tuned byte budget for a runtime-sized privatized histogram; 0 disables it
   int static_smem_threads_per_block  = 0; //!< Static shared-memory tier threads; 0 inherits threads_per_block
   int static_smem_items_per_thread   = 0; //!< Static shared-memory tier items; 0 inherits pixels_per_thread
+  int static_smem_min_blocks_per_sm  = 0; //!< Static shared-memory launch bound; 0 derives it from the block size
   int dynamic_smem_range_max_bins    = 0; //!< Multi-channel RANGE cap per channel; 0 disables the dynamic path
-  int dynamic_smem_even_max_bins     = 0; //!< Multi-channel EVEN cap per channel; 0 disables the dynamic path
-  int dynamic_smem_even_3ch_max_bins = 0; //!< Extended EVEN cap when at most three channels are active
+  int dynamic_smem_even_2ch_max_bins = 0; //!< Two-channel EVEN cap per channel; 0 disables the dynamic path
+  int dynamic_smem_even_3ch_max_bins = 0; //!< Three-channel EVEN cap per channel; 0 disables the dynamic path
+  int dynamic_smem_even_4ch_max_bins = 0; //!< Four-channel EVEN cap per channel; 0 disables the dynamic path
   int range_interpolation_min_bins   = 0; //!< Minimum RANGE bin count for interpolation; 0 disables interpolation
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
@@ -55,6 +57,11 @@ struct HistogramPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_items() const
   {
     return static_smem_items_per_thread != 0 ? static_smem_items_per_thread : pixels_per_thread;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_min_blocks() const
+  {
+    return static_smem_min_blocks_per_sm != 0 ? static_smem_min_blocks_per_sm : (static_smem_threads() >= 512 ? 2 : 0);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -68,9 +75,11 @@ struct HistogramPolicy
         && lhs.dynamic_smem_bytes == rhs.dynamic_smem_bytes
         && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
         && lhs.static_smem_items_per_thread == rhs.static_smem_items_per_thread
+        && lhs.static_smem_min_blocks_per_sm == rhs.static_smem_min_blocks_per_sm
         && lhs.dynamic_smem_range_max_bins == rhs.dynamic_smem_range_max_bins
-        && lhs.dynamic_smem_even_max_bins == rhs.dynamic_smem_even_max_bins
+        && lhs.dynamic_smem_even_2ch_max_bins == rhs.dynamic_smem_even_2ch_max_bins
         && lhs.dynamic_smem_even_3ch_max_bins == rhs.dynamic_smem_even_3ch_max_bins
+        && lhs.dynamic_smem_even_4ch_max_bins == rhs.dynamic_smem_even_4ch_max_bins
         && lhs.range_interpolation_min_bins == rhs.range_interpolation_min_bins;
   }
 
@@ -90,9 +99,12 @@ struct HistogramPolicy
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = "
         << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
-        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread << ", .dynamic_smem_range_max_bins = "
-        << p.dynamic_smem_range_max_bins << ", .dynamic_smem_even_max_bins = " << p.dynamic_smem_even_max_bins
+        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread
+        << ", .static_smem_min_blocks_per_sm = " << p.static_smem_min_blocks_per_sm
+        << ", .dynamic_smem_range_max_bins = " << p.dynamic_smem_range_max_bins
+        << ", .dynamic_smem_even_2ch_max_bins = " << p.dynamic_smem_even_2ch_max_bins
         << ", .dynamic_smem_even_3ch_max_bins = " << p.dynamic_smem_even_3ch_max_bins
+        << ", .dynamic_smem_even_4ch_max_bins = " << p.dynamic_smem_even_4ch_max_bins
         << ", .range_interpolation_min_bins = " << p.range_interpolation_min_bins << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -100,13 +112,12 @@ struct HistogramPolicy
 
 namespace detail::histogram
 {
-// B200 exposes 232448 bytes of opt-in shared memory per block. Autoresearch
-// retained 4096 bytes for static kernel storage and driver bookkeeping, leaving
-// 228352 bytes for the runtime-sized privatized histogram.
+// Leave 4096 bytes of the SM100 opt-in shared-memory limit available for static storage.
 static constexpr int sm100_dynamic_smem_bytes             = 232448 - 4096;
 static constexpr int sm100_dynamic_smem_range_max_bins    = 2048;
-static constexpr int sm100_dynamic_smem_even_max_bins     = 8192;
-static constexpr int sm100_dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_bytes / int{sizeof(unsigned int)};
+static constexpr int sm100_dynamic_smem_even_2ch_max_bins = 28544;
+static constexpr int sm100_dynamic_smem_even_3ch_max_bins = 19029;
+static constexpr int sm100_dynamic_smem_even_4ch_max_bins = 8192;
 static constexpr int sm100_range_interpolation_min_bins   = 512;
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -348,8 +359,9 @@ struct policy_hub
         : 0;
     static constexpr int dynamic_smem_bytes             = sm100_dynamic_smem_bytes;
     static constexpr int dynamic_smem_range_max_bins    = sm100_dynamic_smem_range_max_bins;
-    static constexpr int dynamic_smem_even_max_bins     = sm100_dynamic_smem_even_max_bins;
+    static constexpr int dynamic_smem_even_2ch_max_bins = sm100_dynamic_smem_even_2ch_max_bins;
     static constexpr int dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
+    static constexpr int dynamic_smem_even_4ch_max_bins = sm100_dynamic_smem_even_4ch_max_bins;
     static constexpr int range_interpolation_min_bins   = sm100_range_interpolation_min_bins;
     static constexpr int static_smem_threads_per_block =
       !IsEven && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
@@ -364,6 +376,8 @@ struct policy_hub
           && sizeof(SampleT) == 8
         ? t_scale(16)
         : 0;
+    static constexpr int static_smem_min_blocks_per_sm =
+      !IsEven && static_smem_threads_per_block > 0 && static_smem_threads_per_block < 512 ? 3 : 0;
   };
 
   using MaxPolicy = Policy1000;
@@ -395,8 +409,9 @@ private:
   {
     policy.dynamic_smem_bytes             = sm100_dynamic_smem_bytes;
     policy.dynamic_smem_range_max_bins    = sm100_dynamic_smem_range_max_bins;
-    policy.dynamic_smem_even_max_bins     = sm100_dynamic_smem_even_max_bins;
+    policy.dynamic_smem_even_2ch_max_bins = sm100_dynamic_smem_even_2ch_max_bins;
     policy.dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
+    policy.dynamic_smem_even_4ch_max_bins = sm100_dynamic_smem_even_4ch_max_bins;
     policy.range_interpolation_min_bins   = sm100_range_interpolation_min_bins;
     return policy;
   }
@@ -429,8 +444,9 @@ public:
             HistogramPolicy{768, t_scale(12), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 2048});
         }
 
-        const int static_threads = sample_size == 8 ? 384 : 768;
-        const int static_items   = sample_size == 8 ? t_scale(16) : 0;
+        const int static_threads    = sample_size == 8 ? 384 : 768;
+        const int static_items      = sample_size == 8 ? t_scale(16) : 0;
+        const int static_min_blocks = static_threads < 512 ? 3 : 0;
         return sm100_policy(HistogramPolicy{
           768,
           t_scale(12),
@@ -443,7 +459,8 @@ public:
           2048,
           0,
           static_threads,
-          static_items});
+          static_items,
+          static_min_blocks});
       }
 
       if (num_channels >= 2 && counter_size == 4 && sample_is_primitive)
@@ -453,7 +470,7 @@ public:
           return sm100_policy(HistogramPolicy{1024, t_scale(8), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0});
         }
         return sm100_policy(
-          HistogramPolicy{1024, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0, 0, 384});
+          HistogramPolicy{1024, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0, 0, 384, 0, 3});
       }
 
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 2)
