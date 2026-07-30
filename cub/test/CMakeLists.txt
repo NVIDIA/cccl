@@ -170,7 +170,7 @@ function(
         "${CMAKE_COMMAND}"
            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
-           "-DARGS=~[large-mem]"
+           "-DARGS=[small-mem]"
            "-DALLOW_RUNNING_NO_TESTS=ON"
            "-DTYPE=Catch2"
            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
