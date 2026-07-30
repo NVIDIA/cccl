@@ -1896,6 +1896,22 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   using max_policy_t = typename cub::detail::histogram::policy_hub<int, unsigned int, 1, 1, true>::MaxPolicy;
   const auto legacy_sm100_policy =
     cub::detail::histogram::policy_selector_from_max_policy<max_policy_t>{}(cuda::compute_capability{10, 0});
-  REQUIRE(legacy_sm100_policy.dynamic_smem_bytes == 228352);
+  REQUIRE(legacy_sm100_policy == sm100_policy);
+
+  using range_max_policy_t =
+    typename cub::detail::histogram::policy_hub<long long, unsigned int, 1, 1, false>::MaxPolicy;
+  const auto legacy_range_policy =
+    cub::detail::histogram::policy_selector_from_max_policy<range_max_policy_t>{}(cuda::compute_capability{10, 0});
+  constexpr auto range_policy =
+    cub::detail::histogram::policy_selector_from_types<long long, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  REQUIRE(legacy_range_policy == range_policy);
+
+  using multi_max_policy_t = typename cub::detail::histogram::policy_hub<int, unsigned int, 4, 3, false>::MaxPolicy;
+  const auto legacy_multi_policy =
+    cub::detail::histogram::policy_selector_from_max_policy<multi_max_policy_t>{}(cuda::compute_capability{10, 0});
+  constexpr auto multi_policy = cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
+    cuda::compute_capability{10, 0});
+  REQUIRE(legacy_multi_policy == multi_policy);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

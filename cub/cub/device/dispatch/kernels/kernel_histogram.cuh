@@ -122,6 +122,12 @@ struct Transforms
       this->interpolation_min_bins = interpolation_min_bins_;
       this->m_have_precompute      = false;
       this->m_inv_scale            = 0.0f;
+      this->m_first                = LevelT{};
+      this->m_last                 = LevelT{};
+      this->m_mid                  = LevelT{};
+      this->m_inv_scale_lo         = 0.0f;
+      this->m_inv_scale_hi         = 0.0f;
+      this->m_mid_bin              = 0;
     }
 
     //! @brief Hoist the loop-invariant interpolation state out of `BinSelect`.
