@@ -44,30 +44,30 @@
 
 enum class InputShape
 {
-  concentrated,   // spike-slab family. KNOB = target normalized entropy in
-                  // [0,1]: 1.0 = uniform, 0.0 = constant (single bin), in
-                  // between = one hot bin over a uniform floor. Sweeping the
-                  // knob reproduces (and generalizes) the old Entropy sweep --
-                  // continuously, and with the hot bin scattered off zero.
-  powerlaw,       // decaying warm set (many hot bins). KNOB = target normalized
-                  // entropy in [0,1]; the rank exponent is solved to hit it.
-                  // Independent of the concentrated knob.
-  zipf,           // decaying warm set with a classic exponent. KNOB = exponent
-                  // s >= 0 (default 1.0).
-  hash_synonym,   // hot bins all collide on one cache slot. KNOB = hot share
-                  // in [0,1] (default 0.9).
+  concentrated, // spike-slab family. KNOB = target normalized entropy in
+                // [0,1]: 1.0 = uniform, 0.0 = constant (single bin), in
+                // between = one hot bin over a uniform floor. Sweeping the
+                // knob reproduces (and generalizes) the old Entropy sweep --
+                // continuously, and with the hot bin scattered off zero.
+  powerlaw, // decaying warm set (many hot bins). KNOB = target normalized
+            // entropy in [0,1]; the rank exponent is solved to hit it.
+            // Independent of the concentrated knob.
+  zipf, // decaying warm set with a classic exponent. KNOB = exponent
+        // s >= 0 (default 1.0).
+  hash_synonym, // hot bins all collide on one cache slot. KNOB = hot share
+                // in [0,1] (default 0.9).
   stale_resident, // a cold working set, swept cyclically, that recurs in every
                   // block but overflows the SMEM cache so it cannot stay resident
                   // (thrashes it). KNOB = working-set size as a multiple of cache
                   // slots (default 2.0 => twice the slots, overflowing the cache).
-  temporal_phases,// the hot bin steps to a new location across phases. KNOB =
-                  // number of phases (default 8).
-  strided_sweep,  // bin = stride*i % B (minimal temporal locality). KNOB =
-                  // stride (default a large prime).
-  sawtooth,       // bin = i % period: a monotonic ramp 0..period-1 that resets
-                  // periodically (sequential locality over a bounded working
-                  // set). KNOB = ramp period in bins (default = num_bins => one
-                  // full 0..B-1 sweep, the classic sawtooth).
+  temporal_phases, // the hot bin steps to a new location across phases. KNOB =
+                   // number of phases (default 8).
+  strided_sweep, // bin = stride*i % B (minimal temporal locality). KNOB =
+                 // stride (default a large prime).
+  sawtooth, // bin = i % period: a monotonic ramp 0..period-1 that resets
+            // periodically (sequential locality over a bounded working
+            // set). KNOB = ramp period in bins (default = num_bins => one
+            // full 0..B-1 sweep, the classic sawtooth).
 };
 
 // A shape plus an optional knob value. `has_knob == false` means "use the
@@ -75,8 +75,8 @@ enum class InputShape
 struct ShapeSpec
 {
   InputShape shape;
-  double knob    = 0.0;
-  bool has_knob  = false;
+  double knob   = 0.0;
+  bool has_knob = false;
 };
 
 // kAdversarialCacheSlots mirrors the SMEM cuckoo-cache capacity in
@@ -100,20 +100,47 @@ inline ShapeSpec parse_input_shape(const std::string& spec)
   const auto colon = spec.find(':');
   if (colon != std::string::npos)
   {
-    name        = spec.substr(0, colon);
-    out.knob    = std::stod(spec.substr(colon + 1));
+    name         = spec.substr(0, colon);
+    out.knob     = std::stod(spec.substr(colon + 1));
     out.has_knob = true;
   }
 
-  if (name == "concentrated") { out.shape = InputShape::concentrated; }
-  else if (name == "powerlaw") { out.shape = InputShape::powerlaw; }
-  else if (name == "zipf")     { out.shape = InputShape::zipf; }
-  else if (name == "hash_synonym")    { out.shape = InputShape::hash_synonym; }
-  else if (name == "stale_resident")  { out.shape = InputShape::stale_resident; }
-  else if (name == "temporal_phases") { out.shape = InputShape::temporal_phases; }
-  else if (name == "strided_sweep")   { out.shape = InputShape::strided_sweep; }
-  else if (name == "sawtooth")         { out.shape = InputShape::sawtooth; }
-  else { throw std::runtime_error("Unknown InputShape: " + spec); }
+  if (name == "concentrated")
+  {
+    out.shape = InputShape::concentrated;
+  }
+  else if (name == "powerlaw")
+  {
+    out.shape = InputShape::powerlaw;
+  }
+  else if (name == "zipf")
+  {
+    out.shape = InputShape::zipf;
+  }
+  else if (name == "hash_synonym")
+  {
+    out.shape = InputShape::hash_synonym;
+  }
+  else if (name == "stale_resident")
+  {
+    out.shape = InputShape::stale_resident;
+  }
+  else if (name == "temporal_phases")
+  {
+    out.shape = InputShape::temporal_phases;
+  }
+  else if (name == "strided_sweep")
+  {
+    out.shape = InputShape::strided_sweep;
+  }
+  else if (name == "sawtooth")
+  {
+    out.shape = InputShape::sawtooth;
+  }
+  else
+  {
+    throw std::runtime_error("Unknown InputShape: " + spec);
+  }
   return out;
 }
 
@@ -157,7 +184,7 @@ __host__ __device__ inline int scatter_bin(uint64_t rank, int num_bins, uint64_t
 // (cub::UpperBound is _CCCL_DEVICE only and we need a host path for tests).
 __host__ __device__ inline int upper_bound_cdf(const double* cdf, int n, double val)
 {
-  int lo = 0;
+  int lo  = 0;
   int len = n;
   while (len > 0)
   {
@@ -335,7 +362,8 @@ struct phases_functor
       phase = static_cast<uint64_t>(num_phases) - 1;
     }
     // Spread phases across the bin array, scattered off zero.
-    int bin = scatter_bin(phase * (static_cast<uint64_t>(num_bins) / static_cast<uint64_t>(num_phases) + 1), num_bins, offset);
+    int bin =
+      scatter_bin(phase * (static_cast<uint64_t>(num_bins) / static_cast<uint64_t>(num_phases) + 1), num_bins, offset);
     return mapper(bin);
   }
 };
@@ -349,8 +377,8 @@ struct phases_functor
 __host__ __device__ inline uint64_t feistel_mix(uint64_t x, uint64_t k)
 {
   uint64_t z = x + k + 0x9E3779B97F4A7C15ull;
-  z         = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-  z         = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+  z          = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+  z          = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
   return z ^ (z >> 31);
 }
 
@@ -365,9 +393,9 @@ __host__ __device__ inline uint64_t permute_index(uint64_t i, uint64_t n, uint64
   {
     ++bits; // bits == ceil(log2(n)) for n >= 2
   }
-  const int half        = (bits + 1) / 2;
-  const uint64_t mask    = (half >= 64) ? ~0ull : ((1ull << half) - 1ull);
-  uint64_t x             = i;
+  const int half      = (bits + 1) / 2;
+  const uint64_t mask = (half >= 64) ? ~0ull : ((1ull << half) - 1ull);
+  uint64_t x          = i;
   do
   {
     uint64_t l = (x >> half) & mask;
@@ -567,10 +595,10 @@ constexpr double kDefaultConcentratedEntropy = 0.5; // bare "concentrated"
 constexpr double kDefaultPowerlawEntropy     = 0.5; // bare "powerlaw"
 constexpr double kDefaultZipfExponent        = 1.0; // bare "zipf"
 constexpr double kDefaultHashSynonymHotShare = 0.9; // bare "hash_synonym"
-constexpr int kDefaultTemporalPhases         = 8;   // bare "temporal_phases"
+constexpr int kDefaultTemporalPhases         = 8; // bare "temporal_phases"
 constexpr uint64_t kDefaultStridedStride     = 9973ull; // bare "strided_sweep"
 // bare "sawtooth" => period 0 sentinel, resolved to num_bins at generation time.
-constexpr uint64_t kDefaultSawtoothPeriod    = 0ull;
+constexpr uint64_t kDefaultSawtoothPeriod = 0ull;
 
 // Build the per-bin pmf for an i.i.d. distribution shape, honoring the spec's
 // knob. Hot ranks are scattered across bins via scatter_bin() so the mode is
@@ -705,7 +733,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
       acc += pmf[b];
       h_cdf[b] = acc;
     }
-    h_cdf[num_bins - 1] = 1.0; // guard against fp drift on the last bin
+    h_cdf[num_bins - 1]                 = 1.0; // guard against fp drift on the last bin
     thrust::device_vector<double> d_cdf = h_cdf;
     cdf_sample_functor<SampleT, Mapper> fn{thrust::raw_pointer_cast(d_cdf.data()), num_bins, seed, mapper};
     thrust::tabulate(out.begin(), out.end(), fn);
@@ -716,8 +744,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
   {
     case InputShape::strided_sweep: {
       // KNOB = stride.
-      const uint64_t stride =
-        spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultStridedStride;
+      const uint64_t stride = spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultStridedStride;
       strided_functor<SampleT, Mapper> fn{num_bins, stride, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
@@ -727,8 +754,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
       const uint64_t requested =
         spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultSawtoothPeriod;
       const uint64_t period =
-        (requested == 0) ? static_cast<uint64_t>(num_bins)
-                         : std::min(requested, static_cast<uint64_t>(num_bins));
+        (requested == 0) ? static_cast<uint64_t>(num_bins) : std::min(requested, static_cast<uint64_t>(num_bins));
       sawtooth_functor<SampleT, Mapper> fn{period, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;

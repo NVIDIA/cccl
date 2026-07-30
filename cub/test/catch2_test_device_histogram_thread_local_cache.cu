@@ -21,7 +21,6 @@
 
 namespace
 {
-
 using sample_t  = int;
 using counter_t = int;
 
@@ -70,37 +69,37 @@ auto reference_histogram(const thrust::host_vector<sample_t>& samples, const thr
   return ref;
 }
 
-void run_histogram_range(
-  cudaStream_t stream,
-  const thrust::device_vector<sample_t>& d_samples,
-  const thrust::device_vector<sample_t>& d_levels,
-  thrust::device_vector<counter_t>& d_histogram)
+void run_histogram_range(cudaStream_t stream,
+                         const thrust::device_vector<sample_t>& d_samples,
+                         const thrust::device_vector<sample_t>& d_levels,
+                         thrust::device_vector<counter_t>& d_histogram)
 {
   const int num_levels = static_cast<int>(d_levels.size());
   size_t temp_bytes    = 0;
-  REQUIRE(cudaSuccess
-          == cub::DeviceHistogram::HistogramRange(
-            nullptr,
-            temp_bytes,
-            thrust::raw_pointer_cast(d_samples.data()),
-            thrust::raw_pointer_cast(d_histogram.data()),
-            num_levels,
-            thrust::raw_pointer_cast(d_levels.data()),
-            static_cast<int>(d_samples.size()),
-            stream));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::HistogramRange(
+      nullptr,
+      temp_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      static_cast<int>(d_samples.size()),
+      stream));
   thrust::device_vector<unsigned char> temp(temp_bytes);
-  REQUIRE(cudaSuccess
-          == cub::DeviceHistogram::HistogramRange(
-            thrust::raw_pointer_cast(temp.data()),
-            temp_bytes,
-            thrust::raw_pointer_cast(d_samples.data()),
-            thrust::raw_pointer_cast(d_histogram.data()),
-            num_levels,
-            thrust::raw_pointer_cast(d_levels.data()),
-            static_cast<int>(d_samples.size()),
-            stream));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::HistogramRange(
+      thrust::raw_pointer_cast(temp.data()),
+      temp_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      static_cast<int>(d_samples.size()),
+      stream));
 }
-
 } // namespace
 
 C2H_TEST("DeviceHistogram::HistogramRange thread_local cache: sequential calls on multiple user streams",

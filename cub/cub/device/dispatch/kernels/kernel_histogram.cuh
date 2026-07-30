@@ -124,8 +124,7 @@ struct Transforms
     // `IntArithmeticT` (uint32_t / uint64_t) holds the difference without
     // overflow. For 128-bit and non-integer types, IntArithmeticT == CommonT
     // (or wider), so this is also correct.
-    using FractionStorageT =
-      ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
+    using FractionStorageT = ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
 
     union ScaleT
     {
@@ -175,8 +174,8 @@ struct Transforms
       // wider unsigned type) would sign-extend -1 into a giant value.
       if constexpr (::cuda::std::is_integral_v<T>)
       {
-        using UT          = ::cuda::std::make_unsigned_t<T>;
-        const UT diff     = static_cast<UT>(static_cast<UT>(max_level) - static_cast<UT>(min_level));
+        using UT              = ::cuda::std::make_unsigned_t<T>;
+        const UT diff         = static_cast<UT>(static_cast<UT>(max_level) - static_cast<UT>(min_level));
         result.fraction.range = static_cast<FractionStorageT>(diff);
       }
       else
@@ -276,9 +275,9 @@ struct Transforms
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      using UT                  = ::cuda::std::make_unsigned_t<T>;
-      const IntArithmeticT diff = static_cast<IntArithmeticT>(
-        static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
+      using UT = ::cuda::std::make_unsigned_t<T>;
+      const IntArithmeticT diff =
+        static_cast<IntArithmeticT>(static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
       return static_cast<int>(
         (diff * static_cast<IntArithmeticT>(scale.fraction.bins)) / static_cast<IntArithmeticT>(scale.fraction.range));
     }
