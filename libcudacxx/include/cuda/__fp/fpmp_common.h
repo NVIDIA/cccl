@@ -153,7 +153,7 @@ enum struct fpmp2_accuracy
   low   = 1,
   mid   = 2,
   high  = 3,
-  def   = 2,
+  def   = mid,
 };
 } // namespace cuda::experimental
 

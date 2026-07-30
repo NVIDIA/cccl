@@ -119,15 +119,6 @@ namespace cuda::experimental
 // fpmp_common.h now carries only the public API surface).
 // ===================================================================
 /*
-// Require C++17: the dispatch below is written with if constexpr throughout.
-// Asked through _CCCL_STD_VER rather than __cplusplus, which MSVC pins at 199711L
-// unless /Zc:__cplusplus is passed; _CCCL_STD_VER reads _MSVC_LANG there.
-*/
-#if _CCCL_STD_VER < 2017
-#  error "This header requires C++17 or later (for if constexpr, alignas, etc.)"
-#endif
-
-/*
 // External configuration macros
 */
 
