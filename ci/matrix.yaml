@@ -26,15 +26,15 @@ workflows:
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'],                     std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39'], project: ['libcudacxx', 'thrust']}
-    - {jobs: ['build_nolid', 'build_lid0'], std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39'], project: 'cub'}
     - {jobs: ['build'],                     std: 'minmax', ctk: '12.0', cxx: 'gcc7', project: ['libcudacxx', 'thrust']}
+    - {jobs: ['build'],                     std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc2022' ], project: ['libcudacxx', 'thrust']}
+    - {jobs: ['build'],                     std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ], project: ['libcudacxx', 'thrust']}
+    - {jobs: ['build_nolid', 'build_lid0'], std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39'], project: 'cub'}
     - {jobs: ['build_nolid'],               project: 'cub', std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
     # CTK12.0/GCC7 CUB host-launch builds are memory-heavy with benchmarks enabled; keep this shard below
     # the 61 GiB linux-amd64-cpu16 runner limit.
     - {jobs: ['build_lid0'],                project: 'cub', std: 'minmax', ctk: '12.0', cxx: 'gcc7', environment: ['PARALLEL_LEVEL=8']}
-    - {jobs: ['build'],                     std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc2022' ], project: ['libcudacxx', 'thrust']}
     - {jobs: ['build_nolid', 'build_lid0'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc2022' ], project: 'cub'}
-    - {jobs: ['build'],                     std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ], project: ['libcudacxx', 'thrust']}
     - {jobs: ['build_nolid', 'build_lid0'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ], project: 'cub'}
     # Old CTK: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14',            'msvc14.39']}
@@ -42,14 +42,14 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2022']}
     # Current CTK build-only:
     - {jobs: ['build'],                     std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'], project: ['libcudacxx', 'thrust'] } # Oldest
-    - {jobs: ['build_nolid', 'build_lid0'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'], project: 'cub' } # Oldest
     - {jobs: ['build'],                     std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'], project: ['libcudacxx', 'thrust'] }
-    - {jobs: ['build_nolid', 'build_lid0'], std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'], project: 'cub' }
     - {jobs: ['build'],                     std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'], project: ['libcudacxx', 'thrust'] }
-    - {jobs: ['build_nolid', 'build_lid0'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'], project: 'cub' }
     - {jobs: ['build'],                     std: 'max',    cxx: ['msvc2022'], project: ['libcudacxx', 'thrust'] }
-    - {jobs: ['build_nolid', 'build_lid0'], std: 'max',    cxx: ['msvc2022'], project: 'cub' }
     - {jobs: ['build'],                     std: 'all',    cxx: ['gcc', 'clang', 'msvc'], project: ['libcudacxx', 'thrust']} # Latest
+    - {jobs: ['build_nolid', 'build_lid0'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'], project: 'cub' } # Oldest
+    - {jobs: ['build_nolid', 'build_lid0'], std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'], project: 'cub' }
+    - {jobs: ['build_nolid', 'build_lid0'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'], project: 'cub' }
+    - {jobs: ['build_nolid', 'build_lid0'], std: 'max',    cxx: ['msvc2022'], project: 'cub' }
     - {jobs: ['build_nolid', 'build_lid0'], std: 'all',    cxx: ['gcc', 'clang', 'msvc'], project: 'cub'} # Latest
     # Current CTK build-only: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2022']} # Oldest
