@@ -20,6 +20,8 @@
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
@@ -35,6 +37,20 @@ struct Transforms
   template <typename LevelIteratorT>
   struct SearchTransform
   {
+    template <typename T>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto interpolation_difference(T lhs, T rhs)
+    {
+      if constexpr (::cuda::std::is_integral_v<T>)
+      {
+        using unsigned_t = ::cuda::std::make_unsigned_t<T>;
+        return static_cast<unsigned_t>(lhs) - static_cast<unsigned_t>(rhs);
+      }
+      else
+      {
+        return lhs - rhs;
+      }
+    }
+
     // Compile-time marker used by the privatized-SMEM sweep to select the RANGE
     // low-bin classifier and its launch bound.
     static constexpr bool is_range_transform = true;
@@ -142,7 +158,7 @@ struct Transforms
 
       m_first           = first;
       m_last            = last;
-      m_inv_scale       = static_cast<float>(num_bins) / static_cast<float>(last - first);
+      m_inv_scale       = static_cast<float>(num_bins) / static_cast<float>(interpolation_difference(last, first));
       m_have_precompute = true;
 
       // Three-point split at the midpoint bin. Read d_levels[mid] and derive
@@ -161,8 +177,9 @@ struct Transforms
         {
           m_mid          = mid;
           m_mid_bin      = mid_bin;
-          m_inv_scale_lo = static_cast<float>(mid_bin) / static_cast<float>(mid - first);
-          m_inv_scale_hi = static_cast<float>(num_bins - mid_bin) / static_cast<float>(last - mid);
+          m_inv_scale_lo = static_cast<float>(mid_bin) / static_cast<float>(interpolation_difference(mid, first));
+          m_inv_scale_hi =
+            static_cast<float>(num_bins - mid_bin) / static_cast<float>(interpolation_difference(last, mid));
         }
       }
     }
@@ -227,7 +244,7 @@ struct Transforms
         return;
       }
 
-      const auto delta = (s - first_level);
+      const auto delta = interpolation_difference(s, first_level);
       int guess;
       if (m_have_precompute)
       {
@@ -239,7 +256,7 @@ struct Transforms
           }
           else
           {
-            const auto delta_hi = (s - m_mid);
+            const auto delta_hi = interpolation_difference(s, m_mid);
             guess               = m_mid_bin + static_cast<int>(static_cast<float>(delta_hi) * m_inv_scale_hi);
           }
         }
@@ -250,7 +267,7 @@ struct Transforms
       }
       else
       {
-        const auto range = (last_level - first_level);
+        const auto range = interpolation_difference(last_level, first_level);
         NV_IF_ELSE_TARGET(
           NV_IS_DEVICE,
           (guess = static_cast<int>(
