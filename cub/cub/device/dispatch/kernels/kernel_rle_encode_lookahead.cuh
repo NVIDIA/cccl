@@ -49,7 +49,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE int swizzle_xor_stride32(int x)
 
 constexpr unsigned full_mask = 0xffffffffu;
 
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void wait_parity(cuda::std::uint64_t* bar, unsigned parity)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void wait_parity(::cuda::std::uint64_t* bar, unsigned parity)
 {
   while (!ptx::mbarrier_try_wait_parity(bar, parity))
   {
@@ -83,7 +83,7 @@ constexpr unsigned tile_published = 1u;
 
 struct TilePartialStateT
 {
-  cuda::std::uint64_t dword;
+  ::cuda::std::uint64_t dword;
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned published_tag() const
   {
@@ -102,24 +102,24 @@ struct TilePartialStateT
 
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT pack(int run_count, int open_len)
   {
-    return {((cuda::std::uint64_t) tile_published << 32) | ((cuda::std::uint64_t) (unsigned) open_len << 16)
-            | (cuda::std::uint64_t) (unsigned) run_count};
+    return {((::cuda::std::uint64_t) tile_published << 32) | ((::cuda::std::uint64_t) (unsigned) open_len << 16)
+            | (::cuda::std::uint64_t) (unsigned) run_count};
   }
 };
 
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
-  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
-  a.store(TilePartialStateT::pack(run_count, open_len).dword, cuda::memory_order_relaxed);
+  ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
+  a.store(TilePartialStateT::pack(run_count, open_len).dword, ::cuda::memory_order_relaxed);
 }
 
 // return the state (even if not yet publish for this launch, caller checks it)
 // we do not want to spin here
 _CCCL_DEVICE_API _CCCL_FORCEINLINE TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
-  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
-  return {a.load(cuda::memory_order_relaxed)};
+  ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device> a(tile_state_arr[tile_idx].dword);
+  return {a.load(::cuda::memory_order_relaxed)};
 }
 
 // CRITICAL: from choose_signed_offset, it is guaranteed that OffT covers the whole index space.
@@ -130,11 +130,11 @@ struct PrefixT;
 template <class OffT>
 struct PrefixT<OffT, false>
 {
-  cuda::std::uint64_t dword;
+  ::cuda::std::uint64_t dword;
 
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
   {
-    return {((cuda::std::uint64_t) (unsigned) open_len << 32) | (unsigned) run_count};
+    return {((::cuda::std::uint64_t) (unsigned) open_len << 32) | (unsigned) run_count};
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT run_count() const
@@ -151,12 +151,12 @@ struct PrefixT<OffT, false>
 template <class OffT>
 struct alignas(16) PrefixT<OffT, true>
 {
-  cuda::std::uint64_t packed_run_count;
-  cuda::std::uint64_t packed_open_len;
+  ::cuda::std::uint64_t packed_run_count;
+  ::cuda::std::uint64_t packed_open_len;
 
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT pack(OffT run_count, OffT open_len)
   {
-    return {(cuda::std::uint64_t) run_count, (cuda::std::uint64_t) open_len};
+    return {(::cuda::std::uint64_t) run_count, (::cuda::std::uint64_t) open_len};
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE OffT run_count() const
@@ -239,7 +239,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
   bool first_tile,
   bool last_tile,
   unsigned base_skip,
-  cuda::std::uint64_t* full_bar,
+  ::cuda::std::uint64_t* full_bar,
   int lane_id,
   bool keys_staged)
 {
@@ -272,7 +272,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
 }
 
 _CCCL_DEVICE_API _CCCL_FORCEINLINE int
-clc_next_tile_id(uint4& clc_resp, cuda::std::uint64_t& clc_bar, int pipeline_gen, int num_tiles, int lane_id)
+clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_gen, int num_tiles, int lane_id)
 {
   int nxt = num_tiles; // if no more work was cancellable
   if (lane_id == 0)
@@ -627,7 +627,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   static_assert(num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
   static_assert(policy.buf_per_lane() * ((int) sizeof(KeyT) + 4) <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
-  static_assert(cuda::std::is_integral_v<OffT> && policy.tile_size() <= cuda::std::numeric_limits<OffT>::max(),
+  static_assert(::cuda::std::is_integral_v<OffT> && policy.tile_size() <= ::cuda::std::numeric_limits<OffT>::max(),
                 "OffT must be an integer type wide enough for one tile");
   constexpr int items_per_thread       = policy.items_per_thread;
   constexpr int compute_warps          = policy.compute_warps;
@@ -660,21 +660,21 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
 
   // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where pos_ring_stages < key_ring_stages);
   // if it is mapped 1:1, then this would have been protected by empty / fall as well, but here we need an extra barrier
-  __shared__ cuda::std::uint64_t pos_buf_free[max_pos_ring_stages];
+  __shared__ ::cuda::std::uint64_t pos_buf_free[max_pos_ring_stages];
   // LOAD --full--> COMPUTE & POLL
   // COMPUTE(all warps) --computed--> COMPUTE w0, then cw0 calculates & publishes this tile's aggregate to the global
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
-  __shared__ cuda::std::uint64_t full[max_key_ring_stages];
-  __shared__ cuda::std::uint64_t computed[max_key_ring_stages], prefixed[max_key_ring_stages],
+  __shared__ ::cuda::std::uint64_t full[max_key_ring_stages];
+  __shared__ ::cuda::std::uint64_t computed[max_key_ring_stages], prefixed[max_key_ring_stages],
     empty[max_key_ring_stages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
-  __shared__ cuda::std::uint64_t staged_warp_tile[max_key_ring_stages][compute_warps];
+  __shared__ ::cuda::std::uint64_t staged_warp_tile[max_key_ring_stages][compute_warps];
 
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
   __shared__ __align__(16) uint4 clc_resp;
-  __shared__ cuda::std::uint64_t clc_bar;
+  __shared__ ::cuda::std::uint64_t clc_bar;
   static_assert(
     sizeof(tile_id_buf) + sizeof(warp_run_counts) + sizeof(head_flag_buf) + sizeof(warp_first_heads)
         + sizeof(warp_last_heads) + sizeof(prefix_packed) + sizeof(pos_buf_free) + sizeof(full) + sizeof(computed)
@@ -1167,9 +1167,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
 }
 
 template <class PolicySelector, class StateT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, cuda::std::int64_t n_states)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, ::cuda::std::int64_t n_states)
 {
-  const cuda::std::int64_t i = (cuda::std::int64_t) blockIdx.x * blockDim.x + threadIdx.x;
+  const ::cuda::std::int64_t i = (::cuda::std::int64_t) blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n_states)
   {
     states[i] = StateT{};

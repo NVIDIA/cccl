@@ -93,7 +93,7 @@ public:
   }
 };
 
-constexpr long long segment_grid_tile_size(std::size_t key_size)
+constexpr std::int64_t segment_grid_tile_size(std::size_t key_size)
 {
   return (key_size >= 16) ? 2048 : (key_size == 8) ? 4096 : 8192;
 }
@@ -107,13 +107,13 @@ KeyT make_segment_key(int value)
 template <>
 ulonglong2 make_segment_key<ulonglong2>(int value)
 {
-  return {static_cast<unsigned long long>(value), static_cast<unsigned long long>(value)};
+  return {static_cast<std::uint64_t>(value), static_cast<std::uint64_t>(value)};
 }
 
 // max_seg > 0: run lengths uniform in [1, max_seg]; max_seg == 0: one constant key for the whole
 // input; max_seg < 0: every run exactly -max_seg long (fixed run head positions)
 template <class KeyT>
-c2h::host_vector<KeyT> generate_segmented_keys(long long num_items, int max_seg, unsigned seed)
+c2h::host_vector<KeyT> generate_segmented_keys(std::int64_t num_items, int max_seg, unsigned seed)
 {
   c2h::host_vector<KeyT> keys(static_cast<std::size_t>(num_items));
   if (max_seg == 0)
@@ -124,8 +124,8 @@ c2h::host_vector<KeyT> generate_segmented_keys(long long num_items, int max_seg,
   std::mt19937 rng(seed);
   std::uniform_int_distribution<int> segment_length(1, std::max(1, max_seg));
   std::uniform_int_distribution<int> key_value(0, 1000000);
-  long long i = 0;
-  KeyT prev   = make_segment_key<KeyT>(-1);
+  std::int64_t i = 0;
+  KeyT prev      = make_segment_key<KeyT>(-1);
   while (i < num_items)
   {
     const int run_length = (max_seg < 0) ? -max_seg : segment_length(rng);
@@ -136,8 +136,8 @@ c2h::host_vector<KeyT> generate_segmented_keys(long long num_items, int max_seg,
     {
       value = make_segment_key<KeyT>(key_value(rng));
     }
-    prev                = value;
-    const long long end = std::min(i + run_length, num_items);
+    prev                   = value;
+    const std::int64_t end = std::min(i + run_length, num_items);
     for (; i < end; ++i)
     {
       keys[static_cast<std::size_t>(i)] = value;
@@ -147,7 +147,7 @@ c2h::host_vector<KeyT> generate_segmented_keys(long long num_items, int max_seg,
 }
 
 template <class KeyT, class OffsetT>
-void test_segmented_encode(long long num_items, int max_seg, int elem_offset, unsigned seed)
+void test_segmented_encode(std::int64_t num_items, int max_seg, int elem_offset, unsigned seed)
 {
   CAPTURE(c2h::type_name<KeyT>(), c2h::type_name<OffsetT>(), num_items, max_seg, elem_offset, seed);
 
@@ -155,9 +155,9 @@ void test_segmented_encode(long long num_items, int max_seg, int elem_offset, un
 
   c2h::host_vector<KeyT> ref_unique;
   c2h::host_vector<int> ref_counts;
-  for (long long i = 0; i < num_items;)
+  for (std::int64_t i = 0; i < num_items;)
   {
-    long long j = i + 1;
+    std::int64_t j = i + 1;
     while (j < num_items && h_keys[static_cast<std::size_t>(j)] == h_keys[static_cast<std::size_t>(i)])
     {
       ++j;
@@ -540,12 +540,12 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = typename c2h::get<1, TestType>;
 
-  constexpr long long tile      = segment_grid_tile_size(sizeof(key_t));
-  constexpr long long warp_tile = tile / 8;
+  constexpr std::int64_t tile      = segment_grid_tile_size(sizeof(key_t));
+  constexpr std::int64_t warp_tile = tile / 8;
 
   struct segment_grid_case
   {
-    long long num_items;
+    std::int64_t num_items;
     int max_seg;
   };
   constexpr segment_grid_case cases[] = {
@@ -584,7 +584,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
 {
   using key_t = typename c2h::get<0, TestType>;
 
-  constexpr long long tile = segment_grid_tile_size(sizeof(key_t));
+  constexpr std::int64_t tile = segment_grid_tile_size(sizeof(key_t));
 
   test_segmented_encode<key_t, int>(1030 * tile + 7, 1, 1, 1u); // misaligned input, dense, partial tail
   test_segmented_encode<key_t, int>(1024 * tile, -static_cast<int>(tile), 0, 1u); // a head at every tile start
@@ -601,7 +601,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
 {
   using key_t = typename c2h::get<0, TestType>;
 
-  constexpr long long tile    = segment_grid_tile_size(sizeof(key_t));
+  constexpr std::int64_t tile = segment_grid_tile_size(sizeof(key_t));
   constexpr int offsets_swept = static_cast<int>(32 / sizeof(key_t));
 
   // sweeps every sub-16B misalignment of the input pointer plus the two 16B-aligned shifted bases
