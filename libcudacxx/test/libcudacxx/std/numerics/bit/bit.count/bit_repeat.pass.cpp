@@ -47,10 +47,10 @@ TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::bit_repeat(T{0}, 1))>);
 
-  // Older gcc and msvc fail this !noexcept test.
-#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC, <, 19, 30)
+  // Older nvcc, gcc and msvc fail this !noexcept test.
+#if !TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC, <, 19, 30)
   static_assert(!noexcept(cuda::std::bit_repeat(T{0}, 1)));
-#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC, <, 19, 30)
+#endif // !TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC, <, 19, 30)
 
   constexpr int digits = cuda::std::numeric_limits<T>::digits;
   constexpr T all_ones = cuda::std::numeric_limits<T>::max();
