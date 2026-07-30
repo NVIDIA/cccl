@@ -33,22 +33,23 @@ Mechanism mirrored from the header:
 from __future__ import annotations
 
 from dataclasses import dataclass
+
 import numpy as np
 
 # ---------------------------------------------------------------------------
 # Constants — mirror histogram_inputs.cuh exactly.
 # ---------------------------------------------------------------------------
-K_ADVERSARIAL_CACHE_SLOTS = 4096           # kAdversarialCacheSlots
-K_HASH_SYNONYM_COUNT      = 32             # kHashSynonymCount
-K_SCATTER_PRIME           = 2147483647     # kScatterPrime (2^31 - 1)
+K_ADVERSARIAL_CACHE_SLOTS = 4096  # kAdversarialCacheSlots
+K_HASH_SYNONYM_COUNT = 32  # kHashSynonymCount
+K_SCATTER_PRIME = 2147483647  # kScatterPrime (2^31 - 1)
 
-DEFAULT_CONCENTRATED_ENTROPY = 0.5         # bare "concentrated"
-DEFAULT_POWERLAW_ENTROPY     = 0.5         # bare "powerlaw"
-DEFAULT_ZIPF_EXPONENT        = 1.0         # bare "zipf"
-DEFAULT_HASH_SYNONYM_HOTSHARE = 0.9        # bare "hash_synonym"
-DEFAULT_TEMPORAL_PHASES      = 8           # bare "temporal_phases"
-DEFAULT_STRIDED_STRIDE       = 9973        # bare "strided_sweep"
-DEFAULT_SAWTOOTH_PERIOD      = 0           # bare "sawtooth" => period == num_bins
+DEFAULT_CONCENTRATED_ENTROPY = 0.5  # bare "concentrated"
+DEFAULT_POWERLAW_ENTROPY = 0.5  # bare "powerlaw"
+DEFAULT_ZIPF_EXPONENT = 1.0  # bare "zipf"
+DEFAULT_HASH_SYNONYM_HOTSHARE = 0.9  # bare "hash_synonym"
+DEFAULT_TEMPORAL_PHASES = 8  # bare "temporal_phases"
+DEFAULT_STRIDED_STRIDE = 9973  # bare "strided_sweep"
+DEFAULT_SAWTOOTH_PERIOD = 0  # bare "sawtooth" => period == num_bins
 
 _U64 = np.uint64
 _MASK64 = (1 << 64) - 1
@@ -59,6 +60,7 @@ _MASK64 = (1 << 64) - 1
 # __host__ __device__ inline functions in the header. All arithmetic is done in
 # explicit uint64 with wraparound so results match the C++ byte-for-byte.
 # ---------------------------------------------------------------------------
+
 
 def u01_from_hash(x: np.ndarray | int) -> np.ndarray:
     """Port of u01_from_hash: splitmix64 finalizer -> double in [0, 1)."""
@@ -75,14 +77,16 @@ def element_key(i: np.ndarray | int, seed: int) -> np.ndarray:
     """Port of element_key: i*6364136223846793005 + 1442695040888963407 + seed*phi."""
     i = np.asarray(i, dtype=_U64)
     with np.errstate(over="ignore"):
-        return (i * _U64(6364136223846793005)
-                + _U64(1442695040888963407)
-                + _U64(seed & _MASK64) * _U64(0x9E3779B97F4A7C15))
+        return (
+            i * _U64(6364136223846793005)
+            + _U64(1442695040888963407)
+            + _U64(seed & _MASK64) * _U64(0x9E3779B97F4A7C15)
+        )
 
 
 def scatter_bin(rank: int, num_bins: int, offset: int) -> int:
     """Port of scatter_bin: (rank*kScatterPrime + offset) % num_bins, in uint64."""
-    return int((( (rank & _MASK64) * K_SCATTER_PRIME + offset) & _MASK64) % num_bins)
+    return int((((rank & _MASK64) * K_SCATTER_PRIME + offset) & _MASK64) % num_bins)
 
 
 def _feistel_mix(x: np.ndarray, k: int) -> np.ndarray:
@@ -102,7 +106,7 @@ def permute_index(i: np.ndarray, n: int, seed: int) -> np.ndarray:
     i = np.asarray(i, dtype=_U64)
     if n <= 1:
         return np.zeros_like(i)
-    bits = int(n - 1).bit_length()          # ceil(log2(n)) for n >= 2
+    bits = int(n - 1).bit_length()  # ceil(log2(n)) for n >= 2
     half = (bits + 1) // 2
     mask = _MASK64 if half >= 64 else ((1 << half) - 1)
     mask = _U64(mask)
@@ -110,15 +114,15 @@ def permute_index(i: np.ndarray, n: int, seed: int) -> np.ndarray:
     x = i.copy()
     todo = np.ones(x.shape, dtype=bool)
     with np.errstate(over="ignore"):
-        for _ in range(128):                # cycle-walk; expected < 4 iters
+        for _ in range(128):  # cycle-walk; expected < 4 iters
             xs = x[todo]
-            l = (xs >> hh) & mask
-            r = xs & mask
+            left = (xs >> hh) & mask
+            right = xs & mask
             for rnd in range(4):
-                nl = r
-                nr = l ^ (_feistel_mix(r, seed + rnd) & mask)
-                l, r = nl, nr
-            x[todo] = (l << hh) | r
+                next_left = right
+                next_right = left ^ (_feistel_mix(right, seed + rnd) & mask)
+                left, right = next_left, next_right
+            x[todo] = (left << hh) | right
             todo = x >= _U64(n)
             if not todo.any():
                 break
@@ -127,7 +131,9 @@ def permute_index(i: np.ndarray, n: int, seed: int) -> np.ndarray:
 
 def _scatter_bin_vec(ranks: np.ndarray, num_bins: int, offset: int) -> np.ndarray:
     r = ranks.astype(object)  # python big-ints to avoid overflow before mod
-    return np.array([(int(x) * K_SCATTER_PRIME + offset) % num_bins for x in r], dtype=np.int64)
+    return np.array(
+        [(int(x) * K_SCATTER_PRIME + offset) % num_bins for x in r], dtype=np.int64
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -135,8 +141,13 @@ def _scatter_bin_vec(ranks: np.ndarray, num_bins: int, offset: int) -> np.ndarra
 # ---------------------------------------------------------------------------
 
 VALID_SHAPES = {
-    "concentrated", "powerlaw", "zipf", "hash_synonym",
-    "stale_resident", "temporal_phases", "strided_sweep",
+    "concentrated",
+    "powerlaw",
+    "zipf",
+    "hash_synonym",
+    "stale_resident",
+    "temporal_phases",
+    "strided_sweep",
     "sawtooth",
 }
 
@@ -169,6 +180,7 @@ def knob_or(spec: ShapeSpec, default_value: float) -> float:
 # ---------------------------------------------------------------------------
 # pmf math — mirror normalized_entropy / ranked_powerlaw / solvers.
 # ---------------------------------------------------------------------------
+
 
 def normalized_entropy(pmf: np.ndarray) -> float:
     if len(pmf) <= 1:
@@ -228,6 +240,7 @@ def solve_softmax_pmf(num_bins: int, target: float, seed: int) -> np.ndarray:
 # build_pmf — mirror the C++ switch exactly (i.i.d. distribution shapes).
 # ---------------------------------------------------------------------------
 
+
 def build_pmf(spec: ShapeSpec, num_bins: int, seed: int) -> np.ndarray:
     pmf = np.zeros(num_bins, dtype=np.float64)
     offset = seed % num_bins
@@ -259,9 +272,11 @@ def build_pmf(spec: ShapeSpec, num_bins: int, seed: int) -> np.ndarray:
     elif spec.shape == "hash_synonym":
         hot_share = knob_or(spec, DEFAULT_HASH_SYNONYM_HOTSHARE)
         slot = offset % K_ADVERSARIAL_CACHE_SLOTS
-        syn = [slot + k * K_ADVERSARIAL_CACHE_SLOTS
-               for k in range(K_HASH_SYNONYM_COUNT)
-               if slot + k * K_ADVERSARIAL_CACHE_SLOTS < num_bins]
+        syn = [
+            slot + k * K_ADVERSARIAL_CACHE_SLOTS
+            for k in range(K_HASH_SYNONYM_COUNT)
+            if slot + k * K_ADVERSARIAL_CACHE_SLOTS < num_bins
+        ]
         pmf[:] = (1.0 - hot_share) / num_bins
         if syn:
             per = hot_share / len(syn)
@@ -285,6 +300,7 @@ def is_ordering_shape(shape: str) -> bool:
 # mapping is applied by the public entry points below).
 # ---------------------------------------------------------------------------
 
+
 def _bins_for_spec(spec: ShapeSpec, n: int, num_bins: int, seed: int) -> np.ndarray:
     offset = seed % num_bins
 
@@ -300,7 +316,9 @@ def _bins_for_spec(spec: ShapeSpec, n: int, num_bins: int, seed: int) -> np.ndar
         cdf = np.cumsum(pmf)
         cdf[-1] = 1.0  # guard fp drift, matches header
         u = u01_from_hash(element_key(np.arange(n, dtype=_U64), seed))
-        bins = np.searchsorted(cdf, u, side="right").astype(np.int64)  # == upper_bound_cdf
+        bins = np.searchsorted(cdf, u, side="right").astype(
+            np.int64
+        )  # == upper_bound_cdf
         np.clip(bins, 0, num_bins - 1, out=bins)
         return bins
 
@@ -313,7 +331,7 @@ def _bins_for_spec(spec: ShapeSpec, n: int, num_bins: int, seed: int) -> np.ndar
         # bin = i % period; period 0 (the default) means a full num_bins sweep.
         requested = int(round(spec.knob)) if spec.has_knob else DEFAULT_SAWTOOTH_PERIOD
         period = num_bins if requested == 0 else min(requested, num_bins)
-        return (np.arange(n, dtype=np.int64) % period)
+        return np.arange(n, dtype=np.int64) % period
 
     if spec.shape == "temporal_phases":
         requested = int(round(spec.knob)) if spec.has_knob else DEFAULT_TEMPORAL_PHASES
@@ -340,6 +358,7 @@ def _bins_for_spec(spec: ShapeSpec, n: int, num_bins: int, seed: int) -> np.ndar
 # ---------------------------------------------------------------------------
 # Bin -> sample value mappers — mirror even_bin_to_value / range_bin_to_value.
 # ---------------------------------------------------------------------------
+
 
 def _even_bin_to_value(bins, num_bins, lo, hi, dtype):
     w = (float(hi) - float(lo)) / num_bins
@@ -374,7 +393,10 @@ def _range_bin_to_value(bins, levels, dtype):
 # Return (values, bins). `bins` is what the histogram counts; graphs use it.
 # ---------------------------------------------------------------------------
 
-def generate_histogram_input_even(spec, n, num_bins, lower, upper, dtype=np.int32, seed=42):
+
+def generate_histogram_input_even(
+    spec, n, num_bins, lower, upper, dtype=np.int32, seed=42
+):
     if isinstance(spec, str):
         spec = parse_input_shape(spec)
     bins = _bins_for_spec(spec, n, num_bins, seed)
@@ -402,36 +424,54 @@ def generate_bins(spec, n, num_bins, seed=42):
 # Self-test: confirm the mirror reproduces the documented behavior.
 # ---------------------------------------------------------------------------
 
+
 def _demo():
     N, B = 200_000, 64
 
     print("== exact endpoints ==")
     b = generate_bins("concentrated:1.0", N, B, seed=42)
     c = np.bincount(b, minlength=B)
-    print(f"  concentrated:1.0  per-bin min={c.min()} max={c.max()} (exact uniform), H={normalized_entropy(c/N):.4f}")
+    print(
+        f"  concentrated:1.0  per-bin min={c.min()} max={c.max()} (exact uniform), H={normalized_entropy(c / N):.4f}"
+    )
     b = generate_bins("concentrated:0.0", N, B, seed=42)
     c = np.bincount(b, minlength=B)
-    print(f"  concentrated:0.0  nonzero bins={np.count_nonzero(c)} at bin {c.argmax()} (constant, scattered off 0)")
+    print(
+        f"  concentrated:0.0  nonzero bins={np.count_nonzero(c)} at bin {c.argmax()} (constant, scattered off 0)"
+    )
 
     print("== concentrated entropy knob (measured top-bin share) ==")
     for e in (1.0, 0.75, 0.5, 0.25, 0.0):
         b = generate_bins(f"concentrated:{e}", N, B, seed=42)
         c = np.bincount(b, minlength=B)
-        print(f"  E={e:.2f}: H={normalized_entropy(c/N):.3f}  top-share={c.max()/N:.1%}")
+        print(
+            f"  E={e:.2f}: H={normalized_entropy(c / N):.3f}  top-share={c.max() / N:.1%}"
+        )
 
     print("== hot bin varies with seed (concentrated:0.3) ==")
-    args = {int(np.bincount(generate_bins('concentrated:0.3', N, B, seed=s), minlength=B).argmax()) for s in range(1, 6)}
+    args = {
+        int(
+            np.bincount(
+                generate_bins("concentrated:0.3", N, B, seed=s), minlength=B
+            ).argmax()
+        )
+        for s in range(1, 6)
+    }
     print(f"  argmax bins across seeds 1..5: {sorted(args)} (not pinned to 0)")
 
     print("== adversarial: hash_synonym collides on one slot ==")
     b = generate_bins("hash_synonym", N, 262144, seed=42)
     hotbins = np.argsort(np.bincount(b, minlength=262144))[::-1][:K_HASH_SYNONYM_COUNT]
-    print(f"  distinct slots among the {K_HASH_SYNONYM_COUNT} hottest bins: {len(set(int(x) % 4096 for x in hotbins))} (want 1)")
+    print(
+        f"  distinct slots among the {K_HASH_SYNONYM_COUNT} hottest bins: {len(set(int(x) % 4096 for x in hotbins))} (want 1)"
+    )
 
     print("== adversarial: temporal_phases moves the hot bin ==")
     b = generate_bins("temporal_phases:4", N, 256, seed=42)
     q = N // 4
-    print(f"  per-quarter hot bin: {[int(np.bincount(b[i*q:(i+1)*q], minlength=256).argmax()) for i in range(4)]}")
+    print(
+        f"  per-quarter hot bin: {[int(np.bincount(b[i * q : (i + 1) * q], minlength=256).argmax()) for i in range(4)]}"
+    )
 
 
 if __name__ == "__main__":

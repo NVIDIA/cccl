@@ -279,9 +279,8 @@ void bench_compare_histograms(
     const auto& ref = ref_hists[c];
     if (opt.size() != ref.size())
     {
-      bench_fatal(std::string{"bench correctness check ["} + bench_label + "]: channel "
-                  + std::to_string(c) + " size mismatch: opt=" + std::to_string(opt.size())
-                  + " ref=" + std::to_string(ref.size()));
+      bench_fatal(std::string{"bench correctness check ["} + bench_label + "]: channel " + std::to_string(c)
+                  + " size mismatch: opt=" + std::to_string(opt.size()) + " ref=" + std::to_string(ref.size()));
     }
     long long opt_total = 0;
     long long ref_total = 0;
@@ -332,11 +331,7 @@ bench_snapshot_histograms(const std::vector<thrust::device_vector<CounterT>>& d_
 // major sample buffer and the per-channel optimized histograms it has
 // already produced; this function builds a per-channel reference and
 // compares bin-by-bin.
-template <int NumChannels,
-          int NumActiveChannels,
-          typename SampleT,
-          typename CounterT,
-          typename OffsetT>
+template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 void bench_verify_histogram_even(
   const thrust::device_vector<SampleT>& d_input,
   const std::vector<thrust::device_vector<CounterT>>& opt_hists_d,
@@ -361,8 +356,7 @@ void bench_verify_histogram_even(
     op.d_hist[c] = thrust::raw_pointer_cast(ref_hists_d[c].data());
   }
 
-  thrust::for_each(
-    thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
+  thrust::for_each(thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
   bench_check_cuda(cudaGetLastError(), "ref-even launch");
   bench_check_cuda(cudaDeviceSynchronize(), "ref-even sync");
 
@@ -371,11 +365,7 @@ void bench_verify_histogram_even(
   bench_compare_histograms(opt_hists, ref_hists, bench_label, NumActiveChannels);
 }
 
-template <int NumChannels,
-          int NumActiveChannels,
-          typename SampleT,
-          typename CounterT,
-          typename OffsetT>
+template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
 void bench_verify_histogram_range(
   const thrust::device_vector<SampleT>& d_input,
   const std::vector<thrust::device_vector<CounterT>>& opt_hists_d,
@@ -400,8 +390,7 @@ void bench_verify_histogram_range(
     op.d_levels[c] = thrust::raw_pointer_cast(d_levels_per_channel[c].data());
   }
 
-  thrust::for_each(
-    thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
+  thrust::for_each(thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
   bench_check_cuda(cudaGetLastError(), "ref-range launch");
   bench_check_cuda(cudaDeviceSynchronize(), "ref-range sync");
 
