@@ -675,6 +675,42 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
   }
 }
 
+C2H_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]")
+{
+  using sample_t         = int;
+  constexpr int num_bins = 512;
+
+  c2h::host_vector<sample_t> h_levels(num_bins + 1);
+  constexpr auto lo    = static_cast<int64_t>(cs::numeric_limits<sample_t>::lowest());
+  constexpr auto hi    = static_cast<int64_t>(cs::numeric_limits<sample_t>::max());
+  constexpr auto range = hi - lo;
+  for (int i = 0; i <= num_bins; ++i)
+  {
+    h_levels[i] = static_cast<sample_t>(lo + (range * i) / num_bins);
+  }
+
+  const c2h::host_vector<sample_t> h_samples{
+    cs::numeric_limits<sample_t>::lowest(), -1, 0, 1, cs::numeric_limits<sample_t>::max() - 1};
+  c2h::device_vector<sample_t> d_levels  = h_levels;
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const sample_t sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+  }
+  REQUIRE(d_histogram == expected);
+}
+
 // Limit this large-memory reproducer to the host launch path.
 #if TEST_LAUNCH == 0
 CUB_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]", CUB_LARGE)
