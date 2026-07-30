@@ -120,11 +120,15 @@ public:
   {}
 
 #  if !_CCCL_COMPILER(GCC, <, 10) // Old GCC considers those as deleted
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI complex(const complex&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI complex(complex&&) noexcept      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI complex(complex&&) noexcept = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI complex& operator=(const complex&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI complex& operator=(complex&&) noexcept      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI complex& operator=(complex&&) noexcept = default;
 #  endif // !_CCCL_COMPILER(GCC, <, 10)
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
@@ -274,6 +278,31 @@ _CCCL_HOST_DEVICE_API inline complex<double>& complex<double>::operator=(const c
   __re_ = ::__bfloat162float(__c.real());
   __im_ = ::__bfloat162float(__c.imag());
   return *this;
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 real(const complex<__nv_bfloat16>& __c) noexcept
+{
+  return __c.real();
+}
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 imag(const complex<__nv_bfloat16>& __c) noexcept
+{
+  return __c.imag();
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> conj(const complex<__nv_bfloat16>& __c)
+{
+  return complex<__nv_bfloat16>(__c.real(), ::__hneg(__c.imag()));
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> proj(const complex<__nv_bfloat16>& __c)
+{
+  complex<__nv_bfloat16> __r = __c;
+  if (::cuda::std::isinf(__c.real()) || ::cuda::std::isinf(__c.imag()))
+  {
+    __r = complex<__nv_bfloat16>(
+      numeric_limits<__nv_bfloat16>::infinity(), ::cuda::std::copysign(::__float2bfloat16(0.0f), __c.imag()));
+  }
+  return __r;
 }
 
 template <>
