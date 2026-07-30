@@ -56,10 +56,12 @@ namespace detail::histogram
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
 
-// Use one runtime-sized shared-memory histogram above the static tier. Keep the
-// initial budget conservative so the path is portable across supported devices.
-static constexpr int dynamic_smem_histogram_bytes = 32 * 1024;
-static constexpr int dynamic_smem_histogram_tag   = dynamic_smem_histogram_bytes / sizeof(unsigned int);
+// Compile-time tag selecting the runtime-sized shared-memory kernel. The tag
+// does not size storage; the actual byte budget comes from HistogramPolicy.
+static constexpr int dynamic_smem_histogram_tag = 16384;
+
+static constexpr int multi_channel_dynamic_smem_bins_range = 2048;
+static constexpr int multi_channel_dynamic_smem_bins_even  = 8192;
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -263,8 +265,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int threads_per_block = active_policy.threads_per_block;
-  const int pixels_per_thread = active_policy.pixels_per_thread;
+  constexpr bool use_static_smem = PRIVATIZED_SMEM_BINS > 0 && !use_dynamic_smem;
+  const int threads_per_block = use_static_smem ? active_policy.static_smem_threads() : active_policy.threads_per_block;
+  const int pixels_per_thread = use_static_smem ? active_policy.static_smem_items() : active_policy.pixels_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (use_dynamic_smem)
@@ -273,6 +276,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       dynamic_smem_bytes += (num_privatized_levels[channel] - 1) * static_cast<int>(kernel_source.CounterSize());
     }
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   if (const auto error =
+                         CubDebug(launcher_factory.set_max_dynamic_smem_size_for(sweep_kernel, dynamic_smem_bytes)))
+                   {
+                     return error;
+                   }
+                 }))
   }
 
   // Get SM count
@@ -781,6 +791,20 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_bytes(int) -> decltype(ActivePolicy::dynamic_smem_bytes)
+{
+  return ActivePolicy::dynamic_smem_bytes;
+}
+
+// TODO(bgruber): drop in CCCL 4.0
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_bytes(long)
+{
+  return 0;
+}
+
+// TODO(bgruber): drop in CCCL 4.0
+template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
 {
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
@@ -793,7 +817,8 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    convert_pdl_trigger<ActivePolicy>(0)};
+    convert_pdl_trigger<ActivePolicy>(0),
+    convert_dynamic_smem_bytes<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -936,10 +961,22 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
     int max_num_output_bins = max_levels - 1;
 
-    if constexpr (NUM_ACTIVE_CHANNELS == 1)
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
-      if (max_num_output_bins > max_privatized_smem_bins
-          && size_t(max_num_output_bins) * kernel_source.CounterSize() <= dynamic_smem_histogram_bytes)
+      return error;
+    }
+    const HistogramPolicy active_policy = policy_selector(cc);
+
+    if constexpr (NUM_ACTIVE_CHANNELS >= 1)
+    {
+      const bool within_tuned_channel_cap =
+        NUM_ACTIVE_CHANNELS == 1 || max_num_output_bins <= multi_channel_dynamic_smem_bins_range;
+      const size_t dynamic_smem_bytes = size_t(max_num_output_bins) * NUM_ACTIVE_CHANNELS * kernel_source.CounterSize();
+      const bool prefer_dynamic_smem =
+        kernel_source.CounterSize() > sizeof(unsigned int) || max_num_output_bins > max_privatized_smem_bins;
+      if (prefer_dynamic_smem && within_tuned_channel_cap
+          && dynamic_smem_bytes <= static_cast<size_t>(active_policy.dynamic_smem_bytes))
       {
         constexpr int PRIVATIZED_SMEM_BINS = dynamic_smem_histogram_tag;
         return detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
@@ -1168,10 +1205,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     }
     int max_num_output_bins = max_levels - 1;
 
-    if constexpr (NUM_ACTIVE_CHANNELS == 1)
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
-      if (max_num_output_bins > max_privatized_smem_bins
-          && size_t(max_num_output_bins) * kernel_source.CounterSize() <= dynamic_smem_histogram_bytes)
+      return error;
+    }
+    const HistogramPolicy active_policy = policy_selector(cc);
+
+    if constexpr (NUM_ACTIVE_CHANNELS >= 1)
+    {
+      const bool within_tuned_channel_cap =
+        NUM_ACTIVE_CHANNELS == 1 || max_num_output_bins <= multi_channel_dynamic_smem_bins_even
+        || (NUM_ACTIVE_CHANNELS <= 3
+            && size_t(max_num_output_bins) * NUM_ACTIVE_CHANNELS * kernel_source.CounterSize()
+                 <= static_cast<size_t>(active_policy.dynamic_smem_bytes));
+      const size_t dynamic_smem_bytes = size_t(max_num_output_bins) * NUM_ACTIVE_CHANNELS * kernel_source.CounterSize();
+      const bool prefer_dynamic_smem =
+        kernel_source.CounterSize() > sizeof(unsigned int) || max_num_output_bins > max_privatized_smem_bins;
+      if (prefer_dynamic_smem && within_tuned_channel_cap
+          && dynamic_smem_bytes <= static_cast<size_t>(active_policy.dynamic_smem_bytes))
       {
         constexpr int PRIVATIZED_SMEM_BINS = dynamic_smem_histogram_tag;
         return detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(

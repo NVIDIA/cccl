@@ -324,11 +324,35 @@ struct AgentHistogram
       // Bin pixels
       int bins[pixels_per_thread];
 
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+      if constexpr (UseDynamicSmemHistogram)
       {
-        bins[pixel] = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
+        typename PrivatizedDecodeOpT::BracketCacheT mru;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+        {
+          bins[pixel] = -1;
+          privatized_decode_op[ch].template BinSelect<load_modifier>(
+            samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
+        }
+      }
+      else if constexpr (PrivatizedSmemBins > 0 && PrivatizedDecodeOpT::is_range_transform)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+        {
+          bins[pixel] = -1;
+          privatized_decode_op[ch].template BinSelectStaticLean<load_modifier>(
+            samples[pixel][ch], bins[pixel], is_valid[pixel]);
+        }
+      }
+      else
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+        {
+          bins[pixel] = -1;
+          privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
+        }
       }
 
       CounterT accumulator = 1;
