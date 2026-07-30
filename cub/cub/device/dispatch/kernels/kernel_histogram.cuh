@@ -35,22 +35,9 @@ struct Transforms
   template <typename LevelIteratorT>
   struct SearchTransform
   {
-    // Compile-time RANGE marker, resolved at instantiation (no runtime branch).
-    // The direct-atomic kernels read this to specialize behavior that only helps
-    // the RANGE (SearchTransform) classify, e.g. the per-thread bracket cache.
+    // Compile-time marker used by the privatized-SMEM sweep to select the RANGE
+    // low-bin classifier and its launch bound.
     static constexpr bool is_range_transform = true;
-
-    // Below this bin count, BinSelect skips the interpolated-first-guess machinery
-    // (and PrecomputeOnDevice stays disabled) and uses the lean UpperBound binary
-    // search instead. The interpolation path carries ~7 extra per-thread registers
-    // (endpoints + slopes + 3-point split state) plus a device precompute prologue;
-    // on the small-bin tiers -- especially the static 256-bin privatized-SMEM kernel,
-    // which is occupancy/register-bound -- that overhead is a net LOSS. Measured on
-    // B200: at 256 bins interpolation runs ~0.67x of plain binary search, but by
-    // 1024 bins it already wins ~2.3x and keeps growing, so the cutoff sits between.
-    // (Was hard-coded `< 4`, which only skipped the degenerate tiny case and let the
-    // 256-bin RANGE/I32 tier regress vs upstream.)
-    static constexpr int kInterpolationMinBins = 512;
 
     //! @brief Per-thread most-recently-used (MRU) bin-bracket cache.
     //!
@@ -63,10 +50,9 @@ struct Transforms
     //! classify. Low-entropy inputs (constant or heavily-skewed samples) have high
     //! consecutive-sample locality, so the bracket hits dominate. A `bin < 0`
     //! sentinel marks the cache empty.
-    //! This is per-thread mutable state, so it is only sound on a per-thread
-    //! `SearchTransform` copy (the direct-atomic cuckoo/single-probe kernels'
-    //! `decode_op[ch]`), never on the shared `__grid_constant__` decode op that
-    //! the SMEM-privatized agent path reads through a const pointer.
+    //! This is per-thread mutable state, so the dynamic-SMEM sweep copies each
+    //! transform into thread-local storage before using the cache. The static
+    //! sweep reads the shared transform without a cache.
     struct BracketCacheT
     {
       LevelT lo; // cached d_levels[bin]
@@ -76,6 +62,7 @@ struct Transforms
 
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
+    int interpolation_min_bins; // policy-selected minimum bin count for interpolation
 
     // Precomputed (loop-invariant) interpolation state, populated by
     // `PrecomputeOnDevice()`. The interpolation slope `num_bins / (last -
@@ -111,12 +98,14 @@ struct Transforms
     //!
     //! @param d_levels_ Pointer to levels array
     //! @param num_output_levels_ Number of levels in array
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+    Init(LevelIteratorT d_levels_, int num_output_levels_, int interpolation_min_bins_)
     {
-      this->d_levels          = d_levels_;
-      this->num_output_levels = num_output_levels_;
-      this->m_have_precompute = false;
-      this->m_inv_scale       = 0.0f;
+      this->d_levels               = d_levels_;
+      this->num_output_levels      = num_output_levels_;
+      this->interpolation_min_bins = interpolation_min_bins_;
+      this->m_have_precompute      = false;
+      this->m_inv_scale            = 0.0f;
     }
 
     //! @brief Hoist the loop-invariant interpolation state out of `BinSelect`.
@@ -131,7 +120,7 @@ struct Transforms
     _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice()
     {
       const int num_bins = num_output_levels - 1;
-      if (num_bins < kInterpolationMinBins)
+      if (num_bins < interpolation_min_bins)
       {
         m_have_precompute = false;
         return;
@@ -178,20 +167,20 @@ struct Transforms
       }
     }
 
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+  private:
+    struct NoBracketCacheT
+    {};
+
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT, typename CacheT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Classify(_SampleT sample, int& bin, bool valid, CacheT& cache) const
     {
-      /// Level iterator wrapper type
-      // Wrap the native input pointer with CacheModifiedInputIterator
-      // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
                          CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
                          LevelIteratorT>;
+      constexpr bool use_cache = ::cuda::std::is_same_v<CacheT, BracketCacheT>;
 
       WrappedLevelIteratorT wrapped_levels(d_levels);
-
       const int num_bins = num_output_levels - 1;
       if (!valid)
       {
@@ -200,9 +189,16 @@ struct Transforms
 
       const LevelT s = static_cast<LevelT>(sample);
 
-      // For very small bin counts, the interpolation overhead is not worth
-      // it; fall back to the original binary search.
-      if (num_bins < kInterpolationMinBins)
+      if constexpr (use_cache)
+      {
+        if (cache.bin >= 0 && !(s < cache.lo) && (s < cache.hi))
+        {
+          bin = cache.bin;
+          return;
+        }
+      }
+
+      if (interpolation_min_bins <= 0 || num_bins < interpolation_min_bins)
       {
         bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
         if (bin >= num_bins)
@@ -212,23 +208,9 @@ struct Transforms
         return;
       }
 
-      // Read first and last levels. When `PrecomputeOnDevice()` has run we use
-      // the cached endpoints (and the precomputed reciprocal slope below),
-      // removing two per-sample endpoint loads and the per-sample
-      // `__fdividef`. Otherwise (host-only init, or a degenerate level array
-      // that PrecomputeOnDevice rejected) we read them per sample as before.
-      // These are warp/CTA-uniform and land in L1 / texture cache after the
-      // first read, so even the fallback amortizes across samples.
       const LevelT first_level = m_have_precompute ? m_first : wrapped_levels[0];
       const LevelT last_level  = m_have_precompute ? m_last : wrapped_levels[num_bins];
 
-      // Defensive: if a user-supplied level array has non-monotonic endpoints
-      // (e.g. `last_level <= first_level`), the boundary check below would
-      // misclassify all samples as out-of-range. Fall back to UpperBound,
-      // which uses ordered comparisons only and produces correct results
-      // regardless of endpoint ordering. (PrecomputeOnDevice already enforces
-      // `first < last` before setting m_have_precompute, so this only fires on
-      // the non-precomputed path.)
       if (!(first_level < last_level))
       {
         bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
@@ -239,39 +221,16 @@ struct Transforms
         return;
       }
 
-      // Out-of-range samples map to bin -1.
       if (s < first_level || !(s < last_level))
       {
         bin = -1;
         return;
       }
 
-      // Interpolated first-guess index. We always use a fast 32-bit float
-      // divide (MUFU.RCP) for the slope: the divide does not have to be
-      // accurate, only close enough that the verify-or-1-step-correct path
-      // hits a handful of bins. The full UpperBound fallback catches any
-      // remaining mismatch from precision loss or non-uniform spacing.
-      // For wide-ranged 64-bit types we still compute (sample - first) in
-      // the level type to avoid float overflow on the difference itself.
-      //
-      // On the precomputed path the slope `num_bins / (last - first)` is a
-      // loop-invariant `m_inv_scale`, so the guess collapses to a single
-      // `(float)delta * m_inv_scale` FMA (no per-sample MUFU.RCP). The result
-      // is bit-identical in intent to `__fdividef(delta*num_bins, range)`:
-      // both are approximate first guesses validated by the bracket check
-      // below, so any rounding difference is absorbed by the same verify /
-      // 1-step / UpperBound correction ladder.
       const auto delta = (s - first_level);
       int guess;
       if (m_have_precompute)
       {
-        // Three-point piecewise-linear first guess: interpolate on whichever
-        // half of [first, last] the sample falls in (split at the cached
-        // midpoint level m_mid / m_mid_bin). Using a local slope and a smaller
-        // delta magnitude lands the guess closer to the true bin than a single
-        // first->last secant, so the verify-or-1-step ladder converges without
-        // reaching the UpperBound binary search. m_mid_bin == 0 means the split
-        // was degenerate, so we use the single-secant guess.
         if (m_mid_bin > 0)
         {
           if (s < m_mid)
@@ -308,67 +267,83 @@ struct Transforms
         guess = num_bins - 1;
       }
 
-      // Verify the guess: d_levels[guess] <= s < d_levels[guess + 1]. We
-      // load both bracketing levels in parallel to expose memory-level
-      // parallelism and branch on the result. The level array has length
-      // num_bins + 1, so wrapped_levels[guess + 1] is always in-bounds for
-      // guess <= num_bins - 1.
       const LevelT lvl_lo = wrapped_levels[guess];
       const LevelT lvl_hi = wrapped_levels[guess + 1];
 
       if (!(s < lvl_lo) && (s < lvl_hi))
       {
         bin = guess;
+        if constexpr (use_cache)
+        {
+          cache = BracketCacheT{lvl_lo, lvl_hi, guess};
+        }
         return;
       }
 
-      // One-step linear correction: try a single neighbor before falling
-      // back to a binary search. If the guess was high, try guess - 1; if
-      // low, try guess + 1.
       if (s < lvl_lo)
       {
-        // guess too high; check guess - 1.
         const int g2 = guess - 1;
         if (g2 >= 0)
         {
           const LevelT lvl2_lo = wrapped_levels[g2];
-          // lvl2_hi is lvl_lo (loaded already).
           if (!(s < lvl2_lo))
           {
             bin = g2;
+            if constexpr (use_cache)
+            {
+              cache = BracketCacheT{lvl2_lo, lvl_lo, g2};
+            }
             return;
           }
         }
       }
       else
       {
-        // s >= lvl_hi: guess too low; check guess + 1.
         const int g2 = guess + 1;
         if (g2 <= num_bins - 1)
         {
-          // lvl2_lo is lvl_hi (loaded already).
           const LevelT lvl2_hi = wrapped_levels[g2 + 1];
           if (s < lvl2_hi)
           {
             bin = g2;
+            if constexpr (use_cache)
+            {
+              cache = BracketCacheT{lvl_hi, lvl2_hi, g2};
+            }
             return;
           }
         }
       }
 
-      // Fall back to binary search for irregular level distributions.
       bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
       if (bin >= num_bins)
       {
         bin = -1;
+        return;
       }
+      if constexpr (use_cache)
+      {
+        if (bin >= 0)
+        {
+          cache = BracketCacheT{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
+        }
+      }
+    }
+
+  public:
+    // Method for converting samples to bin-ids
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    {
+      NoBracketCacheT cache;
+      Classify<LOAD_MODIFIER>(sample, bin, valid, cache);
     }
 
     //! @brief Lean classify for the STATIC <=256-bin SMEM tier.
     //!
     //! Byte-identical to upstream `main`'s flat `BinSelect`: a single `UpperBound`
     //! + clamp, with NONE of the interpolation machinery the 3-arg `BinSelect` above
-    //! carries (no `num_bins < kInterpolationMinBins` runtime branch, no reads of the
+    //! carries (no `num_bins < interpolation_min_bins` runtime branch, no reads of the
     //! precompute fields `m_inv_scale`/`m_first`/...). At <=256 bins the interpolation
     //! fast-path never activates (`m_have_precompute` stays false there), so that
     //! machinery is pure dead weight: its extra branch + the wider codegen/register
@@ -412,168 +387,7 @@ struct Transforms
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& mru) const
     {
-      using WrappedLevelIteratorT =
-        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                         LevelIteratorT>;
-
-      const int num_bins = num_output_levels - 1;
-      if (!valid)
-      {
-        return;
-      }
-
-      const LevelT s = static_cast<LevelT>(sample);
-
-      // Fast path: the cached bracket holds the answer with no level loads.
-      // `mru.bin >= 0` guarantees the bracket is populated and in-range.
-      if (mru.bin >= 0 && !(s < mru.lo) && (s < mru.hi))
-      {
-        bin = mru.bin;
-        return;
-      }
-
-      // Tiny bin counts: the interpolation/bracket machinery is not worth it.
-      if (num_bins < kInterpolationMinBins)
-      {
-        WrappedLevelIteratorT wrapped_levels(d_levels);
-        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
-        if (bin >= num_bins)
-        {
-          bin = -1;
-        }
-        return;
-      }
-
-      WrappedLevelIteratorT wrapped_levels(d_levels);
-
-      const LevelT first_level = m_have_precompute ? m_first : wrapped_levels[0];
-      const LevelT last_level  = m_have_precompute ? m_last : wrapped_levels[num_bins];
-
-      if (!(first_level < last_level))
-      {
-        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
-        if (bin >= num_bins)
-        {
-          bin = -1;
-        }
-        return;
-      }
-
-      // Out-of-range samples map to bin -1 (and do not update the cache).
-      if (s < first_level || !(s < last_level))
-      {
-        bin = -1;
-        return;
-      }
-
-      // Identical first-guess ladder to the plain BinSelect above: on a cache
-      // MISS we reproduce the same three-point piecewise-linear first guess so
-      // miss-heavy inputs (high-entropy samples, and the irregular-level
-      // fallback) converge exactly as the uncached path does. Only the hit fast
-      // path and the cache writebacks differ.
-      const auto delta = (s - first_level);
-      int guess;
-      if (m_have_precompute)
-      {
-        if (m_mid_bin > 0)
-        {
-          if (s < m_mid)
-          {
-            guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale_lo);
-          }
-          else
-          {
-            const auto delta_hi = (s - m_mid);
-            guess               = m_mid_bin + static_cast<int>(static_cast<float>(delta_hi) * m_inv_scale_hi);
-          }
-        }
-        else
-        {
-          guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);
-        }
-      }
-      else
-      {
-        const auto range = (last_level - first_level);
-        NV_IF_ELSE_TARGET(
-          NV_IS_DEVICE,
-          (guess = static_cast<int>(
-             __fdividef(static_cast<float>(delta) * static_cast<float>(num_bins), static_cast<float>(range)));),
-          (guess = static_cast<int>(
-             (static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));));
-      }
-      if (guess < 0)
-      {
-        guess = 0;
-      }
-      else if (guess > num_bins - 1)
-      {
-        guess = num_bins - 1;
-      }
-
-      const LevelT lvl_lo = wrapped_levels[guess];
-      const LevelT lvl_hi = wrapped_levels[guess + 1];
-
-      if (!(s < lvl_lo) && (s < lvl_hi))
-      {
-        bin     = guess;
-        mru.lo  = lvl_lo;
-        mru.hi  = lvl_hi;
-        mru.bin = guess;
-        return;
-      }
-
-      // One-step linear correction.
-      if (s < lvl_lo)
-      {
-        const int g2 = guess - 1;
-        if (g2 >= 0)
-        {
-          const LevelT lvl2_lo = wrapped_levels[g2];
-          if (!(s < lvl2_lo))
-          {
-            bin     = g2;
-            mru.lo  = lvl2_lo;
-            mru.hi  = lvl_lo; // lvl2_hi == lvl_lo (already loaded)
-            mru.bin = g2;
-            return;
-          }
-        }
-      }
-      else
-      {
-        const int g2 = guess + 1;
-        if (g2 <= num_bins - 1)
-        {
-          const LevelT lvl2_hi = wrapped_levels[g2 + 1];
-          if (s < lvl2_hi)
-          {
-            bin     = g2;
-            mru.lo  = lvl_hi; // lvl2_lo == lvl_hi (already loaded)
-            mru.hi  = lvl2_hi;
-            mru.bin = g2;
-            return;
-          }
-        }
-      }
-
-      // Fall back to binary search for irregular level distributions. This is
-      // the rare path, so the two extra bracket loads needed to refresh the MRU
-      // cache are amortized; they keep subsequent in-bracket samples on the
-      // zero-load fast path.
-      bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
-      if (bin >= num_bins)
-      {
-        bin = -1;
-        return;
-      }
-      if (bin >= 0)
-      {
-        mru.lo  = wrapped_levels[bin];
-        mru.hi  = wrapped_levels[bin + 1];
-        mru.bin = bin;
-      }
+      Classify<LOAD_MODIFIER>(sample, bin, valid, mru);
     }
   };
 
@@ -982,7 +796,8 @@ template <typename PolicySelector,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -1001,7 +816,7 @@ __launch_bounds__(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
@@ -1027,14 +842,16 @@ __launch_bounds__(
            hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
-                   PrivatizedSmemBins,
+                   0,
                    NumChannels,
                    NumActiveChannels,
                    SampleIteratorT,
                    CounterT,
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
-                   OffsetT>;
+                   OffsetT,
+                   false,
+                   OutputCounterT>;
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
@@ -1066,14 +883,14 @@ __launch_bounds__(
 //! allows one kernel instantiation to cover larger histograms without a ladder
 //! of statically sized kernels.
 template <typename PolicySelector,
-          int PrivatizedSmemBins,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -1082,7 +899,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
@@ -1105,7 +922,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
-                   PrivatizedSmemBins,
+                   0,
                    NumChannels,
                    NumActiveChannels,
                    SampleIteratorT,
@@ -1113,10 +930,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
                    OffsetT,
-                   true>;
+                   true,
+                   OutputCounterT>;
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
-  extern __shared__ unsigned char dynamic_smem[];
+  extern __shared__ __align__(16) unsigned char dynamic_smem[];
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
@@ -1240,7 +1058,8 @@ template <typename PolicySelector,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool IsEven>
+          bool IsEven,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -1249,7 +1068,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const FirstLevelArrayT first_level_array,
     const SecondLevelArrayT second_level_array,
@@ -1282,8 +1101,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     {
       const auto num_output_levels = first_level_array[channel];
       const auto levels            = second_level_array[channel];
-      privatized_decode_op[channel].Init(levels, num_output_levels);
-      output_decode_op[channel].Init(levels, num_output_levels);
+      privatized_decode_op[channel].Init(levels, num_output_levels, hp.range_interpolation_min_bins);
+      output_decode_op[channel].Init(levels, num_output_levels, hp.range_interpolation_min_bins);
     }
   }
 
@@ -1306,7 +1125,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
                    CounterT,
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
-                   OffsetT>;
+                   OffsetT,
+                   false,
+                   OutputCounterT>;
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
