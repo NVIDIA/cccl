@@ -40,6 +40,8 @@
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -64,12 +66,11 @@ _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_div_recip32(uint32_t __b32) noexce
   // Fast fp32 reciprocal seed. The Newton step below refines it and the
   // final trim guarantees a strict underestimate, so the low accuracy of
   // the SFU approximation (rcp.approx) is acceptable here.
-#if defined(__CUDA_ARCH__)
-  float __rf;
-  asm("rcp.approx.ftz.f32 %0, %1;" : "=f"(__rf) : "f"(__bf));
-#else
-  float __rf = 1.0f / __bf; // host fallback
-#endif
+  float __rf{};
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, ({ asm("rcp.approx.ftz.f32 %0, %1;"
+                         : "=f"(__rf)
+                         : "f"(__bf)); }), ({ __rf = 1.0f / __bf; }))
   uint64_t __r = (uint64_t) (__rf * 4294967296.0f); // rf * 2^32
 
   if (__r < 0x80000000ULL)

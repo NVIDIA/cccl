@@ -27,6 +27,9 @@ cudax/test/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 # make an exception for STF test cmake files
 cudax/test/stf/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 cudax/test/stf/static_error_checks/CMakeLists.txt @nvidia/cccl-cudax-codeowners
+# make an exception for places cmake files
+cudax/test/places/CMakeLists.txt @nvidia/cccl-cudax-codeowners
+cudax/examples/places/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 
 # benchmarks
 benchmarks/ @nvidia/cccl-benchmark-codeowners
