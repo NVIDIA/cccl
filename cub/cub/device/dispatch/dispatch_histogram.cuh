@@ -211,7 +211,10 @@ should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter
   {
     if constexpr (IsEven)
     {
-      max_bins = num_active_channels <= 3 ? policy.dynamic_smem_even_3ch_max_bins : policy.dynamic_smem_even_max_bins;
+      max_bins = num_active_channels == 2 ? policy.dynamic_smem_even_2ch_max_bins
+               : num_active_channels == 3
+                 ? policy.dynamic_smem_even_3ch_max_bins
+                 : policy.dynamic_smem_even_4ch_max_bins;
     }
     else
     {
@@ -877,6 +880,19 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_items_per_thread(long)
 }
 
 template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_min_blocks_per_sm(int)
+  -> decltype(ActivePolicy::static_smem_min_blocks_per_sm)
+{
+  return ActivePolicy::static_smem_min_blocks_per_sm;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_min_blocks_per_sm(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(int)
   -> decltype(ActivePolicy::dynamic_smem_range_max_bins)
 {
@@ -890,14 +906,14 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(long)
 }
 
 template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_max_bins(int)
-  -> decltype(ActivePolicy::dynamic_smem_even_max_bins)
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_2ch_max_bins(int)
+  -> decltype(ActivePolicy::dynamic_smem_even_2ch_max_bins)
 {
-  return ActivePolicy::dynamic_smem_even_max_bins;
+  return ActivePolicy::dynamic_smem_even_2ch_max_bins;
 }
 
 template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_max_bins(long)
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_2ch_max_bins(long)
 {
   return 0;
 }
@@ -911,6 +927,19 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_3ch_max_bins(int)
 
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_3ch_max_bins(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_4ch_max_bins(int)
+  -> decltype(ActivePolicy::dynamic_smem_even_4ch_max_bins)
+{
+  return ActivePolicy::dynamic_smem_even_4ch_max_bins;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_4ch_max_bins(long)
 {
   return 0;
 }
@@ -946,9 +975,11 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     convert_dynamic_smem_bytes<ActivePolicy>(0),
     convert_static_smem_threads_per_block<ActivePolicy>(0),
     convert_static_smem_items_per_thread<ActivePolicy>(0),
+    convert_static_smem_min_blocks_per_sm<ActivePolicy>(0),
     convert_dynamic_smem_range_max_bins<ActivePolicy>(0),
-    convert_dynamic_smem_even_max_bins<ActivePolicy>(0),
+    convert_dynamic_smem_even_2ch_max_bins<ActivePolicy>(0),
     convert_dynamic_smem_even_3ch_max_bins<ActivePolicy>(0),
+    convert_dynamic_smem_even_4ch_max_bins<ActivePolicy>(0),
     convert_range_interpolation_min_bins<ActivePolicy>(0)};
 }
 
@@ -1045,8 +1076,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
       num_privatized_levels[channel] = 257;
-      output_decode_op[channel].Init(
-        d_levels[channel], num_output_levels[channel], active_policy.range_interpolation_min_bins);
+      output_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
 
       if (num_output_levels[channel] > max_levels)
       {
@@ -1089,20 +1119,14 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the search transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-
     // Use the pass-thru transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
-      privatized_decode_op[channel].Init(
-        d_levels[channel], num_output_levels[channel], active_policy.range_interpolation_min_bins);
       if (num_output_levels[channel] > max_levels)
       {
         max_levels = num_output_levels[channel];
@@ -1113,6 +1137,14 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     if (should_use_dynamic_smem<false>(
           active_policy, max_num_output_bins, int{kernel_source.CounterSize()}, NUM_ACTIVE_CHANNELS))
     {
+      using PrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        privatized_decode_op[channel].Init(
+          d_levels[channel], num_output_levels[channel], active_policy.range_interpolation_min_bins);
+      }
+
       return CubDebug(
         (detail::histogram::dispatch<NUM_CHANNELS,
                                      NUM_ACTIVE_CHANNELS,
@@ -1137,6 +1169,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
           policy_selector,
           kernel_source,
           launcher_factory)));
+    }
+
+    using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
+    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+    {
+      privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
     }
 
     // Dispatch
