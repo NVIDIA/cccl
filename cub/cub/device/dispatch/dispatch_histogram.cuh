@@ -43,6 +43,7 @@
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
@@ -53,15 +54,23 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
+template <typename PolicySelector, typename OutputCounterT, typename = void>
+struct local_counter
+{
+  using type = OutputCounterT;
+};
+
+template <typename PolicySelector, typename OutputCounterT>
+struct local_counter<PolicySelector, OutputCounterT, ::cuda::std::void_t<typename PolicySelector::local_counter_type>>
+{
+  using type = typename PolicySelector::local_counter_type;
+};
+
+template <typename PolicySelector, typename OutputCounterT>
+using local_counter_t = typename local_counter<PolicySelector, OutputCounterT>::type;
+
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
-
-// Compile-time tag selecting the runtime-sized shared-memory kernel. The tag
-// does not size storage; the actual byte budget comes from HistogramPolicy.
-static constexpr int dynamic_smem_histogram_tag = 16384;
-
-static constexpr int multi_channel_dynamic_smem_bins_range = 2048;
-static constexpr int multi_channel_dynamic_smem_bins_even  = 8192;
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -69,15 +78,19 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename SampleT>
+          typename SampleT,
+          typename OutputCounterT = CounterT>
 struct DeviceHistogramKernelSource
 {
+  static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
+                "The output histogram counter must be at least as wide as the local counter");
+
   using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
 
   template <typename PolicyT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramInitKernel()
   {
-    return &DeviceHistogramInitKernel<PolicyT, NUM_ACTIVE_CHANNELS, CounterT, OffsetT>;
+    return &DeviceHistogramInitKernel<PolicyT, NUM_ACTIVE_CHANNELS, OutputCounterT, OffsetT>;
   }
 
   /// Returns the default histogram sweep kernel that receives pre-initialized decode operators from the host.
@@ -93,22 +106,23 @@ struct DeviceHistogramKernelSource
       CounterT,
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
-      OffsetT>;
+      OffsetT,
+      OutputCounterT>;
   }
 
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  template <typename PolicyT, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepDynamicSmemKernel()
   {
     return &DeviceHistogramSweepDynamicSmemKernel<
       PolicyT,
-      PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       SampleIteratorT,
       CounterT,
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
-      OffsetT>;
+      OffsetT,
+      OutputCounterT>;
   }
 
   /// Returns the device-init histogram sweep kernel that initializes decode operators from level arrays in the kernel.
@@ -149,7 +163,8 @@ struct DeviceHistogramKernelSource
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
       OffsetT,
-      IsEven>;
+      IsEven,
+      OutputCounterT>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -179,9 +194,39 @@ struct DeviceHistogramKernelSource
   }
 };
 
+template <bool IsEven>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
+should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter_size, int num_active_channels)
+{
+  if (policy.dynamic_smem_bytes <= 0 || num_bins <= 0 || counter_size <= 0 || num_active_channels <= 0)
+  {
+    return false;
+  }
+
+  const bool prefer_dynamic_smem = counter_size > int{sizeof(unsigned int)} || num_bins > max_privatized_smem_bins;
+  const size_t required_bytes    = size_t(num_bins) * size_t(num_active_channels) * size_t(counter_size);
+
+  int max_bins = num_bins;
+  if (num_active_channels > 1)
+  {
+    if constexpr (IsEven)
+    {
+      max_bins = num_active_channels <= 3 ? policy.dynamic_smem_even_3ch_max_bins : policy.dynamic_smem_even_max_bins;
+    }
+    else
+    {
+      max_bins = policy.dynamic_smem_range_max_bins;
+    }
+  }
+
+  return prefer_dynamic_smem && max_bins > 0 && num_bins <= max_bins
+      && required_bytes <= static_cast<size_t>(policy.dynamic_smem_bytes);
+}
+
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           int PRIVATIZED_SMEM_BINS,
+          bool UseDynamicSmem,
           bool IsDeviceInit,
           bool IsEven,
           bool IsByteSample,
@@ -214,6 +259,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -233,18 +280,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const auto init_kernel          = kernel_source.template HistogramInitKernel<PolicySelector>();
-  constexpr bool use_dynamic_smem = PRIVATIZED_SMEM_BINS == dynamic_smem_histogram_tag;
-  auto sweep_kernel               = [&] {
-    if constexpr (use_dynamic_smem)
+  const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
+  auto sweep_kernel      = [&] {
+    if constexpr (UseDynamicSmem)
     {
       static_assert(!IsDeviceInit, "Dynamic shared-memory histograms require host-initialized transforms");
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-      return kernel_source.template HistogramSweepDynamicSmemKernel<PolicySelector,
-                                                                                  PRIVATIZED_SMEM_BINS,
-                                                                                  privatized_decode_op_t,
-                                                                                  output_decode_op_t>();
+      return kernel_source
+        .template HistogramSweepDynamicSmemKernel<PolicySelector, privatized_decode_op_t, output_decode_op_t>();
     }
     else if constexpr (IsDeviceInit)
     {
@@ -265,12 +309,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  constexpr bool use_static_smem = PRIVATIZED_SMEM_BINS > 0 && !use_dynamic_smem;
+  constexpr bool use_static_smem = PRIVATIZED_SMEM_BINS > 0 && !UseDynamicSmem;
   const int threads_per_block = use_static_smem ? active_policy.static_smem_threads() : active_policy.threads_per_block;
   const int pixels_per_thread = use_static_smem ? active_policy.static_smem_items() : active_policy.pixels_per_thread;
 
   int dynamic_smem_bytes = 0;
-  if constexpr (use_dynamic_smem)
+  if constexpr (UseDynamicSmem)
   {
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
@@ -334,8 +378,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
     allocation_sizes[CHANNEL] =
-      use_dynamic_smem ? 0
-                       : size_t(num_thread_blocks) * (num_privatized_levels[CHANNEL] - 1) * kernel_source.CounterSize();
+      UseDynamicSmem ? 0
+                     : size_t(num_thread_blocks) * (num_privatized_levels[CHANNEL] - 1) * kernel_source.CounterSize();
   }
 
   allocation_sizes[NUM_ALLOCATIONS - 1] = GridQueue<int>::AllocationSize();
@@ -358,11 +402,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
   // Wrap arrays so we can pass them by-value to the kernel
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
+  ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
 
-  auto* typed_allocations = reinterpret_cast<CounterT**>(allocations);
+  auto* typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
   ::cuda::std::copy(typed_allocations, typed_allocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
 
   auto minus_one = ::cuda::proclaim_return_type<int>([](int levels) {
@@ -576,6 +620,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
                                        PRIVATIZED_SMEM_BINS,
+                                       /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
                                        /* IsByteSample = */ false>(
@@ -608,6 +653,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
                                        PRIVATIZED_SMEM_BINS,
+                                       /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
                                        /* IsByteSample = */ false>(
@@ -748,6 +794,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
         (detail::histogram::dispatch<NUM_CHANNELS,
                                      NUM_ACTIVE_CHANNELS,
                                      PRIVATIZED_SMEM_BINS,
+                                     /* UseDynamicSmem = */ false,
                                      /* IsDeviceInit = */ true,
                                      /* IsEven = */ true,
                                      /* IsByteSample = */ true>(
@@ -803,6 +850,58 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_bytes(long)
   return 0;
 }
 
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(int)
+  -> decltype(ActivePolicy::dynamic_smem_range_max_bins)
+{
+  return ActivePolicy::dynamic_smem_range_max_bins;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_max_bins(int)
+  -> decltype(ActivePolicy::dynamic_smem_even_max_bins)
+{
+  return ActivePolicy::dynamic_smem_even_max_bins;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_max_bins(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_3ch_max_bins(int)
+  -> decltype(ActivePolicy::dynamic_smem_even_3ch_max_bins)
+{
+  return ActivePolicy::dynamic_smem_even_3ch_max_bins;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_3ch_max_bins(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_range_interpolation_min_bins(int)
+  -> decltype(ActivePolicy::range_interpolation_min_bins)
+{
+  return ActivePolicy::range_interpolation_min_bins;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_range_interpolation_min_bins(long)
+{
+  return 0;
+}
+
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
@@ -818,7 +917,13 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
     convert_pdl_trigger<ActivePolicy>(0),
-    convert_dynamic_smem_bytes<ActivePolicy>(0)};
+    convert_dynamic_smem_bytes<ActivePolicy>(0),
+    0,
+    0,
+    convert_dynamic_smem_range_max_bins<ActivePolicy>(0),
+    convert_dynamic_smem_even_max_bins<ActivePolicy>(0),
+    convert_dynamic_smem_even_3ch_max_bins<ActivePolicy>(0),
+    convert_range_interpolation_min_bins<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -852,19 +957,25 @@ public:
   }
 };
 
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  bool IsByteSample,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          bool IsByteSample,
+          typename PolicySelector,
+          typename SampleT      = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename KernelSource = DeviceHistogramKernelSource<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            SampleIteratorT,
+            local_counter_t<PolicySelector, CounterT>,
+            LevelT,
+            OffsetT,
+            SampleT,
+            CounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -881,6 +992,15 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+  const HistogramPolicy active_policy = policy_selector(cc);
+
   if constexpr (IsByteSample)
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
@@ -899,7 +1019,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
       num_privatized_levels[channel] = 257;
-      output_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+      output_decode_op[channel].Init(
+        d_levels[channel], num_output_levels[channel], active_policy.range_interpolation_min_bins);
 
       if (num_output_levels[channel] > max_levels)
       {
@@ -914,6 +1035,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
                                        PRIVATIZED_SMEM_BINS,
+                                       /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ false,
                                        /* IsEven = (unused for host-init) */ false,
                                        /* IsByteSample = (unused for host-init) */ false>(
@@ -953,7 +1075,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
-      privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+      privatized_decode_op[channel].Init(
+        d_levels[channel], num_output_levels[channel], active_policy.range_interpolation_min_bins);
       if (num_output_levels[channel] > max_levels)
       {
         max_levels = num_output_levels[channel];
@@ -961,25 +1084,17 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
     int max_num_output_bins = max_levels - 1;
 
-    ::cuda::compute_capability cc{};
-    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    if (should_use_dynamic_smem<false>(
+          active_policy, max_num_output_bins, int{kernel_source.CounterSize()}, NUM_ACTIVE_CHANNELS))
     {
-      return error;
-    }
-    const HistogramPolicy active_policy = policy_selector(cc);
-
-    if constexpr (NUM_ACTIVE_CHANNELS >= 1)
-    {
-      const bool within_tuned_channel_cap =
-        NUM_ACTIVE_CHANNELS == 1 || max_num_output_bins <= multi_channel_dynamic_smem_bins_range;
-      const size_t dynamic_smem_bytes = size_t(max_num_output_bins) * NUM_ACTIVE_CHANNELS * kernel_source.CounterSize();
-      const bool prefer_dynamic_smem =
-        kernel_source.CounterSize() > sizeof(unsigned int) || max_num_output_bins > max_privatized_smem_bins;
-      if (prefer_dynamic_smem && within_tuned_channel_cap
-          && dynamic_smem_bytes <= static_cast<size_t>(active_policy.dynamic_smem_bytes))
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = dynamic_smem_histogram_tag;
-        return detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+      return CubDebug(
+        (detail::histogram::dispatch<NUM_CHANNELS,
+                                     NUM_ACTIVE_CHANNELS,
+                                     /* PRIVATIZED_SMEM_BINS = */ 0,
+                                     /* UseDynamicSmem = */ true,
+                                     /* IsDeviceInit = */ false,
+                                     /* IsEven = */ false,
+                                     /* IsByteSample = */ false>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -995,8 +1110,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
           stream,
           policy_selector,
           kernel_source,
-          launcher_factory);
-      }
+          launcher_factory)));
     }
 
     // Dispatch
@@ -1009,6 +1123,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
                                          PRIVATIZED_SMEM_BINS,
+                                         /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = (unused for host-init) */ false,
                                          /* IsByteSample = (unused for host-init) */ false>(
@@ -1041,6 +1156,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
                                          PRIVATIZED_SMEM_BINS,
+                                         /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = (unused for host-init) */ false,
                                          /* IsByteSample = (unused for host-init) */ false>(
@@ -1069,19 +1185,25 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   return cudaSuccess;
 }
 
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  bool IsByteSample,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          bool IsByteSample,
+          typename PolicySelector,
+          typename SampleT      = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename KernelSource = DeviceHistogramKernelSource<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            SampleIteratorT,
+            local_counter_t<PolicySelector, CounterT>,
+            LevelT,
+            OffsetT,
+            SampleT,
+            CounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1099,6 +1221,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
   if constexpr (IsByteSample)
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
@@ -1145,6 +1269,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
                                        PRIVATIZED_SMEM_BINS,
+                                       /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ false,
                                        /* IsEven = */ false,
                                        /* IsByteSample = */ false>(
@@ -1212,21 +1337,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     }
     const HistogramPolicy active_policy = policy_selector(cc);
 
-    if constexpr (NUM_ACTIVE_CHANNELS >= 1)
+    if (should_use_dynamic_smem<true>(
+          active_policy, max_num_output_bins, int{kernel_source.CounterSize()}, NUM_ACTIVE_CHANNELS))
     {
-      const bool within_tuned_channel_cap =
-        NUM_ACTIVE_CHANNELS == 1 || max_num_output_bins <= multi_channel_dynamic_smem_bins_even
-        || (NUM_ACTIVE_CHANNELS <= 3
-            && size_t(max_num_output_bins) * NUM_ACTIVE_CHANNELS * kernel_source.CounterSize()
-                 <= static_cast<size_t>(active_policy.dynamic_smem_bytes));
-      const size_t dynamic_smem_bytes = size_t(max_num_output_bins) * NUM_ACTIVE_CHANNELS * kernel_source.CounterSize();
-      const bool prefer_dynamic_smem =
-        kernel_source.CounterSize() > sizeof(unsigned int) || max_num_output_bins > max_privatized_smem_bins;
-      if (prefer_dynamic_smem && within_tuned_channel_cap
-          && dynamic_smem_bytes <= static_cast<size_t>(active_policy.dynamic_smem_bytes))
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = dynamic_smem_histogram_tag;
-        return detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+      return CubDebug(
+        (detail::histogram::dispatch<NUM_CHANNELS,
+                                     NUM_ACTIVE_CHANNELS,
+                                     /* PRIVATIZED_SMEM_BINS = */ 0,
+                                     /* UseDynamicSmem = */ true,
+                                     /* IsDeviceInit = */ false,
+                                     /* IsEven = */ true,
+                                     /* IsByteSample = */ false>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -1242,8 +1363,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
           stream,
           policy_selector,
           kernel_source,
-          launcher_factory);
-      }
+          launcher_factory)));
     }
 
     if (max_num_output_bins > max_privatized_smem_bins)
@@ -1254,6 +1374,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
                                          PRIVATIZED_SMEM_BINS,
+                                         /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
                                          /* IsByteSample = */ false>(
@@ -1285,6 +1406,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
                                          PRIVATIZED_SMEM_BINS,
+                                         /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
                                          /* IsByteSample = */ false>(
