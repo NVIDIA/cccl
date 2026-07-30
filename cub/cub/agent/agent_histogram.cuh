@@ -187,6 +187,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!
 //! @tparam OffsetT
 //!   Signed integer type for global offsets
+//!
+//! @tparam UseDynamicSmemHistogram
+//!   Whether the privatized histogram is supplied separately in dynamic shared memory.
 template <typename AgentHistogramPolicyT,
           int PrivatizedSmemBins,
           int NumChannels,
@@ -195,7 +198,8 @@ template <typename AgentHistogramPolicyT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          bool UseDynamicSmemHistogram = false>
 struct AgentHistogram
 {
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
@@ -230,10 +234,13 @@ struct AgentHistogram
     BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
   using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
+  using HistogramsStorageT = ::cuda::std::
+    _If<UseDynamicSmemHistogram, CounterT* [NumActiveChannels], CounterT[NumActiveChannels][PrivatizedSmemBins + 1]>;
+
   struct _TempStorage
   {
-    // Smem needed for block-privatized smem histogram (with 1 word of padding)
-    CounterT histograms[NumActiveChannels][PrivatizedSmemBins + 1];
+    // Static histogram storage or pointers into the separately allocated dynamic storage.
+    HistogramsStorageT histograms;
     int tile_idx;
 
     union
@@ -631,6 +638,10 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
+    static_assert(!UseDynamicSmemHistogram,
+                  "AgentHistogram with UseDynamicSmemHistogram=true requires the dynamic-SMEM "
+                  "constructor that takes an extern __shared__ base pointer.");
+
     const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
@@ -639,6 +650,44 @@ struct AgentHistogram
     {
       const auto offset                 = static_cast<::cuda::std::int64_t>(blockId) * num_privatized_bins[ch];
       this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
+    }
+  }
+
+  //! @brief Constructor for a histogram stored in dynamic shared memory
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
+    TempStorage& temp_storage,
+    SampleIteratorT d_samples,
+    const int* num_output_bins,
+    const int* num_privatized_bins,
+    CounterT** d_output_histograms,
+    CounterT** d_privatized_histograms,
+    const OutputDecodeOpT* output_decode_op,
+    const PrivatizedDecodeOpT* privatized_decode_op,
+    CounterT* dyn_smem_histogram_base)
+      : temp_storage(temp_storage.Alias())
+      , d_wrapped_samples(d_samples)
+      , d_native_samples(NativePointer(d_wrapped_samples))
+      , num_output_bins(num_output_bins)
+      , num_privatized_bins(num_privatized_bins)
+      , d_output_histograms(d_output_histograms)
+      , output_decode_op(output_decode_op)
+      , privatized_decode_op(privatized_decode_op)
+      , prefer_smem(true)
+  {
+    static_assert(UseDynamicSmemHistogram,
+                  "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
+
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->d_privatized_histograms[ch] = d_privatized_histograms[ch];
+    }
+
+    CounterT* p = dyn_smem_histogram_base;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->temp_storage.histograms[ch] = p;
+      p += num_privatized_bins[ch];
     }
   }
 

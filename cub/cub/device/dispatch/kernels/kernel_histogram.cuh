@@ -518,6 +518,81 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   agent.StoreOutput();
 }
 
+//! Histogram sweep kernel with the privatized histogram in dynamic shared memory.
+//!
+//! The host supplies `num_privatized_bins * sizeof(CounterT)` bytes of dynamic
+//! shared memory. Keeping the runtime-sized histogram outside `TempStorage`
+//! allows one kernel instantiation to cover larger histograms without a ladder
+//! of statically sized kernels.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDynamicSmemKernel(
+    const SampleIteratorT d_samples,
+    const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    const OffsetT num_row_pixels,
+    const OffsetT num_rows,
+    const OffsetT row_stride_samples,
+    const int tiles_per_row,
+    GridQueue<int> tile_queue)
+{
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
+
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT,
+                   true>;
+
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+  extern __shared__ unsigned char dynamic_smem[];
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op_wrapper.data(),
+    privatized_decode_op_wrapper.data(),
+    reinterpret_cast<CounterT*>(dynamic_smem));
+
+  agent.InitBinCounters();
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.StoreOutput();
+}
+
 //! Histogram privatized sweep kernel entry point (multi-block) with device-side initialization.
 //! Computes privatized histograms, one per thread block.
 //! This kernel initializes decode operators from level arrays inside the kernel.
