@@ -61,19 +61,11 @@ namespace
 }
 } // namespace
 
-// Tests a normal non-null stream.
+// Tests a normal non-null stream.  The legacy NULL stream is not covered:
+// cuda::copy_bytes forwards it to cuMemcpyBatchAsync on CTK 13.0+, which
+// rejects it, and no cuco call site passes it.
 C2H_TEST("cuco memcpy_async round-trips on an explicit stream", "[memcpy_async]")
 {
   ::cuda::stream stream{::cuda::device_ref{0}};
   REQUIRE(round_trip_mismatches(stream) == 0);
-}
-
-// Tests a null stream.  cudaMemcpyBatchAsync rejects it, so __memcpy_async
-// falls back to cudaMemcpyAsync.
-C2H_TEST("cuco memcpy_async round-trips on the legacy NULL stream", "[memcpy_async]")
-{
-  ::cudaStream_t legacy_handle = nullptr;
-  ::cuda::stream_ref legacy_stream{legacy_handle};
-  REQUIRE(legacy_stream.get() == nullptr);
-  REQUIRE(round_trip_mismatches(legacy_stream) == 0);
 }
