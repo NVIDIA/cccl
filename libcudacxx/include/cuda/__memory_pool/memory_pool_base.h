@@ -289,7 +289,7 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
   __descs.reserve(__devices.size());
   for (const auto& __dev : __devices)
   {
-    __descs.emplace_back(::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags);
+    __descs.push_back({::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
   }
   ::cuda::__driver::__mempoolSetAccess(__pool, __descs.data(), __descs.size());
 }
