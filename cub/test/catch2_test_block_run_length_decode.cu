@@ -13,7 +13,7 @@
 #include <cuda/iterator>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 /******************************************************************************
  * HELPER CLASS FOR RUN-LENGTH DECODING TESTS
@@ -470,9 +470,10 @@ struct params_t
   static constexpr int block_dim_z              = BlockDimZ;
 };
 
-C2H_TEST_LIST(
+CUB_TEST_LIST(
   "Block Run Length Decode works with run lengths and offsets relative to each run",
   "[rld][block]",
+  CUB_SMALL,
   params_t<1, 1, 64>,
   params_t<1, 3, 32, 2, 3>,
   params_t<1, 1, 128>,
@@ -494,10 +495,11 @@ C2H_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-C2H_TEST_LIST(
+CUB_TEST_LIST(
   "Block Run Length Decode works with run lengths and performs normal run-length "
   "decoding",
   "[rld][block]",
+  CUB_SMALL,
   params_t<1, 1, 64>,
   params_t<1, 3, 32, 2, 3>,
   params_t<1, 1, 128>,
@@ -519,10 +521,11 @@ C2H_TEST_LIST(
                               DO_NOT_TEST_RELATIVE_OFFSETS>();
 }
 
-C2H_TEST_LIST(
+CUB_TEST_LIST(
   "Block Run Length Decode works with run offsets and generates offsets relative to "
   "each run",
   "[rld][block]",
+  CUB_SMALL,
   params_t<1, 1, 64>,
   params_t<1, 3, 32, 2, 3>,
   params_t<1, 1, 128>,
@@ -544,10 +547,11 @@ C2H_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-C2H_TEST_LIST(
+CUB_TEST_LIST(
   "Block Run Length Decode works with run offsets and performs normal run-length "
   "decoding",
   "[rld][block]",
+  CUB_SMALL,
   params_t<1, 1, 64>,
   params_t<1, 3, 32, 2, 3>,
   params_t<1, 1, 128>,

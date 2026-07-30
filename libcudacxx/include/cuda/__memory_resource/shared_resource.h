@@ -61,7 +61,7 @@ struct shared_resource
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
   template <class... _Args>
-  explicit shared_resource(::cuda::std::in_place_type_t<_Resource>, _Args&&... __args)
+  _CCCL_HOST_API explicit shared_resource(::cuda::std::in_place_type_t<_Resource>, _Args&&... __args)
       : __block_(::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...)
   {}
 
@@ -254,7 +254,7 @@ private:
 //!
 //! @endrst
 template <class _Resource, class... _Args>
-auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
+_CCCL_HOST_API auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>,
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");

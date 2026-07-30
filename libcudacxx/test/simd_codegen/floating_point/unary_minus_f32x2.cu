@@ -24,5 +24,7 @@ __device__ Vec_f32_x4 test_operator_unary_minus_f32_x4(Vec_f32_x4 in)
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_unary_minus_f32_x4.*}}
 ; SM100: {{.*FADD2.*}}
 ; SM100: {{.*FADD2.*}}
+; SM103: {{.*FADD2.*}}
+; SM103: {{.*FADD2.*}}
 
 */

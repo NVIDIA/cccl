@@ -11,7 +11,7 @@
 #include <cuda/std/array>
 #include <cuda/std/span>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {
@@ -42,7 +42,7 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
   }
 }
 
-C2H_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(6);
 
@@ -85,7 +85,7 @@ __global__ void WarpReduceBatchedReduceApiKernel(int* out)
   }
 }
 
-C2H_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(3);
 
@@ -145,7 +145,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
   }
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(6);
 
@@ -206,7 +206,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
   }
 }
 
-C2H_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(6);
 
@@ -245,7 +245,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
   }
 }
 
-C2H_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(6);
 
@@ -293,7 +293,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int*
   }
 }
 
-C2H_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(20);
 
@@ -341,7 +341,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
   }
 }
 
-C2H_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce][batched]")
+CUB_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce][batched]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(20);
 

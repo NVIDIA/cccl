@@ -53,7 +53,7 @@
 #elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 900ULL
 // PTX ISA 8.8 is available from CUDA 12.9, driver r575
-#elif _CCCL_CUDACC_AT_LEAST(12, 9) && !_CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_CUDACC_AT_LEAST(12, 9) && !_CCCL_CUDA_COMPILER(CLANG, <, 22)
 #  define __cccl_ptx_isa 880ULL
 // PTX ISA 8.7 is available from CUDA 12.8, driver r570
 #elif _CCCL_CUDACC_AT_LEAST(12, 8) && !_CCCL_CUDA_COMPILER(CLANG, <, 20)
