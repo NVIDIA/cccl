@@ -15,7 +15,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -35,7 +35,7 @@ using custom_t =
 
 using iterator_type_list = c2h::type_list<type_pair<std::int8_t>, type_pair<custom_t>, type_pair<uchar3>>;
 
-C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_list)
+CUB_TEST("Device scan works with iterators", "[scan][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
@@ -296,7 +296,7 @@ struct index_to_custom_output_op
   }
 };
 
-C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
+CUB_TEST("Device scan works complex accumulator types", "[scan][device]", CUB_SMALL)
 {
   constexpr int num_items = 2 * 1024 * 1024;
 

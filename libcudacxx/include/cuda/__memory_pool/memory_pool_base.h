@@ -69,7 +69,7 @@ struct __pool_attr_impl
     return static_cast<type>(__value);
   }
 
-  static void set(::cudaMemPool_t __pool, type __value)
+  _CCCL_HOST_API static void set(::cudaMemPool_t __pool, type __value)
   {
     size_t __value_copy = __value;
     if constexpr (_Settable == __pool_attr_settable{true})
@@ -112,7 +112,8 @@ struct __pool_attr<::cudaMemPoolAttrUsedMemCurrent>
     : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, __pool_attr_settable{false}>
 {};
 
-inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, size_t __value)
+_CCCL_HOST_API inline void
+__set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, size_t __value)
 {
   if (__value != 0)
   {
@@ -125,7 +126,7 @@ template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
     : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable{true}>
 {
-  static void set(::cudaMemPool_t __pool, type __value)
+  _CCCL_HOST_API static void set(::cudaMemPool_t __pool, type __value)
   {
     ::cuda::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH, __value);
   }
@@ -135,7 +136,7 @@ template <>
 struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
     : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable{true}>
 {
-  static void set(::cudaMemPool_t __pool, type __value)
+  _CCCL_HOST_API static void set(::cudaMemPool_t __pool, type __value)
   {
     ::cuda::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_USED_MEM_HIGH, __value);
   }
@@ -145,48 +146,48 @@ namespace memory_pool_attributes
 {
 // The threshold at which the pool will release memory.
 using release_threshold_t = __pool_attr<::cudaMemPoolAttrReleaseThreshold>;
-static constexpr release_threshold_t release_threshold{};
+inline constexpr release_threshold_t release_threshold{};
 
 // Allow the pool to reuse the memory across streams as long as there is a
 // stream ordering dependency between the streams.
 using reuse_follow_event_dependencies_t = __pool_attr<::cudaMemPoolReuseFollowEventDependencies>;
-static constexpr reuse_follow_event_dependencies_t reuse_follow_event_dependencies{};
+inline constexpr reuse_follow_event_dependencies_t reuse_follow_event_dependencies{};
 
 // Allow the pool to reuse already completed frees when there is no dependency
 // between the streams.
 using reuse_allow_opportunistic_t = __pool_attr<::cudaMemPoolReuseAllowOpportunistic>;
-static constexpr reuse_allow_opportunistic_t reuse_allow_opportunistic{};
+inline constexpr reuse_allow_opportunistic_t reuse_allow_opportunistic{};
 
 // Allow the pool to insert stream dependencies to reuse the memory across
 // streams.
 using reuse_allow_internal_dependencies_t = __pool_attr<::cudaMemPoolReuseAllowInternalDependencies>;
-static constexpr reuse_allow_internal_dependencies_t reuse_allow_internal_dependencies{};
+inline constexpr reuse_allow_internal_dependencies_t reuse_allow_internal_dependencies{};
 
 // The current amount of memory reserved in the pool.
 using reserved_mem_current_t = __pool_attr<::cudaMemPoolAttrReservedMemCurrent>;
-static constexpr reserved_mem_current_t reserved_mem_current{};
+inline constexpr reserved_mem_current_t reserved_mem_current{};
 
 // The high water mark for the reserved memory in the pool.
 using reserved_mem_high_t = __pool_attr<::cudaMemPoolAttrReservedMemHigh>;
-static constexpr reserved_mem_high_t reserved_mem_high{};
+inline constexpr reserved_mem_high_t reserved_mem_high{};
 
 // The current amount of memory used in the pool.
 using used_mem_current_t = __pool_attr<::cudaMemPoolAttrUsedMemCurrent>;
-static constexpr used_mem_current_t used_mem_current{};
+inline constexpr used_mem_current_t used_mem_current{};
 
 // The high water mark for the used memory in the pool.
 using used_mem_high_t = __pool_attr<::cudaMemPoolAttrUsedMemHigh>;
-static constexpr used_mem_high_t used_mem_high{};
+inline constexpr used_mem_high_t used_mem_high{};
 }; // namespace memory_pool_attributes
 
-inline bool __is_host_memory_pool_supported()
+[[nodiscard]] _CCCL_HOST_API inline bool __is_host_memory_pool_supported()
 {
   // Both host_numa and host memory pool flags should agree, but check the one corresponding to the implementation
   // of the default pool just to be sure
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  return ::cuda::device_attributes::host_memory_pools_supported(cuda::device_ref{0});
+  return ::cuda::device_attributes::host_memory_pools_supported(::cuda::device_ref{0});
 #  elif _CCCL_CTK_AT_LEAST(12, 9)
-  return ::cuda::device_attributes::host_numa_memory_pools_supported(cuda::device_ref{0});
+  return ::cuda::device_attributes::host_numa_memory_pools_supported(::cuda::device_ref{0});
 #  else
   return false;
 #  endif
@@ -197,11 +198,11 @@ inline bool __is_host_memory_pool_supported()
 //! @param __device The device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
-inline void __verify_device_supports_stream_ordered_allocations(
+_CCCL_HOST_API inline void __verify_device_supports_stream_ordered_allocations(
   ::CUmemLocation __location, [[maybe_unused]] ::CUmemAllocationType __allocation_type)
 {
-  auto __device =
-    __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? cuda::device_ref{__location.id} : cuda::device_ref{0};
+  const auto __device =
+    __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? ::cuda::device_ref{__location.id} : ::cuda::device_ref{0};
   if (!::cuda::device_attributes::memory_pools_supported(__device))
   {
     _CCCL_THROW(::cuda::cuda_error, ::cudaErrorNotSupported, "stream-ordered allocations are not supported");
@@ -227,7 +228,7 @@ inline void __verify_device_supports_stream_ordered_allocations(
 //! @param __handle_type An IPC export handle type to check for support.
 //! @throws cuda_error if the specified `cudaMemAllocationHandleType` is not
 //! supported on the specified device.
-inline void __verify_device_supports_export_handle_type(
+_CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
   const device_ref __device, ::cudaMemAllocationHandleType __handle_type, ::CUmemLocation __location)
 {
   if (__handle_type == ::cudaMemAllocationHandleType::cudaMemHandleTypeNone)
@@ -249,12 +250,12 @@ inline void __verify_device_supports_export_handle_type(
   if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
   {
     _CCCL_THROW(
-      cuda::cuda_error, ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
+      ::cuda::cuda_error, ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
   }
 }
 
-[[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t
-__get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const CUmemAllocationType __allocation_type)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaMemPool_t __get_default_memory_pool(
+  const ::CUmemLocation __location, [[maybe_unused]] const ::CUmemAllocationType __allocation_type)
 {
   ::cuda::__verify_device_supports_stream_ordered_allocations(__location, __allocation_type);
 
@@ -281,7 +282,7 @@ __get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const
 //! for
 //! @param __flags The access flags to set
 //! @throws cuda_error if ``cudaMemPoolSetAccess`` fails.
-inline void
+_CCCL_HOST_API inline void
 __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> __devices, ::CUmemAccess_flags __flags)
 {
   ::std::vector<::CUmemAccessDesc> __descs;
@@ -298,7 +299,7 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
 //! @param __pool The memory pool to query access for
 //! @param __dev The device to query access for
 //! @returns true if the memory pool is accessible from the device
-[[nodiscard]] inline bool __mempool_get_access(::cudaMemPool_t __pool, device_ref __dev)
+[[nodiscard]] _CCCL_HOST_API inline bool __mempool_get_access(::cudaMemPool_t __pool, device_ref __dev)
 {
   ::CUmemAccess_flags __result;
   ::CUmemLocation __loc;
@@ -313,17 +314,17 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
 //! set after the pool is created.
 struct memory_pool_properties
 {
-  size_t initial_pool_size                           = 0;
-  size_t release_threshold                           = ::cuda::std::numeric_limits<size_t>::max();
-  cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
-  size_t max_pool_size                               = 0;
+  size_t initial_pool_size                             = 0;
+  size_t release_threshold                             = ::cuda::std::numeric_limits<size_t>::max();
+  ::cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
+  size_t max_pool_size                                 = 0;
 };
 
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
 //! @throws cuda_error If the creation of the CUDA memory pool failed.
 //! @returns The created CUDA memory pool.
-[[nodiscard]] static cudaMemPool_t __create_cuda_mempool(
-  memory_pool_properties __properties, ::CUmemLocation __location, CUmemAllocationType __allocation_type)
+[[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t __create_cuda_mempool(
+  memory_pool_properties __properties, ::CUmemLocation __location, ::CUmemAllocationType __allocation_type)
 {
   ::CUmemPoolProps __pool_properties{};
   __pool_properties.allocType   = __allocation_type;
@@ -406,7 +407,7 @@ public:
 
   //! @brief  Constructs the __memory_pool_base from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  _CCCL_HOST_API explicit __memory_pool_base(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit constexpr __memory_pool_base(::cudaMemPool_t __pool) noexcept
       : __pool_(__pool)
   {}
 

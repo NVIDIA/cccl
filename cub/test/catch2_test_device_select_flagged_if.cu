@@ -16,7 +16,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
@@ -105,7 +105,7 @@ using types =
 
 using flag_types = c2h::type_list<std::uint8_t, std::uint64_t, custom_t>;
 
-C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -123,7 +123,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -143,7 +143,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   REQUIRE(out == in);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -163,8 +163,9 @@ C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
+CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
          "[device][select_flagged_if]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint64_t>,
          flag_types)
 {
@@ -204,8 +205,9 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
+CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
          "[device][select_if]",
+         CUB_SMALL,
          all_types,
          flag_types)
 {
@@ -316,8 +318,9 @@ C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
   }
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
+CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
          "[device][select_if]",
+         CUB_SMALL,
          all_types,
          flag_types)
 {
@@ -426,7 +429,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", CUB_SMALL, all_types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -454,7 +457,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", CUB_SMALL, types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;

@@ -7,14 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
 // When compiling with gcc-7, nvcc thinks volatile T is not trivially copyable.
 // UNSUPPORTED: gcc-7
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -33,7 +33,7 @@ TEST_NV_DIAG_SUPPRESS(3013)
 #include <cuda/std/type_traits>
 
 template <typename T>
-TEST_FUNC void test_address()
+TEST_HOST_DEVICE_FUNC void test_address()
 {
   alignas(cuda::std::atomic_ref<T>::required_alignment) T x(T(1));
   const cuda::std::atomic_ref<T> a(x);
@@ -48,7 +48,7 @@ TEST_FUNC void test_address()
 }
 
 template <typename T>
-TEST_FUNC void test_address_const()
+TEST_HOST_DEVICE_FUNC void test_address_const()
 {
   alignas(cuda::std::atomic_ref<const T>::required_alignment) T x(T(1));
   const cuda::std::atomic_ref<const T> a(x);
@@ -63,7 +63,7 @@ TEST_FUNC void test_address_const()
 }
 
 template <typename T>
-TEST_FUNC void test_address_volatile()
+TEST_HOST_DEVICE_FUNC void test_address_volatile()
 {
   if constexpr (cuda::std::atomic_ref<T>::is_always_lock_free)
   {
@@ -81,7 +81,7 @@ TEST_FUNC void test_address_volatile()
 }
 
 template <typename T>
-TEST_FUNC void test_address_cv()
+TEST_HOST_DEVICE_FUNC void test_address_cv()
 {
   if constexpr (cuda::std::atomic_ref<T>::is_always_lock_free)
   {
