@@ -5,7 +5,7 @@
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // Guard tests: each public DeviceSegmentedRadixSort method must resolve unambiguously
 // to the legacy temp-storage overload when called in its minimal form (no explicit
@@ -13,7 +13,9 @@
 // scope. If env-overload SFINAE drifts in the future, these become "ambiguous
 // overload" compile errors.
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs legacy size-query is unambiguous", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs legacy size-query is unambiguous",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   void* d_temp_storage        = nullptr;
   size_t temp_storage_bytes   = 0;
@@ -40,8 +42,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs legacy size-query is unambiguous",
       d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending legacy size-query is unambiguous",
-         "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortPairsDescending legacy size-query is unambiguous",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   void* d_temp_storage        = nullptr;
   size_t temp_storage_bytes   = 0;
@@ -68,7 +71,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending legacy size-query is una
       d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys legacy size-query is unambiguous", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys legacy size-query is unambiguous",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   void* d_temp_storage        = nullptr;
   size_t temp_storage_bytes   = 0;
@@ -83,8 +88,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys legacy size-query is unambiguous", 
             d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, n, n_segs, d_offsets, d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending legacy size-query is unambiguous",
-         "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortKeysDescending legacy size-query is unambiguous",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   void* d_temp_storage        = nullptr;
   size_t temp_storage_bytes   = 0;

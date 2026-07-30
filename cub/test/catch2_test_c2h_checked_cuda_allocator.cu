@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <new> // std::bad_alloc
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 std::size_t get_alloc_bytes()
 {
@@ -24,8 +24,9 @@ std::size_t get_alloc_bytes()
   return alloc_bytes;
 }
 
-C2H_TEST("c2h::device_vector throws when requested allocations exceed free device memory",
-         "[c2h][checked_cuda_allocator][device_vector]")
+CUB_TEST("c2h::device_vector throws when requested allocations exceed free device memory",
+         "[c2h][checked_cuda_allocator][device_vector]",
+         CUB_SMALL)
 {
   c2h::device_vector<char> vec;
 
@@ -33,8 +34,9 @@ C2H_TEST("c2h::device_vector throws when requested allocations exceed free devic
   REQUIRE_THROWS_AS(vec.resize(alloc_bytes), std::bad_alloc);
 }
 
-C2H_TEST("c2h::device_policy throws when requested allocations exceed free device memory",
-         "[c2h][checked_cuda_allocator][device_policy]")
+CUB_TEST("c2h::device_policy throws when requested allocations exceed free device memory",
+         "[c2h][checked_cuda_allocator][device_policy]",
+         CUB_SMALL)
 {
   cuda::std::pair<char*, std::ptrdiff_t> buffer{nullptr, 0};
   auto policy = thrust::detail::derived_cast(thrust::detail::strip_const(c2h::device_policy));

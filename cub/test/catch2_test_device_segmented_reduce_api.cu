@@ -14,8 +14,8 @@
 #include <climits>
 #include <cstddef>
 
+#include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
-#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-reduce-custommin
 struct CustomMin
@@ -42,7 +42,7 @@ struct is_equal
   }
 };
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-reduce
   int num_segments                  = 3;
@@ -88,7 +88,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-sum
   int num_segments                  = 3;
@@ -116,7 +116,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segme
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-min
   int num_segments                  = 3;
@@ -144,7 +144,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segme
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-argmin
   int num_segments                  = 3;
@@ -172,7 +172,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[se
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), expected.begin(), is_equal()));
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-max
   int num_segments                  = 3;
@@ -200,7 +200,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segme
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {
   // example-begin segmented-reduce-argmax
   int num_segments                  = 3;
@@ -228,8 +228,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[se
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), expected.begin(), is_equal()));
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-reduce
   int num_segments = 3;
@@ -258,8 +259,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int d
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-sum
   int num_segments = 3;
@@ -286,8 +288,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data
   REQUIRE(d_expected == d_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-min
   int num_segments = 3;
@@ -314,8 +317,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data
   REQUIRE(d_expected == d_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-argmin
   int num_segments = 3;
@@ -344,8 +348,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int d
   REQUIRE(h_expected == h_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-max
   int num_segments = 3;
@@ -373,8 +378,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data
   REQUIRE(d_expected == d_out);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int data elements",
-         "[segmented_reduce][device]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]",
+         CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-argmax
   int num_segments = 3;
@@ -415,7 +421,7 @@ struct segmented_reduce_plus_t
   }
 };
 
-C2H_TEST("DeviceSegmentedReduce::Reduce legacy size-query is unambiguous", "[segmented_reduce][device]")
+CUB_TEST("DeviceSegmentedReduce::Reduce legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -429,7 +435,7 @@ C2H_TEST("DeviceSegmentedReduce::Reduce legacy size-query is unambiguous", "[seg
             d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets, segmented_reduce_plus_t{}, 0));
 }
 
-C2H_TEST("DeviceSegmentedReduce::Sum legacy size-query is unambiguous", "[segmented_reduce][device]")
+CUB_TEST("DeviceSegmentedReduce::Sum legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -442,7 +448,7 @@ C2H_TEST("DeviceSegmentedReduce::Sum legacy size-query is unambiguous", "[segmen
           == cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedReduce::Min legacy size-query is unambiguous", "[segmented_reduce][device]")
+CUB_TEST("DeviceSegmentedReduce::Min legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -455,7 +461,7 @@ C2H_TEST("DeviceSegmentedReduce::Min legacy size-query is unambiguous", "[segmen
           == cub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedReduce::Max legacy size-query is unambiguous", "[segmented_reduce][device]")
+CUB_TEST("DeviceSegmentedReduce::Max legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -468,7 +474,7 @@ C2H_TEST("DeviceSegmentedReduce::Max legacy size-query is unambiguous", "[segmen
           == cub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedReduce::ArgMin legacy size-query is unambiguous", "[segmented_reduce][device]")
+CUB_TEST("DeviceSegmentedReduce::ArgMin legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
 {
   void* d_temp_storage               = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -482,7 +488,7 @@ C2H_TEST("DeviceSegmentedReduce::ArgMin legacy size-query is unambiguous", "[seg
     == cub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
 }
 
-C2H_TEST("DeviceSegmentedReduce::ArgMax legacy size-query is unambiguous", "[segmented_reduce][device]")
+CUB_TEST("DeviceSegmentedReduce::ArgMax legacy size-query is unambiguous", "[segmented_reduce][device]", CUB_SMALL)
 {
   void* d_temp_storage               = nullptr;
   size_t temp_storage_bytes          = 0;

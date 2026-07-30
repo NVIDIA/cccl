@@ -3,8 +3,8 @@
 
 #include <cub/thread/thread_operators.cuh>
 
+#include "cub_test_macros.h"
 #include "test_util.h"
-#include <c2h/catch2_test_helper.h>
 
 template <class T>
 T Make(int val)
@@ -59,7 +59,7 @@ public:
 
 CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
 
-C2H_TEST("InequalityWrapper", "[thread_operator]")
+CUB_TEST("InequalityWrapper", "[thread_operator]", CUB_SMALL)
 {
   cuda::std::equal_to<> wrapped_op{};
   cub::InequalityWrapper<cuda::std::equal_to<>> op{wrapped_op};
