@@ -95,7 +95,8 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
   {
     F f;
     const ::cuda::std::source_location loc;
-    bool active = true;
+    // Armed when != -1; move sets -1 to disarm. Value is otherwise unused for exit.
+    int exceptions = 0;
 
     result(F&& f, ::cuda::std::source_location loc)
         : f(::std::forward<F>(f))
@@ -105,14 +106,14 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , active(rhs.active)
+        , exceptions(rhs.exceptions)
     {
-      rhs.active = false;
+      rhs.exceptions = -1;
     }
 
     ~result() noexcept
     {
-      if (active)
+      if (exceptions != -1)
       {
         invoke_nothrow(f, loc);
       }
@@ -129,8 +130,8 @@ auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
   {
     F f;
     const ::cuda::std::source_location loc;
-    const int exceptions;
-    bool active = true;
+    // Expected uncaught count, or -1 when disarmed by move.
+    int exceptions;
 
     result(F&& f, ::cuda::std::source_location loc, int exceptions)
         : f(::std::forward<F>(f))
@@ -142,14 +143,13 @@ auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(rhs.exceptions)
-        , active(rhs.active)
     {
-      rhs.active = false;
+      rhs.exceptions = -1;
     }
 
     ~result() noexcept
     {
-      if (active && ::std::uncaught_exceptions() == exceptions)
+      if (::std::uncaught_exceptions() == exceptions)
       {
         invoke_nothrow(f, loc);
       }
@@ -169,8 +169,8 @@ auto operator->*(success, F&& f)
   struct result
   {
     F f;
-    const int exceptions;
-    bool active = true;
+    // Expected uncaught count, or -1 when disarmed by move.
+    int exceptions;
 
     result(F&& f, int exceptions)
         : f(::std::forward<F>(f))
@@ -180,15 +180,14 @@ auto operator->*(success, F&& f)
     result(result&& rhs)
         : f(mv(rhs.f))
         , exceptions(rhs.exceptions)
-        , active(rhs.active)
     {
-      rhs.active = false;
+      rhs.exceptions = -1;
     }
 
     // May throw — unlike exit/fail.
     ~result() noexcept(false)
     {
-      if (active && ::std::uncaught_exceptions() == exceptions)
+      if (::std::uncaught_exceptions() == exceptions)
       {
         f();
       }
