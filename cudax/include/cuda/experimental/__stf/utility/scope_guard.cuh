@@ -56,7 +56,7 @@ namespace cuda::experimental::stf
  */
 ///@{
 #define SCOPE(kind) \
-  auto CUDASTF_UNIQUE_NAME(scope_guard) = ::cuda::experimental::stf::detail::scope_guard_handler::kind{}->*[&]()
+  auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
 ///@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -72,33 +72,29 @@ enum class success
 {
 };
 
-#  ifndef NDEBUG
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 {
+  static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
+#  ifndef NDEBUG
   // Forward the SCOPE call-site location into throw_proof.
   ::cuda::experimental::with_location<::cuda::experimental::throw_proof_t>{::cuda::experimental::throw_proof, loc}->*
     [&] {
       f();
     };
-}
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
-template <class F>
-void invoke_nothrow(F& f, ::cuda::std::source_location)
-{
+  (void) loc;
   f();
-}
 #  endif // NDEBUG
+}
 
 template <typename F>
 auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
 {
-  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
-
   struct result
   {
     F f;
-    ::cuda::std::source_location loc;
+    const ::cuda::std::source_location loc;
     bool active = true;
 
     result(F&& f, ::cuda::std::source_location loc)
@@ -129,13 +125,11 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
 template <typename F>
 auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
 {
-  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
-
   struct result
   {
     F f;
-    ::cuda::std::source_location loc;
-    int exceptions;
+    const ::cuda::std::source_location loc;
+    const int exceptions;
     bool active = true;
 
     result(F&& f, ::cuda::std::source_location loc, int exceptions)
@@ -167,14 +161,15 @@ auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
 }
 
 template <typename F>
-auto operator->*(::cuda::experimental::with_location<success> where, F&& f)
+auto operator->*(success, F&& f)
 {
+  // success may throw, so it does not go through invoke_nothrow; keep the same void check.
   static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
 
   struct result
   {
     F f;
-    int exceptions;
+    const int exceptions;
     bool active = true;
 
     result(F&& f, int exceptions)
@@ -200,7 +195,6 @@ auto operator->*(::cuda::experimental::with_location<success> where, F&& f)
     }
   };
 
-  (void) where; // location unused; success may throw so throw_proof does not apply
   return result{::std::forward<F>(f), ::std::uncaught_exceptions()};
 }
 } // namespace detail::scope_guard_handler
