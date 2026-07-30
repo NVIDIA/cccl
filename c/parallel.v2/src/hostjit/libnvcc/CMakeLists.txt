@@ -192,10 +192,6 @@ set_target_properties(
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-if (WIN32)
-  set_target_properties(libnvcc PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OUT_DIR})
-endif()
-
 if (LIBNVCC_LIBRARY_OUTPUT_DIRECTORY)
   set_target_properties(
     libnvcc
