@@ -9,19 +9,11 @@
 #include <thrust/equal.h>
 #include <thrust/memory.h>
 
+#include <cuda/functional>
+
 #include <cstddef>
 
 #include <c2h/catch2_test_helper.h>
-
-// example-begin segmented-select-iseven
-struct is_even_t
-{
-  __host__ __device__ bool operator()(int flag) const
-  {
-    return !(flag % 2);
-  }
-};
-// example-end segmented-select-iseven
 
 C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
 {
@@ -31,7 +23,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_out(num_items);
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  cuda::__is_even is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -74,7 +66,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   c2h::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  cuda::__is_even is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;

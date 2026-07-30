@@ -10,20 +10,12 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
-
-struct is_even
-{
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return static_cast<int>(val) % 2 == 0;
-  }
-};
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
@@ -40,7 +32,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::remove_if(cuda_policy(alloc, launch), in.begin(), in.end(), is_even{});
+               cuda::std::remove_if(cuda_policy(alloc, launch), in.begin(), in.end(), cuda::__is_even{});
              });
 }
 

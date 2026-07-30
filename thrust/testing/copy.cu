@@ -9,6 +9,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 
 #include <algorithm>
@@ -211,15 +212,6 @@ void TestCopyListTo()
 DECLARE_VECTOR_UNITTEST(TestCopyListTo);
 
 template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (x & 1) == 0;
-  }
-};
-
-template <typename T>
 struct is_true
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
@@ -292,8 +284,8 @@ void TestCopyIfIntegral(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -333,8 +325,8 @@ void TestCopyIfSequence(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -394,8 +386,8 @@ void TestCopyIfStencil(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_stencil.begin(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_stencil.begin(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());

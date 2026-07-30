@@ -2,6 +2,8 @@
 #include <thrust/functional.h>
 #include <thrust/partition.h>
 
+#include <cuda/functional>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -11,15 +13,6 @@ is_partitioned_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predi
 {
   *result = thrust::is_partitioned(exec, first, last, pred);
 }
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
 
 template <typename ExecutionPolicy>
 void TestIsPartitionedDevice(ExecutionPolicy exec)
@@ -35,7 +28,7 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   v[0] = 1;
   v[1] = 0;
 
-  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
+  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -43,9 +36,9 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
 
   ASSERT_EQUAL(false, result[0]);
 
-  thrust::partition(v.begin(), v.end(), is_even<int>());
+  thrust::partition(v.begin(), v.end(), cuda::__is_even());
 
-  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
+  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -111,12 +104,11 @@ void TestIsPartitionedCudaStreams()
 }
 DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
 
-template <typename T>
-struct is_even_non_const
+struct is_even_no_const
 {
-  _CCCL_HOST_DEVICE bool operator()(T x) // no const
+  __host__ __device__ bool operator()(int x)
   {
-    return ((int) x % 2) == 0;
+    return (x & 1) == 0;
   }
 };
 
@@ -126,10 +118,9 @@ void TestIsPartitionedWithNonConstPredicate()
   thrust::device_vector<int> unpartitioned = {0, 1, 2, 3};
 
   ASSERT_EQUAL_QUIET(
-    true, thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), is_even_non_const<int>{}));
+    true, thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), is_even_no_const{}));
 
   ASSERT_EQUAL_QUIET(
-    false,
-    thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_non_const<int>{}));
+    false, thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_no_const{}));
 }
 DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);

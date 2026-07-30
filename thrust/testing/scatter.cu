@@ -5,6 +5,8 @@
 #include <thrust/scatter.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -164,16 +166,6 @@ void TestScatterIfDispatchImplicit()
 DECLARE_UNITTEST(TestScatterIfDispatchImplicit);
 
 template <typename T>
-class is_even_scatter_if
-{
-public:
-  _CCCL_HOST_DEVICE bool operator()(const T i) const
-  {
-    return (i % 2) == 0;
-  }
-};
-
-template <typename T>
 void TestScatterIf(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
@@ -193,10 +185,8 @@ void TestScatterIf(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  thrust::scatter_if(
-    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), is_even_scatter_if<unsigned int>());
-  thrust::scatter_if(
-    d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), is_even_scatter_if<unsigned int>());
+  thrust::scatter_if(h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), cuda::__is_even());
+  thrust::scatter_if(d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), cuda::__is_even());
 
   ASSERT_EQUAL(h_output, d_output);
 }
@@ -220,19 +210,9 @@ void TestScatterIfToDiscardIterator(const size_t n)
   thrust::device_vector<unsigned int> d_map = h_map;
 
   thrust::scatter_if(
-    h_input.begin(),
-    h_input.end(),
-    h_map.begin(),
-    h_map.begin(),
-    thrust::make_discard_iterator(),
-    is_even_scatter_if<unsigned int>());
+    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), thrust::make_discard_iterator(), cuda::__is_even());
   thrust::scatter_if(
-    d_input.begin(),
-    d_input.end(),
-    d_map.begin(),
-    d_map.begin(),
-    thrust::make_discard_iterator(),
-    is_even_scatter_if<unsigned int>());
+    d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), thrust::make_discard_iterator(), cuda::__is_even());
 }
 DECLARE_VARIABLE_UNITTEST(TestScatterIfToDiscardIterator);
 
