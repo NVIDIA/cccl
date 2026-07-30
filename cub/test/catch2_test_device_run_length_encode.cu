@@ -195,7 +195,6 @@ void test_segmented_encode(std::int64_t num_items, int max_seg, int elem_offset,
 // the five key size classes: 1, 2, 4, 8 and 16 bytes
 using segment_key_types = c2h::type_list<std::int8_t, std::int16_t, std::uint32_t, std::int64_t, ulonglong2>;
 
-C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]", CUB_SMALL)
 {
   constexpr int num_items = 1;
@@ -532,8 +531,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
+CUB_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
          "[device][run_length_encode]",
+         CUB_SMALL,
          segment_key_types,
          offset_types)
 {
@@ -578,8 +578,9 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
   }
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
+CUB_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
          "[device][run_length_encode]",
+         CUB_SMALL,
          c2h::type_list<std::uint32_t, std::int8_t>)
 {
   using key_t = typename c2h::get<0, TestType>;
@@ -595,8 +596,9 @@ C2H_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
   test_segmented_encode<key_t, int>(1200 * tile + 3, -static_cast<int>(tile + 1), 0, 1u);
 }
 
-C2H_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
+CUB_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
          "[device][run_length_encode]",
+         CUB_SMALL,
          segment_key_types)
 {
   using key_t = typename c2h::get<0, TestType>;
