@@ -27,15 +27,20 @@
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#ifndef NDEBUG
+#  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#endif
+
 namespace cuda::experimental::stf
 {
 /**
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
- * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw, otherwise the application will be terminated.
- * The code controlled by `SCOPE(success)` may throw. In all cases the controlled code must return `void`
- * (enforced at compile time).
+ * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
+ * defined) those lambdas are invoked via `throwproof`, so a throw aborts with a clear message; in release
+ * builds they are called directly. The code controlled by `SCOPE(success)` may throw. In all cases the
+ * controlled code must return `void` (enforced at compile time).
  *
  * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
  *
@@ -94,7 +99,21 @@ auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
       // By convention, call always if threshold is -1, never if threshold < -1
       if (threshold == -1 || ::std::uncaught_exceptions() == threshold)
       {
-        f();
+        if constexpr (cond == scope_guard_condition::success)
+        {
+          f();
+        }
+        else
+        {
+#  ifndef NDEBUG
+          // exit/fail must not throw; abort with location in debug builds.
+          throwproof->*[&] {
+            f();
+          };
+#  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
+          f();
+#  endif // NDEBUG
+        }
       }
     }
 
