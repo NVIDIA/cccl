@@ -323,8 +323,8 @@ struct memory_pool_properties
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
 //! @throws cuda_error If the creation of the CUDA memory pool failed.
 //! @returns The created CUDA memory pool.
-[[nodiscard]] _CCCL_HOST_API static cudaMemPool_t __create_cuda_mempool(
-  memory_pool_properties __properties, ::CUmemLocation __location, CUmemAllocationType __allocation_type)
+[[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t __create_cuda_mempool(
+  memory_pool_properties __properties, ::CUmemLocation __location, ::CUmemAllocationType __allocation_type)
 {
   ::CUmemPoolProps __pool_properties{};
   __pool_properties.allocType   = __allocation_type;
