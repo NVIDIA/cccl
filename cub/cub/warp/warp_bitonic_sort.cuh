@@ -326,10 +326,10 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
     {
-      const int other_i = i + first_half_len;
-      KeyT& key         = keys[i];
-      KeyT& other_key   = keys[other_i];
-      bool should_swap  = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const int other_i      = i + first_half_len;
+      KeyT& key              = keys[i];
+      KeyT& other_key        = keys[other_i];
+      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap)
       {
@@ -384,10 +384,10 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
     {
-      const int other_i = i + first_half_len;
-      KeyT& key         = keys[i];
-      KeyT& other_key   = keys[other_i];
-      bool should_swap  = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const int other_i      = i + first_half_len;
+      KeyT& key              = keys[i];
+      KeyT& other_key        = keys[other_i];
+      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap && other_i * warp_threads + lane < valid_items)
       {
