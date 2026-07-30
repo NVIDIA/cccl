@@ -11,6 +11,8 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
@@ -1061,8 +1063,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SegmentedRadixSortPolicy", "[segmented_radix_sort][device]")
+C2H_TEST("Test SegmentedRadixSortPolicy properties", "[segmented_radix_sort][device]")
 {
+  // no need to test RadixSortDownsweepPolicy, already covered by the radix sort tests
+
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedRadixSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedRadixSortPolicy>);
 
@@ -1100,5 +1104,22 @@ C2H_TEST("SegmentedRadixSortPolicy", "[segmented_radix_sort][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedRadixSortPolicy { .regular_pass = RadixSortDownsweepPolicy {"
+       " .threads_per_block = 192, .items_per_thread = 15"
+       ", .load_algorithm = BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+       ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .radix_bits = 6 }"
+       ", .alternate_pass = RadixSortDownsweepPolicy { .threads_per_block = 384"
+       ", .items_per_thread = 11, .load_algorithm = BLOCK_LOAD_TRANSPOSE"
+       ", .load_modifier = LOAD_DEFAULT, .rank_algorithm = RADIX_RANK_MEMOIZE"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .radix_bits = 5 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

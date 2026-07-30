@@ -128,7 +128,7 @@ struct FindPolicySelector
 };
 // example-end find-if-policy-selector
 
-C2H_TEST("cub::DeviceFind::FindIf env-based API with tuning", "[find][env]")
+C2H_TEST("cub::DeviceFind::FindIf accepts a custom policy selector", "[find][env]")
 {
   // example-begin find-if-tuning
   auto d_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};

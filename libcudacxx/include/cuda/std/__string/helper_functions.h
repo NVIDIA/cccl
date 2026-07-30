@@ -125,6 +125,17 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos,
   return static_cast<_SizeT>(__r - __p);
 }
 
+// In tile mode we cannot pass function pointers, but we can wrap the indirect call into the call operator
+template <class _Traits>
+struct _TraitsWrapperEq
+{
+  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool
+  operator()(typename _Traits::char_type __lhs, typename _Traits::char_type __rhs) const noexcept
+  {
+    return _Traits::eq(__lhs, __rhs);
+  }
+};
+
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _CCCL_API constexpr _SizeT __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
@@ -166,7 +177,13 @@ __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos
     __pos = __sz;
   }
   const _CharT* __r = ::cuda::std::__find_end(
-    __p, __p + __pos, __s, __s + __n, _Traits::eq, random_access_iterator_tag(), random_access_iterator_tag());
+    __p,
+    __p + __pos,
+    __s,
+    __s + __n,
+    _TraitsWrapperEq<_Traits>{},
+    random_access_iterator_tag(),
+    random_access_iterator_tag());
   if (__n > 0 && __r == __p + __pos)
   {
     return __npos;
@@ -182,7 +199,8 @@ __cccl_str_find_first_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Siz
   {
     return __npos;
   }
-  const _CharT* __r = ::cuda::std::__find_first_of_ce(__p + __pos, __p + __sz, __s, __s + __n, _Traits::eq);
+  const _CharT* __r =
+    ::cuda::std::__find_first_of_ce(__p + __pos, __p + __sz, __s, __s + __n, _TraitsWrapperEq<_Traits>{});
   if (__r == __p + __sz)
   {
     return __npos;

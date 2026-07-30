@@ -31,7 +31,7 @@ struct AdjacentDifferencePolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const AdjacentDifferencePolicy& lhs, const AdjacentDifferencePolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -39,7 +39,7 @@ struct AdjacentDifferencePolicy
         && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const AdjacentDifferencePolicy& lhs, const AdjacentDifferencePolicy& rhs)
   {
     return !(lhs == rhs);
@@ -101,7 +101,7 @@ struct policy_hub
 {
   using ValueT = it_value_t<InputIteratorT>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     using AdjacentDifferencePolicy =
       agent_adjacent_difference_policy<128,

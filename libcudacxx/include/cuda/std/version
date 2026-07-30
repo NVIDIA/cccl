@@ -46,9 +46,12 @@
 #define __cccl_lib_is_null_pointer              201309L
 #define __cccl_lib_is_scoped_enum               202011L
 #define __cccl_lib_is_swappable                 201603L
-#define __cccl_lib_launder                      201606L
-#define __cccl_lib_logical_traits               201510L
-#define __cccl_lib_math_constants               201907L
+#if defined(_CCCL_BUILTIN_IS_VIRTUAL_BASE_OF)
+#  define __cccl_lib_is_virtual_base_of 202406L
+#endif // _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
+#define __cccl_lib_launder        201606L
+#define __cccl_lib_logical_traits 201510L
+#define __cccl_lib_math_constants 201907L
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY) \
   && defined(_CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY)
 #  define __cccl_lib_reference_from_temporary 202202L
@@ -75,7 +78,7 @@
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #define __cccl_lib_concepts          202002L
 #define __cccl_lib_exchange_function 201304L
-#define __cccl_lib_expected          202211L
+#define __cccl_lib_expected          202606L
 // # define __cccl_lib_generic_associative_lookup           201304L
 #define __cccl_lib_invoke                201411L
 #define __cccl_lib_invoke_r              202106L
@@ -152,7 +155,7 @@
 #  define __cccl_lib_atomic_flag_test              201907L
 #  define __cccl_lib_atomic_float                  201711L
 #  define __cccl_lib_atomic_lock_free_type_aliases 201907L
-#  define __cccl_lib_atomic_ref                    201806L
+#  define __cccl_lib_atomic_ref                    202603L
 // # define __cccl_lib_atomic_shared_ptr                    201711L
 #  define __cccl_lib_atomic_value_initialization 201911L
 #  define __cccl_lib_atomic_wait                 201907L

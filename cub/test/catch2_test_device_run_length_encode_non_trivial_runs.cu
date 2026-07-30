@@ -254,7 +254,8 @@ struct device_rle_policy_selector
 
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::RleNonTrivialRunsPolicy
   {
-    return {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS};
+    return {cub::RleNonTrivialRunsAlgorithm::lookback,
+            {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS}};
   }
 };
 
@@ -314,7 +315,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
     int j = 0;
     for (; j < large_group_size && i < tile_size; ++j, ++i)
     {
-      h_keys[tile_size + i] = value;
+      h_keys[tile_size + i] = value; // NOLINT(bugprone-misplaced-widening-cast)
     }
     if (j == large_group_size)
     {
@@ -324,7 +325,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
 
     if (i < tile_size)
     {
-      h_keys[tile_size + i] = value;
+      h_keys[tile_size + i] = value; // NOLINT(bugprone-misplaced-widening-cast)
     }
     ++value;
   }

@@ -236,11 +236,13 @@ struct scan_kernel_source
     return arg;
   }
 
-  static auto lookahead_make_tile_state_kernel_arg(void* ts)
+  static auto lookahead_make_tile_state_kernel_arg(void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr)
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead,
+                                cub::detail::scan::lookahead_tile_state_arg_t<char>{
+                                  static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts), atomic_counter});
     return arg;
   }
 };
@@ -400,6 +402,21 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     "-default-device",
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
+
+  // The scan tuning policy depends on the version of the CUDA compiler evaluating it, so this library and NVRTC can
+  // select different algorithms when their versions differ, tripping the policy-mismatch static_assert in the
+  // generated source (NVBug 6235538). Force the JIT to agree with the host: when the host selected lookback, disable
+  // the warpspeed/lookahead scan for the JIT as well. The other direction cannot diverge as long as this library is
+  // built with a CUDA compiler below 13.4: every NVRTC version able to target the architectures for which the host
+  // then selects lookahead also selects lookahead.
+  static_assert(_CCCL_CUDACC_BELOW(13, 4),
+                "Building cccl.c with CUDA >= 13.4 lets the host select the lookahead scan on sm_120, which an NVRTC "
+                "below 13.4 rejects, and this one-directional forcing cannot fix that. Revisit NVBug 6235538 "
+                "before lifting this assert.");
+  if (active_policy.algorithm == cub::ScanAlgorithm::lookback)
+  {
+    args.push_back("-DCCCL_DISABLE_WARPSPEED_SCAN");
+  }
 
   cccl::detail::extend_args_with_build_config(args, config);
 

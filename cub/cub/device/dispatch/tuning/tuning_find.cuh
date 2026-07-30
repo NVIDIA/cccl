@@ -30,14 +30,14 @@ struct FindIfPolicy
   int vec_size; //!< Vectorization size for loading items
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const FindIfPolicy& lhs, const FindIfPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const FindIfPolicy& lhs, const FindIfPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

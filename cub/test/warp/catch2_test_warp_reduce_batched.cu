@@ -84,7 +84,7 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
         : (idx * LogicalWarpThreads + lane_id);
     if (batch_idx < Batches)
     {
-      output[logical_warp_id * Batches + batch_idx] = outputs[idx];
+      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
     }
   }
 }
@@ -127,7 +127,7 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
         : (idx * LogicalWarpThreads + lane_id);
     if (batch_idx < Batches)
     {
-      output[logical_warp_id * Batches + batch_idx] = outputs[idx];
+      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
     }
   }
 }
@@ -183,7 +183,7 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
           : (idx * LogicalWarpThreads + lane_id);
       if (batch_idx < Batches)
       {
-        output[participant_idx * Batches + batch_idx] = outputs[idx];
+        output[static_cast<std::size_t>(participant_idx) * Batches + batch_idx] = outputs[idx];
       }
     }
   }

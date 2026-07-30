@@ -5,10 +5,9 @@
 import itertools
 from typing import Tuple
 
-import cupy as cp
-import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
@@ -152,7 +151,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     DTYPE_SIZE,
 )
 def test_radix_sort_keys(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -168,8 +167,8 @@ def test_radix_sort_keys(dtype, num_items, monkeypatch):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
 
     radix_sort_device(d_in_keys, d_out_keys, None, None, order, num_items)
 
@@ -199,10 +198,10 @@ def test_radix_sort_pairs(dtype, num_items, monkeypatch):
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_values = numba.cuda.to_device(h_in_values)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_values = numba.cuda.to_device(h_out_values)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+    d_out_values = DeviceArray.empty(h_out_values.shape, h_out_values.dtype)
 
     radix_sort_device(
         d_in_keys, d_out_keys, d_in_values, d_out_values, order, num_items
@@ -222,7 +221,7 @@ def test_radix_sort_pairs(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -238,8 +237,8 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
 
     keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
 
@@ -257,7 +256,7 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # NOTE: int16 failures seen only with NVRTC 13.1:
     if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
@@ -274,10 +273,10 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_values = numba.cuda.to_device(h_in_values)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_values = numba.cuda.to_device(h_out_values)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+    d_out_values = DeviceArray.empty(h_out_values.shape, h_out_values.dtype)
 
     keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
     values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
@@ -308,7 +307,7 @@ DTYPE_SIZE_BIT_WINDOW = [
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # NOTE: int16 failures seen only with NVRTC 13.1:
     if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
@@ -333,10 +332,10 @@ def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_values = np.empty(num_items, dtype=np.float32)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_values = numba.cuda.to_device(h_in_values)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_values = numba.cuda.to_device(h_out_values)
+        d_in_keys = DeviceArray.from_numpy(h_in_keys)
+        d_in_values = DeviceArray.from_numpy(h_in_values)
+        d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+        d_out_values = DeviceArray.empty(h_out_values.shape, h_out_values.dtype)
 
         radix_sort_device(
             d_in_keys,
@@ -388,10 +387,10 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_values = np.empty(num_items, dtype=np.float32)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_values = numba.cuda.to_device(h_in_values)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_values = numba.cuda.to_device(h_out_values)
+        d_in_keys = DeviceArray.from_numpy(h_in_keys)
+        d_in_values = DeviceArray.from_numpy(h_in_values)
+        d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+        d_out_values = DeviceArray.empty(h_out_values.shape, h_out_values.dtype)
 
         keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
         values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
@@ -438,8 +437,8 @@ def test_radix_sort_large_num_items(dtype, monkeypatch):
 
     h_in_keys = np.arange(num_items - 1, -1, -1, dtype=dtype)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_out_keys = cp.empty(num_items, dtype=dtype)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_out_keys = DeviceArray.empty(num_items, dtype)
 
     cuda.compute.radix_sort(
         d_in_keys=d_in_keys,
@@ -450,31 +449,37 @@ def test_radix_sort_large_num_items(dtype, monkeypatch):
         order=SortOrder.ASCENDING,
     )
 
-    h_out_keys = d_out_keys.get()
+    h_out_keys = d_out_keys.copy_to_host()
     h_expected, _ = host_sort(h_in_keys, None, SortOrder.ASCENDING)
 
     np.testing.assert_array_equal(h_out_keys, h_expected)
 
 
 def test_radix_sort_with_stream(cuda_stream):
-    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
     num_items = 10000
 
-    with cp_stream:
-        h_in_keys = random_array(num_items, np.int32)
-        d_in_keys = cp.asarray(h_in_keys)
-        d_out_keys = cp.empty_like(d_in_keys)
+    h_in_keys = random_array(num_items, np.int32)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys, stream=cuda_stream)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype, stream=cuda_stream)
 
-    radix_sort_device(d_in_keys, d_out_keys, None, None, SortOrder.ASCENDING, num_items)
+    radix_sort_device(
+        d_in_keys,
+        d_out_keys,
+        None,
+        None,
+        SortOrder.ASCENDING,
+        num_items,
+        stream=cuda_stream,
+    )
 
-    got = d_out_keys.get()
+    got = d_out_keys.copy_to_host(stream=cuda_stream)
     h_in_keys.sort()
 
     np.testing.assert_array_equal(got, h_in_keys)
 
 
 def test_radix_sort(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -486,19 +491,16 @@ def test_radix_sort(monkeypatch):
             False,
         )
 
-    import cupy as cp
-    import numpy as np
-
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
         [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
     )
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_values = cp.asarray(h_in_values)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
 
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_values = cp.empty_like(d_in_values)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_values = DeviceArray.empty(h_in_values.shape, h_in_values.dtype)
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
@@ -506,13 +508,13 @@ def test_radix_sort(monkeypatch):
         d_out_keys=d_out_keys,
         d_in_values=d_in_values,
         d_out_values=d_out_values,
-        num_items=d_in_keys.size,
+        num_items=h_in_keys.size,
         order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct
-    h_out_keys = cp.asnumpy(d_out_keys)
-    h_out_items = cp.asnumpy(d_out_values)
+    h_out_keys = d_out_keys.copy_to_host()
+    h_out_items = d_out_values.copy_to_host()
 
     argsort = np.argsort(h_in_keys, stable=True)
     h_in_keys = np.array(h_in_keys)[argsort]
@@ -523,7 +525,7 @@ def test_radix_sort(monkeypatch):
 
 
 def test_radix_sort_double_buffer(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -535,19 +537,16 @@ def test_radix_sort_double_buffer(monkeypatch):
             False,
         )
 
-    import cupy as cp
-    import numpy as np
-
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
         [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
     )
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_values = cp.asarray(h_in_values)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
 
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_values = cp.empty_like(d_in_values)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_values = DeviceArray.empty(h_in_values.shape, h_in_values.dtype)
 
     keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
     values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
@@ -558,13 +557,13 @@ def test_radix_sort_double_buffer(monkeypatch):
         d_out_keys=None,
         d_in_values=values_double_buffer,
         d_out_values=None,
-        num_items=d_in_keys.size,
+        num_items=h_in_keys.size,
         order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct
-    h_out_keys = cp.asnumpy(keys_double_buffer.current())
-    h_out_values = cp.asnumpy(values_double_buffer.current())
+    h_out_keys = keys_double_buffer.current().copy_to_host()
+    h_out_values = values_double_buffer.current().copy_to_host()
 
     argsort = np.argsort(h_in_keys, stable=True)
     h_in_keys = np.array(h_in_keys)[argsort]
@@ -600,10 +599,10 @@ def test_serialize_deserialize_radix_sort_keys_values():
     h_in_values = np.array(
         [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
     )
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_values = cp.asarray(h_in_values)
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_values = cp.empty_like(d_in_values)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_values = DeviceArray.empty(h_in_values.shape, h_in_values.dtype)
 
     builder = make_radix_sort(
         d_in_keys=d_in_keys,
@@ -622,9 +621,9 @@ def test_serialize_deserialize_radix_sort_keys_values():
         d_out_keys=d_out_keys,
         d_in_values=d_in_values,
         d_out_values=d_out_values,
-        num_items=d_in_keys.size,
+        num_items=h_in_keys.size,
     )
 
     argsort = np.argsort(h_in_keys, stable=True)
-    np.testing.assert_array_equal(d_out_keys.get(), h_in_keys[argsort])
-    np.testing.assert_array_equal(d_out_values.get(), h_in_values[argsort])
+    np.testing.assert_array_equal(d_out_keys.copy_to_host(), h_in_keys[argsort])
+    np.testing.assert_array_equal(d_out_values.copy_to_host(), h_in_values[argsort])

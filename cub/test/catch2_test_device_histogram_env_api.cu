@@ -431,7 +431,7 @@ struct HistogramPolicySelector
 };
 // example-end histogram-even-policy-selector
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven env-based API with tuning", "[histogram][env]")
+C2H_TEST("cub::DeviceHistogram::HistogramEven accepts a custom policy selector", "[histogram][env]")
 {
   // example-begin histogram-even-tuning
   auto d_samples   = thrust::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};

@@ -12,6 +12,8 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_segmented_exclusive_sum);
@@ -663,7 +665,7 @@ C2H_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
+C2H_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanPolicy>);
@@ -693,11 +695,31 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
     .max_segments      = 512};
   constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto block2 = block1;
+  constexpr auto p2     = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(block1 == block2);
+  STATIC_REQUIRE_FALSE(block1 != block2);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(block1)
+          == "SegmentedScanBlockPolicy { .threads_per_block = 128, .items_per_thread = 9"
+             ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .max_segments_per_block = 512 }");
+  REQUIRE(to_string(p1)
+          == "SegmentedScanPolicy { .block = SegmentedScanBlockPolicy { .threads_per_block = 128"
+             ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
+             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .max_segments_per_block = 512 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

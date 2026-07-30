@@ -77,7 +77,7 @@ public:
 };
 
 template <class... _Mappings>
-_CCCL_DEVICE composite_mapping(const _Mappings&...) -> composite_mapping<_Mappings...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES composite_mapping(const _Mappings&...) -> composite_mapping<_Mappings...>;
 
 _CCCL_TEMPLATE(class _Lhs, class _Rhs)
 _CCCL_REQUIRES(__is_group_mapping_v<_Lhs> _CCCL_AND __is_group_mapping_v<_Rhs>)

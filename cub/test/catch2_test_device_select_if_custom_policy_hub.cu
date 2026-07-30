@@ -20,7 +20,7 @@ using namespace cub;
 template <class InputT>
 struct my_policy_hub
 {
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int nominal_4b_items_per_thread = 10;
     static constexpr int items_per_thread =

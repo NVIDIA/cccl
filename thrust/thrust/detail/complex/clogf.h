@@ -41,6 +41,7 @@
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -66,7 +67,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   float x0, y0, x1, y1, x2, y2, t, hm1;
   float val[12];
   int i, sorted;
-  const float e = 2.7182818284590452354f;
+  constexpr auto e = ::cuda::std::__numbers<float>::__e();
 
   x = z.real();
   y = z.imag();

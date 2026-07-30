@@ -5,6 +5,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_merge.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,9 +35,11 @@ CUB_NAMESPACE_BEGIN
 //! less-than), which has to establish a `strict weak ordering
 //! <https://en.cppreference.com/w/cpp/concepts/strict_weak_order>`_.
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceMerge that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref MergePolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::MergePolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
@@ -208,7 +217,7 @@ struct DeviceMerge
     ::cuda::std::int64_t num_keys2,
     KeyIteratorOut keys_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
@@ -434,7 +443,7 @@ struct DeviceMerge
     KeyIteratorOut keys_out,
     ValueIteratorOut values_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
     using default_policy_selector = detail::merge::

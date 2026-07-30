@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/iterator>
 
+#include <sstream>
+
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_env_launch_helper.h"
 
@@ -1099,12 +1101,13 @@ struct select_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
-    return {static_cast<int>(BlockThreads),
-            10,
-            cub::BLOCK_LOAD_DIRECT,
-            cub::LOAD_DEFAULT,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {cub::SelectAlgorithm::lookback,
+            {static_cast<int>(BlockThreads),
+             10,
+             cub::BLOCK_LOAD_DIRECT,
+             cub::LOAD_DEFAULT,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 
@@ -1274,7 +1277,7 @@ C2H_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", block_siz
 }
 
 #  if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("UniqueByKeyPolicy new API is equivalent to existing API", "[select_unique_by_key][device]")
+C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::UniqueByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::UniqueByKeyPolicy>);
@@ -1296,7 +1299,8 @@ C2H_TEST("UniqueByKeyPolicy new API is equivalent to existing API", "[select_uni
     .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #    else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #    endif // _CCCL_STD_VER >= 2020
@@ -1304,35 +1308,51 @@ C2H_TEST("UniqueByKeyPolicy new API is equivalent to existing API", "[select_uni
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "UniqueByKeyPolicy { .threads_per_block = 256, .items_per_thread = 11"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } }");
 }
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SelectPolicy", "[select][device]")
+C2H_TEST("Test SelectPolicy properties", "[select][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SelectPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SelectPolicy>);
 
   // aggregate init
   constexpr auto p1 = cub::SelectPolicy{
-    128,
-    10,
-    cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-    cub::CacheLoadModifier::LOAD_DEFAULT,
-    cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    cub::SelectAlgorithm::lookback,
+    {128,
+     10,
+     cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+     cub::CacheLoadModifier::LOAD_DEFAULT,
+     cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::SelectPolicy{
-    .threads_per_block = 128,
-    .items_per_thread  = 10,
-    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
-    .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    .algorithm = cub::SelectAlgorithm::lookback,
+    .lookback  = cub::SelectLookbackPolicy{
+       .threads_per_block = 128,
+       .items_per_thread  = 10,
+       .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+       .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+       .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+       .lookback_delay    = cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1340,5 +1360,18 @@ C2H_TEST("SelectPolicy", "[select][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
+             ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
