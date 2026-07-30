@@ -173,8 +173,8 @@ struct DeviceHistogramKernelSource
       //      which holds it without overflow.
       using ArrayLevelT = typename UpperLevelArrayT::value_type;
       using ULevelT     = ::cuda::std::make_unsigned_t<ArrayLevelT>;
-      const ULevelT diff = static_cast<ULevelT>(static_cast<ULevelT>(upper_level[channel])
-                                                - static_cast<ULevelT>(lower_level[channel]));
+      const ULevelT diff =
+        static_cast<ULevelT>(static_cast<ULevelT>(upper_level[channel]) - static_cast<ULevelT>(lower_level[channel]));
       const IntArithmeticT range = static_cast<IntArithmeticT>(diff);
       return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
