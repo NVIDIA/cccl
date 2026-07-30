@@ -159,10 +159,8 @@ struct block_size_extracting_minus_t
 
   __device__ int operator()(int lhs, int rhs) const
   {
-    if (threadIdx.x == 1) // thread 0 does not always call this operator
-    {
-      atomicMax(d_block_size, blockDim.x);
-    }
+    // not every thread calls into this operator, so update the block size from all threads
+    atomicMax(d_block_size, blockDim.x);
     return lhs - rhs;
   }
 };
@@ -233,6 +231,32 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(adj_diff_tuning<target_block_size>{});
+
+  device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
+
+  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  REQUIRE(data == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+template <int ThreadsPerBlock>
+struct adj_diff_tuning_tranform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::AdjacentDifferencePolicy policy) const
+    -> cub::AdjacentDifferencePolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+C2H_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adjacent_difference][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto data                                = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto d_block_size                        = c2h::device_vector<unsigned int>{0};
+  auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(adj_diff_tuning_tranform<target_block_size>{});
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 
