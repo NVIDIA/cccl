@@ -95,19 +95,25 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr complex& operator=(const complex&) noexcept(is_nothrow_copy_assignable_v<_Tp>) = default;
   _CCCL_HIDE_FROM_ABI constexpr complex& operator=(complex&&) noexcept(is_nothrow_move_assignable_v<_Tp>) = default;
 
-  template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
+  template <class _Up,
+            enable_if_t<!__is_extended_floating_point_v<_Up>, int>                             = 0,
+            enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _CCCL_API constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
   template <class _Up,
+            enable_if_t<!__is_extended_floating_point_v<_Up>, int>                              = 0,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
             enable_if_t<is_constructible_v<_Tp, _Up>, int>                                      = 0>
   _CCCL_API explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
+
+  template <class _Up, enable_if_t<__is_extended_floating_point_v<_Up>, int> = 0>
+  _CCCL_HOST_DEVICE_API complex(const complex<_Up>& __c);
 
   _CCCL_API constexpr complex& operator=(const value_type& __re)
   {
@@ -116,13 +122,16 @@ public:
     return *this;
   }
 
-  template <class _Up>
+  template <class _Up, enable_if_t<!__is_extended_floating_point_v<_Up>, int> = 0>
   _CCCL_API constexpr complex& operator=(const complex<_Up>& __c)
   {
     __re_ = __c.real();
     __im_ = __c.imag();
     return *this;
   }
+
+  template <class _Up, enable_if_t<__is_extended_floating_point_v<_Up>, int> = 0>
+  _CCCL_HOST_DEVICE_API constexpr complex& operator=(const complex<_Up>& __c);
 
 #if _CCCL_HOSTED()
   template <class _Up>
