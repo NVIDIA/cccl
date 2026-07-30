@@ -37,37 +37,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The algorithm used by the RLE-encode policy.
-enum class RleAlgorithm
-{
-  lookback,
-  lookahead
-};
-
-#if _CCCL_HOSTED()
-namespace detail
-{
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(RleAlgorithm algo) noexcept
-{
-  switch (algo)
-  {
-    case RleAlgorithm::lookback:
-      return "RleAlgorithm::lookback";
-    case RleAlgorithm::lookahead:
-      return "RleAlgorithm::lookahead";
-  }
-  return "<unknown RleAlgorithm>";
-}
-} // namespace detail
-#endif // _CCCL_HOSTED()
-
-#if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
-{
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
-}
-#endif // _CCCL_HOSTED()
-
 //! The lookback tuning policy for DeviceRunLengthEncode::Encode
 struct RleLookbackPolicy
 {
@@ -102,6 +71,37 @@ struct RleLookbackPolicy
   }
 #endif // _CCCL_HOSTED()
 };
+
+//! The algorithm used by the RLE-encode policy.
+enum class RleAlgorithm
+{
+  lookback,
+  lookahead
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(RleAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case RleAlgorithm::lookback:
+      return "RleAlgorithm::lookback";
+    case RleAlgorithm::lookahead:
+      return "RleAlgorithm::lookahead";
+  }
+  return "<unknown RleAlgorithm>";
+}
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
 
 //! The tuning policy for the lookahead implementation of DeviceRunLengthEncode::Encode
 struct RleLookaheadPolicy
