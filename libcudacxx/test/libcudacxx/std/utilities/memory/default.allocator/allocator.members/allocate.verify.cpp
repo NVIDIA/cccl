@@ -18,7 +18,7 @@
 
 #include <cuda/std/__memory_>
 
-__host__ __device__ void f()
+TEST_FUNC void f()
 {
   cuda::std::allocator<int> a;
   a.allocate(3); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}

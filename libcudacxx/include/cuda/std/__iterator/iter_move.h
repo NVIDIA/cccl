@@ -40,7 +40,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__iter_move)
 
-_CCCL_HOST_DEVICE void iter_move();
+_CCCL_API void iter_move();
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -123,6 +123,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_move = __iter_move::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __iter_move_cpo = __iter_move::__fn;
 } // namespace __cpo
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
@@ -131,22 +134,23 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
-    { ::cuda::std::ranges::iter_move(__t) } -> __can_reference;
+    { ::cuda::std::ranges::__iter_move_cpo{}(__t) } -> __can_reference;
   }
-using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
+using iter_rvalue_reference_t = decltype(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<_Tp&>()));
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
-                       requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
-                                          requires(__can_reference<decltype(::cuda::std::ranges::iter_move(__t))>)));
+_CCCL_CONCEPT_FRAGMENT(
+  __can_iter_rvalue_reference_t_,
+  requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
+                     requires(__can_reference<decltype(::cuda::std::ranges::__iter_move_cpo{}(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
 
 template <class _Tp>
-using __iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
+using __iter_rvalue_reference_t = decltype(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<_Tp&>()));
 
 template <class _Tp>
 using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>, __iter_rvalue_reference_t<_Tp>>;

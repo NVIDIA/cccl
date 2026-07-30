@@ -1,0 +1,20 @@
+# -*- conf -*-
+enable=all
+color=never
+external-sources=true
+severity=style
+source-path=SCRIPTDIR
+# Consider invoking this command separately to avoid masking its return value (or use '||
+# true' to ignore).
+#
+# This just clutters up the code. We usually have `set -eo pipefail` enabled.
+disable=SC2312
+# This function is invoked in an 'if' condition so set -e will be disabled. Invoke
+# separately if failures should cause the script to exit.
+#
+# We don't want to exit if errors happen inside an if, that's why we have the if
+# statement...
+disable=SC2310
+# Don't suggest putting braces around all variable references
+disable=SC2250
+shell=bash

@@ -60,6 +60,7 @@
 #define _CCCL_COMPILER_MSVC()     _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_MSVC2019() _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_MSVC2022() _CCCL_VERSION_INVALID()
+#define _CCCL_COMPILER_MSVC2026() _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_NVRTC()    _CCCL_VERSION_INVALID()
 
 // Determine the host compiler and its version
@@ -78,6 +79,7 @@
 #  undef _CCCL_COMPILER_GCC
 #  define _CCCL_COMPILER_GCC() (__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
+// see https://learn.microsoft.com/en-us/cpp/overview/compiler-versions?view=msvc-180#version-macros
 #  undef _CCCL_COMPILER_MSVC
 #  define _CCCL_COMPILER_MSVC() (_MSC_VER / 100, _MSC_VER % 100)
 #  if _CCCL_COMPILER(MSVC, <, 19, 20)
@@ -90,10 +92,14 @@
 #    undef _CCCL_COMPILER_MSVC2019
 #    define _CCCL_COMPILER_MSVC2019() _CCCL_COMPILER_MSVC()
 #  endif // _CCCL_COMPILER(MSVC, >=, 19, 20) && _CCCL_COMPILER(MSVC, <, 19, 30)
-#  if _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 50)
 #    undef _CCCL_COMPILER_MSVC2022
 #    define _CCCL_COMPILER_MSVC2022() _CCCL_COMPILER_MSVC()
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 50)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 50)
+#    undef _CCCL_COMPILER_MSVC2026
+#    define _CCCL_COMPILER_MSVC2026() _CCCL_COMPILER_MSVC()
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 45)
 #elif defined(__CUDACC_RTC__)
 #  undef _CCCL_COMPILER_NVRTC
 #  define _CCCL_COMPILER_NVRTC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
@@ -144,6 +150,12 @@
 #else // ^^^ compiling device code ^^^ / vvv not compiling device code vvv
 #  define _CCCL_DEVICE_COMPILATION() 0
 #endif // ^^^ not compiling device code ^^^
+
+#if defined(__CUDACC_TILE__) && _CCCL_CUDA_COMPILER(NVCC, >, 13, 3)
+#  define _CCCL_TILE_COMPILATION() 1
+#else // ^^^ compiling .cu file in tile mode ^^^ / vvv not compiling in tile mode vvv
+#  define _CCCL_TILE_COMPILATION() 0
+#endif // ^^^ not compiling .cu file ^^^
 
 #define _CCCL_CUDACC_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
 
@@ -209,5 +221,18 @@
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_WARNING(_MSG) _CCCL_PRAGMA(GCC warning _MSG)
 #endif // !_CCCL_COMPILER(MSVC)
+
+// Freestanding environment detection
+// NVRTC is treated as freestanding since it has no access to the host standard library
+#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_FREESTANDING() 1
+#  define _CCCL_HOSTED()       0
+#  define _CCCL_HOSTJIT()      (!_CCCL_COMPILER(NVRTC))
+#  define _CCCL_NO_TYPEID
+#else // ^^^ _CCCL_ENABLE_FREESTANDING ||  _CCCL_COMPILER(NVRTC) ^^^ / vvv Hosted environment vvv
+#  define _CCCL_FREESTANDING() 0
+#  define _CCCL_HOSTED()       1
+#  define _CCCL_HOSTJIT()      0
+#endif // Hosted environment
 
 #endif // __CCCL_COMPILER_H

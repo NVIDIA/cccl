@@ -39,7 +39,7 @@ __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_siz
   using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
-  const int tid     = threadIdx.x;
+  const int tid     = static_cast<int>(threadIdx.x);
   const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   // Test case of partially finished CTA
@@ -102,7 +102,8 @@ __global__ void warp_merge_sort_kernel(
   using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
-  const int tid     = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
   const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   // Test case of partially finished CTA
@@ -515,7 +516,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
     cpu_kv_pairs,
     segment_sizes,
     params::total_warps,
-    thrust::make_tuple(oob_default, value_type{}),
+    cuda::std::tuple(oob_default, value_type{}),
     params::logical_warp_items);
 
   // Verify results

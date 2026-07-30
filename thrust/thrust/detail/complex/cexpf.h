@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2011 David Schultz <das@FreeBSD.ORG>
@@ -71,7 +58,7 @@ _CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
 
   exp_x = ::cuda::std::expf(x - kln2);
   get_float_word(hx, exp_x);
-  *expt = (hx >> 23) - (0x7f + 127) + k;
+  *expt = static_cast<int>((hx >> 23) - (0x7f + 127) + k);
   set_float_word(exp_x, (hx & 0x7fffff) | ((0x7f + 127) << 23));
   return (exp_x);
 }

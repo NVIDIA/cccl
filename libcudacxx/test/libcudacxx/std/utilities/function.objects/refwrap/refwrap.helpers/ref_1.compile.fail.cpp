@@ -21,7 +21,7 @@
 struct A
 {};
 
-__host__ __device__ const A source()
+TEST_FUNC const A source()
 {
   return A();
 }

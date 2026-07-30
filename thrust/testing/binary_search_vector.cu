@@ -1,5 +1,5 @@
 #include <thrust/binary_search.h>
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
@@ -16,7 +16,7 @@ template <class ExampleVector, typename NewType>
 struct vector_like
 {
   using alloc        = typename ExampleVector::allocator_type;
-  using alloc_traits = typename thrust::detail::allocator_traits<alloc>;
+  using alloc_traits = typename cuda::std::allocator_traits<alloc>;
   using new_alloc    = typename alloc_traits::template rebind_alloc<NewType>;
   using type         = thrust::detail::vector_base<NewType, new_alloc>;
 };
@@ -348,7 +348,7 @@ struct TestVectorLowerBoundDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -373,7 +373,7 @@ struct TestVectorUpperBoundDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -398,7 +398,7 @@ struct TestVectorBinarySearchDiscardIterator
     thrust::discard_iterator<> d_result = thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);

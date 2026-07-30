@@ -42,23 +42,23 @@ C2H_TEST("Green context", "[green_context]")
     {
       cudax::green_context green_ctx_dev0(cuda::devices[0]);
       cudax::stream stream_under_green_ctx(green_ctx_dev0);
-      CUDAX_REQUIRE(stream_under_green_ctx.device() == 0);
+      REQUIRE(stream_under_green_ctx.device() == 0);
       if (cuda::devices.size() > 1)
       {
         cudax::green_context green_ctx_dev1(cuda::devices[1]);
         cudax::stream stream_dev1(green_ctx_dev1);
-        CUDAX_REQUIRE(stream_dev1.device() == 1);
+        REQUIRE(stream_dev1.device() == 1);
       }
 
       INFO("Can create a side stream");
       {
         auto ldev1 = stream_under_green_ctx.logical_device();
-        CUDAX_REQUIRE(ldev1.kind() == cudax::logical_device::kinds::green_context);
+        REQUIRE(ldev1.kind() == cudax::logical_device::kinds::green_context);
         cudax::stream side_stream(ldev1);
-        CUDAX_REQUIRE(side_stream.device() == 0);
+        REQUIRE(side_stream.device() == 0);
         auto ldev2 = side_stream.logical_device();
-        CUDAX_REQUIRE(ldev2.kind() == cudax::logical_device::kinds::green_context);
-        CUDAX_REQUIRE(ldev1 == ldev2);
+        REQUIRE(ldev2.kind() == cudax::logical_device::kinds::green_context);
+        REQUIRE(ldev1 == ldev2);
       }
     }
   }
@@ -80,11 +80,20 @@ C2H_TEST("Green context", "[green_context]")
       auto id2 = ctx2.id();
 
       // Test that different contexts have different IDs
-      CUDAX_REQUIRE(id1 != id2);
+#    if _CCCL_COMPILER(NVHPC, <, 25, 11)
+      REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
+#    else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
+      REQUIRE(id1 != id2);
+#    endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
       // Test that the same context returns the same ID when called multiple times
-      CUDAX_REQUIRE(ctx1.id() == id1);
-      CUDAX_REQUIRE(ctx2.id() == id2);
+#    if _CCCL_COMPILER(NVHPC, <, 25, 11)
+      REQUIRE(cuda::std::to_underlying(ctx1.id()) == cuda::std::to_underlying(id1));
+      REQUIRE(cuda::std::to_underlying(ctx2.id()) == cuda::std::to_underlying(id2));
+#    else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
+      REQUIRE(ctx1.id() == id1);
+      REQUIRE(ctx2.id() == id2);
+#    endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
     }
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
@@ -93,6 +102,6 @@ C2H_TEST("Green context", "[green_context]")
 // For some reason CI fails with empty test, add a dummy test case
 C2H_TEST("Dummy test case", "")
 {
-  CUDAX_REQUIRE(1 == 1);
+  REQUIRE(1 == 1);
 }
 #endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^

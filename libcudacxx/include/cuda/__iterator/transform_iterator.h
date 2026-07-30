@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -29,7 +30,9 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -148,7 +151,7 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //!   thrust::reduce(cuda::transform_iterator{v.begin(), square{}},
 //!                  cuda::transform_iterator{v.end(),   square{}});
 //!
-//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   std::cout << "sum of squares: " << sum_of_squares << '\n';
 //!   return 0;
 //! }
 //! @endcode
@@ -235,8 +238,10 @@ public:
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(noexcept(::cuda::std::invoke(::cuda::std::declval<const _Fn&>(), *::cuda::std::declval<const _Iter2&>())))
   {
@@ -248,8 +253,10 @@ public:
   //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
   //! forgotten to const qualify the call operator
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES((!::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>) )
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(noexcept(::cuda::std::invoke(::cuda::std::declval<_Fn&>(), *::cuda::std::declval<const _Iter2&>())))
   {
@@ -268,9 +275,11 @@ public:
   //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
   //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>
                    _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
   {
@@ -283,9 +292,11 @@ public:
   //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
   //! forgotten to const qualify the call operator
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2> _CCCL_AND(
     !::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>))
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
@@ -296,8 +307,10 @@ public:
   //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
   //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>)
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference
   operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
@@ -521,6 +534,48 @@ template <class _Fn, class _Iter>
 //! @}
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! transform_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
+//! To work around that specialize those functions for transform_iterator
+template <class _Diff, class _Fn, class _Iter>
+_CCCL_HOST_API constexpr void advance(::cuda::transform_iterator<_Fn, _Iter>& __iter, _Diff __diff)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::iter_difference_t<_Iter>
+distance(::cuda::transform_iterator<_Fn, _Iter> __first, ::cuda::transform_iterator<_Fn, _Iter> __last)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_iterator<_Fn, _Iter>
+next(::cuda::transform_iterator<_Fn, _Iter> __iter, ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_iterator<_Fn, _Iter>
+prev(::cuda::transform_iterator<_Fn, _Iter> __iter, ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n <= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

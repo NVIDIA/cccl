@@ -15,6 +15,7 @@
 //   swap(x.ptr_, y.ptr_);
 //   swap(x.map_, y.map_);
 //   swap(x.acc_, y.acc_);
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
@@ -26,7 +27,7 @@
 #include "test_macros.h"
 
 template <class MDS>
-__device__ void test_swap(MDS a, MDS b)
+TEST_TILE_DEVICE_FUNC void test_swap(MDS a, MDS b)
 {
   auto org_a = a;
   auto org_b = b;
@@ -42,7 +43,7 @@ __device__ void test_swap(MDS a, MDS b)
   test_swap_counter<MDS>();
 }
 
-__device__ void test()
+TEST_TILE_DEVICE_FUNC void test()
 {
   using extents_t    = cuda::std::extents<int, 4, cuda::std::dynamic_extent>;
   float data_a[1024] = {};

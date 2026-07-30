@@ -13,9 +13,11 @@
 
 #include <cuda/std/cmath>
 
+#include "test_macros.h"
+
 // Regularized incomplete gamma function P(a,x)
 // Adapted from numerical recipes
-__host__ __device__ inline double incomplete_gamma(double a, double x)
+TEST_FUNC inline double incomplete_gamma(double a, double x)
 {
   if (x <= 0.0)
   {
@@ -41,7 +43,7 @@ __host__ __device__ inline double incomplete_gamma(double a, double x)
 
 // Regularized incomplete beta function I_x(a,b)
 // Adapted from numerical recipes
-__host__ __device__ inline double incomplete_beta(double a, double b, double x)
+TEST_FUNC inline double incomplete_beta(double a, double b, double x)
 {
   if (x <= 0.0)
   {

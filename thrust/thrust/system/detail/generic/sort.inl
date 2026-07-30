@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -31,11 +18,11 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/sort.h>
-#include <thrust/tuple.h>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -136,7 +123,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
     return last;
   }
 
-  using IteratorTuple = thrust::tuple<ForwardIterator, ForwardIterator>;
+  using IteratorTuple = ::cuda::std::tuple<ForwardIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ForwardIterator first_plus_one = first;
@@ -145,7 +132,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
   ZipIterator zipped_first = thrust::make_zip_iterator(first_plus_one, first);
   ZipIterator zipped_last  = thrust::make_zip_iterator(last, first);
 
-  return thrust::get<0>(
+  return ::cuda::std::get<0>(
     thrust::find_if(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<Compare>{comp})
       .get_iterator_tuple());
 } // end is_sorted_until()

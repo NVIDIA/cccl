@@ -108,21 +108,37 @@ template <typename _Resource>
 struct __copy_default_queries<_Resource, false>
 {};
 
-enum class __memory_accessability
+enum class __memory_accessibility
 {
+  __unknown,
   __host,
   __device,
   __host_device,
 };
 
-template <class... _Properties>
-struct __memory_accessability_from_properties
+//! @brief The dynamic_accessibility_property reports the resource's memory accessibility at runtime.
+//! Compared to the static properties, it can be used to query the memory accessibility of a resource that is not known
+//! at compile time.
+struct dynamic_accessibility_property
 {
-  static constexpr __memory_accessability value =
-    ::cuda::mr::__is_host_device_accessible<_Properties...> ? __memory_accessability::__host_device
-    : ::cuda::mr::__is_device_accessible<_Properties...>
-      ? __memory_accessability::__device
-      : __memory_accessability::__host;
+  using value_type = __memory_accessibility;
+};
+
+template <bool _HostAccessible, bool _DeviceAccessible>
+_CCCL_API constexpr __memory_accessibility __memory_accessibility_from_static_properties() noexcept
+{
+  return _HostAccessible && _DeviceAccessible ? __memory_accessibility ::__host_device
+       : _DeviceAccessible                    ? __memory_accessibility ::__device
+       : _HostAccessible                      ? __memory_accessibility ::__host
+                                              : __memory_accessibility ::__unknown;
+}
+
+template <class... _Properties>
+struct __memory_accessibility_from_properties
+{
+  static constexpr __memory_accessibility value =
+    __memory_accessibility_from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
+                                                  ::cuda::mr::__is_device_accessible<_Properties...>>();
 };
 
 _CCCL_END_NAMESPACE_CUDA_MR

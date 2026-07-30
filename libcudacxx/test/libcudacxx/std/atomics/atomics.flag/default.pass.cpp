@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -26,7 +29,7 @@
 #include "cuda_space_selector.h"
 
 template <template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Selector<cuda::std::atomic_flag, default_initializer> sel;
   cuda::std::atomic_flag& f = *sel.construct();
@@ -35,13 +38,21 @@ __host__ __device__ void test()
 
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (typedef cuda::std::atomic_flag A; alignas(alignof(A)) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
-     assert(!zero.test_and_set());
-     zero.~A();),
+    ({
+      using A                                     = cuda::std::atomic_flag;
+      alignas(alignof(A)) char storage[sizeof(A)] = {1};
+      A& zero                                     = *new (storage) A();
+      assert(!zero.test_and_set());
+      zero.~A();
+    }),
     NV_PROVIDES_SM_70,
-    (typedef cuda::std::atomic_flag A; alignas(alignof(A)) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
-     assert(!zero.test_and_set());
-     zero.~A();))
+    ({
+      using A                                     = cuda::std::atomic_flag;
+      alignas(alignof(A)) char storage[sizeof(A)] = {1};
+      A& zero                                     = *new (storage) A();
+      assert(!zero.test_and_set());
+      zero.~A();
+    }))
 }
 
 int main(int, char**)

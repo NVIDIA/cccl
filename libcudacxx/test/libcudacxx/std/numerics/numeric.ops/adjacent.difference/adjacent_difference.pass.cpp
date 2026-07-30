@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]         = {15, 10, 6, 3, 1};
   int ir[]         = {15, -5, -4, -3, -2};
@@ -46,23 +46,23 @@ class X
 {
   int i_;
 
-  __host__ __device__ constexpr X& operator=(const X&);
+  TEST_FUNC constexpr X& operator=(const X&);
 
 public:
-  __host__ __device__ constexpr explicit X(int i)
+  TEST_FUNC constexpr explicit X(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr X(const X& x)
+  TEST_FUNC constexpr X(const X& x)
       : i_(x.i_)
   {}
-  __host__ __device__ constexpr X& operator=(X&& x)
+  TEST_FUNC constexpr X& operator=(X&& x)
   {
     i_   = x.i_;
     x.i_ = -1;
     return *this;
   }
 
-  __host__ __device__ constexpr friend X operator-(const X& x, const X& y)
+  TEST_FUNC constexpr friend X operator-(const X& x, const X& y)
   {
     return X(x.i_ - y.i_);
   }
@@ -74,22 +74,22 @@ class Y
 {
   int i_;
 
-  __host__ __device__ constexpr Y& operator=(const Y&);
+  TEST_FUNC constexpr Y& operator=(const Y&);
 
 public:
-  __host__ __device__ constexpr explicit Y(int i)
+  TEST_FUNC constexpr explicit Y(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr Y(const Y& y)
+  TEST_FUNC constexpr Y(const Y& y)
       : i_(y.i_)
   {}
-  __host__ __device__ constexpr void operator=(const X& x)
+  TEST_FUNC constexpr void operator=(const X& x)
   {
     i_ = x.i_;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();
@@ -121,6 +121,13 @@ __host__ __device__ constexpr bool test()
   test<const int*, random_access_iterator<int*>>();
   test<const int*, int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   X x[3] = {X(1), X(2), X(3)};
   Y y[3] = {Y(1), Y(2), Y(3)};
   cuda::std::adjacent_difference(x, x + 3, y);
@@ -131,6 +138,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

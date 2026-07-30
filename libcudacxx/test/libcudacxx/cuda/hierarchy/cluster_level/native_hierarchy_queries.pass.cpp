@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/cassert>
@@ -17,8 +17,9 @@
 #include <cuda/std/type_traits>
 
 #include "hierarchy_queries.h"
+#include "test_macros.h"
 
-__device__ void test_cluster()
+TEST_DEVICE_FUNC void test_cluster()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 
@@ -37,13 +38,16 @@ __device__ void test_cluster()
   // 3. Test cuda::cluster.extents(x)
   test_extents(cuda::std::dims<3, unsigned>{dims.x, dims.y, dims.z}, cuda::cluster, cuda::grid);
 
-  // 4. Test cuda::cluster.count(x)
+  // 4. Test cuda::cluster.static_count(x)
+  test_static_count(cuda::cluster, cuda::grid);
+
+  // 5. Test cuda::cluster.count(x)
   test_count(cuda::std::size_t{dims.z} * dims.y * dims.x, cuda::cluster, cuda::grid);
 
-  // 5. test cuda::cluster.index(x)
+  // 6. test cuda::cluster.index(x)
   test_index(index, cuda::cluster, cuda::grid);
 
-  // 6. Test cuda::cluster.rank(x)
+  // 7. Test cuda::cluster.rank(x)
   {
     const cuda::std::size_t exp = (index.z * dims.y + index.y) * dims.x + index.x;
     test_rank(exp, cuda::cluster, cuda::grid);

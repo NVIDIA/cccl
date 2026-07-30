@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -71,8 +58,8 @@ class xor_combine_engine_max_aux_constants
 public:
   static constexpr result_type two_to_the_d = two_to_the_power(d);
   static constexpr result_type c            = lshift(a, result_type(d));
-  static constexpr result_type t            = ::cuda::std::max(c, b);
-  static constexpr result_type u            = ::cuda::std::min(c, b);
+  static constexpr result_type t            = (::cuda::std::max) (c, b);
+  static constexpr result_type u            = (::cuda::std::min) (c, b);
   static constexpr result_type p            = log2(u);
   static constexpr result_type two_to_the_p = two_to_the_power(p);
   static constexpr result_type k            = t / two_to_the_p;
@@ -173,9 +160,9 @@ struct xor_combine_engine_max
 {
   static constexpr size_t w = ::cuda::std::numeric_limits<result_type>::digits;
   static constexpr result_type m1 =
-    ::cuda::std::min(result_type(Engine1::max - Engine1::min), result_type(two_to_the_power(w - s1) - 1));
+    (::cuda::std::min) (result_type(Engine1::max - Engine1::min), result_type(two_to_the_power(w - s1) - 1));
   static constexpr result_type m2 =
-    ::cuda::std::min(result_type(Engine2::max - Engine2::min), result_type(two_to_the_power(w - s2) - 1));
+    (::cuda::std::min) (result_type(Engine2::max - Engine2::min), result_type(two_to_the_power(w - s2) - 1));
   static constexpr result_type s = s1 - s2;
   static constexpr result_type M = xor_combine_engine_max_aux<result_type, m1, m2, s>::value;
   // the value is M(m1,m2,s) lshift_w s2

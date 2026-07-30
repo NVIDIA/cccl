@@ -13,10 +13,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include <nvrtc.h>
 
@@ -259,7 +262,7 @@ struct nvrtc2_pre_build
     {
       std::unique_ptr<char[]> log{new char[log_size]};
       check(nvrtcGetProgramLog(context.program, log.get()));
-      std::cerr << log.get() << std::endl;
+      std::cerr << log.get() << '\n';
     }
     check(result);
 
@@ -326,11 +329,29 @@ struct nvrtc2_top_level
       }
     }
 
-    // Add all LTO-IR items to the linker
+    // Add all LTO-IR items to the linker (deduplicate identical blobs)
+    std::unordered_map<std::size_t, std::vector<std::pair<const char*, std::size_t>>> seen_ltoirs;
+    std::hash<std::string_view> hasher;
+
+    auto is_duplicate_ltoir = [&](const nvrtc_ltoir& ltoir) {
+      std::string_view ltoir_view(ltoir.ltoir, ltoir.size);
+      auto hash     = hasher(ltoir_view);
+      auto& entries = seen_ltoirs[hash];
+      for (const auto& entry : entries)
+      {
+        if (entry.second == ltoir.size && std::memcmp(entry.first, ltoir.ltoir, ltoir.size) == 0)
+        {
+          return true;
+        }
+      }
+      entries.emplace_back(ltoir.ltoir, ltoir.size);
+      return false;
+    };
+
     for (auto it = list.begin(); it != ltoir_end; ++it)
     {
       const auto& ltoir = std::get<nvrtc_ltoir>(*it);
-      if (ltoir.size)
+      if (ltoir.size && !is_duplicate_ltoir(ltoir))
       {
         check(nvJitLinkAddData(
           context.jit.handle,
@@ -356,7 +377,7 @@ struct nvrtc2_top_level
     {
       std::unique_ptr<char[]> log{new char[log_size]};
       check(nvJitLinkGetErrorLog(context.jit.handle, log.get()));
-      std::cerr << log.get() << std::endl;
+      std::cerr << log.get() << '\n';
     }
 
     check(jitlink_error);

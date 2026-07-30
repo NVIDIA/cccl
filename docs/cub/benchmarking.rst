@@ -1,4 +1,4 @@
-CUB Benchmarks
+Benchmarks
 *************************************
 
 .. TODO(bgruber): this guide applies to Thrust as well. We should rename it to "CCCL Benchmarks" and move it out of CUB
@@ -21,10 +21,10 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake .. --preset=cub-benchmark
+    cmake .. --preset=benchmark
 
 You clone the repository, create a build directory and configure the build with CMake.
-The preset `cub-benchmark` takes care of everything.
+The preset `benchmark` takes care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
 
@@ -108,6 +108,22 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
+If you want to plot the benchmark results, you can use the following script:
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_plot_bwutil.py base.json
+
+The `-a` option is supported to restrict the values for some axes as well,
+which is useful if you want to plot only a subset of workloads.
+Use the `-b` option to select a specific benchmark by name
+in case your JSON file contains results for multiple benchmarks.
+Multiple benchmarks are selected by repeating the `-b` option.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_plot_bwutil.py \
+        -b base -a Elements{io}[pow2]=28 base.json
 
 .. _cub-benchmarking-comparing:
 
@@ -124,7 +140,7 @@ You can now compare the two result JSON files using, assuming you are still in y
 
 .. code-block:: bash
 
-    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_compare.py base.json new.json
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py base.json new.json
 
 The `PYTHONPATH` environment variable may not be necessary in all cases.
 The script will print a Markdown report showing the runtime differences between each variant of the two benchmark run.
@@ -143,6 +159,23 @@ NVBench reports the noise of the measurements,
 which corresponds to the relative standard deviation.
 It then reports with statistical significance in the `Status` column
 how the runtime changed from the base to the new version.
+
+You can reduce the output to runs with larger differences using the `--threshold-diff` option,
+passing the minimum percentage for a run to be shown, e.g., `0.05` for 5%.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py \
+        --threshold-diff 0.05 base.json new.json
+
+You can also plot the comparison by adding the `--plot` argument.
+It's reasonable to combine this with the `-a` option again
+to restrict the values for some axes.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py \
+        -a Elements{io}[pow2]=28 --plot base.json new.json
 
 
 Running all benchmarks directly from the command line
@@ -168,7 +201,7 @@ You can archive those files for later comparison or analysis.
 Running all benchmarks via tuning scripts (alternative)
 --------------------------------------------------------------------------------
 
-The benchmark suite can also be run using the :ref:`tuning <cub-tuning>` infrastructure.
+The benchmark suite can also be run using the :ref:`tuning infrastructure <cub-tuning-infra>`.
 The tuning infrastructure handles building benchmarks itself, because it records the build times.
 Therefore, it's critical that you run it in a clean build directory without any build artifacts.
 Running cmake is enough. Alternatively, you can also clean your build directory.
@@ -307,7 +340,7 @@ With cmake, you can just add `-DCMAKE_CUDA_FLAGS=-lineinfo` when invoking cmake 
 
 .. code-block:: bash
 
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
+    cmake .. --preset=benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
 
 To profile the kernels, use the `ncu` command.
 A typical invocation, if you work on a remote cluster, could look like this:
@@ -340,4 +373,4 @@ Authoring benchmarks
 
 CUB's benchmarks serve a dual purpose.
 They are used to measure and compare the performance of CUB and to tune CUB's algorithms.
-More information on how to create new benchmarks is provided in the :ref:`CUB tuning guide <cub-tuning>`.
+More information on how to create new benchmarks is provided in the :ref:`CUB tuning infrastructure guide <cub-tuning-infra>`.

@@ -1,6 +1,12 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 # distutils: language = c++
 # cython: language_level=3
 # cython: linetrace=True
+# cython: freethreading_compatible=True
 
 # Python signatures are declared in the companion Python stub file _bindings.pyi
 # Make sure to update PYI with change to Python API to ensure that Python
@@ -8,6 +14,7 @@
 
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
+from libc.stdlib cimport malloc, free
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 from cpython.buffer cimport (
@@ -19,7 +26,24 @@ from cpython.pycapsule cimport (
 )
 
 import ctypes
+import threading
 from enum import IntEnum
+
+# Serializes the one-time transition of a build result to "loaded". The backend
+# loader runs under `with nogil` (releasing the GIL), so without this lock two
+# concurrent first-time __call__s on the same build result could both pass the
+# `_loaded` guard and load the same handle twice.
+_LOAD_LOCK = threading.Lock()
+
+
+def _load_once(build_result, loader):
+    with _LOAD_LOCK:
+        if build_result._loaded:
+            return
+        loader(build_result)
+        build_result._loaded = True
+
+
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
     cdef struct OpaqueCUkernel_st
@@ -29,6 +53,13 @@ cdef extern from "<cuda.h>":
     ctypedef OpaqueCUstream_st *CUstream
     ctypedef OpaqueCUkernel_st *CUkernel
     ctypedef OpaqueCUlibrary_st *CUlibrary
+
+
+# Backend-conditional cccl_op_code_type enum + _parse_code_type helper.
+# CMake configures the v1 or v2 variant of `_bindings_op_code_type.pxi` into
+# the build dir. v2 declares the extra CCCL_OP_LLVM_IR value that v1's
+# types.h does not define.
+include "_bindings_op_code_type.pxi"
 
 
 cdef extern from "cccl/c/types.h":
@@ -82,10 +113,6 @@ cdef extern from "cccl/c/types.h":
         size_t alignment
         cccl_type_enum type
 
-    cdef enum cccl_op_code_type:
-        CCCL_OP_LTOIR
-        CCCL_OP_CPP_SOURCE
-
     cdef struct cccl_op_t:
         cccl_op_kind_t type
         const char* name
@@ -95,6 +122,10 @@ cdef extern from "cccl/c/types.h":
         size_t size
         size_t alignment
         void *state
+        const char** extra_ltoirs
+        size_t* extra_ltoir_sizes
+        size_t num_extra_ltoirs
+        cccl_op_code_type* extra_code_types
 
     cdef struct cccl_value_t:
         cccl_type_info type
@@ -130,6 +161,10 @@ cdef extern from "cccl/c/types.h":
         RUN_TO_RUN "CCCL_RUN_TO_RUN"
         GPU_TO_GPU "CCCL_GPU_TO_GPU"
 
+    cpdef enum cccl_binary_search_mode_t:
+        LOWER_BOUND "CCCL_BINARY_SEARCH_LOWER_BOUND"
+        UPPER_BOUND "CCCL_BINARY_SEARCH_UPPER_BOUND"
+
 cdef void arg_type_check(
     str arg_name,
     object expected_type,
@@ -147,6 +182,7 @@ IteratorKind = cccl_iterator_kind_t
 SortOrder = cccl_sort_order_t
 InitKind = cccl_init_kind_t
 Determinism = cccl_determinism_t
+BinarySearchMode = cccl_binary_search_mode_t
 
 cdef void _validate_alignment(int alignment) except *:
     """
@@ -182,32 +218,68 @@ cdef class Op:
             State for the stateful operation.
         state_alignment (int, optional):
             Alignment of the state struct. Default: `1`.
+        extra_ltoirs (list of bytes, optional):
+            Additional LTOIR modules to link with this operation.
     """
     # need Python owner of memory used for operator name
     cdef bytes op_encoded_name
     cdef bytes code_bytes
     cdef bytes state_bytes
+    cdef list extra_ltoirs_list  # Python list to keep bytes alive
+    cdef list extra_code_types_list  # Python list of code_type strings; kept alive in parallel with extra_ltoirs_list
+    cdef const char** extra_ltoirs_ptrs
+    cdef size_t* extra_ltoir_sizes_arr
+    cdef cccl_op_code_type* extra_code_types_arr
     cdef cccl_op_t op_data
 
 
-    cdef void _set_members(self, cccl_op_kind_t op_type, str name, bytes lto_ir, bytes state, int state_alignment):
+    cdef void _set_members(self, cccl_op_kind_t op_type, str name, bytes code_bytes, str code_kind, bytes state, int state_alignment, list extra_bytes, list extra_kinds):
         memset(&self.op_data, 0, sizeof(cccl_op_t))
-        # Reference Python objects in the class to ensure lifetime
+        # Reference Python objects in the class to ensure lifetime.
         self.op_encoded_name = name.encode("utf-8")
-        self.code_bytes = lto_ir
+        self.code_bytes = code_bytes
         self.state_bytes = state
+        self.extra_ltoirs_list = extra_bytes
+        self.extra_code_types_list = extra_kinds
         # set fields of op_data struct
         self.op_data.type = op_type
         self.op_data.name = <const char *>self.op_encoded_name
-        self.op_data.code = <const char *>lto_ir
-        self.op_data.code_size = len(lto_ir)
-        self.op_data.code_type = cccl_op_code_type.CCCL_OP_LTOIR
+        self.op_data.code = <const char *>code_bytes
+        self.op_data.code_size = len(code_bytes)
+        self.op_data.code_type = _parse_code_type(code_kind)
         self.op_data.size = len(state)
         self.op_data.alignment = state_alignment
         self.op_data.state = <void *><const char *>state
 
+        # Handle extras (parallel arrays on the C side).
+        cdef size_t num_extra = len(extra_bytes)
+        if num_extra > 0:
+            self.extra_ltoirs_ptrs = <const char**>malloc(num_extra * sizeof(const char*))
+            self.extra_ltoir_sizes_arr = <size_t*>malloc(num_extra * sizeof(size_t))
+            self.extra_code_types_arr = <cccl_op_code_type*>malloc(num_extra * sizeof(cccl_op_code_type))
+            for i in range(num_extra):
+                eb = <bytes>extra_bytes[i]
+                self.extra_ltoirs_ptrs[i] = <const char*>eb
+                self.extra_ltoir_sizes_arr[i] = len(eb)
+                self.extra_code_types_arr[i] = _parse_code_type(extra_kinds[i])
+            self.op_data.extra_ltoirs = self.extra_ltoirs_ptrs
+            self.op_data.extra_ltoir_sizes = self.extra_ltoir_sizes_arr
+            self.op_data.extra_code_types = self.extra_code_types_arr
+            self.op_data.num_extra_ltoirs = num_extra
+        else:
+            self.extra_ltoirs_ptrs = NULL
+            self.extra_ltoir_sizes_arr = NULL
+            self.extra_code_types_arr = NULL
+            self.op_data.extra_ltoirs = NULL
+            self.op_data.extra_ltoir_sizes = NULL
+            self.op_data.extra_code_types = NULL
+            self.op_data.num_extra_ltoirs = 0
 
-    def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1):
+
+    def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1, extra_ltoirs = None):
+        # ltoir accepts either raw `bytes` (legacy — treated as LTO-IR) or a
+        # DeviceCode instance (carries its own format tag via .kind / .op_bytes).
+        # extra_ltoirs accepts a list of either form, mixable.
         if name is None and ltoir is None:
             name = ""
             ltoir = b""
@@ -215,23 +287,80 @@ cdef class Op:
             state = b""
         if operator_type is None:
             operator_type = OpKind.STATELESS
+        if extra_ltoirs is None:
+            extra_ltoirs = []
         arg_type_check(arg_name="name", expected_type=str, arg=name)
-        arg_type_check(arg_name="ltoir", expected_type=bytes, arg=ltoir)
         arg_type_check(arg_name="state", expected_type=bytes, arg=state)
         arg_type_check(arg_name="state_alignment", expected_type=int, arg=state_alignment)
+        arg_type_check(arg_name="extra_ltoirs", expected_type=list, arg=extra_ltoirs)
         if not isinstance(operator_type, OpKind):
             raise TypeError(
                 f"The operator_type argument should be an enumerator of operator kinds"
             )
+
+        # Unpack ltoir → (bytes, kind). DeviceCode duck-typed via attributes
+        # to avoid importing it here.
+        cdef bytes code_bytes
+        cdef str code_kind
+        if isinstance(ltoir, bytes):
+            code_bytes = <bytes>ltoir
+            code_kind = "ltoir"
+        elif hasattr(ltoir, "op_bytes") and hasattr(ltoir, "kind"):
+            if not isinstance(ltoir.op_bytes, bytes) or not isinstance(ltoir.kind, str):
+                raise TypeError(
+                    f"DeviceCode.op_bytes must be bytes and .kind must be str; "
+                    f"got {type(ltoir.op_bytes)} and {type(ltoir.kind)}"
+                )
+            code_bytes = <bytes>ltoir.op_bytes
+            code_kind = <str>ltoir.kind
+        else:
+            raise TypeError(
+                f"ltoir must be bytes or DeviceCode-like (with op_bytes and kind "
+                f"attributes); got {type(ltoir)}"
+            )
+
+        # Unpack each extra entry the same way.
+        extra_bytes = []
+        extra_kinds = []
+        for i, el in enumerate(extra_ltoirs):
+            if isinstance(el, bytes):
+                extra_bytes.append(el)
+                extra_kinds.append("ltoir")
+            elif hasattr(el, "op_bytes") and hasattr(el, "kind"):
+                if not isinstance(el.op_bytes, bytes) or not isinstance(el.kind, str):
+                    raise TypeError(
+                        f"extra_ltoirs[{i}].op_bytes must be bytes and .kind must be str; "
+                        f"got {type(el.op_bytes)} and {type(el.kind)}"
+                    )
+                extra_bytes.append(el.op_bytes)
+                extra_kinds.append(el.kind)
+            else:
+                raise TypeError(
+                    f"extra_ltoirs[{i}] must be bytes or DeviceCode-like; got {type(el)}"
+                )
+
         _validate_alignment(state_alignment)
         self._set_members(
             <cccl_op_kind_t> operator_type.value,
             <str> name,
-            <bytes> ltoir,
+            code_bytes,
+            code_kind,
             <bytes> state,
-            <int> state_alignment
+            <int> state_alignment,
+            <list> extra_bytes,
+            <list> extra_kinds,
         )
 
+    def __dealloc__(self):
+        if self.extra_ltoirs_ptrs != NULL:
+            free(self.extra_ltoirs_ptrs)
+            self.extra_ltoirs_ptrs = NULL
+        if self.extra_ltoir_sizes_arr != NULL:
+            free(self.extra_ltoir_sizes_arr)
+            self.extra_ltoir_sizes_arr = NULL
+        if self.extra_code_types_arr != NULL:
+            free(self.extra_code_types_arr)
+            self.extra_code_types_arr = NULL
 
     cdef void set_state(self, bytes state):
         self.state_bytes = state
@@ -255,22 +384,41 @@ cdef class Op:
         return self.code_bytes
 
     @property
-    def code(self):
-        return self.code_bytes
-
-    @property
     def state_alignment(self):
         return self.op_data.alignment
 
     @property
-    def state_typenum(self):
-        return self.op_data.type
+    def operator_type(self):
+        """Return the op kind (stateless/stateful) for serialization."""
+        return OpKind(<int>self.op_data.type)
 
-    def as_bytes(self):
-        "Debugging utility to view memory content of library struct"
-        cdef uint8_t[:] mem_view = bytearray(sizeof(self.op_data))
-        memcpy(&mem_view[0], &self.op_data, sizeof(self.op_data))
-        return bytes(mem_view)
+    @property
+    def code(self):
+        """Return a DeviceCode wrapping this op's main code blob + its kind."""
+        from cuda.compute._device_code import DeviceCode
+        return DeviceCode(op_bytes=self.code_bytes, kind=self._code_kind())
+
+    @property
+    def extra_code(self):
+        """Return DeviceCode instances for each extra blob."""
+        from cuda.compute._device_code import DeviceCode
+        return [
+            DeviceCode(op_bytes=b, kind=k)
+            for b, k in zip(self.extra_ltoirs_list, self.extra_code_types_list)
+        ]
+
+    cdef str _code_kind(self):
+        cdef cccl_op_code_type t = self.op_data.code_type
+        if t == CCCL_OP_LTOIR:
+            return "ltoir"
+        if t == CCCL_OP_CPP_SOURCE:
+            return "cpp_source"
+        # CCCL_OP_LLVM_IR is only defined on the v2 build; _parse_code_type
+        # maps "llvm_ir" to CCCL_OP_LTOIR on v1, so we must test CCCL_OP_LTOIR
+        # first (above) before reaching here.
+        if t == _parse_code_type("llvm_ir"):
+            return "llvm_ir"
+        return "ltoir"
 
 
 cdef class TypeInfo:
@@ -740,6 +888,11 @@ cdef class Iterator:
         cdef cccl_type_info type_info = self.iter_data.value_type
         return TypeInfo(type_info.size, type_info.alignment, type_info.type)
 
+    @property
+    def alignment(self):
+        """Return the iterator state alignment for serialization."""
+        return self.iter_data.alignment
+
     def is_kind_pointer(self):
         cdef cccl_iterator_kind_t it_kind = self.iter_data.type
         return (it_kind == cccl_iterator_kind_t.POINTER)
@@ -831,8 +984,9 @@ cdef class CommonData:
 
 cdef extern from "cccl/c/reduce.h":
     cdef struct cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
+        cccl_determinism_t determinism
 
     cdef CUresult cccl_device_reduce_build(
         cccl_device_reduce_build_result_t*,
@@ -875,8 +1029,18 @@ cdef extern from "cccl/c/reduce.h":
 
 cdef class DeviceReduceBuildResult:
     cdef cccl_device_reduce_build_result_t build_data
+    # Whether cuLibraryLoadData + cuLibraryGetKernel have populated the
+    # library/kernel handles.
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        # Always zero the C struct so that __dealloc__ + cccl_device_reduce_cleanup
+        # is safe regardless of which initialization path is taken (regular build,
+        # alternate factory like deserialize, or a build that raises mid-way).
+        memset(&self.build_data, 0, sizeof(cccl_device_reduce_build_result_t))
+        self._loaded = False
+
+    def __init__(
         DeviceReduceBuildResult self,
         Iterator d_in,
         Iterator d_out,
@@ -892,7 +1056,6 @@ cdef class DeviceReduceBuildResult:
         cdef const char *thrust_path = common_data.thrust_path_get_c_str()
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
-        memset(&self.build_data, 0, sizeof(cccl_device_reduce_build_result_t))
 
         with nogil:
             status = cccl_device_reduce_build(
@@ -921,7 +1084,7 @@ cdef class DeviceReduceBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during reduce result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -955,7 +1118,7 @@ cdef class DeviceReduceBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_nondeterministic(
+    cpdef size_t compute_nondeterministic(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -991,9 +1154,33 @@ cdef class DeviceReduceBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    @property
+    def determinism(DeviceReduceBuildResult self):
+        return <int>self.build_data.determinism
+
+    def serialize(DeviceReduceBuildResult self):
+        return _reduce_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _reduce_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _reduce_compile(*args)
+
+    def load(DeviceReduceBuildResult self):
+        # Idempotent: the fused build and a prior load() both set _loaded, so
+        # this is a cheap no-op after the first successful load. The guard also
+        # keeps the (unsupported) v2 backend's load stub from firing on an
+        # already-loaded result.
+        if self._loaded:
+            return
+        _load_once(self, _reduce_load)
 
 # ------------
 #   DeviceScan
@@ -1004,8 +1191,8 @@ cdef extern from "cccl/c/scan.h":
     ctypedef bint _Bool
 
     cdef struct cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_scan_build(
         cccl_device_scan_build_result_t*,
@@ -1084,8 +1271,13 @@ cdef extern from "cccl/c/scan.h":
 
 cdef class DeviceScanBuildResult:
     cdef cccl_device_scan_build_result_t build_data
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_scan_build_result_t))
+        self._loaded = False
+
+    def __init__(
         DeviceScanBuildResult self,
         Iterator d_in,
         Iterator d_out,
@@ -1102,7 +1294,6 @@ cdef class DeviceScanBuildResult:
         cdef const char *thrust_path = common_data.thrust_path_get_c_str()
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
-        memset(&self.build_data, 0, sizeof(cccl_device_scan_build_result_t))
 
         with nogil:
             status = cccl_device_scan_build(
@@ -1130,7 +1321,7 @@ cdef class DeviceScanBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during scan result cleanup")
 
-    cpdef int compute_inclusive(
+    cpdef size_t compute_inclusive(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1164,7 +1355,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_exclusive(
+    cpdef size_t compute_exclusive(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1198,7 +1389,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_inclusive_future_value(
+    cpdef size_t compute_inclusive_future_value(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1232,7 +1423,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_exclusive_future_value(
+    cpdef size_t compute_exclusive_future_value(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1266,7 +1457,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_inclusive_no_init(
+    cpdef size_t compute_inclusive_no_init(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1301,9 +1492,25 @@ cdef class DeviceScanBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceScanBuildResult self):
+        return _scan_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _scan_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _scan_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _scan_load)
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1312,8 +1519,8 @@ cdef class DeviceScanBuildResult:
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef struct cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_segmented_reduce_build(
         cccl_device_segmented_reduce_build_result_t*,
@@ -1326,29 +1533,32 @@ cdef extern from "cccl/c/segmented_reduce.h":
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 
-    cdef CUresult cccl_device_segmented_reduce(
-        cccl_device_segmented_reduce_build_result_t,
-        void *,
-        size_t *,
-        cccl_iterator_t,
-        cccl_iterator_t,
-        uint64_t,
-        cccl_iterator_t,
-        cccl_iterator_t,
-        cccl_op_t,
-        cccl_value_t,
-        CUstream
-    ) nogil
+    # `cccl_device_segmented_reduce` (the execute entry point) is declared in the
+    # generated _bindings_segmented_reduce_backend.pxi included below, because its
+    # signature differs between the v1 and v2 backends.
+
 
     cdef CUresult cccl_device_segmented_reduce_cleanup(
         cccl_device_segmented_reduce_build_result_t* bld_ptr
     ) nogil
 
 
+# v1 and v2 disagree on whether `cccl_device_segmented_reduce` takes a
+# `size_t max_segment_size` argument. The .pxi pulled in here declares the
+# extern and a uniform `_call_segmented_reduce()` helper that hides the
+# difference; CMake configure_file picks the right backend variant.
+include "_bindings_segmented_reduce_backend.pxi"
+
+
 cdef class DeviceSegmentedReduceBuildResult:
     cdef cccl_device_segmented_reduce_build_result_t build_data
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_segmented_reduce_build_result_t))
+        self._loaded = False
+
+    def __init__(
         DeviceSegmentedReduceBuildResult self,
         Iterator d_in,
         Iterator d_out,
@@ -1366,7 +1576,6 @@ cdef class DeviceSegmentedReduceBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_segmented_reduce_build_result_t))
         with nogil:
             status = cccl_device_segmented_reduce_build(
                 &self.build_data,
@@ -1395,7 +1604,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during segmented_reduce result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceSegmentedReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1406,7 +1615,8 @@ cdef class DeviceSegmentedReduceBuildResult:
         Iterator end_offsets,
         Op op,
         Value h_init,
-        stream
+        size_t max_segment_size=0,  # accepted for v1 API compat; v2 ignores
+        stream=None
     ):
         cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
@@ -1414,7 +1624,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
-            status = cccl_device_segmented_reduce(
+            status = _call_segmented_reduce(
                 self.build_data,
                 storage_ptr,
                 &storage_sz,
@@ -1425,7 +1635,8 @@ cdef class DeviceSegmentedReduceBuildResult:
                 end_offsets.iter_data,
                 op.op_data,
                 h_init.value_data,
-                c_stream
+                max_segment_size,
+                c_stream,
             )
         if status != 0:
             raise RuntimeError(
@@ -1435,9 +1646,25 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceSegmentedReduceBuildResult self):
+        return _segmented_reduce_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _segmented_reduce_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _segmented_reduce_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _segmented_reduce_load)
 
 # -----------------
 #   DeviceMergeSort
@@ -1446,8 +1673,8 @@ cdef class DeviceSegmentedReduceBuildResult:
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef struct cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_merge_sort_build(
         cccl_device_merge_sort_build_result_t *bld_ptr,
@@ -1479,8 +1706,13 @@ cdef extern from "cccl/c/merge_sort.h":
 
 cdef class DeviceMergeSortBuildResult:
     cdef cccl_device_merge_sort_build_result_t build_data
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_merge_sort_build_result_t))
+        self._loaded = False
+
+    def __init__(
         DeviceMergeSortBuildResult self,
         Iterator d_in_keys,
         Iterator d_in_items,
@@ -1497,7 +1729,6 @@ cdef class DeviceMergeSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_merge_sort_build_result_t))
         with nogil:
             status = cccl_device_merge_sort_build(
                 &self.build_data,
@@ -1525,7 +1756,7 @@ cdef class DeviceMergeSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during merge_sort result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceMergeSortBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1563,9 +1794,25 @@ cdef class DeviceMergeSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceMergeSortBuildResult self):
+        return _merge_sort_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _merge_sort_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _merge_sort_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _merge_sort_load)
 
 
 # -------------------
@@ -1574,8 +1821,8 @@ cdef class DeviceMergeSortBuildResult:
 
 cdef extern from "cccl/c/unique_by_key.h":
     cdef struct cccl_device_unique_by_key_build_result_t 'cccl_device_unique_by_key_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
 
     cdef CUresult cccl_device_unique_by_key_build(
@@ -1610,8 +1857,13 @@ cdef extern from "cccl/c/unique_by_key.h":
 
 cdef class DeviceUniqueByKeyBuildResult:
     cdef cccl_device_unique_by_key_build_result_t build_data
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_unique_by_key_build_result_t))
+        self._loaded = False
+
+    def __init__(
         DeviceUniqueByKeyBuildResult self,
         Iterator d_keys_in,
         Iterator d_values_in,
@@ -1629,7 +1881,6 @@ cdef class DeviceUniqueByKeyBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_unique_by_key_build_result_t))
         with nogil:
             status = cccl_device_unique_by_key_build(
                 &self.build_data,
@@ -1658,7 +1909,7 @@ cdef class DeviceUniqueByKeyBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during unique_by_key result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceUniqueByKeyBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1699,9 +1950,25 @@ cdef class DeviceUniqueByKeyBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceUniqueByKeyBuildResult self):
+        return _unique_by_key_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _unique_by_key_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _unique_by_key_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _unique_by_key_load)
 
 # -----------------
 # DeviceRadixSort
@@ -1709,8 +1976,8 @@ cdef class DeviceUniqueByKeyBuildResult:
 
 cdef extern from "cccl/c/radix_sort.h":
     cdef struct cccl_device_radix_sort_build_result_t 'cccl_device_radix_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_radix_sort_build(
         cccl_device_radix_sort_build_result_t *build_ptr,
@@ -1746,6 +2013,11 @@ cdef extern from "cccl/c/radix_sort.h":
 
 cdef class DeviceRadixSortBuildResult:
     cdef cccl_device_radix_sort_build_result_t build_data
+    cdef public bint _loaded
+
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_radix_sort_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceRadixSortBuildResult self):
         cdef CUresult status = -1
@@ -1754,7 +2026,7 @@ cdef class DeviceRadixSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during radix_sort result cleanup")
 
-    def __cinit__(
+    def __init__(
         DeviceRadixSortBuildResult self,
         cccl_sort_order_t order,
         Iterator d_keys_in,
@@ -1771,7 +2043,6 @@ cdef class DeviceRadixSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_radix_sort_build_result_t))
         with nogil:
             status = cccl_device_radix_sort_build(
                 &self.build_data,
@@ -1841,17 +2112,33 @@ cdef class DeviceRadixSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceRadixSortBuildResult self):
+        return _radix_sort_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _radix_sort_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _radix_sort_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _radix_sort_load)
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
 # --------------------------------------------
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_unary_transform_build(
         cccl_device_transform_build_result_t *build_ptr,
@@ -1894,16 +2181,19 @@ cdef extern from "cccl/c/transform.h":
 
 cdef class DeviceUnaryTransform:
     cdef cccl_device_transform_build_result_t build_data
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+        self._loaded = False
+
+    def __init__(
         self,
         Iterator d_in,
         Iterator d_out,
         Op op,
         CommonData common_data
     ):
-        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
-
         cdef CUresult status = -1
         cdef int cc_major = common_data.get_cc_major()
         cdef int cc_minor = common_data.get_cc_minor()
@@ -1960,15 +2250,36 @@ cdef class DeviceUnaryTransform:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceUnaryTransform self):
+        return _unary_transform_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _unary_transform_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _unary_transform_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _unary_transform_load)
 
 
 cdef class DeviceBinaryTransform:
     cdef cccl_device_transform_build_result_t build_data
+    cdef public bint _loaded
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+        self._loaded = False
+
+    def __init__(
         self,
         Iterator d_in1,
         Iterator d_in2,
@@ -1976,8 +2287,6 @@ cdef class DeviceBinaryTransform:
         Op op,
         CommonData common_data
     ):
-        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
-
         cdef CUresult status = -1
         cdef int cc_major = common_data.get_cc_major()
         cdef int cc_minor = common_data.get_cc_minor()
@@ -2036,9 +2345,25 @@ cdef class DeviceBinaryTransform:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceBinaryTransform self):
+        return _binary_transform_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _binary_transform_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _binary_transform_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _binary_transform_load)
 
 
 # -----------------
@@ -2046,8 +2371,8 @@ cdef class DeviceBinaryTransform:
 # -----------------
 cdef extern from "cccl/c/histogram.h":
     cdef struct cccl_device_histogram_build_result_t 'cccl_device_histogram_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_histogram_build(
         cccl_device_histogram_build_result_t *build_ptr,
@@ -2056,7 +2381,7 @@ cdef extern from "cccl/c/histogram.h":
         cccl_iterator_t d_samples,
         int num_output_levels_val,
         cccl_iterator_t d_output_histograms,
-        cccl_value_t h_levels,
+        cccl_type_info level_type,
         int64_t num_rows,
         int64_t row_stride_samples,
         bint is_evenly_segmented,
@@ -2085,6 +2410,11 @@ cdef extern from "cccl/c/histogram.h":
 
 cdef class DeviceHistogramBuildResult:
     cdef cccl_device_histogram_build_result_t build_data
+    cdef public bint _loaded
+
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceHistogramBuildResult self):
         cdef CUresult status = -1
@@ -2094,14 +2424,14 @@ cdef class DeviceHistogramBuildResult:
             print(f"Return code {status} encountered during histogram result cleanup")
 
 
-    def __cinit__(
+    def __init__(
         DeviceHistogramBuildResult self,
         int num_channels,
         int num_active_channels,
         Iterator d_samples,
         int num_levels,
         Iterator d_histogram,
-        Value h_levels,
+        TypeInfo level_type,
         int num_rows,
         int row_stride_samples,
         bint is_evenly_segmented,
@@ -2115,7 +2445,6 @@ cdef class DeviceHistogramBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
         with nogil:
             status = cccl_device_histogram_build(
                 &self.build_data,
@@ -2124,7 +2453,7 @@ cdef class DeviceHistogramBuildResult:
                 d_samples.iter_data,
                 num_levels,
                 d_histogram.iter_data,
-                h_levels.value_data,
+                level_type.type_info,
                 num_rows,
                 row_stride_samples,
                 is_evenly_segmented,
@@ -2140,7 +2469,7 @@ cdef class DeviceHistogramBuildResult:
                 f"Failed building histogram, error code: {status}"
             )
 
-    cpdef int compute_even(
+    cpdef size_t compute_even(
         DeviceHistogramBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -2183,9 +2512,160 @@ cdef class DeviceHistogramBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceHistogramBuildResult self):
+        return _histogram_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _histogram_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _histogram_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _histogram_load)
+
+
+# -------------------
+#   DeviceBinarySearch
+# -------------------
+# Backend-specific struct decl + cubin-extract helper.
+include "_bindings_binary_search_backend.pxi"
+
+cdef extern from "cccl/c/binary_search.h":
+
+    cdef CUresult cccl_device_binary_search_build(
+        cccl_device_binary_search_build_result_t*,
+        cccl_binary_search_mode_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_binary_search(
+        cccl_device_binary_search_build_result_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_binary_search_cleanup(
+        cccl_device_binary_search_build_result_t *build_ptr
+    ) nogil
+
+
+cdef class DeviceBinarySearchBuildResult:
+    cdef cccl_device_binary_search_build_result_t build_data
+    cdef public bint _loaded
+
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_binary_search_build_result_t))
+        self._loaded = False
+
+    def __dealloc__(DeviceBinarySearchBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_binary_search_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during binary_search result cleanup")
+
+    def __init__(
+        DeviceBinarySearchBuildResult self,
+        cccl_binary_search_mode_t mode,
+        Iterator d_data,
+        Iterator d_values,
+        Iterator d_out,
+        Op op,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_binary_search_build(
+                &self.build_data,
+                mode,
+                d_data.iter_data,
+                d_values.iter_data,
+                d_out.iter_data,
+                op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed building binary_search, error code: {status}"
+            )
+
+    cpdef void compute(
+        DeviceBinarySearchBuildResult self,
+        Iterator d_data,
+        size_t num_items,
+        Iterator d_values,
+        size_t num_values,
+        Iterator d_out,
+        Op op,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_binary_search(
+                self.build_data,
+                d_data.iter_data,
+                <uint64_t>num_items,
+                d_values.iter_data,
+                <uint64_t>num_values,
+                d_out.iter_data,
+                op.op_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing binary_search, error code: {status}"
+            )
+
+    def _get_cubin(self):
+        return _binary_search_cubin_bytes(&self.build_data)
+
+    def serialize(DeviceBinarySearchBuildResult self):
+        return _binary_search_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _binary_search_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _binary_search_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _binary_search_load)
 
 
 # ----------------------------------
@@ -2193,8 +2673,8 @@ cdef class DeviceHistogramBuildResult:
 # ----------------------------------
 cdef extern from "cccl/c/three_way_partition.h":
     cdef struct cccl_device_three_way_partition_build_result_t 'cccl_device_three_way_partition_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_three_way_partition_build(
         cccl_device_three_way_partition_build_result_t *build_ptr,
@@ -2230,6 +2710,11 @@ cdef extern from "cccl/c/three_way_partition.h":
 
 cdef class DeviceThreeWayPartitionBuildResult:
     cdef cccl_device_three_way_partition_build_result_t build_data
+    cdef public bint _loaded
+
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_three_way_partition_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceThreeWayPartitionBuildResult self):
         cdef CUresult status = -1
@@ -2239,7 +2724,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
             print(f"Return code {status} encountered during three_way_partition result cleanup")
 
 
-    def __cinit__(
+    def __init__(
         DeviceThreeWayPartitionBuildResult self,
         Iterator d_in,
         Iterator d_first_part_out,
@@ -2258,7 +2743,6 @@ cdef class DeviceThreeWayPartitionBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_three_way_partition_build_result_t))
         with nogil:
             status = cccl_device_three_way_partition_build(
                 &self.build_data,
@@ -2281,7 +2765,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
                 f"Failed building three_way_partition, error code: {status}"
             )
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceThreeWayPartitionBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -2323,9 +2807,25 @@ cdef class DeviceThreeWayPartitionBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceThreeWayPartitionBuildResult self):
+        return _three_way_partition_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _three_way_partition_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _three_way_partition_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _three_way_partition_load)
 
 
 # -------------------
@@ -2334,8 +2834,8 @@ cdef class DeviceThreeWayPartitionBuildResult:
 
 cdef extern from "cccl/c/segmented_sort.h":
     cdef struct cccl_device_segmented_sort_build_result_t 'cccl_device_segmented_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_segmented_sort_build(
         cccl_device_segmented_sort_build_result_t *build_ptr,
@@ -2370,6 +2870,11 @@ cdef extern from "cccl/c/segmented_sort.h":
 
 cdef class DeviceSegmentedSortBuildResult:
     cdef cccl_device_segmented_sort_build_result_t build_data
+    cdef public bint _loaded
+
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_segmented_sort_build_result_t))
+        self._loaded = False
 
     def __dealloc__(DeviceSegmentedSortBuildResult self):
         cdef CUresult status = -1
@@ -2378,7 +2883,7 @@ cdef class DeviceSegmentedSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during segmented_sort result cleanup")
 
-    def __cinit__(
+    def __init__(
         DeviceSegmentedSortBuildResult self,
         cccl_sort_order_t order,
         Iterator d_keys_in,
@@ -2395,7 +2900,6 @@ cdef class DeviceSegmentedSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_segmented_sort_build_result_t))
         with nogil:
             status = cccl_device_segmented_sort_build(
                 &self.build_data,
@@ -2465,6 +2969,24 @@ cdef class DeviceSegmentedSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceSegmentedSortBuildResult self):
+        return _segmented_sort_serialize(self)
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        return _segmented_sort_deserialize(blob, load, check_cc)
+
+    @staticmethod
+    def compile(*args):
+        return _segmented_sort_compile(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        _load_once(self, _segmented_sort_load)
+
+include "_bindings_serialization.pxi"

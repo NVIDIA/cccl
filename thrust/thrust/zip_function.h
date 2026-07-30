@@ -18,7 +18,10 @@
 
 #include <thrust/detail/type_deduction.h>
 
-#include <cuda/functional>
+#include <cuda/__functional/address_stability.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -53,7 +56,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct SumTuple {
  *    float operator()(auto tup) const {
- *      return thrust::get<0>(tup) + thrust::get<1>(tup) + thrust::get<2>(tup);
+ *      return cuda::std::get<0>(tup) + cuda::std::get<1>(tup) + ::cuda::std::get<2>(tup);
  *    }
  *  };
  *  struct SumArgs {
@@ -92,6 +95,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see make_zip_function
  *  \see zip_iterator
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Function>
 class zip_function
@@ -126,6 +133,10 @@ private:
  *  \return A \p zip_function that takes a N-tuple.
  *
  *  \see zip_function
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Function>
 _CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
@@ -138,6 +149,10 @@ _CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function
  */
 
 /*! \} // end function_objects
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 THRUST_NAMESPACE_END

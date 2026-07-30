@@ -43,7 +43,9 @@
 
 // Device
 #include <cub/device/device_adjacent_difference.cuh>
+#include <cub/device/device_batched_topk.cuh>
 #include <cub/device/device_copy.cuh>
+#include <cub/device/device_find.cuh>
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_histogram.cuh>
 #include <cub/device/device_memcpy.cuh>

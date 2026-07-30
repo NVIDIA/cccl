@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr void test_char()
+TEST_FUNC constexpr void test_char()
 {
   const unsigned n = 4;
   char ca[n]       = {0};
@@ -32,7 +32,7 @@ __host__ __device__ constexpr void test_char()
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test_int()
+TEST_FUNC constexpr void test_int()
 {
   const unsigned n = 4;
   int ia[n]        = {0};
@@ -43,7 +43,7 @@ __host__ __device__ constexpr void test_int()
   assert(ia[3] == 1);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_char<forward_iterator<char*>>();
   test_char<bidirectional_iterator<char*>>();
@@ -55,13 +55,20 @@ __host__ __device__ constexpr bool test()
   test_int<random_access_iterator<int*>>();
   test_int<int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test_int<host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test_int<device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A pointer to a variable which resides in memory associated with a
@@ -35,12 +22,12 @@
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
-
-#include <ostream>
 
 // Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
 #include <thrust/system/detail/sequential/assign_value.h>
@@ -84,7 +71,7 @@ template <typename Element, typename Pointer, typename Derived>
 class reference
 {
 private:
-  using derived_type = typename std::conditional<std::is_same<Derived, use_default>::value, reference, Derived>::type;
+  using derived_type = std::conditional_t<std::is_same_v<Derived, use_default>, reference, Derived>;
 
 public:
   using pointer    = Pointer;
@@ -109,8 +96,8 @@ public:
     /*! \cond
      */
     ,
-    typename std::enable_if<std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer,
-                                                pointer>::value>::type* = nullptr
+    std::enable_if_t<
+      std::is_convertible_v<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>>* = nullptr
     /*! \endcond
      */
     )
@@ -320,6 +307,102 @@ public:
     return derived();
   }
 
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator==(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_equality_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return lhs_ref == rhs_ref;
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator==(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator!=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_equality_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  {
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return !(lhs_ref == rhs_ref);
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator!=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return lhs_ref < rhs_ref;
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return !(lhs_ref < rhs_ref);
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return rhs_ref < lhs_ref;
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return !(rhs_ref < lhs_ref);
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
 private:
   pointer const ptr;
 
@@ -408,7 +491,7 @@ std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, reference<Element, Pointer, Derived> const& r)
 {
   using value_type = typename reference<Element, Pointer, Derived>::value_type;
-  return os << static_cast<value_type>(r);
+  return os << static_cast<value_type>(r); // NOLINT(bugprone-unintended-char-ostream-output)
 }
 
 template <typename Element, typename Tag>

@@ -17,8 +17,14 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T, cuda::std::float_denorm_style expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::has_denorm == expected, "has_denorm test 1");
   static_assert(cuda::std::numeric_limits<const T>::has_denorm == expected, "has_denorm test 2");
@@ -33,9 +39,9 @@ int main(int, char**)
   test<signed char, cuda::std::denorm_absent>();
   test<unsigned char, cuda::std::denorm_absent>();
   test<wchar_t, cuda::std::denorm_absent>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, cuda::std::denorm_absent>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, cuda::std::denorm_absent>();
   test<char32_t, cuda::std::denorm_absent>();
   test<short, cuda::std::denorm_absent>();

@@ -56,7 +56,7 @@ using types =
                      int16_t,
                      int32_t,
                      int64_t,
-#if NVBENCH_HELPER_HAS_I128
+#if _CCCL_HAS_INT128()
                      int128_t,
 #endif
                      float,
@@ -75,7 +75,8 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed data", "[gen][
 
 struct complex_to_real_t
 {
-  __host__ __device__ float operator()(const complex& c) const
+  template <typename T>
+  __host__ __device__ T operator()(const cuda::std::complex<T>& c) const
   {
     return c.real();
   }
@@ -83,25 +84,29 @@ struct complex_to_real_t
 
 struct complex_to_imag_t
 {
-  __host__ __device__ float operator()(const complex& c) const
+  template <typename T>
+  __host__ __device__ T operator()(const cuda::std::complex<T>& c) const
   {
     return c.imag();
   }
 };
 
-TEST_CASE("Generators produce uniformly distributed complex", "[gen]")
+using complex_value_types = nvbench::type_list<float, double>;
+
+TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed complex", "[gen]", complex_value_types)
 {
-  const float min = ::cuda::std::numeric_limits<float>::min();
-  const float max = ::cuda::std::numeric_limits<float>::max();
+  using value_type = TestType;
+  const auto min   = ::cuda::std::numeric_limits<value_type>::min();
+  const auto max   = ::cuda::std::numeric_limits<value_type>::max();
 
-  const thrust::device_vector<complex> data = generate(1 << 16);
+  const thrust::device_vector<cuda::std::complex<value_type>> data = generate(1 << 16);
 
-  thrust::device_vector<float> component(data.size());
+  thrust::device_vector<value_type> component(data.size());
   thrust::transform(data.begin(), data.end(), component.begin(), complex_to_real_t());
-  REQUIRE(is_uniform<float>(component, min, max));
+  REQUIRE(is_uniform<value_type>(component, min, max));
 
   thrust::transform(data.begin(), data.end(), component.begin(), complex_to_imag_t());
-  REQUIRE(is_uniform<float>(component, min, max));
+  REQUIRE(is_uniform<value_type>(component, min, max));
 }
 
 TEST_CASE("Generators produce uniformly distributed bools", "[gen]")

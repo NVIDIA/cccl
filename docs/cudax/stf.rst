@@ -1,7 +1,7 @@
 .. _stf:
 
 CUDASTF
-=======
+========
 
 .. contents::
    :depth: 2
@@ -293,7 +293,7 @@ synchronization. Each ``stream_task`` in the ``stream_ctx`` backend
 represents a task that is associated with an input CUDA stream.
 Asynchronous work can be submitted in the body of the task using this
 input stream. Once the ``stream_task`` completes, all work submitted
-within the task’s body is assumed to be synchronized with the associated
+within the task's body is assumed to be synchronized with the associated
 stream.
 
 Users can query the stream associated to a ``stream_task`` using its
@@ -322,7 +322,7 @@ Users can retrieve the graph associated to a ``graph_task`` by using its
 Logical data
 ------------
 
-In traditional computing, “data”, such as a matrix describing a neural
+In traditional computing, "data", such as a matrix describing a neural
 network layer, typically refers to a location in memory with a defined
 address. However, in mixed CPU/GPU systems, the same conceptual data may
 exist simultaneously in multiple locations and have multiple addresses
@@ -331,7 +331,7 @@ high-bandwidth memory used by GPUs). CUDASTF refers to such conceptual
 data as *logical data*, an abstract handle for data that may get
 transparently transferred to or replicated over the different places
 used by CUDASTF tasks. When user code creates a logical data object from
-a user-provided object (e.g. an array of ``double``), they transfer the
+a user-provided object (e.g. an array of ``double``), they transfer the
 ownership of the original data to CUDASTF. As a result, any access to
 the original data should be performed through the logical data
 interface, as CUDASTF may transfer the logical data to a CUDA device
@@ -411,7 +411,7 @@ Write-back policy
 
 When a logical data object is destroyed, the original data instance is
 updated (unless the logical data was created without a reference value,
-e.g. from a shape). The result is only guaranteed to be available on the
+e.g. from a shape). The result is only guaranteed to be available on the
 corresponding data place when after the ``finalize()`` method was called
 on the context. Likewise, when calling ``finalize()`` a write-back
 mechanism is automatically issued on all logical data associated to the
@@ -428,7 +428,7 @@ Slices
 
 To facilitate the use of potentially non-contiguous multi-dimensional
 arrays, we have introduced a C++ data structure class called ``slice``.
-A slice is a partial specialization of C++’s
+A slice is a partial specialization of C++'s
 ``std::mdspan`` (or ``std::experimental::mdspan`` depending on the C++ revision).
 
 .. code:: cpp
@@ -608,7 +608,7 @@ needs to be updated so it uses a read-write access mode.
 
 The object returned by the call ``ctx.task()`` overloads
 ``operator->*()`` to accept a lambda function on the right-hand side.
-This makes it easy for user code to pass the task’s body to the context
+This makes it easy for user code to pass the task's body to the context
 with a syntax akin to a control flow statement. The first argument of
 the lambda function is a ``cudaStream_t`` that can be used to submit
 work asynchronously on the selected device within the body of the task.
@@ -732,6 +732,8 @@ Lower-level task API
 A lower-level API that does not rely on lambda functions is also
 available, and is described `here <stf/lower_level_api.rst>`__.
 
+.. _stf-synchronization:
+
 Synchronization
 ---------------
 
@@ -754,7 +756,7 @@ CUDASTF transparently handles data management (allocations, transfers,
 …), there can be outstanding asynchronous operations that were not
 submitted explicitly by the user. Therefore it is not sufficient to use
 native CUDA synchronization operations because they are not aware of
-CUDASTF’s state. Client code must call ``ctx.finalize()`` instead of
+CUDASTF's state. Client code must call ``ctx.finalize()`` instead of
 ``cudaStreamSynchronize()`` or ``cudaDeviceSynchronize()``.
 
 -  ``ctx.submit()`` initiates the submission of all asynchronous tasks
@@ -767,7 +769,7 @@ Usually, creating the task and invoking ``ctx.finalize()`` is
 sufficient. However, manually calling ``ctx.submit()`` can be beneficial
 in at least two situations. First, it allows for executing additional
 unrelated work on the CPU (or another GPU) between submission and
-synchronization. Second, when it’s necessary for two contexts to run
+synchronization. Second, when it's necessary for two contexts to run
 concurrently, using the sequence
 ``ctx1.submit(); ctx2.submit(); ctx1.finalize(); ctx2.finalize();``
 achieves this goal (whereas calling
@@ -788,32 +790,34 @@ context object. It is typically used in combination with the ``reduce()``
 access mode for dynamic control flow. ``auto val = ctx.wait(ld)`` is a
 blocking call that returns the content of the ``ld`` logical data. The type of
 the returned value is defined by the ``owning_container_of<interface>`` trait
-class where ``interface`` is the data interface of the logical data. The
-``wait`` method therefore cannot be called on a logical data with an
-interface that does not overload this trait class.
+class where ``interface`` is the data interface of the logical data. For a
+logical data with a regular data interface, the ``wait`` method therefore
+cannot be called unless that interface overloads this trait class.
 
 This mechanism is illustrated in the dot product example of the
 :ref:`reduce_access_mode` section.
 
+``ctx.wait`` can also be called on a :ref:`token <stf-tokens>`. Since a token
+carries no content, ``ctx.wait(token)`` returns ``void`` and simply blocks the
+host until the work the token depends on has completed (see the token section
+for an example).
+
 Places
 ------
 
-To assist users with managing data and execution affinity, CUDASTF
-provides the notion of *place*. Places can represent either *execution
-places*, which determine where code is executed, or *data places*,
-specifying the location of data across the machine’s non-uniform memory.
-One of CUDASTF’s goals is to ensure efficient data placement in line
-with the execution place by default, while also providing users the
-option to easily customize placement if necessary. Execution places
-allow users to express where computation occurs without directly
-engaging with the underlying CUDA APIs or dealing with the complex
-synchronization that emerges from combining various execution places
-asynchronously.
+CUDASTF uses :ref:`places <cudax-places>` to manage data and execution
+affinity. Places can represent either *execution places*, which determine
+where code is executed, or *data places*, specifying the location of data
+across the machine's non-uniform memory. See :ref:`cudax-places` for the
+full places API reference, including stream management, memory allocation,
+grid of places, and partitioning policies.
 
-Execution places
-^^^^^^^^^^^^^^^^
+This section describes how places are used with CUDASTF tasks.
 
-A task’s constructor allows choosing an execution place. The example
+Execution places in tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A task's constructor allows choosing an execution place. The example
 below creates a logical data variable that describes an integer as a
 vector of one ``int``. The logical data variable is then updated on
 device ``0`` and on device ``1`` before being accessed again from the
@@ -826,7 +830,7 @@ and tells CUDASTF where the task is expected to execute.
 the host.
 
 Regardless of the *execution place*, it is important to note that the
-task’s body (i.e., the contents of the lambda function) corresponds to
+task's body (i.e., the contents of the lambda function) corresponds to
 CPU code that is expected to launch computation asynchronously. When
 using ``exec_place::device(id)``, CUDASTF will automatically set the
 current CUDA device to ``id`` when the task is started, and restore the
@@ -881,14 +885,15 @@ the entire workload. Since no explicit synchronization with the
 underlying CUDA stream is needed, ``ctx.host_launch`` is thus compatible
 with the CUDA graph backend (i.e., a context of type ``graph_ctx``).
 
-Data places
-^^^^^^^^^^^
+Data places in tasks
+^^^^^^^^^^^^^^^^^^^^
 
 By default, logical data is associated with the device where it is
 currently processed. A task launched on a device should therefore have
 its data loaded into the global memory of that device, whereas a task
 executed on the host would access data in host memory (RAM). These are
-defined as the *affine* data places of an execution place.
+defined as the *affine* data places of an execution place (see
+:ref:`places-data-places`).
 
 In the example below, data places are not specified for the two tasks
 created. Consequently, the affine data places will be chosen for the two
@@ -971,183 +976,6 @@ accessing large data sets. They however assume that the system can
 perform such accesses, which may depend on the hardware (NVLINK, UVM, …)
 and the OS (WSL has limited support and lower performance when accessing
 host memory from CUDA kernels, for example).
-
-Grid of places
-^^^^^^^^^^^^^^
-
-CUDASTF also makes it possible to manipulate places which are a
-collection of multiple places. In particular, it is possible an
-execution place which corresponds to multiple device execution places.
-
-Creating grids of places
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Grid of execution places are described with the ``exec_place_grid``
-class. This class is templated by two parameters : a scalar_view execution
-place type which represents the type of each individual element, and a
-partitioning class which defines how data and indexes are spread across
-the different places of the grid.
-
-The scalar_view execution place can be for example be ``exec_place_device``
-if all entries are devices, or it can be the base ``exec_place`` class
-if the type of the places is not homogeneous in the grid, or if the type
-is not known statically, for example.
-
-It is possible to generate a 1D grid from a vector of places :
-
-.. code:: c++
-
-       exec_place exec_place::grid(std::vector<exec_place> places);
-
-For example, this is used to implement the ``exec_place::all_devices()``
-helper which creates a grid of all devices.
-
-.. code:: c++
-
-   template <typename partitioner_t>
-   inline exec_place_grid<exec_place_device, partitioner_t> exec_place::all_devices() {
-       int ndevs;
-       cuda_safe_call(cudaGetDeviceCount(&ndevs));
-
-       std::vector<exec_place> devices;
-       devices.reserve(ndevs);
-       for (int d = 0; d < ndevs; d++) {
-           devices.push_back(exec_place::device(d));
-       }
-
-       return exec_place::grid<exec_place_device, partitioner_t>(std::move(devices));
-   }
-
-The default partitioner class associated to
-``exec_place::all_devices()`` is ``null_partition``, which means there
-is no partitioning operator defined if none is provided.
-
-It is possible to retrieve the total number of elements in a grid using
-the ``size_t size()`` method. For ``exec_place::all_devices()``, this
-will correspond to the total number of devices.
-
-Shaped grids
-~~~~~~~~~~~~
-
-To fit the needs of the applications, grid of places need not be 1D
-arrays, and can be structured as a multi-dimensional grid described with
-a ``dim4`` class. There is indeed another constructor which takes such a
-``dim4`` parameter :
-
-.. code:: c++
-
-       exec_place::grid(std::vector<exec_place> places, dim4 dims);
-
-Note that the total size of ``dims`` must match the size of the vector
-of places.
-
-It is possible to query the *shape* of the grid using the following
-methods : - ``dim4 get_dims()`` returns the shape of the grid -
-``int get_dim(int axis_id)`` returns the number of elements along
-direction ``axis_id``
-
-Given an ``exec_place_grid``, it is also possible to create a new grid
-with a different shape using the reshape member of the
-``exec_place_grid``. In this example, a grid of 8 devices is reshaped
-into a cube of size 2.
-
-.. code:: c++
-
-       // This assumes places.size() == 8
-       auto places = exec_place::all_devices();
-       auto places_reshaped = places.reshape(dim4(2, 2, 2));
-
-Partitioning policies
-~~~~~~~~~~~~~~~~~~~~~
-
-Partitioning policies makes it possible to express how data are
-dispatched over the different places of a grid, or how the index space
-of a ``parallel_loop`` will be scattered across places too.
-
-.. code:: c++
-
-   class MyPartition : public partitioner_base {
-   public:
-       template <typename S_out, typename S_in>
-       static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
-
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
-   };
-
-A partitioning class must implement a ``apply`` method which takes :
-
-- a reference to a shape of type ``S_in`` - a position within a grid of
-  execution places. This position is described using an object of type ``pos4``
-- the dimension of this grid express as a ``dim4`` object.
-
-``apply`` returns a shape which corresponds to the subset of the ``in``
-shape associated to this entry of the grid. Note that the output shape
-type ``S_out`` may be different from the ``S_in`` type of the input
-shape.
-
-To support different types of shapes, appropriate overloads of the
-``apply`` method should be implemented.
-
-This ``apply`` method is typically used by the ``parallel_for``
-construct in order to dispatch indices over the different places.
-
-A partitioning class must also implement the ``get_executor`` virtual
-method which allows CUDASTF to use localized data allocators. This
-method indicates, for each entry of a shape, on which place this entry
-should *preferably* be allocated.
-
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are :
-
-- a coordinate within the shape described as a ``pos4`` object
-- the dimension of the shape expressed as a ``dim4`` object
-- the dimension of the execution place grid expressed as a ``dim4`` object
-
-Defining the ``get_executor`` makes it possible to map a piece of data
-over a execution place grid. The ``get_executor`` method of partitioning
-policy in an execution place grid therefore defines the *affine data
-place* of a logical data accessed on that grid.
-
-Predefined partitioning policies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are currently two policies readily available in CUDASTF : -
-``tiled_partition<TILE_SIZE>`` dispatches entries of a shape using a
-*tiled* layout. For multi-dimensional shapes, the outermost dimension is
-dispatched into contiguous tiles of size ``TILE_SIZE``. -
-``blocked_partition`` dispatches entries of the shape using a *blocked*
-layout, where each entry of the grid of places receive approximately
-the same contiguous portion of the shape, dispatched along the outermost
-dimension.
-
-This illustrates how a 2D shape is dispatched over 3 places using the
-blocked layout :
-
-.. code:: text
-
-    __________________________________
-   |           |           |         |
-   |           |           |         |
-   |           |           |         |
-   |    P 0    |    P 1    |   P 2   |
-   |           |           |         |
-   |           |           |         |
-   |___________|___________|_________|
-
-This illustrates how a 2D shape is dispatched over 3 places using a
-tiled layout, where the dimension of the tiles is indicated by the
-``TILE_SIZE`` parameter :
-
-.. code:: text
-
-    ________________________________
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   | P 0 | P 1 | P 2 | P 0 | P 1 |P2|
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   |_____|_____|_____|_____|_____|__|
 
 .. _parallel_for_construct:
 
@@ -1756,7 +1584,7 @@ Note the use of the ``mutable`` qualifier because a task accessing a
 ``const foo`` object might want to read the ``ldata`` field. Submitting a
 task that use this logical data in read only mode would modify the
 internal data structures of the logical data, but should probably appear
-as a ``const`` operation from user’s perspective. Without this ``mutable``
+as a ``const`` operation from user's perspective. Without this ``mutable``
 qualifier, we could not have a ``const`` qualifier on the ``f`` variable
 in the following code :
 
@@ -1800,7 +1628,7 @@ compilation.
        ...
    };
 
-In most cases, it’s recommended to use the ``auto`` C++ keyword to
+In most cases, it's recommended to use the ``auto`` C++ keyword to
 automatically obtain the correct data types:
 
 .. code:: cpp
@@ -1894,6 +1722,12 @@ in existing code.
   the application take care of synchronization.
 - ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
+- :ref:`Execution places <cudax-places>` can be used without tasks for example to
+  automate the management of CUDA streams, set the current execution context,
+  or allocate memory. See the :ref:`cudax-places` documentation for details on
+  standalone usage including :ref:`stream management <places-stream-management>`,
+  :ref:`device activation <places-activate>`, and
+  :ref:`memory allocation <places-memory-allocation>`.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1966,6 +1800,8 @@ depend on the completion of the work in the streams used for any preceding
 It is possible to retrieve the access mode used to freeze a logical data with
 the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
 
+.. _stf-tokens:
+
 Tokens
 ^^^^^^
 
@@ -1996,7 +1832,7 @@ task.
 
 Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
-task’s implementation. Thus, the above task is equivalent to this code:
+task's implementation. Thus, the above task is equivalent to this code:
 
 .. code:: cpp
 
@@ -2015,6 +1851,68 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+The blocking ``ctx.wait`` method (see :ref:`the synchronization section
+<stf-synchronization>`) can also be called on a token. Because a token has no
+content to materialize, ``ctx.wait(token)`` returns ``void`` and simply blocks
+the calling host thread until the work the token depends on has completed. This
+is convenient to synchronize the host with a phase of computation expressed with
+tokens before performing host-side operations on externally managed state (for
+example, operations that are not suitable for a ``host_launch`` callback):
+
+.. code:: cpp
+
+    auto token = ctx.token();
+
+    ctx.task(token.rw())->*[&](cudaStream_t stream) {
+        // launch some asynchronous work on user-provided buffers
+    };
+
+    // Block until the work above has completed.
+    ctx.wait(token);
+
+    // The host can now safely operate on the externally managed state.
+
+Debugging
+---------
+
+Enabling internal checks
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF includes internal assertions (``_CCCL_ASSERT``) that help detect
+programming errors and invalid usage patterns during development. These checks
+are disabled by default for performance but can be enabled to aid debugging.
+
+**With CMake:**
+
+When building in Debug mode, assertions are enabled automatically:
+
+.. code:: bash
+
+   cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+To explicitly enable assertions for any build type, add the compile definition
+to your target:
+
+.. code:: cmake
+
+   target_compile_definitions(your_target PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+**With Makefile or manual compilation:**
+
+Add the ``-DCCCL_ENABLE_ASSERTIONS`` flag to your compiler invocation:
+
+.. code:: bash
+
+   # For nvcc
+   nvcc -DCCCL_ENABLE_ASSERTIONS ...
+
+   # For host compiler
+   g++ -DCCCL_ENABLE_ASSERTIONS ...
+
+Note that this flag enables the assertion checks themselves. For full debugging
+support (setting breakpoints, inspecting variables), you may also want to add
+debug symbol flags (``-g`` for host code, ``-G`` for device code).
 
 Tools
 -----
@@ -2201,7 +2099,7 @@ would all have the same name. One possible work-around is to let ``ncu``
 rename kernels accordingly to ``NVTX`` annotations. To do so, a symbol
 must be associated to the ``ctx.parallel_for`` and ``ctx.launch``
 constructs using the ``set_symbol`` method. In the following example, we
-name the generated kernel “updateA” :
+name the generated kernel "updateA" :
 
 .. code:: cpp
 
@@ -2361,7 +2259,7 @@ Syntax:
 
     logicalData.accessMode([data place])
 
-- **Data Places**: Specify where a logical data in the data dependencies should be located:
+- **Data Places** (see :ref:`cudax-places`): Specify where a logical data in the data dependencies should be located:
 
   - `data_place::affine()` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
   - `data_place::managed()`: Use managed memory.
@@ -2387,7 +2285,7 @@ Syntax:
             // Task implementation using stream
         };
 
-- **Execution Place**: Specify where the task should be executed:
+- **Execution Place** (see :ref:`cudax-places`): Specify where the task should be executed:
 
   - `exec_place::current_device()` (default): Run on current CUDA device.
   - `exec_place::device(ID)`: Run on CUDA device identified by its index.

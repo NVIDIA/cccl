@@ -90,7 +90,7 @@ template <typename _Tp>
 #if _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
 {
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -180,10 +180,12 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp bit_reverse(_Tp __value) noexcept
 {
   static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
+#if !_CCCL_TILE_COMPILATION() // nvbug6085411: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))
   }
+#endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_BITREVERSE32)
   return ::cuda::__bit_reverse_builtin(__value);
 #else

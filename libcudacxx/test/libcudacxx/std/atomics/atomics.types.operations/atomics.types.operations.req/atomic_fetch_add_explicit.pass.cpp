@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 //  ... test crashes clang
@@ -39,10 +42,10 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     {
-      typedef cuda::std::atomic<T> A;
+      using A = cuda::std::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       cuda::std::atomic_init(&t, T(1));
@@ -50,7 +53,7 @@ struct TestFn
       assert(t == T(3));
     }
     {
-      typedef cuda::std::atomic<T> A;
+      using A = cuda::std::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       cuda::std::atomic_init(&t, T(1));
@@ -61,11 +64,11 @@ struct TestFn
 };
 
 template <class T, template <typename, typename> class Selector>
-__host__ __device__ void testp()
+TEST_FUNC void testp()
 {
   {
-    typedef cuda::std::atomic<T> A;
-    typedef typename cuda::std::remove_pointer<T>::type X;
+    using A = cuda::std::atomic<T>;
+    using X = typename cuda::std::remove_pointer<T>::type;
     Selector<A, constructor_initializer> sel;
     A& t = *sel.construct();
     cuda::std::atomic_init(&t, T(1 * sizeof(X)));
@@ -73,8 +76,8 @@ __host__ __device__ void testp()
     assert(t == T(3 * sizeof(X)));
   }
   {
-    typedef cuda::std::atomic<T> A;
-    typedef typename cuda::std::remove_pointer<T>::type X;
+    using A = cuda::std::atomic<T>;
+    using X = typename cuda::std::remove_pointer<T>::type;
     Selector<volatile A, constructor_initializer> sel;
     volatile A& t = *sel.construct();
     cuda::std::atomic_init(&t, T(1 * sizeof(X)));

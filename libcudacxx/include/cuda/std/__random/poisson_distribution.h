@@ -20,15 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/normal_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -115,7 +119,7 @@ private:
     static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
     static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
-    constexpr int _bits = cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
+    constexpr int _bits = ::cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
     return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _bits << _bits);
   }
 
@@ -157,7 +161,7 @@ public:
   template <class _URNG>
   [[nodiscard]] _CCCL_API result_type operator()(_URNG& __urng, const param_type& __pr)
   {
-    static_assert(__cccl_random_is_valid_urng<_URNG>, "");
+    static_assert(__cccl_random_is_valid_urng<_URNG>);
     double __tx = 0;
     uniform_real_distribution<double> __urd{};
     if (__pr.__mean_ < 10)
@@ -289,14 +293,14 @@ public:
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const poisson_distribution& __x, const poisson_distribution& __y) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const poisson_distribution& __x, const poisson_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const poisson_distribution& __x)
@@ -328,7 +332,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

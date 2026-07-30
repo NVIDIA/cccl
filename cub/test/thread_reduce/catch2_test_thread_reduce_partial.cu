@@ -5,12 +5,11 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_macro.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/functional>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
 #include "catch2_test_device_reduce.cuh"
@@ -18,6 +17,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
+#include <c2h/operator.cuh>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 inline constexpr int max_size  = 16;
@@ -69,8 +69,6 @@ thread_reduce_partial_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce
   *d_out = cub::detail::ThreadReducePartial(span, reduce_operator, valid_items);
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NumItems, typename T, typename ReduceOperator>
 __global__ void
 thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator, int valid_items)
@@ -86,8 +84,6 @@ thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator redu
   cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
   *d_out = cub::detail::ThreadReducePartial(mdspan, reduce_operator, valid_items);
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * Type list definition
@@ -131,7 +127,7 @@ C2H_TEST("ThreadReduce Integral Type Tests",
   constexpr int num_items          = c2h::get<2, TestType>::value;
   using dist_param                 = dist_interval<value_t, op_t, num_items>;
   constexpr auto reduce_op         = op_t{};
-  constexpr auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  constexpr auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -163,7 +159,7 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests",
   constexpr int num_items      = c2h::get<2, TestType>::value;
   using dist_param             = dist_interval<value_t, op_t, num_items>;
   constexpr auto reduce_op     = op_t{};
-  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  const auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -197,7 +193,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
   constexpr int num_items      = c2h::get<2, TestType>::value;
   using dist_param             = dist_interval<value_t, op_t, num_items>;
   constexpr auto reduce_op     = unwrap_op(std::true_type{}, op_t{});
-  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  const auto operator_identity = identity_v<op_t, accum_t>;
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -252,13 +248,11 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 
-#if _CCCL_STD_VER >= 2023
   thread_reduce_partial_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
-#endif // _CCCL_STD_VER >= 2023
 }
 
 C2H_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]")

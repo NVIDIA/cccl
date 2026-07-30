@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
-
 // <utility>
 
 // template <class T1, class T2> struct pair
@@ -20,7 +18,18 @@
 #include "archetypes.h"
 #include "test_macros.h"
 
-int main(int, char**)
+struct CopyAssignableInt
+{
+  TEST_FUNC constexpr CopyAssignableInt& operator=(int&)
+  {
+    return *this;
+  }
+};
+
+struct Unrelated
+{};
+
+TEST_FUNC constexpr bool test()
 {
   {
     typedef cuda::std::pair<int, short> P1;
@@ -32,20 +41,30 @@ int main(int, char**)
     assert(p2.second == 4);
   }
   {
-    using C = TestTypes::TestType;
+    using C = ConstexprTestTypes::TestType;
     using P = cuda::std::pair<int, C>;
     using T = cuda::std::pair<long, C>;
     const T t(42, -42);
     P p(101, 101);
-    C::reset_constructors();
     p = t;
-    assert(C::constructed() == 0);
-    assert(C::assigned() == 1);
-    assert(C::copy_assigned() == 1);
-    assert(C::move_assigned() == 0);
     assert(p.first == 42);
     assert(p.second.value == -42);
   }
+  {
+    int i = 0, j = 0;
+    cuda::std::pair<int&, int&> p(i, j);
+    const cuda::std::pair<const int, const int> from(11, 12);
+    p = from;
+    assert(i == 11);
+    assert(j == 12);
+  }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

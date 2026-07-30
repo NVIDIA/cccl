@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Duration>
-__host__ __device__ constexpr auto check_subseconds(Duration d)
+TEST_FUNC constexpr auto check_subseconds(Duration d)
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
   static_assert(cuda::std::is_same_v<typename HMS::precision, decltype(cuda::std::declval<HMS>().subseconds())>);
@@ -33,8 +33,8 @@ int main(int, char**)
 {
   using microfortnights = cuda::std::chrono::duration<int, cuda::std::ratio<756, 625>>;
 
-  static_assert(check_subseconds(cuda::std::chrono::seconds(1)) == 0, "");
-  static_assert(check_subseconds(cuda::std::chrono::seconds(-1)) == 0, "");
+  static_assert(check_subseconds(cuda::std::chrono::seconds(1)) == 0);
+  static_assert(check_subseconds(cuda::std::chrono::seconds(-1)) == 0);
 
   assert(check_subseconds(cuda::std::chrono::seconds(5000)) == 0);
   assert(check_subseconds(cuda::std::chrono::seconds(-5000)) == 0);

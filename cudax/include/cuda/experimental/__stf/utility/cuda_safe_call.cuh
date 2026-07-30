@@ -30,21 +30,25 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <cstdlib>
+#include <exception>
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
-#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
+#if __has_include(<cusolverDn.h>)
 #  include <cusolverDn.h>
 #endif
 
 namespace cuda::experimental::stf
 {
-#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
+#if __has_include(<cusolverDn.h>)
 // Undocumented
 inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 {
@@ -113,10 +117,10 @@ public:
   {
     // All "success" statuses are zero
     static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
-#if _CCCL_HAS_INCLUDE(<cublas_v2.h>)
+#if __has_include(<cublas_v2.h>)
                     && CUBLAS_STATUS_SUCCESS == 0
 #endif
-#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
+#if __has_include(<cusolverDn.h>)
                     && CUSOLVER_STATUS_SUCCESS == 0
 #endif
                   ,
@@ -131,7 +135,7 @@ public:
     int dev = -1;
     cudaGetDevice(&dev);
 
-#if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
+#if __has_include(<cusolverDn.h>)
     if constexpr (::std::is_same_v<T, cusolverStatus_t>)
     {
       format("%s(%u) [device %d] CUSOLVER error in call %s: %s.",
@@ -142,8 +146,8 @@ public:
              cusolverGetErrorString(status));
     }
     else
-#endif // _CCCL_HAS_INCLUDE(<cusolverDn.h>)
-#if _CCCL_HAS_INCLUDE(<cublas_v2.h>)
+#endif // __has_include(<cusolverDn.h>)
+#if __has_include(<cublas_v2.h>)
       if constexpr (::std::is_same_v<T, cublasStatus_t>)
     {
       format("%s(%u) [device %d] CUBLAS error in %s: %s.",
@@ -154,7 +158,7 @@ public:
              cublasGetStatusString(status));
     }
     else
-#endif // _CCCL_HAS_INCLUDE(<cublas_v2.h>)
+#endif // __has_include(<cublas_v2.h>)
       if constexpr (::std::is_same_v<T, cudaOccError>)
       {
         format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
@@ -224,7 +228,7 @@ UNITTEST("cuda_exception")
 {
   auto e = cuda_exception(CUDA_SUCCESS);
   EXPECT(e.what()[0] == 0);
-#  if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
+#  if __has_include(<cusolverDn.h>)
   auto e1 = cuda_exception(CUSOLVER_STATUS_ZERO_PIVOT);
   EXPECT(strlen(e1.what()) > 0u);
 #  endif
@@ -243,22 +247,56 @@ struct first_param_impl<R (*)(P, Ps...)>
   using type = P;
 };
 
+template <typename...>
+struct last_param_impl;
+
+template <typename P>
+struct last_param_impl<P>
+{
+  using type = P;
+};
+
+template <typename P, typename... Ps>
+struct last_param_impl<P, Ps...> : last_param_impl<Ps...>
+{};
+
+template <typename>
+struct function_last_param_impl;
+
+template <typename R, typename... Ps>
+struct function_last_param_impl<R (*)(Ps...)>
+{
+  using type = typename last_param_impl<Ps...>::type;
+};
+
 /*
 `reserved::first_param<fun>` is an alias for the type of `fun`'s first parameter.
 */
 template <auto f>
 using first_param = typename first_param_impl<decltype(f)>::type;
+
+/*
+`reserved::last_param<fun>` is an alias for the type of `fun`'s last parameter.
+*/
+template <auto f>
+using last_param = typename function_last_param_impl<decltype(f)>::type;
+
+template <typename...>
+inline constexpr bool dependent_false = false;
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
-UNITTEST("first_param")
+UNITTEST("first_last_param")
 {
   extern int test1(int);
   static_assert(::std::is_same_v<reserved::first_param<test1>, int>);
+  static_assert(::std::is_same_v<reserved::last_param<test1>, int>);
   extern int test2(double, int);
   static_assert(::std::is_same_v<reserved::first_param<test2>, double>);
+  static_assert(::std::is_same_v<reserved::last_param<test2>, int>);
   extern int test3(int&&);
   static_assert(::std::is_same_v<reserved::first_param<test3>, int&&>);
+  static_assert(::std::is_same_v<reserved::last_param<test3>, int&&>);
 };
 #endif // UNITTESTED_FILE
 
@@ -286,7 +324,154 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
   abort();
 }
 
+/**
+ * @brief Value (or reference) plus the call-site `source_location` of its construction.
+ *
+ * Intended as a function parameter type: write `with_location<widget>` instead of `widget`
+ * so the callee can report file/line. Construction from an argument captures
+ * `source_location::current()` at that call site (overloaded operators cannot take
+ * defaulted `source_location` parameters themselves).
+ *
+ * Move-only: may be constructed as a temporary and moved into a by-value parameter,
+ * but not copied. `T` may be a value, lvalue reference, or rvalue reference.
+ */
+template <class T>
+struct with_location
+{
+  with_location(const with_location&)            = delete;
+  with_location& operator=(const with_location&) = delete;
+  with_location& operator=(with_location&&)      = delete;
+
+  // Required so a converting temporary can initialize a by-value parameter.
+  with_location(with_location&&) = default;
+
+  // Constrained so that ill-formed reference bindings are detected by
+  // `is_constructible_v` instead of erroring inside the mem-initializer, and so
+  // that this template does not hijack the move constructor.
+  template <typename U,
+            ::std::enable_if_t<!::std::is_same_v<::std::decay_t<U>, with_location> && ::std::is_constructible_v<T, U&&>,
+                               int> = 0>
+  constexpr with_location(U&& payload, ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+      : payload(::std::forward<U>(payload))
+      , loc(loc)
+  {}
+
+  T payload;
+  ::cuda::std::source_location loc;
+};
+
+/**
+ * @brief Invokes a callable and aborts if it throws.
+ *
+ * Use around code that must not let an exception escape into backend state
+ * that cannot recover (e.g. after a CUDA stream capture has begun).
+ *
+ * Usage: `throwproof->*[&] { ... };`
+ *
+ * `throwproof` converts to `with_location`, which captures the call-site
+ * `source_location` (overloaded operators cannot take default arguments).
+ *
+ * @snippet this throwproof
+ */
+struct throwproof_t
+{
+} inline constexpr throwproof{};
+
+template <class F>
+decltype(auto) operator->*(with_location<throwproof_t> s, F&& f) noexcept
+{
+  _CCCL_TRY
+  {
+    return ::std::forward<F>(f)();
+  }
+  _CCCL_CATCH (const ::std::exception& e)
+  {
+    fprintf(stderr, "%s(%u) throwproof in %s: %s\n", s.loc.file_name(), s.loc.line(), s.loc.function_name(), e.what());
+  }
+  _CCCL_CATCH_ALL
+  {
+    fprintf(
+      stderr, "%s(%u) throwproof in %s: unknown exception\n", s.loc.file_name(), s.loc.line(), s.loc.function_name());
+  }
+  ::std::abort();
+}
+
 #ifdef UNITTESTED_FILE
+UNITTEST("with_location")
+{
+  struct widget
+  {
+    int x = 0;
+  };
+
+  // Move-only wrapper (independent of whether T is copyable).
+  static_assert(!::std::is_copy_constructible_v<with_location<widget>>);
+  static_assert(!::std::is_copy_assignable_v<with_location<widget>>);
+  static_assert(::std::is_move_constructible_v<with_location<widget>>);
+  static_assert(!::std::is_move_assignable_v<with_location<widget>>);
+  static_assert(!::std::is_default_constructible_v<with_location<widget>>);
+
+  // Value T: takes lvalues (copy) or rvalues (move).
+  static_assert(::std::is_constructible_v<with_location<widget>, widget>);
+  static_assert(::std::is_constructible_v<with_location<widget>, widget&>);
+  static_assert(::std::is_constructible_v<with_location<widget>, const widget&>);
+  static_assert(::std::is_constructible_v<with_location<widget>, widget&&>);
+
+  // Lvalue-reference T: binds only to lvalues.
+  static_assert(::std::is_constructible_v<with_location<widget&>, widget&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&>, widget>);
+  static_assert(!::std::is_constructible_v<with_location<widget&>, widget&&>);
+  static_assert(::std::is_move_constructible_v<with_location<widget&>>);
+
+  // Rvalue-reference T: binds only to rvalues.
+  static_assert(::std::is_constructible_v<with_location<widget&&>, widget>);
+  static_assert(::std::is_constructible_v<with_location<widget&&>, widget&&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&&>, widget&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&&>, const widget&>);
+  static_assert(::std::is_move_constructible_v<with_location<widget&&>>);
+
+  // Empty tag lvalues (e.g. throwproof) must remain convertible — that is how
+  // `throwproof->*f` captures source_location.
+  static_assert(::std::is_constructible_v<with_location<throwproof_t>, throwproof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throwproof_t>, const throwproof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throwproof_t>, throwproof_t>);
+
+  auto consume_value = [](with_location<widget> w) {
+    EXPECT(w.payload.x == 42);
+    EXPECT(w.loc.line() != 0);
+  };
+  consume_value(widget{42});
+
+  widget live{7};
+  auto consume_lref = [](with_location<widget&> w) {
+    EXPECT(w.payload.x == 7);
+    w.payload.x = 9;
+  };
+  consume_lref(live);
+  EXPECT(live.x == 9);
+
+  auto consume_rref = [](with_location<widget&&> w) {
+    EXPECT(w.payload.x == 3);
+  };
+  consume_rref(widget{3});
+};
+
+UNITTEST("throwproof")
+{
+  //! [throwproof]
+  int value = 0;
+  throwproof->*[&] {
+    value = 42; // would abort the application if this code threw
+  };
+  EXPECT(value == 42);
+  //! [throwproof]
+  EXPECT((throwproof->*
+          [] {
+            return 7;
+          })
+         == 7);
+};
+
 UNITTEST("cuda_safe_call")
 {
   //! [cuda_safe_call]
@@ -349,46 +534,125 @@ UNITTEST("cuda_try1")
 #endif // UNITTESTED_FILE
 
 /**
- * @brief Calls a CUDA function and throws a `cuda_exception` in case of failure.
+ * @brief Calls a CUDA function with optional output-parameter inference and throws a `cuda_exception` on failure.
  *
- * @tparam fun Name of the CUDA function to invoke, cannot be the name of an overloaded function
- * @tparam Ps Parameter types to be forwarded
- * @param ps Arguments to be forwarded
- * @return `auto` (see below)
+ * @tparam fun The CUDA function to invoke. Must not be an overloaded name (templated overloads in
+ *             `cuda_runtime.h` such as `cudaMalloc`/`cudaMallocHost`/`cudaMallocAsync` therefore do not work).
+ * @tparam Ps  Argument types deduced from @p ps.
+ * @param ps   Arguments forwarded to @p fun.
+ * @return     `void` if @p fun does not have a synthesized output parameter (see below); otherwise the value of the
+ *             synthesized output parameter.
  *
- * In this overload of `cuda_try`, the function name is passed explicitly as a template argument and also the first
- * argument is omitted, as in `cuda_try<cudaCreateStream>()`. `cuda_try` will create a temporary  of the appropriate
- * type internally, call the specified CUDA function with the address of that temporary, and then return the temporary.
- * For example, in the call `cuda_try<cudaCreateStream>()`, the created stream object will be returned. That way you can
- * write `auto stream = cuda_try<cudaCreateStream>();` instead of `cudaStream_t stream; cudaCreateStream(&stream);`.
- * This invocation mode relies on the convention used by many CUDA functions with output parameters of specifying them
- * in the first parameter position.
+ * Calls @p fun and translates a non-zero CUDA status into a thrown `cuda_exception`. Three call shapes are
+ * supported, selected at compile time in the following order:
  *
- * Limitations: Does not work with overloaded functions.
+ *  1. **Direct form.** If `fun(ps...)` is invocable, the call is made directly and the status is checked. The
+ *     return type is `void`.
+ *
+ *  2. **First-parameter output form.** Otherwise, if @p fun's first parameter is a non-`const` pointer (an output
+ *     pointer by CUDA convention) and `fun(&result, ps...)` is invocable, a temporary `result` of the pointee type
+ *     is value-initialized, the call is made, and `result` is returned. This matches CUDA APIs like
+ *     `cudaStreamCreate(cudaStream_t*)`, `cudaGraphAddEmptyNode(cudaGraphNode_t*, ...)`, and
+ *     `cudaDeviceCanAccessPeer(int*, ...)`.
+ *
+ *  3. **Last-parameter output form.** Otherwise, if @p fun's last parameter is a non-`const` pointer and
+ *     `fun(ps..., &result)` is invocable, the temporary is appended instead and returned. This matches CUDA APIs
+ *     like `cuStreamGetId(CUstream, unsigned long long*)` and `cuCtxGetId(CUcontext, unsigned long long*)`.
+ *
+ * If none of the three forms apply, compilation fails with a `static_assert` that says no valid invocation form
+ * exists for the given function and arguments.
+ *
+ * **Ambiguity rejection.** When @p fun has non-`const` pointer parameters in both the first and last positions,
+ * the same user arguments can satisfy both the first- and last-parameter output forms with different effects
+ * (for example, `cudaMemGetInfo(size_t* free, size_t* total)` called with one user-supplied `size_t*`). In that
+ * case a `static_assert` rejects the call with the message:
+ *
+ *     "Ambiguous cuda_try: both first- and last-output forms apply; call the function explicitly to disambiguate."
+ *
+ * The single zero-argument case (`cuda_try<fun>()`) is exempt because the synthesized call `fun(&result)` is
+ * identical for both interpretations.
+ *
+ * @par Examples
+ * @code
+ * auto dev = cuda_try<cudaGetDevice>();                          // first-parameter output form
+ * auto id  = cuda_try<cuStreamGetId>(some_cu_stream);            // last-parameter output form
+ * cuda_try<cudaSetDevice>(0);                                    // direct form, returns void
+ * cuda_try(cudaSetDevice(0));                                    // equivalent runtime-status overload
+ * @endcode
+ *
+ * @par Limitations
+ *  - Overloaded functions are not supported. CUDA's templated wrappers in `cuda_runtime.h` (e.g. `cudaMalloc`,
+ *    `cudaMallocHost`, `cudaMallocManaged`, `cudaMallocAsync`, `cudaHostAlloc`) are overloads and must be invoked
+ *    using the runtime-status overload, e.g. `cuda_try(cudaMalloc(&p, n))`.
+ *  - The synthesized output parameter must be a non-`const` pointer; in/out parameters expressed as
+ *    pointer-to-existing-storage are not synthesized and must be passed explicitly.
+ *  - In ambiguous cases (see above) the call must be written explicitly via the runtime-status overload.
  *
  * @snippet this cuda_try2
  */
 template <auto fun, typename... Ps>
 auto cuda_try(Ps&&... ps)
 {
-  if constexpr (::std::is_invocable_v<decltype(fun), Ps...>)
+  constexpr bool direct_form = ::std::is_invocable_v<decltype(fun), Ps...>;
+
+  constexpr bool first_output_form =
+    ::std::is_pointer_v<reserved::first_param<fun>>
+    && !::std::is_const_v<::std::remove_pointer_t<reserved::first_param<fun>>>
+    && ::std::is_invocable_v<decltype(fun), ::std::remove_pointer_t<reserved::first_param<fun>>*, Ps...>;
+
+  constexpr bool last_output_form =
+    ::std::is_pointer_v<reserved::last_param<fun>>
+    && !::std::is_const_v<::std::remove_pointer_t<reserved::last_param<fun>>>
+    && ::std::is_invocable_v<decltype(fun), Ps..., ::std::remove_pointer_t<reserved::last_param<fun>>*>;
+
+  // When no user args are supplied, the first- and last-output forms produce the same call
+  // `fun(&result)`, so they are not ambiguous. Otherwise, both matching is a real ambiguity.
+  static_assert(!(first_output_form && last_output_form) || sizeof...(Ps) == 0,
+                "Ambiguous cuda_try: both first- and last-output forms apply; "
+                "call the function explicitly to disambiguate.");
+
+  if constexpr (direct_form)
   {
     cuda_try(fun(::std::forward<Ps>(ps)...));
   }
-  else
+  else if constexpr (first_output_form)
   {
     ::std::remove_pointer_t<reserved::first_param<fun>> result{};
     cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
     return result;
   }
+  else if constexpr (last_output_form)
+  {
+    ::std::remove_pointer_t<reserved::last_param<fun>> result{};
+    cuda_try(fun(::std::forward<Ps>(ps)..., &result));
+    return result;
+  }
+  else
+  {
+    static_assert(reserved::dependent_false<Ps...>, "No valid cuda_try invocation form for this function.");
+  }
 }
 
 #ifdef UNITTESTED_FILE
+inline cudaError_t test_first_output_param(int* out)
+{
+  *out = 1;
+  return cudaSuccess;
+}
+
+inline cudaError_t test_last_output_param(double in, int* out)
+{
+  *out = static_cast<int>(in);
+  return cudaSuccess;
+}
+
 UNITTEST("cuda_try2")
 {
   //! [cuda_try2]
   int dev = cuda_try<cudaGetDevice>(); // continue execution if the call is successful
   cuda_try(cudaGetDevice(&dev)); // equivalent to the line above
+  EXPECT(cuda_try<test_first_output_param>() == 1);
+  EXPECT(cuda_try<test_last_output_param>(2.0) == 2);
   //! [cuda_try2]
 };
 #endif // UNITTESTED_FILE

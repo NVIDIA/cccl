@@ -8,6 +8,9 @@ inputs:
   command:
     description: "The command to run."
     required: true
+  environment:
+    description: "Additional environmental parameters for the command."
+    required: false
   image:
     description: "The Docker image to use."
     required: true
@@ -26,7 +29,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: ${{github.event.repository.name}}
         persist-credentials: false
@@ -36,7 +39,10 @@ runs:
     - name: Define and log job details
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        ENVIRONMENT: ${{ inputs.environment }}
         GH_TOKEN: ${{ github.token }}
       run: |
         echo "::group::️🔍 Job Vars"
@@ -48,6 +54,17 @@ runs:
         echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_ENVIRONMENT=${ENVIRONMENT}" | tee -a "${GITHUB_ENV}"
+
+        # Translate the JSON-string ENVIRONMENT input into `--env FOO=bar` args
+        # for the downstream `docker run` step:
+        if [[ -z "$ENVIRONMENT" || "$ENVIRONMENT" == "null" || "$ENVIRONMENT" == "[]" ]]; then
+          ENVARGS=""
+        else
+          # Extra space is necessary to prevent jq from merging arguments
+          ENVARGS=$(echo "$ENVIRONMENT" | jq -rj '.[] | "--env \(.) "')
+        fi
+        echo "ENVARGS=${ENVARGS}" | tee -a "${GITHUB_ENV}"
 
         # SCCACHE config:
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
@@ -71,11 +88,37 @@ runs:
 
     - name: Get AWS credentials for sccache bucket
       if: ${{ github.repository == 'NVIDIA/cccl' }}
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
+
+    - name: Prepare AWS credentials file for container
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        AWS_ACCESS_KEY_ID: "${{ env.AWS_ACCESS_KEY_ID }}"
+        AWS_SESSION_TOKEN: "${{ env.AWS_SESSION_TOKEN }}"
+        AWS_SECRET_ACCESS_KEY: "${{ env.AWS_SECRET_ACCESS_KEY }}"
+      run: |
+        umask 077
+
+        repo_dir="${{ github.event.repository.name }}"
+        aws_dir="${repo_dir}/.aws"
+        mkdir -p "${aws_dir}"
+
+        cat <<EOF > "${aws_dir}/config"
+        [default]
+        bucket=rapids-sccache-devs
+        region=us-east-2
+        EOF
+
+        cat <<EOF > "${aws_dir}/credentials"
+        [default]
+        aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+        aws_session_token=${AWS_SESSION_TOKEN:-}
+        aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+        EOF
 
     - name: Initialize artifact environment
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -179,9 +222,8 @@ runs:
           --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
           --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
           --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
-          --env "AWS_ACCESS_KEY_ID=${{env.AWS_ACCESS_KEY_ID}}" \
-          --env "AWS_SECRET_ACCESS_KEY=${{env.AWS_SECRET_ACCESS_KEY}}" \
-          --env "AWS_SESSION_TOKEN=${{env.AWS_SESSION_TOKEN}}" \
+          --env "AWS_CONFIG_FILE=${{steps.paths.outputs.MOUNT_REPO}}/.aws/config" \
+          --env "AWS_SHARED_CREDENTIALS_FILE=${{steps.paths.outputs.MOUNT_REPO}}/.aws/credentials" \
           --env "CONTAINER_WORKSPACE=${{steps.paths.outputs.MOUNT_REPO}}" \
           --env "CI=true" \
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
@@ -205,6 +247,7 @@ runs:
           --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
+          ${ENVARGS:-} \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 

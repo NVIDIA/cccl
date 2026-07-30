@@ -218,7 +218,7 @@ private:
     }
     else
     {
-      return data[Fold + i];
+      return data[Fold + i]; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 
@@ -684,21 +684,6 @@ public:
   _CCCL_DEVICE void renorm()
   {
     binned_renorm();
-  }
-};
-
-_CCCL_TEMPLATE(typename FType = float)
-_CCCL_REQUIRES(::cuda::std::is_floating_point_v<FType>)
-struct rfa_float_transform_t
-{
-  _CCCL_DEVICE FType operator()(FType accum) const
-  {
-    return accum;
-  }
-
-  _CCCL_DEVICE FType operator()(ReproducibleFloatingAccumulator<FType> accum) const
-  {
-    return accum.conv_to_fp();
   }
 };
 } // namespace detail::rfa

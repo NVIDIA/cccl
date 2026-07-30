@@ -416,7 +416,7 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
 constexpr struct test_query_t : ex::forwarding_query_t
 {
   template <class Env>
-  _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
   {
     return env.query(*this);
   }
@@ -429,7 +429,7 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
                             }),
                             ex::prop{test_query, 42});
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 // NOT YET SUPPORTED
@@ -467,8 +467,16 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 
 #endif // _CCCL_HOST_COMPILATION()
 
-#if !_CCCL_CUDA_COMPILER(NVCC)
-// This example causes nvcc to segfault
+#if !_CCCL_CUDA_COMPILER(NVCC) && !defined(_CCCL_CLANG_TIDY_INVOKED)
+// This example causes nvcc to segfault, and clang-tidy to error out with
+//
+// cudax/test/execution/test_let_value.cu:487:17: error: static assertion failed due to requirement
+// '::cuda::std::is_same_v<cuda::experimental::execution::default_domain, (anonymous
+// namespace)::let_value_test_domain2>' [clang-diagnostic-error]
+//
+// 487 |   static_assert(::cuda::std::is_same_v<decltype(result), let_value_test_domain2>);
+//     |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 struct let_value_test_domain2
 {};
 

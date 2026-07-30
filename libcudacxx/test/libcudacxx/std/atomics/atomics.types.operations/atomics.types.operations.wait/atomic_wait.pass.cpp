@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 
@@ -23,9 +26,9 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope Scope>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
-    typedef cuda::std::atomic<T> A;
+    using A = cuda::std::atomic<T>;
 
     SHARED A* t;
     execute_on_main_thread([&] {

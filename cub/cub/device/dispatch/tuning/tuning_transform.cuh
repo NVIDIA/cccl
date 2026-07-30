@@ -13,191 +13,242 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/detect_cuda_runtime.cuh>
-#include <cub/util_device.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__numeric/reduce.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
-#include <cuda/std/cstdint>
+#include <cuda/std/concepts>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
-namespace detail::transform
-{
-struct always_true_predicate
-{
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
-  {
-    return true;
-  }
-};
-} // namespace detail::transform
-CUB_NAMESPACE_END
 
-template <>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
-    : ::cuda::std::true_type
-{};
-
-CUB_NAMESPACE_BEGIN
-namespace detail::transform
-{
-enum class Algorithm
+//! Backend algorithms for @ref cub::DeviceTransform "DeviceTransform".
+enum class TransformAlgorithm
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
   // is always superior to that fallback, so it was removed.
-  prefetch,
-  vectorized,
-  memcpy_async,
-  ublkcp
+  prefetch, //!< Uses a transform kernel that relies on prefetching the memory of all contiguous iterators.
+  vectorized, //!< Uses a transform kernel that uses load and store vectorization.
+  ldgsts, //!< Uses a transform kernel that relies on cp.async/LDGSTS to stage data into shared memory.
+  ublkcp //!< Uses a transform kernel that relies on cp.async.bulk/UBLKCP to stage data into shared memory.
 };
 
-template <int BlockThreads>
-struct prefetch_policy_t
+#if _CCCL_HOSTED()
+namespace detail
 {
-  static constexpr int block_threads = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
-  static constexpr int min_items_per_thread      = 1;
-  static constexpr int max_items_per_thread      = 32;
-
-  // TODO: remove with C++20
-  // The value of the below does not matter.
-  static constexpr int not_a_vectorized_policy = 0;
-};
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  TransformAgentPrefetchPolicy,
-  (always_true),
-  (block_threads, BlockThreads, int),
-  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
-  (min_items_per_thread, MinItemsPerThread, int),
-  (max_items_per_thread, MaxItemsPerThread, int),
-  (not_a_vectorized_policy, NotAVectorizedPolicy, int) ) // TODO: remove with C++20
-
-template <typename Tuning>
-struct vectorized_policy_t : prefetch_policy_t<Tuning::block_threads>
+[[nodiscard]] _CCCL_API constexpr const char* to_string(TransformAlgorithm algo) noexcept
 {
-  static constexpr int items_per_thread_vectorized = Tuning::items_per_thread;
-  static constexpr int vec_size                    = Tuning::vec_size;
-
-  using not_a_vectorized_policy = void; // TODO: remove with C++20, shadows the variable in prefetch_policy_t
-};
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  TransformAgentVectorizedPolicy,
-  (always_true), // TODO: restore with C++20: (TransformAgentPrefetchPolicy),
-  (block_threads, BlockThreads, int),
-  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
-  (min_items_per_thread, MinItemsPerThread, int),
-  (max_items_per_thread, MaxItemsPerThread, int),
-  (items_per_thread_vectorized, ItemsPerThreadVectorized, int),
-  (vec_size, VecSize, int) )
-
-template <int BlockThreads, int BulkCopyAlignment>
-struct async_copy_policy_t
-{
-  static constexpr int block_threads = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int min_items_per_thread = 1;
-  static constexpr int max_items_per_thread = 32;
-
-  static constexpr int bulk_copy_alignment = BulkCopyAlignment;
-};
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  TransformAgentAsyncPolicy,
-  (always_true),
-  (block_threads, BlockThreads, int),
-  (min_items_per_thread, MinItemsPerThread, int),
-  (max_items_per_thread, MaxItemsPerThread, int),
-  (bulk_copy_alignment, BulkCopyAlignment, int) )
-
-_CCCL_TEMPLATE(typename PolicyT)
-_CCCL_REQUIRES((!TransformAgentPrefetchPolicy<PolicyT> && !TransformAgentAsyncPolicy<PolicyT>
-                && !TransformAgentVectorizedPolicy<PolicyT>) )
-__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
-{
-  return policy;
+  switch (algo)
+  {
+    case TransformAlgorithm::prefetch:
+      return "TransformAlgorithm::prefetch";
+    case TransformAlgorithm::vectorized:
+      return "TransformAlgorithm::vectorized";
+    case TransformAlgorithm::ldgsts:
+      return "TransformAlgorithm::ldgsts";
+    case TransformAlgorithm::ublkcp:
+      return "TransformAlgorithm::ublkcp";
+  }
+  return "<unknown TransformAlgorithm>";
 }
+} // namespace detail
+#endif // _CCCL_HOSTED()
 
-template <typename PolicyT, typename = void>
-struct TransformPolicyWrapper : PolicyT
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
 {
-  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct TransformPolicyWrapper<StaticPolicyT,
-                              ::cuda::std::void_t<decltype(StaticPolicyT::algorithm),
-                                                  decltype(StaticPolicyT::min_bif),
-                                                  typename StaticPolicyT::prefetch_policy,
-                                                  typename StaticPolicyT::vectorized_policy,
-                                                  typename StaticPolicyT::async_policy>> : StaticPolicyT
-{
-  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  _CCCL_HOST_DEVICE static constexpr Algorithm Algorithm()
-  {
-    return StaticPolicyT::algorithm;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MinBif()
-  {
-    return StaticPolicyT::min_bif;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto PrefetchPolicy()
-  {
-    return MakePolicyWrapper(typename StaticPolicyT::prefetch_policy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto VectorizedPolicy()
-  {
-    return MakePolicyWrapper(typename StaticPolicyT::vectorized_policy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto AsyncPolicy()
-  {
-    return MakePolicyWrapper(typename StaticPolicyT::async_policy());
-  }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"min_bif">()           = value<StaticPolicyT::min_bif>(),
-                  key<"algorithm">()         = value<static_cast<int>(StaticPolicyT::algorithm)>(),
-                  key<"prefetch_policy">()   = PrefetchPolicy().EncodedPolicy(),
-                  key<"vectorized_policy">() = VectorizedPolicy().EncodedPolicy(),
-                  key<"async_policy">()      = AsyncPolicy().EncodedPolicy()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
-};
-
-template <typename PolicyT>
-_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
-{
-  return TransformPolicyWrapper<PolicyT>(base);
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::TransformAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::TransformAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
+
+//! The prefetch sub-policy for @ref TransformPolicy.
+struct TransformPrefetchPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
+  int items_per_thread_no_input = 2; //!< When there are no iterators as inputs, the kernel is just filling. This is the
+                                     //!< number of items written per thread in this case.
+  int min_items_per_thread = 1; //!< Minimum number of items per thread (inclusive)
+  int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
+  int prefetch_byte_stride = 128; //!< The stride in bytes to issue prefetch requests to memory. Corresponds somewhat to
+                                  //!< the size of a cache line.
+  // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so prevent unrolling
+  // bgruber: but A6000 and H100 show small gains without pragma, so omitting pragma
+  int unroll_factor = 0; //!< For any value >1, the unroll factor for the transformation loop in the kernel. The value 0
+                         //!< retains the compiler's default unrolling by specifying no unroll pragma. 1 prevents
+                         //!< unrolling.
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block
+        && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
+        && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const TransformPrefetchPolicy& policy)
+  {
+    return os
+        << "TransformPrefetchPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread_no_input = " << policy.items_per_thread_no_input << ", .min_items_per_thread = "
+        << policy.min_items_per_thread << ", .max_items_per_thread = " << policy.max_items_per_thread
+        << ", .prefetch_byte_stride = " << policy.prefetch_byte_stride << ", .unroll_factor = " << policy.unroll_factor
+        << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The vectorized sub-policy for @ref TransformPolicy.
+struct TransformVectorizedPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread. Must be a multiple of vec_size.
+  int vec_size; //!< Number of elements loaded/stored per vectorized access. Must evenly divide items_per_thread.
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.vec_size == rhs.vec_size;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const TransformVectorizedPolicy& policy)
+  {
+    return os << "TransformVectorizedPolicy { .threads_per_block = " << policy.threads_per_block
+              << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The async copy sub-policy for @ref TransformPolicy.
+struct TransformAsyncCopyPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
+  int min_items_per_thread = 1; //!< Minimum number of items per thread (inclusive)
+  int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
+  // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
+  int unroll_factor = 1; //!< The unroll factor for the transformation loop in the kernel. The value 0 retains the
+                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling. This
+                         //!< parameter has no effect when store vectorization is enabled (see @p store_vec_size) and
+                         //!< eligible at runtime (buffer alignments are sufficient).
+  // Setting store_vec_size smaller narrows the store but also reduces the number of fully-unrolled lambda calls per
+  // store, which bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
+  int store_vec_size = 0; //!< Output elements per vectorized store; only used when algorithm == ublkcp. 0 = auto
+                          //!< (16 / sizeof(output), a 16-byte STG.128); 1 disables vectorization (scalar stores) and
+                          //!< compiles the vectorized branch out of the kernel.
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.min_items_per_thread == rhs.min_items_per_thread
+        && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor
+        && lhs.store_vec_size == rhs.store_vec_size;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
+  {
+    return os
+        << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
+        << ", .store_vec_size = " << policy.store_vec_size << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
+struct TransformPolicy
+{
+  int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
+                           //!< no effect if algorithm is @p vectorized.
+  TransformAlgorithm algorithm; //!< The transform algorithm to use by the kernel
+  TransformPrefetchPolicy prefetch; //!< Sub-policy for the prefetch algorithm. Only used when @p algorithm is @p
+                                    //!< prefetch or when @p algorithm is @p vectorized and the input pointers are not
+                                    //!< sufficiently aligned.
+  TransformVectorizedPolicy vectorized; //!< Sub-policy for the vectorized algorithm. Only used when @p algorithm is @p
+                                        //!< vectorized.
+  TransformAsyncCopyPolicy async_copy; //!< Sub-policy for the async copy algorithms. Only used when @p algorithm is @p
+                                       //!< ldgsts or @p ublkcp.
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
+  {
+    return lhs.min_bytes_in_flight == rhs.min_bytes_in_flight && lhs.algorithm == rhs.algorithm
+        && lhs.prefetch == rhs.prefetch && lhs.vectorized == rhs.vectorized && lhs.async_copy == rhs.async_copy;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const TransformPolicy& policy)
+  {
+    return os << "TransformPolicy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
+              << ", .algorithm = " << policy.algorithm << ", .prefetch = " << policy.prefetch
+              << ", .vectorized = " << policy.vectorized << ", .async_copy = " << policy.async_copy << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+namespace detail::transform
+{
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept transform_policy_selector = policy_selector<T, TransformPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
 
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
@@ -205,20 +256,22 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
-constexpr int ldgsts_size_and_align = 16;
+inline constexpr int ldgsts_size_and_align = 16;
 
-template <typename ItValueSizesAlignments>
+template <int InputCount>
 _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
-  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
+  const ::cuda::std::array<iterator_info, InputCount>& inputs,
+  int tile_size,
+  int copy_alignment = ldgsts_size_and_align) -> int
 {
   int smem_size = 0;
-  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  for (const auto& input : inputs)
   {
     smem_size =
-      static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max(static_cast<int>(vt_alignment), copy_alignment)));
+      static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max(input.value_type_alignment, copy_alignment)));
     // max head/tail padding is copy_alignment - sizeof(T) each
     const int max_bytes_to_copy =
-      static_cast<int>(vt_size) * tile_size + ::cuda::std::max(copy_alignment - static_cast<int>(vt_size), 0) * 2;
+      input.value_type_size * tile_size + ::cuda::std::max(copy_alignment - input.value_type_size, 0) * 2;
     smem_size += max_bytes_to_copy;
   };
   return smem_size;
@@ -226,120 +279,244 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
 
 constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {
-  return sm_arch < 1000 ? 128 : 16;
+  return (cc < ::cuda::compute_capability{10, 0}) ? 128 : 16;
 }
 
-template <typename ItValueSizesAlignments>
-_CCCL_HOST_DEVICE constexpr auto
-bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int bulk_copy_align)
-  -> int
+template <int InputCount>
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
+  const ::cuda::std::array<iterator_info, InputCount>& inputs, int tile_size, int bulk_copy_align) -> int
 {
   // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments
   _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
   _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
 
   int tile_padding = bulk_copy_align;
-  for (auto&& [_, vt_alignment] : it_value_sizes_alignments)
+  for (const auto& input : inputs)
   {
-    tile_padding = ::cuda::std::max(tile_padding, static_cast<int>(vt_alignment));
+    tile_padding = ::cuda::std::max(tile_padding, input.value_type_alignment);
   }
 
   int smem_size = tile_padding; // for the barrier and padding
-  for (auto&& [vt_size, _] : it_value_sizes_alignments)
+  for (const auto& input : inputs)
   {
-    smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;
+    smem_size += tile_padding + input.value_type_size * tile_size;
   }
   return smem_size;
 }
 
-_CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
 {
-  if (sm_arch >= 1000)
+  if (cc >= ::cuda::compute_capability{10, 0})
   {
     return 64 * 1024; // B200
   }
-  if (sm_arch >= 900)
+  if (cc >= ::cuda::compute_capability{9, 0})
   {
     return 48 * 1024; // 32 for H100, 48 for H200
   }
-  if (sm_arch >= 800)
+  if (cc >= ::cuda::compute_capability{8, 0})
   {
     return 16 * 1024; // A100
   }
   return 12 * 1024; // V100 and below
 }
 
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool filling)
 {
-  return ::cuda::std::array<::cuda::std::pair<::cuda::std::size_t, ::cuda::std::size_t>,
-                            sizeof...(RandomAccessIteratorsIn)>{
-    {{sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)}...}};
+  if (filling)
+  {
+    // manually tuned fill on RTX 5090
+    // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
+    // if (cc >= ::cuda::compute_capability{12, 0})
+    // {
+    //   return TransformVectorizedPolicy{256, 8, 4};
+    // }
+    // manually tuned fill on B200, same as H200
+    if (cc >= ::cuda::compute_capability{9, 0})
+    {
+      return TransformVectorizedPolicy{
+        store_size > 4 ? 128 : 256, 16, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+    }
+    // manually tuned fill on A100
+    if (cc >= ::cuda::compute_capability{8, 0})
+    {
+      return TransformVectorizedPolicy{256, 8, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+    }
+  }
+  else
+  {
+    // manually tuned triad on A100
+    if (cc == ::cuda::compute_capability{8, 0})
+    {
+      return TransformVectorizedPolicy{128, 16, 4};
+    }
+  }
+
+  // defaults from fill on RTX 5090, but can be changed
+  return TransformVectorizedPolicy{256, 8, 4};
 }
 
-template <int PtxVersion, int StoreSize, int... LoadSizes>
-struct tuning_vec
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int auto_ublkcp_store_vec_size(int out_size)
 {
-  // defaults from fill on RTX 5090, but can be changed
-  static constexpr int block_threads    = 256;
-  static constexpr int vec_size         = 4;
-  static constexpr int items_per_thread = 8;
+  return (out_size > 0 && out_size <= 16 && ::cuda::is_power_of_two(out_size)) ? 16 / out_size : 1;
+}
+
+template <int InputCount>
+struct policy_selector
+{
+  bool requires_stable_address;
+  bool dense_output;
+  ::cuda::std::array<iterator_info, InputCount> inputs;
+  iterator_info output;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> TransformPolicy
+  {
+    const bool no_input_streams = InputCount == 0;
+
+    bool all_inputs_contiguous                  = true;
+    bool all_input_values_trivially_reloc       = true;
+    bool can_memcpy_contiguous_inputs           = true;
+    bool all_value_types_have_power_of_two_size = ::cuda::is_power_of_two(output.value_type_size);
+    for (const auto& input : inputs)
+    {
+      all_inputs_contiguous &= input.is_contiguous;
+      all_input_values_trivially_reloc &= input.value_type_is_trivially_relocatable;
+      // the vectorized kernel supports mixing contiguous and non-contiguous iterators
+      can_memcpy_contiguous_inputs &= !input.is_contiguous || input.value_type_is_trivially_relocatable;
+      _CCCL_ASSERT(input.value_type_size > 0, "Iterators to inputs must not have a value_type of zero size");
+      all_value_types_have_power_of_two_size &= ::cuda::is_power_of_two(input.value_type_size);
+    }
+    const bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
+    const bool fallback_to_prefetch  = requires_stable_address || !can_memcpy_contiguous_inputs || !dense_output;
+    const int min_bytes_in_flight    = cc_to_min_bytes_in_flight(cc);
+
+    if (cc >= ::cuda::compute_capability{9, 0}) // handles sm_100 as well
+    {
+      const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
+      const int alignment        = bulk_copy_alignment(cc);
+
+      const auto prefetch = TransformPrefetchPolicy{256};
+      const auto vectorized =
+        tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+      auto async           = TransformAsyncCopyPolicy{async_block_size};
+      async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
+
+      // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
+      // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
+      // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
+      const bool exhaust_smem =
+        bulk_copy_dyn_smem_for_tile_size<InputCount>(inputs, async_block_size * async.min_items_per_thread, alignment)
+        > int{max_smem_per_block};
+
+      // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained
+      // if the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
+      // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly
+      // and complex, so let's fall back in this case.
+      int max_alignment = alignment;
+      for (const auto& input : inputs)
+      {
+        max_alignment = ::cuda::std::max({max_alignment, input.value_type_alignment});
+      }
+
+      bool tile_sizes_retain_alignment = true;
+      for (const auto& input : inputs)
+      {
+        tile_sizes_retain_alignment &= (input.value_type_size * async_block_size) % max_alignment == 0;
+      }
+
+      // on Hopper, the vectorized kernel performs better for 1 and 2 byte values, except for BabelStream mul (1 input)
+      bool vector_kernel_is_faster =
+        (cc == ::cuda::compute_capability{9, 0} && output.value_type_size < 4 && InputCount > 1);
+      for (const auto& input : inputs)
+      {
+        vector_kernel_is_faster &= input.value_type_size < 4;
+      }
+
+      const bool enough_threads_for_peeling = async_block_size >= alignment; // head and tail bytes
+      const bool fallback_to_vectorized = exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling
+                                       || no_input_streams || !can_memcpy_all_inputs || vector_kernel_is_faster;
+
+      const auto algorithm =
+        fallback_to_prefetch ? TransformAlgorithm::prefetch
+        : fallback_to_vectorized
+          ? (all_value_types_have_power_of_two_size ? TransformAlgorithm::vectorized : TransformAlgorithm::prefetch)
+          : TransformAlgorithm::ublkcp;
+
+      return TransformPolicy{
+        min_bytes_in_flight,
+        algorithm,
+        prefetch,
+        vectorized,
+        async,
+      };
+    }
+    else if (cc >= ::cuda::compute_capability{8, 0})
+    {
+      const int threads_per_block = 256;
+      const auto prefetch         = TransformPrefetchPolicy{threads_per_block};
+      const auto vectorized =
+        tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+      const auto async = TransformAsyncCopyPolicy{threads_per_block};
+
+      // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
+      // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
+      // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
+      const bool exhaust_smem =
+        memcpy_async_dyn_smem_for_tile_size<InputCount>(
+          inputs, threads_per_block * async.min_items_per_thread, ldgsts_size_and_align)
+        > int{max_smem_per_block};
+
+      // on Ampere, the vectorized kernel performs better for 1 and 2 byte values
+      bool use_vector_kernel_on_ampere = output.value_type_size < 4 && inputs.size() > 1;
+      for (const auto& input : inputs)
+      {
+        use_vector_kernel_on_ampere &= input.value_type_size < 4;
+      }
+      const bool fallback_to_vectorized =
+        exhaust_smem || no_input_streams || !can_memcpy_all_inputs || use_vector_kernel_on_ampere;
+
+      const auto algorithm =
+        fallback_to_prefetch ? TransformAlgorithm::prefetch
+        : fallback_to_vectorized
+          ? (all_value_types_have_power_of_two_size ? TransformAlgorithm::vectorized : TransformAlgorithm::prefetch)
+          : TransformAlgorithm::ldgsts;
+
+      return TransformPolicy{
+        min_bytes_in_flight,
+        algorithm,
+        prefetch,
+        vectorized,
+        async,
+      };
+    }
+
+    // fallback
+    return TransformPolicy{
+      min_bytes_in_flight,
+      (fallback_to_prefetch || !all_value_types_have_power_of_two_size)
+        ? TransformAlgorithm::prefetch
+        : TransformAlgorithm::vectorized,
+      TransformPrefetchPolicy{256},
+      tuned_vectorized_policy(
+        ::cuda::compute_capability{6, 0}, ::cuda::std::max(1, output.value_type_size), no_input_streams),
+      TransformAsyncCopyPolicy{}, // never used
+    };
+  }
 };
 
-// manually tuned fill on A100
-template <int StoreSize>
-struct tuning_vec<800, StoreSize>
-{
-  static constexpr int block_threads    = 256;
-  static constexpr int vec_size         = ::cuda::std::max(8 / StoreSize, 1); // 64-bit instructions
-  static constexpr int items_per_thread = 8;
-};
+#if _CCCL_HAS_CONCEPTS()
+static_assert(transform_policy_selector<policy_selector<1>>);
+#endif // _CCCL_HAS_CONCEPTS()
 
-// manually tuned fill on H200
-template <int StoreSize>
-struct tuning_vec<900, StoreSize>
-{
-  static constexpr int block_threads    = StoreSize > 4 ? 128 : 256;
-  static constexpr int vec_size         = ::cuda::std::max(8 / StoreSize, 1); // 64-bit instructions
-  static constexpr int items_per_thread = 16;
-};
-
-// manually tuned fill on B200, same as H200
-template <int StoreSize>
-struct tuning_vec<1000, StoreSize> : tuning_vec<900, StoreSize>
-{};
-
-// manually tuned fill on RTX 5090
-template <int StoreSize>
-struct tuning_vec<1200, StoreSize>
-{
-  static constexpr int block_threads    = 256;
-  static constexpr int vec_size         = 4;
-  static constexpr int items_per_thread = 8;
-};
-
-// manually tuned triad on A100
-template <int StoreSize, int LoadSize0, int... LoadSizes>
-struct tuning_vec<800, StoreSize, LoadSize0, LoadSizes...>
-{
-  static constexpr int block_threads    = 128;
-  static constexpr int vec_size         = 4;
-  static constexpr int items_per_thread = 16;
-};
-
+// stateless version which can be passed to kernels
 template <bool RequiresStableAddress,
           bool DenseOutput,
           typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut>
-struct policy_hub
+struct policy_selector_from_types
 {
   static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
 };
@@ -348,145 +525,25 @@ template <bool RequiresStableAddress,
           bool DenseOutput,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut>
-struct policy_hub<RequiresStableAddress,
-                  DenseOutput,
-                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                  RandomAccessIteratorOut>
+struct policy_selector_from_types<RequiresStableAddress,
+                                  DenseOutput,
+                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                  RandomAccessIteratorOut>
 {
-  static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
-  static constexpr bool all_inputs_contiguous =
-    (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn> && ...);
-  static constexpr bool all_input_values_trivially_reloc =
-    (THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>> && ...);
-  static constexpr bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
-  // the vectorized kernel supports mixing contiguous and non-contiguous iterators
-  static constexpr bool can_memcpy_contiguous_inputs =
-    ((!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>
-      || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>>)
-     && ...);
+  static_assert((!::cuda::std::is_void_v<it_value_t<RandomAccessIteratorsIn>> && ...),
+                "Iterators for inputs must not have a value_type of void. This can happen for multiple reasons. You "
+                "could pass an output iterator by accident, but it could also be a transform_iterator with a "
+                "__device__ callable and a deduced return type (which is void in host code).");
 
-  static constexpr bool all_value_types_have_power_of_two_size =
-    (::cuda::is_power_of_two(sizeof(it_value_t<RandomAccessIteratorsIn>)) && ...)
-    && ::cuda::is_power_of_two(size_of<it_value_t<RandomAccessIteratorOut>>);
-
-  static constexpr bool fallback_to_prefetch = RequiresStableAddress || !can_memcpy_contiguous_inputs || !DenseOutput;
-
-  // TODO(bgruber): consider a separate kernel for just filling
-
-  struct policy300 : ChainedPolicy<300, policy300, policy300>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> TransformPolicy
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
-    using prefetch_policy        = prefetch_policy_t<256>;
-    using vectorized_policy      = vectorized_policy_t<
-           tuning_vec<500, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
-    using async_policy = async_copy_policy_t<256, 16>; // dummy policy, never used
-    static constexpr auto algorithm =
-      (fallback_to_prefetch || !all_value_types_have_power_of_two_size) ? Algorithm::prefetch : Algorithm::vectorized;
-  };
-
-  struct policy800 : ChainedPolicy<800, policy800, policy300>
-  {
-  private:
-    static constexpr int block_threads = 256;
-
-  public:
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
-    using prefetch_policy        = prefetch_policy_t<block_threads>;
-    using vectorized_policy      = vectorized_policy_t<
-           tuning_vec<800, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
-    using async_policy = async_copy_policy_t<block_threads, ldgsts_size_and_align>;
-
-  private:
-    // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
-    // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
-    // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
-    static constexpr bool exhaust_smem =
-      memcpy_async_dyn_smem_for_tile_size(
-        make_sizes_alignments<RandomAccessIteratorsIn...>(),
-        block_threads* async_policy::min_items_per_thread,
-        ldgsts_size_and_align)
-      > int{max_smem_per_block};
-
-    // on Ampere, the vectorized kernel performs better for 1 and 2 byte values
-    static constexpr bool use_vector_kernel_on_ampere =
-      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
-      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
-
-    static constexpr bool fallback_to_vectorized =
-      exhaust_smem || no_input_streams || !can_memcpy_all_inputs || use_vector_kernel_on_ampere;
-
-  public:
-    static constexpr auto algorithm =
-      fallback_to_prefetch ? Algorithm::prefetch
-      : fallback_to_vectorized
-        ? (all_value_types_have_power_of_two_size ? Algorithm::vectorized : Algorithm::prefetch)
-        : Algorithm::memcpy_async;
-  };
-
-  template <int AsyncBlockSize, int PtxVersion>
-  struct bulk_copy_policy_base
-  {
-  private:
-    static constexpr int alignment = bulk_copy_alignment(PtxVersion);
-
-  public:
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
-    using prefetch_policy        = prefetch_policy_t<256>;
-    using vectorized_policy =
-      vectorized_policy_t<tuning_vec<PtxVersion,
-                                     size_of<it_value_t<RandomAccessIteratorOut>>,
-                                     sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
-    using async_policy = async_copy_policy_t<AsyncBlockSize, alignment>;
-
-  private:
-    // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
-    // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
-    // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
-    static constexpr bool exhaust_smem =
-      bulk_copy_dyn_smem_for_tile_size(
-        make_sizes_alignments<RandomAccessIteratorsIn...>(),
-        AsyncBlockSize* async_policy::min_items_per_thread,
-        alignment)
-      > int{max_smem_per_block};
-
-    // on Hopper, the vectorized kernel performs better for 1 and 2 byte values
-    static constexpr bool use_vector_kernel_on_hopper =
-      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
-      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
-
-    // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
-    // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
-    // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly and
-    // complex, so let's fall back in this case.
-    static constexpr int max_alignment =
-      ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
-    static constexpr bool tile_sizes_retain_alignment =
-      (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
-    static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
-    static constexpr bool fallback_to_vectorized =
-      exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams
-      || !can_memcpy_all_inputs || (PtxVersion == 900 && use_vector_kernel_on_hopper);
-
-  public:
-    static constexpr auto algorithm =
-      fallback_to_prefetch ? Algorithm::prefetch
-      : fallback_to_vectorized
-        ? (all_value_types_have_power_of_two_size ? Algorithm::vectorized : Algorithm::prefetch)
-        : Algorithm::ublkcp;
-  };
-
-  struct policy900
-      : bulk_copy_policy_base<256, 900>
-      , ChainedPolicy<900, policy900, policy800>
-  {};
-
-  struct policy1000
-      : bulk_copy_policy_base<128, 1000>
-      , ChainedPolicy<1000, policy1000, policy900>
-  {};
-
-  using max_policy = policy1000;
+    constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{
+      RequiresStableAddress,
+      DenseOutput,
+      {make_iterator_info<RandomAccessIteratorsIn>()...},
+      make_iterator_info<RandomAccessIteratorOut>()};
+    return policies(cc);
+  }
 };
 } // namespace detail::transform
-
 CUB_NAMESPACE_END

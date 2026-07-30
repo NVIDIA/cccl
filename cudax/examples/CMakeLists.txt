@@ -37,7 +37,7 @@ file(
 cccl_get_cudatoolkit()
 
 # Example requires pinned_memory_resource.
-if (CUDAToolkit_VERSION VERSION_LESS 12.6)
+if (CUDAToolkit_VERSION VERSION_LESS 12.9)
   list(REMOVE_ITEM example_srcs async_buffer_add.cu cub_reduce.cu)
 endif()
 
@@ -49,4 +49,8 @@ endforeach()
 if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF examples are handled separately:
   add_subdirectory(stf)
+endif()
+
+if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  add_subdirectory(places)
 endif()

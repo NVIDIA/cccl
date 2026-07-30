@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2012 Stephen Montgomery-Smith <stephen@FreeBSD.ORG>
@@ -54,6 +41,7 @@
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -77,7 +65,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
   double x0, y0, x1, y1, x2, y2, t, hm1;
   double val[12];
   int i, sorted;
-  const double e = 2.7182818284590452354;
+  constexpr auto e = ::cuda::std::__numbers<double>::__e();
 
   x = z.real();
   y = z.imag();
@@ -216,7 +204,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> log10(const complex<ValueType>& z)
 {
   // Using the explicit literal prevents compile time warnings in
   // devices that don't support doubles
-  return thrust::log(z) / ValueType(2.30258509299404568402);
+  return thrust::log(z) / ::cuda::std::__numbers<ValueType>::__ln10();
 }
 
 THRUST_NAMESPACE_END

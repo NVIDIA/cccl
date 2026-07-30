@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -38,7 +15,6 @@
 
 #include <thrust/system/cuda/config.h>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/system/cuda/detail/cdp_dispatch.h>
 #include <thrust/system/cuda/detail/cross_system.h>
@@ -52,7 +28,8 @@
 #  include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #endif // _CCCL_CUDA_COMPILATION()
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -65,7 +42,7 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
-OutputIt _CCCL_API _CCCL_FORCEINLINE
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
@@ -74,7 +51,7 @@ namespace __transform
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp, class Predicate>
-OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,
   OutputIt result,
@@ -177,8 +154,8 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
   if constexpr (is_indirectly_trivially_relocate_to_v<InputIt, OutputIt>)
   {
     using InputTy = thrust::detail::it_value_t<InputIt>;
-    auto* dst     = reinterpret_cast<InputTy*>(thrust::raw_pointer_cast(&*result));
-    auto* src     = reinterpret_cast<InputTy const*>(thrust::raw_pointer_cast(&*begin));
+    auto* dst     = reinterpret_cast<InputTy*>(::cuda::std::to_address(result));
+    auto* src     = reinterpret_cast<InputTy const*>(::cuda::std::to_address(begin));
     trivial_cross_system_copy_n(derived_cast(systems.sys1), derived_cast(systems.sys2), dst, src, n);
     return result + n;
   }
@@ -204,8 +181,8 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
     {
       const cudaError status = trivial_copy_device_to_device(
         policy,
-        reinterpret_cast<InputTy*>(thrust::raw_pointer_cast(&*result)),
-        reinterpret_cast<InputTy const*>(thrust::raw_pointer_cast(&*first)),
+        reinterpret_cast<InputTy*>(::cuda::std::to_address(result)),
+        reinterpret_cast<InputTy const*>(::cuda::std::to_address(first)),
         n);
       throw_on_error(status, "__copy:: D->D: failed");
     }
@@ -216,12 +193,7 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
   {
     const auto n = ::cuda::std::distance(first, last);
     return cuda_cub::__transform::cub_transform_many(
-      policy,
-      ::cuda::std::move(first).__base(),
-      result,
-      n,
-      ::cuda::std::move(first).__pred(),
-      cub::detail::transform::always_true_predicate{});
+      policy, ::cuda::std::move(first).__base(), result, n, ::cuda::std::move(first).__pred(), ::cuda::always_true{});
   }
   else
   {

@@ -16,7 +16,7 @@ namespace c2h::detail
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  const auto* dist = generator.prepare_random_generator(seed, data.size());
+  const auto* dist = prepare_random_data(seed, data.size());
   thrust::transform(device_policy, dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
 }
 

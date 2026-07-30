@@ -17,7 +17,9 @@
 
 #include <nv/target>
 
-__host__ __device__ constexpr int exception_value()
+#include "test_macros.h"
+
+TEST_FUNC constexpr int exception_value()
 {
   return 42;
 }
@@ -26,7 +28,7 @@ struct ExceptionBase
 {
   int value = exception_value();
 
-  [[nodiscard]] __host__ __device__ static const char* what() noexcept
+  [[nodiscard]] TEST_FUNC static const char* what() noexcept
   {
     return "ExceptionBase";
   }
@@ -35,11 +37,11 @@ struct ExceptionBase
 struct Exception : ExceptionBase
 {};
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   _CCCL_TRY
   {
-    _CCCL_THROW(Exception());
+    _CCCL_THROW(Exception);
   }
   _CCCL_CATCH ([[maybe_unused]] Exception e)
   {

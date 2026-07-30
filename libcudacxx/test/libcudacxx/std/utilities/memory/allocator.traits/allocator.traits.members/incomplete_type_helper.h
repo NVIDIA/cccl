@@ -14,6 +14,6 @@ struct Holder
   T value;
 };
 
-typedef Holder<NS::Incomplete> IncompleteHolder;
+using IncompleteHolder = Holder<NS::Incomplete>;
 
 #endif

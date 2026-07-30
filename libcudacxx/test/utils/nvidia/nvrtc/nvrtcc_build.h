@@ -20,6 +20,7 @@
 #include "nvrtcc_common.h"
 
 inline bool enable_float128 = false;
+extern std::string inputFile;
 
 // Arch configs are strings and bools determining architecture and ptx/sass compilation
 using ArchConfig          = std::tuple<std::string, bool>;
@@ -62,8 +63,8 @@ GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, co
 
   if (enable_float128)
   {
-    // __float128 is only supported on architectures >= 90
-    if (archId(config) >= 90)
+    // __float128 is only supported on architectures >= 100
+    if (archId(config) >= 100)
     {
       optList.emplace_back("-device-float128");
     }
@@ -77,7 +78,7 @@ GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, co
 
   fprintf(stderr, "Compiling program...\r\n");
   nvrtcProgram prog;
-  NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog, testCu.c_str(), "test.cu", 0, nullptr, nullptr));
+  NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog, testCu.c_str(), inputFile.c_str(), 0, nullptr, nullptr));
 
   nvrtcResult compile_result = nvrtcCompileProgram(prog, optList.size(), optList.data());
 

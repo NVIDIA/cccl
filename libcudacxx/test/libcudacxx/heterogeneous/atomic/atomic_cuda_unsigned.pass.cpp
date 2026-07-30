@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 

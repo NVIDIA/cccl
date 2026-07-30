@@ -29,7 +29,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public bool_constant<_CCCL_BUILTIN_IS_FINAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : bool_constant<_CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 
 template <class _Tp>

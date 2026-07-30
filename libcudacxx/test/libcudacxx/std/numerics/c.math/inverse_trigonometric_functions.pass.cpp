@@ -7,11 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 #include <cuda/std/type_traits>
 
 #include "comparison.h"
@@ -22,10 +26,12 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_acos(T val)
+TEST_FUNC void test_acos(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::acos(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::acos(T{})), ret>);
+
+  [[maybe_unused]] constexpr auto pi = static_cast<T>(cuda::std::__numbers<ret>::__pi());
 
   assert(eq(cuda::std::acos(T(1.0)), val));
   assert(cuda::std::isnan(cuda::std::acos(T(2.0))));
@@ -36,7 +42,6 @@ __host__ __device__ void test_acos(T val)
     assert(cuda::std::isnan(cuda::std::acos(-cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::acos(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
-    const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::acos(T(0.5)), pi / T(3.0)));
   }
 
@@ -47,7 +52,6 @@ __host__ __device__ void test_acos(T val)
     assert(cuda::std::isnan(cuda::std::acosf(-cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::acosf(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
-    const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::acosf(T(0.5)), pi / T(3.0)));
   }
 #if _CCCL_HAS_LONG_DOUBLE()
@@ -58,17 +62,18 @@ __host__ __device__ void test_acos(T val)
     assert(cuda::std::isnan(cuda::std::acosl(-cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::acosl(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
-    const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::acosl(T(0.5)), pi / T(3.0)));
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
 template <typename T>
-__host__ __device__ void test_asin(T val)
+TEST_FUNC void test_asin(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::asin(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::asin(T{})), ret>);
+
+  [[maybe_unused]] constexpr auto pi = static_cast<T>(cuda::std::__numbers<ret>::__pi());
 
   // 0 is returned unmodified
   assert(eq(cuda::std::asin(val), val));
@@ -81,7 +86,6 @@ __host__ __device__ void test_asin(T val)
     assert(cuda::std::isnan(cuda::std::asin(-cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::asin(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
-    const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::asin(T(1.0)), pi / T(2.0)));
     assert(is_about(cuda::std::asin(T(-0.5)), -pi / T(6.0)));
   }
@@ -93,7 +97,6 @@ __host__ __device__ void test_asin(T val)
     assert(cuda::std::isnan(cuda::std::asinf(-cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::asinf(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
-    const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::asinf(T(1.0)), pi / T(2.0)));
     assert(is_about(cuda::std::asinf(T(-0.5)), -pi / T(6.0)));
   }
@@ -105,7 +108,6 @@ __host__ __device__ void test_asin(T val)
     assert(cuda::std::isnan(cuda::std::asinl(-cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::asinl(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
-    const T pi = T(3.141592653589793238462643383279502);
     assert(is_about(cuda::std::asinl(T(1.0)), pi / T(2.0)));
     assert(is_about(cuda::std::asinl(T(-0.5)), -pi / T(6.0)));
   }
@@ -113,17 +115,18 @@ __host__ __device__ void test_asin(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_atan(T val)
+TEST_FUNC void test_atan(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan(T{})), ret>);
+
+  [[maybe_unused]] constexpr auto pi = static_cast<T>(cuda::std::__numbers<ret>::__pi());
 
   // 0 is returned unmodified
   assert(eq(cuda::std::atan(val), val));
   assert(eq(cuda::std::atan(-val), -val));
   if constexpr (!cuda::std::is_integral_v<T>)
   {
-    const T pi = T(3.141592653589793238462643383279502);
     assert(eq(cuda::std::atan(cuda::std::numeric_limits<T>::infinity()), pi / T(2.0)));
     assert(eq(cuda::std::atan(-cuda::std::numeric_limits<T>::infinity()), -pi / T(2.0)));
     assert(cuda::std::isnan(cuda::std::atan(-cuda::std::numeric_limits<T>::signaling_NaN())));
@@ -134,7 +137,6 @@ __host__ __device__ void test_atan(T val)
 
   if constexpr (cuda::std::is_same_v<T, float>)
   {
-    const T pi = T(3.141592653589793238462643383279502);
     assert(eq(cuda::std::atanf(cuda::std::numeric_limits<T>::infinity()), pi / T(2.0)));
     assert(eq(cuda::std::atanf(-cuda::std::numeric_limits<T>::infinity()), -pi / T(2.0)));
     assert(cuda::std::isnan(cuda::std::atanf(-cuda::std::numeric_limits<T>::signaling_NaN())));
@@ -145,7 +147,6 @@ __host__ __device__ void test_atan(T val)
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
-    const T pi = T(3.141592653589793238462643383279502);
     assert(eq(cuda::std::atanl(cuda::std::numeric_limits<T>::infinity()), pi / T(2.0)));
     assert(eq(cuda::std::atanl(-cuda::std::numeric_limits<T>::infinity()), -pi / T(2.0)));
     assert(cuda::std::isnan(cuda::std::atanl(-cuda::std::numeric_limits<T>::signaling_NaN())));
@@ -157,10 +158,12 @@ __host__ __device__ void test_atan(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_atan2(T val)
+TEST_FUNC void test_atan2(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan2(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan2(T{}, T{})), ret>);
+
+  [[maybe_unused]] constexpr auto pi = static_cast<T>(cuda::std::__numbers<ret>::__pi());
 
   // If y is ±0 and x is positive or +0, ±0 is returned.
   assert(eq(cuda::std::atan2(val, val), val));
@@ -169,7 +172,6 @@ __host__ __device__ void test_atan2(T val)
   assert(eq(cuda::std::atan2(-val, T(2.0)), val));
   if constexpr (!cuda::std::is_integral_v<T>)
   {
-    const T pi = T(3.141592653589793238462643383279502);
     assert(cuda::std::isnan(cuda::std::atan2(val, cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::atan2(val, cuda::std::numeric_limits<T>::quiet_NaN())));
     assert(cuda::std::isnan(cuda::std::atan2(cuda::std::numeric_limits<T>::signaling_NaN(), val)));
@@ -226,7 +228,6 @@ __host__ __device__ void test_atan2(T val)
 
   if constexpr (cuda::std::is_same_v<T, float>)
   {
-    const T pi = T(3.141592653589793238462643383279502);
     assert(cuda::std::isnan(cuda::std::atan2f(val, cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::atan2f(val, cuda::std::numeric_limits<T>::quiet_NaN())));
     assert(cuda::std::isnan(cuda::std::atan2f(cuda::std::numeric_limits<T>::signaling_NaN(), val)));
@@ -283,7 +284,6 @@ __host__ __device__ void test_atan2(T val)
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)
   {
-    const T pi = T(3.141592653589793238462643383279502);
     assert(cuda::std::isnan(cuda::std::atan2l(val, cuda::std::numeric_limits<T>::signaling_NaN())));
     assert(cuda::std::isnan(cuda::std::atan2l(val, cuda::std::numeric_limits<T>::quiet_NaN())));
     assert(cuda::std::isnan(cuda::std::atan2l(cuda::std::numeric_limits<T>::signaling_NaN(), val)));
@@ -341,7 +341,7 @@ __host__ __device__ void test_atan2(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_acos<T>(val);
   test_asin<T>(val);
@@ -349,7 +349,7 @@ __host__ __device__ void test(const T val)
   test_atan2<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

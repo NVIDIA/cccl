@@ -1,14 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
-if [ -z "${GITHUB_ACTIONS:-}" ]; then
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
   echo "This script must be run in a GitHub Actions environment." >&2
   exit 1
 fi
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ci_dir
+repo_root="$(cd "${ci_dir}/.." && pwd)"
+readonly repo_root
 
 cd "$repo_root"
 
@@ -17,7 +19,7 @@ Usage: $0 <job_id> <exit code>
 EOF
 )
 
-if [ "$#" -ne 2 ]; then
+if [[ "$#" -ne 2 ]]; then
   echo "Error: Invalid number of arguments." >&2
   echo "$usage" >&2
   exit 1
@@ -44,16 +46,21 @@ fi
 
 # Finds a matching file in the root and copies it to the artifact directory.
 find_and_copy_job_artifact_from() {
-  filename="$1"
-  root="$2"
-  filepath="$(find "$root" -name "$filename" -print -quit)"
-  if [[ -z "$filepath" ]]; then
-    echo "$filename does not exist in repo directory."
+  root="$1"
+  name="$2"
+  if find "$root"/ -maxdepth 4 -name "$name" -type f -printf '' -quit 2>/dev/null; then
+    find "$root"/ -maxdepth 4 -name "$name" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
+  else
+    echo "No file matching '$name' found in '$root'."
     return 1
   fi
-  cp -v "$filepath" "$job_artifacts/"
 }
 
-find_and_copy_job_artifact_from "sccache_stats.json" build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
+find_and_copy_job_artifact_from build ".ninja_log"         || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "build.ninja"        || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "rules.ninja"        || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "ctest.log"          || : # Nonfatal if not found
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"

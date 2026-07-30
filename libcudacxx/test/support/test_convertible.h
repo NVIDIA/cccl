@@ -21,24 +21,23 @@
 namespace detail
 {
 template <class Tp>
-__host__ __device__ void eat_type(Tp);
+TEST_FUNC void eat_type(Tp);
 
 template <class Tp, class... Args>
-__host__ __device__ constexpr auto test_convertible_imp(int)
-  -> decltype(eat_type<Tp>({cuda::std::declval<Args>()...}), true)
+TEST_FUNC constexpr auto test_convertible_imp(int) -> decltype(eat_type<Tp>({cuda::std::declval<Args>()...}), true)
 {
   return true;
 }
 
 template <class Tp, class... Args>
-__host__ __device__ constexpr auto test_convertible_imp(long) -> bool
+TEST_FUNC constexpr auto test_convertible_imp(long) -> bool
 {
   return false;
 }
 } // namespace detail
 
 template <class Tp, class... Args>
-__host__ __device__ constexpr bool test_convertible()
+TEST_FUNC constexpr bool test_convertible()
 {
   return detail::test_convertible_imp<Tp, Args...>(0);
 }

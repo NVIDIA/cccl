@@ -4,13 +4,9 @@
 ## Test targets:
 #    libcudacxx.test.atomics.codegen.diff
 
-cccl_get_fmt()
-
 add_executable(codegen EXCLUDE_FROM_ALL codegen.cpp)
 
-target_link_libraries(codegen PRIVATE fmt)
-
-set_property(TARGET codegen PROPERTY CXX_STANDARD 17)
+target_compile_features(codegen PRIVATE cxx_std_20)
 
 set(
   atomic_generated_output

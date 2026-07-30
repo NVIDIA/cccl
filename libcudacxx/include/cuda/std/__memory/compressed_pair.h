@@ -64,10 +64,12 @@ struct __compressed_pair_elem
       : __value_()
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Up, enable_if_t<!is_same_v<__compressed_pair_elem, decay_t<_Up>>, int> = 0>
   _CCCL_API constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>)
       : __value_(::cuda::std::forward<_Up>(__u))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class... _Args, size_t... _Indices>
   _CCCL_API constexpr explicit __compressed_pair_elem(
@@ -107,10 +109,12 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
       : __value_type()
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Up, enable_if_t<!is_same_v<__compressed_pair_elem, decay_t<_Up>>, int> = 0>
   _CCCL_API constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>)
       : __value_type(::cuda::std::forward<_Up>(__u))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class... _Args, size_t... _Indices>
   _CCCL_API constexpr __compressed_pair_elem(

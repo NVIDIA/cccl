@@ -35,7 +35,7 @@ _CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indi
 
 _CCCL_TEMPLATE(class Mapping, class... Indices)
 _CCCL_REQUIRES(operator_constraints<Mapping, Indices...>)
-__host__ __device__ constexpr bool check_operator_constraints(Mapping m, Indices... idxs)
+TEST_FUNC constexpr bool check_operator_constraints(Mapping m, Indices... idxs)
 {
   (void) m(idxs...);
   return true;
@@ -43,13 +43,13 @@ __host__ __device__ constexpr bool check_operator_constraints(Mapping m, Indices
 
 _CCCL_TEMPLATE(class Mapping, class... Indices)
 _CCCL_REQUIRES((!operator_constraints<Mapping, Indices...>) )
-__host__ __device__ constexpr bool check_operator_constraints(Mapping, Indices...)
+TEST_FUNC constexpr bool check_operator_constraints(Mapping, Indices...)
 {
   return false;
 }
 
 template <class M, class T, class... Args>
-__host__ __device__ constexpr void iterate_right(M m, T& count, Args... args)
+TEST_FUNC constexpr void iterate_right(M m, T& count, Args... args)
 {
   using extents = typename M::extents_type;
   if constexpr (extents::rank() == sizeof...(Args))
@@ -69,7 +69,7 @@ __host__ __device__ constexpr void iterate_right(M m, T& count, Args... args)
 }
 
 template <class E, class... Args>
-__host__ __device__ constexpr void test_iteration(Args... args)
+TEST_FUNC constexpr void test_iteration(Args... args)
 {
   using M = cuda::std::layout_right::mapping<E>;
   M m{E{args...}};
@@ -78,7 +78,7 @@ __host__ __device__ constexpr void test_iteration(Args... args)
   iterate_right(m, count);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int>>();
@@ -86,37 +86,29 @@ __host__ __device__ constexpr bool test()
   test_iteration<cuda::std::extents<unsigned, D>>(7);
   test_iteration<cuda::std::extents<unsigned, 7>>();
   test_iteration<cuda::std::extents<unsigned, 7, 8>>();
-  test_iteration<cuda::std::extents<char, D, D, D, D>>(1, 1, 1, 1);
+  test_iteration<cuda::std::extents<signed char, D, D, D, D>>(1, 1, 1, 1);
 
   // Check operator constraint for number of arguments
   static_assert(check_operator_constraints(
-                  cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0),
-                "");
+    cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0));
   static_assert(!check_operator_constraints(
-                  cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0, 0),
-                "");
+    cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0, 0));
 
   // Check operator constraint for convertibility of arguments to index_type
-  static_assert(
-    check_operator_constraints(
-      cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), IntType(0)),
-    "");
+  static_assert(check_operator_constraints(
+    cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), IntType(0)));
   static_assert(!check_operator_constraints(
-                  cuda::std::layout_right::mapping<cuda::std::extents<unsigned, D>>(cuda::std::extents<unsigned, D>(1)),
-                  IntType(0)),
-                "");
+    cuda::std::layout_right::mapping<cuda::std::extents<unsigned, D>>(cuda::std::extents<unsigned, D>(1)), IntType(0)));
 
   // Check operator constraint for no-throw-constructibility of index_type from arguments
-  static_assert(
-    !check_operator_constraints(
-      cuda::std::layout_right::mapping<cuda::std::extents<unsigned char, D>>(cuda::std::extents<unsigned char, D>(1)),
-      IntType(0)),
-    "");
+  static_assert(!check_operator_constraints(
+    cuda::std::layout_right::mapping<cuda::std::extents<unsigned char, D>>(cuda::std::extents<unsigned char, D>(1)),
+    IntType(0)));
 
   return true;
 }
 
-__host__ __device__ constexpr bool test_large()
+TEST_FUNC constexpr bool test_large()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int64_t, D, 8, D, D>>(7, 9, 10);
@@ -127,7 +119,7 @@ __host__ __device__ constexpr bool test_large()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   // The large test iterates over ~10k loop indices.
   // With assertions enabled this triggered the maximum default limit

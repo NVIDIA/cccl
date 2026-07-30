@@ -33,4 +33,10 @@
 #  define _CCCL_HAS_EXCEPTIONS() (__EXCEPTIONS) // disabled with -fno-exceptions
 #endif // has exceptions
 
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L
+#  define _CCCL_HAS_CONSTEXPR_EXCEPTIONS() 1
+#else // ^^^ has constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#  define _CCCL_HAS_CONSTEXPR_EXCEPTIONS() 0
+#endif // ^^^ no constexpr exceptions ^^^
+
 #endif // __CCCL_EXCEPTIONS_H

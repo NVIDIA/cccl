@@ -27,21 +27,21 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 cuda::std::size_t max_size() const
+  TEST_FUNC TEST_CONSTEXPR_CXX20 cuda::std::size_t max_size() const
   {
     return 100;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     B<int> b;
@@ -52,8 +52,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(cuda::std::allocator_traits<B<int>>::max_size(b) == 100);
   }
   {
-    typedef IncompleteHolder* VT;
-    typedef B<VT> Alloc;
+    using VT    = IncompleteHolder*;
+    using Alloc = B<VT>;
     Alloc a;
     assert(cuda::std::allocator_traits<Alloc>::max_size(a) == 100);
   }
@@ -69,7 +69,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   }
   {
     cuda::std::allocator<int> a;
-    static_assert(noexcept(cuda::std::allocator_traits<cuda::std::allocator<int>>::max_size(a)) == true, "");
+    static_assert(noexcept(cuda::std::allocator_traits<cuda::std::allocator<int>>::max_size(a)) == true);
     unused(a);
   }
 

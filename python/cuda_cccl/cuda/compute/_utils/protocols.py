@@ -1,17 +1,25 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+import numpy as np
 
 """
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import List, Optional, Tuple
+if TYPE_CHECKING:
+    from ..typing import DeviceArrayLike, GpuStruct
 
-import numpy as np
 
-from ..typing import DeviceArrayLike, GpuStruct
+def is_device_array(obj: object) -> bool:
+    """Check if an object implements the `__cuda_array_interface__` protocol."""
+    return hasattr(obj, "__cuda_array_interface__")
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
@@ -60,6 +68,21 @@ def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
         return arr.shape  # type: ignore
     except AttributeError:
         return arr.__cuda_array_interface__["shape"]
+
+
+def get_size(arr: DeviceArrayLike) -> int:
+    """Get the total number of elements in an array."""
+    # Try fast path via .size attribute
+    try:
+        return int(arr.size)  # type: ignore
+    except AttributeError:
+        pass
+
+    # Fall back to computing from shape
+    shape = get_shape(arr)
+    import math
+
+    return math.prod(shape)
 
 
 def is_contiguous(arr: DeviceArrayLike) -> bool:

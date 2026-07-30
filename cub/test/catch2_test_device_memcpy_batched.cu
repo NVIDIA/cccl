@@ -109,7 +109,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceMemcpy::Batched works for a very large buffer",
@@ -141,7 +141,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceMemcpy::Batched works for a very large number of buffer",
@@ -223,5 +223,5 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }

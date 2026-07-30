@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class To, class From>
-__host__ __device__ constexpr void test_overflow_cast(const From& from, const bool overflow)
+TEST_FUNC constexpr void test_overflow_cast(const From& from, const bool overflow)
 {
   const auto result = cuda::overflow_cast<To>(from);
   assert(result.value == static_cast<To>(from));
@@ -23,7 +23,7 @@ __host__ __device__ constexpr void test_overflow_cast(const From& from, const bo
 }
 
 template <class To, class From>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::overflow_cast<To>(From{})), cuda::overflow_result<To>>);
   static_assert(noexcept(cuda::overflow_cast<To>(From{})));
@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<T, signed char>();
   test_type<T, unsigned char>();
@@ -70,7 +70,7 @@ __host__ __device__ constexpr void test_type()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<unsigned char>();

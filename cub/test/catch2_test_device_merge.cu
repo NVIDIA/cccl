@@ -89,6 +89,7 @@ try
 catch (const std::bad_alloc&)
 {
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
+  SUCCEED("allocation failure is not a test failure");
 }
 
 C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
@@ -101,36 +102,17 @@ C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
   test_keys<key_t>(size1, size2);
 }
 
-struct Dispatcher
-{
-  int items_per_tile = 0;
-
-  template <typename ActivePolicy>
-  _CCCL_HOST_DEVICE auto Invoke() -> cudaError
-  {
-    items_per_tile = ActivePolicy::merge_policy::ITEMS_PER_TILE;
-    return cudaSuccess;
-  }
-};
-
-template <typename PolicyHub>
-auto items_per_tile_on_current_device() -> int
-{
-  int ptx_version = 0;
-  REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
-  Dispatcher dispatcher{};
-  REQUIRE(PolicyHub::max_policy::Invoke(ptx_version, dispatcher) == cudaSuccess);
-  REQUIRE(dispatcher.items_per_tile != 0);
-  return dispatcher.items_per_tile;
-}
-
 C2H_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device]")
 {
   using key_t    = int;
   using offset_t = int;
 
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   const offset_t items_per_tile =
-    items_per_tile_on_current_device<cub::detail::merge::policy_hub<key_t, cub::NullType, offset_t>>();
+    cub::detail::merge::policy_selector_from_types<key_t*, cub::NullType*, key_t*, cub::NullType*, offset_t>{}(cc)
+      .items_per_thread;
+
   test_keys<key_t>(items_per_tile - 1, 1);
   test_keys<key_t>(items_per_tile, 1);
   test_keys<key_t>(1, items_per_tile - 1);
@@ -250,7 +232,7 @@ void test_pairs(
                zip(keys2_h.end(), values2_h.end()),
                zip(reference_keys_h.begin(), reference_values_h.begin()),
                [&](const value_t& a, const value_t& b) {
-                 return compare_op(thrust::get<0>(a), thrust::get<0>(b));
+                 return compare_op(cuda::std::get<0>(a), cuda::std::get<0>(b));
                });
   }
 
@@ -307,6 +289,7 @@ try
 catch (const std::bad_alloc&)
 {
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
+  SUCCEED("allocation failure is not a test failure");
 }
 
 C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
@@ -342,6 +325,7 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
 
     for (offset_t i = 0; i < static_cast<offset_t>(result_keys_h.size()); i++)
     {
+      CAPTURE(i);
       if (i < 2 * smaller_size)
       {
         CHECK(result_keys_h[i + 0] == i / 2);

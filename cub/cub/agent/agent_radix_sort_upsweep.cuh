@@ -29,11 +29,8 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/agent/agent_radix_sort_histogram.cuh>
-#endif
-
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
@@ -43,10 +40,12 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+namespace detail
+{
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
  *
- * @tparam NominalBlockThreads4B
+ * @tparam NominalThreadsPerBlock4B
  *   Threads per thread block
  *
  * @tparam NominalItemsPerThread4B
@@ -61,13 +60,13 @@ CUB_NAMESPACE_BEGIN
  * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           CacheLoadModifier LoadModifier,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortUpsweepPolicy : ScalingType
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_radix_sort_upsweep_policy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)
   static constexpr int RADIX_BITS = RadixBits;
@@ -75,25 +74,23 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
   /// Cache load modifier for reading keys
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortUpsweepAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (RADIX_BITS, RadixBits, int),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+//! Deprecated [Since 3.5]
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          CacheLoadModifier LoadModifier,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortUpsweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_upsweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    LoadModifier,
+    RadixBits,
+    ScalingType>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -206,35 +203,6 @@ struct AgentRadixSortUpsweep
   DecomposerT decomposer;
 
   //---------------------------------------------------------------------
-  // Helper structure for templated iteration
-  //---------------------------------------------------------------------
-
-  // Iterate
-  template <int COUNT, int MAX>
-  struct Iterate
-  {
-    // BucketKeys
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    BucketKeys(AgentRadixSortUpsweep& cta, bit_ordered_type keys[KEYS_PER_THREAD])
-    {
-      cta.Bucket(keys[COUNT]);
-
-      // Next
-      Iterate<COUNT + 1, MAX>::BucketKeys(cta, keys);
-    }
-  };
-
-  // Terminate
-  template <int MAX>
-  struct Iterate<MAX, MAX>
-  {
-    // BucketKeys
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    BucketKeys(AgentRadixSortUpsweep& /*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD])
-    {}
-  };
-
-  //---------------------------------------------------------------------
   // Utility methods
   //---------------------------------------------------------------------
   _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
@@ -258,6 +226,7 @@ struct AgentRadixSortUpsweep
 
     // Get row offset
     uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    _CCCL_ASSERT(row_offset < COUNTER_LANES, "");
 
     // Increment counter
     temp_storage.thread_counters[row_offset][threadIdx.x][sub_counter]++;
@@ -334,7 +303,9 @@ struct AgentRadixSortUpsweep
     __syncthreads();
 
     // Bucket tile of keys
-    Iterate<0, KEYS_PER_THREAD>::BucketKeys(*this, keys);
+    cuda::static_for<KEYS_PER_THREAD>([&](auto ic) {
+      Bucket(keys[ic]);
+    });
   }
 
   /**
@@ -449,7 +420,7 @@ struct AgentRadixSortUpsweep
     for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
          BIN_BASE += BLOCK_THREADS)
     {
-      int bin_idx       = BIN_BASE + threadIdx.x;
+      int bin_idx       = static_cast<int>(BIN_BASE + threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -469,7 +440,7 @@ struct AgentRadixSortUpsweep
     // Remainder
     if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
     {
-      int bin_idx       = threadIdx.x;
+      int bin_idx       = static_cast<int>(threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()

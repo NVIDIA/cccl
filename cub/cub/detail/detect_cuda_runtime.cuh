@@ -20,11 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-// CUDA headers might not be present when using NVRTC, see NVIDIA/cccl#2095 for detail
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cuda_runtime_api.h>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 #ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! Defined if RDC is enabled and CUB_DISABLE_CDP is not defined.
 //! Deprecated [Since 3.2]
@@ -40,9 +35,9 @@
 #  define CUB_RUNTIME_FUNCTION
 #else // Non-doxygen pass:
 
-#  if _CCCL_HAS_RDC()
+#  if _CCCL_HAS_CDP()
 #    define CUB_RDC_ENABLED
-#  endif // _CCCL_HAS_RDC()
+#  endif // _CCCL_HAS_CDP()
 
 #  ifndef CUB_RUNTIME_FUNCTION
 #    define CUB_RUNTIME_FUNCTION _CCCL_CDP_API

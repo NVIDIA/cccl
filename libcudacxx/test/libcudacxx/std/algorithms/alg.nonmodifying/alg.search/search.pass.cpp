@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <algorithm>
 
 // template<ForwardIterator Iter1, ForwardIterator Iter2>
@@ -30,7 +33,7 @@ TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 struct MySearcherC
 {
   template <typename Iterator>
-  __host__ __device__ cuda::std::pair<Iterator, Iterator> constexpr operator()(Iterator b, Iterator e) const
+  TEST_FUNC cuda::std::pair<Iterator, Iterator> constexpr operator()(Iterator b, Iterator e) const
   {
     return cuda::std::make_pair(b, e);
   }
@@ -38,12 +41,12 @@ struct MySearcherC
 
 struct MySearcher
 {
-  __host__ __device__ constexpr MySearcher(int& searcher_called) noexcept
+  TEST_FUNC constexpr MySearcher(int& searcher_called) noexcept
       : searcher_called(searcher_called)
   {}
 
   template <typename Iterator>
-  __host__ __device__ cuda::std::pair<Iterator, Iterator> constexpr operator()(Iterator b, Iterator e) const
+  TEST_FUNC cuda::std::pair<Iterator, Iterator> constexpr operator()(Iterator b, Iterator e) const
   {
     ++searcher_called;
     return cuda::std::make_pair(b, e);
@@ -56,10 +59,10 @@ namespace User
 {
 struct S
 {
-  __host__ __device__ constexpr S(int x)
+  TEST_FUNC constexpr S(int x)
       : x_(x)
   {}
-  __host__ __device__ friend constexpr bool operator==(S lhs, S rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(S lhs, S rhs) noexcept
   {
     return lhs.x_ == rhs.x_;
   }
@@ -71,7 +74,7 @@ void make_pair(T&&, U&&) = delete;
 } // namespace User
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]          = {0, 1, 2, 3, 4, 5};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -109,13 +112,13 @@ __host__ __device__ constexpr void test()
 }
 
 template <class Iter>
-__host__ __device__ constexpr void adl_test()
+TEST_FUNC constexpr void adl_test()
 {
   User::S ua[] = {1};
   assert(cuda::std::search(Iter(ua), Iter(ua), Iter(ua), Iter(ua)) == Iter(ua));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>, forward_iterator<const int*>>();
   test<forward_iterator<const int*>, bidirectional_iterator<const int*>>();
@@ -127,6 +130,13 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   adl_test<forward_iterator<User::S*>>();
   adl_test<random_access_iterator<User::S*>>();
 
@@ -136,13 +146,13 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   {
     int searcher_called = 0;
     using RI            = int*;
-    static_assert((cuda::std::is_same<RI, decltype(cuda::std::search(RI(), RI(), MySearcher{searcher_called}))>::value),
-                  "");
+    static_assert(
+      (cuda::std::is_same<RI, decltype(cuda::std::search(RI(), RI(), MySearcher{searcher_called}))>::value));
 
     RI it(nullptr);
     assert(it == cuda::std::search(it, it, MySearcher{searcher_called}));

@@ -18,7 +18,7 @@
 #include "large_type.h"
 
 template <cuda::thread_scope scope, uint8_t PipelineStages>
-__host__ __device__ cuda::pipeline<scope> get_pipeline(cuda::pipeline_shared_state<scope, PipelineStages>* pipe_state)
+TEST_FUNC cuda::pipeline<scope> get_pipeline(cuda::pipeline_shared_state<scope, PipelineStages>* pipe_state)
 {
   NV_DISPATCH_TARGET(NV_IS_DEVICE,
                      (auto group = cooperative_groups::this_thread_block(); return make_pipeline(group, pipe_state);),
@@ -32,7 +32,7 @@ template <cuda::thread_scope Scope,
           template <typename, typename> class DestSelector,
           template <typename, typename> class PipelineSelector,
           uint8_t PipelineStages>
-__host__ __device__ __noinline__ void test_fully_specialized()
+TEST_FUNC __noinline__ void test_fully_specialized()
 {
   SourceSelector<T, constructor_initializer> source_sel;
   typename DestSelector<T, constructor_initializer>::template offsetted<decltype(source_sel)::shared_offset> dest_sel;
@@ -86,7 +86,7 @@ template <cuda::thread_scope Scope,
           class T,
           template <typename, typename> class SourceSelector,
           template <typename, typename> class DestSelector>
-__host__ __device__ __noinline__ void test_select_pipeline()
+TEST_FUNC __noinline__ void test_select_pipeline()
 {
   constexpr uint8_t stages_count = 2;
   test_fully_specialized<Scope, T, SourceSelector, DestSelector, local_memory_selector, stages_count>();
@@ -97,7 +97,7 @@ __host__ __device__ __noinline__ void test_select_pipeline()
 }
 
 template <cuda::thread_scope Scope, class T, template <typename, typename> class SourceSelector>
-__host__ __device__ __noinline__ void test_select_destination()
+TEST_FUNC __noinline__ void test_select_destination()
 {
   test_select_pipeline<Scope, T, SourceSelector, local_memory_selector>();
   NV_IF_TARGET(NV_IS_DEVICE,
@@ -106,7 +106,7 @@ __host__ __device__ __noinline__ void test_select_destination()
 }
 
 template <cuda::thread_scope Scope, class T>
-__host__ __device__ __noinline__ void test_select_source()
+TEST_FUNC __noinline__ void test_select_source()
 {
   test_select_destination<Scope, T, local_memory_selector>();
   NV_IF_TARGET(NV_IS_DEVICE,

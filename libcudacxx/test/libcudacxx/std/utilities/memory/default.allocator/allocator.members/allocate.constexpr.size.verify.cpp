@@ -21,10 +21,10 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
-  typedef cuda::std::allocator<T> A;
-  typedef cuda::std::allocator_traits<A> AT;
+  using A  = cuda::std::allocator<T>;
+  using AT = cuda::std::allocator_traits<A>;
   A a;
   TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) + 1); // just barely too large
   TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) * 2); // significantly too large
@@ -34,7 +34,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void f()
+TEST_FUNC void f()
 {
   static_assert(test<double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is not an
                                  // integral constant expression}}

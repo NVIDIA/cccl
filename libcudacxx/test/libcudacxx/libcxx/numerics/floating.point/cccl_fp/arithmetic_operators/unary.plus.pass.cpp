@@ -12,8 +12,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_fp_unary_plus()
+TEST_FUNC constexpr void test_fp_unary_plus()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -23,7 +25,7 @@ __host__ __device__ constexpr void test_fp_unary_plus()
   // todo: implement test once __fp_cast is implemented
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_fp_unary_plus<cuda::std::__fp_format::__binary16>();
   test_fp_unary_plus<cuda::std::__fp_format::__binary32>();

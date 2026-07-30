@@ -18,10 +18,10 @@
 struct Error
 {
   int i;
-  __host__ __device__ constexpr Error(int ii)
+  TEST_FUNC constexpr Error(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr Error& operator=(Error&& other)
+  TEST_FUNC constexpr Error& operator=(Error&& other)
   {
     i       = other.i;
     other.i = 0;
@@ -29,7 +29,7 @@ struct Error
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::unexpected<Error> unex1(4);
   cuda::std::unexpected<Error> unex2(5);
@@ -42,6 +42,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

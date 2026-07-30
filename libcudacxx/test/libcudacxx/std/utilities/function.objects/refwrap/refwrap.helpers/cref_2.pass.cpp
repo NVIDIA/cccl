@@ -23,10 +23,10 @@ namespace adl
 {
 struct A
 {};
-__host__ __device__ void cref(A) {}
+TEST_FUNC void cref(A) {}
 } // namespace adl
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const int i                                = 0;

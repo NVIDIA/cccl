@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class Iter1, class T>
-__host__ __device__ constexpr void test(Iter1 first, Iter1 last, const T* rFirst, const T* rLast)
+TEST_FUNC constexpr void test(Iter1 first, Iter1 last, const T* rFirst, const T* rLast)
 {
   assert((rLast - rFirst) <= 5); // or else increase the size of "out"
   T out[5] = {};
@@ -45,12 +45,12 @@ __host__ __device__ constexpr void test(Iter1 first, Iter1 last, const T* rFirst
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]          = {1, 3, 5, 7, 9};
   const int pRes[]  = {1, 4, 9, 16, 25};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  static_assert(sa == sizeof(pRes) / sizeof(pRes[0]), ""); // just to be sure
+  static_assert(sa == sizeof(pRes) / sizeof(pRes[0])); // just to be sure
 
   for (unsigned int i = 0; i < sa; ++i)
   {
@@ -58,13 +58,13 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr cuda::std::size_t triangle(size_t n)
+TEST_FUNC constexpr cuda::std::size_t triangle(size_t n)
 {
   return n * (n + 1) / 2;
 }
 
 //  Basic sanity
-__host__ __device__ constexpr void basic_tests()
+TEST_FUNC constexpr void basic_tests()
 {
   {
     cuda::std::array<cuda::std::size_t, 10> v{};
@@ -107,7 +107,7 @@ __host__ __device__ constexpr void basic_tests()
 #endif //  !TEST_COMPILER(NVHPC)
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   basic_tests();
 
@@ -119,12 +119,19 @@ __host__ __device__ constexpr bool test()
   test<const int*>();
   test<int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

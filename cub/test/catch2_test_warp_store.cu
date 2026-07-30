@@ -23,12 +23,13 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
   T reg[ITEMS_PER_THREAD];
 
   for (int item = 0; item < ITEMS_PER_THREAD; item++)
   {
-    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item);
+    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
   }
 
   const int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -107,8 +108,8 @@ c2h::device_vector<T> compute_reference(int valid_items)
     for (int warp_id = 0; warp_id < TOTAL_WARPS; warp_id++)
     {
       thrust::fill(c2h::device_policy,
-                   d_input.begin() + warp_id * tile_size + valid_items,
-                   d_input.begin() + (warp_id + 1) * tile_size,
+                   d_input.begin() + warp_id * tile_size + valid_items, // NOLINT(bugprone-misplaced-widening-cast)
+                   d_input.begin() + (warp_id + 1) * tile_size, // NOLINT(bugprone-misplaced-widening-cast)
                    T{});
     }
   }

@@ -22,27 +22,17 @@
 
 #if _CCCL_HAS_BACKEND_CUDA()
 
-#  include <cuda/__fwd/execution_policy.h>
 #  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__type_traits/is_execution_policy.h>
 
 #  include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
-
-template <uint32_t _Policy>
-struct _CCCL_DECLSPEC_EMPTY_BASES __execution_policy_base<_Policy, __execution_backend::__cuda>
-    : __execution_policy_base<_Policy, __execution_backend::__none>
-{};
-
-_CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 using __cub_parallel_unsequenced_policy =
-  ::cuda::std::execution::__execution_policy_base<::cuda::std::execution::__with_cuda_backend<static_cast<uint32_t>(
-    ::cuda::std::execution::__execution_policy::__parallel_unsequenced)>()>;
-_CCCL_GLOBAL_CONSTANT __cub_parallel_unsequenced_policy __cub_par_unseq{};
+  ::cuda::std::execution::__execution_policy_base<::cuda::std::execution::__with_backend<
+    static_cast<uint32_t>(::cuda::std::execution::__execution_policy::__parallel_unsequenced),
+    ::cuda::std::execution::__execution_backend::__cuda>()>;
+_CCCL_GLOBAL_CONSTANT __cub_parallel_unsequenced_policy gpu{};
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
 

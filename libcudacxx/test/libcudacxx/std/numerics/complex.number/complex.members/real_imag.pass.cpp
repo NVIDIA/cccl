@@ -18,21 +18,21 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_constexpr()
+TEST_FUNC constexpr void test_constexpr()
 {
   constexpr cuda::std::complex<T> c1;
-  static_assert(c1.real() == 0, "");
-  static_assert(c1.imag() == 0, "");
+  static_assert(c1.real() == 0);
+  static_assert(c1.imag() == 0);
   constexpr cuda::std::complex<T> c2(3);
-  static_assert(c2.real() == 3, "");
-  static_assert(c2.imag() == 0, "");
+  static_assert(c2.real() == 3);
+  static_assert(c2.imag() == 0);
   constexpr cuda::std::complex<T> c3(3, 4);
-  static_assert(c3.real() == 3, "");
-  static_assert(c3.imag() == 4, "");
+  static_assert(c3.real() == 3);
+  static_assert(c3.imag() == 4);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_nonconstexpr()
+TEST_FUNC constexpr void test_nonconstexpr()
 {
   cuda::std::complex<T> c;
   assert(c.real() == T(0));
@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();
@@ -61,7 +61,7 @@ __host__ __device__ constexpr bool test()
 }
 
 template <class T>
-__host__ __device__ void test_volatile()
+TEST_FUNC void test_volatile()
 {
   volatile cuda::std::complex<T> cv;
   assert(cv.real() == T(0));
@@ -81,27 +81,27 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test_nonconstexpr<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test_nonconstexpr<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<int>();
 
   // test volatile extensions
   test_volatile<float>();
   test_volatile<double>();
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   // test_volatile<__half>();
 #endif
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   // test_volatile<__nv_bfloat16>();
 #endif
 

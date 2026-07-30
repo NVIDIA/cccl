@@ -22,7 +22,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::chrono::duration<double, cuda::std::micro> us(1);
   cuda::std::chrono::duration<double, cuda::std::milli> ms = us;

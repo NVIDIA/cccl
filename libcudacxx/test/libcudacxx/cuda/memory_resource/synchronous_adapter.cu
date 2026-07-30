@@ -13,6 +13,7 @@
 
 #include <testing.cuh>
 
+#include "resources/pool_availability.cuh"
 #include "test_resource.cuh"
 
 template <class Resource>
@@ -28,7 +29,23 @@ constexpr bool passed_property =
 template <class Resource>
 constexpr bool same_properties =
   passed_property<Resource, cuda::mr::device_accessible> && passed_property<Resource, cuda::mr::host_accessible>
-  && passed_property<Resource, extra_property> && passed_property<Resource, get_data>;
+  && passed_property<Resource, extra_property> && passed_property<Resource, get_data>
+  && passed_property<Resource, cuda::mr::dynamic_accessibility_property>;
+
+struct explicit_dynamic_resource
+{
+  void* allocate_sync(size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
+  friend constexpr cuda::mr::__memory_accessibility
+  get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
+  {
+    return cuda::mr::__memory_accessibility ::__device;
+  }
+};
 
 C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 {
@@ -36,6 +53,8 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 
   SECTION("Test wrapping a resource")
   {
+    test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
+
     auto pool = cuda::device_default_memory_pool(cuda::device_ref{0});
     cuda::mr::synchronous_resource_adapter<cuda::device_memory_pool_ref> adapter{pool};
     auto* ptr = adapter.allocate(stream, 1024, 128);
@@ -54,20 +73,28 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
   }
   SECTION("test property passing through")
   {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
     STATIC_CHECK(same_properties<cuda::pinned_memory_pool_ref>);
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
     STATIC_CHECK(same_properties<cuda::device_memory_pool_ref>);
     STATIC_CHECK(same_properties<cuda::mr::legacy_pinned_memory_resource>);
     STATIC_CHECK(same_properties<small_resource>);
   }
   SECTION("test default queries")
   {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
     STATIC_CHECK(same_default_queries<cuda::pinned_memory_pool_ref>);
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
     STATIC_CHECK(same_default_queries<cuda::device_memory_pool_ref>);
     STATIC_CHECK(same_default_queries<cuda::mr::legacy_pinned_memory_resource>);
     STATIC_CHECK(same_default_queries<small_resource>);
+  }
+
+  SECTION("explicit dynamic_accessibility_property overrides template")
+  {
+    cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
+    STATIC_CHECK(cuda::has_property<decltype(adapter), cuda::mr::dynamic_accessibility_property>);
+    CHECK(get_property(adapter, cuda::mr::dynamic_accessibility_property{})
+          == cuda::mr::__memory_accessibility ::__device);
   }
 }

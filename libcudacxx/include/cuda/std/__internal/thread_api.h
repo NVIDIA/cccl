@@ -28,7 +28,7 @@
 #endif // _CCCL_HAS_THREAD_API_EXTERNAL
 
 #ifndef _CCCL_HAS_THREAD_API_CUDA
-#  if ((_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) || defined(__EMSCRIPTEN__))
+#  if ((_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) || defined(__EMSCRIPTEN__) || _CCCL_HOSTJIT())
 #    define _CCCL_HAS_THREAD_API_CUDA
 #  endif // ((_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) || defined(__EMSCRIPTEN__))
 #endif // _CCCL_HAS_THREAD_API_CUDA
@@ -42,7 +42,7 @@
 #if !defined(_CCCL_HAS_THREAD_API_PTHREAD) && !defined(_CCCL_HAS_THREAD_API_WIN32) \
   && !defined(_CCCL_HAS_THREAD_API_EXTERNAL)
 #  if defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX) \
-    || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
+    || (defined(__MINGW32__) && __has_include(<pthread.h>))
 #    define _CCCL_HAS_THREAD_API_PTHREAD
 #  elif defined(_WIN32)
 #    define _CCCL_HAS_THREAD_API_WIN32

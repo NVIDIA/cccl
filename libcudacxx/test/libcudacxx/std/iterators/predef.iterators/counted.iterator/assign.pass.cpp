@@ -22,42 +22,42 @@ class AssignableFromIter
   int* it_;
 
 public:
-  typedef cuda::std::input_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef typename cuda::std::iterator_traits<int*>::difference_type difference_type;
-  typedef int* pointer;
-  typedef int& reference;
+  using iterator_category = cuda::std::input_iterator_tag;
+  using value_type        = int;
+  using difference_type   = typename cuda::std::iterator_traits<int*>::difference_type;
+  using pointer           = int*;
+  using reference         = int&;
 
-  __host__ __device__ friend constexpr int* base(const AssignableFromIter& i)
+  TEST_FUNC friend constexpr int* base(const AssignableFromIter& i)
   {
     return i.it_;
   }
 
   AssignableFromIter() = default;
-  __host__ __device__ explicit constexpr AssignableFromIter(int* it)
+  TEST_FUNC explicit constexpr AssignableFromIter(int* it)
       : it_(it)
   {}
-  __host__ __device__ constexpr AssignableFromIter(const forward_iterator<int*>& it)
+  TEST_FUNC constexpr AssignableFromIter(const forward_iterator<int*>& it)
       : it_(base(it))
   {}
 
-  __host__ __device__ constexpr AssignableFromIter& operator=(const forward_iterator<int*>& other)
+  TEST_FUNC constexpr AssignableFromIter& operator=(const forward_iterator<int*>& other)
   {
     it_ = base(other);
     return *this;
   }
 
-  __host__ __device__ constexpr reference operator*() const
+  TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr AssignableFromIter& operator++()
+  TEST_FUNC constexpr AssignableFromIter& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr AssignableFromIter operator++(int)
+  TEST_FUNC constexpr AssignableFromIter operator++(int)
   {
     AssignableFromIter tmp(*this);
     ++(*this);
@@ -71,22 +71,22 @@ struct InputOrOutputArchetype
 
   int* ptr;
 
-  __host__ __device__ int operator*()
+  TEST_FUNC int operator*()
   {
     return *ptr;
   }
-  __host__ __device__ void operator++(int)
+  TEST_FUNC void operator++(int)
   {
     ++ptr;
   }
-  __host__ __device__ InputOrOutputArchetype& operator++()
+  TEST_FUNC InputOrOutputArchetype& operator++()
   {
     ++ptr;
     return *this;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

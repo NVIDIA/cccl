@@ -27,9 +27,9 @@
 
 struct CopyOnly
 {
-  __host__ __device__ CopyOnly() {}
-  __host__ __device__ CopyOnly(CopyOnly const&) noexcept {}
-  __host__ __device__ CopyOnly& operator=(CopyOnly const&)
+  TEST_FUNC CopyOnly() {}
+  TEST_FUNC CopyOnly(CopyOnly const&) noexcept {}
+  TEST_FUNC CopyOnly& operator=(CopyOnly const&)
   {
     return *this;
   }
@@ -37,9 +37,9 @@ struct CopyOnly
 
 struct MoveOnly
 {
-  __host__ __device__ MoveOnly() {}
-  __host__ __device__ MoveOnly(MoveOnly&&) {}
-  __host__ __device__ MoveOnly& operator=(MoveOnly&&) noexcept
+  TEST_FUNC MoveOnly() {}
+  TEST_FUNC MoveOnly(MoveOnly&&) {}
+  TEST_FUNC MoveOnly& operator=(MoveOnly&&) noexcept
   {
     return *this;
   }
@@ -47,9 +47,9 @@ struct MoveOnly
 
 struct NoexceptMoveOnly
 {
-  __host__ __device__ NoexceptMoveOnly() {}
-  __host__ __device__ NoexceptMoveOnly(NoexceptMoveOnly&&) noexcept {}
-  __host__ __device__ NoexceptMoveOnly& operator=(NoexceptMoveOnly&&) noexcept
+  TEST_FUNC NoexceptMoveOnly() {}
+  TEST_FUNC NoexceptMoveOnly(NoexceptMoveOnly&&) noexcept {}
+  TEST_FUNC NoexceptMoveOnly& operator=(NoexceptMoveOnly&&) noexcept
   {
     return *this;
   }
@@ -57,37 +57,36 @@ struct NoexceptMoveOnly
 
 struct NotMoveConstructible
 {
-  __host__ __device__ NotMoveConstructible& operator=(NotMoveConstructible&&)
+  TEST_FUNC NotMoveConstructible& operator=(NotMoveConstructible&&)
   {
     return *this;
   }
 
 private:
-  __host__ __device__ NotMoveConstructible(NotMoveConstructible&&);
+  TEST_FUNC NotMoveConstructible(NotMoveConstructible&&);
 };
 
 struct NotMoveAssignable
 {
-  __host__ __device__ NotMoveAssignable(NotMoveAssignable&&);
+  TEST_FUNC NotMoveAssignable(NotMoveAssignable&&);
 
 private:
-  __host__ __device__ NotMoveAssignable& operator=(NotMoveAssignable&&);
+  TEST_FUNC NotMoveAssignable& operator=(NotMoveAssignable&&);
 };
 
 template <class Tp>
-__host__ __device__ auto can_swap_test(int)
-  -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
+TEST_FUNC auto can_swap_test(int) -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
 
 template <class Tp>
-__host__ __device__ auto can_swap_test(...) -> cuda::std::false_type;
+TEST_FUNC auto can_swap_test(...) -> cuda::std::false_type;
 
 template <class Tp>
-__host__ __device__ constexpr bool can_swap()
+TEST_FUNC constexpr bool can_swap()
 {
   return cuda::std::is_same<decltype(can_swap_test<Tp>(0)), void>::value;
 }
 
-__host__ __device__ constexpr bool test_swap_constexpr()
+TEST_FUNC constexpr bool test_swap_constexpr()
 {
   int i = 1;
   int j = 2;
@@ -98,11 +97,11 @@ __host__ __device__ constexpr bool test_swap_constexpr()
 template <class T>
 struct swap_with_friend
 {
-  __host__ __device__ friend void swap(swap_with_friend&, swap_with_friend&) {}
+  TEST_FUNC friend void swap(swap_with_friend&, swap_with_friend&) {}
 };
 
 template <typename T>
-__host__ __device__ void test_ambiguous_std()
+TEST_FUNC void test_ambiguous_std()
 {
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (
@@ -165,6 +164,7 @@ int main(int, char**)
     assert(i == 2);
     assert(j == 1);
   }
+#if !_CCCL_TILE_COMPILATION() // dynamic memory allocation with non-placement ::operator new is unsupported in tile code
   {
     cuda::std::unique_ptr<int> i(new int(1));
     cuda::std::unique_ptr<int> j(new int(2));
@@ -172,24 +172,25 @@ int main(int, char**)
     assert(*i == 2);
     assert(*j == 1);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   {
     // test that the swap
-    static_assert(can_swap<CopyOnly&>(), "");
-    static_assert(can_swap<MoveOnly&>(), "");
-    static_assert(can_swap<NoexceptMoveOnly&>(), "");
+    static_assert(can_swap<CopyOnly&>());
+    static_assert(can_swap<MoveOnly&>());
+    static_assert(can_swap<NoexceptMoveOnly&>());
 
-    static_assert(!can_swap<NotMoveConstructible&>(), "");
-    static_assert(!can_swap<NotMoveAssignable&>(), "");
+    static_assert(!can_swap<NotMoveConstructible&>());
+    static_assert(!can_swap<NotMoveAssignable&>());
 
     CopyOnly c;
     MoveOnly m;
     NoexceptMoveOnly nm;
-    static_assert(!noexcept(cuda::std::swap(c, c)), "");
-    static_assert(!noexcept(cuda::std::swap(m, m)), "");
-    static_assert(noexcept(cuda::std::swap(nm, nm)), "");
+    static_assert(!noexcept(cuda::std::swap(c, c)));
+    static_assert(!noexcept(cuda::std::swap(m, m)));
+    static_assert(noexcept(cuda::std::swap(nm, nm)));
   }
 
-  static_assert(test_swap_constexpr(), "");
+  static_assert(test_swap_constexpr());
 
   test_ambiguous_std<cuda::std::pair<int, int>>(); // has cuda::std::swap overload
 #if !TEST_COMPILER(NVRTC)
@@ -202,8 +203,8 @@ int main(int, char**)
 #endif // !TEST_COMPILER(NVRTC)
 
 #if !TEST_COMPILER(NVRTC)
-  static_assert(cuda::std::is_swappable<cuda::std::pair<::std::pair<int, int>, int>>::value, "");
-  static_assert(cuda::std::is_swappable<swap_with_friend<::std::pair<int, int>>>::value, "");
+  static_assert(cuda::std::is_swappable<cuda::std::pair<::std::pair<int, int>, int>>::value);
+  static_assert(cuda::std::is_swappable<swap_with_friend<::std::pair<int, int>>>::value);
 #endif // !TEST_COMPILER(NVRTC)
 
   return 0;

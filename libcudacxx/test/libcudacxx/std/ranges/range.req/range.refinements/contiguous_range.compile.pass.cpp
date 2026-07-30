@@ -15,70 +15,71 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 #include "test_range.h"
 
 namespace ranges = cuda::std::ranges;
 
 template <template <class...> class I>
-__host__ __device__ constexpr bool check_range()
+TEST_FUNC constexpr bool check_range()
 {
   constexpr bool result = ranges::contiguous_range<test_range<I>>;
-  static_assert(ranges::contiguous_range<test_range<I> const> == result, "");
-  static_assert(ranges::contiguous_range<test_non_const_common_range<I>> == result, "");
-  static_assert(ranges::contiguous_range<test_non_const_range<I>> == result, "");
-  static_assert(ranges::contiguous_range<test_common_range<I>> == result, "");
-  static_assert(ranges::contiguous_range<test_common_range<I> const> == result, "");
-  static_assert(!ranges::contiguous_range<test_non_const_common_range<I> const>, "");
-  static_assert(!ranges::contiguous_range<test_non_const_range<I> const>, "");
+  static_assert(ranges::contiguous_range<test_range<I> const> == result);
+  static_assert(ranges::contiguous_range<test_non_const_common_range<I>> == result);
+  static_assert(ranges::contiguous_range<test_non_const_range<I>> == result);
+  static_assert(ranges::contiguous_range<test_common_range<I>> == result);
+  static_assert(ranges::contiguous_range<test_common_range<I> const> == result);
+  static_assert(!ranges::contiguous_range<test_non_const_common_range<I> const>);
+  static_assert(!ranges::contiguous_range<test_non_const_range<I> const>);
   return result;
 }
 
-static_assert(!check_range<cpp20_input_iterator>(), "");
-static_assert(!check_range<forward_iterator>(), "");
-static_assert(!check_range<bidirectional_iterator>(), "");
-static_assert(!check_range<random_access_iterator>(), "");
-static_assert(check_range<contiguous_iterator>(), "");
+static_assert(!check_range<cpp20_input_iterator>());
+static_assert(!check_range<forward_iterator>());
+static_assert(!check_range<bidirectional_iterator>());
+static_assert(!check_range<random_access_iterator>());
+static_assert(check_range<contiguous_iterator>());
 
 struct ContiguousWhenNonConst
 {
-  __host__ __device__ const int* begin() const;
-  __host__ __device__ const int* end() const;
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
-  __host__ __device__ int* data() const;
+  TEST_FUNC const int* begin() const;
+  TEST_FUNC const int* end() const;
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
+  TEST_FUNC int* data() const;
 };
-static_assert(cuda::std::ranges::contiguous_range<ContiguousWhenNonConst>, "");
-static_assert(cuda::std::ranges::random_access_range<const ContiguousWhenNonConst>, "");
-static_assert(!cuda::std::ranges::contiguous_range<const ContiguousWhenNonConst>, "");
+static_assert(cuda::std::ranges::contiguous_range<ContiguousWhenNonConst>);
+static_assert(cuda::std::ranges::random_access_range<const ContiguousWhenNonConst>);
+static_assert(!cuda::std::ranges::contiguous_range<const ContiguousWhenNonConst>);
 
 struct ContiguousWhenConst
 {
-  __host__ __device__ const int* begin() const;
-  __host__ __device__ const int* end() const;
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
-  __host__ __device__ const int* data() const;
+  TEST_FUNC const int* begin() const;
+  TEST_FUNC const int* end() const;
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
+  TEST_FUNC const int* data() const;
 };
-static_assert(cuda::std::ranges::contiguous_range<const ContiguousWhenConst>, "");
-static_assert(cuda::std::ranges::random_access_range<ContiguousWhenConst>, "");
-static_assert(!cuda::std::ranges::contiguous_range<ContiguousWhenConst>, "");
+static_assert(cuda::std::ranges::contiguous_range<const ContiguousWhenConst>);
+static_assert(cuda::std::ranges::random_access_range<ContiguousWhenConst>);
+static_assert(!cuda::std::ranges::contiguous_range<ContiguousWhenConst>);
 
 struct DataFunctionWrongReturnType
 {
-  __host__ __device__ const int* begin() const;
-  __host__ __device__ const int* end() const;
-  __host__ __device__ const char* data() const;
+  TEST_FUNC const int* begin() const;
+  TEST_FUNC const int* end() const;
+  TEST_FUNC const char* data() const;
 };
-static_assert(cuda::std::ranges::random_access_range<DataFunctionWrongReturnType>, "");
-static_assert(!cuda::std::ranges::contiguous_range<DataFunctionWrongReturnType>, "");
+static_assert(cuda::std::ranges::random_access_range<DataFunctionWrongReturnType>);
+static_assert(!cuda::std::ranges::contiguous_range<DataFunctionWrongReturnType>);
 
 struct WrongObjectness
 {
-  __host__ __device__ const int* begin() const;
-  __host__ __device__ const int* end() const;
-  __host__ __device__ void* data() const;
+  TEST_FUNC const int* begin() const;
+  TEST_FUNC const int* end() const;
+  TEST_FUNC void* data() const;
 };
-static_assert(cuda::std::ranges::contiguous_range<WrongObjectness>, "");
+static_assert(cuda::std::ranges::contiguous_range<WrongObjectness>);
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -89,19 +90,19 @@ struct Holder
   T t;
 };
 
-static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>*>, "");
-static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>*&>, "");
-static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>*&&>, "");
-static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>* const>, "");
-static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>* const&>, "");
-static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>* const&&>, "");
+static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>*>);
+static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>*&>);
+static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>*&&>);
+static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>* const>);
+static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>* const&>);
+static_assert(!cuda::std::ranges::contiguous_range<Holder<Incomplete>* const&&>);
 
-static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* [10]>, "");
-static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* (&) [10]>, "");
-static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* (&&) [10]>, "");
-static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* const[10]>, "");
-static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* const (&)[10]>, "");
-static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* const (&&)[10]>, "");
+static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* [10]>);
+static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* (&) [10]>);
+static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* (&&) [10]>);
+static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* const[10]>);
+static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* const (&)[10]>);
+static_assert(cuda::std::ranges::contiguous_range<Holder<Incomplete>* const (&&)[10]>);
 #endif
 
 int main(int, char**)

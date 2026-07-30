@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // <memory>
 
 // unique_ptr
@@ -28,7 +29,7 @@ struct Deleter
 struct D2
 {
 private:
-  typedef void pointer;
+  using pointer = void;
 };
 #endif // !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
 
@@ -40,32 +41,32 @@ struct D3
 #endif // !TEST_COMPILER(NVRTC)
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, int[], int>::type VT;
+  using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
-    typedef cuda::std::unique_ptr<VT> P;
-    static_assert((cuda::std::is_same<typename P::pointer, int*>::value), "");
+    using P = cuda::std::unique_ptr<VT>;
+    static_assert((cuda::std::is_same<typename P::pointer, int*>::value));
   }
   {
-    typedef cuda::std::unique_ptr<VT, Deleter> P;
-    static_assert((cuda::std::is_same<typename P::pointer, Deleter::pointer>::value), "");
+    using P = cuda::std::unique_ptr<VT, Deleter>;
+    static_assert((cuda::std::is_same<typename P::pointer, Deleter::pointer>::value));
   }
 #if !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
   {
-    typedef cuda::std::unique_ptr<VT, D2> P;
-    static_assert(cuda::std::is_same<typename P::pointer, int*>::value, "");
+    using P = cuda::std::unique_ptr<VT, D2>;
+    static_assert(cuda::std::is_same<typename P::pointer, int*>::value);
   }
 #endif // !TEST_COMPILER(GCC) && !TEST_COMPILER(MSVC)
 #if !TEST_COMPILER(NVRTC)
   {
-    typedef cuda::std::unique_ptr<VT, D3> P;
-    static_assert(cuda::std::is_same<typename P::pointer, int*>::value, "");
+    using P = cuda::std::unique_ptr<VT, D3>;
+    static_assert(cuda::std::is_same<typename P::pointer, int*>::value);
   }
 #endif // !TEST_COMPILER(NVRTC)
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

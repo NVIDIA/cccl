@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -14,8 +17,8 @@
 // template<class IntType = int>
 // class negative_binomial_distribution
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 
 #include "random_utilities/stats_functions.h"
 #include "random_utilities/test_distribution.h"
@@ -26,7 +29,7 @@ struct negative_binomial_cdf
 {
   using P = typename cuda::std::negative_binomial_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; k, p) = I_p(k, x+1) where I_p is the regularized incomplete beta function
     // This represents P(X <= x) where X is the number of failures before k successes
@@ -41,7 +44,7 @@ struct negative_binomial_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // Cannot be constexpr due to gamma_distribution and log/exp
   [[maybe_unused]] const bool test_constexpr = false;

@@ -20,8 +20,8 @@ int main(int, char**)
 {
   using month = cuda::std::chrono::month;
 
-  static_assert(cuda::std::is_trivially_copyable_v<month>, "");
-  static_assert(cuda::std::is_standard_layout_v<month>, "");
+  static_assert(cuda::std::is_trivially_copyable_v<month>);
+  static_assert(cuda::std::is_standard_layout_v<month>);
 
   return 0;
 }

@@ -84,6 +84,11 @@
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_ASSUME
+#  define _CCCL_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
+
 // _CCCL_CONST
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__const__)
@@ -153,6 +158,16 @@
 
 #define _CCCL_NO_SPECIALIZATIONS \
   _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
+
+// _CCCL_LIFETIMEBOUND
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
+#  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]
+#else
+#  define _CCCL_LIFETIMEBOUND
+#endif
 
 // _CCCL_NO_UNIQUE_ADDRESS
 

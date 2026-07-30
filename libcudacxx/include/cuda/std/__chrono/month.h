@@ -35,19 +35,19 @@ namespace chrono
 class month
 {
 private:
-  unsigned char __m_;
+  unsigned char __month_;
 
   _CCCL_API constexpr void __add_clamped(long long __add) noexcept
   {
-    const auto __mu = static_cast<long long>(static_cast<unsigned>(__m_)) + (__add - 1);
+    const auto __mu = static_cast<long long>(static_cast<unsigned>(__month_)) + (__add - 1);
     const auto __yr = (__mu >= 0 ? __mu : __mu - 11) / 12;
-    __m_            = static_cast<unsigned char>(__mu - __yr * 12 + 1);
+    __month_        = static_cast<unsigned char>(__mu - __yr * 12 + 1);
   }
 
 public:
   _CCCL_HIDE_FROM_ABI month() = default;
-  _CCCL_API explicit constexpr month(unsigned __val) noexcept
-      : __m_(static_cast<unsigned char>(__val))
+  _CCCL_API explicit constexpr month(unsigned __month) noexcept
+      : __month_(static_cast<unsigned char>(__month))
   {}
   _CCCL_API constexpr month& operator++() noexcept
   {
@@ -86,12 +86,12 @@ public:
 
   _CCCL_API explicit constexpr operator unsigned() const noexcept
   {
-    return __m_;
+    return __month_;
   }
 
   [[nodiscard]] _CCCL_API constexpr bool ok() const noexcept
   {
-    return __m_ >= 1 && __m_ <= 12;
+    return __month_ >= 1 && __month_ <= 12;
   }
 
   // Arithmetics

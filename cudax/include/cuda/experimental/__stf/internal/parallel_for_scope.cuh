@@ -21,11 +21,22 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
 
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
+
+#include <type_traits>
+#include <utility>
 
 namespace cuda::experimental::stf
 {
@@ -39,6 +50,33 @@ struct owning_container_of;
 
 namespace reserved
 {
+//! Detects shapes carrying a coordinate predicate (e.g. cute_sub_shape):
+//! enumerated coordinates outside the predicate are skipped, which is how
+//! interior regions and padding phantoms are handled (predication rather than
+//! restructured iteration).
+//!
+//! NVCC 12.0 may diagnose a missing contains member even in a discarded
+//! if constexpr branch. Keep the member access inside overload SFINAE so it
+//! is never instantiated for ordinary shapes.
+template <typename _Shape, typename _Coords>
+_CCCL_HOST_DEVICE_API constexpr auto __shape_contains(const _Shape& __shape, const _Coords& __coords, int)
+  -> decltype(static_cast<bool>(__shape.contains(__coords)))
+{
+  return static_cast<bool>(__shape.contains(__coords));
+}
+
+template <typename _Shape, typename _Coords>
+_CCCL_HOST_DEVICE_API constexpr bool __shape_contains(const _Shape&, const _Coords&, long)
+{
+  return true;
+}
+
+template <typename _Fn, typename _Tuple>
+_CCCL_HOST_DEVICE_API constexpr decltype(auto) __apply_coords(_Fn&& __fn, _Tuple&& __coords)
+{
+  return ::cuda::std::apply(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Tuple>(__coords));
+}
+
 /*
  * @brief A CUDA kernel for executing a function `f` in parallel over `n` threads.
  *
@@ -60,9 +98,9 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 
   // This will explode the targs tuple into a pack of data
   // Help the compiler which may not detect that a device lambda is calling a device lambda
-  CUDASTF_NO_DEVICE_STACK
+  _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
   auto const explode_args = [&](auto&... data) {
-    CUDASTF_NO_DEVICE_STACK
+    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     auto const explode_coords = [&](auto&&... coords) {
       // No move/forward for `data` because it's used multiple times.
       f(::std::forward<decltype(coords)>(coords)..., data...);
@@ -70,7 +108,12 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      auto coords = shape.index_to_coords(i);
+      if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+      {
+        continue;
+      }
+      ::cuda::experimental::stf::reserved::__apply_coords(explode_coords, mv(coords));
     }
   };
   // Moving from `targs` here is not useful because `explode_args` uses it multiple times.
@@ -302,9 +345,9 @@ __global__ void loop_redux(
   // This is used to build the arguments passed to the user-provided lambda function.
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
-  CUDASTF_NO_DEVICE_STACK
+  _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
   const auto explode_args = [&](auto&&... data) {
-    CUDASTF_NO_DEVICE_STACK
+    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     const auto explode_coords = [&](auto&&... coords) {
       // No move/forward for `data` because it's used multiple times.
       f(::std::forward<decltype(coords)>(coords)..., data...);
@@ -312,7 +355,12 @@ __global__ void loop_redux(
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      ::std::apply(explode_coords, shape.index_to_coords(i));
+      auto coords = shape.index_to_coords(i);
+      if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+      {
+        continue;
+      }
+      ::cuda::experimental::stf::reserved::__apply_coords(explode_coords, mv(coords));
     }
   };
 
@@ -411,12 +459,12 @@ public:
       : args_(args)
   {}
 
-  bool can_release_in_callback() const override
+  bool can_release_in_callback() const noexcept override
   {
     return true;
   }
 
-  void release_in_callback() override
+  void release_in_callback() noexcept override
   {
     delete args_;
   }
@@ -432,6 +480,20 @@ private:
  *
  * @tparam deps_t
  */
+//! Detects partitioners exposing the classic type-defined interface (a static
+//! get_executor usable as a bare partition function pointer); partitioners
+//! whose ownership depends on their object value provide member functions.
+template <typename T, typename = void>
+struct has_static_get_executor : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct has_static_get_executor<
+  T,
+  ::cuda::std::void_t<decltype(::cuda::experimental::places::partition_fn_t{&T::get_executor})>>
+    : ::cuda::std::true_type
+{};
+
 template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
@@ -483,6 +545,17 @@ public:
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
+  {}
+
+  /// @brief Constructor keeping the partitioner instance (required when
+  /// ownership depends on the partitioner value; type-defined policies cost
+  /// nothing thanks to [[no_unique_address]])
+  parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
+      : deps(mv(deps)...)
+      , ctx(ctx)
+      , e_place(mv(e_place))
+      , shape(mv(shape))
+      , p_(mv(p))
   {}
 
   parallel_for_scope(const parallel_for_scope&)            = delete;
@@ -548,11 +621,19 @@ public:
     // If there is a partitioner, we ensure there is a proper affine data place for this execution place
     if constexpr (!::std::is_same_v<partitioner_t, null_partition>)
     {
-      // This is only meaningful for grid of places
-      if (e_place.is_grid())
+      // Grids need a composite data place
+      if (e_place.size() > 1)
       {
-        // Create a composite data place defined by the grid of places + the partitioning function
-        t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
+        // Create a composite data place defined by the grid of places + the partitioner
+        if constexpr (has_static_get_executor<partitioner_t>::value)
+        {
+          t.set_affine_data_place(data_place::composite(p_, e_place.as_grid()));
+        }
+        else
+        {
+          // Value-defined partitioner (found by ADL in the partitioner's namespace)
+          t.set_affine_data_place(make_composite_data_place(e_place.as_grid(), p_));
+        }
       }
     }
 
@@ -567,8 +648,8 @@ public:
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
 
-    int device = -1;
-    cudaEvent_t start_event, end_event;
+    int device              = -1;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
     {
@@ -602,32 +683,34 @@ public:
     {
       if (record_time)
       {
-        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate is an overload set, so use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags.
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
       }
     }
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#  if __NVCOMPILER
+#  if _CCCL_CUDA_COMPILER(NVHPC)
     // With nvc++, all lambdas can run on host and device.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
-#  else
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)
     // With nvcpp, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)
     {
       _CCCL_ASSERT(e_place != exec_place::host(), "Reduce access mode currently unimplemented on host.");
-      _CCCL_ASSERT(!e_place.is_grid(), "Reduce access mode currently unimplemented on grid of places.");
+      _CCCL_ASSERT(e_place.size() == 1, "Reduce access mode currently unimplemented on grid of places.");
       do_parallel_for_redux(f, e_place, shape, t);
       return;
     }
@@ -654,13 +737,12 @@ public:
     }
 
     // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
-    if constexpr (!::std::is_same_v<exec_place_t, exec_place_host> && is_extended_host_device_lambda_closure_type
-                  || is_extended_device_lambda_closure_type)
+    if constexpr (is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
     {
-      if (!e_place.is_grid())
+      if (e_place.size() == 1)
       {
         // Apply the parallel_for construct over the entire shape on the
-        // execution place of the task
+        // execution place of the task.
         if constexpr (need_reduction)
         {
           do_parallel_for_redux(f, e_place, shape, t);
@@ -679,13 +761,11 @@ public:
         }
         else
         {
-          size_t grid_size = t.grid_dims().size();
-          for (size_t i = 0; i < grid_size; i++)
+          for (size_t i = 0; i < e_place.size(); i++)
           {
-            t.set_current_place(pos4(i));
-            const auto sub_shape = partitioner_t::apply(shape, pos4(i), t.grid_dims());
-            do_parallel_for(f, t.get_current_place(), sub_shape, t);
-            t.unset_current_place();
+            auto active          = t.activate_place(i);
+            const auto sub_shape = p_.apply(shape, pos4(i), e_place.get_dims());
+            do_parallel_for(f, active.place(), sub_shape, t, i);
           }
         }
       }
@@ -743,8 +823,8 @@ public:
         kernel_params.sharedMemBytes = 0;
 
         // This new node will depend on the previous in the chain (allocation)
-        auto lock = t.lock_ctx_graph();
-        cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params);
+        auto lock    = t.lock_ctx_graph();
+        t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
       }
 
       return;
@@ -753,7 +833,8 @@ public:
     static const auto conf = [] {
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
+      // Two output parameters: keeps the runtime-status cuda_try form.
+      cuda_try(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
         &minGridSize,
         &blockSize,
         reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>,
@@ -761,8 +842,8 @@ public:
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    const auto block_size = conf.first;
-    const auto min_blocks = conf.second;
+    const auto block_size = conf.second;
+    const auto min_blocks = conf.first;
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
@@ -770,12 +851,10 @@ public:
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
-    ////static_assert(::std::is_same_v<context, stream_ctx>);
-
     static const auto conf_finalize = [] {
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
+      cuda_try(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
         &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>, block_to_shared_mem));
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
@@ -785,14 +864,37 @@ public:
     const size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
     _CCCL_ASSERT(n > 0, "Invalid empty shape here");
+
+    // XXX maybe this should only be !host, because that could be a green context for example
+    _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
+
+    // Use uncached allocator
+    auto dplace = sub_exec_place.affine_data_place();
+
+    // Get backend context and stream once
+    [[maybe_unused]] cudaStream_t stream;
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      cudaStream_t stream = t.get_stream();
+      stream = t.get_stream();
+    }
 
-      // One tuple per CUDA block
-      // TODO use CUDASTF facilities to replace this manual allocation
-      redux_vars<deps_tup_t, ops_and_inits>* d_redux_buffer;
-      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(*d_redux_buffer), stream));
+    // Allocation using uncached allocator directly
+    auto& allocator              = ctx.get_uncached_allocator();
+    ::std::ptrdiff_t buffer_size = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
+    // Allocation depends on task dependencies
+    event_list& alloc_events = t.get_ready_prereqs();
+    void* raw_buffer         = allocator.allocate(ctx, dplace, buffer_size, alloc_events);
+    auto* d_redux_buffer     = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(raw_buffer);
+
+    // Variable to hold the last kernel node for graph context
+    cudaGraphNode_t last_kernel_node = nullptr;
+
+    // Context-specific kernel execution and completion event preparation
+    event_list completion_event;
+    if constexpr (::std::is_same_v<context, stream_ctx>)
+    {
+      // Synchronize stream with allocation events
+      reserved::join_with_stream(ctx, augmented_stream(stream), alloc_events, "alloc_sync", false);
 
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>
@@ -802,28 +904,17 @@ public:
       reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
-      cuda_safe_call(cudaFreeAsync(d_redux_buffer, stream));
+      // Stream context: create event from stream to represent kernel completion
+      completion_event = event_list(reserved::record_event_in_stream(augmented_stream(stream)));
     }
     else
     {
-      _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
-      const int dev_id = device_ordinal(sub_exec_place.affine_data_place());
+      auto lock = t.lock_ctx_graph();
+      auto g    = t.get_ctx_graph();
 
-      cudaMemAllocNodeParams allocParams{};
-      allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
-      allocParams.poolProps.handleTypes = cudaMemHandleTypeNone;
-      allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
-      allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
-
-      auto lock               = t.lock_ctx_graph();
-      auto g                  = t.get_ctx_graph();
-      const auto& input_nodes = t.get_ready_dependencies();
-
-      /* This first node depends on task's dependencies themselves */
-      cudaGraphNode_t allocNode;
-      cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
-
-      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(allocParams.dptr);
+      auto stage = ctx.stage();
+      // Note that allocation did depend on the task dependencies, so these node depend on them
+      ::std::vector<cudaGraphNode_t> alloc_nodes = reserved::join_with_graph_nodes(ctx, alloc_events, stage);
 
       // Launch the main kernel
       // It is ok to use reference to local variables because the arguments
@@ -838,9 +929,9 @@ public:
       kernel_params.extra          = nullptr;
       kernel_params.sharedMemBytes = dyn_shmem_size;
 
-      // This new node will depend on the previous in the chain (allocation)
-      cudaGraphNode_t kernel_1;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, &allocNode, 1, &kernel_params));
+      // This new node depends on allocation (which already incorporated task dependencies)
+      const cudaGraphNode_t kernel_1 =
+        cuda_try<cudaGraphAddKernelNode>(g, alloc_nodes.data(), alloc_nodes.size(), &kernel_params);
 
       // Launch the second kernel to reduce remaining values among original blocks
       // It is ok to use reference to local variables because the arguments
@@ -855,22 +946,39 @@ public:
       kernel2_params.kernelParams   = kernel2Args;
       kernel2_params.extra          = nullptr;
       kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
-      cudaGraphNode_t kernel_2;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_2, g, &kernel_1, 1, &kernel2_params));
 
-      // We can now free memory
-      cudaGraphNode_t free_node;
-      cuda_safe_call(cudaGraphAddMemFreeNode(&free_node, g, &kernel_2, 1, allocParams.dptr));
+      last_kernel_node = cuda_try<cudaGraphAddKernelNode>(g, &kernel_1, 1, &kernel2_params);
 
-      // Make this the node which defines the end of the task
-      t.add_done_node(free_node);
+      // Graph context: create event from kernel completion graph node
+      completion_event = event_list(reserved::graph_event(last_kernel_node, stage, g));
+    }
+
+    // Common: Deallocation using uncached allocator directly, completion_event list is used for input and output
+    // dependencies
+    allocator.deallocate(ctx, dplace, completion_event, d_redux_buffer, buffer_size);
+
+    if constexpr (::std::is_same_v<context, stream_ctx>)
+    {
+      reserved::join_with_stream(ctx, augmented_stream(stream), completion_event, "dealloc_sync", false);
+    }
+    else
+    {
+      auto stage                                   = ctx.stage();
+      ::std::vector<cudaGraphNode_t> dealloc_nodes = reserved::join_with_graph_nodes(ctx, completion_event, stage);
+      for (auto& n : dealloc_nodes)
+      {
+        t.add_done_node(n);
+      }
     }
   }
 
   // Executes the loop on a device, or use the host implementation
   template <typename Fun, typename sub_shape_t>
-  void do_parallel_for(
-    Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
+  void do_parallel_for(Fun&& f,
+                       const exec_place& sub_exec_place,
+                       const sub_shape_t& sub_shape,
+                       typename context::task_type& t,
+                       size_t place_index = 0)
   {
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
@@ -878,7 +986,7 @@ public:
     if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
-      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
+      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t, place_index);
     }
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
@@ -889,7 +997,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       auto res = reserved::compute_kernel_limits(&reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, 0, false);
-      return ::std::pair(size_t(res.min_grid_size), size_t(res.max_block_size));
+      return ::std::pair(size_t(res.max_block_size), size_t(res.min_grid_size));
     }();
 
     const auto [block_size, min_blocks] = conf;
@@ -914,7 +1022,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
-        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
+        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream(place_index)>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
@@ -938,8 +1046,8 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
-      auto lock = t.lock_ctx_graph();
-      cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
+      auto lock    = t.lock_ctx_graph();
+      t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
 
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
@@ -991,7 +1099,12 @@ public:
         auto h = [&](auto&&... coords) {
           f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
         };
-        ::std::apply(h, shape.index_to_coords(i));
+        auto coords = shape.index_to_coords(i);
+        if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+        {
+          return;
+        }
+        ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
       };
 
       // Finally we get to do the workload on every 1D item of the shape
@@ -1010,7 +1123,14 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), host_func, args));
+      // Stream path: the callback owns `args` once the launch succeeds, so delete
+      // it if the enqueue throws. (Graph path hands ownership to a ctx resource
+      // above before the node is created, so it needs no guard here.)
+      SCOPE(fail)
+      {
+        delete args;
+      };
+      cuda_try<cudaLaunchHostFunc>(t.get_stream(), host_func, args);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
@@ -1019,7 +1139,7 @@ public:
       params.fn       = host_func;
 
       // Put this host node into the child graph that implements the graph_task<>
-      cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
+      t.get_node() = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
     }
     else
     {
@@ -1034,6 +1154,14 @@ private:
   exec_place_t e_place;
   ::std::string symbol;
   shape_t shape;
+
+  //! Empty stand-in stored when no partitioner is used (null_partition is
+  //! only forward-declared here, and nothing reads p_ in that case)
+  struct no_partitioner_t
+  {};
+  using stored_partitioner_t =
+    ::std::conditional_t<::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
+  [[no_unique_address]] stored_partitioner_t p_{};
 };
 } // end namespace reserved
 

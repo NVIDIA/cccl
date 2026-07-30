@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -20,13 +24,13 @@
 #include "unique_ptr_test_helper.h"
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, int[], int>::type VT;
-  typedef const VT CVT;
+  using VT  = typename cuda::std::conditional<IsArray, int[], int>::type;
+  using CVT = const VT;
   {
-    typedef cuda::std::unique_ptr<VT> U;
-    int* p = newValue<VT>(1);
+    using U = cuda::std::unique_ptr<VT>;
+    int* p  = newValue<VT>(1);
     U s(p);
     U const& sc = s;
     static_assert(cuda::std::is_same_v<decltype(s.get()), int*>);
@@ -35,7 +39,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(sc.get() == s.get());
   }
   {
-    typedef cuda::std::unique_ptr<CVT> U;
+    using U      = cuda::std::unique_ptr<CVT>;
     const int* p = newValue<VT>(1);
     U s(p);
     U const& sc = s;
@@ -46,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

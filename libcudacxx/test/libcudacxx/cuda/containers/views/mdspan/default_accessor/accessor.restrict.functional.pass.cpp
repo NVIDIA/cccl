@@ -13,7 +13,7 @@
 
 using dim = cuda::std::dims<1>;
 
-__host__ __device__ void
+TEST_FUNC void
 compute(cuda::restrict_mdspan<int, dim> a, cuda::restrict_mdspan<int, dim> b, cuda::restrict_mdspan<int, dim> c)
 {
   c[0] = a[0] * b[0];
@@ -24,7 +24,7 @@ compute(cuda::restrict_mdspan<int, dim> a, cuda::restrict_mdspan<int, dim> b, cu
   c[5] = b[0];
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   int arrayA[] = {1, 2};
   int arrayB[] = {5};

@@ -56,17 +56,17 @@
 
 struct NotTriviallyCopyable
 {
-  __host__ __device__ NotTriviallyCopyable(int i)
+  TEST_FUNC NotTriviallyCopyable(int i)
       : i_(i)
   {}
-  __host__ __device__ NotTriviallyCopyable(const NotTriviallyCopyable& rhs)
+  TEST_FUNC NotTriviallyCopyable(const NotTriviallyCopyable& rhs)
       : i_(rhs.i_)
   {}
   int i_;
 };
 
 template <class T>
-__host__ __device__ void test(T t)
+TEST_FUNC void test(T t)
 {
   cuda::std::atomic<T> t0(t);
 }

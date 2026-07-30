@@ -13,7 +13,7 @@
 int main(int, char**)
 {
   constexpr cuda::std::byte b{42};
-  static_assert(cuda::std::to_integer<int>(b) == 42, "");
+  static_assert(cuda::std::to_integer<int>(b) == 42);
 
   return 0;
 }

@@ -1,7 +1,9 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
 
 from typing import Callable
 
@@ -9,41 +11,56 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
-    call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
+from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..op import OpAdapter, make_op_adapter
+from ..typing import (
+    DeviceArrayLike,
+    GpuStruct,
+    IteratorBase,
+    IteratorT,
+    Operator,
+    _Struct,
+)
 
 
-class _Reduce:
+class _Reduce(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
         "device_reduce_fn",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("h_init_cccl", VALUE),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceReduceBuildResult)),
+    )
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -53,34 +70,62 @@ class _Reduce:
         value_type = get_value_type(h_init)
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        # loaded_build_result / device_reduce_fn are bound lazily on the first
+        # __call__ (see _bind_device_reduce_fn).
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
-            self.h_init_cccl,
+            d_in,
+            d_out,
+            op,
+            h_init,
             determinism,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceReduceBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+                self.h_init_cccl,
+                determinism,
+                compute_capability=compute_capability,
+            ),
         )
 
-        match determinism:
-            case Determinism.RUN_TO_RUN:
-                self.device_reduce_fn = self.build_result.compute
-            case Determinism.NOT_GUARANTEED:
-                self.device_reduce_fn = self.build_result.compute_nondeterministic
-            case _:
-                raise ValueError(f"Invalid determinism: {determinism}")
+    def _bind_device_reduce_fn(self) -> None:
+        # Derived from the loaded build result (not serialized); bound at __call__
+        # once resolve_build_result picks + loads the current device's build result.
+        if (
+            Determinism(self.loaded_build_result.determinism)
+            is Determinism.NOT_GUARANTEED
+        ):
+            self.device_reduce_fn = self.loaded_build_result.compute_nondeterministic
+        else:
+            self.device_reduce_fn = self.loaded_build_result.compute
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
         num_items: int,
+        op: Callable | OpAdapter,
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
+        # Select (and lazily load) the current device's build result, then bind the
+        # derived compute fn from it.
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+        self._bind_device_reduce_fn()
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
@@ -106,44 +151,12 @@ class _Reduce:
         return temp_storage_bytes
 
 
-def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    h_init: np.ndarray | GpuStruct,
-    **kwargs,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-    h_init_key = h_init.dtype
-    determinism = kwargs.get("determinism", Determinism.RUN_TO_RUN)
-    return (d_in_key, d_out_key, op.get_cache_key(), h_init_key, determinism)
-
-
-@cache_with_key(_make_cache_key)
-def _make_reduce_into_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    h_init: np.ndarray | GpuStruct,
-    **kwargs,
-):
-    """Internal cached factory for _Reduce."""
-    return _Reduce(
-        d_in, d_out, op, h_init, kwargs.get("determinism", Determinism.RUN_TO_RUN)
-    )
-
-
-# TODO Figure out `sum` without operator and initial value
-# TODO Accept stream
+@cache_with_registered_key_functions
 def make_reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
 ):
@@ -159,22 +172,63 @@ def make_reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array (of size 1) that will store the result of the reduction
-        op: Callable or OpKind representing the binary operator to apply
+        d_out: Device array (of size 1) or iterator that will store the result of the reduction
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the reduction
     """
+    try:
+        accum_dtype = get_dtype(h_init)
+    except (AttributeError, TypeError) as e:
+        raise TypeError(
+            "Could not determine accumulator dtype from h_init; "
+            "expected numpy array or object with .dtype"
+        ) from e
+
+    # Validate d_in and d_out if they are device arrays (iterators may not expose
+    # dtype reliably here). Additionally, only require equality of dtypes for
+    # struct objects; mixed scalar dtypes (e.g. int8 input with int64 output)
+    # is acceptable
+    if isinstance(h_init, _Struct):
+        for arr, name in ((d_in, "input"), (d_out, "output")):
+            if isinstance(arr, IteratorBase):
+                continue
+
+            dtype = get_dtype(arr)
+            if dtype != accum_dtype:
+                raise TypeError(
+                    f"reduce_into dtype mismatch: {name} dtype {dtype} != "
+                    f"accumulator dtype {accum_dtype}. "
+                    f"Ensure {name} elements and h_init have identical dtype to "
+                    "avoid truncation or misinterpretation."
+                )
+
     op_adapter = make_op_adapter(op)
-    return _make_reduce_into_cached(d_in, d_out, op_adapter, h_init, **kwargs)
+    return _Reduce(
+        d_in,
+        d_out,
+        op_adapter,
+        h_init,
+        kwargs.get("determinism", Determinism.RUN_TO_RUN),
+        compute_capability=kwargs.get("compute_capability"),
+    )
 
 
 def reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     num_items: int,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     stream=None,
     **kwargs,
@@ -193,13 +247,31 @@ def reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array to store the result of the reduction
-        op: Binary reduction operator
+        d_out: Device array or iterator to store the result of the reduction
         num_items: Number of items to reduce
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         h_init: Initial value for the reduction
         stream: CUDA stream for the operation (optional)
     """
-    reducer = make_reduce_into(d_in, d_out, op, h_init, **kwargs)
-    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init, **kwargs)
+    tmp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    reducer(
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )

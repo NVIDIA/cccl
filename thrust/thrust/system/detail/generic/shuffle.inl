@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-20120 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-20120, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #include <thrust/detail/config.h>
 
@@ -25,6 +12,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -103,7 +91,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // we have an available bijection of length n via a feistel cipher
   std::size_t m = last - first;
   thrust::detail::feistel_bijection bijection(m, g);
-  std::uint64_t n = bijection.nearest_power_of_two();
+  std::uint64_t n = bijection.size();
 
   // perform stream compaction over length n bijection to get length m
   // pseudorandom bijection over the original input
@@ -117,7 +105,12 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // flag each value < m and compact it, so we have a set of permuted indices in
   // range [0,m) each thread gathers an input element according to its
   // pseudorandom permuted index
-  thrust::inclusive_scan(exec, key_flag_it, key_flag_it + n, gather_output_it, key_flag_scan_op());
+  thrust::inclusive_scan(
+    exec,
+    key_flag_it,
+    key_flag_it + static_cast<typename decltype(key_flag_it)::difference_type>(n),
+    gather_output_it,
+    key_flag_scan_op());
 }
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

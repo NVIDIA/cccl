@@ -3,7 +3,9 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
-#include <assert.h>
+#include <cuda/std/cassert>
+
+#include <iostream>
 
 #include "include/timer.h"
 
@@ -49,9 +51,9 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
   thrust::host_vector<MyStruct> h_structures(structures.size());
 
-  for (size_t i = 0; i < h_structures.size(); i++)
+  for (auto& s : h_structures)
   {
-    h_structures[i].key = dist(rng);
+    s.key = dist(rng);
   }
 
   structures = h_structures;
@@ -72,7 +74,7 @@ int main()
     thrust::sort(structures.begin(), structures.end());
     assert(thrust::is_sorted(structures.begin(), structures.end()));
 
-    std::cout << "AoS sort took " << 1e3 * t.elapsed() << " milliseconds" << std::endl;
+    std::cout << "AoS sort took " << 1e3 * t.elapsed() << " milliseconds" << '\n';
   }
 
   // Sort Key-Value pairs using Structure of Arrays (SoA) storage
@@ -87,7 +89,7 @@ int main()
     thrust::sort_by_key(keys.begin(), keys.end(), values.begin());
     assert(thrust::is_sorted(keys.begin(), keys.end()));
 
-    std::cout << "SoA sort took " << 1e3 * t.elapsed() << " milliseconds" << std::endl;
+    std::cout << "SoA sort took " << 1e3 * t.elapsed() << " milliseconds" << '\n';
   }
 
   return 0;

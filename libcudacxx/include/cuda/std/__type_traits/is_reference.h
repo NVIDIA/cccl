@@ -31,17 +31,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   && defined(_CCCL_BUILTIN_IS_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_REFERENCE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_lvalue_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference : bool_constant<_CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_rvalue_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference : bool_constant<_CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : bool_constant<_CCCL_BUILTIN_IS_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
@@ -54,37 +52,33 @@ inline constexpr bool is_reference_v = _CCCL_BUILTIN_IS_REFERENCE(_Tp);
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference : public false_type
-{};
+inline constexpr bool is_lvalue_reference_v = false;
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference<_Tp&> : public true_type
+inline constexpr bool is_lvalue_reference_v<_Tp&> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference : bool_constant<is_lvalue_reference_v<_Tp>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference : public false_type
-{};
+inline constexpr bool is_rvalue_reference_v = false;
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference<_Tp&&> : public true_type
+inline constexpr bool is_rvalue_reference_v<_Tp&&> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference : bool_constant<is_rvalue_reference_v<_Tp>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : public false_type
-{};
+inline constexpr bool is_reference_v = false;
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference<_Tp&> : public true_type
-{};
+inline constexpr bool is_reference_v<_Tp&> = true;
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference<_Tp&&> : public true_type
-{};
+inline constexpr bool is_reference_v<_Tp&&> = true;
 
 template <class _Tp>
-inline constexpr bool is_lvalue_reference_v = is_lvalue_reference<_Tp>::value;
-
-template <class _Tp>
-inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<_Tp>::value;
-
-template <class _Tp>
-inline constexpr bool is_reference_v = is_reference<_Tp>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : bool_constant<is_reference_v<_Tp>>
+{};
 
 #endif // !_CCCL_BUILTIN_IS_LVALUE_REFERENCE
 

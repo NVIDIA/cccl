@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Argument parser for Python CI scripts.
 parse_python_args() {
     # Initialize variables

@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
@@ -42,13 +44,20 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_TEMPLATE(class _Policy, class _Iter, class _Size, class _Fn)
 _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_Policy>)
-_CCCL_HOST_API _Iter for_each_n([[maybe_unused]] _Policy __policy, _Iter __first, _Size __orig_n, _Fn __func)
+_CCCL_HOST_API _Iter for_each_n([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
 {
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__for_each_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    return __dispatch(::cuda::std::move(__policy), ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::for_each_n");
+
+    if (__orig_n == 0)
+    {
+      return __first;
+    }
+
+    return __dispatch(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
   }
   else
   {
@@ -63,6 +72,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_FOR_EACH_N_H

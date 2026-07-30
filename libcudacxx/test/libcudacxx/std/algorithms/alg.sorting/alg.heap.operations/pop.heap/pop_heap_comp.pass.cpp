@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class T, class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   T orig[15] = {1, 1, 2, 3, 3, 8, 4, 6, 5, 5, 5, 9, 9, 7, 9};
   T work[15] = {1, 1, 2, 3, 3, 8, 4, 6, 5, 5, 5, 9, 9, 7, 9};
@@ -54,12 +54,19 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, random_access_iterator<int*>>();
   test<int, int*>();
   test<MoveOnly, random_access_iterator<MoveOnly*>>();
   test<MoveOnly, MoveOnly*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<int, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<int, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   return true;
 }
@@ -67,7 +74,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

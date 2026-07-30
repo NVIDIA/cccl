@@ -86,49 +86,9 @@ class stream_adapter
     void* allocate(
       backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& /* prereqs */) override
     {
-      // prereqs are unchanged
-
-      void* result;
+      // prereqs are unchanged - use raw allocation with the adapter's stream
       EXPECT(!memory_node.is_composite());
-
-      if (memory_node.is_host())
-      {
-        cuda_safe_call(cudaMallocHost(&result, s));
-      }
-      else if (memory_node.is_managed())
-      {
-        cuda_safe_call(cudaMallocManaged(&result, s));
-      }
-      else
-      {
-        const int prev_dev_id = cuda_try<cudaGetDevice>();
-        // (Note device_ordinal works with green contexts as well)
-        const int target_dev_id = device_ordinal(memory_node);
-
-        if (memory_node.is_green_ctx())
-        {
-          fprintf(stderr,
-                  "Pretend we use cudaMallocAsync on green context (using device %d in reality)\n",
-                  device_ordinal(memory_node));
-        }
-
-        if (prev_dev_id != target_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(target_dev_id));
-        }
-
-        SCOPE(exit)
-        {
-          if (target_dev_id != prev_dev_id)
-          {
-            cuda_safe_call(cudaSetDevice(prev_dev_id));
-          }
-        };
-
-        cuda_safe_call(cudaMallocAsync(&result, s, state->stream));
-      }
-
-      return result;
+      return memory_node.allocate(s, state->stream);
     }
 
     void deallocate(backend_ctx_untyped&,
@@ -171,8 +131,8 @@ public:
 
   // This is movable, but we don't need to call clear anymore after moving
   stream_adapter(stream_adapter&& other) noexcept
-      : adapter_state(other.adapter_state)
-      , alloc(other.alloc)
+      : adapter_state(mv(other.adapter_state))
+      , alloc(mv(other.alloc))
       , cleared_or_moved(other.cleared_or_moved)
   {
     // No need to clear this now that it was moved
@@ -210,57 +170,42 @@ public:
     _CCCL_ASSERT(adapter_state, "Invalid state");
     _CCCL_ASSERT(!cleared_or_moved, "clear() was already called, or the object was moved.");
 
-    // We avoid changing device around every CUDA API call, so we will only
-    // change it when necessary, and restore the current device at the end
-    // of the loop.
-    const int prev_dev_id = cuda_try<cudaGetDevice>();
-    int current_dev_id    = prev_dev_id;
+    const cudaStream_t stream = adapter_state->stream;
 
-    cudaStream_t stream = adapter_state->stream;
-
-    // No need to wait for the stream multiple times
-    bool stream_was_synchronized = false;
-
-    for (auto& b : adapter_state->to_free)
+    // Deallocate buffers one at a time, popping from the back. If any CUDA
+    // call below throws, ``to_free`` still holds the un-deallocated entries
+    // and ``cleared_or_moved`` stays false, so the caller can recover (catch
+    // and retry, or let the destructor's assertion fire with accurate state).
+    // Order across buffers does not matter because each ``raw_buffer`` is
+    // independent.
+    //
+    // Subtlety: we do not call ``cuda_try(cudaStreamSynchronize(...))`` here
+    // because we want the just-popped buffer's ``deallocate`` to run even on
+    // sync failure -- losing the descriptor without freeing would leak. We
+    // capture the sync status, do the deallocation, then surface the sync
+    // error via ``cuda_try(cudaStreamSynchronize_result)`` afterwards. We
+    // deliberately do not wrap that in a SCOPE guard: ``data_place_*::
+    // deallocate`` itself can throw (it uses ``cuda_try`` internally for
+    // ``cudaFreeHost`` / ``cudaFree`` / ``cudaFreeAsync``), and SCOPE bodies
+    // are ``noexcept``, so a deallocate-throw during unwinding would call
+    // ``std::terminate``.
+    bool cudaStreamSynchronize_was_called = false;
+    while (!adapter_state->to_free.empty())
     {
-      if (b.memory_node.is_host())
-      {
-        if (!stream_was_synchronized)
-        {
-          cuda_safe_call(cudaStreamSynchronize(stream));
-          stream_was_synchronized = true;
-        }
-        cuda_safe_call(cudaFreeHost(b.ptr));
-      }
-      else if (b.memory_node.is_managed())
-      {
-        if (!stream_was_synchronized)
-        {
-          cuda_safe_call(cudaStreamSynchronize(stream));
-          stream_was_synchronized = true;
-        }
-        cuda_safe_call(cudaFree(b.ptr));
-      }
-      else
-      {
-        // (Note device_ordinal works with green contexts as well)
-        int target_dev_id = device_ordinal(b.memory_node);
-        if (current_dev_id != target_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(target_dev_id));
-          current_dev_id = target_dev_id;
-        }
+      const auto b = mv(adapter_state->to_free.back());
+      adapter_state->to_free.pop_back();
 
-        cuda_safe_call(cudaFreeAsync(b.ptr, stream));
+      cudaError_t cudaStreamSynchronize_result = cudaSuccess;
+      if (!cudaStreamSynchronize_was_called && !b.memory_node.allocation_is_stream_ordered())
+      {
+        cudaStreamSynchronize_result     = cudaStreamSynchronize(stream);
+        cudaStreamSynchronize_was_called = true;
       }
+
+      // The following two lines may throw, in which case we're left in steady state
+      b.memory_node.deallocate(b.ptr, b.sz, stream);
+      cuda_try(cudaStreamSynchronize_result);
     }
-
-    if (current_dev_id != prev_dev_id)
-    {
-      cuda_safe_call(cudaSetDevice(prev_dev_id));
-    }
-
-    adapter_state->to_free.clear();
 
     cleared_or_moved = true;
   }

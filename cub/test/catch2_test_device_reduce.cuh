@@ -27,23 +27,25 @@
 // The specializations below can be removed once we drop these architectures.
 
 template <>
-_CCCL_API inline __half cuda::minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_HOST_DEVICE_API inline __half
+cuda::minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::cuda::std::min(a, b);), (return ::cuda::std::min(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
 
 template <>
-_CCCL_API inline __half cuda::maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_HOST_DEVICE_API inline __half
+cuda::maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
@@ -85,24 +87,6 @@ __host__ __device__ __forceinline__ //
 CUB_NAMESPACE_END
 
 #endif // TEST_HALF_T()
-
-CUB_NAMESPACE_BEGIN
-
-template <typename Key, typename Value>
-static std::ostream& operator<<(std::ostream& os, const KeyValuePair<Key, Value>& val)
-{
-  os << '(' << val.key << ',' << val.value << ')';
-  return os;
-}
-
-template <typename Key, typename Value>
-__host__ __device__ __forceinline__ bool
-operator==(const KeyValuePair<Key, Value>& lhs, const KeyValuePair<Key, Value>& rhs)
-{
-  return lhs.key == rhs.key && lhs.value == rhs.value;
-}
-
-CUB_NAMESPACE_END
 
 // Comparing results computed on CPU and GPU for extended floating point types is impossible.
 // For instance, when used with a constant iterator of two, the accumulator in sequential reference
@@ -201,34 +185,38 @@ inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, 
  * @brief Initializes the given item type with a constant non-zero value.
  */
 template <typename T>
-inline void init_default_constant(T& val)
+inline void init_default_constant(T& val, int element_val = 2)
 {
-  val = T{2};
+  val = T{static_cast<T>(element_val)};
 }
 
 template <template <typename> class... Policies>
-inline void init_default_constant(c2h::custom_type_t<Policies...>& val)
+inline void init_default_constant(c2h::custom_type_t<Policies...>& val, int element_val = 2)
 {
-  val.key = 2;
-  val.val = 2;
+  val.key = static_cast<size_t>(element_val);
+  val.val = static_cast<size_t>(element_val);
 }
 
-inline void init_default_constant(uchar3& val)
+inline void init_default_constant(uchar3& val, int element_val = 2)
 {
-  val = uchar3{2, 2, 2};
+  const auto element_init = static_cast<unsigned char>(element_val);
+  val                     = uchar3{element_init, element_init, element_init};
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-inline void init_default_constant(ulonglong4& val)
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+inline void init_default_constant(ulonglong4& val, int element_val = 2)
 {
-  val = ulonglong4{2, 2, 2, 2};
+  const auto element_init = static_cast<unsigned long long>(element_val);
+  val                     = ulonglong4{element_init, element_init, element_init, element_init};
 }
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
-inline void init_default_constant(ulonglong4_16a& val)
+inline void init_default_constant(ulonglong4_16a& val, int element_val = 2)
 {
-  val = ulonglong4_16a{2, 2, 2, 2};
+  const auto element_init = static_cast<unsigned long long>(element_val);
+  val                     = ulonglong4_16a{element_init, element_init, element_init, element_init};
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
@@ -236,7 +224,7 @@ template <typename InputItT,
           typename OffsetItT,
           typename SizeItT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename ResultOutItT>
 inline void compute_host_reference(
   InputItT h_in,
@@ -244,7 +232,7 @@ inline void compute_host_reference(
   SizeItT h_sizes_begin,
   std::size_t num_segments,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   ResultOutItT h_data_out)
 {
   for (std::size_t segment = 0; segment < num_segments; segment++)
@@ -415,7 +403,7 @@ void compute_fixed_size_segmented_problem_reference(
 
   for (int segment = 0; segment < num_segments; segment++)
   {
-    auto seg_begin = h_begin + segment * segment_size;
+    auto seg_begin = h_begin + static_cast<long>(segment) * segment_size;
     auto seg_end   = seg_begin + segment_size;
     h_results[segment] =
       static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
@@ -441,7 +429,7 @@ void compute_fixed_size_segmented_argmax_reference(
     }
     else
     {
-      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::max_element(seg_begin, seg_end);
       int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
@@ -469,7 +457,7 @@ void compute_fixed_size_segmented_argmin_reference(
     }
     else
     {
-      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::min_element(seg_begin, seg_end);
       int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));

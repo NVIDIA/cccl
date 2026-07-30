@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2012 Stephen Montgomery-Smith <stephen@FreeBSD.ORG>
@@ -64,6 +51,7 @@
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -195,7 +183,6 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   int B_is_usable;
   complex<float> w;
   const float RECIP_EPSILON = 1.0f / FLT_EPSILON;
-  const float m_ln2         = 6.9314718055994531e-1f; /*  0x162e42fefa39ef.0p-53 */
   x                         = z.real();
   y                         = z.imag();
   ax                        = ::cuda::std::fabsf(x);
@@ -222,11 +209,11 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   {
     if (::cuda::std::signbit(x) == 0)
     {
-      w = clog_for_large_values(z) + m_ln2;
+      w = clog_for_large_values(z) + ::cuda::std::__numbers<float>::__ln2();
     }
     else
     {
-      w = clog_for_large_values(-z) + m_ln2;
+      w = clog_for_large_values(-z) + ::cuda::std::__numbers<float>::__ln2();
     }
     return (complex<float>(::cuda::std::copysignf(w.real(), x), ::cuda::std::copysignf(w.imag(), y)));
   }
@@ -271,7 +258,6 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   complex<float> w;
   const float pio2_hi          = 1.5707963267948966e0f; /*  0x1921fb54442d18.0p-52 */
   const volatile float pio2_lo = 6.1232339957367659e-17f; /*  0x11a62633145c07.0p-106 */
-  const float m_ln2            = 6.9314718055994531e-1f; /*  0x162e42fefa39ef.0p-53 */
 
   x  = z.real();
   y  = z.imag();
@@ -302,7 +288,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   {
     w  = clog_for_large_values(z);
     rx = ::cuda::std::fabsf(w.imag());
-    ry = w.real() + m_ln2;
+    ry = w.real() + ::cuda::std::__numbers<float>::__ln2();
     if (sy == 0)
     {
       ry = -ry;
@@ -387,7 +373,7 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
 {
   float x, y;
   float ax, ay, t;
-  const float m_e = 2.7182818284590452e0f; /*  0x15bf0a8b145769.0p-51 */
+  constexpr auto m_e = ::cuda::std::__numbers<float>::__e();
 
   x  = z.real();
   y  = z.imag();
@@ -447,9 +433,9 @@ _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
   int32_t ix, iy;
 
   get_float_word(hx, x);
-  ix = hx & 0x7f800000;
+  ix = static_cast<int32_t>(hx & 0x7f800000);
   get_float_word(hy, y);
-  iy = hy & 0x7f800000;
+  iy = static_cast<int32_t>(hy & 0x7f800000);
   // #define	BIAS	(FLT_MAX_EXP - 1)
   const int BIAS = FLT_MAX_EXP - 1;
   // #define	CUTOFF	(FLT_MANT_DIG / 2 + 1)
@@ -519,10 +505,9 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
     return (z);
   }
 
-  const float m_ln2 = 6.9314718056e-1f; /*  0xb17218.0p-24 */
   if (ax == 1 && ay < FLT_EPSILON)
   {
-    rx = (m_ln2 - ::cuda::std::logf(ay)) / 2;
+    rx = (::cuda::std::__numbers<float>::__ln2() - ::cuda::std::logf(ay)) / 2;
   }
   else
   {

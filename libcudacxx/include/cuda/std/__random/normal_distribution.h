@@ -12,12 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__cmath/logarithms.h>
-#include <cuda/std/__cmath/roots.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__random/is_valid.h>
-#include <cuda/std/__random/uniform_real_distribution.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,9 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__random/is_valid.h>
+#include <cuda/std/__random/uniform_real_distribution.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -168,14 +166,14 @@ public:
     return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const normal_distribution& __x)
@@ -222,7 +220,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

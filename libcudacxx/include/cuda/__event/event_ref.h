@@ -24,9 +24,10 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/cstddef>
-#  include <cuda/std/utility>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -101,7 +102,7 @@ public:
     }
     else
     {
-      ::cuda::__throw_cuda_error(__status, "Failed to query CUDA event");
+      _CCCL_THROW(::cuda::cuda_error, __status, "Failed to query CUDA event");
     }
   }
 

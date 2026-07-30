@@ -1,107 +1,127 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+from __future__ import annotations
 
-from .._caching import cache_with_key
-from .._utils import protocols
+from functools import cache
+
+from .._caching import cache_with_registered_key_functions
+from .._cpp_compile import compile_cpp_op_code
+from .._serialization import NESTED, Serializable
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._factories import DiscardIterator
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike
-from ._three_way_partition import make_three_way_partition
+from ..iterators import DiscardIterator
+from ..op import OpAdapter, RawOp, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
+from ._three_way_partition import _ThreeWayPartition, make_three_way_partition
 
 
-def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike,
-    cond: OpAdapter,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-    d_num_selected_out_key = protocols.get_dtype(d_num_selected_out)
+@cache
+def _always_false_op(_target_cc):
+    # ``_target_cc`` (the build's get_target_cc()) is part of the cache key so the
+    # predicate's LTO-IR is recompiled per target arch: this RawOp is linked into
+    # the three-way-partition build, and nvJitLink rejects a newer-arch input in
+    # an older-arch result. Without the key, the first build's arch would leak
+    # into every later build (module-global cache). compile_cpp_op_code() reads
+    # the same target internally; the arg only distinguishes cache entries.
+    source = """
+extern "C" __device__ void always_false(void*, void* result) {{
+    *static_cast<bool*>(result) = false;
+}}
+"""
+    code = compile_cpp_op_code(source)
+    return RawOp(ltoir=code, name="always_false")
 
-    return (d_in_key, d_out_key, d_num_selected_out_key, cond.get_cache_key())
+
+def _get_always_false_op():
+    """The always-false predicate compiled for the current build's target cc."""
+    from .._target_cc import get_target_cc
+
+    return _always_false_op(get_target_cc())
 
 
-class _Select:
-    __slots__ = ["partitioner", "discard_second", "discard_unselected"]
+class _Select(Serializable):
+    __slots__ = ["_bound_build_result", "partitioner", "always_false_op", "_discards"]
+
+    __serialization_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
+        compute_capability=None,
     ):
-        # Create discard iterators for unused outputs, using d_out as reference
-        # to match the input/output type
-        self.discard_second = DiscardIterator(d_out)
-        self.discard_unselected = DiscardIterator(d_out)
-
-        # Create a predicate that always returns False
-        def _cccl_always_false(x):
-            return False
-
-        # Use three_way_partition internally
+        self.always_false_op = _get_always_false_op()
+        d_second, d_unselected = self._discard_iterators(d_out)
         self.partitioner = make_three_way_partition(
-            d_in,
-            d_out,  # first_part_out - this is where selected items go
-            self.discard_second,  # second_part_out - discarded
-            self.discard_unselected,  # unselected_out - discarded
-            d_num_selected_out,
-            cond,  # select_first_part_op - user's select condition
-            _cccl_always_false,  # select_second_part_op - always false
+            d_in=d_in,
+            d_first_part_out=d_out,
+            d_second_part_out=d_second,
+            d_unselected_out=d_unselected,
+            d_num_selected_out=d_num_selected_out,
+            select_first_part_op=cond,
+            select_second_part_op=self.always_false_op,
+            compute_capability=compute_capability,
         )
+
+    def _discard_iterators(self, d_out):
+        # The second/unselected outputs are discarded; their iterators depend
+        # only on d_out's type, so build the pair once and cache it. Bound
+        # lazily (on first construction or first call) so a deserialized
+        # _Select, which has no construction d_out, builds them on first use.
+        try:
+            return self._discards
+        except AttributeError:
+            self._discards = (DiscardIterator(d_out), DiscardIterator(d_out))
+            return self._discards
+
+    def _after_deserialize(self) -> None:
+        # always_false_op (the always-false second predicate) is not serialized.
+        # Its compiled LTO-IR is already baked into the (serialized) three-way
+        # partition build result, and __call__ reads only this op's runtime state
+        # (which is empty — the predicate is stateless). So reconstruct an
+        # empty-state stand-in WITHOUT compiling: deserialize() must neither
+        # recompile nor require a GPU, and calling _get_always_false_op() here
+        # would do both (cold cache -> compile_cpp_op_code -> Device() fallback).
+        self.always_false_op = RawOp(ltoir=b"", name="always_false")
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
         d_num_selected_out,
+        cond,
         num_items: int,
         stream=None,
     ):
+        d_second, d_unselected = self._discard_iterators(d_out)
         return self.partitioner(
-            temp_storage,
-            d_in,
-            d_out,
-            self.discard_second,
-            self.discard_unselected,
-            d_num_selected_out,
-            num_items,
-            stream,
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_first_part_out=d_out,
+            d_second_part_out=d_second,
+            d_unselected_out=d_unselected,
+            d_num_selected_out=d_num_selected_out,
+            select_first_part_op=make_op_adapter(cond),
+            select_second_part_op=self.always_false_op,
+            num_items=num_items,
+            stream=stream,
         )
 
 
-@cache_with_key(_make_cache_key)
-def _make_select_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike,
-    cond: OpAdapter,
-):
-    """Internal cached factory for _Select."""
-    # Note: _Select internally calls make_three_way_partition which will
-    # normalize the cond. But we've already normalized it, so the Op
-    # will be passed through make_op unchanged.
-    return _Select(d_in, d_out, d_num_selected_out, cond)
-
-
+@cache_with_registered_key_functions
 def make_select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
+    cond: Operator,
+    compute_capability=None,
 ):
     """
     Create a select object that can be called to select elements matching a condition.
@@ -121,21 +141,37 @@ def make_select(
         d_out: Device array or iterator to store the selected output items.
         d_num_selected_out: Device array to store the number of items that passed the selection.
             The count is stored in ``d_num_selected_out[0]``.
-        cond: Callable representing the selection condition (predicate). Should return a
-            boolean-like value (typically uint8) where non-zero means the item passes the selection.
+        cond: Selection condition (predicate).
+            The signature is ``(T) -> uint8``, where ``T`` is the input data type.
+            Returns 1 (selected) or 0 (not selected).
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that performs the selection operation.
     """
     cond_adapter = make_op_adapter(cond)
-    return _make_select_cached(d_in, d_out, d_num_selected_out, cond_adapter)
+    # Note: _Select internally calls make_three_way_partition which will
+    # normalize the cond. But we've already normalized it, so the Op
+    # will be passed through make_op unchanged.
+    return _Select(
+        d_in,
+        d_out,
+        d_num_selected_out,
+        cond_adapter,
+        compute_capability=compute_capability,
+    )
 
 
 def select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
+    cond: Operator,
     num_items: int,
     stream=None,
 ):
@@ -169,28 +205,35 @@ def select(
         d_out: Device array or iterator to store the selected output items.
         d_num_selected_out: Device array to store the number of items that passed the selection.
             The count is stored in ``d_num_selected_out[0]``.
-        cond: Callable representing the selection condition (predicate). Should return a
-            boolean-like value (typically uint8) where non-zero means the item passes the selection.
+        cond: Selection condition (predicate).
+            The signature is ``(T) -> uint8``, where ``T`` is the input data type.
+            Returns 1 (selected) or 0 (not selected).
             Can reference device arrays as globals/closures - they will be automatically captured.
         num_items: Number of items in the input sequence.
         stream: CUDA stream to use for the operation (optional).
     """
-    selector = make_select(d_in, d_out, d_num_selected_out, cond)
+    # Create adapter to support stateful ops
+    cond_adapter = make_op_adapter(cond)
+    selector = make_select(
+        d_in=d_in, d_out=d_out, d_num_selected_out=d_num_selected_out, cond=cond_adapter
+    )
 
     tmp_storage_bytes = selector(
-        None,
-        d_in,
-        d_out,
-        d_num_selected_out,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected_out,
+        cond=cond_adapter,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     selector(
-        tmp_storage,
-        d_in,
-        d_out,
-        d_num_selected_out,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected_out,
+        cond=cond_adapter,
+        num_items=num_items,
+        stream=stream,
     )

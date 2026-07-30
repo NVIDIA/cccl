@@ -3,42 +3,106 @@
 # This script builds CCCL documentation using Sphinx directly
 #
 # Usage:
-#   ./gen_docs.bash           - Build documentation
-#   ./gen_docs.bash clean     - Clean build directory
-#   ./gen_docs.bash clean --all - Clean build directory and Doxygen build
+#   ./gen_docs.bash                    - Build documentation
+#   ./gen_docs.bash --allow-dep-install - Build, auto-install missing system deps
+#   ./gen_docs.bash clean              - Clean build directory
+#   ./gen_docs.bash clean --all        - Clean build directory and Doxygen build
 #
 # The script will optionally build Doxygen 1.9.6 from source to ensure
 # consistent documentation generation. The built Doxygen will be stored
 # in _build/doxygen-build/ and reused for subsequent runs.
 
-set -e
+set -euo pipefail
 
-SCRIPT_PATH=$(cd $(dirname ${0}); pwd -P)
-cd $SCRIPT_PATH
+ALLOW_DEP_INSTALL=false
+CLEAN=false
+CLEAN_ALL=false
 
-# Configuration
-SPHINXOPTS="${SPHINXOPTS:---keep-going}"
+for arg in "$@"; do
+    case "$arg" in
+        --allow-dep-install) ALLOW_DEP_INSTALL=true ;;
+        clean)               CLEAN=true ;;
+        --all)               CLEAN_ALL=true ;;
+        *)                   echo "Unknown argument: $arg"; exit 1 ;;
+    esac
+done
+
+SCRIPT_PATH=$(cd "$(dirname "${0}")"; pwd -P)
+cd "$SCRIPT_PATH"
+
 BUILDDIR="_build"
 DOXYGEN_BUILD_DIR="${SCRIPT_PATH}/_build/doxygen-build"
 DOXYGEN_SRC_DIR="${SCRIPT_PATH}/_build/doxygen-src"
-DOXYGEN_BIN="${DOXYGEN_BUILD_DIR}/bin/doxygen"
 
-# Use custom-built doxygen if available, otherwise fall back to system doxygen
-if [ -f "${DOXYGEN_BIN}" ]; then
-    DOXYGEN="${DOXYGEN_BIN}"
-else
-    DOXYGEN="${DOXYGEN:-doxygen}"
-fi
-
-# Handle clean command
-if [ "$1" = "clean" ]; then
+# Handle clean command (before dep checks — clean doesn't need deps)
+if [[ "$CLEAN" = true ]]; then
     echo "Cleaning build directory..."
-    rm -rf ${BUILDDIR}/*
-    if [ "$2" = "--all" ]; then
+    rm -rf "${BUILDDIR:?}"/*
+    if [[ "$CLEAN_ALL" = true ]]; then
         echo "Also removing Doxygen source and build directories..."
         rm -rf "${DOXYGEN_SRC_DIR}" "${DOXYGEN_BUILD_DIR}"
     fi
     exit 0
+fi
+
+# Check and optionally install system dependencies
+check_system_deps() {
+    local missing=()
+    # Map of command -> package name
+    local -A cmd_to_pkg=(
+        [cmake]=cmake
+        [ninja]=ninja-build
+        [flex]=flex
+        [bison]=bison
+        [git]=git
+    )
+
+    # python3-venv is a package, not a command — check by trying to create a venv
+    if ! python3 -m venv --help &>/dev/null; then
+        missing+=(python3-venv)
+    fi
+
+    for cmd in "${!cmd_to_pkg[@]}"; do
+        if ! command -v "$cmd" &>/dev/null; then
+            missing+=("${cmd_to_pkg[$cmd]}")
+        fi
+    done
+
+    if [[ ${#missing[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    echo "Missing system dependencies: ${missing[*]}"
+
+    if [[ "$ALLOW_DEP_INSTALL" = true ]]; then
+        echo "Installing missing dependencies (--allow-dep-install)..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq "${missing[@]}"
+    else
+        read -r -p "Install them now? [y/N] " response
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq "${missing[@]}"
+        else
+            echo "Error: Missing dependencies. Install with:"
+            echo "  sudo apt-get install -y ${missing[*]}"
+            exit 1
+        fi
+    fi
+}
+
+check_system_deps
+
+# Configuration
+# Keep going to surface all warnings; -W makes warnings fail the build.
+declare -a SPHINXOPTS="(${SPHINXOPTS:---keep-going -W})"
+DOXYGEN_BIN="${DOXYGEN_BUILD_DIR}/bin/doxygen"
+
+# Use custom-built doxygen if available, otherwise fall back to system doxygen
+if [[ -f "${DOXYGEN_BIN}" ]]; then
+    DOXYGEN="${DOXYGEN_BIN}"
+else
+    DOXYGEN="${DOXYGEN:-doxygen}"
 fi
 
 ## Clean image directory, without this any artifacts will prevent fetching
@@ -46,25 +110,26 @@ rm -rf img
 mkdir -p img
 
 # Pull cub images
-if [ ! -d cubimg ]; then
+if [[ ! -d cubimg ]]; then
     git clone -b gh-pages https://github.com/NVlabs/cub.git cubimg
 fi
 
-if [ ! -n "$(find cubimg -name 'example_range.png')" ]; then
+if [[ -z "$(find cubimg -name 'example_range.png')" ]]; then
     wget -q https://raw.githubusercontent.com/NVIDIA/NVTX/release-v3/docs/images/example_range.png -O cubimg/example_range.png
 fi
 
-if [ ! -n "$(find img -name '*.png')" ]; then
+if [[ -z "$(find img -name '*.png')" ]]; then
     wget -q https://docs.nvidia.com/cuda/_static/Logo_and_CUDA.png -O img/logo.png
 
     # Parse files and collects unique names ending with .png
-    imgs=( $(grep -R -o -h '[[:alpha:][:digit:]_]*.png' ../cub/cub | uniq) )
+    imgs="$(grep -R -o -h '[[:alpha:][:digit:]_]*.png' ../cub/cub | uniq)"
+    declare -a imgs="($imgs)"
     imgs+=( "cub_overview.png" "nested_composition.png" "tile.png" "blocked.png" "striped.png" )
 
     for img in "${imgs[@]}"
     do
-        echo ${img}
-        cp cubimg/${img} img/${img}
+        echo "${img}"
+        cp cubimg/"${img}" img/"${img}"
     done
 fi
 
@@ -73,7 +138,7 @@ build_doxygen() {
     echo "Building Doxygen 1.9.6..."
 
     # Clone Doxygen if not already cloned
-    if [ ! -d "${DOXYGEN_SRC_DIR}" ]; then
+    if [[ ! -d "${DOXYGEN_SRC_DIR}" ]]; then
         echo "Cloning Doxygen repository..."
         git clone https://github.com/doxygen/doxygen.git "${DOXYGEN_SRC_DIR}"
     fi
@@ -122,22 +187,8 @@ build_doxygen() {
 }
 
 # Check if custom Doxygen needs to be built
-if [ ! -f "${DOXYGEN_BIN}" ]; then
+if [[ ! -f "${DOXYGEN_BIN}" ]]; then
     echo "Custom Doxygen 1.9.6 not found, building it now..."
-
-    # Check for required build tools
-    if ! command -v cmake &> /dev/null; then
-        echo "Error: cmake is required to build Doxygen"
-        echo "Please install cmake and try again"
-        exit 1
-    fi
-
-    if ! command -v ninja &> /dev/null; then
-        echo "Error: ninja is required to build Doxygen"
-        echo "Please install ninja-build and try again"
-        exit 1
-    fi
-
     build_doxygen
     DOXYGEN="${DOXYGEN_BIN}"
 else
@@ -148,12 +199,14 @@ fi
 echo "Checking for documentation dependencies..."
 
 # Use virtual environment if it exists, otherwise create one
-if [ -d "env" ]; then
+if [[ -d "env" ]]; then
     echo "Using existing virtual environment..."
+    # shellcheck disable=SC1091
     source env/bin/activate
 else
     echo "Creating virtual environment..."
     python3 -m venv env
+    # shellcheck disable=SC1091
     source env/bin/activate
 fi
 
@@ -168,22 +221,36 @@ if ! python -c "import sphinx" 2>/dev/null; then
 fi
 
 # Generate Doxygen XML in parallel (if doxygen is available)
-if which ${DOXYGEN} > /dev/null 2>&1; then
+if command -v "${DOXYGEN}" > /dev/null 2>&1; then
     echo "Generating Doxygen XML..."
-    mkdir -p ${BUILDDIR}/doxygen/cub ${BUILDDIR}/doxygen/thrust ${BUILDDIR}/doxygen/cudax ${BUILDDIR}/doxygen/libcudacxx
+    mkdir -p "${BUILDDIR}"/doxygen/cub "${BUILDDIR}"/doxygen/thrust "${BUILDDIR}"/doxygen/cudax "${BUILDDIR}"/doxygen/libcudacxx
 
     # Copy all images to Doxygen XML output directories where they're expected
     for project in cub thrust cudax libcudacxx; do
-        mkdir -p ${BUILDDIR}/doxygen/${project}/xml
-        cp img/*.png ${BUILDDIR}/doxygen/${project}/xml/ 2>/dev/null || true
+        mkdir -p "${BUILDDIR}"/doxygen/"${project}"/xml
+        cp img/*.png "${BUILDDIR}"/doxygen/"${project}"/xml/ 2>/dev/null || true
     done
 
-    # Run all Doxygen builds in parallel
+    # Run all Doxygen builds in parallel, fail if any produce warnings/errors
     (cd cub && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd thrust && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd cudax && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd libcudacxx && ${DOXYGEN} Doxyfile) &
-    wait
+    pids+=($!)
+
+    doxygen_failed=0
+    for pid in "${pids[@]}"; do
+        if ! wait "$pid"; then
+            doxygen_failed=1
+        fi
+    done
+    if [[ "$doxygen_failed" -ne 0 ]]; then
+        echo "Error: one or more Doxygen builds failed (see warnings above)"
+        exit 1
+    fi
 
     echo "Doxygen complete"
 else
@@ -193,6 +260,52 @@ fi
 # Build Sphinx HTML documentation
 echo "Building documentation with Sphinx..."
 # Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
+python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${BUILDDIR}/html" "${SPHINXOPTS[@]}"
+
+# Reorganize output to include versioned directory and root assets
+VERSION="${SPHINX_CCCL_VER:-unstable}"
+BASE_URL="${CCCL_DOCS_BASE_URL:-https://nvidia.github.io/cccl/}"
+BASE_URL="${BASE_URL%/}/"
+IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
+
+HTML_DIR="${BUILDDIR}/html"
+ORIG_DIR="${BUILDDIR}/html_orig"
+
+rm -rf "${ORIG_DIR}"
+mv "${HTML_DIR}" "${ORIG_DIR}"
+mkdir -p "${HTML_DIR}/${VERSION}"
+cp -a "${ORIG_DIR}/." "${HTML_DIR}/${VERSION}/"
+rm -rf "${ORIG_DIR}"
+
+# Copy objects.inv to the root to support intersphinx consumers
+if [[ -f "${HTML_DIR}/${VERSION}/objects.inv" ]]; then
+    cp "${HTML_DIR}/${VERSION}/objects.inv" "${HTML_DIR}/objects.inv"
+fi
+
+# Scrape docs to generate page list
+./scrape_docs.bash "${HTML_DIR}/${VERSION}"
+
+cp "./404.html" "${HTML_DIR}/404.html"
+
+# Provide version metadata for the theme switcher
+cat > "${HTML_DIR}/nv-versions.json" <<EOF
+[
+  {
+    "name": "${VERSION}",
+    "version": "${VERSION}",
+    "url": "${BASE_URL}${VERSION}/",
+    "latest": ${IS_LATEST},
+    "preferred": ${IS_LATEST}
+  }
+]
+EOF
+
+cat > "${HTML_DIR}/versions.json" <<EOF
+{
+  "${VERSION}": "${VERSION}"
+}
+EOF
+
+touch "${HTML_DIR}/.nojekyll"
 
 echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"

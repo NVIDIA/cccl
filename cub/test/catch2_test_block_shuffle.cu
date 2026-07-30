@@ -99,7 +99,8 @@ struct up_with_suffix_op_t
 
     block_shuffle.Up(thread_data, thread_data, suffix);
 
-    if (cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z) == m_target_thread_id)
+    if (cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z))
+        == m_target_thread_id)
     {
       m_d_suffix_ptr[0] = suffix;
     }
@@ -133,7 +134,8 @@ struct down_with_prefix_op_t
 
     block_shuffle.Down(thread_data, thread_data, prefix);
 
-    if (cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z) == m_target_thread_id)
+    if (cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z))
+        == m_target_thread_id)
     {
       m_d_prefix_ptr[0] = prefix;
     }

@@ -56,9 +56,9 @@ int main(int, char**)
     static_assert(noexcept(Feb2018 / weekday_indexed{Tuesday, 2}));
     static_assert(cuda::std::is_same_v<year_month_weekday, decltype(Feb2018 / weekday_indexed{Tuesday, 2})>);
 
-    static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).year() == year{2018}, "");
-    static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).month() == February, "");
-    static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).weekday() == Tuesday, "");
+    static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).year() == year{2018});
+    static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).month() == February);
+    static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).weekday() == Tuesday);
 
     for (int i = 1000; i < 1010; ++i)
     {
@@ -88,9 +88,9 @@ int main(int, char**)
     static_assert(noexcept(Feb1stTues / year{2018}));
     static_assert(cuda::std::is_same_v<year_month_weekday, decltype(Feb1stTues / year{2018})>);
 
-    static_assert((year{2018} / Feb1stTues).year() == year{2018}, "");
-    static_assert((year{2018} / Feb1stTues).month() == February, "");
-    static_assert((year{2018} / Feb1stTues).weekday() == Tuesday, "");
+    static_assert((year{2018} / Feb1stTues).year() == year{2018});
+    static_assert((year{2018} / Feb1stTues).month() == February);
+    static_assert((year{2018} / Feb1stTues).weekday() == Tuesday);
 
     for (int i = 1000; i < 1010; ++i)
     {
@@ -126,9 +126,9 @@ int main(int, char**)
     static_assert(noexcept(Feb1stTues / 2018));
     static_assert(cuda::std::is_same_v<year_month_weekday, decltype(Feb1stTues / 2018)>);
 
-    static_assert((2018 / Feb1stTues).year() == year{2018}, "");
-    static_assert((2018 / Feb1stTues).month() == February, "");
-    static_assert((2018 / Feb1stTues).weekday() == Tuesday, "");
+    static_assert((2018 / Feb1stTues).year() == year{2018});
+    static_assert((2018 / Feb1stTues).month() == February);
+    static_assert((2018 / Feb1stTues).weekday() == Tuesday);
 
     for (int i = 1000; i < 1010; ++i)
     {

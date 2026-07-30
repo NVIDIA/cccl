@@ -15,7 +15,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::input_iterator<cuda::std::counted_iterator<cpp17_input_iterator<int*>>>);
   static_assert(cuda::std::forward_iterator<cuda::std::counted_iterator<forward_iterator<int*>>>);

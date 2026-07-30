@@ -24,9 +24,9 @@
 #  error "<cuda/cufile> is not supported on Windows"
 #endif // _CCCL_OS(WINDOWS)
 
-#if !_CCCL_HAS_INCLUDE(<cufile.h>)
+#if !__has_include(<cufile.h>)
 #  error "<cuda/cufile> requires libcufile-dev package to be installed"
-#endif // !_CCCL_HAS_INCLUDE(<cufile.h>)
+#endif // !__has_include(<cufile.h>)
 
 #if _CCCL_CTK_BELOW(12, 9)
 #  error "<cuda/cufile> requires at least CUDA 12.9"

@@ -165,16 +165,16 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
 
 C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][device]", index_types_dynamic, layouts)
 {
-  constexpr int rank = 3;
-  using index_type   = c2h::get<0, TestType>;
-  using layout_t     = c2h::get<1, TestType>;
-  using ext_t        = cuda::std::dextents<index_type, 3>;
-  using mapping_t    = typename layout_t::template mapping<ext_t>;
-  using data_t       = cuda::std::array<index_type, rank>;
-  using store_op_t   = LinearStore<index_type, rank>;
-  auto X             = GENERATE_COPY(take(3, random(2, 10)));
-  auto Y             = GENERATE_COPY(take(3, random(2, 10)));
-  auto Z             = GENERATE_COPY(take(3, random(2, 10)));
+  [[maybe_unused]] constexpr int rank = 3;
+  using index_type                    = c2h::get<0, TestType>;
+  using layout_t                      = c2h::get<1, TestType>;
+  using ext_t                         = cuda::std::dextents<index_type, 3>;
+  using mapping_t                     = typename layout_t::template mapping<ext_t>;
+  using data_t                        = cuda::std::array<index_type, rank>;
+  using store_op_t                    = LinearStore<index_type, rank>;
+  auto X                              = GENERATE_COPY(take(3, random(2, 10)));
+  auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
+  auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
   ext_t ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
   c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});

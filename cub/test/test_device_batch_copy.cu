@@ -6,12 +6,13 @@
 
 #include <thrust/logical.h>
 #include <thrust/sequence.h>
-#include <thrust/tuple.h>
 
 #include <cuda/iterator>
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -90,19 +91,19 @@ GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const s
 }
 
 template <size_t n, typename... T>
-std::enable_if_t<n >= thrust::tuple_size<thrust::tuple<T...>>::value>
-print_tuple(std::ostream&, const thrust::tuple<T...>&)
+std::enable_if_t<n >= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+print_tuple(std::ostream&, const cuda::std::tuple<T...>&)
 {}
 
 template <size_t n, typename... T>
-std::enable_if_t<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>
-print_tuple(std::ostream& os, const thrust::tuple<T...>& tup)
+std::enable_if_t<n + 1 <= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+print_tuple(std::ostream& os, const cuda::std::tuple<T...>& tup)
 {
   if constexpr (n != 0)
   {
     os << ", ";
   }
-  os << thrust::get<n>(tup);
+  os << cuda::std::get<n>(tup);
   print_tuple<n + 1>(os, tup);
 }
 
@@ -242,8 +243,11 @@ try
 
   if (it_pair.first != h_gpu_results.cend())
   {
-    std::cout << "Mismatch at index " << std::distance(h_gpu_results.cbegin(), it_pair.first)
-              << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
+    std::cout
+      << "Mismatch at index "
+      << std::distance(h_gpu_results.cbegin(), it_pair.first)
+      // NOLINTNEXTLINE(bugprone-unintended-char-ostream-output)
+      << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
@@ -257,6 +261,7 @@ catch ([[maybe_unused]] std::bad_alloc& e)
     << TestDataGenToString(output_gen) << ")" //
     << "' due to insufficient memory: " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
+  return;
 }
 
 struct object_with_non_trivial_ctor
@@ -399,7 +404,7 @@ int main(int argc, char** argv)
   for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT         = thrust::tuple<int64_t, int32_t, int16_t, char, char>;
+    using AtomicCopyT         = cuda::std::tuple<int64_t, int32_t, int16_t, char, char>;
     RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
     RangeSizeT max_range_size =
       static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));

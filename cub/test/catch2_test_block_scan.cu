@@ -189,7 +189,8 @@ struct min_init_value_aggregate_op_t
       scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, block_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid == m_target_thread_id)
     {
@@ -218,7 +219,8 @@ struct sum_aggregate_op_t
       scan.InclusiveSum(thread_data, thread_data, block_aggregate);
     }
 
-    const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
+    const int tid = static_cast<int>(
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
 
     if (tid == m_target_thread_id)
     {
@@ -253,7 +255,8 @@ struct sum_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
+    const int tid = static_cast<int>(
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)
@@ -294,7 +297,8 @@ struct min_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
+    const int tid = static_cast<int>(
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)

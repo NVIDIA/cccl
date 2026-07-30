@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cooperative_groups.h>
 #endif // _CCCL_CUDA_COMPILATION()

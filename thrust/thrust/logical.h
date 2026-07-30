@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file logical.h
  *  \brief Logical operations on ranges
@@ -76,6 +63,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see any_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -115,6 +106,10 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see any_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool all_of(InputIterator first, InputIterator last, Predicate pred);
@@ -156,6 +151,10 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see all_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -196,6 +195,10 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see all_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool any_of(InputIterator first, InputIterator last, Predicate pred);
@@ -237,6 +240,10 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see all_of
  *  \see any_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -277,6 +284,10 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see all_of
  *  \see any_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool none_of(InputIterator first, InputIterator last, Predicate pred);

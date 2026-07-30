@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +33,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 ::cuda::std::size_t __physical_devices_count();
 
 //! @brief A non-owning representation of a CUDA device
@@ -42,7 +46,7 @@ class device_ref
 
 public:
   //! @brief Create a `device_ref` object from a native device ordinal.
-  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
+  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id)
       : __id_(__id)
   {
     _CCCL_IF_CONSTEVAL_DEFAULT
@@ -124,6 +128,13 @@ public:
   //! @brief Initializes the primary context of the device.
   _CCCL_HOST_API void init() const; // implemented in <cuda/__device/physical_device.h> to avoid circular dependency
 
+  //! @brief Retrieve the primary context of this device.
+  //!
+  //! @return The primary CUDA context for this device.
+  [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context() const; // implemented in
+                                                                      // <cuda/__device/physical_device.h> to avoid
+                                                                      // circular dependency
+
   //! @brief Retrieve the name of this device.
   //!
   //! @return String view containing the name of this device.
@@ -158,6 +169,8 @@ public:
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
 };
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

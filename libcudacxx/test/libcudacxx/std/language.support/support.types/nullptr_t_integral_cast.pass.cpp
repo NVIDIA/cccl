@@ -10,7 +10,7 @@
 // integral type
 // XFAIL: c++98, c++03
 
-// typedef decltype(nullptr) nullptr_t;
+// using nullptr_t = decltype(nullptr);
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>

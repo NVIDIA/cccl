@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -37,8 +14,10 @@
 #endif // no system header
 #include <thrust/system/cuda/config.h>
 
+#include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -142,7 +121,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
 {};
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
-#  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
+#  if (NV_TARGET_MINIMUM_SM_INTEGER >= 60)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
 #    define _THRUST_TUNING_ARCH sm52
@@ -232,7 +211,7 @@ struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
 
 struct AgentPlan
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   int items_per_tile;
   int shared_memory_size;
@@ -241,26 +220,20 @@ struct AgentPlan
   AgentPlan() = default;
 
   THRUST_RUNTIME_FUNCTION
-  AgentPlan(int block_threads_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
-      : block_threads(block_threads_)
+  AgentPlan(int threads_per_block_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
+      : threads_per_block(threads_per_block_)
       , items_per_thread(items_per_thread_)
-      , items_per_tile(items_per_thread * block_threads)
+      , items_per_tile(items_per_thread * threads_per_block)
       , shared_memory_size(shared_memory_size_)
       , grid_size(grid_size_)
   {}
 
-  THRUST_RUNTIME_FUNCTION AgentPlan(AgentPlan const& plan)
-      : block_threads(plan.block_threads)
-      , items_per_thread(plan.items_per_thread)
-      , items_per_tile(plan.items_per_tile)
-      , shared_memory_size(plan.shared_memory_size)
-      , grid_size(plan.grid_size)
-  {}
+  AgentPlan(AgentPlan const& plan) = default;
 
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : block_threads(PtxPlan::BLOCK_THREADS)
+      : threads_per_block(PtxPlan::BLOCK_THREADS)
       , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
       , items_per_tile(PtxPlan::ITEMS_PER_TILE)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)
@@ -421,7 +394,8 @@ public:
 };
 
 #if !_CCCL_COMPILER(NVRTC)
-THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
+template <class = void>
+THRUST_RUNTIME_FUNCTION int get_ptx_version()
 {
   int ptx_version = 0;
   if (cub::PtxVersion(ptx_version) != cudaSuccess)
@@ -453,7 +427,7 @@ THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
     char str[]      = "This program was not compiled for SM     \n";
 
     auto print_1_helper = [&](int v) {
-      str[code_offset] = static_cast<char>(v) + '0';
+      str[code_offset] = static_cast<char>(static_cast<char>(v) + '0');
       code_offset++;
     };
 
@@ -504,42 +478,6 @@ struct uninitialized
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
   {
     return get();
-  }
-};
-
-// uninitialized_array
-// --------------
-// allocates uninitialized data on stack
-template <class T, size_t N>
-struct uninitialized_array
-{
-  using value_type = T;
-  static constexpr ::cuda::std::integral_constant<size_t, N> size{};
-  alignas(T) char data_[N * sizeof(T)];
-
-  _CCCL_HOST_DEVICE T* data()
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE const T* data() const
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T (&as_array())[N]
-  {
-    return static_cast<T(&)[N]>(data_);
   }
 };
 

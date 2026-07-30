@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <vector>
+
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -15,8 +17,8 @@
 
 __global__ void axpy(int cnt, double a, const double* x, double* y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < cnt; i += nthreads)
   {
@@ -38,31 +40,30 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 {
   size_t N = 1000000;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
-  stf_logical_data_handle lX, lY;
-
-  double *X, *Y;
-  X = (double*) malloc(N * sizeof(double));
-  Y = (double*) malloc(N * sizeof(double));
+  std::vector<double> X(N);
+  std::vector<double> Y(N);
 
   for (size_t i = 0; i < N; i++)
   {
-    X[i] = X0(i);
-    Y[i] = Y0(i);
+    X[i] = X0(static_cast<int>(i));
+    Y[i] = Y0(static_cast<int>(i));
   }
 
   const double alpha = 3.14;
 
-  stf_logical_data(ctx, &lX, X, N * sizeof(double));
-  stf_logical_data(ctx, &lY, Y, N * sizeof(double));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), N * sizeof(double));
+  stf_logical_data_handle lY = stf_logical_data(ctx, Y.data(), N * sizeof(double));
+  REQUIRE(lX != nullptr);
+  REQUIRE(lY != nullptr);
 
   stf_logical_data_set_symbol(lX, "X");
   stf_logical_data_set_symbol(lY, "Y");
 
-  stf_cuda_kernel_handle k;
-  stf_cuda_kernel_create(ctx, &k);
+  stf_cuda_kernel_handle k = stf_cuda_kernel_create(ctx);
+  REQUIRE(k != nullptr);
   stf_cuda_kernel_set_symbol(k, "axpy");
   stf_cuda_kernel_add_dep(k, lX, STF_READ);
   stf_cuda_kernel_add_dep(k, lY, STF_RW);
@@ -85,7 +86,4 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
     assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
-
-  free(X);
-  free(Y);
 }

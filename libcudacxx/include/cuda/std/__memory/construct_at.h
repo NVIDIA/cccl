@@ -40,9 +40,9 @@
 #include <cuda/std/__utility/move.h>
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  include <cuda/std/__cccl/memory_wrapper.h>
+#  include <cuda/std/__host_stdlib/memory>
 
-#  ifndef __cpp_lib_constexpr_dynamic_alloc
+#  if __cpp_lib_constexpr_dynamic_alloc < 201907L
 namespace std
 {
 _CCCL_EXEC_CHECK_DISABLE
@@ -59,7 +59,7 @@ _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 #    endif
 }
 } // namespace std
-#  endif // __cpp_lib_constexpr_dynamic_alloc
+#  endif // __cpp_lib_constexpr_dynamic_alloc < 201907L
 #endif // _CCCL_STD_VER >= 2020
 
 #include <cuda/std/__cccl/prologue.h>
@@ -166,7 +166,7 @@ _CCCL_API constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
   }
   else if constexpr (is_array_v<_Tp>)
   {
-    ::cuda::std::__destroy(::cuda::std::begin(*__loc), ::cuda::std::end(*__loc));
+    ::cuda::std::__destroy(::cuda::std::__begin_cpo{}(*__loc), ::cuda::std::__end_cpo{}(*__loc));
   }
   else
   {
@@ -209,7 +209,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at([[maybe_unused]] _Tp* __l
   }
   else if constexpr (is_array_v<_Tp>)
   {
-    ::cuda::std::__destroy(::cuda::std::begin(*__loc), ::cuda::std::end(*__loc));
+    ::cuda::std::__destroy(::cuda::std::__begin_cpo{}(*__loc), ::cuda::std::__end_cpo{}(*__loc));
   }
   else
   {

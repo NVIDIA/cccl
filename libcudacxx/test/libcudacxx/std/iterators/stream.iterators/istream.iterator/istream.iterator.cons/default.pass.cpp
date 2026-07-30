@@ -45,7 +45,7 @@ struct test_trivial<T, false>
 int main(int, char**)
 {
   {
-    typedef cuda::std::istream_iterator<int> T;
+    using T = cuda::std::istream_iterator<int>;
     T it;
     assert(it == T());
     [[maybe_unused]] constexpr T it2;

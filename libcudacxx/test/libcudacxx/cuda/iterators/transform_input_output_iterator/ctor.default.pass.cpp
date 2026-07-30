@@ -17,7 +17,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::transform_input_output_iterator<PlusOne, PlusOne, random_access_iterator<int*>> iter;
@@ -44,7 +44,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

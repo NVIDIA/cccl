@@ -255,6 +255,7 @@ void TestFindWithBigIndexesHelper(int magnitude)
   ASSERT_EQUAL(distance_high_value, (1ll << magnitude) - 18);
 }
 
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 void TestFindWithBigIndexes()
 {
   TestFindWithBigIndexesHelper(30);
@@ -263,6 +264,7 @@ void TestFindWithBigIndexes()
   TestFindWithBigIndexesHelper(33);
 }
 DECLARE_UNITTEST(TestFindWithBigIndexes);
+#endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 namespace
 {

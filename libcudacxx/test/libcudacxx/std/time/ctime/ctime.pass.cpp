@@ -4,40 +4,26 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
 
 #include <cuda/std/cassert>
 #include <cuda/std/ctime>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-// Undefine macros that conflict with the tested symbols
-
-#if defined(clock)
-#  undef clock
-#endif // clock
-
-#if defined(difftime)
-#  undef difftime
-#endif // difftime
-
-#if defined(time)
-#  undef time
-#endif // time
-
-#if defined(timespec_get)
-#  undef timespec_get
-#endif // timespec_get
-
 #ifndef TIME_UTC
 #  error TIME_UTC not defined
 #endif
+#include "test_macros.h"
 
 static_assert(TIME_UTC != 0);
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   // struct timespec
 

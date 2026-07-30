@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -37,13 +24,17 @@
 
 #  include <nv/target>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 namespace detail
 {
 template <typename Pointer1, typename Pointer2>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
+_CCCL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
 {
   using ::cuda::std::swap;
   swap(*raw_pointer_cast(a), *raw_pointer_cast(b));
@@ -75,5 +66,9 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
 
 } // end iter_swap()
 } // namespace cuda_cub
+
 THRUST_NAMESPACE_END
+
+_CCCL_DIAG_POP
+
 #endif // _CCCL_CUDA_COMPILATION()

@@ -23,7 +23,7 @@
 using UDI = UserDefinedIntegral<unsigned>;
 
 template <class Iter>
-__host__ __device__ constexpr void test_char()
+TEST_FUNC constexpr void test_char()
 {
   char a[4] = {};
   Iter it   = cuda::std::fill_n(Iter(a), UDI(4), char(1));
@@ -35,7 +35,7 @@ __host__ __device__ constexpr void test_char()
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test_int()
+TEST_FUNC constexpr void test_int()
 {
   int a[4] = {};
   Iter it  = cuda::std::fill_n(Iter(a), UDI(4), 1);
@@ -46,7 +46,7 @@ __host__ __device__ constexpr void test_int()
   assert(a[3] == 1);
 }
 
-__host__ __device__ constexpr void test_int_array()
+TEST_FUNC constexpr void test_int_array()
 {
   int a[4] = {};
   assert(cuda::std::fill_n(a, UDI(4), static_cast<char>(1)) == a + 4);
@@ -59,18 +59,18 @@ __host__ __device__ constexpr void test_int_array()
 // nvcc does not support modification of mutable variables in a constexpr context
 struct source
 {
-  __host__ __device__ source()
+  TEST_FUNC source()
       : i(0)
   {}
 
-  __host__ __device__ operator int() const
+  TEST_FUNC operator int() const
   {
     return i++;
   }
   mutable int i;
 };
 
-__host__ __device__ void test_int_array_struct_source()
+TEST_FUNC void test_int_array_struct_source()
 {
   int a[4] = {};
   assert(cuda::std::fill_n(a, UDI(4), source()) == a + 4);
@@ -82,16 +82,16 @@ __host__ __device__ void test_int_array_struct_source()
 
 struct test1
 {
-  __host__ __device__ constexpr test1()
+  TEST_FUNC constexpr test1()
       : c(0)
   {}
-  __host__ __device__ constexpr test1(char xc)
+  TEST_FUNC constexpr test1(char xc)
       : c(xc + 1)
   {}
   char c;
 };
 
-__host__ __device__ constexpr void test_struct_array()
+TEST_FUNC constexpr void test_struct_array()
 {
   test1 test1a[4] = {};
   assert(cuda::std::fill_n(test1a, UDI(4), static_cast<char>(10)) == test1a + 4);
@@ -106,24 +106,24 @@ class A
   char a_;
 
 public:
-  __host__ __device__ constexpr A()
+  TEST_FUNC constexpr A()
       : a_()
   {}
-  __host__ __device__ explicit constexpr A(char a)
+  TEST_FUNC explicit constexpr A(char a)
       : a_(a)
   {}
-  __host__ __device__ constexpr operator unsigned char() const
+  TEST_FUNC constexpr operator unsigned char() const
   {
     return 'b';
   }
 
-  __host__ __device__ constexpr friend bool operator==(const A& x, const A& y)
+  TEST_FUNC constexpr friend bool operator==(const A& x, const A& y)
   {
     return x.a_ == y.a_;
   }
 };
 
-__host__ __device__ constexpr void test5()
+TEST_FUNC constexpr void test5()
 {
   A a[3];
   assert(cuda::std::fill_n(&a[0], UDI(3), A('a')) == a + 3);
@@ -141,13 +141,13 @@ struct Storage
   };
 };
 
-__host__ __device__ constexpr void test6()
+TEST_FUNC constexpr void test6()
 {
   Storage foo[5] = {};
   cuda::std::fill_n(&foo[0], UDI(5), Storage());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_char<cpp17_output_iterator<char*>>();
   test_char<forward_iterator<char*>>();
@@ -167,6 +167,13 @@ __host__ __device__ constexpr bool test()
   test5();
   test6();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test_int<host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test_int<device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
@@ -174,7 +181,7 @@ int main(int, char**)
 {
   test();
   test_int_array_struct_source();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

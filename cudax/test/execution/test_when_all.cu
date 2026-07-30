@@ -85,13 +85,13 @@ C2H_TEST("when_all completes when children complete", "[when_all]")
   auto op = ex::connect(std::move(snd), checked_value_receiver{41});
   ex::start(op);
   // The when_all scheduler will complete only after 3 impulses
-  CUDAX_CHECK_FALSE(called);
+  CHECK_FALSE(called);
   sched.start_next();
-  CUDAX_CHECK_FALSE(called);
+  CHECK_FALSE(called);
   sched.start_next();
-  CUDAX_CHECK_FALSE(called);
+  CHECK_FALSE(called);
   sched.start_next();
-  CUDAX_CHECK(called);
+  CHECK(called);
 }
 
 #endif
@@ -142,15 +142,15 @@ C2H_TEST("when_all cancels remaining children if error is detected", "[when_all]
   auto op = ex::connect(std::move(snd), checked_error_receiver{42});
   ex::start(op);
   // The first child will complete; the third one will be cancelled
-  CUDAX_CHECK_FALSE(called1);
-  CUDAX_CHECK_FALSE(called3);
+  CHECK_FALSE(called1);
+  CHECK_FALSE(called3);
   sched.start_next(); // start the first child
-  CUDAX_CHECK(called1);
+  CHECK(called1);
   sched.start_next(); // start the second child; this will generate an error
-  CUDAX_CHECK_FALSE(called3);
+  CHECK_FALSE(called3);
   sched.start_next(); // start the third child
-  CUDAX_CHECK_FALSE(called3);
-  CUDAX_CHECK(cancelled);
+  CHECK_FALSE(called3);
+  CHECK(cancelled);
 }
 
 C2H_TEST("when_all cancels remaining children if cancel is detected", "[when_all]")
@@ -174,15 +174,15 @@ C2H_TEST("when_all cancels remaining children if cancel is detected", "[when_all
   auto op = ex::connect(std::move(snd), checked_stopped_receiver{});
   ex::start(op);
   // The first child will complete; the third one will be cancelled
-  CUDAX_CHECK_FALSE(called1);
-  CUDAX_CHECK_FALSE(called3);
+  CHECK_FALSE(called1);
+  CHECK_FALSE(called3);
   sched.start_next(); // start the first child
-  CUDAX_CHECK(called1);
+  CHECK(called1);
   sched.start_next(); // start the second child; this will call set_stopped
-  CUDAX_CHECK_FALSE(called3);
+  CHECK_FALSE(called3);
   sched.start_next(); // start the third child
-  CUDAX_CHECK_FALSE(called3);
-  CUDAX_CHECK(cancelled);
+  CHECK_FALSE(called3);
+  CHECK(cancelled);
 }
 
 #endif

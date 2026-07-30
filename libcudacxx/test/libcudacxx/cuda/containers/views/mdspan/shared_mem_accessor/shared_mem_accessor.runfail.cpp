@@ -7,13 +7,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: Calling a __device__ function in tile code
+
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-__device__ int device_array[] = {1, 2, 3, 4};
+TEST_GLOBAL_VARIABLE int device_array[] = {1, 2, 3, 4};
 
-__device__ void access_test()
+TEST_DEVICE_FUNC void access_test()
 {
   using ext_t = cuda::std::extents<int, 4>;
   [[maybe_unused]] cuda::shared_memory_mdspan<int, ext_t> md{device_array, ext_t{}};

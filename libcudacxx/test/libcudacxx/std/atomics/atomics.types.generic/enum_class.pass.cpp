@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -64,7 +67,7 @@ enum class foo_bar_enum : uint8_t
 };
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Selector<A, constructor_initializer> sel;
   A& obj = *sel.construct(T(0));

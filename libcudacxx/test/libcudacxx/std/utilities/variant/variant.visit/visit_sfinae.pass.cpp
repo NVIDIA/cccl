@@ -26,23 +26,20 @@
 struct any_visitor
 {
   template <typename T>
-  __host__ __device__ void operator()(const T&) const
+  TEST_FUNC void operator()(const T&) const
   {}
 };
 
 template <typename T, typename = decltype(cuda::std::visit(cuda::std::declval<any_visitor&>(), cuda::std::declval<T>()))>
-__host__ __device__ constexpr bool has_visit(int)
-{
-  return true;
-}
+TEST_FUNC constexpr auto has_visit_impl(int) -> cuda::std::true_type;
 
 template <typename T>
-__host__ __device__ constexpr bool has_visit(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto has_visit_impl(...) -> cuda::std::false_type;
 
-__host__ __device__ void test_sfinae()
+template <class T>
+inline constexpr bool has_visit = decltype(has_visit_impl<T>(0))::value;
+
+TEST_FUNC void test_sfinae()
 {
   struct BadVariant
       : cuda::std::variant<short>
@@ -55,14 +52,14 @@ __host__ __device__ void test_sfinae()
   struct GoodVariant2 : GoodVariant
   {};
 
-  static_assert(!has_visit<int>(0), "");
+  static_assert(!has_visit<int>);
 #if !TEST_COMPILER(MSVC) // MSVC cannot deal with that even with std::variant
-  static_assert(!has_visit<BadVariant>(0), "");
+  static_assert(!has_visit<BadVariant>);
 #endif // !TEST_COMPILER(MSVC)
-  static_assert(!has_visit<BadVariant2>(0), "");
-  static_assert(has_visit<cuda::std::variant<int>>(0), "");
-  static_assert(has_visit<GoodVariant>(0), "");
-  static_assert(has_visit<GoodVariant2>(0), "");
+  static_assert(!has_visit<BadVariant2>);
+  static_assert(has_visit<cuda::std::variant<int>>);
+  static_assert(has_visit<GoodVariant>);
+  static_assert(has_visit<GoodVariant2>);
 }
 
 int main(int, char**)

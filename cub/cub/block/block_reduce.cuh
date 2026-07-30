@@ -25,12 +25,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -152,24 +151,47 @@ enum BlockReduceAlgorithm
   BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
 
-#if !_CCCL_COMPILER(NVRTC)
-inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+namespace detail
 {
-  switch (alg)
+[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
+{
+  switch (algo)
   {
-    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
-      return os << "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING:
-      return os << "BLOCK_REDUCE_RAKING";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS:
-      return os << "BLOCK_REDUCE_WARP_REDUCTIONS";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
-      return os << "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
-    default:
-      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
+    case BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
+      return "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
+    case BLOCK_REDUCE_RAKING:
+      return "BLOCK_REDUCE_RAKING";
+    case BLOCK_REDUCE_WARP_REDUCTIONS:
+      return "BLOCK_REDUCE_WARP_REDUCTIONS";
+    case BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
+      return "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
   }
+  return "<unknown BlockReduceAlgorithm>";
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a
@@ -316,6 +338,11 @@ public:
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary
   //! storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -323,6 +350,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -339,6 +371,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
@@ -389,6 +424,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
   //! functor. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -445,6 +483,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
   //! functor. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread<sub>0</sub>.
   //! - @rowmajor
@@ -511,6 +552,9 @@ public:
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
   //! Each thread contributes one input element.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
   //! - @smemreuse
@@ -553,6 +597,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction
   //! operator. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -603,6 +650,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction
   //! operator. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor

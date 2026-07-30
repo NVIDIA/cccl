@@ -29,23 +29,23 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct Alloc
 {
-  typedef T value_type;
+  using value_type = T;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 Alloc() {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 Alloc() {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 value_type* allocate(cuda::std::size_t n)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 value_type* allocate(cuda::std::size_t n)
   {
     assert(n == 1);
     return &storage;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type*, cuda::std::size_t) noexcept {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 void deallocate(value_type*, cuda::std::size_t) noexcept {}
 
   value_type storage;
 };
@@ -53,14 +53,14 @@ struct Alloc
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 B(int& count)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 B(int& count)
       : count_(count)
   {}
 
   template <class U, class... Args>
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void construct(U* p, Args&&... args)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 void construct(U* p, Args&&... args)
   {
     ++count_;
 #if TEST_STD_VER >= 2020
@@ -76,7 +76,7 @@ struct B
 struct A0
 {
   A0() = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 A0(int* count)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 A0(int* count)
   {
     ++*count;
   }
@@ -85,7 +85,7 @@ struct A0
 struct A1
 {
   A1() = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 A1(int* count, char c)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 A1(int* count, char c)
   {
     assert(c == 'c');
     ++*count;
@@ -95,7 +95,7 @@ struct A1
 struct A2
 {
   A2() = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 A2(int* count, char c, int i)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 A2(int* count, char c, int i)
   {
     assert(c == 'd');
     assert(i == 5);
@@ -103,7 +103,7 @@ struct A2
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     int A0_count = 0;
@@ -136,8 +136,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     alloc.deallocate(a2, 1);
   }
   {
-    typedef IncompleteHolder* VT;
-    typedef A<VT> Alloc2;
+    using VT     = IncompleteHolder*;
+    using Alloc2 = A<VT>;
     Alloc2 a;
     Alloc<VT> alloc;
     VT* vt = alloc.allocate(1);

@@ -147,14 +147,14 @@ int main(int, char**)
   test_to_string<65>();
   test_to_string<1000>(); // not in constexpr because of constexpr evaluation step limits
 #  if TEST_STD_VER >= 2023
-  static_assert(test_to_string<0>(), "");
-  static_assert(test_to_string<1>(), "");
-  static_assert(test_to_string<31>(), "");
-  static_assert(test_to_string<32>(), "");
-  static_assert(test_to_string<33>(), "");
-  static_assert(test_to_string<63>(), "");
-  static_assert(test_to_string<64>(), "");
-  static_assert(test_to_string<65>(), "");
+  static_assert(test_to_string<0>());
+  static_assert(test_to_string<1>());
+  static_assert(test_to_string<31>());
+  static_assert(test_to_string<32>());
+  static_assert(test_to_string<33>());
+  static_assert(test_to_string<63>());
+  static_assert(test_to_string<64>());
+  static_assert(test_to_string<65>());
 #  endif
 
   test_to_string_wchar<0>();
@@ -167,12 +167,12 @@ int main(int, char**)
   test_to_string_wchar<65>();
   test_to_string_wchar<1000>(); // not in constexpr because of constexpr evaluation step limits
 #  if TEST_STD_VER >= 2023
-  static_assert(test_to_string_wchar<0>(), "");
-  static_assert(test_to_string_wchar<1>(), "");
-  static_assert(test_to_string_wchar<31>(), "");
-  static_assert(test_to_string_wchar<32>(), "");
-  static_assert(test_to_string_wchar<33>(), "");
-  static_assert(test_to_string_wchar<63>(), "");
+  static_assert(test_to_string_wchar<0>());
+  static_assert(test_to_string_wchar<1>());
+  static_assert(test_to_string_wchar<31>());
+  static_assert(test_to_string_wchar<32>());
+  static_assert(test_to_string_wchar<33>());
+  static_assert(test_to_string_wchar<63>());
 #  endif
   return 0;
 }

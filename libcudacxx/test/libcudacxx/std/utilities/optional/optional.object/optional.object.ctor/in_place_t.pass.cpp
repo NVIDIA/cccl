@@ -29,20 +29,20 @@ class X
   int j_ = 0;
 
 public:
-  __host__ __device__ constexpr X()
+  TEST_FUNC constexpr X()
       : i_(0)
   {}
-  __host__ __device__ constexpr X(int i)
+  TEST_FUNC constexpr X(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr X(int i, int j)
+  TEST_FUNC constexpr X(int i, int j)
       : i_(i)
       , j_(j)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~X() {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~X() {}
 
-  __host__ __device__ constexpr friend bool operator==(const X& x, const X& y)
+  TEST_FUNC constexpr friend bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -54,25 +54,25 @@ class Y
   int j_ = 0;
 
 public:
-  __host__ __device__ constexpr Y()
+  TEST_FUNC constexpr Y()
       : i_(0)
   {}
-  __host__ __device__ constexpr Y(int i)
+  TEST_FUNC constexpr Y(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr Y(int i, int j)
+  TEST_FUNC constexpr Y(int i, int j)
       : i_(i)
       , j_(j)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
+  TEST_FUNC friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
 };
 
 template <class T, class... Args>
-__host__ __device__ constexpr void test(Args... vals)
+TEST_FUNC constexpr void test(Args... vals)
 {
   const T expected{vals...};
   {
@@ -92,7 +92,7 @@ __host__ __device__ constexpr void test(Args... vals)
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<const int>();
@@ -108,9 +108,7 @@ __host__ __device__ constexpr bool test()
   test<Y>(42);
   test<Y>(42, 1337);
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>(42);
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
@@ -143,7 +141,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
 #if TEST_HAS_EXCEPTIONS()

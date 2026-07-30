@@ -54,6 +54,9 @@ inline constexpr bool __can_apply<_Fn, _Tuple, true> = __can_apply_impl<_Fn, __m
 template <class _Fn, class _Tuple, size_t... _Id>
 _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
   _LIBCUDACXX_NOEXCEPT_RETURN(
+    // clang-tidy incorrectly reports "'__t' used after it was forwarded".
+    // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::get<_Id>(::cuda::std::forward<_Tuple>(__t))...))
 
     template <class _Fn, class _Tuple>

@@ -25,6 +25,14 @@
 
 #include <nv/target>
 
+/// In device code, _CCCL_PTX_ARCH() expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH()'s value is implementation defined.
+#if !defined(__CUDA_ARCH__)
+#  define _CCCL_PTX_ARCH() 0
+#else
+#  define _CCCL_PTX_ARCH() __CUDA_ARCH__
+#endif
+
 #ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! When this macro is defined, Programmatic Dependent Launch (PDL) is disabled across CCCL
 #  define CCCL_DISABLE_PDL
@@ -47,5 +55,64 @@
 #  define _CCCL_PDL_GRID_DEPENDENCY_SYNC()
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH()
 #endif // _CCCL_HAS_PDL()
+
+// Check whether the relocatable device code (RDC) is being generated.
+#if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__) || defined(_NVHPC_RDC)
+#  define _CCCL_HAS_RDC() 1
+#else // ^^^ has RDC ^^^ / vvv no RDC vvv
+#  define _CCCL_HAS_RDC() 0
+#endif // ^^^ no RDC ^^^
+
+// Check whether extensible whole program is being compiled.
+#if defined(__CUDACC_EWP__)
+#  define _CCCL_HAS_EWP() 1
+#else // ^^^ has EWP ^^^ / vvv no EWP vvv
+#  define _CCCL_HAS_EWP() 0
+#endif // ^^^ no EWP ^^^
+
+// Control whether device runtime APIs can be used, because they require libcudadevrt to be linked. Defaults to true
+// when RDC or EWP are enabled. Can be disabled by defining CCCL_DISABLE_DEVICE_RUNTIME.
+#if (_CCCL_HAS_RDC() || _CCCL_HAS_EWP()) && !defined(CCCL_DISABLE_DEVICE_RUNTIME)
+#  define _CCCL_HAS_DEVICE_RUNTIME() 1
+#else // ^^^ has device runtime ^^^ / vvv no device runtime vvv
+#  define _CCCL_HAS_DEVICE_RUNTIME() 0
+#endif // ^^^ no device runtime ^^^
+
+// Some functions can be called from host or device code and launch kernels inside. Thus, they use CUDA Dynamic
+// Parallelism (CDP) and require compiling with Relocatable Device Code (RDC) or extensible whole program (EWP) and link
+// with device runtime library. CDP is unsupported with clang-cuda below 22.
+// TODO(bgruber): remove CUB_DISABLE_CDP in CCCL 4.0
+#if _CCCL_HAS_DEVICE_RUNTIME() && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP) \
+  && !_CCCL_CUDA_COMPILER(CLANG, <, 22)
+// We have CDP, so host and device APIs can call kernels
+#  define _CCCL_HAS_CDP() 1
+#else // ^^^ has CDP ^^^ / vvv no CDP vvv
+// We don't have CDP, only host APIs can call kernels
+#  define _CCCL_HAS_CDP() 0
+#endif // ^^^ no CDP ^^^
+
+// When RDC is enabled, __launch_bounds__ cannot be used reliably. See #902.
+#if !_CCCL_HAS_RDC() && !defined(CCCL_DISABLE_LAUNCH_BOUNDS)
+#  define _CCCL_LAUNCH_BOUNDS(...) __launch_bounds__(__VA_ARGS__)
+#else // ^^^ has launch bounds attribute ^^^ / vvv no launch bounds attribute vvv
+#  define _CCCL_LAUNCH_BOUNDS(...)
+#endif // ^^^ no launch bounds attribute ^^^
+
+// __block_size__ attribute is available for nvcc and nvrtc 12.9+ for hopper+ architectures. For older nvcc and nvrtc,
+// we can fallback to __cluster_dims__ attribute only specifying the ncta per cluster.
+// This attribute should be used only for cluster launches.
+#if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __block_size__(_NTID, _NCTA_PER_CLUSTER)
+#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __cluster_dims__ _NCTA_PER_CLUSTER
+#else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)
+#endif // ^^^ no __block_size__ attribute ^^^
+
+#if _CCCL_HAS_CDP()
+#  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
+#    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
+#  endif // CUDA_FORCE_CDP1_IF_SUPPORTED
+#endif // _CCCL_HAS_CDP()
 
 #endif // __CCCL_CUDA_CAPABILITIES

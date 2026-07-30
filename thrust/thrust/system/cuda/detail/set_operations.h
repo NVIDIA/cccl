@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -51,6 +28,7 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__memory/uninitialized_array.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__bit/popcount.h>
@@ -220,13 +198,15 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
-  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-    NOMINAL_4B_ITEMS_PER_THREAD,
-    ::cuda::std::max(
-      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                        (::cuda::std::max) (1,
+                                            static_cast<int>(
+                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
+                                              / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -235,13 +215,15 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
-  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-    NOMINAL_4B_ITEMS_PER_THREAD,
-    ::cuda::std::max(
-      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                        (::cuda::std::max) (1,
+                                            static_cast<int>(
+                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
+                                              / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -304,7 +286,7 @@ struct SetOpAgent
 
       struct LoadStorage
       {
-        core::detail::uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
+        ::cuda::__uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
         union
         {
           // FIXME These don't appear to be used anywhere?
@@ -316,9 +298,9 @@ struct SetOpAgent
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
-          core::detail::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
+          ::cuda::__uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
 
-          core::detail::uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
+          ::cuda::__uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
         }; // anon union
       } load_storage; // struct LoadStorage
     }; // union TempStorage
@@ -438,9 +420,9 @@ struct SetOpAgent
       }
       __syncthreads();
 
-      for (int item = threadIdx.x; item < tile_output_count; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
       {
-        output[tile_output_prefix + item] = shared[item];
+        output[tile_output_prefix + item] = shared[item]; // NOLINT(bugprone-misplaced-widening-cast)
       }
     }
 
@@ -467,8 +449,6 @@ struct SetOpAgent
     template <bool IS_LAST_TILE>
     void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
-      using core::detail::uninitialized_array;
-
       ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
       ::cuda::std::pair<Size, Size> partition_end = partitions[tile_idx + 1];
 
@@ -618,7 +598,7 @@ struct SetOpAgent
 
       if (IS_LAST_TILE && threadIdx.x == 0)
       {
-        *output_count = tile_output_prefix + tile_output_count;
+        *output_count = static_cast<std::size_t>(tile_output_prefix) + tile_output_count;
       }
     }
 
@@ -656,8 +636,8 @@ struct SetOpAgent
         , partitions(partitions_)
         , output_count(output_count_)
     {
-      int tile_idx  = blockIdx.x;
-      int num_tiles = gridDim.x;
+      int tile_idx  = static_cast<int>(blockIdx.x);
+      int num_tiles = static_cast<int>(gridDim.x);
 
       if (tile_idx < num_tiles - 1)
       {
@@ -733,7 +713,7 @@ struct PartitionAgent
     int items_per_tile,
     char* /*shmem*/)
   {
-    Size partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
+    Size partition_idx = static_cast<Size>(blockDim.x) * blockIdx.x + threadIdx.x;
     if (partition_idx < num_partitions)
     {
       Size partition_at = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);

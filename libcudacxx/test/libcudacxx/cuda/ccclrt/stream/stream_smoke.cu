@@ -125,6 +125,57 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
   CCCLRT_REQUIRE(stream_ref_cudart.device() == *std::prev(cuda::devices.end()));
 }
 
+C2H_CCCLRT_TEST("Stream construction uses the explicit device", "[stream][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  auto stream = [&]() {
+    cuda::__ensure_current_context guard(current_device);
+    return cuda::stream{explicit_device};
+  }();
+
+  CCCLRT_REQUIRE(stream.device() == explicit_device);
+}
+
+C2H_CCCLRT_TEST("Stream dependency uses the explicit stream device", "[stream][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  cuda::stream waiter{explicit_device};
+  cuda::stream waitee{explicit_device};
+
+  ::test::pinned<int> value(0);
+  ::cuda::atomic_ref atomic_value(*value);
+
+  ::test::launch_kernel_single_thread(waitee, ::test::spin_until_80{}, value.get());
+  ::test::launch_kernel_single_thread(waitee, ::test::assign_42{}, value.get());
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    waiter.wait(waitee);
+  }
+
+  ::test::launch_kernel_single_thread(waiter, ::test::verify_42{}, value.get());
+  CCCLRT_REQUIRE(atomic_value.load() != 42);
+  CCCLRT_REQUIRE(!waiter.is_done());
+
+  atomic_value.store(80);
+  waiter.sync();
+  waitee.sync();
+}
+
 C2H_CCCLRT_TEST("Stream ID", "[stream]")
 {
   STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cuda::stream_id>>);
@@ -138,11 +189,20 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
   auto id2 = stream2.id();
 
   // Test that different streams have different IDs
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CCCLRT_REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
   CCCLRT_REQUIRE(id1 != id2);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   // Test that the same stream returns the same ID when called multiple times
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CCCLRT_REQUIRE(cuda::std::to_underlying(stream1.id()) == cuda::std::to_underlying(id1));
+  CCCLRT_REQUIRE(cuda::std::to_underlying(stream2.id()) == cuda::std::to_underlying(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
   CCCLRT_REQUIRE(stream1.id() == id1);
   CCCLRT_REQUIRE(stream2.id() == id2);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   {
     // Test that stream_ref also supports id()
@@ -151,8 +211,13 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     cuda::stream_ref ref1(::cudaStream_t{});
     cuda::stream_ref ref2(stream1);
 
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+    CCCLRT_REQUIRE(cuda::std::to_underlying(ref1.id()) != cuda::std::to_underlying(ref2.id()));
+    CCCLRT_REQUIRE(cuda::std::to_underlying(ref2.id()) == cuda::std::to_underlying(id1));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
     CCCLRT_REQUIRE(ref1.id() != ref2.id());
     CCCLRT_REQUIRE(ref2.id() == id1);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
   }
 }
 
@@ -166,12 +231,12 @@ C2H_CCCLRT_TEST("Invalid stream", "[stream]")
   STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::invalid_stream_t, cuda::stream_ref>);
   {
     cuda::stream_ref stream{cuda::invalid_stream};
-    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull));
+    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull)); // NOLINT(performance-no-int-to-ptr)
   }
 
   // 3. Test stream_ref comparisons
   {
-    cuda::stream_ref valid_stream{(cudaStream_t) (123ull)};
+    cuda::stream_ref valid_stream{(cudaStream_t) (123ull)}; // NOLINT(performance-no-int-to-ptr)
     cuda::stream_ref invalid_stream{cuda::invalid_stream};
 
     CCCLRT_REQUIRE(!(valid_stream == cuda::invalid_stream));

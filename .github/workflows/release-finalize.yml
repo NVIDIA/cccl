@@ -54,7 +54,7 @@ jobs:
       next_full_version: ${{ steps.prepare.outputs.next_full_version }}
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Prepare environment
         id: prepare
@@ -234,7 +234,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create patch version PR
         uses: ./.github/actions/version-update

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 // <cuda/std/iterator>
 
 // back_insert_iterator
@@ -23,7 +26,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c)
+TEST_FUNC void test(C c)
 {
   cuda::std::back_insert_iterator<C> i(c);
   i = typename C::value_type();

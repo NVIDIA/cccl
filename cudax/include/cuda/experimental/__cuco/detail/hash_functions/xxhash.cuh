@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -42,10 +42,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#define _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -67,7 +67,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco
 {
 //! @brief A `_XXHash_32` hash function to hash the given argument on host and device.
 //!
@@ -88,14 +88,14 @@ private:
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_API constexpr _XXHash_32(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr _XXHash_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
     // explicit copy to avoid emitting a bunch of LDG.8 instructions
@@ -108,7 +108,7 @@ public:
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -121,7 +121,7 @@ private:
   //! @param __holder The input argument to hash in form of a byte holder
   //! @return The resulting hash value
   template <class _Holder>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::uint32_t __offset = 0;
     ::cuda::std::uint32_t __h32    = {};
@@ -181,7 +181,8 @@ private:
   //! @tparam _Extent The extent type
   //! @param __holder The input argument to hash in form of a span
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
+  __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
   {
     auto __bytes      = ::cuda::std::as_bytes(__keys).data();
     const auto __size = __keys.size_bytes();
@@ -205,9 +206,8 @@ private:
         // pipeline 4*4byte computations
         const auto __pipeline_offset = __offset / 4;
         ::cuda::static_for<4>([&](auto i) {
-          __v[i] +=
-            ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __pipeline_offset + i)
-            * __prime2;
+          __v[i] += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __pipeline_offset + i)
+                  * __prime2;
           __v[i] = ::cuda::std::rotl(__v[i], 13);
           __v[i] *= __prime1;
         });
@@ -229,8 +229,7 @@ private:
       _CCCL_PRAGMA_UNROLL(4)
       for (; __offset <= __size - 4; __offset += 4)
       {
-        __h32 += ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)
-               * __prime3;
+        __h32 += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4) * __prime3;
         __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
@@ -249,7 +248,8 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __finalize(::cuda::std::uint32_t __h) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
+  __finalize(::cuda::std::uint32_t __h) const noexcept
   {
     __h ^= __h >> 15;
     __h *= __prime2;
@@ -279,7 +279,7 @@ public:
   //! @brief Constructs a XXH64 hash function with the given `seed`.
   //!
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_API constexpr _XXHash_64(::cuda::std::uint64_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr _XXHash_64(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -287,7 +287,7 @@ public:
   //!
   //! @param _Key The input argument to hash
   //! @return The resulting hash value for `key`
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
   {
     if constexpr (sizeof(_Key) <= 16)
     {
@@ -306,7 +306,7 @@ public:
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -318,7 +318,8 @@ private:
   //! @tparam _Extent The extent type
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_API ::cuda::std::uint64_t __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
+  __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     auto __bytes      = ::cuda::std::as_bytes(__keys).data();
     const auto __size = __keys.size_bytes();
@@ -342,9 +343,8 @@ private:
         // pipeline 4*8byte computations
         const auto __pipeline_offset = __offset / 8;
         ::cuda::static_for<4>([&](auto i) {
-          __v[i] +=
-            ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint64_t>(__bytes, __pipeline_offset + i)
-            * __prime2;
+          __v[i] += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, __pipeline_offset + i)
+                  * __prime2;
           __v[i] = ::cuda::std::rotl(__v[i], 31);
           __v[i] *= __prime1;
         });
@@ -375,7 +375,7 @@ private:
       for (; __offset <= __size - 8; __offset += 8)
       {
         ::cuda::std::uint64_t __k1 =
-          ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
+          ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
         __k1 = ::cuda::std::rotl(__k1, 31) * __prime1;
         __h64 ^= __k1;
         __h64 = ::cuda::std::rotl(__h64, 27) * __prime1 + __prime4;
@@ -387,8 +387,7 @@ private:
     {
       for (; __offset <= __size - 4; __offset += 4)
       {
-        __h64 ^= (::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4))
-               * __prime1;
+        __h64 ^= (::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)) * __prime1;
         __h64 = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
       }
     }
@@ -408,7 +407,7 @@ private:
   }
 
   // avalanche helper
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t __finalize(std::uint64_t __h) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t __finalize(std::uint64_t __h) const noexcept
   {
     __h ^= __h >> 33;
     __h *= __prime2;
@@ -420,8 +419,8 @@ private:
 
   ::cuda::std::uint64_t __seed_;
 };
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#endif // _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH

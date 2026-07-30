@@ -17,17 +17,17 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivially_move_constructible()
+TEST_FUNC void test_is_trivially_move_constructible()
 {
-  static_assert(cuda::std::is_trivially_move_constructible<T>::value, "");
-  static_assert(cuda::std::is_trivially_move_constructible_v<T>, "");
+  static_assert(cuda::std::is_trivially_move_constructible<T>::value);
+  static_assert(cuda::std::is_trivially_move_constructible_v<T>);
 }
 
 template <class T>
-__host__ __device__ void test_has_not_trivial_move_constructor()
+TEST_FUNC void test_has_not_trivial_move_constructor()
 {
-  static_assert(!cuda::std::is_trivially_move_constructible<T>::value, "");
-  static_assert(!cuda::std::is_trivially_move_constructible_v<T>, "");
+  static_assert(!cuda::std::is_trivially_move_constructible<T>::value);
+  static_assert(!cuda::std::is_trivially_move_constructible_v<T>);
 }
 
 class Empty
@@ -36,7 +36,7 @@ class Empty
 class NotEmpty
 {
 public:
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -50,17 +50,17 @@ struct bit_zero
 class Abstract
 {
 public:
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 struct A
 {
-  __host__ __device__ A(const A&);
+  TEST_FUNC A(const A&);
 };
 
 struct MoveOnly1
 {
-  __host__ __device__ MoveOnly1(MoveOnly1&&);
+  TEST_FUNC MoveOnly1(MoveOnly1&&);
 };
 
 struct MoveOnly2
@@ -83,8 +83,8 @@ int main(int, char**)
   test_is_trivially_move_constructible<const int*>();
   test_is_trivially_move_constructible<bit_zero>();
 
-  static_assert(!cuda::std::is_trivially_move_constructible<MoveOnly1>::value, "");
-  static_assert(cuda::std::is_trivially_move_constructible<MoveOnly2>::value, "");
+  static_assert(!cuda::std::is_trivially_move_constructible<MoveOnly1>::value);
+  static_assert(cuda::std::is_trivially_move_constructible<MoveOnly2>::value);
 
   return 0;
 }

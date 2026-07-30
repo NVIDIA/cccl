@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -22,10 +25,10 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_exp(T val)
+TEST_FUNC void test_exp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::exp(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::exp(T{})), ret>);
 
   [[maybe_unused]] const T euler = T(2.718281828459045);
   assert(eq(cuda::std::exp(T(-0.0)), T(1.0)));
@@ -52,10 +55,10 @@ __host__ __device__ void test_exp(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_exp2(T val)
+TEST_FUNC void test_exp2(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::exp2(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::exp2(T{})), ret>);
 
   assert(eq(cuda::std::exp2(val), T(2.0)));
   assert(eq(cuda::std::exp2(val * T(4)), T(16.0)));
@@ -86,10 +89,10 @@ __host__ __device__ void test_exp2(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_expm1(T val)
+TEST_FUNC void test_expm1(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::expm1(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::expm1(T{})), ret>);
 
   const T eulerm1 = T(1.718281828459045);
   assert(is_about(T(cuda::std::expm1(val)), eulerm1));
@@ -119,10 +122,10 @@ __host__ __device__ void test_expm1(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_frexp(T val)
+TEST_FUNC void test_frexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::frexp(T{}, nullptr)), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::frexp(T{}, nullptr)), ret>);
 
   int exponent = -1;
   assert(eq(cuda::std::frexp(T(0.0), &exponent), T(0.0)));
@@ -187,10 +190,10 @@ __host__ __device__ void test_frexp(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_ldexp(T val)
+TEST_FUNC void test_ldexp(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::ldexp(T{}, int{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ldexp(T{}, int{})), ret>);
 
   assert(eq(cuda::std::ldexp(T(0.0), 800), T(0.0)));
   assert(eq(cuda::std::ldexp(T(-0.0), 800), T(0.0)));
@@ -233,10 +236,10 @@ __host__ __device__ void test_ldexp(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_scalbln(T val)
+TEST_FUNC void test_scalbln(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::scalbln(T{}, long{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::scalbln(T{}, long{})), ret>);
 
   assert(eq(cuda::std::scalbln(T(0.0), 800), T(0.0)));
   assert(eq(cuda::std::scalbln(T(-0.0), 800), T(0.0)));
@@ -279,10 +282,10 @@ __host__ __device__ void test_scalbln(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_scalbn(T val)
+TEST_FUNC void test_scalbn(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::scalbn(T{}, int{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::scalbn(T{}, int{})), ret>);
 
   assert(eq(cuda::std::scalbn(T(0.0), 800), T(0.0)));
   assert(eq(cuda::std::scalbn(T(-0.0), 800), T(0.0)));
@@ -325,10 +328,10 @@ __host__ __device__ void test_scalbn(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_pow(T val)
+TEST_FUNC void test_pow(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::pow(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::pow(T{}, T{})), ret>);
 
   assert(eq(cuda::std::pow(T(2.0), T(10.0)), T(1024.0)));
   assert(eq(cuda::std::pow(val, cuda::std::numeric_limits<T>::infinity()), val));
@@ -385,7 +388,7 @@ __host__ __device__ void test_pow(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_exp<T>(val);
   test_exp2<T>(val);
@@ -397,7 +400,7 @@ __host__ __device__ void test(const T val)
   test_pow<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

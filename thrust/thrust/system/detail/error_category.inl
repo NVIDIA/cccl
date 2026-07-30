@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -77,14 +64,14 @@ namespace detail
 class generic_error_category : public error_category
 {
 public:
-  inline generic_error_category() {}
+  inline generic_error_category() = default;
 
-  inline virtual const char* name() const
+  inline const char* name() const override
   {
     return "generic";
   }
 
-  inline virtual std::string message(int ev) const
+  inline std::string message(int ev) const override
   {
     static const std::string unknown_err("Unknown error");
 
@@ -101,19 +88,19 @@ public:
 class system_error_category : public error_category
 {
 public:
-  inline system_error_category() {}
+  inline system_error_category() = default;
 
-  inline virtual const char* name() const
+  inline const char* name() const override
   {
     return "system";
   }
 
-  inline virtual std::string message(int ev) const
+  inline std::string message(int ev) const override
   {
     return generic_category().message(ev);
   }
 
-  inline virtual error_condition default_error_condition(int ev) const
+  inline error_condition default_error_condition(int ev) const override
   {
     using namespace errc;
 

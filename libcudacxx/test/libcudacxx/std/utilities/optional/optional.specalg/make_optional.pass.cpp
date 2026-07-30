@@ -37,7 +37,7 @@ int main(int, char**)
   {
     constexpr auto opt = cuda::std::make_optional(2);
     static_assert(cuda::std::is_same_v<decltype(opt), const cuda::std::optional<int>>);
-    static_assert(opt.value() == 2, "");
+    static_assert(opt.value() == 2);
   }
 
   {

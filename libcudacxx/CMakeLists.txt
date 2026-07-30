@@ -19,7 +19,7 @@ if (libcudacxx_ENABLE_CODEGEN)
   add_subdirectory(codegen)
 endif()
 
-set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
+list(PREPEND CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
 set(LLVM_PATH "${libcudacxx_SOURCE_DIR}" CACHE STRING "" FORCE)
 
 # Configuration options.
@@ -42,4 +42,8 @@ if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
   include(cmake/LibcudacxxPublicHeaderTestingHost.cmake)
 
   add_subdirectory(test)
+endif()
+
+if (CCCL_ENABLE_BENCHMARKS)
+  add_subdirectory(benchmarks)
 endif()

@@ -22,8 +22,14 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T>
-__host__ __device__ constexpr void test_copysign(const T mag, const T sign, bool expected)
+TEST_FUNC constexpr void test_copysign(const T mag, const T sign, bool expected)
 {
   const auto result = cuda::std::copysign(mag, sign);
   assert(cuda::std::signbit(result) == expected);
@@ -45,7 +51,7 @@ __host__ __device__ constexpr void test_copysign(const T mag, const T sign, bool
 }
 
 template <class T>
-__host__ __device__ constexpr void test_copysign(const T pos)
+TEST_FUNC constexpr void test_copysign(const T pos)
 {
   using Result = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
 
@@ -78,7 +84,7 @@ __host__ __device__ constexpr void test_copysign(const T pos)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type(float val)
+TEST_FUNC constexpr void test_type(float val)
 {
   if constexpr (cuda::std::is_integral_v<T>)
   {
@@ -128,7 +134,7 @@ __host__ __device__ constexpr void test_type(float val)
   }
 }
 
-__host__ __device__ constexpr bool test(float val)
+TEST_FUNC constexpr bool test(float val)
 {
   test_type<float>(val);
   test_type<double>(val);
@@ -159,6 +165,9 @@ __host__ __device__ constexpr bool test(float val)
 #if _CCCL_HAS_NVFP4_E2M1()
   test_type<__nv_fp4_e2m1>(val);
 #endif // _CCCL_HAS_NVFP4_E2M1
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>(val);
+#endif // _CCCL_HAS_FLOAT128()
 
   test_type<signed char>(val);
   test_type<unsigned char>(val);
@@ -179,7 +188,7 @@ __host__ __device__ constexpr bool test(float val)
 }
 
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-__host__ __device__ constexpr bool test_constexpr(float val)
+TEST_FUNC constexpr bool test_constexpr(float val)
 {
   test_type<float>(val);
   test_type<double>(val);

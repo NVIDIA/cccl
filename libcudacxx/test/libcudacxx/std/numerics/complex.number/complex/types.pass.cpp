@@ -13,7 +13,7 @@
 // class complex
 // {
 // public:
-//   typedef T value_type;
+//   using value_type = T;
 //   ...
 // };
 
@@ -23,10 +23,10 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  typedef cuda::std::complex<T> C;
-  static_assert((cuda::std::is_same<typename C::value_type, T>::value), "");
+  using C = cuda::std::complex<T>;
+  static_assert((cuda::std::is_same<typename C::value_type, T>::value));
 }
 
 int main(int, char**)
@@ -36,12 +36,12 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

@@ -10,7 +10,8 @@
 
 /**
  * @file
- * @brief This test ensures that a task can access a logical data with a const qualifier.
+ * @brief This test ensures that read() can be called on const logical_data
+ *        (typed and untyped).
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -66,6 +67,12 @@ void read_only_access(context& ctx, const foo& f)
   };
 }
 
+void read_only_access_untyped(const logical_data_untyped& ld)
+{
+  auto dep = ld.read();
+  (void) dep;
+}
+
 int main()
 {
   context ctx;
@@ -78,6 +85,9 @@ int main()
   B.ensure(ctx, 42);
 
   read_only_access(ctx, A);
+
+  const logical_data_untyped& ld_untyped = A.l;
+  read_only_access_untyped(ld_untyped);
 
   ctx.finalize();
 }

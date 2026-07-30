@@ -20,8 +20,11 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/grid/grid_even_share.cuh>
+#include <cub/util_arch.cuh>
 
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -39,9 +42,6 @@ namespace detail::radix_sort
 /**
  * @brief Upsweep digit-counting kernel entry point (multi-block).
  *        Computes privatized digit histograms, one per block.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
  *
  * @tparam ALT_DIGIT_BITS
  *   Whether or not to use the alternate (lower-bits) policy
@@ -74,36 +74,39 @@ namespace detail::radix_sort
  * @param[in] even_share
  *   Even-share descriptor for mapan equal number of tiles onto each thread block
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           bool ALT_DIGIT_BITS,
           SortOrder Order,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS)
-                                       : int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
-    const KeyT* d_keys,
-    OffsetT* d_spine,
-    OffsetT /*num_items*/,
-    int current_bit,
-    int num_bits,
+__launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsweep.threads_per_block
+                                     : current_policy<PolicySelector>().upsweep.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
+    const KeyT* const d_keys,
+    OffsetT* const d_spine,
+    const OffsetT /*num_items*/,
+    const int current_bit,
+    const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
+    const DecomposerT decomposer = {})
 {
-  using ActiveUpsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
-
-  using ActiveDownsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+  static constexpr RadixSortPolicy policy                       = current_policy<PolicySelector>();
+  static constexpr RadixSortUpsweepPolicy active_upsweep_policy = ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
+  static constexpr RadixSortDownsweepPolicy active_downsweep_policy =
+    ALT_DIGIT_BITS ? policy.alt_downsweep : policy.downsweep;
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                     ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD);
+    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
+
+  using ActiveUpsweepPolicyT = detail::agent_radix_sort_upsweep_policy<
+    active_upsweep_policy.threads_per_block,
+    active_upsweep_policy.items_per_thread,
+    void,
+    active_upsweep_policy.load_modifier,
+    active_upsweep_policy.radix_bits,
+    NoScaling<active_upsweep_policy.threads_per_block, active_upsweep_policy.items_per_thread>>;
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
   using AgentRadixSortUpsweepT =
@@ -129,9 +132,6 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
  * @brief Spine scan kernel entry point (single-block).
  *        Computes an exclusive prefix sum over the privatized digit histograms
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -142,19 +142,26 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
  * @param[in] num_counts
  *   Total number of bin-counts
  */
-template <typename ChainedPolicyT, typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* d_spine, int num_counts)
+template <typename PolicySelector, typename OffsetT>
+__launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_block, 1)
+  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* const d_spine, const int num_counts)
 {
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>().scan;
+  static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
+  static constexpr ScanLookbackPolicy policy = active_policy.lookback;
+  using ScanPolicy                           = agent_scan_policy<
+                              0,
+                              0,
+                              void,
+                              policy.load_algorithm,
+                              policy.load_modifier,
+                              policy.store_algorithm,
+                              policy.scan_algorithm,
+                              NoScaling<policy.threads_per_block, policy.items_per_thread>,
+                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+
   // Parameterize the AgentScan type for the current configuration
-  using AgentScanT =
-    scan::AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
-                    OffsetT*,
-                    OffsetT*,
-                    ::cuda::std::plus<>,
-                    OffsetT,
-                    OffsetT,
-                    OffsetT>;
+  using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
 
   // Shared memory storage
   __shared__ typename AgentScanT::TempStorage temp_storage;
@@ -181,9 +188,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 /**
  * @brief Downsweep pass kernel entry point (multi-block).
  *        Scatters keys (and values) into corresponding bins for the current digit place.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
  *
  * @tparam ALT_DIGIT_BITS
  *   Whether or not to use the alternate (lower-bits) policy
@@ -228,40 +232,47 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
  * @param[in] even_share
  *   Even-share descriptor for mapan equal number of tiles onto each thread block
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           bool ALT_DIGIT_BITS,
           SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
-                                       : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    OffsetT* d_spine,
-    OffsetT num_items,
-    int current_bit,
-    int num_bits,
+__launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_downsweep.threads_per_block
+                                     : current_policy<PolicySelector>().downsweep.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
+    const KeyT* const d_keys_in,
+    KeyT* const d_keys_out,
+    const ValueT* const d_values_in,
+    ValueT* const d_values_out,
+    OffsetT* const d_spine,
+    const OffsetT num_items,
+    const int current_bit,
+    const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
+    const DecomposerT decomposer = {})
 {
-  using ActiveUpsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+  static constexpr RadixSortPolicy policy = current_policy<PolicySelector>();
 
-  using ActiveDownsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+  static constexpr RadixSortUpsweepPolicy active_upsweep_policy = ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
+  static constexpr RadixSortDownsweepPolicy active_downsweep_policy =
+    ALT_DIGIT_BITS ? policy.alt_downsweep : policy.downsweep;
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                     ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD);
+    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
+
+  using ActiveDownsweepPolicyT = detail::agent_radix_sort_downsweep_policy<
+    active_downsweep_policy.threads_per_block,
+    active_downsweep_policy.items_per_thread,
+    void,
+    active_downsweep_policy.load_algorithm,
+    active_downsweep_policy.load_modifier,
+    active_downsweep_policy.rank_algorithm,
+    active_downsweep_policy.scan_algorithm,
+    active_downsweep_policy.radix_bits,
+    NoScaling<active_downsweep_policy.threads_per_block, active_downsweep_policy.items_per_thread>>;
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
   using AgentRadixSortDownsweepT = radix_sort::
@@ -282,9 +293,6 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
 /**
  * @brief Single pass kernel entry point (single-block).
  *        Fully sorts a tile of input.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
  *
  * @tparam SortOrder
  *   Whether or not to use the alternate (lower-bits) policy
@@ -319,27 +327,28 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
  * @param[in] end_bit
  *   The past-the-end (most-significant) bit index needed for key comparison
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
+__launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block, 1)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
+    const KeyT* const d_keys_in,
+    KeyT* const d_keys_out,
+    const ValueT* const d_values_in,
+    ValueT* const d_values_out,
     OffsetT num_items,
-    int current_bit,
-    int end_bit,
-    DecomposerT decomposer = {})
+    const int current_bit,
+    const int end_bit,
+    const DecomposerT decomposer = {})
 {
   // Constants
-  static constexpr int BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = ChainedPolicyT::ActivePolicy::SingleTilePolicy::ITEMS_PER_THREAD;
-  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr RadixSortPolicy policy = current_policy<PolicySelector>();
+  static constexpr int BLOCK_THREADS      = policy.single_tile.threads_per_block;
+  static constexpr int ITEMS_PER_THREAD   = policy.single_tile.items_per_thread;
+  static constexpr bool KEYS_ONLY         = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // BlockRadixSort type
   using BlockRadixSortT =
@@ -347,17 +356,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
                    BLOCK_THREADS,
                    ITEMS_PER_THREAD,
                    ValueT,
-                   ChainedPolicyT::ActivePolicy::SingleTilePolicy::RADIX_BITS,
-                   (ChainedPolicyT::ActivePolicy::SingleTilePolicy::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
-                   ChainedPolicyT::ActivePolicy::SingleTilePolicy::SCAN_ALGORITHM>;
+                   policy.single_tile.radix_bits,
+                   (policy.single_tile.rank_algorithm == RADIX_RANK_MEMOIZE),
+                   policy.single_tile.scan_algorithm>;
 
   // BlockLoad type (keys)
-  using BlockLoadKeys =
-    BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>;
+  using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
 
   // BlockLoad type (values)
-  using BlockLoadValues =
-    BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>;
+  using BlockLoadValues = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
 
   // Unsigned word for key bits
   using traits           = detail::radix::traits_t<KeyT>;
@@ -392,7 +399,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   {
     // Register pressure work-around: moving num_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    num_items = ShuffleIndex<warp_threads>(num_items, 0, 0xffffffff);
+    num_items = ::cuda::device::warp_shuffle_idx(num_items, 0);
 
     BlockLoadValues(temp_storage.load_values).Load(d_values_in, values, num_items);
 
@@ -437,23 +444,58 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
 /**
  * Histogram kernel
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
-  OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) void DeviceRadixSortHistogramKernel(
+  OffsetT* const d_bins_out,
+  const KeyT* const d_keys_in,
+  const OffsetT num_items,
+  const int start_bit,
+  const int end_bit,
+  const DecomposerT decomposer = {})
 {
-  using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
+  static constexpr RadixSortHistogramPolicy policy = current_policy<PolicySelector>().histogram;
+
+  using HistogramPolicyT = detail::agent_radix_sort_histogram_policy<
+    policy.threads_per_block,
+    policy.items_per_thread,
+    policy.private_partitions,
+    void,
+    policy.radix_bits>;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
 }
 
-template <typename ChainedPolicyT,
+template <typename PolicySelector, typename InitT0, typename InitT1>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
+  InitT0* const d_items0, const size_t num_items0, InitT1* const d_items1, const size_t num_items1)
+{
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
+  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+       idx < ::cuda::std::max(num_items0, num_items1);
+       idx += stride)
+  {
+    if (idx < num_items0)
+    {
+      d_items0[idx] = 0;
+    }
+    if (idx < num_items1)
+    {
+      d_items1[idx] = 0;
+    }
+  }
+}
+
+template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -461,22 +503,33 @@ template <typename ChainedPolicyT,
           typename PortionOffsetT,
           typename AtomicOffsetT = PortionOffsetT,
           typename DecomposerT   = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().onesweep.threads_per_block)
   DeviceRadixSortOnesweepKernel(
-    AtomicOffsetT* d_lookback,
-    AtomicOffsetT* d_ctrs,
-    OffsetT* d_bins_out,
-    const OffsetT* d_bins_in,
-    KeyT* d_keys_out,
-    const KeyT* d_keys_in,
-    ValueT* d_values_out,
-    const ValueT* d_values_in,
-    PortionOffsetT num_items,
-    int current_bit,
-    int num_bits,
-    DecomposerT decomposer = {})
+    AtomicOffsetT* const d_lookback,
+    AtomicOffsetT* const d_ctrs,
+    OffsetT* const d_bins_out,
+    const OffsetT* const d_bins_in,
+    KeyT* const d_keys_out,
+    const KeyT* const d_keys_in,
+    ValueT* const d_values_out,
+    const ValueT* const d_values_in,
+    const PortionOffsetT num_items,
+    const int current_bit,
+    const int num_bits,
+    const DecomposerT decomposer = {})
 {
-  using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
+  static constexpr RadixSortOnesweepPolicy policy = current_policy<PolicySelector>().onesweep;
+  using OnesweepPolicyT                           = detail::agent_radix_sort_onesweep_policy<
+                              0,
+                              0,
+                              void,
+                              policy.rank_private_partitions,
+                              policy.rank_algorithm,
+                              policy.scan_algorithm,
+                              policy.store_algorithm,
+                              policy.radix_bits,
+                              NoScaling<policy.threads_per_block, policy.items_per_thread>>;
+
   using AgentT =
     AgentRadixSortOnesweep<OnesweepPolicyT,
                            Order == SortOrder::Descending,
@@ -507,16 +560,19 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
 /**
  * Exclusive sum kernel
  */
-template <typename ChainedPolicyT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
+template <typename PolicySelector, typename OffsetT>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_bins)
 {
-  using ExclusiveSumPolicyT     = typename ChainedPolicyT::ActivePolicy::ExclusiveSumPolicy;
-  constexpr int RADIX_BITS      = ExclusiveSumPolicyT::RADIX_BITS;
-  constexpr int RADIX_DIGITS    = 1 << RADIX_BITS;
-  constexpr int BLOCK_THREADS   = ExclusiveSumPolicyT::BLOCK_THREADS;
-  constexpr int BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
-  using BlockScan               = cub::BlockScan<OffsetT, BLOCK_THREADS>;
+  static constexpr RadixSortExclusiveSumPolicy policy = current_policy<PolicySelector>().exclusive_sum;
+  constexpr int RADIX_BITS                            = policy.radix_bits;
+  constexpr int RADIX_DIGITS                          = 1 << RADIX_BITS;
+  constexpr int BLOCK_THREADS                         = policy.threads_per_block;
+  constexpr int BINS_PER_THREAD                       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  using BlockScan                                     = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Make sure the histograms are done
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   // load the bins
   OffsetT bins[BINS_PER_THREAD];

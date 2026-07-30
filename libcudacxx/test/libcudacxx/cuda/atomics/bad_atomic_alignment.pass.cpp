@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -24,7 +27,7 @@
 template <template <typename, typename> class Selector>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     {
       struct key
@@ -32,7 +35,7 @@ struct TestFn
         int32_t a;
         int32_t b;
       };
-      typedef cuda::std::atomic<key> A;
+      using A = cuda::std::atomic<key>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       cuda::std::atomic_init(&t, key{1, 2});
@@ -49,7 +52,7 @@ struct TestFn
         int32_t a;
         int32_t b;
       };
-      typedef cuda::std::atomic<key> A;
+      using A = cuda::std::atomic<key>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       cuda::std::atomic_init(&t, key{1, 2});

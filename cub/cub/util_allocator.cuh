@@ -29,11 +29,11 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__host_stdlib/math.h>
+
 #include <map>
 #include <mutex>
 #include <set>
-
-#include <math.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -131,8 +131,8 @@ struct CachingDeviceAllocator
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
-        , associated_stream(0)
-        , ready_event(0)
+        , associated_stream(nullptr)
+        , ready_event(nullptr)
     {}
 
     // Constructor (suitable for searching maps for a range of suitable blocks, given a device)
@@ -141,8 +141,8 @@ struct CachingDeviceAllocator
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
-        , associated_stream(0)
-        , ready_event(0)
+        , associated_stream(nullptr)
+        , ready_event(nullptr)
     {}
 
     // Comparison functor for comparing device pointers
@@ -305,9 +305,6 @@ struct CachingDeviceAllocator
    * @param skip_cleanup
    *   Whether or not to skip a call to @p FreeAllCached() when the destructor is called (default
    *   is to deallocate)
-   *
-   * @param debug
-   *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
    */
   CachingDeviceAllocator(
     unsigned int bin_growth,
@@ -398,7 +395,7 @@ struct CachingDeviceAllocator
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
+  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     *d_ptr                = nullptr;
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
@@ -658,7 +655,7 @@ struct CachingDeviceAllocator
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
+  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     return DeviceAllocate(INVALID_DEVICE_ORDINAL, d_ptr, bytes, active_stream);
   }

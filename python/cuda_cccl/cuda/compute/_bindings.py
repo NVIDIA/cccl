@@ -22,6 +22,8 @@
 #    (e.g. cuda/cccl/parallel/experimental/cu13/_bindings_impl.cp312-win_amd64.pyd)
 #    to the current process's DLL search path using `os.add_dll_directory`.
 
+from __future__ import annotations
+
 import importlib
 import os
 
@@ -69,11 +71,17 @@ if os.name == "nt":
             except Exception:
                 pass
 
+_BINDINGS_AVAILABLE = False
+
 try:
     bindings_module = importlib.import_module(module_suffix, __package__)
     # Import all symbols from the module
     globals().update(bindings_module.__dict__)
+    _BINDINGS_AVAILABLE = True
 except ImportError as e:
-    raise ImportError(
-        f"Failed to import CUDA CCCL bindings for CUDA {cuda_version}. "
-    ) from e
+    import warnings
+
+    warnings.warn(
+        f"CUDA CCCL bindings for CUDA {cuda_version} not available: {e}",
+        RuntimeWarning,
+    )

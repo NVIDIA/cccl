@@ -23,7 +23,7 @@
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
@@ -91,7 +91,7 @@ public:                                                                         
                                                                                  \
   template <class... _Args>                                                      \
   _CCCL_API explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-      : __head_(in_place, ::cuda::std::forward<_Args>(__args)...)                \
+      : __head_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)            \
   {}                                                                             \
                                                                                  \
   template <size_t _Ip, class... _Args>                                          \
@@ -300,7 +300,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-        in_place,
+        in_place_t{},
         __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
@@ -316,7 +316,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-        in_place,
+        in_place_t{},
         __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
@@ -332,7 +332,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place_t{}, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
@@ -377,7 +377,7 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _CCCL_API __move_constructor(__move_constructor&& __that) noexcept(
-    __all<is_nothrow_move_constructible_v<_Types>...>::value) : __move_constructor(__valueless_t{}) {
+    __fold_and_v<is_nothrow_move_constructible_v<_Types>...>) : __move_constructor(__valueless_t{}) {
     this->__generic_construct(*this, ::cuda::std::move(__that));
   });
 
@@ -548,7 +548,7 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _Trait::_Available,
   _CCCL_API __move_assignment&
   operator=(__move_assignment&& __that) noexcept(
-    __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>::value) {
+    __fold_and_v<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>) {
     this->__generic_assign(::cuda::std::move(__that));
     return *this;
   });

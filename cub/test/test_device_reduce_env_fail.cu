@@ -19,6 +19,6 @@ int main()
   auto error = cub::DeviceReduce::Reduce(ptr, ptr, 0, cuda::std::plus<>{}, 0, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceReduce::Reduce failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceReduce::Reduce failed with status: " << error << '\n';
   }
 }

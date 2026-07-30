@@ -15,12 +15,14 @@
 #include "test_macros.h"
 
 template <class Mapping>
-__host__ __device__ void test(Mapping map, size_t expected_size)
+TEST_FUNC void test(Mapping map, [[maybe_unused]] size_t expected_size)
 {
   assert(map.extents().extent(0) == 42);
   assert(map.extents().extent(1) == 1337);
   assert(map.extents().extent(2) == 7);
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   assert(sizeof(Mapping) == expected_size);
+#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 }
 
 template <class Mapping>

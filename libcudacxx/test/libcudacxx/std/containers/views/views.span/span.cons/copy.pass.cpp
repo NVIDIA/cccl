@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool doCopy(const T& rhs)
+TEST_FUNC constexpr bool doCopy(const T& rhs)
 {
   static_assert(noexcept(T{rhs}));
   T lhs{rhs};
@@ -28,7 +28,7 @@ struct A
 {};
 
 template <typename T>
-__host__ __device__ void testCV()
+TEST_FUNC void testCV()
 {
   int arr[] = {1, 2, 3};
   assert((doCopy(cuda::std::span<T>())));

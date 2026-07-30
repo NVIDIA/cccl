@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -99,7 +102,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ __noinline__ void do_test()
+TEST_FUNC __noinline__ void do_test()
 {
   Selector<T, constructor_initializer> sel;
   T& val = *sel.construct(T(0));
@@ -157,7 +160,7 @@ __host__ __device__ __noinline__ void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ __noinline__ void test()
+TEST_FUNC __noinline__ void test()
 {
   do_test<A, T, Selector>();
 }
@@ -165,7 +168,7 @@ __host__ __device__ __noinline__ void test()
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename> class Selector>
-__host__ __device__ void test_for_all_types()
+TEST_FUNC void test_for_all_types()
 {
   test<Atomic<int, Scope>, int, Selector>();
   test<Atomic<unsigned int, Scope>, unsigned int, Selector>();

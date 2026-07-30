@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+clang_tidy_args=()
+if test -n "${CCCL_CLANG_TIDY_ARGS:+x}"; then
+    mapfile -t clang_tidy_args < <(echo "${CCCL_CLANG_TIDY_ARGS}" | tr ' ' '\n' | sort -u)
+fi
+
+set -x
+
+"@CCCL_CLANG_TIDY@" \
+  --use-color \
+  --quiet \
+  --extra-arg='-Wno-error=unused-command-line-argument' \
+  --extra-arg='-D_CCCL_CLANG_TIDY_INVOKED=1' \
+  -p '@CMAKE_BINARY_DIR@' \
+  "${clang_tidy_args[@]}" \
+  "$@"

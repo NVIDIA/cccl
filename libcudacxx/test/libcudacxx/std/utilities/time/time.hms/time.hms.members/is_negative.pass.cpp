@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename Duration>
-__host__ __device__ constexpr bool check_neg(Duration d)
+TEST_FUNC constexpr bool check_neg(Duration d)
 {
   static_assert(
     cuda::std::is_same_v<bool, decltype(cuda::std::declval<cuda::std::chrono::hh_mm_ss<Duration>>().is_negative())>);
@@ -31,8 +31,8 @@ int main(int, char**)
 {
   using microfortnights = cuda::std::chrono::duration<int, cuda::std::ratio<756, 625>>;
 
-  static_assert(!check_neg(cuda::std::chrono::minutes(1)), "");
-  static_assert(check_neg(cuda::std::chrono::minutes(-1)), "");
+  static_assert(!check_neg(cuda::std::chrono::minutes(1)));
+  static_assert(check_neg(cuda::std::chrono::minutes(-1)));
 
   assert(!check_neg(cuda::std::chrono::seconds(5000)));
   assert(check_neg(cuda::std::chrono::seconds(-5000)));

@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -27,17 +31,17 @@ _CCCL_CONSTINIT cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime(nu
 struct NonDefaultDeleter
 {
   NonDefaultDeleter() = delete;
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   {
     using U1 = cuda::std::unique_ptr<VT>;
     using U2 = cuda::std::unique_ptr<VT, Deleter<VT>>;
-    static_assert(cuda::std::is_nothrow_constructible<U1, decltype(nullptr)>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U2, decltype(nullptr)>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U1, decltype(nullptr)>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U2, decltype(nullptr)>::value);
   }
   {
     cuda::std::unique_ptr<VT> p(nullptr);
@@ -56,12 +60,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
     using U = cuda::std::unique_ptr<VT, void (*)(void*)>;
-    static_assert(!cuda::std::is_constructible<U, decltype(nullptr)>::value, "");
+    static_assert(!cuda::std::is_constructible<U, decltype(nullptr)>::value);
   }
   { // the constructor does not participate in overload resolution when
     // the deleter is not default constructible
@@ -69,9 +73,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U1  = cuda::std::unique_ptr<VT, NonDefaultDeleter>;
     using U2  = cuda::std::unique_ptr<VT, Del&>;
     using U3  = cuda::std::unique_ptr<VT, Del const&>;
-    static_assert(!cuda::std::is_constructible<U1, decltype(nullptr)>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, decltype(nullptr)>::value, "");
-    static_assert(!cuda::std::is_constructible<U3, decltype(nullptr)>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, decltype(nullptr)>::value);
+    static_assert(!cuda::std::is_constructible<U2, decltype(nullptr)>::value);
+    static_assert(!cuda::std::is_constructible<U3, decltype(nullptr)>::value);
   }
 }
 
@@ -96,7 +100,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
 })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_basic<int>();

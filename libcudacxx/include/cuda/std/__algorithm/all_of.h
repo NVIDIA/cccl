@@ -28,14 +28,16 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
 [[nodiscard]] _CCCL_API constexpr bool all_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
+  bool __result = true;
   for (; __first != __last; ++__first)
   {
     if (!__pred(*__first))
     {
-      return false;
+      __result = false;
+      break;
     }
   }
-  return true;
+  return __result;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

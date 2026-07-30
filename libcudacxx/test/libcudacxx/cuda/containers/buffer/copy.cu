@@ -10,6 +10,8 @@
 
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -22,14 +24,6 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 template <class T1, class T2, class... PropertiesSuperSet, class... PropertiesSubset>
 constexpr bool is_matching_buffer(const cuda::buffer<T1, PropertiesSuperSet...>&,
                                   const cuda::buffer<T2, PropertiesSubset...>&) noexcept
@@ -40,15 +34,17 @@ constexpr bool is_matching_buffer(const cuda::buffer<T1, PropertiesSuperSet...>&
 
 C2H_CCCLRT_TEST("cuda::buffer make_buffer", "[container][buffer]", test_types)
 {
-  using TestT    = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::buffer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
   using T        = typename Buffer::value_type;
 
-  cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
 
-  using MatchingResource = typename extract_properties<TestT>::matching_resource;
+  cuda::stream stream{cuda::device_ref{0}};
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("Same resource and stream")
   {
@@ -235,6 +231,85 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, cuda::mr::host_accessible>);
+}
+
+C2H_CCCLRT_TEST("cuda::buffer make_buffer uses the explicit device", "[container][buffer][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+  cuda::stream explicit_device_stream{explicit_device};
+  cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+
+  {
+    cuda::__ensure_current_context guard{current_device};
+    auto resource = cuda::device_default_memory_pool(explicit_device);
+    cuda::device_buffer<int> source{explicit_device_stream, resource, input};
+    auto copy = cuda::make_buffer(explicit_device_stream, resource, source);
+
+    CCCLRT_CHECK(source.size() == input.size());
+    CCCLRT_CHECK(copy.size() == source.size());
+    check_allocation_device(source, explicit_device);
+    check_allocation_device(copy, explicit_device);
+    CCCLRT_CHECK(equal_range(source));
+    CCCLRT_CHECK(equal_range(copy));
+  }
+
+  explicit_device_stream.sync();
+}
+
+C2H_CCCLRT_TEST("cuda::buffer make_buffer copies between peer devices", "[container][buffer][multi_gpu]")
+{
+  // Cross-device copy coverage requires at least two GPUs.
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref source_device{0};
+  auto peers = source_device.peers();
+  // This test exercises direct peer memory access; non-peer topologies have no legal device-to-device path to cover.
+  if (peers.empty())
+  {
+    return;
+  }
+
+  cuda::device_ref destination_device = peers.front();
+  // Device buffers are allocated from stream-ordered memory pools.
+  if (!source_device.attribute(cuda::device_attributes::memory_pools_supported)
+      || !destination_device.attribute(cuda::device_attributes::memory_pools_supported))
+  {
+    return;
+  }
+
+  cuda::stream source_stream{source_device};
+  cuda::stream destination_stream{destination_device};
+  cuda::device_memory_pool source_pool{source_device};
+  cuda::device_memory_pool destination_pool{destination_device};
+  source_pool.enable_access_from(destination_device);
+  CCCLRT_REQUIRE(source_pool.is_accessible_from(destination_device));
+  auto source_resource      = source_pool.as_ref();
+  auto destination_resource = destination_pool.as_ref();
+
+  {
+    cuda::device_buffer<int> source{source_stream, source_resource, compare_data_initializer_list};
+    destination_stream.wait(source_stream);
+    auto copy = cuda::make_buffer(destination_stream, destination_resource, source);
+
+    CCCLRT_CHECK(source.size() == cuda::std::size(compare_data_initializer_list));
+    CCCLRT_CHECK(copy.size() == source.size());
+    check_allocation_device(source, source_device);
+    check_allocation_device(copy, destination_device);
+    CCCLRT_CHECK(equal_range(source));
+    CCCLRT_CHECK(equal_range(copy));
+  }
+
+  source_stream.sync();
+  destination_stream.sync();
 }
 
 C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")

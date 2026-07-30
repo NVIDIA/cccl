@@ -64,6 +64,7 @@ public:
   _CCCL_HIDE_FROM_ABI unexpected(const unexpected&) = default;
   _CCCL_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Error = _Err)
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Error>, unexpected> && !is_same_v<remove_cvref_t<_Error>, in_place_t>
@@ -71,6 +72,7 @@ public:
   _CCCL_API constexpr explicit unexpected(_Error&& __error) noexcept(is_nothrow_constructible_v<_Err, _Error>)
       : __unex_(::cuda::std::forward<_Error>(__error))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)

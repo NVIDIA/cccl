@@ -17,9 +17,9 @@ private:
 
   bool check_cuda_error(bool concise);
 
-  virtual bool post_test_smoke_check(const UnitTest& test, bool concise);
+  bool post_test_smoke_check(const UnitTest& test, bool concise) override;
 
-  virtual bool run_tests(const ArgumentSet& args, const ArgumentMap& kwargs);
+  bool run_tests(const ArgumentSet& args, const ArgumentMap& kwargs) override;
 };
 
 UnitTestDriver& driver_instance(thrust::system::cuda::tag);

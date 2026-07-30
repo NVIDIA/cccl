@@ -28,17 +28,17 @@ _CCCL_CONCEPT has_or_else =
   _CCCL_REQUIRES_EXPR((Opt, F), Opt&& opt, F&& f)((cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
 
 template <class T>
-__host__ __device__ cuda::std::optional<T> return_optional();
+TEST_FUNC cuda::std::optional<T> return_optional();
 
-static_assert(has_or_else<cuda::std::optional<int>&, decltype(return_optional<int>)>, "");
-static_assert(has_or_else<cuda::std::optional<int>&&, decltype(return_optional<int>)>, "");
-static_assert(!has_or_else<cuda::std::optional<MoveOnly>&, decltype(return_optional<MoveOnly>)>, "");
-static_assert(has_or_else<cuda::std::optional<MoveOnly>&&, decltype(return_optional<MoveOnly>)>, "");
-static_assert(!has_or_else<cuda::std::optional<NonMovable>&, decltype(return_optional<NonMovable>)>, "");
-static_assert(!has_or_else<cuda::std::optional<NonMovable>&&, decltype(return_optional<NonMovable>)>, "");
+static_assert(has_or_else<cuda::std::optional<int>&, decltype(return_optional<int>)>);
+static_assert(has_or_else<cuda::std::optional<int>&&, decltype(return_optional<int>)>);
+static_assert(!has_or_else<cuda::std::optional<MoveOnly>&, decltype(return_optional<MoveOnly>)>);
+static_assert(has_or_else<cuda::std::optional<MoveOnly>&&, decltype(return_optional<MoveOnly>)>);
+static_assert(!has_or_else<cuda::std::optional<NonMovable>&, decltype(return_optional<NonMovable>)>);
+static_assert(!has_or_else<cuda::std::optional<NonMovable>&&, decltype(return_optional<NonMovable>)>);
 
-__host__ __device__ cuda::std::optional<int> take_int(int);
-__host__ __device__ void take_int_return_void(int);
+TEST_FUNC cuda::std::optional<int> take_int(int);
+TEST_FUNC void take_int_return_void(int);
 
 // For some reason, MSVC handles the assertions above correctly in pre-C++20 modes, but... fails to fail these.
 // And it's not because the tested expressions are valid; no, they fail to compile, but something in the sfinae
@@ -56,16 +56,16 @@ struct has_or_else_war<T, F, decltype(cuda::std::declval<T>().or_else(cuda::std:
     : cuda::std::true_type
 {};
 
-static_assert(!has_or_else_war<cuda::std::optional<int>&, decltype(take_int)>::value, "");
-static_assert(!has_or_else_war<cuda::std::optional<int>&, decltype(take_int_return_void)>::value, "");
-static_assert(!has_or_else_war<cuda::std::optional<int>&, int>::value, "");
+static_assert(!has_or_else_war<cuda::std::optional<int>&, decltype(take_int)>::value);
+static_assert(!has_or_else_war<cuda::std::optional<int>&, decltype(take_int_return_void)>::value);
+static_assert(!has_or_else_war<cuda::std::optional<int>&, int>::value);
 #else
-static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int)>, "");
-static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int_return_void)>, "");
-static_assert(!has_or_else<cuda::std::optional<int>&, int>, "");
+static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int)>);
+static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int_return_void)>);
+static_assert(!has_or_else<cuda::std::optional<int>&, int>);
 #endif
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::optional<int> opt{};
@@ -95,7 +95,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test_nontrivial()
+TEST_FUNC constexpr bool test_nontrivial()
 {
   {
     cuda::std::optional<MoveOnly> opt{};
@@ -118,7 +118,7 @@ int main(int, char**)
 
   // GCC <9 incorrectly trips on the assertions in this, so disable it there
 #if !TEST_COMPILER(GCC, <, 10)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // !TEST_COMPILER(GCC, <, 11)
 #if TEST_STD_VER > 2017
 #  if defined(_CCCL_BUILTIN_ADDRESSOF)

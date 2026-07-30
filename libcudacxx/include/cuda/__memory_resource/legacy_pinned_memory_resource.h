@@ -24,12 +24,14 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/throw_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -38,9 +40,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
-//! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
+//! @note This memory resource will be deprecated in the future. For CUDA 12.9 and above, use
 //! `cuda::pinned_memory_resource` instead, which is the long-term replacement.
-class legacy_pinned_memory_resource
+class legacy_pinned_memory_resource : public memory_resource_base<legacy_pinned_memory_resource>
 {
 public:
   //! @brief Construct a new legacy_pinned_memory_resource.
@@ -63,9 +65,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "legacy_pinned_memory_resource::allocate_sync.");
+      _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync.");
     }
 
     ::cuda::__ensure_current_context __guard(__device_);
@@ -79,7 +79,7 @@ public:
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
-    const size_t,
+    [[maybe_unused]] const size_t __bytes,
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
@@ -90,7 +90,6 @@ public:
   }
 
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
-  //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
   [[nodiscard]] _CCCL_HOST_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
@@ -98,7 +97,6 @@ public:
   }
 #  if _CCCL_STD_VER <= 2017
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
-  //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
   [[nodiscard]] _CCCL_HOST_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
@@ -128,8 +126,8 @@ private:
   device_ref __device_{0};
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>);
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

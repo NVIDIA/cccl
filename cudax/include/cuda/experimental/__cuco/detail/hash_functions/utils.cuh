@@ -4,14 +4,14 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#define _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,13 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco
 {
 //! @brief Loads a chunk of type _Tp from a byte pointer at a given index, handling alignment
 //!
@@ -37,30 +38,33 @@ namespace cuda::experimental::cuco::__detail
 //! @param __index The index of the chunk to load
 //! @return The loaded chunk of type _Tp
 template <typename _Tp, typename _Extent>
-[[nodiscard]] _CCCL_API constexpr _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
 {
-  _Tp __chunk;
-
-  auto __ptr     = __bytes + __index * sizeof(_Tp);
-  auto __uintptr = reinterpret_cast<::cuda::std::uintptr_t>(__ptr);
-
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
 
-  if (alignof(_Tp) == 8 && ((__uintptr % 8) == 0))
+  const auto __ptr = __bytes + __index * sizeof(_Tp);
+
+  _Tp __chunk;
+  if constexpr (alignof(_Tp) == 8)
   {
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
+    if (::cuda::is_aligned(__ptr, 8))
+    {
+      ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
+      return __chunk;
+    }
   }
-  else if ((__uintptr % 4) == 0)
+
+  if (::cuda::is_aligned(__ptr, 4))
   {
     ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<4>(__ptr), sizeof(_Tp));
   }
-  else if ((__uintptr % 2) == 0)
+  else if (::cuda::is_aligned(__ptr, 2))
   {
     ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<2>(__ptr), sizeof(_Tp));
   }
   else
   {
-    ::cuda::std::memcpy(&__chunk, __bytes, sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
   }
   return __chunk;
 }
@@ -139,8 +143,8 @@ struct _Byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, tr
 
   _BlockT __blocks[__num_blocks];
 };
-}; // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#endif // _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH

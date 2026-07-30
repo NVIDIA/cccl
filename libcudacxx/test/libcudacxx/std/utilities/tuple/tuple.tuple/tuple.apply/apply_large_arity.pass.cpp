@@ -6,9 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-6
 // UNSUPPORTED: windows
-// We run out of heap space with windows
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
 
 // <cuda/std/tuple>
 
@@ -61,13 +62,13 @@ template <class Tp, cuda::std::size_t Size>
 using make_tuple_t = typename make_tuple_imp<Tp, cuda::std::make_index_sequence<Size>>::type;
 
 template <class... Types>
-__host__ __device__ bool test_apply_fn(Types...)
+TEST_FUNC bool test_apply_fn(Types...)
 {
   return true;
 }
 
 template <cuda::std::size_t Size>
-__host__ __device__ void test_all()
+TEST_FUNC void test_all()
 {
   using A      = cuda::std::array<int, Size>;
   using ConstA = cuda::std::array<int const, Size>;
@@ -114,7 +115,7 @@ __host__ __device__ void test_all()
 }
 
 template <cuda::std::size_t Size>
-__host__ __device__ void test_one()
+TEST_FUNC void test_one()
 {
   using A     = cuda::std::array<int, Size>;
   using Tuple = make_tuple_t<int, Size>;

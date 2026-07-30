@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -42,8 +19,10 @@
 
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
+#  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -89,81 +68,71 @@ template <typename Derived,
           typename ValOutputIt,
           typename BinaryPred,
           typename OffsetT>
-struct DispatchUniqueByKey
+THRUST_RUNTIME_FUNCTION cudaError_t unique_by_key_impl(
+  execution_policy<Derived>& policy,
+  KeyInputIt keys_first,
+  ValInputIt values_first,
+  KeyOutputIt keys_result,
+  ValOutputIt values_result,
+  BinaryPred binary_pred,
+  OffsetT num_items,
+  cudaStream_t stream,
+  ::cuda::std::pair<KeyOutputIt, ValOutputIt>& result_end)
 {
-  static cudaError_t THRUST_RUNTIME_FUNCTION dispatch(
-    execution_policy<Derived>& policy,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIt keys_in,
-    ValInputIt values_in,
-    KeyOutputIt keys_out,
-    ValOutputIt values_out,
-    OffsetT num_items,
-    BinaryPred binary_pred,
-    ::cuda::std::pair<KeyOutputIt, ValOutputIt>& result_end)
-  {
-    cudaError_t status         = cudaSuccess;
-    cudaStream_t stream        = cuda_cub::stream(policy);
-    size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
-    void* allocations[2]       = {nullptr, nullptr};
+  std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
+  void* allocations[2]            = {nullptr, nullptr};
 
-    // Query algorithm memory requirements
-    status = cub::DeviceSelect::UniqueByKey(
-      nullptr,
-      allocation_sizes[0],
-      keys_in,
-      values_in,
-      keys_out,
-      values_out,
-      static_cast<OffsetT*>(nullptr),
-      num_items,
-      binary_pred,
-      stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
+  thrust::detail::wrapped_function<BinaryPred, bool> wrapped_pred{binary_pred};
 
-    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    _CUDA_CUB_RET_IF_FAIL(status);
+  // Query temp storage
+  cudaError_t status = cub::DeviceSelect::UniqueByKey(
+    nullptr,
+    allocation_sizes[0],
+    keys_first,
+    values_first,
+    keys_result,
+    values_result,
+    static_cast<OffsetT*>(nullptr),
+    num_items,
+    wrapped_pred,
+    stream);
+  cuda_cub::throw_on_error(status, "unique_by_key: failed on 1st step");
 
-    // Return if we're only querying temporary storage requirements
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
+  size_t temp_storage_bytes = 0;
+  status = cub::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+  cuda_cub::throw_on_error(status, "unique_by_key: failed on temp storage query");
 
-    // Return for empty problems
-    if (num_items == 0)
-    {
-      result_end = ::cuda::std::make_pair(keys_out, values_out);
-      return status;
-    }
+  // Allocate temporary storage
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
+  void* temp_storage = static_cast<void*>(tmp.data().get());
 
-    // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+  status = cub::detail::alias_temporaries(temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  cuda_cub::throw_on_error(status, "unique_by_key: failed on temp storage alias");
 
-    // Run algorithm
-    status = cub::DeviceSelect::UniqueByKey(
-      allocations[0],
-      allocation_sizes[0],
-      keys_in,
-      values_in,
-      keys_out,
-      values_out,
-      d_num_selected_out,
-      num_items,
-      binary_pred,
-      stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
+  OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
-    // Get number of selected items
-    status = cuda_cub::synchronize(policy);
-    _CUDA_CUB_RET_IF_FAIL(status);
-    OffsetT num_selected = get_value(policy, d_num_selected_out);
+  // Run algorithm
+  status = cub::DeviceSelect::UniqueByKey(
+    allocations[0],
+    allocation_sizes[0],
+    keys_first,
+    values_first,
+    keys_result,
+    values_result,
+    d_num_selected_out,
+    num_items,
+    wrapped_pred,
+    stream);
+  cuda_cub::throw_on_error(status, "unique_by_key: failed on 2nd step");
 
-    result_end = ::cuda::std::make_pair(keys_out + num_selected, values_out + num_selected);
-    return status;
-  }
-};
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  cuda_cub::throw_on_error(status, "unique_by_key: failed to synchronize");
+  const OffsetT num_selected = get_value(policy, d_num_selected_out);
+
+  result_end = ::cuda::std::make_pair(keys_result + num_selected, values_result + num_selected);
+  return cudaSuccess;
+}
 
 template <typename Derived,
           typename KeyInputIt,
@@ -182,58 +151,18 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeyOutputIt, ValOutputIt> unique_by_ke
 {
   using size_type = thrust::detail::it_difference_t<KeyInputIt>;
 
-  size_type num_items = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
+  const auto num_items = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
+  cudaStream_t stream  = cuda_cub::stream(policy);
+
   ::cuda::std::pair<KeyOutputIt, ValOutputIt> result_end{};
-  cudaError_t status        = cudaSuccess;
-  size_t temp_storage_bytes = 0;
+  cudaError_t status = cudaSuccess;
 
-  // 32-bit offset-type dispatch
-  using dispatch32_t =
-    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, std::uint32_t>;
-
-  // 64-bit offset-type dispatch
-  using dispatch64_t =
-    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, std::uint64_t>;
-
-  // Query temporary storage requirements
-  THRUST_INDEX_TYPE_DISPATCH2(
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
+    unique_by_key_impl,
     num_items,
-    (policy,
-     nullptr,
-     temp_storage_bytes,
-     keys_first,
-     values_first,
-     keys_result,
-     values_result,
-     num_items_fixed,
-     binary_pred,
-     result_end));
-  cuda_cub::throw_on_error(status, "unique_by_key: failed on 1st step");
-
-  // Allocate temporary storage.
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
-  void* temp_storage = static_cast<void*>(tmp.data().get());
-
-  // Run algorithm
-  THRUST_INDEX_TYPE_DISPATCH2(
-    status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
-    num_items,
-    (policy,
-     temp_storage,
-     temp_storage_bytes,
-     keys_first,
-     values_first,
-     keys_result,
-     values_result,
-     num_items_fixed,
-     binary_pred,
-     result_end));
-  cuda_cub::throw_on_error(status, "unique_by_key: failed on 2nd step");
+    (policy, keys_first, values_first, keys_result, values_result, binary_pred, num_items_fixed, stream, result_end));
+  throw_on_error(status, "unique_by_key failed");
 
   return result_end;
 }

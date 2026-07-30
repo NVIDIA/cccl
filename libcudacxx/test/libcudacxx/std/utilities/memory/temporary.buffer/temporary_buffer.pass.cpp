@@ -22,6 +22,9 @@
 
 // UNSUPPORTED: nvrtc
 
+// XFAIL: enable-tile
+// In tile mode dynamic memory allocation is unsupported
+
 #include <cuda/std/cassert>
 #include <cuda/std/memory>
 #include <cuda/std/utility>

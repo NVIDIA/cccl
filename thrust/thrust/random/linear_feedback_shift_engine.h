@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file linear_feedback_shift_engine.h
  *  \brief A linear feedback shift pseudorandom number generator.
@@ -41,9 +28,9 @@
 #include <thrust/random/detail/linear_feedback_shift_engine_wordmask.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstddef> // for size_t
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -137,7 +124,7 @@ public:
   /*! This member function produces a new random value and updates this \p linear_feedback_shift_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p linear_feedback_shift_engine's state a given number of times
    *  and discards the results.

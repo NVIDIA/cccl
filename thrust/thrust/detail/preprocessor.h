@@ -1,11 +1,9 @@
-// Copyright (c) 2017-2018 NVIDIA Corporation
-// Copyright (c) 2014-2018 Bryce Adelstein Lelbach
-// Copyright (c) 2001-2015 Housemarque Oy (housemarque.com)
-// Copyright (c) 2007-2015 Hartmut Kaiser
-// Copyright (c)      2002 Peter Dimov and Multi Media Ltd
-//                         (`THRUST_CURRENT_FUNCTION`)
-//
-// Distributed under the Boost Software License v1.0 (boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Copyright (c) 2017-2018, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2014-2018, Bryce Adelstein Lelbach
+// SPDX-FileCopyrightText: Copyright (c) 2001-2015, Housemarque Oy (housemarque.com)
+// SPDX-FileCopyrightText: Copyright (c) 2007-2015, Hartmut Kaiser
+// SPDX-FileCopyrightText: Copyright (c) 2002, Peter Dimov and Multi Media Ltd (`THRUST_CURRENT_FUNCTION`)
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 

@@ -8,19 +8,19 @@ struct TestZipIteratorStableSort
 {
   void operator()(const size_t n)
   {
-    using namespace thrust;
+    thrust::host_vector<T> h1 = unittest::random_integers<T>(n);
+    thrust::host_vector<T> h2 = unittest::random_integers<T>(n);
 
-    host_vector<T> h1 = unittest::random_integers<T>(n);
-    host_vector<T> h2 = unittest::random_integers<T>(n);
-
-    device_vector<T> d1 = h1;
-    device_vector<T> d2 = h2;
+    thrust::device_vector<T> d1 = h1;
+    thrust::device_vector<T> d2 = h2;
 
     // sort on host
-    thrust::stable_sort(make_zip_iterator(h1.begin(), h2.begin()), make_zip_iterator(h1.end(), h2.end()));
+    thrust::stable_sort(thrust::make_zip_iterator(h1.begin(), h2.begin()),
+                        thrust::make_zip_iterator(h1.end(), h2.end()));
 
     // sort on device
-    thrust::stable_sort(make_zip_iterator(d1.begin(), d2.begin()), make_zip_iterator(d1.end(), d2.end()));
+    thrust::stable_sort(thrust::make_zip_iterator(d1.begin(), d2.begin()),
+                        thrust::make_zip_iterator(d1.end(), d2.end()));
 
     ASSERT_EQUAL_QUIET(h1, d1);
     ASSERT_EQUAL_QUIET(h2, d2);

@@ -2,69 +2,76 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/std/initializer_list>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy,
-          typename Iterator1,
-          typename Iterator2,
-          typename Iterator3,
-          typename Iterator4,
-          typename Iterator5,
-          typename Iterator6,
-          typename Iterator7>
-__global__ void set_difference_by_key_kernel(
-  ExecutionPolicy exec,
-  Iterator1 keys_first1,
-  Iterator1 keys_last1,
-  Iterator2 keys_first2,
-  Iterator2 keys_last2,
-  Iterator3 values_first1,
-  Iterator4 values_first2,
-  Iterator5 keys_result,
-  Iterator6 values_result,
-  Iterator7 result)
+struct set_difference_by_key_kernel
 {
-  *result = thrust::set_difference_by_key(
-    exec, keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
-}
+  template <typename ExecutionPolicy,
+            typename Keys1,
+            typename Keys2,
+            typename Values1,
+            typename Values2,
+            typename KeysOutput,
+            typename ValuesOutput>
+  __device__ void operator()(
+    ExecutionPolicy exec,
+    Keys1 keys1,
+    Keys2 keys2,
+    Values1 values1,
+    Values2 values2,
+    KeysOutput keys_result,
+    ValuesOutput values_result) const
+  {
+    auto end = thrust::set_difference_by_key(
+      exec,
+      keys1.begin(),
+      keys1.end(),
+      keys2.begin(),
+      keys2.end(),
+      values1.begin(),
+      values2.begin(),
+      keys_result.begin(),
+      values_result.begin());
+    TEST_ASSERT_DEVICE(end.first == keys_result.end());
+    TEST_ASSERT_DEVICE(end.second == values_result.end());
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestSetDifferenceByKeyDevice(ExecutionPolicy exec)
 {
-  using Vector   = thrust::device_vector<int>;
-  using Iterator = typename Vector::iterator;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector a_key{0, 2, 4, 5}, b_key{0, 3, 3, 4, 6};
-  Vector a_val(4, 0), b_val(5, 1);
+  auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
+  auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
+  auto a_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0, 0});
+  auto b_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1, 1});
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
 
-  Vector ref_key{2, 5}, ref_val{0, 0};
-  Vector result_key(2), result_val(2);
-
-  using iter_pair = cuda::std::pair<Iterator, Iterator>;
-
-  thrust::device_vector<iter_pair> end_vec(1);
-
-  set_difference_by_key_kernel<<<1, 1>>>(
+  cuda::launch(
+    stream,
+    test_runtime::single_thread_config(),
+    set_difference_by_key_kernel{},
     exec,
-    a_key.begin(),
-    a_key.end(),
-    b_key.begin(),
-    b_key.end(),
-    a_val.begin(),
-    b_val.begin(),
-    result_key.begin(),
-    result_val.begin(),
-    end_vec.begin());
-  cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+    a_key,
+    b_key,
+    a_val,
+    b_val,
+    result_key,
+    result_val);
+  stream.sync();
 
-  iter_pair end = end_vec.front();
-
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  test_runtime::assert_equal(stream, result_key, {2, 5});
+  test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 
 void TestSetDifferenceByKeyDeviceSeq()
@@ -82,20 +89,18 @@ DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceDevice);
 
 void TestSetDifferenceByKeyCudaStreams()
 {
-  using Vector   = thrust::device_vector<int>;
-  using Iterator = Vector::iterator;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector a_key{0, 2, 4, 5}, b_key{0, 3, 3, 4, 6};
-  Vector a_val(4, 0), b_val(5, 1);
+  auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
+  auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
+  auto a_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0, 0});
+  auto b_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1, 1});
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
 
-  Vector ref_key{2, 5}, ref_val{0, 0};
-  Vector result_key(2), result_val(2);
-
-  cudaStream_t s;
-  cudaStreamCreate(&s);
-
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
-    thrust::cuda::par.on(s),
+  auto end = thrust::set_difference_by_key(
+    thrust::cuda::par.on(stream.get()),
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -104,13 +109,10 @@ void TestSetDifferenceByKeyCudaStreams()
     b_val.begin(),
     result_key.begin(),
     result_val.begin());
-  cudaStreamSynchronize(s);
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, result_key, {2, 5});
+  test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 DECLARE_UNITTEST(TestSetDifferenceByKeyCudaStreams);

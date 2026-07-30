@@ -28,30 +28,34 @@ struct Ptr
 template <class T>
 struct A
 {
-  typedef T value_type;
-  typedef Ptr<T> pointer;
+  using value_type = T;
+  using pointer    = Ptr<T>;
 };
 
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct C
 {
-  typedef T value_type;
+  using value_type = T;
 
 private:
-  typedef void pointer;
+  using pointer = void;
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::pointer, Ptr<char>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::pointer, char*>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::pointer, char*>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::pointer, Ptr<char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::pointer, char*>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::pointer, char*>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
   return 0;
 }

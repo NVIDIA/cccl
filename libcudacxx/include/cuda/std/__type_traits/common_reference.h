@@ -209,7 +209,7 @@ struct __common_reference_sub_bullet1<
 
 // sub-bullet 2 - Otherwise, if basic_common_reference<remove_cvref_t<T1>, remove_cvref_t<T2>, XREF(T1), XREF(T2)>::type
 // is well-formed, then the member typedef `type` denotes that type.
-template <class, class, template <class> class, template <class> class>
+template <class, class, template <class> class, template <class> class, class = void>
 struct basic_common_reference
 {};
 

@@ -47,12 +47,11 @@ struct double_buffer_sort_t
 {
 private:
   bool m_is_descending;
-  int* m_selector;
+  int* m_selector{nullptr};
 
 public:
   explicit double_buffer_sort_t(bool is_descending)
       : m_is_descending(is_descending)
-      , m_selector(nullptr)
   {}
 
   void initialize()
@@ -105,12 +104,11 @@ struct double_buffer_segmented_sort_t
 {
 private:
   bool m_is_descending;
-  int* m_selector;
+  int* m_selector{nullptr};
 
 public:
   explicit double_buffer_segmented_sort_t(bool is_descending)
       : m_is_descending(is_descending)
-      , m_selector(nullptr)
   {}
 
   void initialize()
