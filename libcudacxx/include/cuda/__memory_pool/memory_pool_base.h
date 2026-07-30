@@ -180,14 +180,14 @@ using used_mem_high_t = __pool_attr<::cudaMemPoolAttrUsedMemHigh>;
 inline constexpr used_mem_high_t used_mem_high{};
 }; // namespace memory_pool_attributes
 
-_CCCL_HOST_API inline bool __is_host_memory_pool_supported()
+[[nodiscard]] _CCCL_HOST_API inline bool __is_host_memory_pool_supported()
 {
   // Both host_numa and host memory pool flags should agree, but check the one corresponding to the implementation
   // of the default pool just to be sure
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  return ::cuda::device_attributes::host_memory_pools_supported(cuda::device_ref{0});
+  return ::cuda::device_attributes::host_memory_pools_supported(::cuda::device_ref{0});
 #  elif _CCCL_CTK_AT_LEAST(12, 9)
-  return ::cuda::device_attributes::host_numa_memory_pools_supported(cuda::device_ref{0});
+  return ::cuda::device_attributes::host_numa_memory_pools_supported(::cuda::device_ref{0});
 #  else
   return false;
 #  endif
@@ -201,8 +201,8 @@ _CCCL_HOST_API inline bool __is_host_memory_pool_supported()
 _CCCL_HOST_API inline void __verify_device_supports_stream_ordered_allocations(
   ::CUmemLocation __location, [[maybe_unused]] ::CUmemAllocationType __allocation_type)
 {
-  auto __device =
-    __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? cuda::device_ref{__location.id} : cuda::device_ref{0};
+  const auto __device =
+    __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? ::cuda::device_ref{__location.id} : ::cuda::device_ref{0};
   if (!::cuda::device_attributes::memory_pools_supported(__device))
   {
     _CCCL_THROW(::cuda::cuda_error, ::cudaErrorNotSupported, "stream-ordered allocations are not supported");
@@ -250,12 +250,12 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
   if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
   {
     _CCCL_THROW(
-      cuda::cuda_error, ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
+      ::cuda::cuda_error, ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
   }
 }
 
-[[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t
-__get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const CUmemAllocationType __allocation_type)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaMemPool_t __get_default_memory_pool(
+  const ::CUmemLocation __location, [[maybe_unused]] const ::CUmemAllocationType __allocation_type)
 {
   ::cuda::__verify_device_supports_stream_ordered_allocations(__location, __allocation_type);
 
@@ -289,7 +289,7 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
   __descs.reserve(__devices.size());
   for (const auto& __dev : __devices)
   {
-    __descs.push_back({::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
+    __descs.emplace_back(::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags);
   }
   ::cuda::__driver::__mempoolSetAccess(__pool, __descs.data(), __descs.size());
 }
@@ -314,10 +314,10 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
 //! set after the pool is created.
 struct memory_pool_properties
 {
-  size_t initial_pool_size                           = 0;
-  size_t release_threshold                           = ::cuda::std::numeric_limits<size_t>::max();
-  cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
-  size_t max_pool_size                               = 0;
+  size_t initial_pool_size                             = 0;
+  size_t release_threshold                             = ::cuda::std::numeric_limits<size_t>::max();
+  ::cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
+  size_t max_pool_size                                 = 0;
 };
 
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
