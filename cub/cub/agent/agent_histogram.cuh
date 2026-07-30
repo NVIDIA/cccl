@@ -178,7 +178,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!   Random-access input iterator type for reading samples
 //!
 //! @tparam CounterT
-//!   Integer type for counting sample occurrences per histogram bin
+//!   Integer type for per-block privatized histogram bins
 //!
 //! @tparam PrivatizedDecodeOpT
 //!   The transform operator type for determining privatized counter indices from samples, one for
@@ -193,6 +193,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!
 //! @tparam UseDynamicSmemHistogram
 //!   Whether the privatized histogram is supplied separately in dynamic shared memory.
+//!
+//! @tparam OutputCounterT
+//!   Integer type for final output histogram bins. May be wider than `CounterT`.
 template <typename AgentHistogramPolicyT,
           int PrivatizedSmemBins,
           int NumChannels,
@@ -202,9 +205,12 @@ template <typename AgentHistogramPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool UseDynamicSmemHistogram = false>
+          bool UseDynamicSmemHistogram = false,
+          typename OutputCounterT      = CounterT>
 struct AgentHistogram
 {
+  static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
+                "The output histogram counter must be at least as wide as the local counter");
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
   static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
@@ -237,13 +243,9 @@ struct AgentHistogram
     BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
   using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
-  using HistogramsStorageT = ::cuda::std::
-    _If<UseDynamicSmemHistogram, CounterT* [NumActiveChannels], CounterT[NumActiveChannels][PrivatizedSmemBins + 1]>;
-
   struct _TempStorage
   {
-    // Static histogram storage or pointers into the separately allocated dynamic storage.
-    HistogramsStorageT histograms;
+    CounterT histograms[NumActiveChannels][PrivatizedSmemBins + 1];
     int tile_idx;
 
     union
@@ -262,7 +264,8 @@ struct AgentHistogram
   const int* num_output_bins; // one for each channel
   const int* num_privatized_bins; // one for each channel
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
-  CounterT** d_output_histograms; // in global memory
+  CounterT* smem_histograms[NumActiveChannels]; // dynamic shared-memory channel bases, when enabled
+  OutputCounterT** d_output_histograms; // final output, in global memory
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
   const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
@@ -307,7 +310,7 @@ struct AgentHistogram
 
         if (output_bin >= 0)
         {
-          atomicAdd(&d_output_histograms[ch][output_bin], count);
+          atomicAdd(&d_output_histograms[ch][output_bin], static_cast<OutputCounterT>(count));
         }
       }
     }
@@ -508,7 +511,14 @@ struct AgentHistogram
 
     if (prefer_smem)
     {
-      AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      if constexpr (UseDynamicSmemHistogram)
+      {
+        AccumulatePixels(samples, is_valid, smem_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      }
+      else
+      {
+        AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      }
     }
     else
     {
@@ -648,7 +658,7 @@ struct AgentHistogram
     SampleIteratorT d_samples,
     const int* num_output_bins,
     const int* num_privatized_bins,
-    CounterT** d_output_histograms,
+    OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
     const PrivatizedDecodeOpT* privatized_decode_op)
@@ -686,7 +696,7 @@ struct AgentHistogram
     SampleIteratorT d_samples,
     const int* num_output_bins,
     const int* num_privatized_bins,
-    CounterT** d_output_histograms,
+    OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
     const PrivatizedDecodeOpT* privatized_decode_op,
@@ -713,7 +723,7 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      this->temp_storage.histograms[ch] = p;
+      this->smem_histograms[ch] = p;
       p += num_privatized_bins[ch];
     }
   }
@@ -775,7 +785,14 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      ZeroBinCounters(temp_storage.histograms);
+      if constexpr (UseDynamicSmemHistogram)
+      {
+        ZeroBinCounters(smem_histograms);
+      }
+      else
+      {
+        ZeroBinCounters(temp_storage.histograms);
+      }
     }
     else
     {
@@ -788,7 +805,14 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      StoreOutput(temp_storage.histograms);
+      if constexpr (UseDynamicSmemHistogram)
+      {
+        StoreOutput(smem_histograms);
+      }
+      else
+      {
+        StoreOutput(temp_storage.histograms);
+      }
     }
     else
     {
