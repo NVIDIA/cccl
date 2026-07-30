@@ -389,7 +389,7 @@ struct AgentSelectIf
   // Utility methods for initializing the selections
   //---------------------------------------------------------------------
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto GetInputIterator() const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE InputIteratorT GetInputIterator() const
   {
     if constexpr (::cuda::std::is_pointer_v<InputIteratorT>)
     {
