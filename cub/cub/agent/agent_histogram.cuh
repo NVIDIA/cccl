@@ -188,7 +188,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //! @tparam OffsetT
 //!   Signed integer type for global offsets
 //!
-//! @tparam UseDynamicSmemHistogram
+//! @tparam UseDynamicSmem
 //!   Whether the privatized histogram is supplied separately in dynamic shared memory.
 //!
 //! @tparam OutputCounterT
@@ -202,8 +202,8 @@ template <typename AgentHistogramPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool UseDynamicSmemHistogram = false,
-          typename OutputCounterT      = CounterT>
+          bool UseDynamicSmem     = false,
+          typename OutputCounterT = CounterT>
 struct AgentHistogram
 {
   static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
@@ -328,35 +328,13 @@ struct AgentHistogram
       // Bin pixels
       int bins[pixels_per_thread];
 
-      if constexpr (UseDynamicSmemHistogram)
+      typename PrivatizedDecodeOpT::BinSelectState bin_select_state;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
       {
-        typename PrivatizedDecodeOpT::BracketCacheT mru;
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
-        {
-          bins[pixel] = -1;
-          privatized_decode_op[ch].template BinSelect<load_modifier>(
-            samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
-        }
-      }
-      else if constexpr (PrivatizedSmemBins > 0 && PrivatizedDecodeOpT::is_range_transform)
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
-        {
-          bins[pixel] = -1;
-          privatized_decode_op[ch].template BinSelectStaticLean<load_modifier>(
-            samples[pixel][ch], bins[pixel], is_valid[pixel]);
-        }
-      }
-      else
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
-        {
-          bins[pixel] = -1;
-          privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
-        }
+        bins[pixel] = -1;
+        privatized_decode_op[ch].template BinSelect<load_modifier>(
+          samples[pixel][ch], bins[pixel], is_valid[pixel], bin_select_state);
       }
 
       CounterT accumulator = 1;
@@ -509,7 +487,7 @@ struct AgentHistogram
 
     if (prefer_smem)
     {
-      if constexpr (UseDynamicSmemHistogram)
+      if constexpr (UseDynamicSmem)
       {
         AccumulatePixels(samples, is_valid, smem_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
       }
@@ -673,8 +651,8 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
-    static_assert(!UseDynamicSmemHistogram,
-                  "AgentHistogram with UseDynamicSmemHistogram=true requires the dynamic-SMEM "
+    static_assert(!UseDynamicSmem,
+                  "AgentHistogram with UseDynamicSmem=true requires the dynamic-SMEM "
                   "constructor that takes an extern __shared__ base pointer.");
 
     const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
@@ -709,8 +687,7 @@ struct AgentHistogram
       , privatized_decode_op(privatized_decode_op)
       , prefer_smem(true)
   {
-    static_assert(UseDynamicSmemHistogram,
-                  "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
+    static_assert(UseDynamicSmem, "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmem=true.");
 
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
@@ -783,7 +760,7 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      if constexpr (UseDynamicSmemHistogram)
+      if constexpr (UseDynamicSmem)
       {
         ZeroBinCounters(smem_histograms);
       }
@@ -803,7 +780,7 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      if constexpr (UseDynamicSmemHistogram)
+      if constexpr (UseDynamicSmem)
       {
         StoreOutput(smem_histograms);
       }
