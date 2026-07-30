@@ -28,7 +28,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 #define C6 (1.0 / 5040.0)
 #define C7 (1.0 / 40320.0)
 
-TEST_FUNC void test(double dx, double dy, double dz, double dw)
+TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz, double dw)
 {
   const double ref[5] = {
     dx * dy * dz * dw,

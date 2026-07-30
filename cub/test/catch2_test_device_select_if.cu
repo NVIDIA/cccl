@@ -23,7 +23,7 @@
 
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -60,7 +60,7 @@ using types =
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
-C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -77,7 +77,7 @@ C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", typ
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If handles all matched", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -96,7 +96,7 @@ C2H_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
   REQUIRE(out == in);
 }
 
-C2H_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If handles no matched", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -114,7 +114,7 @@ C2H_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If does not change input", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -138,7 +138,7 @@ C2H_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
+CUB_TEST("DeviceSelect::If is stable", "[device][select_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -170,7 +170,7 @@ C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::If works with user provided memory and environment", "[device][select_if]", all_types)
+CUB_TEST("DeviceSelect::If works with user provided memory and environment", "[device][select_if]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -265,7 +265,10 @@ C2H_TEST("DeviceSelect::If works with user provided memory and environment", "[d
   }
 }
 
-C2H_TEST("DeviceSelect::If works in place with user provided memory and environment", "[device][select_if]", all_types)
+CUB_TEST("DeviceSelect::If works in place with user provided memory and environment",
+         "[device][select_if]",
+         CUB_SMALL,
+         all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -352,7 +355,7 @@ C2H_TEST("DeviceSelect::If works in place with user provided memory and environm
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_types)
+CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -375,7 +378,7 @@ C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
-C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -399,7 +402,7 @@ C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
-C2H_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -445,7 +448,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DeviceSelect::If works with a different output type", "[device][select_if]")
+CUB_TEST("DeviceSelect::If works with a different output type", "[device][select_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -468,8 +471,9 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of items",
-         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceSelect::If works for very large number of items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL)
 try
 {
   using type     = std::int64_t;
@@ -514,8 +518,9 @@ catch (std::bad_alloc&)
   SUCCEED("exceeding memory is not a failure");
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of output items",
-         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceSelect::If works for very large number of output items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using type     = std::uint8_t;
@@ -563,7 +568,7 @@ catch (std::bad_alloc&)
   SUCCEED("exceeding memory is not a failure");
 }
 
-C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]")
+CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMALL)
 {
   using type = int;
 
