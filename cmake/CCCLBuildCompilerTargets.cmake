@@ -221,14 +221,25 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
-    append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
-    # Calling a variadic macro with zero args is a GNU extension until C++20,
-    # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
-    # is a real problem worth fixing.
-    append_option_if_available(
-      "-Wno-gnu-zero-variadic-macro-arguments"
-      cxx_compile_options
+    # -Wno-gnu-* flags exist in Clang and GCC >= 10. GCC < 10 silently accepts them
+    # without -Werror but errors when they are passed via nvcc's -Xcompiler= with
+    # -Werror active. Restrict to compilers where they are reliably supported.
+    if (
+      NOT
+        (
+          "GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
+          AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10
+        )
     )
+      append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
+      # Calling a variadic macro with zero args is a GNU extension until C++20,
+      # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
+      # is a real problem worth fixing.
+      append_option_if_available(
+        "-Wno-gnu-zero-variadic-macro-arguments"
+        cxx_compile_options
+      )
+    endif()
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)

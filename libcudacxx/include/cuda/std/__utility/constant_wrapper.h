@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER(GCC, <, 12)
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -553,6 +553,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER(GCC, <, 12)
 
 #endif // _CUDA_STD___UTILITY_CONSTANT_WRAPPER_H
