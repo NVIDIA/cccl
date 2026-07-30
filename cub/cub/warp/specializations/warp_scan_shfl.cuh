@@ -380,7 +380,7 @@ struct WarpScanShfl
   template <typename _Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(_Tp input, ScanOpT scan_op, int first_lane, int offset)
   {
-    _Tp temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
+    _Tp temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
 
     // Perform scan op if from a valid peer
     _Tp output = scan_op(temp, input);
@@ -500,7 +500,7 @@ struct WarpScanShfl
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, int src_lane)
   {
-    return ShuffleIndex<LOGICAL_WARP_THREADS>(input, src_lane, member_mask);
+    return ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(input, src_lane, member_mask);
   }
 
   //---------------------------------------------------------------------
@@ -591,7 +591,7 @@ struct WarpScanShfl
   {
     inclusive_output = input;
 
-    KeyT pred_key = ShuffleUp<LOGICAL_WARP_THREADS>(inclusive_output.key, 1, 0, member_mask);
+    KeyT pred_key = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(inclusive_output.key, 1, member_mask);
 
     unsigned int ballot = __ballot_sync(member_mask, (pred_key != inclusive_output.key));
 
@@ -635,7 +635,8 @@ struct WarpScanShfl
     InclusiveScan(input, inclusive_output, scan_op);
 
     // Grab aggregate from last warp lane
-    warp_aggregate = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive_output, LOGICAL_WARP_THREADS - 1, member_mask);
+    warp_aggregate =
+      ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(inclusive_output, LOGICAL_WARP_THREADS - 1, member_mask);
   }
 
   /**
@@ -690,7 +691,7 @@ struct WarpScanShfl
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // initial value unknown
-    exclusive = ShuffleUp<LOGICAL_WARP_THREADS>(inclusive, 1, 0, member_mask);
+    exclusive = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(inclusive, 1, member_mask);
   }
 
   /**
@@ -713,7 +714,7 @@ struct WarpScanShfl
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT scan_op, T initial_value, IsIntegerT /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
-    exclusive = ShuffleUp<LOGICAL_WARP_THREADS>(inclusive, 1, 0, member_mask);
+    exclusive = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(inclusive, 1, member_mask);
 
     if (lane_id == 0)
     {
@@ -744,7 +745,8 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Update(T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, IsIntegerT is_integer)
   {
-    warp_aggregate = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive, LOGICAL_WARP_THREADS - 1, member_mask);
+    warp_aggregate =
+      ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(inclusive, LOGICAL_WARP_THREADS - 1, member_mask);
     Update(input, inclusive, exclusive, scan_op, is_integer);
   }
 
@@ -756,7 +758,8 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
     T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, T initial_value, IsIntegerT is_integer)
   {
-    warp_aggregate = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive, LOGICAL_WARP_THREADS - 1, member_mask);
+    warp_aggregate =
+      ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(inclusive, LOGICAL_WARP_THREADS - 1, member_mask);
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
   }
 
