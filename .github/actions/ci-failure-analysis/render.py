@@ -225,9 +225,8 @@ def render_evidence(group, jobs, repository, run_id):
 def render_group(index, group, jobs, repository, run_id, head_sha):
     job_ids = group["job_ids"]
     job_label = "job" if len(job_ids) == 1 else "jobs"
-    open_attribute = " open" if index == 1 else ""
     lines = [
-        f"<details{open_attribute}>",
+        "<details>",
         (
             "<summary><strong>"
             f"{index}. {sanitize_html(group['title'], limit=100)}"
