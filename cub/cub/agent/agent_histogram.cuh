@@ -208,6 +208,7 @@ struct AgentHistogram
 {
   static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
                 "The output histogram counter must be at least as wide as the local counter");
+  static constexpr int privatized_smem_bins        = PrivatizedSmemBins;
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
   static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
