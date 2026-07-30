@@ -576,6 +576,16 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
 
 C2H_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]")
 {
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
   using counter_t      = unsigned long long;
   const int num_levels = GENERATE(1025, 4097);
 
