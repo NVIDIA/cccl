@@ -407,7 +407,7 @@ decltype(auto) operator->*(with_location<throwproof_t> s, F&& f) noexcept
  * Usage: `auto e = defer_exception->*[&] { ... };`
  *
  * The result is `[[nodiscard]]` so the caller must acknowledge it (store it, test it,
- * or deliberately discard with `::std::ignore = ...`).
+ * or deliberately discard it, e.g. by assigning to std::ignore).
  *
  * @snippet this defer_exception
  */
