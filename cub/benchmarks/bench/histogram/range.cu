@@ -90,25 +90,13 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     size_t temp_storage_bytes = 0;
     bench_check_cuda(
       cub::DeviceHistogram::HistogramRange(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_input,
-        d_histogram,
-        num_levels,
-        d_levels,
-        static_cast<OffsetT>(elements)),
+        d_temp_storage, temp_storage_bytes, d_input, d_histogram, num_levels, d_levels, static_cast<OffsetT>(elements)),
       "warmup HistogramRange temp-size");
     thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
     bench_check_cuda(
       cub::DeviceHistogram::HistogramRange(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_input,
-        d_histogram,
-        num_levels,
-        d_levels,
-        static_cast<OffsetT>(elements)),
+        d_temp_storage, temp_storage_bytes, d_input, d_histogram, num_levels, d_levels, static_cast<OffsetT>(elements)),
       "warmup HistogramRange");
     bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
 

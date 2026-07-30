@@ -85,8 +85,8 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
   thrust::device_vector<CounterT> hist_b(num_bins);
-  thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
-    shape, elements * num_channels, static_cast<int>(num_bins), d_levels_r);
+  thrust::device_vector<SampleT> input =
+    generate_histogram_input_range<SampleT>(shape, elements * num_channels, static_cast<int>(num_bins), d_levels_r);
 
   SampleT* d_input        = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
