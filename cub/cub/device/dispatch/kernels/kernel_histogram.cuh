@@ -913,7 +913,7 @@ __launch_bounds__(
            hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
-                   0,
+                   PrivatizedSmemBins,
                    NumChannels,
                    NumActiveChannels,
                    SampleIteratorT,
@@ -923,6 +923,7 @@ __launch_bounds__(
                    OffsetT,
                    false,
                    OutputCounterT>;
+  static_assert(AgentHistogramT::privatized_smem_bins == PrivatizedSmemBins);
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
