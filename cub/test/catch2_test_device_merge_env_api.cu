@@ -118,6 +118,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge
     result.begin(),
     cuda::std::less{},
     cuda::execution::tune(MergePolicySelector{}));
+
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';

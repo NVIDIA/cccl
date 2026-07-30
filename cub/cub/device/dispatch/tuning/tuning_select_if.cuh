@@ -78,7 +78,7 @@ enum class SelectAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(SelectAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(SelectAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -129,7 +129,7 @@ enum class PartitionAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(PartitionAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(PartitionAlgorithm algo) noexcept
 {
   switch (algo)
   {

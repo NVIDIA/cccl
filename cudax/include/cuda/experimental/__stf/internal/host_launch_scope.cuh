@@ -240,22 +240,32 @@ public:
     }
 
     cudaEvent_t start_event = nullptr, end_event = nullptr;
+
+    SCOPE(exit)
+    {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
-    // Set only once both timing events exist and the start event has been recorded.
-    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
-    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
-    bool timing_active = false;
 
     t.start();
 
-    SCOPE(exit)
+    // If things go well, end the task with time measurements.
+    SCOPE(success)
     {
       t.end_uncleared();
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
-        if (timing_active)
+        if (start_event && end_event)
         {
-          // Inside the noexcept SCOPE(exit) body; keep cuda_safe_call so a CUDA
+          // Inside the noexcept SCOPE body; keep cuda_safe_call so a CUDA
           // error aborts rather than throwing through the guard.
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
@@ -277,6 +287,12 @@ public:
       t.clear();
     };
 
+    // And if they don't, just end the task.
+    SCOPE(fail)
+    {
+      t.end();
+    };
+
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
@@ -287,7 +303,6 @@ public:
         start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         cuda_try<cudaEventRecord>(start_event, t.get_stream());
-        timing_active = true;
       }
     }
 
