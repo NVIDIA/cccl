@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <thrust/sequence.h>
+#include <thrust/host_vector.h>
+
+#include <random>
 
 #include <nvbench_helper.cuh>
 
 #include "histogram_common.cuh"
+#include "histogram_inputs.cuh"
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
@@ -16,58 +19,170 @@
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
-template <typename SampleT, typename CounterT, typename OffsetT>
-static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+template <typename SampleT, typename LocalCounterT, typename GlobalCounterT, typename OffsetT>
+static void range(nvbench::state& state, nvbench::type_list<SampleT, LocalCounterT, GlobalCounterT, OffsetT>)
 {
-  const auto entropy   = str_to_entropy(state.get_string("Entropy"));
+  const auto shape     = parse_input_shape(state.get_string("InputShape"));
   const auto elements  = state.get_int64("Elements{io}");
   const auto num_bins  = state.get_int64("Bins");
   const int num_levels = static_cast<int>(num_bins) + 1;
 
-  const SampleT lower_level = 0;
+  // Skip invalid configurations where the SampleT range can't hold enough
+  // strictly-monotonic levels. The level-construction loop below uses
+  // `h_levels[i-1] + SampleT{1}` to enforce strict monotonicity; for narrow
+  // integer SampleT this overflows once bins exceed the count of distinct
+  // SampleT values, leaving a non-monotonic level array.
+  if (num_bins > max_representable_bins<SampleT>())
+  {
+    state.skip("Number of bins exceeds what SampleT can represent");
+    return;
+  }
+
+  const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  SampleT step = (upper_level - lower_level) / num_bins;
-  thrust::device_vector<SampleT> levels(num_bins + 1);
+  // Jittered uniform spacing keeps DispatchRange on the SearchTransform path
+  // while keeping bin widths within ~2x of each other. Fixed seed makes the
+  // levels reproducible across runs.
+  thrust::host_vector<SampleT> h_levels(num_bins + 1);
+  const double L    = static_cast<double>(lower_level);
+  const double U    = static_cast<double>(upper_level);
+  const double step = (U - L) / static_cast<double>(num_bins);
+  std::mt19937 rng(0xC0FFEE);
+  std::uniform_real_distribution<double> jitter(-0.25, 0.25);
+  h_levels[0]        = lower_level;
+  h_levels[num_bins] = upper_level;
+  for (int i = 1; i < num_bins; ++i)
+  {
+    SampleT lvl = static_cast<SampleT>(L + i * step + step * jitter(rng));
+    if (lvl <= h_levels[i - 1])
+    {
+      lvl = static_cast<SampleT>(h_levels[i - 1] + SampleT{1});
+    }
+    h_levels[i] = lvl;
+  }
+  if (h_levels[num_bins] <= h_levels[num_bins - 1])
+  {
+    h_levels[num_bins] = static_cast<SampleT>(h_levels[num_bins - 1] + SampleT{1});
+  }
+  thrust::device_vector<SampleT> levels = h_levels;
+  SampleT* d_levels                     = thrust::raw_pointer_cast(levels.data());
 
-  // TODO Extract sequence to the helper TU
-  thrust::sequence(levels.begin(), levels.end(), lower_level, step);
-  SampleT* d_levels = thrust::raw_pointer_cast(levels.data());
+  // Per-block direct-atomic SMEM cache slot count S, queried from CUB's occupancy
+  // sizer so hash_synonym, stale_resident, and poison track the ACTUAL cache.
+  // Single-channel RANGE path (IsEven=false uses the SearchTransform
+  // kernel). RANGE's slot count DEPENDS on OffsetT (int -> 4096, int64 -> 8192 on B200),
+  // so query with the extent so the SAME kernel the dispatch launches at this N is sized.
+#if defined(CUB_HISTO_BENCH_DISABLE_CACHE_QUERY)
+  const int64_t cache_slots = 0;
+#else
+  const int64_t cache_slots = cub::detail::histogram::query_direct_atomic_cache_slots_for_extent<
+    1,
+    1,
+    /*IsEven=*/false,
+    SampleT,
+    LocalCounterT,
+    SampleT,
+    OffsetT,
+    GlobalCounterT>(static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(elements));
+#endif
+  bench_log_input_cache_slots(cache_slots);
+  if (bench_input_cache_slot_query_only())
+  {
+    state.skip("input cache-slot query only");
+    return;
+  }
 
-  thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
-  thrust::device_vector<CounterT> hist(num_bins);
+  thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
+    shape, elements, static_cast<int>(num_bins), d_levels, /*seed=*/42, cache_slots);
+  thrust::device_vector<GlobalCounterT> hist(num_bins);
 
-  SampleT* d_input      = thrust::raw_pointer_cast(input.data());
-  CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
+  SampleT* d_input            = thrust::raw_pointer_cast(input.data());
+  GlobalCounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
   state.add_element_count(elements);
   state.add_global_memory_reads<SampleT>(elements);
-  state.add_global_memory_writes<CounterT>(num_bins);
+  state.add_global_memory_writes<GlobalCounterT>(num_bins);
+
+  // Warmup + correctness check: run HistogramRange once outside
+  // `state.exec`, checking the dispatch return code, then verify that the
+  // histogram sums to the input sample count and matches an independent
+  // reference bin-by-bin.
+  // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
+  if (bench_correctness_checks_enabled())
+  {
+    thrust::fill(hist.begin(), hist.end(), GlobalCounterT{0});
+    bench_check_cuda(
+      cub::DeviceHistogram::HistogramRange(
+        d_input,
+        d_histogram,
+        num_levels,
+        d_levels,
+        static_cast<OffsetT>(elements),
+        cuda::execution::tune(bench_policy_selector<SampleT, LocalCounterT, 1, 1, false>{})),
+      "warmup HistogramRange");
+    bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
+
+    std::vector<thrust::device_vector<GlobalCounterT>> opt_hists_d;
+    opt_hists_d.emplace_back(std::move(hist));
+    std::vector<thrust::device_vector<SampleT>> d_levels_per_channel;
+    d_levels_per_channel.emplace_back(std::move(levels));
+    bench_verify_histogram_range<1, 1, SampleT, GlobalCounterT, OffsetT>(
+      input, opt_hists_d, d_levels_per_channel, static_cast<OffsetT>(elements), "range");
+    hist        = std::move(opt_hists_d[0]);
+    d_histogram = thrust::raw_pointer_cast(hist.data());
+    levels      = std::move(d_levels_per_channel[0]);
+    d_levels    = thrust::raw_pointer_cast(levels.data());
+  }
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(
-      alloc,
-      launch
-#if !TUNE_BASE
-      ,
-      cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
-#endif // !TUNE_BASE
-    );
-    _CCCL_TRY_CUDA_API(
-      cub::DeviceHistogram::HistogramRange,
-      "HistogramRange failed",
-      d_input,
-      d_histogram,
-      num_levels,
-      d_levels,
-      static_cast<OffsetT>(elements),
-      env);
-  });
+
+  // Force the persisting-L2 reservation back to 0 and demote any persisting
+  // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
+  // bumped cudaLimitPersistingL2CacheSize can carry across iterations. The
+  // default reservation is 0; hardcoding 0 also clears any pollution left by
+  // a prior benchmark in the same nvbench process.
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
+             [&](nvbench::launch& launch, auto& timer) {
+               cudaDeviceSetLimit(cudaLimitPersistingL2CacheSize, 0);
+               cudaCtxResetPersistingL2Cache();
+               timer.start();
+               auto env = cub_bench_env(
+                 alloc, launch, cuda::execution::tune(bench_policy_selector<SampleT, LocalCounterT, 1, 1, false>{}));
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceHistogram::HistogramRange,
+                 "HistogramRange failed",
+                 d_input,
+                 d_histogram,
+                 num_levels,
+                 d_levels,
+                 static_cast<OffsetT>(elements),
+                 env);
+               timer.stop();
+             });
 }
 
-using counter_types     = nvbench::type_list<int32_t>;
+// Local and global counter widths are independent axes. TUNE_CounterT remains a
+// compatibility fallback that selects the historical same-width configuration.
+#ifdef TUNE_LocalCounterT
+using local_counter_types = nvbench::type_list<TUNE_LocalCounterT>;
+#elif defined(TUNE_CounterT)
+using local_counter_types = nvbench::type_list<TUNE_CounterT>;
+#else
+using local_counter_types = nvbench::type_list<int32_t>;
+#endif
+#ifdef TUNE_GlobalCounterT
+using global_counter_types = nvbench::type_list<TUNE_GlobalCounterT>;
+#elif defined(TUNE_CounterT)
+using global_counter_types = nvbench::type_list<TUNE_CounterT>;
+#else
+using global_counter_types = nvbench::type_list<int32_t>;
+#endif
+#ifdef TUNE_OffsetT
+using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
+#else
 using some_offset_types = nvbench::type_list<int32_t>;
+#endif
 
 #ifdef TUNE_SampleT
 using sample_types = nvbench::type_list<TUNE_SampleT>;
@@ -75,9 +190,24 @@ using sample_types = nvbench::type_list<TUNE_SampleT>;
 using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 #endif // TUNE_SampleT
 
-NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
+NVBENCH_BENCH_TYPES(range,
+                    NVBENCH_TYPE_AXES(sample_types, local_counter_types, global_counter_types, some_offset_types))
   .set_name("base")
-  .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {32, 128, 2048, 2097152})
-  .add_string_axis("Entropy", {"0.201", "1.000"});
+  .set_type_axes_names({"SampleT{ct}", "LocalCounter{ct}", "GlobalCounter{ct}", "OffsetT{ct}"})
+  .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
+  .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
+  // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,
+  // 0.0=constant) plus the multi-hot and cache-adversarial shapes. Each value
+  // may carry an inline knob as "name:value"; see histogram_inputs.cuh.
+  .add_string_axis(
+    "InputShape",
+    {"concentrated:1.0",
+     "concentrated:0.5",
+     "concentrated:0.0",
+     "powerlaw:0.5",
+     "hash_synonym",
+     "stale_resident:0.5",
+     "stale_resident:0.25",
+     "temporal_phases:0.10",
+     "strided_sweep",
+     "sawtooth"});

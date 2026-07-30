@@ -4,11 +4,24 @@
 #pragma once
 
 #include <cub/device/device_histogram.cuh>
+#include <cub/thread/thread_search.cuh>
+
+#include <thrust/device_vector.h>
+#include <thrust/for_each.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 
 #include <cuda/std/type_traits>
 
-#if !TUNE_BASE
+#include <cctype>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
+#if !TUNE_BASE
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
 #  elif TUNE_LOAD == 1
@@ -34,12 +47,28 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 #  else
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
 #  endif // TUNE_LOAD_ALGORITHM_ID
+#endif // !TUNE_BASE
 
-template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
+// The environment API normally derives every internal counter from the output
+// counter type. Histogram benchmarks need to exercise the high-count design where
+// per-block/on-chip accumulation stays narrow while the final output is wide. The
+// selector's nested alias is consumed by CUB's environment dispatch; older/default
+// selectors without the alias continue to fall back to the output counter type.
+//
+// Keep this selector active for TUNE_BASE too. Otherwise a base benchmark with
+// LocalCounterT != GlobalCounterT would silently take the output type for local
+// accumulation, making the LocalCounter axis decorative rather than functional.
+template <typename SampleT, typename LocalCounterT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, bool IsEven>
 struct bench_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::HistogramPolicy
+  using local_counter_type = LocalCounterT;
+
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
+#if TUNE_BASE
+    return cub::detail::histogram::
+      policy_selector_from_types<SampleT, LocalCounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, IsEven>{}(cc);
+#else // TUNE_BASE
     constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
@@ -54,25 +83,447 @@ struct bench_policy_selector
             MEM_PREFERENCE,
             TUNE_WORK_STEALING,
             2048}; // TODO(bgruber): make tunable
+#endif // TUNE_BASE
   }
 };
-#endif // !TUNE_BASE
+
+// Lower bound of the bench's level range. For signed integer SampleT we use
+// `numeric_limits<SampleT>::min()` so the level range spans the full type;
+// previously `lower_level = 0` clipped half the range, forcing a skip on
+// configurations like int8_t with bins > 127 even though the type can hold
+// 256 distinct values. For unsigned integer and floating-point SampleT,
+// `lower_level = 0` is the natural choice.
+template <class SampleT>
+SampleT get_lower_level()
+{
+  if constexpr (cuda::std::is_integral_v<SampleT> && cuda::std::is_signed_v<SampleT>)
+  {
+    return ::cuda::std::numeric_limits<SampleT>::min();
+  }
+  return SampleT{0};
+}
 
 template <class SampleT, class OffsetT>
 SampleT get_upper_level(OffsetT bins, OffsetT elements)
 {
   if constexpr (cuda::std::is_integral_v<SampleT>)
   {
-    if constexpr (sizeof(SampleT) < sizeof(OffsetT))
-    {
-      const SampleT max_key = ::cuda::std::numeric_limits<SampleT>::max();
-      return static_cast<SampleT>(std::min(bins, static_cast<OffsetT>(max_key)));
-    }
-    else
-    {
-      return static_cast<SampleT>(bins);
-    }
+    // Widen the upper level to ~4 * num_bins so the range bench's
+    // jittered-uniform level construction (jitter amplitude is step / 4)
+    // produces genuinely non-uniform integer levels. With the previous
+    // upper_level == num_bins, step was exactly 1 for `int32_t` / `int64_t`,
+    // the integer cast in the level loop annihilated the jitter, and the
+    // dedup-by-1 step forced the array back to perfect uniform stride —
+    // which `DispatchHistogram`'s uniform-range detection (when present)
+    // would route through the fast EVEN classify path, defeating the
+    // purpose of the range bench. Clamp to the type max when 4 * bins
+    // overflows `SampleT`; those axes already have step < 1 and the level
+    // array is degenerate regardless of jitter.
+    const int64_t max_v = static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max());
+    const int64_t want  = static_cast<int64_t>(bins) * int64_t{4};
+    return static_cast<SampleT>(std::min(want, max_v));
   }
 
   return static_cast<SampleT>(elements);
+}
+
+// Maximum number of bins that can be represented by SampleT levels in this
+// bench's `[get_lower_level<SampleT>(), get_upper_level<SampleT>(...)]` range.
+// For integer SampleT this caps at the count of distinct values the type can
+// hold (`max - min`); strict-monotonic level construction needs `bins + 1`
+// distinct values. For floating-point SampleT it's effectively unbounded.
+template <class SampleT>
+int64_t max_representable_bins()
+{
+  if constexpr (cuda::std::is_integral_v<SampleT> && sizeof(SampleT) < sizeof(int64_t))
+  {
+    return static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max())
+         - static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::min());
+  }
+  // For int64_t (and any wider type that we may add later) the bins axis tops
+  // out at ~10^6, which is many orders of magnitude below the type's range, so
+  // the skip never triggers. Avoid the int64_t overflow that
+  // `max() - min() = 2^64 - 1` would produce.
+  return ::cuda::std::numeric_limits<int64_t>::max();
+}
+
+// Bench-side correctness checks that require every channel's histogram to sum
+// to the input sample count, then compare the CUB result bin-by-bin against an
+// independent on-device reference computed with `thrust::for_each` + global
+// `atomicAdd`. The host-side sum is checked for negative counters and uint64_t
+// accumulation overflow. Comparing each sum to the expected count is necessary
+// because the optimized and reference histograms use the same GlobalCounterT and
+// can otherwise overflow identically. This deliberately validates the final output
+// width independently of the benchmark's LocalCounter axis. The verifier is invoked
+// once per benchmark cell, outside NVBench's timed region, so it does not contribute to the
+// reported bandwidth. The reference does not share any kernels with
+// `cub::DeviceHistogram`, so a bug that leaves the optimized histogram shaped
+// correctly but counted incorrectly is still caught.
+//
+// Verification is on by default. To skip it (e.g. during a tuning sweep where
+// only relative throughput matters), set the environment variable
+// CUB_BENCH_HISTOGRAM_VERIFY to one of: 0, false, no, off (case-insensitive).
+
+inline bool bench_correctness_checks_enabled()
+{
+  static const bool enabled = []() {
+    const char* v = std::getenv("CUB_BENCH_HISTOGRAM_VERIFY");
+    if (v == nullptr)
+    {
+      return true;
+    }
+    std::string s(v);
+    for (char& c : s)
+    {
+      c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return !(s == "0" || s == "false" || s == "no" || s == "off");
+  }();
+  return enabled;
+}
+
+inline void bench_log_input_cache_slots(int64_t cache_slots)
+{
+  if (std::getenv("CUB_HISTO_LOG_INPUT_CACHE_SLOTS") != nullptr)
+  {
+    std::fprintf(stderr, "[input-cache] slots=%lld\n", static_cast<long long>(cache_slots));
+    std::fflush(stderr);
+  }
+}
+
+inline bool bench_input_cache_slot_query_only()
+{
+  return std::getenv("CUB_HISTO_QUERY_INPUT_CACHE_SLOTS_ONLY") != nullptr;
+}
+
+// A correctness-check failure MUST end the trial in a hard runtime failure, not
+// a silent skip. nvbench catches a thrown std::exception from the benchmark body
+// and merely marks the measurement `Skipped: Yes`, then exits 0 -- which lets an
+// incorrect kernel "pass" by having its failing cells silently dropped from any
+// downstream aggregation. To make a wrong result unambiguously fatal, we print
+// the diagnostic to stderr and `std::abort()`, which terminates the process with
+// a non-zero status that nvbench cannot swallow. Legitimate, expected skips
+// (e.g. row-stride overflow) use `state.skip(...)` instead and are unaffected.
+[[noreturn]] inline void bench_fatal(const std::string& msg)
+{
+  std::fprintf(stderr, "FATAL %s\n", msg.c_str());
+  std::fflush(stderr);
+  std::abort();
+}
+
+inline void bench_check_cuda(cudaError_t e, const char* what)
+{
+  if (e != cudaSuccess)
+  {
+    bench_fatal(std::string{"bench correctness check: "} + what + " -> " + cudaGetErrorString(e));
+  }
+}
+
+// EVEN reference: closed-form bin index `(sample - lo) * num_bins / (hi - lo)`
+// computed in double precision, then a global `atomicAdd` per pixel per active
+// channel.
+template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
+struct bench_ref_even_op
+{
+  const SampleT* d_input;
+  CounterT* d_hist[NumActiveChannels];
+  OffsetT num_pixels;
+  int num_bins;
+  SampleT lower_level;
+  SampleT upper_level;
+
+  __device__ void operator()(OffsetT pixel) const
+  {
+    if (pixel >= num_pixels)
+    {
+      return;
+    }
+
+    const double L     = static_cast<double>(lower_level);
+    const double U     = static_cast<double>(upper_level);
+    const double scale = static_cast<double>(num_bins) / (U - L);
+
+    const SampleT* px = d_input + static_cast<std::size_t>(pixel) * NumChannels;
+#pragma unroll
+    for (int c = 0; c < NumActiveChannels; ++c)
+    {
+      const SampleT s = px[c];
+      if (s < lower_level || s >= upper_level)
+      {
+        continue;
+      }
+      int bin = static_cast<int>((static_cast<double>(s) - L) * scale);
+      if (bin >= num_bins)
+      {
+        bin = num_bins - 1;
+      }
+      if (bin >= 0)
+      {
+        cub::detail::histogram::histogram_atomic_add(d_hist[c] + bin, CounterT{1});
+      }
+    }
+  }
+};
+
+// RANGE reference: per-pixel `cub::UpperBound` on the per-channel level array,
+// then a global `atomicAdd`. Levels are arbitrary monotonic boundaries so the
+// closed-form EVEN index does not apply.
+template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
+struct bench_ref_range_op
+{
+  const SampleT* d_input;
+  CounterT* d_hist[NumActiveChannels];
+  const SampleT* d_levels[NumActiveChannels];
+  OffsetT num_pixels;
+  int num_levels[NumActiveChannels];
+
+  __device__ void operator()(OffsetT pixel) const
+  {
+    if (pixel >= num_pixels)
+    {
+      return;
+    }
+
+    const SampleT* px = d_input + static_cast<std::size_t>(pixel) * NumChannels;
+
+#pragma unroll
+    for (int c = 0; c < NumActiveChannels; ++c)
+    {
+      const int channel_num_levels = num_levels[c];
+      const int channel_num_bins   = channel_num_levels - 1;
+      const SampleT s              = px[c];
+      const int idx                = cub::UpperBound(d_levels[c], channel_num_levels, s);
+      const int bin                = idx - 1;
+      if (bin >= 0 && bin < channel_num_bins)
+      {
+        cub::detail::histogram::histogram_atomic_add(d_hist[c] + bin, CounterT{1});
+      }
+    }
+  }
+};
+
+struct bench_histogram_total
+{
+  std::uint64_t value    = 0;
+  int first_negative_bin = -1;
+  int first_overflow_bin = -1;
+
+  bool valid() const
+  {
+    return first_negative_bin < 0 && first_overflow_bin < 0;
+  }
+};
+
+template <typename CounterT>
+bench_histogram_total bench_sum_histogram(const thrust::host_vector<CounterT>& histogram)
+{
+  static_assert(cuda::std::is_integral_v<CounterT>);
+  static_assert(sizeof(CounterT) <= sizeof(std::uint64_t));
+
+  bench_histogram_total total{};
+  for (std::size_t bin = 0; bin < histogram.size(); ++bin)
+  {
+    const CounterT count = histogram[bin];
+    if constexpr (cuda::std::is_signed_v<CounterT>)
+    {
+      if (count < 0)
+      {
+        total.first_negative_bin = static_cast<int>(bin);
+        return total;
+      }
+    }
+
+    const auto count_u64 = static_cast<std::uint64_t>(count);
+    if (count_u64 > ~std::uint64_t{0} - total.value)
+    {
+      total.first_overflow_bin = static_cast<int>(bin);
+      return total;
+    }
+    total.value += count_u64;
+  }
+  return total;
+}
+
+inline std::string bench_format_histogram_total(const bench_histogram_total& total)
+{
+  if (total.first_negative_bin >= 0)
+  {
+    return std::string{"invalid (negative counter at bin "} + std::to_string(total.first_negative_bin) + ")";
+  }
+  if (total.first_overflow_bin >= 0)
+  {
+    return std::string{"invalid (checker overflow at bin "} + std::to_string(total.first_overflow_bin) + ")";
+  }
+  return std::to_string(total.value);
+}
+
+template <typename CounterT>
+std::string bench_format_counter(CounterT count)
+{
+  static_assert(cuda::std::is_integral_v<CounterT>);
+  static_assert(sizeof(CounterT) <= sizeof(unsigned long long));
+  if constexpr (cuda::std::is_signed_v<CounterT>)
+  {
+    return std::to_string(static_cast<long long>(count));
+  }
+  else
+  {
+    return std::to_string(static_cast<unsigned long long>(count));
+  }
+}
+
+template <typename ExpectedT>
+std::uint64_t bench_expected_histogram_total(ExpectedT expected, const char* bench_label)
+{
+  static_assert(cuda::std::is_integral_v<ExpectedT>);
+  static_assert(sizeof(ExpectedT) <= sizeof(std::uint64_t));
+  if constexpr (cuda::std::is_signed_v<ExpectedT>)
+  {
+    if (expected < 0)
+    {
+      bench_fatal(std::string{"bench correctness check ["} + bench_label
+                  + "]: negative expected sample count=" + std::to_string(static_cast<long long>(expected)));
+    }
+  }
+  return static_cast<std::uint64_t>(expected);
+}
+
+template <typename CounterT, typename ExpectedT>
+void bench_compare_histograms(
+  const std::vector<thrust::host_vector<CounterT>>& opt_hists,
+  const std::vector<thrust::host_vector<CounterT>>& ref_hists,
+  const char* bench_label,
+  int num_channels,
+  ExpectedT expected_per_channel)
+{
+  const std::uint64_t expected_total = bench_expected_histogram_total(expected_per_channel, bench_label);
+  for (int c = 0; c < num_channels; ++c)
+  {
+    const auto& opt = opt_hists[c];
+    const auto& ref = ref_hists[c];
+    if (opt.size() != ref.size())
+    {
+      bench_fatal(std::string{"bench correctness check ["} + bench_label + "]: channel " + std::to_string(c)
+                  + " size mismatch: opt=" + std::to_string(opt.size()) + " ref=" + std::to_string(ref.size()));
+    }
+    const bench_histogram_total opt_total = bench_sum_histogram(opt);
+    const bench_histogram_total ref_total = bench_sum_histogram(ref);
+    int first_mismatch                    = -1;
+    for (std::size_t b = 0; b < opt.size(); ++b)
+    {
+      if (first_mismatch < 0 && opt[b] != ref[b])
+      {
+        first_mismatch = static_cast<int>(b);
+      }
+    }
+    if (!opt_total.valid() || !ref_total.valid() || opt_total.value != expected_total
+        || ref_total.value != expected_total || first_mismatch >= 0)
+    {
+      std::string msg =
+        std::string{"bench correctness check ["} + bench_label + "]: channel=" + std::to_string(c)
+        + " total opt=" + bench_format_histogram_total(opt_total) + " ref=" + bench_format_histogram_total(ref_total)
+        + " expected=" + std::to_string(expected_total) + "; first mismatched bin=" + std::to_string(first_mismatch);
+      if (first_mismatch >= 0)
+      {
+        msg += " (opt=" + bench_format_counter(opt[first_mismatch])
+             + " ref=" + bench_format_counter(ref[first_mismatch]) + ")";
+      }
+      bench_fatal(msg);
+    }
+  }
+}
+
+template <typename CounterT>
+std::vector<thrust::host_vector<CounterT>>
+bench_snapshot_histograms(const std::vector<thrust::device_vector<CounterT>>& d_hists)
+{
+  std::vector<thrust::host_vector<CounterT>> out;
+  out.reserve(d_hists.size());
+  for (const auto& d : d_hists)
+  {
+    out.emplace_back(d);
+  }
+  return out;
+}
+
+// Verifier entry point for EVEN benches. Caller passes the strided pixel-
+// major sample buffer and the per-channel optimized histograms it has
+// already produced; this function builds a per-channel reference and
+// compares bin-by-bin.
+template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
+void bench_verify_histogram_even(
+  const thrust::device_vector<SampleT>& d_input,
+  const std::vector<thrust::device_vector<CounterT>>& opt_hists_d,
+  OffsetT num_pixels,
+  int num_bins,
+  SampleT lower_level,
+  SampleT upper_level,
+  const char* bench_label)
+{
+  static_assert(NumActiveChannels >= 1 && NumActiveChannels <= NumChannels);
+
+  std::vector<thrust::device_vector<CounterT>> ref_hists_d(NumActiveChannels);
+  bench_ref_even_op<NumChannels, NumActiveChannels, SampleT, CounterT, OffsetT> op{};
+  op.d_input     = thrust::raw_pointer_cast(d_input.data());
+  op.num_pixels  = num_pixels;
+  op.num_bins    = num_bins;
+  op.lower_level = lower_level;
+  op.upper_level = upper_level;
+  for (int c = 0; c < NumActiveChannels; ++c)
+  {
+    ref_hists_d[c].assign(num_bins, CounterT{0});
+    op.d_hist[c] = thrust::raw_pointer_cast(ref_hists_d[c].data());
+  }
+
+  thrust::for_each(thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
+  bench_check_cuda(cudaGetLastError(), "ref-even launch");
+  bench_check_cuda(cudaDeviceSynchronize(), "ref-even sync");
+
+  const auto opt_hists = bench_snapshot_histograms(opt_hists_d);
+  const auto ref_hists = bench_snapshot_histograms(ref_hists_d);
+  bench_compare_histograms(opt_hists, ref_hists, bench_label, NumActiveChannels, num_pixels);
+}
+
+template <int NumChannels, int NumActiveChannels, typename SampleT, typename CounterT, typename OffsetT>
+void bench_verify_histogram_range(
+  const thrust::device_vector<SampleT>& d_input,
+  const std::vector<thrust::device_vector<CounterT>>& opt_hists_d,
+  const std::vector<thrust::device_vector<SampleT>>& d_levels_per_channel,
+  OffsetT num_pixels,
+  const char* bench_label)
+{
+  static_assert(NumActiveChannels >= 1 && NumActiveChannels <= NumChannels);
+
+  if (d_levels_per_channel.size() != NumActiveChannels)
+  {
+    bench_fatal(
+      std::string{"bench correctness check ["} + bench_label + "]: expected " + std::to_string(NumActiveChannels)
+      + " level arrays, got " + std::to_string(d_levels_per_channel.size()));
+  }
+
+  std::vector<thrust::device_vector<CounterT>> ref_hists_d(NumActiveChannels);
+  bench_ref_range_op<NumChannels, NumActiveChannels, SampleT, CounterT, OffsetT> op{};
+  op.d_input    = thrust::raw_pointer_cast(d_input.data());
+  op.num_pixels = num_pixels;
+  for (int c = 0; c < NumActiveChannels; ++c)
+  {
+    const int channel_num_levels = static_cast<int>(d_levels_per_channel[c].size());
+    if (channel_num_levels < 2)
+    {
+      bench_fatal(std::string{"bench correctness check ["} + bench_label + "]: channel " + std::to_string(c)
+                  + " has fewer than two levels");
+    }
+    ref_hists_d[c].assign(channel_num_levels - 1, CounterT{0});
+    op.d_hist[c]     = thrust::raw_pointer_cast(ref_hists_d[c].data());
+    op.d_levels[c]   = thrust::raw_pointer_cast(d_levels_per_channel[c].data());
+    op.num_levels[c] = channel_num_levels;
+  }
+
+  thrust::for_each(thrust::counting_iterator<OffsetT>(0), thrust::counting_iterator<OffsetT>(num_pixels), op);
+  bench_check_cuda(cudaGetLastError(), "ref-range launch");
+  bench_check_cuda(cudaDeviceSynchronize(), "ref-range sync");
+
+  const auto opt_hists = bench_snapshot_histograms(opt_hists_d);
+  const auto ref_hists = bench_snapshot_histograms(ref_hists_d);
+  bench_compare_histograms(opt_hists, ref_hists, bench_label, NumActiveChannels, num_pixels);
 }

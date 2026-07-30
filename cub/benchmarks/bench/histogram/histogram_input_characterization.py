@@ -1,0 +1,564 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+# SPDX-License-Identifier: BSD-3
+"""Characterization plots for the CUB histogram benchmark InputShapes.
+
+For every InputShape (see `histogram_inputs.cuh`), draw what the input actually
+looks like, straight from the SOURCE OF TRUTH generators in
+`histogram_input_design.py` (the bit-exact host mirror of the .cuh). One figure
+per shape, three panels each:
+
+  1. value distribution  -- count vs bin index, on a LOG y-axis with a stem per
+     occupied bin. The earlier linear count-vs-index plot made these look empty:
+     a single hot bin is one sub-pixel-wide spike among thousands of bins, and a
+     decaying tail (counts 1..100) is crushed flat under a ~N-tall spike. Log-y
+     stems show both the spike(s) AND the floor; the hottest bins are annotated
+     with their real index (so e.g. `concentrated:0.0`'s hot bin reads as
+     "bin 42", which is `seed % num_bins` -- deliberately scattered off zero --
+     not "empty at zero").
+  2. rank-frequency       -- sorted count vs rank, with a zero-based linear
+     count axis. A filled stair for every occupied rank keeps even a single hot
+     bin visible, while the logarithmic value-distribution panel retains the
+     detail in low-frequency tails.
+  3. position of values   -- bin index vs position in the input sequence
+     (subsampled). i.i.d. shapes smear vertically over their occupied bins;
+     ORDERING shapes show their structure here (temporal_phases steps,
+     stale_resident's uniform visits to its cold working set, the sawtooth's
+     ramp-and-reset).
+
+This is the standalone characterization generator AND the home of the shared
+draw_* functions reused by `histogram_algo_perf.py` for its top-row context.
+
+Run with a Python that has numpy + matplotlib, e.g.:
+  python histogram_input_characterization.py --outdir histogram_input_figs
+"""
+
+from __future__ import annotations
+
+import argparse
+import functools
+import math
+import os
+import sys
+import textwrap
+
+import matplotlib
+import numpy as np
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import histogram_input_design as D  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# Shapes + human-readable blurbs. Mirrors the catalog in histogram_inputs.cuh.
+# ---------------------------------------------------------------------------
+SHAPES = [
+    "concentrated:1.0",
+    "concentrated:0.75",
+    "concentrated:0.5",
+    "concentrated:0.25",
+    "concentrated:0.0",
+    "powerlaw:0.75",
+    "powerlaw:0.5",
+    "powerlaw:0.25",
+    "temporal_phases:0.10",
+    "stale_resident:0.5",
+    "stale_resident:0.25",
+    "hash_synonym",
+    "sawtooth",
+    "poison",
+    "sawtooth:8192:2654435761:1",
+]
+
+SHAPE_BLURB = {
+    "concentrated:1.0": "uniform endpoint (entropy 1.0): exact equal counts per bin, in random sequence order "
+    "(a Feistel shuffle of the tiling) — uniform counts, randomly distributed",
+    "concentrated:0.75": "entropy 0.75: random bin probabilities (softmax over random logits) — MOSTLY uniform, mild variation",
+    "concentrated:0.5": "entropy 0.5 (bare `concentrated` default): random bin probabilities dialed to medium entropy",
+    "concentrated:0.25": "entropy 0.25: random bin probabilities, now strongly skewed toward a few bins",
+    "concentrated:0.0": "single value (entropy 0.0): 100% on one bin, scattered to seed%bins (NOT bin 0)",
+    "powerlaw:0.75": "power-law warm set (entropy 0.75): gentle 1/rank^s decay over many bins",
+    "powerlaw:0.5": "power-law warm set (entropy 0.5): one dominant bin + a decaying tail",
+    "powerlaw:0.25": "power-law warm set (entropy 0.25): steep decay, a few bins dominate",
+    "temporal_phases": "eight evenly spaced temporal hot bins with 10% uniform random noise in each phase",
+    "temporal_phases:0.10": "eight evenly spaced temporal hot bins with 10% uniform random noise in each phase",
+    "stale_resident:0.5": "W=2S cold bins in an upper-bin window vs an S-slot no-eviction cache "
+    "(targeting ~50% hits)",
+    "stale_resident:0.25": "W=4S cold bins in an upper-bin window vs an S-slot no-eviction cache "
+    "(targeting ~25% hits)",
+    "hash_synonym": "up to 32 hot bins from one real primary-hash bucket; a short prefix primes their "
+    "secondary slots so both one- and two-probe caches reject the collisions",
+    "sawtooth": "bin(i)=i%period: a monotonic ramp that resets periodically (sequential locality, bounded working set)",
+    "poison": "two blocker bins claim the cache slots probed by one poison bin, then the poison bin dominates and misses",
+    "sawtooth:8192:2654435761:1": "8192 upper-window bins visited in a coprime strided cycle "
+    "without a wrapped low-bin tail",
+}
+
+# Characterization sample size. These are illustrative inputs, not the multi-GB
+# benchmark inputs.
+CHAR_N = 1_000_000
+CHAR_SEQ_SAMPLES = 4000
+CHAR_SEED = 42
+
+# Deliberately small schematic used only by the position overlay. Dividing every
+# full-sequence view into four blocks over four rounds makes block 0's repeated
+# tiles readable and identical across shapes. This illustrates the grid-stride
+# pattern; it is not a claim about the production kernel's policy-dependent block
+# size or grid dimensions.
+CHAR_GRID_BLOCKS = 4
+CHAR_GRID_ROUNDS = 4
+
+# Bin count is PER SHAPE, drawn at the shape's natural scale (the original design
+# figures did the same). Two reasons it must not be one global value:
+#  * the i.i.d. distribution shapes put their hot bin at seed % num_bins (= 42).
+#    At 16384 bins that is 0.3% from the left edge and reads as "pinned to 0";
+#    at a few hundred bins it sits visibly off zero where it belongs.
+#  * the cache-adversarial shapes are defined RELATIVE TO the SMEM cache slot count,
+#    so their structure only appears for bins > the working set (hash_synonym needs
+#    enough bins per actual cache slot to expose many synonyms; stale_resident needs bins > W so the
+#    whole working set fits, e.g. W=4S=32768 for :0.25 at the figure's S=8192).
+CHAR_BINS_DEFAULT = 16384
+CHAR_BINS_BY_SHAPE = {
+    "concentrated": 256,  # hot bin at 42 clearly off zero; floor legible
+    "powerlaw": 256,
+    "temporal_phases": 256,  # the 8 phase locations are distinct
+    "sawtooth": 256,  # several ramp periods visible
+    "sawtooth:8192:2654435761:1": 16384,  # show the full upper-window 8192-bin support
+    "poison": 32768,  # at least four bins per representative 8192-slot cache entry
+    "hash_synonym": 262144,  # ~32 real primary-slot synonyms for the representative S=8192
+    "stale_resident": 65536,  # bins > W (W up to 4*8192 for :0.25) so the whole set fits
+}
+
+
+def bins_for_shape(shape: str) -> int:
+    """The bin count this shape is characterized at (keyed by name, ignoring knob)."""
+    return CHAR_BINS_BY_SHAPE.get(
+        shape, CHAR_BINS_BY_SHAPE.get(shape.split(":")[0], CHAR_BINS_DEFAULT)
+    )
+
+
+def fmt_bins(b: int) -> str:
+    b = int(b)
+    return f"{b // 1024}K" if b >= 1024 and b % 1024 == 0 else str(b)
+
+
+DIST_COLOR = "#2b8cbe"
+RANK_COLOR = "#6a51a3"
+SEQ_COLOR = "#cb181d"
+BLOCK_STRIDE_COLOR = "#2171b5"
+
+
+def fmt_int(v: int) -> str:
+    return f"{int(v):,}"
+
+
+@functools.lru_cache(maxsize=None)
+def _counts_cached(shape: str, n: int, num_bins: int, seed: int):
+    """(bins, counts) for a shape. Cached so the perf script's 64 composites
+    regenerate each shape's input only once."""
+    bins = np.asarray(D.generate_bins(shape, n, num_bins, seed=seed), dtype=np.int64)
+    counts = np.bincount(bins, minlength=num_bins).astype(np.int64)
+    return bins, counts
+
+
+def char_input(
+    shape: str, n: int = CHAR_N, num_bins: int | None = None, seed: int = CHAR_SEED
+):
+    """(bins, counts, num_bins) for a shape, at its natural per-shape bin count."""
+    if num_bins is None:
+        num_bins = bins_for_shape(shape)
+    bins, counts = _counts_cached(shape, n, num_bins, seed)
+    return bins, counts, num_bins
+
+
+# ---------------------------------------------------------------------------
+# Shared draw_* functions (reused by histogram_algo_perf.py).
+# ---------------------------------------------------------------------------
+
+
+def draw_distribution(ax, counts, num_bins):
+    """count vs bin index on a log y-axis, one stem per occupied bin.
+
+    Robust to the spiky, wide distributions here: a lone hot bin shows as a tall
+    stem with a marker (never sub-pixel-invisible), and a low floor shows as a
+    band well above the axis floor instead of being crushed to zero."""
+    nz = np.flatnonzero(counts)
+    if nz.size == 0:
+        ax.text(
+            0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes
+        )
+        return
+    cmax = int(counts[nz].max())
+    base = 0.7  # < 1 so a count of 1 still draws a short stem on the log axis
+    ax.set_yscale("log")
+    # Thin stems when nearly every bin is occupied (uniform / sawtooth),
+    # thicker when there are a few discrete spikes.
+    dense = nz.size > 2000
+    ax.vlines(
+        nz, base, counts[nz], color=DIST_COLOR, lw=0.5 if dense else 1.6, alpha=0.9
+    )
+    ax.scatter(
+        nz,
+        counts[nz],
+        s=8 if dense else 22,
+        color=DIST_COLOR,
+        zorder=3,
+        edgecolors="none",
+    )
+
+    ax.set_title(
+        f"value distribution (count vs bin index, {fmt_bins(num_bins)} bins, log y)",
+        fontsize=10,
+    )
+    ax.set_xlabel("bin index")
+    ax.set_ylabel("count (log)")
+    ax.set_xlim(-num_bins * 0.02, num_bins * 1.02)
+    ax.set_ylim(base, cmax * 2.5)
+    ax.grid(axis="y", which="both", linestyle=":", alpha=0.45)
+
+
+def draw_rankfreq(ax, counts):
+    """Sorted count vs rank on a zero-based linear count axis.
+
+    A filled stair rather than a point/line plot is intentional: for a
+    single-valued input there is only one occupied rank, and a lone marker is
+    nearly invisible in the combined catalog. Giving every rank a unit-width
+    interval makes that singleton distribution unambiguously visible.
+    """
+    c = np.sort(counts[counts > 0])[::-1]
+    if c.size == 0:
+        ax.text(
+            0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes
+        )
+        ax.set_ylim(bottom=0)
+        return
+    rank_edges = np.arange(0.5, c.size + 1.5)
+    ax.stairs(c, rank_edges, fill=True, color=RANK_COLOR, alpha=0.8, linewidth=1.0)
+    ax.set_title(
+        f"rank-frequency (sorted count vs rank) — {c.size} occupied bins",
+        fontsize=10,
+    )
+    ax.set_xlabel("rank (hottest = 1)")
+    ax.set_ylabel("count")
+    ax.set_xlim(0.5, max(1.5, c.size + 0.5))
+    ax.set_ylim(0, max(1, int(c[0])) * 1.05)
+    ax.grid(axis="y", linestyle=":", alpha=0.45)
+
+
+def sequence_sample_positions(n):
+    """Return one shape-independent sample of the full input-position domain."""
+    if n <= 0:
+        return np.empty(0, dtype=np.int64)
+    if n <= CHAR_SEQ_SAMPLES:
+        return np.arange(n, dtype=np.int64)
+    return np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64)
+
+
+def block_stride_spans(
+    sequence_start,
+    sequence_stop,
+    grid_blocks=CHAR_GRID_BLOCKS,
+    grid_rounds=CHAR_GRID_ROUNDS,
+    block_index=0,
+):
+    """Return block ``block_index`` tiles in a readable grid-stride schematic.
+
+    The visible full-sequence domain is divided into ``grid_rounds`` groups of
+    ``grid_blocks`` equal tiles. Block ``b`` owns tile ``b`` in every group.
+    Production launch dimensions are policy-dependent; this intentionally shows
+    the access pattern without pretending that one hardware block size applies to
+    every single-, multi-channel, EVEN, and RANGE kernel in the figure set.
+    """
+    if (
+        sequence_stop <= sequence_start
+        or grid_blocks <= 0
+        or grid_rounds <= 0
+        or block_index < 0
+        or block_index >= grid_blocks
+    ):
+        return []
+
+    tile_width = (sequence_stop - sequence_start) / (grid_blocks * grid_rounds)
+    return [
+        (
+            sequence_start + (round_index * grid_blocks + block_index) * tile_width,
+            sequence_start + (round_index * grid_blocks + block_index + 1) * tile_width,
+        )
+        for round_index in range(grid_rounds)
+    ]
+
+
+def draw_block_stride_overlay(
+    ax,
+    sequence_start,
+    sequence_stop,
+    grid_blocks=CHAR_GRID_BLOCKS,
+    grid_rounds=CHAR_GRID_ROUNDS,
+):
+    """Shade schematic block 0 tiles directly over the sequence data.
+
+    ``axvspan`` takes x coordinates in data space and y coordinates in axes space,
+    so every rectangle aligns with real input positions while covering the full
+    height of the bin-index axis. The translucent patches are deliberately drawn
+    over the scatter points; there is no detached schematic or legend-like box.
+    """
+    for start, stop in block_stride_spans(
+        sequence_start,
+        sequence_stop,
+        grid_blocks=grid_blocks,
+        grid_rounds=grid_rounds,
+    ):
+        ax.axvspan(
+            start,
+            stop,
+            ymin=0,
+            ymax=1,
+            facecolor=BLOCK_STRIDE_COLOR,
+            edgecolor=BLOCK_STRIDE_COLOR,
+            linewidth=0.6,
+            alpha=0.16,
+            zorder=3,
+        )
+
+
+def validate_block_stride_overlay():
+    """Regression checks for the illustrative block-0 sequence overlay.
+
+    Every shape must use the same full-sequence domain, sampled positions, and
+    schematic band coordinates. The checks cover both geometry and the full-height
+    overlay requested for the position-vs-bin panel.
+    """
+    spans = block_stride_spans(0, CHAR_N)
+    expected_spans = [
+        (0.0, 62500.0),
+        (250000.0, 312500.0),
+        (500000.0, 562500.0),
+        (750000.0, 812500.0),
+    ]
+    if spans != expected_spans:
+        raise AssertionError(
+            f"block-stride span regression: got {spans}, expected {expected_spans}"
+        )
+
+    covered = sum(stop - start for start, stop in spans)
+    expected_fraction = 1.0 / CHAR_GRID_BLOCKS
+    if abs(covered / CHAR_N - expected_fraction) > 1e-12:
+        raise AssertionError(
+            "block-stride coverage regression: "
+            f"got {covered / CHAR_N:.6f}, "
+            f"expected {expected_fraction:.6f}"
+        )
+
+    # axvspan must produce one patch per tile whose local y coordinates cover
+    # the complete [0, 1] axes height. This catches a regression back to a
+    # detached schematic or a partial-height data-coordinate rectangle.
+    fig, ax = plt.subplots()
+    try:
+        draw_block_stride_overlay(ax, 0, CHAR_N)
+        if len(ax.patches) != len(expected_spans):
+            raise AssertionError(
+                f"block-stride patch-count regression: got {len(ax.patches)}, "
+                f"expected {len(expected_spans)}"
+            )
+        for patch, (expected_start, expected_stop) in zip(ax.patches, expected_spans):
+            if float(patch.get_y()) != 0.0 or float(patch.get_height()) != 1.0:
+                raise AssertionError(
+                    "block-stride patch does not span full axes height: "
+                    f"y={patch.get_y()}, height={patch.get_height()}"
+                )
+            if (
+                float(patch.get_x()) != expected_start
+                or float(patch.get_width()) != expected_stop - expected_start
+            ):
+                raise AssertionError(
+                    "block-stride patch does not align to its input span: "
+                    f"x={patch.get_x()}, width={patch.get_width()}, "
+                    f"expected=({expected_start}, {expected_stop})"
+                )
+    finally:
+        plt.close(fig)
+
+    # Exercise different shape names and value distributions through the public
+    # draw function. Both must retain the same full x domain and band geometry.
+    left_bins = np.arange(CHAR_N, dtype=np.int64) % 256
+    right_bins = np.full(CHAR_N, 42, dtype=np.int64)
+    fig, axes = plt.subplots(1, 2)
+    try:
+        draw_sequence(axes[0], left_bins, 256, shape="sawtooth")
+        draw_sequence(axes[1], right_bins, 256, shape="temporal_phases:0.10")
+        if axes[0].get_xlim() != axes[1].get_xlim() or axes[0].get_xlim() != (
+            0.0,
+            float(CHAR_N),
+        ):
+            raise AssertionError(
+                "sequence x-domain differs by shape: "
+                f"left={axes[0].get_xlim()}, right={axes[1].get_xlim()}"
+            )
+
+        def patch_bounds(ax):
+            return [
+                (float(patch.get_x()), float(patch.get_width())) for patch in ax.patches
+            ]
+
+        if patch_bounds(axes[0]) != patch_bounds(axes[1]):
+            raise AssertionError("block-stride patch positions differ by shape")
+    finally:
+        plt.close(fig)
+
+    return {
+        "schematic_spans": spans,
+        "full_sequence_stop": CHAR_N,
+        "coverage": covered / CHAR_N,
+    }
+
+
+def draw_sequence(ax, bins, num_bins, shape=None):
+    """Draw full-sequence bin index vs position with a block-stride overlay."""
+    n = len(bins)
+    idx = sequence_sample_positions(n)
+    sequence_start = 0
+    sequence_stop = n
+    ax.scatter(
+        idx,
+        bins[idx],
+        s=5,
+        alpha=0.45,
+        color=SEQ_COLOR,
+        edgecolors="none",
+        zorder=2,
+    )
+    ax.set_title("position of values (bin index vs position in sequence)", fontsize=10)
+    ax.set_xlabel(
+        "position in input sequence (full range, subsampled)\n"
+        f"blue: schematic block 0 ({CHAR_GRID_BLOCKS}-block grid × "
+        f"{CHAR_GRID_ROUNDS} rounds)"
+    )
+    ax.set_ylabel("bin index")
+    ax.set_xlim(sequence_start, sequence_stop)
+    ax.set_ylim(-num_bins * 0.02, num_bins * 1.02)
+    ax.grid(axis="y", linestyle=":", alpha=0.4)
+    draw_block_stride_overlay(ax, sequence_start, sequence_stop)
+
+
+# ---------------------------------------------------------------------------
+# Standalone per-shape characterization figure.
+# ---------------------------------------------------------------------------
+
+
+def render_shape(shape, outdir, n, num_bins, seed):
+    bins, counts, num_bins = char_input(shape, n, num_bins, seed)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 4.8))
+    # Wrap the blurb so a long description does not run past the figure edge.
+    blurb = "\n".join(
+        textwrap.wrap(
+            f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}", width=150
+        )
+    )
+    fig.suptitle(
+        f"{blurb}\n(N={fmt_int(n)} samples, {fmt_bins(num_bins)} bins, seed={seed})",
+        fontsize=12,
+    )
+    draw_distribution(axes[0], counts, num_bins)
+    draw_rankfreq(axes[1], counts)
+    draw_sequence(axes[2], bins, num_bins, shape=shape)
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    out = os.path.join(outdir, f"{shape.replace(':', '_')}.png")
+    fig.savefig(out, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    return out, num_bins, int(np.count_nonzero(counts)), int(counts.max())
+
+
+def render_catalog(shapes, out, n, num_bins, seed, columns=3):
+    """Render every shape into one high-resolution, zoomable catalog image."""
+    rows = math.ceil(len(shapes) / columns)
+    fig = plt.figure(figsize=(18 * columns, 5.2 * rows), constrained_layout=True)
+    cards = fig.subfigures(rows, columns, squeeze=False)
+
+    for index, card in enumerate(cards.flat):
+        if index >= len(shapes):
+            card.set_visible(False)
+            continue
+
+        shape = shapes[index]
+        bins, counts, shape_bins = char_input(shape, n, num_bins, seed)
+        axes = card.subplots(1, 3)
+        blurb = "\n".join(
+            textwrap.wrap(
+                f"InputShape: {shape} — {SHAPE_BLURB.get(shape, '')}", width=105
+            )
+        )
+        card.suptitle(f"{blurb}\n({fmt_bins(shape_bins)} bins)", fontsize=10)
+        draw_distribution(axes[0], counts, shape_bins)
+        draw_rankfreq(axes[1], counts)
+        draw_sequence(axes[2], bins, shape_bins, shape=shape)
+        axes[0].set_title("value distribution (log y)", fontsize=9)
+        axes[1].set_title(
+            f"rank-frequency — {int(np.count_nonzero(counts))} occupied bins",
+            fontsize=9,
+        )
+        axes[2].set_title("position in input sequence", fontsize=9)
+
+    fig.savefig(out, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--outdir",
+        default="histogram_input_figs",
+        help="output directory for the per-shape PNGs",
+    )
+    ap.add_argument(
+        "--elements", type=int, default=CHAR_N, help="number of samples to characterize"
+    )
+    ap.add_argument(
+        "--bins",
+        type=int,
+        default=None,
+        help="override the per-shape bin count (default: each shape's natural scale)",
+    )
+    ap.add_argument("--seed", type=int, default=CHAR_SEED, help="generator seed")
+    ap.add_argument(
+        "--shapes", nargs="*", default=SHAPES, help="subset of InputShapes to render"
+    )
+    ap.add_argument(
+        "--combined",
+        action="store_true",
+        help="also render all selected shapes into one catalog PNG",
+    )
+    args = ap.parse_args()
+
+    overlay_validation = validate_block_stride_overlay()
+    print(f"Block-stride overlay validation: {overlay_validation}")
+
+    os.makedirs(args.outdir, exist_ok=True)
+    print(
+        f"Characterizing {len(args.shapes)} shapes (N={fmt_int(args.elements)}, seed={args.seed})"
+    )
+    for shape in args.shapes:
+        out, nb, occupied, hottest = render_shape(
+            shape, args.outdir, args.elements, args.bins, args.seed
+        )
+        print(
+            f"  {shape:<20} bins={fmt_bins(nb):<5} occupied={occupied:<6} hottest={fmt_int(hottest):<12} -> {out}"
+        )
+    if args.combined:
+        combined = render_catalog(
+            args.shapes,
+            os.path.join(args.outdir, "all_input_characterizations.png"),
+            args.elements,
+            args.bins,
+            args.seed,
+        )
+        print(f"Combined catalog -> {combined}")
+    print(f"Done. {len(args.shapes)} figures under {args.outdir}")
+
+
+if __name__ == "__main__":
+    main()

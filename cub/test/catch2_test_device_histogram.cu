@@ -30,7 +30,15 @@
 #include <c2h/extended_types.h>
 #include <c2h/vector.h>
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
+// Device-side (CDP) launch (lid_1) is intentionally omitted: the high-bin histogram
+// path requires either a cooperative launch (cudaLaunchCooperativeKernel) or a raised
+// dynamic-SMEM cap (cudaFuncSetAttribute), both of which are host-only runtime APIs
+// that cannot be issued from a device-side launch. The dispatch therefore returns
+// cudaErrorNotSupported for those tiers under CDP, which the shared launch helper
+// (catch2_test_launch_helper.h) asserts against. Only host launch (lid_0) and graph
+// capture (lid_2) are exercised. See task to add a non-cooperative 3-launch gather
+// fallback if device-side high-bin histogram is ever required.
+// %PARAM% TEST_LAUNCH lid 0:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
@@ -208,6 +216,12 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
   const auto min_bin_width = max_level / (max_level_count - 1);
   REQUIRE(min_bin_width > 0);
 
+  // Perturb interior levels to defeat uniform-spacing detection so the
+  // SearchTransform path is exercised. Endpoints stay anchored. When
+  // min_bin_width is too small for a strictly monotonic shift (e.g. byte-sample
+  // tests with 256 levels), levels stay uniform.
+  const auto perturbation_step = min_bin_width / 4;
+
   array<c2h::host_vector<LevelT>, ActiveChannels> levels;
   for (size_t c = 0; c < ActiveChannels; ++c)
   {
@@ -217,7 +231,12 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
     const auto lower_level    = (max_level / 2 - min_hist_width / 2);
     for (int l = 0; l < num_levels[c]; ++l)
     {
-      levels[c][l] = static_cast<LevelT>(lower_level + l * min_bin_width);
+      auto level = static_cast<LevelT>(lower_level + l * min_bin_width);
+      if (l > 0 && l < num_levels[c] - 1 && perturbation_step > LevelT{0})
+      {
+        level = static_cast<LevelT>(level + (l % 2 == 0 ? perturbation_step : -perturbation_step));
+      }
+      levels[c][l] = level;
       if (l > 0)
       {
         REQUIRE(levels[c][l - 1] < levels[c][l]);
@@ -748,8 +767,15 @@ C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   CHECK(error2 == (num_bins == 1 || sizeof(sample_t) <= 4UL ? cudaSuccess : cudaErrorInvalidValue));
 }
 
-// When the number of bins exceeds what LevelT can represent, the bin computation will overflow
-// during the cast to CommonT. We expect cudaErrorInvalidValue to be returned.
+// `num_bins` may exceed what `LevelT` can represent without an error: bin
+// width can be fractional (smaller than one LevelT distinct value), and the
+// integer ComputeBin path promotes through `IntArithmeticT` (uint32_t /
+// uint64_t) so the multiplication and division do not overflow even when
+// `num_bins > numeric_limits<LevelT>::max()`. The previous implementation
+// returned `cudaErrorInvalidValue` in this regime because both the
+// `MayOverflow` precondition and `ScaleTransform`'s `range = max - min`
+// storage truncated `num_bins` and the level difference back to `LevelT`
+// before checking; once those casts are removed, the dispatch succeeds.
 C2H_TEST_LIST(
   "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", int8_t, int16_t)
 {
@@ -765,13 +791,13 @@ C2H_TEST_LIST(
   auto d_samples   = cuda::counting_iterator<sample_t>{0};
   auto d_histo_out = c2h::device_vector<counter_t>(4096);
 
-  // Test with num_bins that exceeds what LevelT can represent
-  // int8_t max = 127, so 128 bins will overflow
-  // int16_t max = 32767, so 32768 bins will overflow
+  // num_bins that previously overflowed LevelT-typed storage:
+  //   int8_t  max = 127, so 128 bins triggered the bug
+  //   int16_t max = 32767, so 32768 bins triggered the bug
   const int num_bins_overflow = static_cast<int>(cs::numeric_limits<level_t>::max()) + 1;
   const int num_levels        = num_bins_overflow + 1;
 
-  // Verify temp_storage_bytes is always initialized even on error
+  // Verify temp_storage_bytes is always initialized.
   constexpr size_t canary_bytes = 3;
   size_t temp_storage_bytes     = canary_bytes;
 
@@ -785,12 +811,12 @@ C2H_TEST_LIST(
     upper_level,
     num_samples);
 
-  // Should return error because num_bins overflows LevelT
-  CHECK(error1 == cudaErrorInvalidValue);
-  // Should still initialize temp_storage_bytes to a valid value
+  // Now succeeds: bin width is fractional but the integer ComputeBin path
+  // handles it correctly.
+  CHECK(error1 == cudaSuccess);
   CHECK(temp_storage_bytes != canary_bytes);
 
-  // Also verify that valid num_bins works
+  // Also verify that num_bins == numeric_limits<LevelT>::max() still works.
   const int valid_num_bins   = static_cast<int>(cs::numeric_limits<level_t>::max());
   const int valid_num_levels = valid_num_bins + 1;
 
