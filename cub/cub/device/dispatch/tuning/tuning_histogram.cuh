@@ -39,9 +39,13 @@ struct HistogramPolicy
   bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
-  int dynamic_smem_bytes            = 0; //!< Tuned byte budget for a runtime-sized privatized histogram; 0 disables it
-  int static_smem_threads_per_block = 0; //!< Static shared-memory tier threads; 0 inherits threads_per_block
-  int static_smem_items_per_thread  = 0; //!< Static shared-memory tier items; 0 inherits pixels_per_thread
+  int dynamic_smem_bytes             = 0; //!< Tuned byte budget for a runtime-sized privatized histogram; 0 disables it
+  int static_smem_threads_per_block  = 0; //!< Static shared-memory tier threads; 0 inherits threads_per_block
+  int static_smem_items_per_thread   = 0; //!< Static shared-memory tier items; 0 inherits pixels_per_thread
+  int dynamic_smem_range_max_bins    = 0; //!< Multi-channel RANGE cap per channel; 0 disables the dynamic path
+  int dynamic_smem_even_max_bins     = 0; //!< Multi-channel EVEN cap per channel; 0 disables the dynamic path
+  int dynamic_smem_even_3ch_max_bins = 0; //!< Extended EVEN cap when at most three channels are active
+  int range_interpolation_min_bins   = 0; //!< Minimum RANGE bin count for interpolation; 0 disables interpolation
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
   {
@@ -63,7 +67,11 @@ struct HistogramPolicy
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.dynamic_smem_bytes == rhs.dynamic_smem_bytes
         && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
-        && lhs.static_smem_items_per_thread == rhs.static_smem_items_per_thread;
+        && lhs.static_smem_items_per_thread == rhs.static_smem_items_per_thread
+        && lhs.dynamic_smem_range_max_bins == rhs.dynamic_smem_range_max_bins
+        && lhs.dynamic_smem_even_max_bins == rhs.dynamic_smem_even_max_bins
+        && lhs.dynamic_smem_even_3ch_max_bins == rhs.dynamic_smem_even_3ch_max_bins
+        && lhs.range_interpolation_min_bins == rhs.range_interpolation_min_bins;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -82,7 +90,10 @@ struct HistogramPolicy
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = "
         << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
-        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread << " }";
+        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread << ", .dynamic_smem_range_max_bins = "
+        << p.dynamic_smem_range_max_bins << ", .dynamic_smem_even_max_bins = " << p.dynamic_smem_even_max_bins
+        << ", .dynamic_smem_even_3ch_max_bins = " << p.dynamic_smem_even_3ch_max_bins
+        << ", .range_interpolation_min_bins = " << p.range_interpolation_min_bins << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -92,7 +103,11 @@ namespace detail::histogram
 // B200 exposes 232448 bytes of opt-in shared memory per block. Autoresearch
 // retained 4096 bytes for static kernel storage and driver bookkeeping, leaving
 // 228352 bytes for the runtime-sized privatized histogram.
-static constexpr int sm100_dynamic_smem_bytes = 232448 - 4096;
+static constexpr int sm100_dynamic_smem_bytes             = 232448 - 4096;
+static constexpr int sm100_dynamic_smem_range_max_bins    = 2048;
+static constexpr int sm100_dynamic_smem_even_max_bins     = 8192;
+static constexpr int sm100_dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_bytes / int{sizeof(unsigned int)};
+static constexpr int sm100_range_interpolation_min_bins   = 512;
 
 // TODO(bgruber): drop in CCCL 4.0
 enum class primitive_sample
@@ -321,6 +336,9 @@ struct policy_hub
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
     static constexpr int dynamic_smem_bytes               = sm100_dynamic_smem_bytes;
+    static constexpr int dynamic_smem_range_max_bins      = sm100_dynamic_smem_range_max_bins;
+    static constexpr int dynamic_smem_even_max_bins       = sm100_dynamic_smem_even_max_bins;
+    static constexpr int dynamic_smem_even_3ch_max_bins   = sm100_dynamic_smem_even_3ch_max_bins;
   };
 
   using MaxPolicy = Policy1000;
@@ -350,7 +368,11 @@ private:
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto sm100_policy(HistogramPolicy policy) const -> HistogramPolicy
   {
-    policy.dynamic_smem_bytes = sm100_dynamic_smem_bytes;
+    policy.dynamic_smem_bytes             = sm100_dynamic_smem_bytes;
+    policy.dynamic_smem_range_max_bins    = sm100_dynamic_smem_range_max_bins;
+    policy.dynamic_smem_even_max_bins     = sm100_dynamic_smem_even_max_bins;
+    policy.dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
+    policy.range_interpolation_min_bins   = sm100_range_interpolation_min_bins;
     return policy;
   }
 
@@ -382,8 +404,8 @@ public:
             HistogramPolicy{768, t_scale(12), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 2048});
         }
 
-        const int static_threads = sample_size_bytes >= 8 ? 384 : 768;
-        const int static_items   = sample_size_bytes >= 8 ? t_scale(16) : 0;
+        const int static_threads = sample_size == 8 ? 384 : 768;
+        const int static_items   = sample_size == 8 ? t_scale(16) : 0;
         return sm100_policy(HistogramPolicy{
           768,
           t_scale(12),
