@@ -24,13 +24,17 @@
 #include <thrust/device_reference.h>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 
@@ -128,6 +132,10 @@ public:
 private:
   /// Determines if the container is a key/value or key-only store
   static constexpr auto __has_payload = !::cuda::std::is_same_v<_Key, typename _StorageRef::__value_type>;
+
+  static constexpr auto __has_packable_representation =
+    sizeof(__value_type) <= 8 && ::cuda::is_power_of_two(sizeof(__value_type))
+    && ::cuda::std::is_trivially_copyable_v<__value_type>;
 
   /// Flag indicating whether duplicate keys are allowed or not
   static constexpr auto __allows_duplicates = _AllowsDuplicates;
@@ -796,16 +804,14 @@ public:
   packed_cas(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     using packed_type =
-      ::cuda::std::conditional_t<sizeof(__value_type) == 4, ::cuda::std::uint32_t, ::cuda::std::uint64_t>;
+      ::cuda::std::__make_nbit_uint_t<sizeof(__value_type) * ::cuda::std::numeric_limits<unsigned char>::digits>;
 
-    auto* __slot_ptr     = reinterpret_cast<packed_type*>(__address);
-    auto* __expected_ptr = reinterpret_cast<packed_type*>(&__expected);
-    auto* __desired_ptr  = reinterpret_cast<packed_type*>(&__desired);
-
-    auto __slot_ref = ::cuda::atomic_ref<packed_type, _Scope>{*__slot_ptr};
+    auto __slot_ref             = ::cuda::atomic_ref<packed_type, _Scope>{*reinterpret_cast<packed_type*>(__address)};
+    auto __expected_packed      = ::cuda::std::bit_cast<packed_type>(__expected);
+    const auto __desired_packed = ::cuda::std::bit_cast<packed_type>(__native_value(__desired));
 
     const auto success =
-      __slot_ref.compare_exchange_strong(*__expected_ptr, *__desired_ptr, ::cuda::memory_order_relaxed);
+      __slot_ref.compare_exchange_strong(__expected_packed, __desired_packed, ::cuda::memory_order_relaxed);
 
     if (success)
     {
@@ -813,7 +819,8 @@ public:
     }
     else
     {
-      return __predicate.__equal_to(__extract_key(__desired), __extract_key(__expected))
+      return __predicate.__equal_to(__extract_key(__desired),
+                                    __extract_key(::cuda::std::bit_cast<__value_type>(__expected_packed)))
               == detail::__equal_result::__equal
              ? __insert_result::__duplicate
              : __insert_result::__continue;
@@ -931,17 +938,24 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API __insert_result
   __attempt_insert(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
-    if constexpr (sizeof(__value_type) <= 8)
+    if constexpr (__has_payload)
     {
-      return packed_cas(__address, __expected, __desired);
-    }
-    else
-    {
+      if constexpr (__has_packable_representation)
+      {
+        if (__storage_ref.__is_packed_cas_aligned())
+        {
+          return packed_cas(__address, __expected, __desired);
+        }
+      }
 #  if (__CUDA_ARCH__ < 700)
       return cas_dependent_write(__address, __expected, __desired);
 #  else
       return back_to_back_cas(__address, __expected, __desired);
 #  endif
+    }
+    else
+    {
+      return packed_cas(__address, __expected, __desired);
     }
   }
 
@@ -965,13 +979,20 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API __insert_result
   __attempt_insert_stable(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
-    if constexpr (sizeof(__value_type) <= 8)
+    if constexpr (__has_payload)
     {
-      return packed_cas(__address, __expected, __desired);
+      if constexpr (__has_packable_representation)
+      {
+        if (__storage_ref.__is_packed_cas_aligned())
+        {
+          return packed_cas(__address, __expected, __desired);
+        }
+      }
+      return cas_dependent_write(__address, __expected, __desired);
     }
     else
     {
-      return cas_dependent_write(__address, __expected, __desired);
+      return packed_cas(__address, __expected, __desired);
     }
   }
 

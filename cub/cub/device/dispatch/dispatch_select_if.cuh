@@ -355,7 +355,7 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     const OffsetT num_items,
     const int num_tiles,
-    const StreamingContextT streaming_context,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<

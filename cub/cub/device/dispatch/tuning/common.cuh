@@ -206,7 +206,7 @@ enum class LookbackDelayAlgorithm
 
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(LookbackDelayAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(LookbackDelayAlgorithm algo) noexcept
 {
   switch (algo)
   {
