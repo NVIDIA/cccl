@@ -187,25 +187,46 @@ template <::cuda::thread_scope _Scope, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __atomic_load(const _Tp* __address) noexcept
 {
   ::cuda::experimental::cuco::detail::__validate_atomic_type<_Tp>();
-  static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "cuCO atomic load requires a 4 or 8 byte type");
 
-  using __word_type            = __atomic_word_t<_Tp>;
-  auto* const __word_address   = reinterpret_cast<__word_type*>(const_cast<_Tp*>(__address));
-  constexpr __word_type __zero = 0;
-  const auto __old = ::cuda::experimental::cuco::detail::__atomic_cas_word<_Scope>(__word_address, __zero, __zero);
-  return ::cuda::std::bit_cast<_Tp>(__old);
+  using __word_type = __atomic_word_t<_Tp>;
+  if constexpr (sizeof(_Tp) <= 2)
+  {
+    constexpr ::cuda::std::uintptr_t __align_mask = sizeof(unsigned int) - 1;
+    constexpr unsigned int __size_mask            = (1u << (sizeof(_Tp) * 8)) - 1;
+    const auto __address_value                    = reinterpret_cast<::cuda::std::uintptr_t>(__address);
+    auto* const __aligned                         = reinterpret_cast<unsigned int*>(__address_value & ~__align_mask);
+    const auto __offset                           = static_cast<unsigned int>((__address_value & __align_mask) * 8);
+    const auto __old = ::cuda::experimental::cuco::detail::__atomic_cas_word<_Scope>(__aligned, 0u, 0u);
+    return ::cuda::std::bit_cast<_Tp>(static_cast<__word_type>((__old >> __offset) & __size_mask));
+  }
+  else
+  {
+    auto* const __word_address   = reinterpret_cast<__word_type*>(const_cast<_Tp*>(__address));
+    constexpr __word_type __zero = 0;
+    const auto __old = ::cuda::experimental::cuco::detail::__atomic_cas_word<_Scope>(__word_address, __zero, __zero);
+    return ::cuda::std::bit_cast<_Tp>(__old);
+  }
 }
 
 template <::cuda::thread_scope _Scope, class _Tp>
 _CCCL_DEVICE_API void __atomic_store(_Tp* __address, _Tp __value) noexcept
 {
   ::cuda::experimental::cuco::detail::__validate_atomic_type<_Tp>();
-  static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "cuCO atomic store requires a 4 or 8 byte type");
 
-  using __word_type           = __atomic_word_t<_Tp>;
-  auto* const __word_address  = reinterpret_cast<__word_type*>(__address);
-  const __word_type __desired = ::cuda::std::bit_cast<__word_type>(__value);
-  (void) ::cuda::experimental::cuco::detail::__atomic_exchange_word<_Scope>(__word_address, __desired);
+  if constexpr (sizeof(_Tp) <= 2)
+  {
+    auto __expected = ::cuda::experimental::cuco::detail::__atomic_load<_Scope>(__address);
+    while (!::cuda::experimental::cuco::detail::__atomic_compare_exchange<_Scope>(__address, __expected, __value))
+    {
+    }
+  }
+  else
+  {
+    using __word_type           = __atomic_word_t<_Tp>;
+    auto* const __word_address  = reinterpret_cast<__word_type*>(__address);
+    const __word_type __desired = ::cuda::std::bit_cast<__word_type>(__value);
+    (void) ::cuda::experimental::cuco::detail::__atomic_exchange_word<_Scope>(__word_address, __desired);
+  }
 }
 
 template <::cuda::thread_scope _Scope, class _Tp>

@@ -253,14 +253,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
   // any_resource is convertible to any_synchronous_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  any_synchronous_resource(any_resource<_OtherProperties...> __other) noexcept
+  _CCCL_HOST_API any_synchronous_resource(any_resource<_OtherProperties...> __other) noexcept
       : __base(::cuda::std::move(__other.__get_base()))
   {}
 
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
   //! @cond
-  explicit any_synchronous_resource(__from_base_tag, __base&& __b) noexcept
+  _CCCL_HOST_API explicit any_synchronous_resource(__from_base_tag, __base&& __b) noexcept
       : __base(::cuda::std::move(__b))
   {}
   //! @endcond

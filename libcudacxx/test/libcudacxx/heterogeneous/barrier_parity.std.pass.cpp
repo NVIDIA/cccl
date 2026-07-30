@@ -13,6 +13,9 @@
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include <cuda/barrier>
 #include <cuda/std/cassert>
 
@@ -30,7 +33,7 @@ struct barrier_and_token
   cuda::std::atomic<bool> parity_waiting{false};
 
   template <typename... Args>
-  TEST_FUNC barrier_and_token(Args&&... args)
+  TEST_HOST_DEVICE_FUNC barrier_and_token(Args&&... args)
       : barrier{cuda::std::forward<Args>(args)...}
   {}
 };
@@ -40,7 +43,7 @@ struct barrier_arrive_and_wait
   using async = cuda::std::true_type;
 
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     while (data.parity_waiting.load(cuda::std::memory_order_acquire) == false)
     {
@@ -56,7 +59,7 @@ struct barrier_parity_wait
   using async = cuda::std::true_type;
 
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     data.parity_waiting.store(true, cuda::std::memory_order_release);
     data.parity_waiting.notify_all();
@@ -67,7 +70,7 @@ struct barrier_parity_wait
 struct clear_token
 {
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     data.parity_waiting.store(false, cuda::std::memory_order_release);
   }

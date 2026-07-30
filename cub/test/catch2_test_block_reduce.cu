@@ -6,7 +6,7 @@
 #include <limits>
 #include <numeric>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <cub::BlockReduceAlgorithm Algorithm,
           int ItemsPerThread,
@@ -136,8 +136,14 @@ struct params_t
   static constexpr cub::BlockReduceAlgorithm algorithm = c2h::get<4, TestType>::value;
 };
 
-C2H_TEST(
-  "Block reduce works with sum", "[reduce][block]", types, items_per_thread, block_dim_xs, block_dim_yzs, algorithm)
+CUB_TEST("Block reduce works with sum",
+         "[reduce][block]",
+         CUB_SMALL,
+         types,
+         items_per_thread,
+         block_dim_xs,
+         block_dim_yzs,
+         algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -162,8 +168,9 @@ C2H_TEST(
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
 
-C2H_TEST("Block reduce works with sum in partial tiles",
+CUB_TEST("Block reduce works with sum in partial tiles",
          "[reduce][block]",
+         CUB_SMALL,
          types,
          single_item_per_thread,
          block_dim_xs,
@@ -193,8 +200,9 @@ C2H_TEST("Block reduce works with sum in partial tiles",
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
 
-C2H_TEST("Block reduce works with custom op",
+CUB_TEST("Block reduce works with custom op",
          "[reduce][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          block_dim_xs,
@@ -224,8 +232,9 @@ C2H_TEST("Block reduce works with custom op",
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
 
-C2H_TEST("Block reduce works with custom op in partial tiles",
+CUB_TEST("Block reduce works with custom op in partial tiles",
          "[reduce][block]",
+         CUB_SMALL,
          types,
          single_item_per_thread,
          block_dim_xs,
@@ -255,7 +264,7 @@ C2H_TEST("Block reduce works with custom op in partial tiles",
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
 
-C2H_TEST("Block reduce works with custom types", "[reduce][block]", block_dim_xs, block_dim_yzs, algorithm)
+CUB_TEST("Block reduce works with custom types", "[reduce][block]", CUB_SMALL, block_dim_xs, block_dim_yzs, algorithm)
 {
   using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 
@@ -283,7 +292,8 @@ C2H_TEST("Block reduce works with custom types", "[reduce][block]", block_dim_xs
   REQUIRE(h_reference == d_out);
 }
 
-C2H_TEST("Block reduce works with vec types", "[reduce][block]", vec_types, block_dim_xs, block_dim_yzs, algorithm)
+CUB_TEST(
+  "Block reduce works with vec types", "[reduce][block]", CUB_SMALL, vec_types, block_dim_xs, block_dim_yzs, algorithm)
 {
   using type = c2h::get<0, TestType>;
 

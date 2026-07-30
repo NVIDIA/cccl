@@ -95,7 +95,8 @@ template <class _Tp>
       return FP_INFINITE;
     }
   }
-  if constexpr (is_floating_point_v<_Tp>)
+  // comparison based classification keeps this path constexpr for types whose storage would need bit_cast
+  if constexpr (is_floating_point_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
     if (__x > -numeric_limits<_Tp>::min() && __x < numeric_limits<_Tp>::min())
     {
@@ -210,6 +211,13 @@ template <class _Tp>
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__float128 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

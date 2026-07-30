@@ -90,8 +90,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  const int threads_per_block = policy.threads_per_block;
-  const int items_per_thread  = policy.items_per_thread;
+  const int threads_per_block = policy.lookback.threads_per_block;
+  const int items_per_thread  = policy.lookback.items_per_thread;
   const auto tile_size =
     static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
