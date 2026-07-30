@@ -371,6 +371,13 @@ UNITTEST("with_location")
   static_assert(::std::is_constructible_v<with_location<throw_proof_t>, const throw_proof_t&>);
   static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t>);
 
+  // Two-arg CTAD (C++17): forward a previously captured location.
+  {
+    const auto loc = ::cuda::std::source_location::current();
+    auto wl        = with_location{throw_proof, loc};
+    static_assert(::std::is_same_v<decltype(wl), with_location<throw_proof_t>>);
+    EXPECT(wl.loc.line() == loc.line());
+  }
   auto consume_value = [](with_location<widget> w) {
     EXPECT(w.payload.x == 42);
     EXPECT(w.loc.line() != 0);

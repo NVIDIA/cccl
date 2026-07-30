@@ -144,6 +144,11 @@ struct with_location
   ::cuda::std::source_location loc;
 };
 
+// Two-arg form only: CTAD cannot see `_Tp` in the converting constructor, and a
+// one-arg guide would steal moves (`with_location{std::move(w)}`).
+template <class _Up>
+with_location(_Up&&, ::cuda::std::source_location) -> with_location<::cuda::std::decay_t<_Up>>;
+
 /**
  * @brief Invokes a callable and aborts if it throws.
  *
@@ -154,8 +159,8 @@ struct with_location
  *
  * `throw_proof` converts to `with_location`, which captures the call-site
  * `source_location` (overloaded operators cannot take default arguments). An
- * explicit `with_location<throw_proof_t>{throw_proof, loc}` can forward a
- * previously captured location.
+ * explicit `with_location{throw_proof, loc}` can forward a previously captured
+ * location (CTAD, C++17).
  */
 struct throw_proof_t
 {

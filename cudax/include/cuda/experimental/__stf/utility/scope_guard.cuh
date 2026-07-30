@@ -78,10 +78,9 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc)
   static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
 #  ifndef NDEBUG
   // Forward the SCOPE call-site location into throw_proof.
-  ::cuda::experimental::with_location<::cuda::experimental::throw_proof_t>{::cuda::experimental::throw_proof, loc}->*
-    [&] {
-      f();
-    };
+  ::cuda::experimental::with_location{::cuda::experimental::throw_proof, loc}->*[&] {
+    f();
+  };
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
   (void) loc;
   f();
