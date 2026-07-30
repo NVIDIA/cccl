@@ -247,26 +247,24 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
   static constexpr bool use_work_stealing                        = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_VECTORIZE;
+  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
   static constexpr int vec_size                                  = 1 << 2;
 };
 
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
 {
-  static constexpr int items                                     = 8;
-  static constexpr int threads                                   = 512;
+  static constexpr int items                                     = 6;
+  static constexpr int threads                                   = 768;
   static constexpr bool rle_compress                             = true;
   static constexpr bool use_work_stealing                        = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_VECTORIZE;
+  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// sample_size 2 showed no benefit over SM90 during verification benchmarks
-
-// multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
+// sample_size 2 retains the SM90 launch shape while using the SM100 shared-memory policy.
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
@@ -329,16 +327,43 @@ struct policy_hub
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
 
-    using AgentHistogramPolicyT =
+    using SelectedAgentHistogramPolicyT =
       decltype(select_agent_policy<
                sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
         0));
 
-    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
-    static constexpr int dynamic_smem_bytes               = sm100_dynamic_smem_bytes;
-    static constexpr int dynamic_smem_range_max_bins      = sm100_dynamic_smem_range_max_bins;
-    static constexpr int dynamic_smem_even_max_bins       = sm100_dynamic_smem_even_max_bins;
-    static constexpr int dynamic_smem_even_3ch_max_bins   = sm100_dynamic_smem_even_3ch_max_bins;
+    using MultiChannelAgentHistogramPolicyT =
+      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4>;
+
+    static constexpr bool use_sm100_multi_channel_policy =
+      NumChannels >= 2 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value;
+
+    using AgentHistogramPolicyT =
+      ::cuda::std::_If<use_sm100_multi_channel_policy, MultiChannelAgentHistogramPolicyT, SelectedAgentHistogramPolicyT>;
+
+    static constexpr int init_kernel_pdl_trigger_max_bins =
+      NumChannels == 1 && NumActiveChannels == 1 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
+          && (sizeof(SampleT) == 1 || sizeof(SampleT) == 2 || sizeof(SampleT) == 4 || sizeof(SampleT) == 8)
+        ? 2048
+        : 0;
+    static constexpr int dynamic_smem_bytes             = sm100_dynamic_smem_bytes;
+    static constexpr int dynamic_smem_range_max_bins    = sm100_dynamic_smem_range_max_bins;
+    static constexpr int dynamic_smem_even_max_bins     = sm100_dynamic_smem_even_max_bins;
+    static constexpr int dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
+    static constexpr int range_interpolation_min_bins   = sm100_range_interpolation_min_bins;
+    static constexpr int static_smem_threads_per_block =
+      !IsEven && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
+        ? (NumChannels >= 2
+             ? 384
+             : (NumChannels == 1 && NumActiveChannels == 1 && sizeof(SampleT) == 4
+                  ? 768
+                  : (NumChannels == 1 && NumActiveChannels == 1 && sizeof(SampleT) == 8 ? 384 : 0)))
+        : 0;
+    static constexpr int static_smem_items_per_thread =
+      !IsEven && NumChannels == 1 && NumActiveChannels == 1 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
+          && sizeof(SampleT) == 8
+        ? t_scale(16)
+        : 0;
   };
 
   using MaxPolicy = Policy1000;
