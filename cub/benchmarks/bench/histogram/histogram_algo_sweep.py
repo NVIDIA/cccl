@@ -39,7 +39,6 @@ import json
 import os
 import statistics
 import subprocess
-import sys
 from io import StringIO
 from pathlib import Path
 
@@ -107,7 +106,9 @@ def cell_key(sample: str, elements: int, bins: int, shape: str) -> str:
     return f"{sample}|{elements}|{bins}|{shape}"
 
 
-def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min_time, timeout):
+def run_cell(
+    binary_path, algo_env, sample, elements, bins, shapes, repeats, min_time, timeout
+):
     """Run one NVBench invocation (all `shapes` in one go) `repeats` times; return
     {shape: median_gibps}, direct_ran_bool, ok_bool. A single binary call sweeps
     the InputShape axis, so we pass the whole shape list and split per shape."""
@@ -121,13 +122,26 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
     # >= 2 shapes; callers ensure that (we sweep the full shape list at once).
     shape_axis = "[" + ",".join(shapes) + "]"
     cmd = [
-        str(binary_path), "--benchmark", "base",
-        "--axis", f"SampleT{{ct}}={sample}",
-        "--axis", f"Elements{{io}}=[{elements}]",
-        "--axis", f"Bins=[{bins}]",
-        "--axis", f"InputShape={shape_axis}",
-        "--min-samples", str(repeats), "--min-time", str(min_time),
-        "--timeout", str(timeout), "--csv", "stdout", "--quiet",
+        str(binary_path),
+        "--benchmark",
+        "base",
+        "--axis",
+        f"SampleT{{ct}}={sample}",
+        "--axis",
+        f"Elements{{io}}=[{elements}]",
+        "--axis",
+        f"Bins=[{bins}]",
+        "--axis",
+        f"InputShape={shape_axis}",
+        "--min-samples",
+        str(repeats),
+        "--min-time",
+        str(min_time),
+        "--timeout",
+        str(timeout),
+        "--csv",
+        "stdout",
+        "--quiet",
     ]
     per_shape = {}
     direct_ran = False
@@ -142,30 +156,53 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
             bw = r.get("GlobalMem BW (bytes/sec)", "")
             if bw:
                 per_shape.setdefault(r["InputShape"], []).append(float(bw) / 1024**3)
-    return {sh: statistics.median(v) for sh, v in per_shape.items() if v}, direct_ran, True
+    return (
+        {sh: statistics.median(v) for sh, v in per_shape.items() if v},
+        direct_ran,
+        True,
+    )
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--branch-bin-dir", default="build/autocuda/cub-benchmark/bin",
-                    help="dir with this branch's cub.bench.histogram.*.base binaries (force hook present)")
-    ap.add_argument("--main-bin-dir", default="",
-                    help="dir with upstream main's cub.bench.histogram.*.base binaries (default dispatch only); "
-                         "omit to skip the main baseline column")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--branch-bin-dir",
+        default="build/autocuda/cub-benchmark/bin",
+        help="dir with this branch's cub.bench.histogram.*.base binaries (force hook present)",
+    )
+    ap.add_argument(
+        "--main-bin-dir",
+        default="",
+        help="dir with upstream main's cub.bench.histogram.*.base binaries (default dispatch only); "
+        "omit to skip the main baseline column",
+    )
     ap.add_argument("--out", default="sweep_results.json", help="output per-cell JSON")
     ap.add_argument("--bins", type=int, nargs="+", default=DEFAULT_BINS)
     ap.add_argument("--elements", type=int, nargs="+", default=DEFAULT_ELEMENTS)
-    ap.add_argument("--samples", nargs="+", default=DEFAULT_SAMPLES, help="SampleT axis values, e.g. I32 F64")
+    ap.add_argument(
+        "--samples",
+        nargs="+",
+        default=DEFAULT_SAMPLES,
+        help="SampleT axis values, e.g. I32 F64",
+    )
     ap.add_argument("--shapes", nargs="+", default=DEFAULT_SHAPES)
-    ap.add_argument("--binaries", nargs="+", default=list(BINARIES), choices=list(BINARIES))
+    ap.add_argument(
+        "--binaries", nargs="+", default=list(BINARIES), choices=list(BINARIES)
+    )
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--min-time", default="0.02")
     ap.add_argument("--timeout", default="120")
-    ap.add_argument("--main-comparable-shapes", nargs="*", default=None,
-                    help="restrict the `main` baseline to these shapes (use when --main-bin-dir is "
-                         "UNMODIFIED upstream main, whose generators differ). Default: all swept shapes "
-                         "(correct when the main binaries carry this branch's generators -- see "
-                         "MAIN_COMPARABLE_SHAPES).")
+    ap.add_argument(
+        "--main-comparable-shapes",
+        nargs="*",
+        default=None,
+        help="restrict the `main` baseline to these shapes (use when --main-bin-dir is "
+        "UNMODIFIED upstream main, whose generators differ). Default: all swept shapes "
+        "(correct when the main binaries carry this branch's generators -- see "
+        "MAIN_COMPARABLE_SHAPES).",
+    )
     args = ap.parse_args()
 
     branch_dir = Path(args.branch_bin_dir)
@@ -196,7 +233,9 @@ def main():
         target = BINARIES[blabel]
         branch_bin = branch_dir / target
         if not branch_bin.exists():
-            print(f"!! missing branch binary {branch_bin}; skipping {blabel}", flush=True)
+            print(
+                f"!! missing branch binary {branch_bin}; skipping {blabel}", flush=True
+            )
             continue
         algo_cells: dict[str, dict[str, float]] = {}
         for sample in args.samples:
@@ -207,38 +246,81 @@ def main():
                     algos = FORCED_ALGOS if high else [""]
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
-                        med, dr, ok = run_cell(branch_bin, algo_env, sample, elements, bins,
-                                               args.shapes, args.repeats, args.min_time, args.timeout)
+                        med, dr, ok = run_cell(
+                            branch_bin,
+                            algo_env,
+                            sample,
+                            elements,
+                            bins,
+                            args.shapes,
+                            args.repeats,
+                            args.min_time,
+                            args.timeout,
+                        )
                         total_calls += 1
                         if not ok:
-                            print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                  f"{akey:28} ABORT", flush=True)
+                            print(
+                                f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                f"{akey:28} ABORT",
+                                flush=True,
+                            )
                             continue
                         for sh, v in med.items():
-                            algo_cells.setdefault(akey, {})[cell_key(sample, elements, bins, sh)] = v
-                        line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
-                        print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                              f"{akey:28} dr={int(dr)} {line}", flush=True)
+                            algo_cells.setdefault(akey, {})[
+                                cell_key(sample, elements, bins, sh)
+                            ] = v
+                        line = "  ".join(
+                            f"{sh.split(':')[0][:5]}={med[sh]:.0f}"
+                            for sh in sorted(med)
+                        )
+                        print(
+                            f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                            f"{akey:28} dr={int(dr)} {line}",
+                            flush=True,
+                        )
                 # main baseline column for this (sample, elements): default dispatch only.
                 if main_dir and main_shapes:
                     main_bin = main_dir / target
                     if main_bin.exists():
                         for elements in args.elements:
                             for bins in args.bins:
-                                med, _, ok = run_cell(main_bin, "", sample, elements, bins,
-                                                      main_shapes, args.repeats, args.min_time, args.timeout)
+                                med, _, ok = run_cell(
+                                    main_bin,
+                                    "",
+                                    sample,
+                                    elements,
+                                    bins,
+                                    main_shapes,
+                                    args.repeats,
+                                    args.min_time,
+                                    args.timeout,
+                                )
                                 total_calls += 1
                                 if not ok:
-                                    print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                          f"{'main':28} ABORT", flush=True)
+                                    print(
+                                        f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                        f"{'main':28} ABORT",
+                                        flush=True,
+                                    )
                                     continue
                                 for sh, v in med.items():
-                                    algo_cells.setdefault("main", {})[cell_key(sample, elements, bins, sh)] = v
-                                line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
-                                print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                      f"{'main':28}      {line}", flush=True)
+                                    algo_cells.setdefault("main", {})[
+                                        cell_key(sample, elements, bins, sh)
+                                    ] = v
+                                line = "  ".join(
+                                    f"{sh.split(':')[0][:5]}={med[sh]:.0f}"
+                                    for sh in sorted(med)
+                                )
+                                print(
+                                    f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                    f"{'main':28}      {line}",
+                                    flush=True,
+                                )
                     else:
-                        print(f"!! missing main binary {main_bin}; no main column for {blabel}", flush=True)
+                        print(
+                            f"!! missing main binary {main_bin}; no main column for {blabel}",
+                            flush=True,
+                        )
         results[blabel] = algo_cells
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

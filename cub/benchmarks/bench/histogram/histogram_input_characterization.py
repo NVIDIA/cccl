@@ -41,9 +41,8 @@ import os
 import sys
 import textwrap
 
-import numpy as np
-
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -104,13 +103,13 @@ CHAR_SEED = 42
 #    >= ~12289 to show its 4096-spaced synonyms; stale_resident a 4096 prefix).
 CHAR_BINS_DEFAULT = 16384
 CHAR_BINS_BY_SHAPE = {
-    "concentrated": 256,      # hot bin at 42 clearly off zero; floor legible
+    "concentrated": 256,  # hot bin at 42 clearly off zero; floor legible
     "powerlaw": 256,
     "zipf": 256,
-    "temporal_phases": 256,   # the 8 phase locations are distinct
-    "sawtooth": 256,          # several ramp periods visible
-    "hash_synonym": 16384,    # synonyms at 42 / 4138 / 8234 / 12330 (spaced 4096)
-    "stale_resident": 8192,   # 4096-bin cold prefix + a hot bulk
+    "temporal_phases": 256,  # the 8 phase locations are distinct
+    "sawtooth": 256,  # several ramp periods visible
+    "hash_synonym": 16384,  # synonyms at 42 / 4138 / 8234 / 12330 (spaced 4096)
+    "stale_resident": 8192,  # 4096-bin cold prefix + a hot bulk
 }
 
 
@@ -122,6 +121,7 @@ def bins_for_shape(shape: str) -> int:
 def fmt_bins(b: int) -> str:
     b = int(b)
     return f"{b // 1024}K" if b >= 1024 and b % 1024 == 0 else str(b)
+
 
 DIST_COLOR = "#2b8cbe"
 RANK_COLOR = "#6a51a3"
@@ -141,7 +141,9 @@ def _counts_cached(shape: str, n: int, num_bins: int, seed: int):
     return bins, counts
 
 
-def char_input(shape: str, n: int = CHAR_N, num_bins: int | None = None, seed: int = CHAR_SEED):
+def char_input(
+    shape: str, n: int = CHAR_N, num_bins: int | None = None, seed: int = CHAR_SEED
+):
     """(bins, counts, num_bins) for a shape, at its natural per-shape bin count."""
     if num_bins is None:
         num_bins = bins_for_shape(shape)
@@ -153,6 +155,7 @@ def char_input(shape: str, n: int = CHAR_N, num_bins: int | None = None, seed: i
 # Shared draw_* functions (reused by histogram_algo_perf.py).
 # ---------------------------------------------------------------------------
 
+
 def draw_distribution(ax, counts, num_bins):
     """count vs bin index on a log y-axis, one stem per occupied bin.
 
@@ -161,7 +164,9 @@ def draw_distribution(ax, counts, num_bins):
     band well above the axis floor instead of being crushed to zero."""
     nz = np.flatnonzero(counts)
     if nz.size == 0:
-        ax.text(0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes)
+        ax.text(
+            0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes
+        )
         return
     cmax = int(counts[nz].max())
     base = 0.7  # < 1 so a count of 1 still draws a short stem on the log axis
@@ -169,10 +174,22 @@ def draw_distribution(ax, counts, num_bins):
     # Thin stems when nearly every bin is occupied (uniform / sawtooth),
     # thicker when there are a few discrete spikes.
     dense = nz.size > 2000
-    ax.vlines(nz, base, counts[nz], color=DIST_COLOR, lw=0.5 if dense else 1.6, alpha=0.9)
-    ax.scatter(nz, counts[nz], s=8 if dense else 22, color=DIST_COLOR, zorder=3, edgecolors="none")
+    ax.vlines(
+        nz, base, counts[nz], color=DIST_COLOR, lw=0.5 if dense else 1.6, alpha=0.9
+    )
+    ax.scatter(
+        nz,
+        counts[nz],
+        s=8 if dense else 22,
+        color=DIST_COLOR,
+        zorder=3,
+        edgecolors="none",
+    )
 
-    ax.set_title(f"value distribution (count vs bin index, {fmt_bins(num_bins)} bins, log y)", fontsize=10)
+    ax.set_title(
+        f"value distribution (count vs bin index, {fmt_bins(num_bins)} bins, log y)",
+        fontsize=10,
+    )
     ax.set_xlabel("bin index")
     ax.set_ylabel("count (log)")
     ax.set_xlim(-num_bins * 0.02, num_bins * 1.02)
@@ -184,11 +201,16 @@ def draw_rankfreq(ax, counts):
     """Sorted count vs rank, log-log. Scale-free view of the distribution shape."""
     c = np.sort(counts[counts > 0])[::-1]
     if c.size == 0:
-        ax.text(0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes)
+        ax.text(
+            0.5, 0.5, "no samples", ha="center", va="center", transform=ax.transAxes
+        )
         return
     ranks = np.arange(1, c.size + 1)
     ax.loglog(ranks, c, marker=".", ms=4, lw=1.1, color=RANK_COLOR)
-    ax.set_title(f"rank-frequency (sorted count vs rank, log-log) — {c.size} occupied bins", fontsize=10)
+    ax.set_title(
+        f"rank-frequency (sorted count vs rank, log-log) — {c.size} occupied bins",
+        fontsize=10,
+    )
     ax.set_xlabel("rank (hottest = 1)")
     ax.set_ylabel("count")
     ax.grid(True, which="both", linestyle=":", alpha=0.45)
@@ -209,7 +231,11 @@ def draw_sequence(ax, bins, num_bins, shape=None):
     n = len(bins)
     full_range = shape is not None and shape.split(":")[0] in _FULL_RANGE_SEQ_SHAPES
     if full_range:
-        idx = np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64) if n > CHAR_SEQ_SAMPLES else np.arange(n)
+        idx = (
+            np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64)
+            if n > CHAR_SEQ_SAMPLES
+            else np.arange(n)
+        )
         xlabel = "position in input sequence (full range, subsampled)"
     else:
         w = min(n, CHAR_SEQ_SAMPLES)
@@ -227,11 +253,16 @@ def draw_sequence(ax, bins, num_bins, shape=None):
 # Standalone per-shape characterization figure.
 # ---------------------------------------------------------------------------
 
+
 def render_shape(shape, outdir, n, num_bins, seed):
     bins, counts, num_bins = char_input(shape, n, num_bins, seed)
     fig, axes = plt.subplots(1, 3, figsize=(18, 4.8))
     # Wrap the blurb so a long description does not run past the figure edge.
-    blurb = "\n".join(textwrap.wrap(f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}", width=150))
+    blurb = "\n".join(
+        textwrap.wrap(
+            f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}", width=150
+        )
+    )
     fig.suptitle(
         f"{blurb}\n(N={fmt_int(n)} samples, {fmt_bins(num_bins)} bins, seed={seed})",
         fontsize=12,
@@ -247,20 +278,40 @@ def render_shape(shape, outdir, n, num_bins, seed):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--outdir", default="histogram_input_figs", help="output directory for the per-shape PNGs")
-    ap.add_argument("--elements", type=int, default=CHAR_N, help="number of samples to characterize")
-    ap.add_argument("--bins", type=int, default=None,
-                    help="override the per-shape bin count (default: each shape's natural scale)")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--outdir",
+        default="histogram_input_figs",
+        help="output directory for the per-shape PNGs",
+    )
+    ap.add_argument(
+        "--elements", type=int, default=CHAR_N, help="number of samples to characterize"
+    )
+    ap.add_argument(
+        "--bins",
+        type=int,
+        default=None,
+        help="override the per-shape bin count (default: each shape's natural scale)",
+    )
     ap.add_argument("--seed", type=int, default=CHAR_SEED, help="generator seed")
-    ap.add_argument("--shapes", nargs="*", default=SHAPES, help="subset of InputShapes to render")
+    ap.add_argument(
+        "--shapes", nargs="*", default=SHAPES, help="subset of InputShapes to render"
+    )
     args = ap.parse_args()
 
     os.makedirs(args.outdir, exist_ok=True)
-    print(f"Characterizing {len(args.shapes)} shapes (N={fmt_int(args.elements)}, seed={args.seed})")
+    print(
+        f"Characterizing {len(args.shapes)} shapes (N={fmt_int(args.elements)}, seed={args.seed})"
+    )
     for shape in args.shapes:
-        out, nb, occupied, hottest = render_shape(shape, args.outdir, args.elements, args.bins, args.seed)
-        print(f"  {shape:<20} bins={fmt_bins(nb):<5} occupied={occupied:<6} hottest={fmt_int(hottest):<12} -> {out}")
+        out, nb, occupied, hottest = render_shape(
+            shape, args.outdir, args.elements, args.bins, args.seed
+        )
+        print(
+            f"  {shape:<20} bins={fmt_bins(nb):<5} occupied={occupied:<6} hottest={fmt_int(hottest):<12} -> {out}"
+        )
     print(f"Done. {len(args.shapes)} figures under {args.outdir}")
 
 

@@ -88,13 +88,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     std::vector<thrust::device_vector<CounterT>> opt_hists_d;
     opt_hists_d.emplace_back(std::move(hist));
     bench_verify_histogram_even<1, 1, SampleT, CounterT, OffsetT>(
-      input,
-      opt_hists_d,
-      static_cast<OffsetT>(elements),
-      static_cast<int>(num_bins),
-      lower_level,
-      upper_level,
-      "even");
+      input, opt_hists_d, static_cast<OffsetT>(elements), static_cast<int>(num_bins), lower_level, upper_level, "even");
     hist        = std::move(opt_hists_d[0]);
     d_histogram = thrust::raw_pointer_cast(hist.data());
   }
