@@ -20,6 +20,7 @@ GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 PEDANTIC=${PEDANTIC:-} # Enable strict warnings. Default: on in CI, off locally.
 CONFIGURE_ONLY=false
+CTEST_PARALLEL_LEVEL=1
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -34,6 +35,7 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  --test-par: CTest parallel level (Defaults to 1)"
     echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
     echo
@@ -78,6 +80,7 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    --test-par) CTEST_PARALLEL_LEVEL="${args[1]}"; args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
@@ -189,13 +192,7 @@ BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 # Prepare environment for CMake:
 export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
 
-# Keep ctest serial by default. When GPU parallelism is enabled, use a
-# higher job count; CTest RESOURCE_GROUPS still limit GPU concurrency.
-if [[ "${CCCL_TEST_GPU_PARALLELISM:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
-  export CTEST_PARALLEL_LEVEL="${CTEST_PARALLEL_LEVEL:-20}"
-else
-  export CTEST_PARALLEL_LEVEL="1"
-fi
+export CTEST_PARALLEL_LEVEL
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
