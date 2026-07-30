@@ -851,6 +851,32 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_bytes(long)
 }
 
 template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_threads_per_block(int)
+  -> decltype(ActivePolicy::static_smem_threads_per_block)
+{
+  return ActivePolicy::static_smem_threads_per_block;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_threads_per_block(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_items_per_thread(int)
+  -> decltype(ActivePolicy::static_smem_items_per_thread)
+{
+  return ActivePolicy::static_smem_items_per_thread;
+}
+
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_items_per_thread(long)
+{
+  return 0;
+}
+
+template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(int)
   -> decltype(ActivePolicy::dynamic_smem_range_max_bins)
 {
@@ -918,8 +944,8 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     ap::IS_WORK_STEALING,
     convert_pdl_trigger<ActivePolicy>(0),
     convert_dynamic_smem_bytes<ActivePolicy>(0),
-    0,
-    0,
+    convert_static_smem_threads_per_block<ActivePolicy>(0),
+    convert_static_smem_items_per_thread<ActivePolicy>(0),
     convert_dynamic_smem_range_max_bins<ActivePolicy>(0),
     convert_dynamic_smem_even_max_bins<ActivePolicy>(0),
     convert_dynamic_smem_even_3ch_max_bins<ActivePolicy>(0),
