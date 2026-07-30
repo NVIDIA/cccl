@@ -574,6 +574,14 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
   test_even_and_range<int, TestType::channels, TestType::active_channels, int, int, int>(256, 256 + 1, 128, 32);
 }
 
+C2H_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]")
+{
+  using counter_t      = unsigned long long;
+  const int num_levels = GENERATE(1025, 4097);
+
+  test_even_and_range<int, 1, 1, counter_t>(num_levels - 1, num_levels, 4096, 4);
+}
+
 // Testing only HistogramEven is fine, because HistogramRange shares the loading logic and the different binning
 // implementations are not affected by the iterator.
 CUB_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][device]", CUB_SMALL)
