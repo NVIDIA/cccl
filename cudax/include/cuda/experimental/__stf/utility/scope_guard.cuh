@@ -28,8 +28,6 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #include <cuda/experimental/__utility/scope_exit.cuh>
 
-#include <optional>
-
 namespace cuda::experimental::stf
 {
 /**
@@ -97,18 +95,30 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
 {
   static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
 
-  // Aggregate: brace-init at the call site. `optional` makes moved-from guards inert
-  // (no custom move / active flag). Copy is unavailable for the usual `[&]` lambdas.
   struct result
   {
-    ::std::optional<F> f;
+    F f;
     ::cuda::std::source_location loc;
+    bool active = true;
+
+    result(F&& f, ::cuda::std::source_location loc)
+        : f(::std::forward<F>(f))
+        , loc(loc)
+    {}
+    result(result&) = delete;
+    result(result&& rhs)
+        : f(mv(rhs.f))
+        , loc(rhs.loc)
+        , active(rhs.active)
+    {
+      rhs.active = false;
+    }
 
     ~result() noexcept
     {
-      if (f)
+      if (active)
       {
-        invoke_nothrow(*f, loc);
+        invoke_nothrow(f, loc);
       }
     }
   };
@@ -123,15 +133,31 @@ auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
 
   struct result
   {
-    ::std::optional<F> f;
+    F f;
     ::cuda::std::source_location loc;
     int exceptions;
+    bool active = true;
+
+    result(F&& f, ::cuda::std::source_location loc, int exceptions)
+        : f(::std::forward<F>(f))
+        , loc(loc)
+        , exceptions(exceptions)
+    {}
+    result(result&) = delete;
+    result(result&& rhs)
+        : f(mv(rhs.f))
+        , loc(rhs.loc)
+        , exceptions(rhs.exceptions)
+        , active(rhs.active)
+    {
+      rhs.active = false;
+    }
 
     ~result() noexcept
     {
-      if (f && ::std::uncaught_exceptions() == exceptions)
+      if (active && ::std::uncaught_exceptions() == exceptions)
       {
-        invoke_nothrow(*f, loc);
+        invoke_nothrow(f, loc);
       }
     }
   };
@@ -147,15 +173,29 @@ auto operator->*(::cuda::experimental::with_location<success> where, F&& f)
 
   struct result
   {
-    ::std::optional<F> f;
+    F f;
     int exceptions;
+    bool active = true;
+
+    result(F&& f, int exceptions)
+        : f(::std::forward<F>(f))
+        , exceptions(exceptions)
+    {}
+    result(result&) = delete;
+    result(result&& rhs)
+        : f(mv(rhs.f))
+        , exceptions(rhs.exceptions)
+        , active(rhs.active)
+    {
+      rhs.active = false;
+    }
 
     // May throw — unlike exit/fail.
     ~result() noexcept(false)
     {
-      if (f && ::std::uncaught_exceptions() == exceptions)
+      if (active && ::std::uncaught_exceptions() == exceptions)
       {
-        (*f)();
+        f();
       }
     }
   };
