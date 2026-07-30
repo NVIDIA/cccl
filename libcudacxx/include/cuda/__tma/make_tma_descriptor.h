@@ -432,7 +432,12 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
     return __output_strides;
 #    endif // ^^^ _CCCL_DLPACK_BELOW(1, 2) ^^^
   }
-  // TMA ignores the innermost stride (always 1).
+
+  if (__input_strides[__rank - 1] != 1)
+  {
+    _CCCL_THROW(::std::invalid_argument, "The inner most stride is required to be 1");
+  }
+
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
     const auto __next_stride = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
