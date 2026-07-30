@@ -28,6 +28,8 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #include <cuda/experimental/__utility/scope_exit.cuh>
 
+#include <optional>
+
 namespace cuda::experimental::stf
 {
 /**
@@ -56,7 +58,7 @@ namespace cuda::experimental::stf
  */
 ///@{
 #define SCOPE(kind) \
-  auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
+  auto CUDASTF_UNIQUE_NAME(scope_guard) = ::cuda::experimental::stf::detail::scope_guard_handler::kind{}->*[&]()
 ///@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -95,36 +97,23 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
 {
   static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
 
+  // Aggregate: brace-init at the call site. `optional` makes moved-from guards inert
+  // (no custom move / active flag). Copy is unavailable for the usual `[&]` lambdas.
   struct result
   {
-    result(F&& f, ::cuda::std::source_location loc)
-        : f(::std::forward<F>(f))
-        , loc(loc)
-    {}
-    result(result&) = delete;
-    result(result&& rhs)
-        : f(mv(rhs.f))
-        , loc(rhs.loc)
-        , active(rhs.active)
-    {
-      rhs.active = false;
-    }
+    ::std::optional<F> f;
+    ::cuda::std::source_location loc;
 
     ~result() noexcept
     {
-      if (active)
+      if (f)
       {
-        invoke_nothrow(f, loc);
+        invoke_nothrow(*f, loc);
       }
     }
-
-  private:
-    F f;
-    ::cuda::std::source_location loc;
-    bool active = true;
   };
 
-  return result(::std::forward<F>(f), where.loc);
+  return result{::std::forward<F>(f), where.loc};
 }
 
 template <typename F>
@@ -134,38 +123,21 @@ auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
 
   struct result
   {
-    result(F&& f, ::cuda::std::source_location loc, int exceptions)
-        : f(::std::forward<F>(f))
-        , loc(loc)
-        , exceptions(exceptions)
-    {}
-    result(result&) = delete;
-    result(result&& rhs)
-        : f(mv(rhs.f))
-        , loc(rhs.loc)
-        , exceptions(rhs.exceptions)
-        , active(rhs.active)
-    {
-      rhs.active = false;
-    }
+    ::std::optional<F> f;
+    ::cuda::std::source_location loc;
+    int exceptions;
 
     ~result() noexcept
     {
-      if (active && ::std::uncaught_exceptions() == exceptions)
+      if (f && ::std::uncaught_exceptions() == exceptions)
       {
-        invoke_nothrow(f, loc);
+        invoke_nothrow(*f, loc);
       }
     }
-
-  private:
-    F f;
-    ::cuda::std::source_location loc;
-    int exceptions;
-    bool active = true;
   };
 
   // Run only if an exception is in flight: uncaught count is one above creation-time count.
-  return result(::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1);
+  return result{::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
 }
 
 template <typename F>
@@ -175,36 +147,21 @@ auto operator->*(::cuda::experimental::with_location<success> where, F&& f)
 
   struct result
   {
-    result(F&& f, int exceptions)
-        : f(::std::forward<F>(f))
-        , exceptions(exceptions)
-    {}
-    result(result&) = delete;
-    result(result&& rhs)
-        : f(mv(rhs.f))
-        , exceptions(rhs.exceptions)
-        , active(rhs.active)
-    {
-      rhs.active = false;
-    }
+    ::std::optional<F> f;
+    int exceptions;
 
     // May throw — unlike exit/fail.
     ~result() noexcept(false)
     {
-      if (active && ::std::uncaught_exceptions() == exceptions)
+      if (f && ::std::uncaught_exceptions() == exceptions)
       {
-        f();
+        (*f)();
       }
     }
-
-  private:
-    F f;
-    int exceptions;
-    bool active = true;
   };
 
   (void) where; // location unused; success may throw so throw_proof does not apply
-  return result(::std::forward<F>(f), ::std::uncaught_exceptions());
+  return result{::std::forward<F>(f), ::std::uncaught_exceptions()};
 }
 } // namespace detail::scope_guard_handler
 #endif // !_CCCL_DOXYGEN_INVOKED
