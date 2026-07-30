@@ -154,7 +154,7 @@ enum BlockReduceAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
 {
   switch (algo)
   {
