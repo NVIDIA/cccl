@@ -11,7 +11,7 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -50,7 +50,7 @@ struct equal_zero_t
   }
 };
 
-C2H_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition][device]")
+CUB_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition][device]", CUB_SMALL)
 {
   using value_t  = int;
   using offset_t = int;

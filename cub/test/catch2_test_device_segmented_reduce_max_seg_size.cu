@@ -9,7 +9,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // only lid 0 is enabled, as this test only tests max_segment_size functionality through dispatch directly
 
@@ -18,8 +18,9 @@
 using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using offsets        = c2h::type_list<std::int32_t, std::uint64_t>;
 
-C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
+CUB_TEST("Device segmented reduce works with dynamic max segment sizes",
          "[segmented][reduce][device]",
+         CUB_SMALL,
          full_type_list,
          offsets)
 {

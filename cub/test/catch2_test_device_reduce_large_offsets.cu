@@ -14,7 +14,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -60,7 +60,7 @@ struct custom_sum_op
   }
 };
 
-C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", offset_types)
+CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", CUB_SMALL, offset_types)
 {
   using index_t  = uint64_t;
   using offset_t = typename c2h::get<0, TestType>;

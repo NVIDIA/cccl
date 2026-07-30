@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 struct CustomLess
 {
@@ -181,8 +181,9 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
 
-C2H_TEST("Block merge sort can sort keys in partial tiles",
+CUB_TEST("Block merge sort can sort keys in partial tiles",
          "[merge sort][block]",
+         CUB_SMALL,
          key_types,
          items_per_thread,
          threads_in_block)
@@ -204,8 +205,12 @@ C2H_TEST("Block merge sort can sort keys in partial tiles",
   REQUIRE(h_reference == d_keys);
 }
 
-C2H_TEST(
-  "Block merge sort can sort keys in full tiles", "[merge sort][block]", key_types, items_per_thread, threads_in_block)
+CUB_TEST("Block merge sort can sort keys in full tiles",
+         "[merge sort][block]",
+         CUB_SMALL,
+         key_types,
+         items_per_thread,
+         threads_in_block)
 {
   using params = params_t<TestType>;
   using key_t  = typename params::key_t;
@@ -224,8 +229,9 @@ C2H_TEST(
   REQUIRE(h_reference == d_keys);
 }
 
-C2H_TEST("Block merge sort can sort pairs in partial tiles",
+CUB_TEST("Block merge sort can sort pairs in partial tiles",
          "[merge sort][block]",
+         CUB_SMALL,
          key_types,
          items_per_thread,
          threads_in_block)
@@ -270,8 +276,12 @@ C2H_TEST("Block merge sort can sort pairs in partial tiles",
   REQUIRE(h_vals == d_vals);
 }
 
-C2H_TEST(
-  "Block merge sort can sort pairs in full tiles", "[merge sort][block]", key_types, items_per_thread, threads_in_block)
+CUB_TEST("Block merge sort can sort pairs in full tiles",
+         "[merge sort][block]",
+         CUB_SMALL,
+         key_types,
+         items_per_thread,
+         threads_in_block)
 {
   using params  = params_t<TestType>;
   using key_t   = typename params::key_t;
@@ -312,7 +322,7 @@ C2H_TEST(
   REQUIRE(h_vals == d_vals);
 }
 
-C2H_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block]", threads_in_block)
+CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block]", CUB_SMALL, threads_in_block)
 {
   using key_t   = std::int32_t;
   using value_t = std::int64_t;
@@ -356,7 +366,7 @@ C2H_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block
   REQUIRE(h_vals == d_vals);
 }
 
-C2H_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads_in_block)
+CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", CUB_SMALL, threads_in_block)
 {
   using key_t = std::uint16_t;
 
@@ -381,7 +391,7 @@ C2H_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads
   REQUIRE(h_reference == d_keys);
 }
 
-C2H_TEST("Block merge sort is stable", "[merge sort][block]", threads_in_block)
+CUB_TEST("Block merge sort is stable", "[merge sort][block]", CUB_SMALL, threads_in_block)
 {
   using key_t = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
