@@ -21,13 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__algorithm/copy.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/span>
+// `cuda::copy_bytes`, `cuda::copy_configuration` and `cuda::stream_ref` are not declared under NVRTC.
+#if !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__algorithm/copy.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__cstddef/byte.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/span>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco::detail
 {
@@ -48,11 +51,11 @@ _CCCL_HOST_API inline void
 __memcpy_async(void* __dst, const void* __src, ::cuda::std::size_t __count, ::cuda::stream_ref __stream)
 {
   ::cuda::copy_configuration __config{};
-#if _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   // Sources are written by preceding work on the same stream, so they must be read in stream order. The default is
   // `source_access_order::any`, and the enumerator only exists starting with CTK 13.0.
   __config.src_access_order = ::cuda::source_access_order::stream;
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   ::cuda::copy_bytes(__stream,
                      ::cuda::std::span<const ::cuda::std::byte>{static_cast<const ::cuda::std::byte*>(__src), __count},
@@ -61,6 +64,8 @@ __memcpy_async(void* __dst, const void* __src, ::cuda::std::size_t __count, ::cu
 }
 } // namespace cuda::experimental::cuco::detail
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___CUCO_DETAIL_UTILITY_MEMCPY_ASYNC_CUH
