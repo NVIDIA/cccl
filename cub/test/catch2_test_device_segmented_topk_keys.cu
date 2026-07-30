@@ -35,7 +35,7 @@
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
@@ -187,8 +187,9 @@ using det_tie_combos =
                  det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
                          cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -269,8 +270,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
 #if TEST_TYPES == 0
 // `constant` is the one public arg form whose segment size must be a compile-time constant expression, so it gets its
 // own fixed-size test. Gated to a single TEST_TYPES variant to balance build time across the suite.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a compile-time-constant segment size",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a compile-time-constant segment size",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          select_direction_list)
 {
@@ -314,8 +316,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a compile-time-constant seg
 // A `k` larger than the segment is clamped to `segment_size` (every element selected), routing through the select-all
 // fast path. The output then holds exactly `segment_size` items per segment, so we verify against the full sorted
 // segment.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys clamp k larger than the segment size",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys clamp k larger than the segment size",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          select_direction_list)
 {
@@ -367,8 +370,9 @@ using narrow_seg_size_list = c2h::type_list<cuda::std::int8_t, cuda::std::uint8_
 // that narrows an index to `segment_size_val_t` before its bound check would go out of bounds. We sweep `segment_size`
 // and `k` to hit every path (`k == segment_size` -> select-all copy; `k < segment_size` -> radix / histogram /
 // output-ordering) and run over `det_tie_combos` to also cover the deterministic scan/atomics under the narrow type.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower than the internal offset",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower than the internal offset",
          "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          narrow_seg_size_list,
          det_tie_combos)
 {
@@ -441,8 +445,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower t
 // so on SM 10.0+ the automatic selector prefers the cluster backend purely on size, under a *non-deterministic* request
 // -- a branch no other test hits (deterministic tests force cluster via the requirement, oversize tests via
 // non-coverage). Below SM 10.0 the crossover does not apply, so the case is skipped. Checked vs a sorted reference.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys route a large baseline-coverable segment to the cluster backend on SM10+",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys route a large baseline-coverable segment to the cluster backend on SM10+",
          "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL,
          select_direction_list)
 {
   // Gate on the compiled/JIT compute capability the dispatch resolves (cub::PtxVersion), not the physical device
@@ -503,8 +508,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys route a large baseline-coverable segm
 // `deferred` wraps a device-accessible handle whose value is read in stream order on the device, so unlike the
 // host-value forms it cannot be produced from a plain scalar; the uniform segment size lives in a 1-element device
 // buffer. Gated to a single TEST_TYPES variant to balance build time across the suite.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a deferred (device-resident) segment size",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a deferred (device-resident) segment size",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          select_direction_list)
 {
@@ -650,8 +656,9 @@ auto make_cluster_tune_env(Selector selector)
 // Non-deterministic here (striped load + early-stop driver, the path unique to keys); the deterministic driver's use of
 // the same scan is verified against an index reference by the pairs "deterministic cross-CTA scan" test. No overflow
 // (verifies the scan in isolation).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through the cross-CTA scan",
-         "[keys][segmented][topk][device][cluster]")
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through the cross-CTA scan",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
@@ -713,8 +720,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through
 using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
 using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across the pipeline-stage schedule",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across the pipeline-stage schedule",
          "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL,
          cluster_cap_list,
          stage_list)
 {
@@ -779,8 +787,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across
 // (whereas the sweep's 12-chunk segment leaves an aligned 2-chunk tail). Single-CTA (cap 1) streaming,
 // non-deterministic (forward first wave); the pairs stage-rotation test streams the deterministic combos, which
 // additionally rotate the reverse first wave. Verified against a sorted reference.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment with a misaligned resident tail",
-         "[keys][segmented][topk][device][cluster]")
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment with a misaligned resident tail",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
@@ -834,8 +843,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment with a
 // source makes `use_block_load_to_shared` false, and the slot cap forces a ~1.5 K segment to overflow, so the agent
 // takes its generic gmem-streaming path. Non-deterministic (the load path is determinism-independent; the deterministic
 // generic streamer is covered by the pairs generic index-order test). Verified against the identity sequence.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment through a non-contiguous key iterator",
-         "[keys][segmented][topk][device][cluster]")
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment through a non-contiguous key iterator",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
@@ -892,8 +902,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment throug
 // exercised at scale. Their sweeps are trimmed (fewer sizes/k/pads) since the fine-grained path coverage now lives in
 // the tiny tests.
 #if TEST_TYPES == 1
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
          "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_combos)
 {
   using key_t           = float;
@@ -948,8 +959,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
 
 // Big streaming with a signed 32-bit segment-size type (same width as the internal `offset_t`, but signed): the point
 // is that the large-offset arithmetic stays correct on a signed type at real 1 Mi scale.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 32-bit segment-size type",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 32-bit segment-size type",
          "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_combos)
 {
   using key_t           = float;
@@ -1003,8 +1015,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
 // segment, a fully-resident multi-CTA segment, and small segments that leave surplus CTAs idle -- large-offset
 // coverage of every effective-width regime in one launch (the tiny idle-rank test above covers the idle path
 // racecheck-clean; this covers it at scale).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
          "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_combos)
 {
   using key_t           = float;
@@ -1083,8 +1096,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
 // overflow-streaming path (vs. the tiny forced-cluster generic test above, this exercises the real default routing at
 // large-offset scale). The 1 Mi - 31 segment streams with an unaligned tail edge; the 128 Ki segment validates the
 // generic resident path (no streaming) through the same code. Keeping totals below 2^24 makes every key an exact float.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-contiguous key iterator",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-contiguous key iterator",
          "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_combos)
 {
   using key_t           = float;
@@ -1134,8 +1148,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
 }
 #endif // TEST_TYPES == 1
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segments",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -1239,8 +1254,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
 // arithmetic and the `rank >= eff_cluster_blocks` idle early-out at a racecheck-tiny footprint (previously only
 // reachable on a 64 Ki+ mixed batch). Non-deterministic (the effective-width arithmetic is determinism-independent; the
 // deterministic idle path is covered by the pairs mixed-effective-width test). Verified against a sorted reference.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys leave surplus cluster CTAs idle on small variable-size segments",
-         "[keys][segmented][topk][device][cluster]")
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys leave surplus cluster CTAs idle on small variable-size segments",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
@@ -1317,8 +1333,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys leave surplus cluster CTAs idle on sm
 
 #endif // TEST_TYPES == 1 && TEST_LAUNCH == 0
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -1414,8 +1431,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and per-segment k",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -1518,8 +1536,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 //
 // The tie-break path is key-type-independent (the 8 small values twiddle trivially), so we fix the key type and build
 // this only in the matching `TEST_TYPES` variant. Float keys and per-type behavior are covered by the tests above.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundary",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundary",
          "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          select_direction_list,
          det_tie_combos)
 {
@@ -1578,8 +1597,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
 #endif // TEST_TYPES == 2
 
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
          "[keys][segmented][topk][device][float]",
+         CUB_SMALL,
          select_direction_list)
 {
   constexpr cuda::std::int64_t segment_size                      = 8;
@@ -1614,8 +1634,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
 
 // Users may pass `k` and `num_segments` un-annotated. A plain integral value is taken as a uniform immediate with no
 // compile-time bound.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k and num_segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k and num_segments",
          "[keys][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -1667,7 +1688,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k a
 #if TEST_TYPES == 0 && TEST_LAUNCH == 0
 // The temporary storage size requirement must not assume a particular base-pointer alignment (the public contract
 // states that no special alignment is required). Over-allocate by one byte and offset the base pointer.
-C2H_TEST("DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer", "[keys][segmented][topk][device]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL)
 {
   constexpr int num_segments = 2;
   constexpr int segment_size = 8;
@@ -1716,8 +1739,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage poin
 // maximum. An un-annotated segment size is accepted only when its element type's maximum already fits: a narrow type
 // (e.g. uint16, [0, 65535]) qualifies with no cuda::args::bounds, while a type whose max exceeds 2^21 (int32, uint32,
 // int64) needs one. Verify the un-annotated narrow path compiles and runs end-to-end.
-C2H_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned segment size",
-         "[keys][segmented][topk][device]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned segment size",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL)
 {
   constexpr int num_segments = 2;
   constexpr int segment_size = 8;
@@ -1777,8 +1801,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned seg
 // Exercise the clamp with a mixed batch -- segment 0 declares a negative size, segment 1 a normal one. A small size
 // and no determinism requirement route this to the baseline backend (the deterministic-requirement counterpart, which
 // routes to the cluster backend, is below).
-C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (no determinism requirement)",
-         "[keys][segmented][topk][device]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (no determinism requirement)",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL)
 {
   using seg_size_t           = cuda::std::int16_t; // negative-capable lower bound -> clamp path
   constexpr int num_segments = 2;
@@ -1829,8 +1854,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
 
 // Deterministic-requirement counterpart of the clamp test above: a gpu_to_gpu requirement routes to the SM90+ cluster
 // backend even for small segments, pinning that backend's own empty-segment early-out on a clamped negative size.
-C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (deterministic requirement)",
-         "[keys][segmented][topk][device][cluster][determinism]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (deterministic requirement)",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL)
 {
   using seg_size_t                  = cuda::std::int16_t;
   static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
@@ -1877,8 +1903,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
 // kernel clamps a negative runtime `k` up to 0 before widening it, so that segment selects nothing rather than
 // reinterpreting the negative count as a huge unsigned "select all". Small segments and no determinism route to the
 // baseline backend (the cluster-backend counterpart is below).
-C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (no determinism requirement)",
-         "[keys][segmented][topk][device]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (no determinism requirement)",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL)
 {
   using k_t                  = cuda::std::int16_t; // negative-capable lower bound -> clamp path
   constexpr int num_segments = 2;
@@ -1937,8 +1964,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (no det
 // Deterministic-requirement counterpart of the negative-`k` clamp test above: a gpu_to_gpu requirement routes to the
 // SM90+ cluster backend even for small segments, exercising that backend's negative-`k` clamp (a signed `k` widened to
 // the cluster's 64-bit intermediate must not become a huge "select all").
-C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (deterministic requirement)",
-         "[keys][segmented][topk][device][cluster][determinism]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (deterministic requirement)",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL)
 {
   using k_t                         = cuda::std::int16_t;
   static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
@@ -1984,8 +2012,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (determ
 // size and skipped without launching, leaving the output untouched -- rather than casting the negative maximum to
 // unsigned and sizing an enormous launch. Where that backend is unavailable the request fails with
 // cudaErrorNotSupported even though it is a no-op (the wrapper verifies that, then skips).
-C2H_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as no work (deterministic requirement)",
-         "[keys][segmented][topk][device][cluster][determinism]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as no work (deterministic requirement)",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL)
 {
   using seg_size_t                  = cuda::std::int16_t;
   static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
@@ -2025,8 +2054,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as n
 // dispatch must elide the launch from `num_segments == 0` alone -- otherwise the grid would use `grid_dim == 0`, an
 // invalid launch configuration. A small size and no determinism requirement route this to the baseline backend; the
 // deterministic-requirement counterpart is below.
-C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (no determinism requirement)",
-         "[keys][segmented][topk][device]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (no determinism requirement)",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL)
 {
   constexpr int k        = 3;
   constexpr int stride   = 8;
@@ -2070,8 +2100,9 @@ C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (no determi
 // bound means the `max_seg_size <= 0` guard does not apply, so the launch must be elided from `num_segments == 0`
 // alone -- by the dispatch's empty-batch guard, before the cluster arm launches. Where that backend is unavailable the
 // request fails with cudaErrorNotSupported even though it is a no-op (the wrapper verifies that, then skips).
-C2H_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (deterministic requirement)",
-         "[keys][segmented][topk][device][cluster][determinism]")
+CUB_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (deterministic requirement)",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL)
 {
   static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
   static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;

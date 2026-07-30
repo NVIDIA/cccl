@@ -17,7 +17,7 @@
 
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -83,7 +83,7 @@ using types =
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-C2H_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flagged]", types)
+CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -101,7 +101,7 @@ C2H_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]", types)
+CUB_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -122,7 +122,7 @@ C2H_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]"
   REQUIRE(out == in);
 }
 
-C2H_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]", types)
+CUB_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -142,7 +142,7 @@ C2H_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]",
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged]", types)
+CUB_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -168,8 +168,9 @@ C2H_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceSelect::Flagged is stable",
+CUB_TEST("DeviceSelect::Flagged is stable",
          "[device][select_flagged]",
+         CUB_SMALL,
          c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t>>)
 {
   using type = typename c2h::get<0, TestType>;
@@ -196,7 +197,10 @@ C2H_TEST("DeviceSelect::Flagged is stable",
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::Flagged works with user provided memory and environment", "[device][select_flagged]", all_types)
+CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment",
+         "[device][select_flagged]",
+         CUB_SMALL,
+         all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -294,7 +298,7 @@ C2H_TEST("DeviceSelect::Flagged works with user provided memory and environment"
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]", all_types)
+CUB_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -319,7 +323,7 @@ C2H_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]", types)
+CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -372,7 +376,7 @@ struct convertible_to_bool
   }
 };
 
-C2H_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", "[device][select_flagged]")
+CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", "[device][select_flagged]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -399,7 +403,7 @@ C2H_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", 
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][select_flagged]")
+CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][select_flagged]", CUB_SMALL)
 {
   using type = int;
 
@@ -422,7 +426,7 @@ C2H_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][se
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", types)
+CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -445,7 +449,7 @@ C2H_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", typ
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[device][select_flagged]")
+CUB_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[device][select_flagged]", CUB_SMALL)
 {
   using type = int;
 
@@ -488,7 +492,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DeviceSelect::Flagged works with a different output type", "[device][select_flagged]")
+CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][select_flagged]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -514,8 +518,9 @@ C2H_TEST("DeviceSelect::Flagged works with a different output type", "[device][s
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Flagged works for very large number of items",
-         "[device][select_flagged][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceSelect::Flagged works for very large number of items",
+         "[device][select_flagged][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL)
 try
 {
   using type     = std::int64_t;

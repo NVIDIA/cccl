@@ -33,7 +33,7 @@
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
@@ -279,8 +279,9 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
   return num_duplicates == 0;
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -380,8 +381,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
 // A `k` larger than the segment is clamped to `segment_size` (every pair is selected), routing through the select-all
 // fast path. The output then holds exactly `segment_size` pairs per segment -- identical to a `k == segment_size`
 // request -- so we verify with a `segment_size`-wide output and a key/value-consistency check on the full segment.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs clamp k larger than the segment size",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs clamp k larger than the segment size",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          select_direction_list)
 {
@@ -450,8 +452,9 @@ using narrow_seg_size_list = c2h::type_list<cuda::std::int8_t, cuda::std::uint8_
 // each narrow size type to exercise every path under it: `k == segment_size` hits the select-all copy, while
 // `k < segment_size` drives the radix-select / cluster-histogram / output-ordering paths (and, for pairs, the value
 // gather). Running over `det_tie_pair_combos` additionally covers the deterministic output-ordering scan/atomics.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower than the internal offset",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower than the internal offset",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          narrow_seg_size_list,
          det_tie_pair_combos)
 {
@@ -678,8 +681,9 @@ struct counting_segment_keys_op
   }
 };
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-contiguous key iterator",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-contiguous key iterator",
          "[pairs][segmented][topk][device][cluster]",
+         CUB_SMALL,
          select_direction_list)
 {
   using key_t           = float;
@@ -755,8 +759,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
 // the boundary-edge value writes that the small and non-contiguous pair tests above do not. An unaligned tail suffix
 // is always peeled into `edge_keys` (like the head prefix), so every launch config that owns such a tail exercises the
 // head edge plus the persistent `num_local_tail_edge_items`/`process_tail_edge` value writes.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned segments",
          "[pairs][segmented][topk][device][cluster]",
+         CUB_SMALL,
          select_direction_list)
 {
   using key_t           = float;
@@ -832,8 +837,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
 // resident cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use the same signed 32-bit type as
 // the internal `offset_t` to exercise the streaming path's index arithmetic (including the value gather) across
 // det/non-det.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 32-bit segment-size type",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 32-bit segment-size type",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_pair_combos)
 {
   using key_t           = float;
@@ -961,8 +967,9 @@ c2h::host_vector<IndexT> reference_deterministic_topk_indices(
 // returns a uniquely defined top-k. Few distinct key values pack many ties into the k-th bucket so the preference (not
 // the key comparison) drives the result; the value payload is the global index, so we compare per-segment index sets
 // against the host reference (within-top-k order is unspecified).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the index-ordered top-k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the index-ordered top-k",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          select_direction_list,
          tie_break_pref_list)
 {
@@ -1041,8 +1048,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
 // on 64 Ki+ segments too large for `compute-sanitizer racecheck`. Heavy ties (keys in [0, 7]) fill the k-th bucket so
 // the deterministic scan/tie-break drives the result; the value payload (global index) is checked against the host
 // index reference, so a wrong scan result is observable. Direct-API, so built once for `TEST_LAUNCH == 0`.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through the deterministic cross-CTA scan",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through the deterministic cross-CTA scan",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          select_direction_list,
          tie_break_pref_list)
 {
@@ -1139,8 +1147,9 @@ static_assert(cluster_num_passes<cuda::std::uint32_t> % 2 != cluster_num_passes<
 // indices -- observable here (unlike keys-only, where all tied keys are equal) via the value payload checked against
 // the host index reference. Two key widths cover both `num_passes` parities; `tie_break_pref_list` both tie-break
 // directions.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the index-ordered top-k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the index-ordered top-k",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          streaming_tie_pair_key_types,
          tie_break_pref_list)
 {
@@ -1246,8 +1255,9 @@ struct heavy_tie_segment_keys_op
 // the agent's generic overflow-streaming path (not BlockLoadToShared) while still straddling the k-th bucket, so it
 // covers the preselected ping-pong direction on the generic streamer for both `num_passes` parities and both tie-break
 // directions. Value-observable: the value payload (global index) is checked against the host index reference.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the index-ordered top-k (generic path)",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the index-ordered top-k (generic path)",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          streaming_tie_pair_key_types,
          tie_break_pref_list)
 {
@@ -1342,8 +1352,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
 using repro_config_a = cluster_tuning_selector<2, /*slots=*/0, /*single_block=*/0, cluster_test_chunk_bytes>;
 using repro_config_b =
   cluster_tuning_selector<1, /*slots=*/4, /*single_block=*/0, cluster_test_chunk_bytes, /*stages=*/4>;
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break is reproducible",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break is reproducible",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          select_direction_list,
          determinism_list)
 {
@@ -1471,8 +1482,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
 using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
 using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment across the pipeline-stage schedule",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment across the pipeline-stage schedule",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          cluster_cap_list,
          stage_list,
          det_tie_pair_combos)
@@ -1548,8 +1560,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment acros
 // chunks remain and `3 % prologue(2) == 1` misaligns the tail. Swept over `det_tie_pair_combos` so the deterministic
 // combos flip the first-wave direction, rotating both the forward and the reverse `first_wave_chunk_for_stage`
 // mapping. The unaligned size (`609 = 5 chunks - 31`) also peels the unaligned tail edge under the rotation.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a misaligned resident tail",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a misaligned resident tail",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_pair_combos)
 {
   using key_t           = float;
@@ -1624,8 +1637,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 // 0` pure streaming, which guards `stage_base` back to 0). The combos that select a forward first wave drive the new
 // coverage; the reverse ones here land on `stage_base == 0` (`num_local_overflow_chunks(6) % num_stream_stages(3) ==
 // 0`), the simplest reverse case (the wrapping non-zero reverse `stage_base` is pinned by the C = 5 test below).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a resident chunk below a wider stream",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a resident chunk below a wider stream",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_pair_combos)
 {
   using key_t           = float;
@@ -1698,8 +1712,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 // re-arm must free stream stage 0 in consume order. The `stage_base == 0` reverse case is covered by the wider-stream
 // test above (C = 7); this pins the wrapping, non-zero-`stage_base` reverse path. Only the deterministic combos whose
 // (tie-break, pass-parity) select a reverse first wave exercise it; the rest re-drive forward paths.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a wrapping reverse resident window",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a wrapping reverse resident window",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_pair_combos)
 {
   using key_t           = float;
@@ -1769,8 +1784,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 // resident chunks remain: sub-case B with `num_local_overflow_chunks = 5`, `num_stream_stages = 2` -> `5 % 2 == 1`. The
 // other tune tests all keep `num_local_overflow_chunks` a multiple of `num_stream_stages`, so this is the only tiny
 // check of the uneven-tail reload for both directions (deterministic combos drive reverse, non-deterministic forward).
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a partial final overflow wave",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with a partial final overflow wave",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_pair_combos)
 {
   using key_t           = float;
@@ -1841,8 +1857,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream a tiny oversize segment with 
 // and a tiny single-CTA-collapsed segment (257). Confirms each value payload stays attached to its key through that
 // path, for every determinism requirement. Streaming (overflowing) pairs are covered by the large-segment tests above,
 // so this one stays small enough for `compute-sanitizer --tool racecheck`.
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width variable-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width variable-size segments",
          "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
          det_tie_pair_combos)
 {
   using key_t           = float;
@@ -1929,8 +1946,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width vari
 }
 #endif // TEST_TYPES == 1
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -2048,8 +2066,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and per-segment k",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,
@@ -2165,8 +2184,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and per-segment k",
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and per-segment k",
          "[pairs][segmented][topk][device]",
+         CUB_SMALL,
          key_types,
          max_segment_size_list,
          max_num_k_list,

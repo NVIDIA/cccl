@@ -14,28 +14,19 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
 
+# Pin cuda-toolkit to the container's CTK minor (CCCL_PYTHON_TEST_LATEST_CTK=1
+# opts out). See build_common_python.psm1.
+Set-CtkPin
+
 $repoRoot = Get-RepoRoot
 
 ${wheelPath} = Get-CudaCcclWheel
 
-# Native commands (python.exe / pip / pytest) only set $LASTEXITCODE on failure;
-# $ErrorActionPreference = "Stop" does not make them throw, so a non-zero exit
-# must be checked explicitly or a failed pip/pytest is masked by a later
-# successful command and the job passes green.
-& $python -m pip install -U pip pytest pytest-xdist
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install pytest / pytest-xdist"
-}
-& $python -m pip install "${wheelPath}[test-cu$cudaMajor]"
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install cuda_cccl test extra"
-}
+Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
+Invoke-Checked { & $python -m pip install "${wheelPath}[test-cu$cudaMajor]" } "Failed to install cuda_cccl test extra"
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
-    & $python -m pytest -n auto -v headers/
-    if ($LASTEXITCODE -ne 0) {
-        throw "headers tests failed"
-    }
+    Invoke-Checked { & $python -m pytest -n auto -v headers/ } "headers tests failed"
 }
 finally { Pop-Location }
