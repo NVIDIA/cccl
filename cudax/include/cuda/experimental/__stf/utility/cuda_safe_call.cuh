@@ -396,6 +396,41 @@ decltype(auto) operator->*(with_location<throwproof_t> s, F&& f) noexcept
   ::std::abort();
 }
 
+/**
+ * @brief Invokes a callable and returns any thrown exception as an `exception_ptr`.
+ *
+ * Use around best-effort code where a failure should not escape (e.g. optional DOT
+ * timing annotations) but the caller may still want to inspect or rethrow later.
+ * The callable's return value must be `void` (enforced at compile time); the
+ * result is empty if nothing was thrown.
+ *
+ * Usage: `auto e = defer_exception->*[&] { ... };`
+ *
+ * The result is `[[nodiscard]]` so the caller must acknowledge it (store it, test it,
+ * or deliberately discard with `::std::ignore = ...`).
+ *
+ * @snippet this defer_exception
+ */
+struct defer_exception_t
+{
+} inline constexpr defer_exception{};
+
+template <class F>
+[[nodiscard]] ::std::exception_ptr operator->*(defer_exception_t, F&& f) noexcept
+{
+  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>,
+                "defer_exception requires a void-returning callable");
+  _CCCL_TRY
+  {
+    ::std::forward<F>(f)();
+    return {};
+  }
+  _CCCL_CATCH_ALL
+  {
+    return ::std::current_exception();
+  }
+}
+
 #ifdef UNITTESTED_FILE
 UNITTEST("with_location")
 {
@@ -470,6 +505,35 @@ UNITTEST("throwproof")
             return 7;
           })
          == 7);
+};
+
+UNITTEST("defer_exception")
+{
+  //! [defer_exception]
+  int value = 0;
+  auto e    = defer_exception->*[&] {
+    value = 42; // if this threw, e would hold the exception_ptr
+  };
+  EXPECT(!e);
+  EXPECT(value == 42);
+  //! [defer_exception]
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  e = defer_exception->*[] {
+    throw ::std::runtime_error("boom");
+  };
+  EXPECT(static_cast<bool>(e));
+  try
+  {
+    ::std::rethrow_exception(e);
+  }
+  catch (const ::std::runtime_error& ex)
+  {
+    EXPECT(::std::string_view(ex.what()) == "boom");
+    return;
+  }
+  EXPECT(false, "rethrow should have transferred control");
+#  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
 UNITTEST("cuda_safe_call")

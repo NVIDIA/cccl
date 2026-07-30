@@ -34,7 +34,8 @@ namespace cuda::experimental::stf
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
  * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw, otherwise the application will be terminated.
- * The code controlled by `SCOPE(exit)` may throw.
+ * The code controlled by `SCOPE(success)` may throw. In all cases the controlled code must return `void`
+ * (enforced at compile time).
  *
  * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
  *
@@ -70,6 +71,8 @@ enum class scope_guard_condition
 template <scope_guard_condition cond, typename F>
 auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
 {
+  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
+
   struct result
   {
     result(F&& f, int threshold)
