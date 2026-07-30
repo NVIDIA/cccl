@@ -349,25 +349,25 @@ public:
   // Prefix increment/decrement
   _CCCL_HOST_DEVICE_API fpemu& operator++() noexcept
   {
-    this = this + fpemu(1.0);
+    *this = *this + fpemu(1.0);
     return *this;
   }
   _CCCL_HOST_DEVICE_API fpemu& operator--() noexcept
   {
-    this = this - fpemu(1.0);
+    *this = *this - fpemu(1.0);
     return *this;
   }
   // Postfix increment/decrement
   _CCCL_HOST_DEVICE_API fpemu operator++(int) noexcept
   {
     fpemu __temp(*this);
-    this = this + fpemu(1.0);
+    *this = *this + fpemu(1.0);
     return __temp;
   }
   _CCCL_HOST_DEVICE_API fpemu operator--(int) noexcept
   {
     fpemu __temp(*this);
-    this = this - fpemu(1.0);
+    *this = *this - fpemu(1.0);
     return __temp;
   }
   // Compound assignment operators
@@ -704,25 +704,25 @@ public:
   // Prefix increment/decrement
   _CCCL_HOST_DEVICE_API fpemu_unpacked& operator++() noexcept
   {
-    this = this + fpemu_unpacked(1.0);
+    *this = *this + fpemu_unpacked(1.0);
     return *this;
   }
   _CCCL_HOST_DEVICE_API fpemu_unpacked& operator--() noexcept
   {
-    this = this - fpemu_unpacked(1.0);
+    *this = *this - fpemu_unpacked(1.0);
     return *this;
   }
   // Postfix increment/decrement
   _CCCL_HOST_DEVICE_API fpemu_unpacked operator++(int) noexcept
   {
     fpemu_unpacked __temp(*this);
-    this = this + fpemu_unpacked(1.0);
+    *this = *this + fpemu_unpacked(1.0);
     return __temp;
   }
   _CCCL_HOST_DEVICE_API fpemu_unpacked operator--(int) noexcept
   {
     fpemu_unpacked __temp(*this);
-    this = this - fpemu_unpacked(1.0);
+    *this = *this - fpemu_unpacked(1.0);
     return __temp;
   }
   // Compound assignment operators
