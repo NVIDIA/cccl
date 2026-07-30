@@ -34,7 +34,7 @@ static_assert(cuda::std::is_constructible_v<fpemu_unpacked<double>, signed char>
 static_assert(cuda::std::is_constructible_v<fpemu_unpacked<double>, unsigned char>);
 
 template <class FP>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   const double tol = 1e-10;
 
@@ -68,7 +68,7 @@ TEST_FUNC void test()
   }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<fpemu<double>>();
   test<fpemu_unpacked<double>>();

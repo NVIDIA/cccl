@@ -37,11 +37,13 @@
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-#if !(defined(__CUDA_ARCH__))
+#if _CCCL_HOST_COMPILATION()
 // Host seed: the libm symbol. The exception spec must match the platform's
 // <math.h> prototype exactly, otherwise this extern-"C" redeclaration conflicts
 // with ::fma when <cmath> is also in the TU (in C++17+ the exception spec is
@@ -50,12 +52,12 @@ namespace cuda::experimental
 //   - MSVC's CRT/CUDA prototype carries no exception specification, so a
 //     noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
 //     under C++20); declare it without noexcept to match.
-#  if defined(_MSC_VER)
+#  if _CCCL_COMPILER(MSVC)
 extern "C" double fma(double __x, double __y, double __z);
-#  else
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 extern "C" double fma(double __x, double __y, double __z) noexcept;
-#  endif
-#endif
+#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif // _CCCL_HOST_COMPILATION()
 
 //! @brief Pure FMA core operating on the unpacked representation.
 //!
@@ -70,7 +72,7 @@ extern "C" double fma(double __x, double __y, double __z) noexcept;
 //! job of pack. Templated on the rounding mode (sign-of-zero, rd handling) and
 //! the method (product accuracy via __mul_128 and range-based special handling).
 template <fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64_unpacked
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked
 __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b, __fpbits64_unpacked __c) noexcept
 {
   constexpr fpemu_accuracy __acc_forced = fpemu_accuracy::_CCCL_FPEMU_FMA_METHOD;
@@ -135,10 +137,11 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   int32_t __delta_a = __exponent_r - __exponent_ab_new;
   int32_t __delta_b = __exponent_r - __exponent_c;
 
-#ifndef __CUDA_ARCH__
-  __delta_a = (__delta_a > 127) ? 127 : __delta_a;
-  __delta_b = (__delta_b > 127) ? 127 : __delta_b;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 __delta_a = (__delta_a > 127) ? 127 : __delta_a;
+                 __delta_b = (__delta_b > 127) ? 127 : __delta_b;
+               }))
+
   // Shift mantissas with jam only (SoftFloat shiftRightJam*); round at pack
   __mantissa_ab = __shr_128_jam(__mantissa_ab, __delta_a);
   __mantissa_c  = __shr_128_jam(__mantissa_c << 64, __delta_b);
@@ -204,7 +207,7 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
 } // __internal_fp64emu_fma_unpacked
 
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_fma(__fpbits64 __x, __fpbits64 __y, __fpbits64 __z) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_fma(__fpbits64 __x, __fpbits64 __y, __fpbits64 __z) noexcept
 {
   // Forced parameters for the fused multiply-add operation
   constexpr fpemu_accuracy __acc_forced = fpemu_accuracy::_CCCL_FPEMU_FMA_METHOD;
@@ -359,7 +362,7 @@ namespace cuda::experimental
 // API (merged from fp64emu_fma_api.hpp)
 // ============================================================================
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
 fma(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const fpemu<double, _Acc>& __z) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -385,7 +388,7 @@ fma(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const fpemu<
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
 __fma_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const fpemu<double, _Acc>& __z) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -411,7 +414,7 @@ __fma_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const f
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
 __fma_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const fpemu<double, _Acc>& __z) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -444,7 +447,7 @@ __fma_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const f
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
 __fma_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const fpemu<double, _Acc>& __z) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -477,7 +480,7 @@ __fma_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const f
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
 __fma_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const fpemu<double, _Acc>& __z) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -511,7 +514,7 @@ __fma_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y, const f
 }
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 fma(const fpemu_unpacked<double, _Acc>& __x,
     const fpemu_unpacked<double, _Acc>& __y,
     const fpemu_unpacked<double, _Acc>& __z) noexcept
@@ -539,7 +542,7 @@ fma(const fpemu_unpacked<double, _Acc>& __x,
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 __fma_rn(const fpemu_unpacked<double, _Acc>& __x,
          const fpemu_unpacked<double, _Acc>& __y,
          const fpemu_unpacked<double, _Acc>& __z) noexcept
@@ -575,7 +578,7 @@ __fma_rn(const fpemu_unpacked<double, _Acc>& __x,
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2, _T3>)
-_CCCL_API __fpemu_pick_t<_T1, _T2, _T3> fma(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2, _T3> fma(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2, _T3>;
   return fma(_Fp(__x), _Fp(__y), _Fp(__z));
@@ -583,7 +586,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2, _T3> fma(const _T1& __x, const _T2& __y, cons
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2, _T3>)
-_CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rn(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rn(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2, _T3>;
   return __fma_rn(_Fp(__x), _Fp(__y), _Fp(__z));
@@ -591,7 +594,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rn(const _T1& __x, const _T2& __y,
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2, _T3>)
-_CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rz(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rz(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2, _T3>;
   return __fma_rz(_Fp(__x), _Fp(__y), _Fp(__z));
@@ -599,7 +602,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rz(const _T1& __x, const _T2& __y,
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2, _T3>)
-_CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_ru(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2, _T3> __fma_ru(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2, _T3>;
   return __fma_ru(_Fp(__x), _Fp(__y), _Fp(__z));
@@ -607,7 +610,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_ru(const _T1& __x, const _T2& __y,
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2, _T3>)
-_CCCL_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rd(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2, _T3> __fma_rd(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2, _T3>;
   return __fma_rd(_Fp(__x), _Fp(__y), _Fp(__z));
@@ -624,7 +627,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // exact-type overloads cover pure fpemu/fpemu/fpemu calls (which __fpemu_mixed_v
 // excludes), while the constrained overload handles mixed fpemu + arithmetic.
 template <::cuda::experimental::fpemu_accuracy _Acc>
-[[nodiscard]] _CCCL_API ::cuda::experimental::fpemu<double, _Acc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpemu<double, _Acc>
 fma(const ::cuda::experimental::fpemu<double, _Acc>& __x,
     const ::cuda::experimental::fpemu<double, _Acc>& __y,
     const ::cuda::experimental::fpemu<double, _Acc>& __z) noexcept
@@ -632,7 +635,7 @@ fma(const ::cuda::experimental::fpemu<double, _Acc>& __x,
   return ::cuda::experimental::fma(__x, __y, __z);
 }
 template <::cuda::experimental::fpemu_accuracy _Acc>
-[[nodiscard]] _CCCL_API ::cuda::experimental::fpemu_unpacked<double, _Acc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpemu_unpacked<double, _Acc>
 fma(const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __x,
     const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __y,
     const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __z) noexcept
@@ -641,7 +644,7 @@ fma(const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __x,
 }
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(::cuda::experimental::__fpemu_mixed_v<_T1, _T2, _T3>)
-[[nodiscard]] _CCCL_API ::cuda::experimental::__fpemu_pick_t<_T1, _T2, _T3>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::__fpemu_pick_t<_T1, _T2, _T3>
 fma(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
   return ::cuda::experimental::fma(__x, __y, __z);

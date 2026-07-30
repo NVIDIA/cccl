@@ -32,7 +32,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Horner evaluation of the degree-7 polynomial for any value type.
 #define POLY(v) (C0 + (v) * (C1 + (v) * (C2 + (v) * (C3 + (v) * (C4 + (v) * (C5 + (v) * (C6 + (v) * C7)))))))
 
-TEST_FUNC void test(double dx, double dy, double dz, double dw)
+TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz, double dw)
 {
   const double ref[5] = {
     dx * dy * dz * dw,

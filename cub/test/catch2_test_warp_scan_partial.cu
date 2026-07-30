@@ -8,7 +8,7 @@
 #include <cuda/std/limits>
 
 #include "catch2_test_warp_scan_partial_helper.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using types                = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
@@ -190,7 +190,7 @@ struct min_init_value_scan_op_t
   }
 };
 
-C2H_TEST("Partial warp scan works with sum", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST("Partial warp scan works with sum", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -225,7 +225,7 @@ C2H_TEST("Partial warp scan works with sum", "[scan][warp]", types, logical_warp
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Partial warp scan works with vec_types", "[scan][warp]", vec_types, logical_warp_threads, modes)
+CUB_TEST("Partial warp scan works with vec_types", "[scan][warp]", CUB_SMALL, vec_types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -261,8 +261,9 @@ C2H_TEST("Partial warp scan works with vec_types", "[scan][warp]", vec_types, lo
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Partial warp scan works with custom types",
+CUB_TEST("Partial warp scan works with custom types",
          "[scan][warp]",
+         CUB_SMALL,
          c2h::type_list<c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>>,
          logical_warp_threads,
          modes)
@@ -301,8 +302,9 @@ C2H_TEST("Partial warp scan works with custom types",
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Partial warp scan returns valid warp aggregate",
+CUB_TEST("Partial warp scan returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          c2h::type_list<c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>>,
          logical_warp_threads,
          modes)
@@ -355,7 +357,7 @@ C2H_TEST("Partial warp scan returns valid warp aggregate",
 }
 
 // TODO : Do we need all the types?
-C2H_TEST("Partial warp scan works with custom scan op", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST("Partial warp scan works with custom scan op", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -400,7 +402,12 @@ C2H_TEST("Partial warp scan works with custom scan op", "[scan][warp]", types, l
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Partial warp custom op scan returns valid warp aggregate", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST("Partial warp custom op scan returns valid warp aggregate",
+         "[scan][warp]",
+         CUB_SMALL,
+         types,
+         logical_warp_threads,
+         modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -456,7 +463,8 @@ C2H_TEST("Partial warp custom op scan returns valid warp aggregate", "[scan][war
   }
 }
 
-C2H_TEST("Partial warp custom op scan works with initial value", "[scan][warp]", types, logical_warp_threads, modes)
+CUB_TEST(
+  "Partial warp custom op scan works with initial value", "[scan][warp]", CUB_SMALL, types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -492,8 +500,9 @@ C2H_TEST("Partial warp custom op scan works with initial value", "[scan][warp]",
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Partial warp custom op scan with initial value returns valid warp aggregate",
+CUB_TEST("Partial warp custom op scan with initial value returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          modes)
@@ -541,7 +550,7 @@ C2H_TEST("Partial warp custom op scan with initial value returns valid warp aggr
   }
 }
 
-C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp]", logical_warp_threads)
+CUB_TEST("Partial warp combination scan works with custom scan op", "[scan][warp]", CUB_SMALL, logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
@@ -611,7 +620,8 @@ C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp
   REQUIRE(h_exclusive_out == d_exclusive_out);
 }
 
-C2H_TEST("Partial warp combination custom scan works with initial value", "[scan][warp]", logical_warp_threads)
+CUB_TEST(
+  "Partial warp combination custom scan works with initial value", "[scan][warp]", CUB_SMALL, logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();

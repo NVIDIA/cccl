@@ -51,7 +51,7 @@ namespace cuda::experimental
 //! @param b The second __fpbits64_unpacked
 //! @return The result of the subtraction
 template <fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64_unpacked
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked
 __internal_fp64emu_dsub_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b) noexcept
 {
   return __internal_fp64emu_dadd_unpacked<_Acc, true>(__a, __b);
@@ -65,7 +65,7 @@ __internal_fp64emu_dsub_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
 //! @param y The second __fpbits64
 //! @return The result of the subtraction
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dsub(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_dsub(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   // Forced parameters for the subtraction operation
   constexpr fpemu_accuracy __acc_forced = fpemu_accuracy::_CCCL_FPEMU_ADD_METHOD;
@@ -193,7 +193,8 @@ namespace cuda::experimental
 
 // Default API implementation - binary subtraction operator
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> operator-(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+operator-(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -214,7 +215,8 @@ _CCCL_API fpemu<double, _Acc> operator-(const fpemu<double, _Acc>& __x, const fp
 } // operator-
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsub_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dsub_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -233,7 +235,8 @@ _CCCL_API fpemu<double, _Acc> __dsub_rn(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsub_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dsub_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -257,7 +260,8 @@ _CCCL_API fpemu<double, _Acc> __dsub_rz(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsub_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dsub_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -281,7 +285,8 @@ _CCCL_API fpemu<double, _Acc> __dsub_ru(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __dsub_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__dsub_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -307,7 +312,7 @@ _CCCL_API fpemu<double, _Acc> __dsub_rd(const fpemu<double, _Acc>& __x, const fp
 
 // Operator- for unpacked subtraction
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 operator-(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -329,7 +334,7 @@ operator-(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 } // operator-
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 __dsub_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -357,7 +362,7 @@ __dsub_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_rn(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dsub_rn(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dsub_rn(_Fp(__x), _Fp(__y));
@@ -365,7 +370,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_rn(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_rz(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dsub_rz(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dsub_rz(_Fp(__x), _Fp(__y));
@@ -373,7 +378,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_rz(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_ru(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dsub_ru(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dsub_ru(_Fp(__x), _Fp(__y));
@@ -381,7 +386,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_ru(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __dsub_rd(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __dsub_rd(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __dsub_rd(_Fp(__x), _Fp(__y));
