@@ -28,7 +28,6 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -60,7 +59,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
 
   const auto __total = __counts.back() + __displs.back();
 
-  __ret->resize(__ret->__get().stream(), __total, ::cuda::no_init);
+  __ret->resize_discard(__ret->stream(), __total, ::cuda::no_init);
 
   // This staggered implementation is an optimization to avoid allocating a temporary
   // buffer. If we can just do a single merge we don't need the bounce buffer.
@@ -78,7 +77,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   if (__counts.size() > 2)
   {
     ::cuda::std::size_t __merged_size = __counts[0] + __counts[1];
-    auto __tmp_buf                    = __ret->__make_empty_like(__total);
+    auto __tmp_buf                    = __buffer_type<_Tp>{
+      __ret->stream(),
+      __ret->memory_resource(),
+      __total,
+      ::cuda::no_init,
+      ::cuda::experimental::__detail::__sanitize_buffer_env(__env)};
 
     for (::cuda::std::size_t __i = 2; __i < __counts.size(); ++__i)
     {
@@ -93,7 +97,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
         __cmp,
         __env);
 
-      __ret->__get().swap(__tmp_buf);
+      __ret->swap(__tmp_buf);
       __merged_size += __counts[__i];
     }
   }

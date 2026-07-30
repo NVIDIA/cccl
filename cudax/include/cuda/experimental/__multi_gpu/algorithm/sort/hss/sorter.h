@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/__container/buffer.h>
+#include <cuda/__container/resizable_buffer.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__utility/pair.h>
@@ -30,7 +31,6 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__utility/result_policy.cuh>
 
 #include <vector>
@@ -66,10 +66,9 @@ struct _PerCommSamplingScratch
   ::cuda::std::size_t __sample_sendcount{};
 };
 
-template <class _Resource, template <class> class _Buffer>
+template <template <class> class _Buffer>
 struct _LocalSetupResult
 {
-  ::std::vector<_Resource> __resources{};
   ::std::vector<_Buffer<::cuda::std::uint64_t>> __all_local_offsets{};
   ::std::vector<::cuda::std::size_t> __local_original_sizes{};
   ::cuda::std::uint64_t __N{};
@@ -100,11 +99,12 @@ public:
 
   // The size/capacity-aware device buffer type for element type `_Up`.
   template <class _Up>
-  using __buffer_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__hss_sort::__buffer<_Up, __resource_type>;
+  using __buffer_type _CCCL_NODEBUG =
+    typename __resource_type::default_queries::template rebind<::cuda::__resizable_buffer, _Up>;
 
   using __per_comm_splitters_type _CCCL_NODEBUG            = _PerCommSplitters<__buffer_type, _Tp>;
   using __per_comm_sampling_scratch_type _CCCL_NODEBUG     = _PerCommSamplingScratch<__buffer_type, _Tp>;
-  using __local_setup_result_type _CCCL_NODEBUG            = _LocalSetupResult<__resource_type, __buffer_type>;
+  using __local_setup_result_type _CCCL_NODEBUG            = _LocalSetupResult<__buffer_type>;
   using __per_comm_histogramming_result_type _CCCL_NODEBUG = _PerCommHistogrammingResult<__buffer_type, _Tp>;
   using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<__buffer_type, _Tp>;
 

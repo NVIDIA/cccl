@@ -27,7 +27,8 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
-#include <cuda/std/__ranges/zip_view.h>
+#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
@@ -36,7 +37,6 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/bucket_count_fn.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/merge_k_way.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
@@ -159,98 +159,115 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   __local_counts.reserve(__num_local_inputs);
 
   const auto __send_span = [__comm_size](auto& __counts) {
-    return __counts.__get().subspan(0, __comm_size);
+    return __counts.subspan(0, __comm_size);
   };
   const auto __recv_span = [__comm_size](auto& __counts) {
-    return __counts.__get().subspan(__comm_size, __comm_size);
+    return __counts.subspan(__comm_size, __comm_size);
   };
 
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
 
   __local_current_offsets.reserve(__num_local_inputs);
-  for (auto&& [__comm, __env, __resource, __input, __hist_result] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources, __local_inputs, __hist_results))
+
   {
-    const auto& __hist   = __hist_result.__hist;
-    const auto& __Ls     = __hist_result.__splitters.__Ls;
-    const auto& __Us     = __hist_result.__splitters.__Us;
-    const auto& __probes = __hist_result.__splitters.__probes;
+    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __env_it   = ::cuda::std::ranges::begin(__envs);
+    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
 
-    auto& __counts =
-      __local_counts.emplace_back(__Ls.__get().stream(), __resource, 2 * __comm_size, ::cuda::no_init, __env);
-    auto& __offsets =
-      __local_current_offsets.emplace_back(__Ls.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
+    {
+      const auto& __hist   = __hist_results[__idx].__hist;
+      const auto& __Ls     = __hist_results[__idx].__splitters.__Ls;
+      const auto& __Us     = __hist_results[__idx].__splitters.__Us;
+      const auto& __probes = __hist_results[__idx].__splitters.__probes;
 
-    _CCCL_VERIFY(!__probes.__get().empty(), "Histogramming phase should have generated at least one probe");
-    _CCCL_VERIFY(__hist.size() == __probes.size() + 1, "The probe histogram must still describe the final probe set");
+      auto& __counts = __local_counts.emplace_back(
+        __Ls.stream(),
+        __Ls.memory_resource(),
+        2 * __comm_size,
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+      auto& __offsets = __local_current_offsets.emplace_back(
+        __Ls.stream(),
+        __Ls.memory_resource(),
+        __comm_size,
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
-    // Everyone is sorted locally but nobody holds a globally correct slice yet, so each rank
-    // has to hand every key to whichever rank the splitters say owns it. Per destination d we
-    // need:
-    //
-    // - send count: how many of our keys belong to d. Sizes are all we have to agree on, since
-    //   we are sorted and d's keys are already a contiguous run of ours.
-    // - offset: d's position in the final order. The splitters divide by key value, not
-    //   evenly, so d ends up with more or fewer keys than it started with. The rebalance phase
-    //   reads these to put the original sizes back (note we should consider dropping rebalance).
-    //
-    // Both fall out of splitter d - 1, because a bracket endpoint carries a key *and* that
-    // key's global rank. The key bounds the search for the count; the rank is already the
-    // offset, since it counts exactly the keys ordered before d. There is one splitter object,
-    // held by the search iterator, so the two columns cannot describe different splitters.
-    //
-    // The reason for complexity here is that this is actually the fusion of 2 separate
-    // kernels. It used to be that the counts and offsets were computed separately, but they
-    // ultimately both ask the same question "for my particular bucket, how many keys and where
-    // are they?".
+      _CCCL_VERIFY(!__probes.empty(), "Histogramming phase should have generated at least one probe");
+      _CCCL_VERIFY(__hist.size() == __probes.size() + 1, "The probe histogram must still describe the final probe set");
 
-    // TODO(jfaibussowit)
-    //
-    // This mess can probably be simplified greatly. __bucket_count_fn is shared with the
-    // histogramming phase, but ultimately it does something very similar here. I wonder if we
-    // can't just reuse the histogram directly here. There is a lot of repeated information
-    // here.
-    const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(__input));
-    using __input_it_t        = ::cuda::std::remove_cvref_t<decltype(__input_begin)>;
+      // Everyone is sorted locally but nobody holds a globally correct slice yet, so each rank
+      // has to hand every key to whichever rank the splitters say owns it. Per destination d we
+      // need:
+      //
+      // - send count: how many of our keys belong to d. Sizes are all we have to agree on, since
+      //   we are sorted and d's keys are already a contiguous run of ours.
+      // - offset: d's position in the final order. The splitters divide by key value, not
+      //   evenly, so d ends up with more or fewer keys than it started with. The rebalance phase
+      //   reads these to put the original sizes back (note we should consider dropping rebalance).
+      //
+      // Both fall out of splitter d - 1, because a bracket endpoint carries a key *and* that
+      // key's global rank. The key bounds the search for the count; the rank is already the
+      // offset, since it counts exactly the keys ordered before d. There is one splitter object,
+      // held by the search iterator, so the two columns cannot describe different splitters.
+      //
+      // The reason for complexity here is that this is actually the fusion of 2 separate
+      // kernels. It used to be that the counts and offsets were computed separately, but they
+      // ultimately both ask the same question "for my particular bucket, how many keys and where
+      // are they?".
 
-    auto __op = __send_count_and_offset_fn<__bucket_count_fn<__input_it_t, __bucket_to_splitter_key_fn<_Tp>, _BinaryOp>>{
-      {__input_begin,
-       ::cuda::std::to_address(::cuda::std::ranges::end(__input)),
-       // This is doing double duty here. Not only do we use it to calculate the actual size
-       // of each bin, but we also use the __rank() function to calculate the offsets.
-       __bucket_to_splitter_key_fn<_Tp>{
-         __Ls.data(),
-         __Us.data(),
-         __probes.data(),
-         static_cast<::cuda::std::uint64_t>(__probes.size()),
-         __hist.data(),
-         __ideal_rank_fn{__N, static_cast<::cuda::std::uint64_t>(__comm_size)}},
-       __Ls.size(),
-       __cmp}};
+      // TODO(jfaibussowit)
+      //
+      // This mess can probably be simplified greatly. __bucket_count_fn is shared with the
+      // histogramming phase, but ultimately it does something very similar here. I wonder if we
+      // can't just reuse the histogram directly here. There is a lot of repeated information
+      // here.
+      const auto* __input_begin = ::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it));
+      using __input_it_t        = ::cuda::std::remove_cvref_t<decltype(__input_begin)>;
 
-    const auto __send_counts = __send_span(__counts);
+      auto __op =
+        __send_count_and_offset_fn<__bucket_count_fn<__input_it_t, __bucket_to_splitter_key_fn<_Tp>, _BinaryOp>>{
+          {__input_begin,
+           ::cuda::std::to_address(::cuda::std::ranges::end(*__input_it)),
+           // This is doing double duty here. Not only do we use it to calculate the actual size
+           // of each bin, but we also use the __rank() function to calculate the offsets.
+           __bucket_to_splitter_key_fn<_Tp>{
+             __Ls.data(),
+             __Us.data(),
+             __probes.data(),
+             static_cast<::cuda::std::uint64_t>(__probes.size()),
+             __hist.data(),
+             __ideal_rank_fn{__N, static_cast<::cuda::std::uint64_t>(__comm_size)}},
+           __Ls.size(),
+           __cmp}};
 
-    auto __out = ::cuda::std::make_tuple(__send_counts.data(), __offsets.data());
+      const auto __send_counts = __send_span(__counts);
 
-    __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
-      CUB_NS_QUALIFIER::DeviceTransform::Transform,
-      ::cuda::counting_iterator<::cuda::std::uint64_t>{},
-      ::cuda::std::move(__out),
-      __send_counts.size(),
-      ::cuda::std::move(__op),
-      __env);
+      auto __out = ::cuda::std::make_tuple(__send_counts.data(), __offsets.data());
+
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm_it->logical_device(),
+        CUB_NS_QUALIFIER::DeviceTransform::Transform,
+        ::cuda::counting_iterator<::cuda::std::uint64_t>{},
+        ::cuda::std::move(__out),
+        __send_counts.size(),
+        ::cuda::std::move(__op),
+        *__env_it);
+    }
   }
 
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __counts] : ::cuda::std::ranges::views::zip(__comms, __local_counts))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto* const __send_ptr = __send_span(__counts).data();
-      auto* const __recv_ptr = __recv_span(__counts).data();
+      auto* const __send_ptr = __send_span(__local_counts[__idx]).data();
+      auto* const __recv_ptr = __recv_span(__local_counts[__idx]).data();
 
-      __comm.all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __counts.__get().stream());
+      __comm_it->all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __local_counts[__idx].stream());
     }
   }
 
@@ -265,32 +282,34 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   const auto __h_column =
     [__comm_size](
       ::std::vector<::cuda::std::size_t>& __h_counts, ::cuda::std::size_t __rank_idx, ::cuda::std::size_t __col) {
-      return ::cuda::std::span<::cuda::std::size_t>{__h_counts}.subspan(
-        ((__rank_idx * __h_num_columns) + __col) * __comm_size, __comm_size);
+      return ::cuda::std::span<::cuda::std::size_t>{
+        __h_counts.data() + ((__rank_idx * __h_num_columns) + __col) * __comm_size, __comm_size};
     };
 
   ::std::vector<__buffer_type<_Tp>> __local_recvd;
 
   __local_recvd.reserve(__num_local_inputs);
   {
-    auto __idx = 0;
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto __env_it  = ::cuda::std::ranges::begin(__envs);
 
-    for (auto&& [__comm, __env, __counts] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_counts))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
     {
       const auto __h_send_counts = __h_column(__local_h_counts, __idx, __h_send_counts_column);
 
       static_assert(__h_recv_counts_column == __h_send_counts_column + 1,
                     "The fused counts copy requires the send and recv count columns to be adjacent");
       ::cuda::copy_bytes(
-        __counts.__get().stream(),
-        __counts.__get(),
+        __local_counts[__idx].stream(),
+        __local_counts[__idx],
         ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * __h_send_counts.size()},
-        ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
 
       // All streams are the same, so any suffices
-      __counts.__get().stream().sync();
+      __local_counts[__idx].stream().sync();
 
       const auto __h_recv_counts = __h_column(__local_h_counts, __idx, __h_recv_counts_column);
       const auto __h_send_displs = __h_column(__local_h_counts, __idx, __h_send_displs_column);
@@ -307,29 +326,31 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
       const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
 
       __local_recvd.emplace_back(
-        __counts.__get().stream(), __counts.__get().memory_resource(), __total_recv, ::cuda::no_init, __env);
-
-      ++__idx;
+        __local_counts[__idx].stream(),
+        __local_counts[__idx].memory_resource(),
+        __total_recv,
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
     }
   }
 
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
-    auto __idx     = 0;
+    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    auto&& __guard  = __comm_it->group_guard();
 
-    for (auto&& [__comm, __input, __recvd] : ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_recvd))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__input_it)
     {
-      __comm.all_to_all_v(
+      __comm_it->all_to_all_v(
         __guard,
-        ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
+        ::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)),
         __h_column(__local_h_counts, __idx, __h_send_counts_column).data(),
         __h_column(__local_h_counts, __idx, __h_send_displs_column).data(),
-        __recvd.data(),
+        __local_recvd[__idx].data(),
         __h_column(__local_h_counts, __idx, __h_recv_counts_column).data(),
         __h_column(__local_h_counts, __idx, __h_recv_displs_column).data(),
-        __recvd.__get().stream());
-
-      ++__idx;
+        __local_recvd[__idx].stream());
     }
   }
 
@@ -346,22 +367,25 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   __local_merged.reserve(__num_local_inputs);
 
   {
-    auto __idx = 0;
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto __env_it  = ::cuda::std::ranges::begin(__envs);
 
-    for (auto&& [__comm, __env, __recvd] : ::cuda::std::ranges::views::zip(__comms, __envs, __local_recvd))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
     {
-      auto& __merged = __local_merged.emplace_back(__recvd.__make_empty_like(0));
+      auto& __merged = __local_merged.emplace_back(
+        __local_recvd[__idx].stream(),
+        __local_recvd[__idx].memory_resource(),
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
       __merge_k_way(
-        __comm,
-        __env,
-        __recvd,
+        *__comm_it,
+        *__env_it,
+        __local_recvd[__idx],
         __h_column(__local_h_counts, __idx, __h_recv_counts_column),
         __h_column(__local_h_counts, __idx, __h_recv_displs_column),
         __cmp,
         &__merged);
-
-      ++__idx;
     }
   }
 

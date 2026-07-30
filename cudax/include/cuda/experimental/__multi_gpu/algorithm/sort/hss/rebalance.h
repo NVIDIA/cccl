@@ -28,13 +28,13 @@
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__ranges/zip_view.h>
+#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/sorter.h>
 
 #include <vector>
@@ -154,30 +154,29 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   const auto __h_column =
     [__comm_size](
       ::std::vector<::cuda::std::size_t>& __h_counts, ::cuda::std::size_t __rank_idx, ::cuda::std::size_t __col) {
-      return ::cuda::std::span<::cuda::std::size_t>{__h_counts}.subspan(
-        ((__rank_idx * __num_columns) + __col) * __comm_size, __comm_size);
+      return ::cuda::std::span<::cuda::std::size_t>{
+        __h_counts.data() + ((__rank_idx * __num_columns) + __col) * __comm_size, __comm_size};
     };
 
   __local_rebalanced.reserve(__num_local_inputs);
 
+  // The vectors walked alongside the caller's ranges hold `__buffer_type`s, whose operations are
+  // host-only. `views::zip` would instantiate its `__host__ __device__` iterator members over
+  // them, so the per-rank walks in this function step the ranges in lockstep by hand instead.
   {
-    auto __idx = 0;
+    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    auto __env_it   = ::cuda::std::ranges::begin(__envs);
 
-    for (auto&& [__comm, __input, __env, __resource, __current_offsets, __desired_offsets] :
-         ::cuda::std::ranges::views::zip(
-           __comms,
-           __local_inputs,
-           __envs,
-           __setup.__resources,
-           __exchange_results.__local_current_offsets,
-           __setup.__all_local_offsets))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__input_it, (void) ++__env_it)
     {
       auto __counts = ::cuda::make_buffer<::cuda::std::size_t>(
-        __current_offsets.__get().stream(),
-        __resource,
+        __exchange_results.__local_current_offsets[__idx].stream(),
+        __exchange_results.__local_current_offsets[__idx].memory_resource(),
         __num_columns * __comm_size,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
       auto __out = ::cuda::std::make_tuple(
         __column(__counts, __send_counts_column).data(),
@@ -186,20 +185,20 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
         __column(__counts, __recv_displs_column).data());
 
       auto __op = __rebalance_counts_fn{
-        static_cast<::cuda::std::uint64_t>(__comm.rank()),
+        static_cast<::cuda::std::uint64_t>(__comm_it->rank()),
         static_cast<::cuda::std::uint64_t>(__comm_size),
         __N,
-        __current_offsets.data(),
-        __desired_offsets.data()};
+        __exchange_results.__local_current_offsets[__idx].data(),
+        __setup.__all_local_offsets[__idx].data()};
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __comm_it->logical_device(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         ::cuda::std::move(__out),
         __comm_size,
         __op,
-        __env);
+        *__env_it);
 
       {
         auto __h_counts_dest = __h_column(__local_h_counts, __idx, __send_counts_column);
@@ -212,54 +211,58 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
           __counts.stream(),
           __counts,
           ::cuda::std::span<::cuda::std::size_t>{__h_counts_dest.data(), __num_columns * __h_counts_dest.size()},
-          ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
+          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
                                      ::cuda::host_memory_location,
                                      ::cuda::source_access_order::stream});
       }
 
       __local_rebalanced.emplace_back(
-        __counts.stream(), __resource, ::cuda::std::ranges::size(__input), ::cuda::no_init, __env);
-
-      ++__idx;
+        __counts.stream(),
+        __counts.memory_resource(),
+        ::cuda::std::ranges::size(*__input_it),
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
     }
   }
 
   {
-    auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
-    auto __idx     = 0;
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto&& __guard = __comm_it->group_guard();
 
-    for (auto&& [__comm, __exchanged, __out] :
-         ::cuda::std::ranges::views::zip(__comms, __exchange_results.__local_merged, __local_rebalanced))
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
       // Wait for DtoH above to finish
-      __out.__get().stream().sync();
+      __local_rebalanced[__idx].stream().sync();
 
-      __comm.all_to_all_v(
+      __comm_it->all_to_all_v(
         __guard,
-        __exchanged.data(),
+        __exchange_results.__local_merged[__idx].data(),
         __h_column(__local_h_counts, __idx, __send_counts_column).data(),
         __h_column(__local_h_counts, __idx, __send_displs_column).data(),
-        __out.data(),
+        __local_rebalanced[__idx].data(),
         __h_column(__local_h_counts, __idx, __recv_counts_column).data(),
         __h_column(__local_h_counts, __idx, __recv_displs_column).data(),
-        __out.__get().stream());
-
-      ++__idx;
+        __local_rebalanced[__idx].stream());
     }
   }
 
-  for (auto&& [__comm, __input, __rebalanced] :
-       ::cuda::std::ranges::views::zip(__comms, __local_inputs, __local_rebalanced))
   {
-    _CCCL_VERIFY(::cuda::std::ranges::size(__input) == __rebalanced.size(), "Incorrect sizing for temp storage");
-    const ::cuda::device_ref __device = __comm.logical_device().underlying_device();
+    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
+    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
 
-    ::cuda::copy_bytes(
-      __rebalanced.__get().stream(),
-      __rebalanced.__get(),
-      ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
-                             ::cuda::std::ranges::size(__input)},
-      ::cuda::copy_configuration{__device, __device, ::cuda::source_access_order::stream});
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__input_it)
+    {
+      const auto __n = ::cuda::std::ranges::size(*__input_it);
+
+      _CCCL_VERIFY(__n == __local_rebalanced[__idx].size(), "Incorrect sizing for temp storage");
+      const ::cuda::device_ref __device = __comm_it->logical_device().underlying_device();
+
+      ::cuda::copy_bytes(__local_rebalanced[__idx].stream(),
+                         __local_rebalanced[__idx],
+                         ::cuda::std::span<_Tp>{::cuda::std::to_address(::cuda::std::ranges::begin(*__input_it)), __n},
+                         ::cuda::copy_configuration{__device, __device, ::cuda::source_access_order::stream});
+    }
   }
 }
 

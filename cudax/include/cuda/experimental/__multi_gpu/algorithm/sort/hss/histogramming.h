@@ -57,7 +57,6 @@
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/bucket_count_fn.h>
-#include <cuda/experimental/__multi_gpu/algorithm/sort/hss/buffer.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/__multi_gpu/algorithm/sort/hss/merge_k_way.h>
 
@@ -155,7 +154,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__sample_probes(
 
   ::cuda::launch(
     // All inputs should be on the same stream here
-    __I_j.__get().stream(),
+    __I_j.stream(),
     __config,
     ::cuda::experimental::__detail::__hss_sort::
       __sample_probes_kernel<::cuda::std::remove_cvref_t<decltype(__config)>, _Tp, _BinaryOp>,
@@ -163,10 +162,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__sample_probes(
     __sampling_probability,
     ::cuda::std::to_address(::cuda::std::ranges::begin(__input)),
     ::cuda::std::to_address(::cuda::std::ranges::end(__input)),
-    __I_j.__get(),
+    __I_j,
     __cmp,
     ::cuda::std::span<_Tp>{*__samples},
-    __sample_size->__get().data());
+    __sample_size->data());
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
@@ -238,10 +237,14 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
   __local_scratch.reserve(__num_local_inputs);
   __local_hist_results.reserve(__num_local_inputs);
 
-  for (auto&& [__comm, __env, __resource] : ::cuda::std::ranges::views::zip(__comms, __envs, __setup.__resources))
+  for (auto&& [__comm, __env] : ::cuda::std::ranges::views::zip(__comms, __envs))
   {
     const auto __stream  = ::cuda::get_stream(__env);
     const auto __n_split = __comm_size - 1;
+
+    auto&& __resource =
+      ::cuda::experimental::__detail::__resource_from_env(__env, __comm.logical_device().underlying_device());
+    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(__env);
 
     {
 #if _CCCL_CTK_AT_LEAST(12, 9)
@@ -258,27 +261,35 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
       __local_scratch.emplace_back(__per_comm_sampling_scratch_type{
         /*__I_j=*/
         __buffer_type<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>{
-          __stream,
-          __resource,
-          __n_split,
-          ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
-          __env},
-        /*__samples=*/__buffer_type<_Tp>{__stream, __resource, __env},
+          ::cuda::make_buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>>(
+            __stream,
+            __resource,
+            __n_split,
+            ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>{},
+            __buffer_env)},
+        /*__samples=*/
+        __buffer_type<_Tp>{__stream, __resource, __buffer_env},
         /*__samples_size=*/
         __buffer_type<::cuda::std::size_t>{
-          __stream, __resource, /*__size=*/__comm.rank() == __ROOT_RANK ? __comm_size : 1, ::cuda::no_init, __env},
+          __stream,
+          __resource,
+          /*__size=*/::cuda::std::size_t{__comm.rank() == __ROOT_RANK ? __comm_size : 1},
+          ::cuda::no_init,
+          __buffer_env},
         ::cuda::std::move(__probe_counts)});
     }
 
     __local_hist_results.emplace_back(__per_comm_histogramming_result_type{
       /*__splitters=*/
       __per_comm_splitters_type{
-        /*__Ls=*/__buffer_type<_Bracket<_Tp>>{
-          __stream, __resource, __n_split, _Bracket<_Tp>{0, ::cuda::std::nullopt}, __env},
+        /*__Ls=*/__buffer_type<_Bracket<_Tp>>{::cuda::make_buffer<_Bracket<_Tp>>(
+          __stream, __resource, __n_split, _Bracket<_Tp>{0, ::cuda::std::nullopt}, __buffer_env)},
         /*__Us=*/
-        __buffer_type<_Bracket<_Tp>>{__stream, __resource, __n_split, _Bracket<_Tp>{__N, ::cuda::std::nullopt}, __env},
-        /*__probes=*/__buffer_type<_Tp>{__stream, __resource, __env}},
-      /*__hist=*/__buffer_type<::cuda::std::uint64_t>{__stream, __resource, __env}});
+        __buffer_type<_Bracket<_Tp>>{::cuda::make_buffer<_Bracket<_Tp>>(
+          __stream, __resource, __n_split, _Bracket<_Tp>{__N, ::cuda::std::nullopt}, __buffer_env)},
+        /*__probes=*/
+        __buffer_type<_Tp>{__stream, __resource, __buffer_env}},
+      /*__hist=*/__buffer_type<::cuda::std::uint64_t>{__stream, __resource, __buffer_env}});
   }
 
   return ::cuda::std::make_pair(::cuda::std::move(__local_scratch), ::cuda::std::move(__local_hist_results));
@@ -306,13 +317,13 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
     {
       auto* const __ptr = __scratch.__samples_size.data();
 
-      __comm.gather(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__samples_size.__get().stream());
+      __comm.gather(__guard, __ptr, __ptr, /*__count=*/1, __ROOT_RANK, __scratch.__samples_size.stream());
     }
   }
 
   for (auto&& [__comm, __env, __scratch] : ::cuda::std::ranges::views::zip(__comms, __envs, *__local_scratch))
   {
-    auto& __samples_size               = __scratch.__samples_size.__get();
+    auto& __samples_size               = __scratch.__samples_size;
     ::cuda::std::uint64_t& __sendcount = __scratch.__sample_sendcount;
 
     if (__comm.rank() == __ROOT_RANK)
@@ -349,12 +360,16 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
       // (samples shrink monotonically, so this never grows after round one).
       if (__root_all_samples->has_value())
       {
-        (*__root_all_samples)->resize(__samples_size.stream(), __all_recv, ::cuda::no_init);
+        (*__root_all_samples)->resize_discard(__samples_size.stream(), __all_recv, ::cuda::no_init);
       }
       else
       {
         __root_all_samples->emplace(
-          __samples_size.stream(), __samples_size.memory_resource(), __all_recv, ::cuda::no_init, __env);
+          __samples_size.stream(),
+          __samples_size.memory_resource(),
+          __all_recv,
+          ::cuda::no_init,
+          ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
       }
     }
     else
@@ -386,7 +401,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
         __root_recvcounts->data(),
         __root_displs->data(),
         __ROOT_RANK,
-        __scratch.__samples.__get().stream());
+        __scratch.__samples.stream());
     }
   }
 
@@ -448,7 +463,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
         __probe_count = __scratch.__probe_counts.front();
       }
 
-      __probes.resize(__probes.__get().stream(), *__probe_count, ::cuda::no_init);
+      __probes.resize_discard(__probes.stream(), *__probe_count, ::cuda::no_init);
     }
   }
 
@@ -460,7 +475,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_merge_broadcast(
       auto& __probes    = __hist_result.__splitters.__probes;
       auto* const __ptr = __probes.data();
 
-      __comm.broadcast(__guard, __ptr, __ptr, __probes.size(), __ROOT_RANK, __probes.__get().stream());
+      __comm.broadcast(__guard, __ptr, __ptr, __probes.size(), __ROOT_RANK, __probes.stream());
     }
   }
 }
@@ -485,7 +500,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
     const auto* __keys_first   = ::cuda::std::to_address(::cuda::std::ranges::begin(__keys));
     const auto* __probes_first = __probes.data();
 
-    __hist.resize(__hist.__get().stream(), __num_buckets, ::cuda::no_init);
+    __hist.resize_discard(__hist.stream(), __num_buckets, ::cuda::no_init);
 
     auto __op = __bucket_count_fn<::cuda::std::remove_cvref_t<decltype(__keys_first)>,
                                   ::cuda::std::remove_cvref_t<decltype(__probes_first)>,
@@ -510,7 +525,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
       auto& __hist      = __hist_result.__hist;
       auto* const __ptr = __hist.data();
 
-      __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __hist.__get().stream());
+      __comm.all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __hist.stream());
     }
   }
 }
@@ -615,7 +630,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
       const auto __seed = (static_cast<::cuda::std::uint64_t>(__j) * 0x129381294235245ULL)
                         ^ static_cast<::cuda::std::uint64_t>(__comm.rank());
 
-      __scratch.__samples.resize(__scratch.__samples.__get().stream(), __estimate, ::cuda::no_init);
+      __scratch.__samples.resize_discard(__scratch.__samples.stream(), __estimate, ::cuda::no_init);
       __sample_probes(__input, __scratch.__I_j, __prob, __seed, __cmp, &__scratch.__samples, &__scratch.__samples_size);
     }
 

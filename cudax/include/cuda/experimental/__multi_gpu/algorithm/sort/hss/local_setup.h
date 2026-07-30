@@ -54,13 +54,11 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__resource_type> __resources;
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
   ::std::vector<::cuda::std::size_t> __local_original_sizes;
   ::cuda::std::uint64_t __N = 0;
 
   // TODO (jfaibussowit): maybe can combine some of these
-  __resources.reserve(__num_local_inputs);
   __all_local_offsets.reserve(__num_local_inputs);
   __local_original_sizes.reserve(__num_local_inputs);
 
@@ -72,10 +70,12 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   {
     const auto __n_local = static_cast<::cuda::std::uint64_t>(::cuda::std::ranges::size(__input));
 
-    auto& __resource = __resources.emplace_back(
-      ::cuda::experimental::__detail::__resource_from_env(__env, __comm.logical_device().underlying_device()));
-    auto& __sizes =
-      __all_local_sizes.emplace_back(::cuda::get_stream(__env), __resource, __comm_size, ::cuda::no_init, __env).__get();
+    auto& __sizes = __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
+      ::cuda::get_stream(__env),
+      ::cuda::experimental::__detail::__resource_from_env(__env, __comm.logical_device().underlying_device()),
+      __comm_size,
+      ::cuda::no_init,
+      ::cuda::experimental::__detail::__sanitize_buffer_env(__env)));
 
     __local_original_sizes.push_back(__n_local);
     ::cuda::copy_bytes(
@@ -94,7 +94,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
     {
       auto* const __ptr = __sizes.data();
 
-      __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, /*__count=*/1, __sizes.__get().stream());
+      __comm.all_gather(__guard, __ptr + __comm.rank(), __ptr, /*__count=*/1, __sizes.stream());
     }
   }
 
@@ -104,11 +104,15 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   // and could potentially merge it there.
   bool __N_computed = false;
 
-  for (auto&& [__comm, __resource, __env, __input, __sizes] :
-       ::cuda::std::ranges::views::zip(__comms, __resources, __envs, __local_inputs, __all_local_sizes))
+  for (auto&& [__comm, __env, __input, __sizes] :
+       ::cuda::std::ranges::views::zip(__comms, __envs, __local_inputs, __all_local_sizes))
   {
-    auto& __offsets =
-      __all_local_offsets.emplace_back(__sizes.__get().stream(), __resource, __comm_size, ::cuda::no_init, __env);
+    auto& __offsets = __all_local_offsets.emplace_back(
+      __sizes.stream(),
+      __sizes.memory_resource(),
+      __comm_size,
+      ::cuda::no_init,
+      ::cuda::experimental::__detail::__sanitize_buffer_env(__env));
 
     __CUDAX_MULTI_GPU_DISPATCH(
       __comm.logical_device(),
@@ -126,32 +130,28 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
       // The desired-offset scan already encodes the global extent: N =
       // offset[p - 1] + size[p - 1].
       ::cuda::copy_bytes(
-        __offsets.__get().stream(),
-        __offsets.__get().subspan(__comm_size - 1, 1),
+        __offsets.stream(),
+        __offsets.subspan(__comm_size - 1, 1),
         ::cuda::std::span{&__last_offset, ::cuda::std::size_t{1}},
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
       ::cuda::copy_bytes(
-        __sizes.__get().stream(),
-        __sizes.__get().subspan(__comm_size - 1, 1),
+        __sizes.stream(),
+        __sizes.subspan(__comm_size - 1, 1),
         ::cuda::std::span{&__last_size, ::cuda::std::size_t{1}},
         ::cuda::copy_configuration{__comm.logical_device().underlying_device(),
                                    ::cuda::host_memory_location,
                                    ::cuda::source_access_order::stream});
 
-      __sizes.__get().stream().sync();
+      __sizes.stream().sync();
       __N          = __last_offset + __last_size;
       __N_computed = true;
     }
   }
 
   return __local_setup_result_type{
-    ::cuda::std::move(__resources),
-    ::cuda::std::move(__all_local_offsets),
-    ::cuda::std::move(__local_original_sizes),
-    __N,
-    __comm_size};
+    ::cuda::std::move(__all_local_offsets), ::cuda::std::move(__local_original_sizes), __N, __comm_size};
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
