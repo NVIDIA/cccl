@@ -20,6 +20,8 @@ _CUDA_STREAM_CAPTURE_STATUS_NONE = 0
 _CUDA_STREAM_CAPTURE_STATUS_ACTIVE = 1
 _CUDA_STREAM_IS_CAPTURING = "((int (*)(cudaStream_t, int*))cudaStreamIsCapturing)"
 _CU_STREAM_GET_ID = "((int (*)(void*, unsigned long long*))cuStreamGetId)"
+_UINT32_BITS = 32
+_UINT32_MASK = (1 << _UINT32_BITS) - 1
 InternalDict = dict[str, object]
 
 
@@ -75,6 +77,39 @@ def _evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
     return frame.EvaluateExpression(expression, options)
 
 
+def _query_stream_property_32(
+    value: lldb.SBValue,
+    handle: int,
+    function: str,
+    output_type: str,
+    *,
+    signed: bool,
+) -> int | None:
+    # Expression evaluation dominates LLDB formatter runtime. Pack the CUDA
+    # status and result into one scalar to avoid inferior malloc/read/free calls.
+    result = _evaluate(
+        value,
+        "(unsigned long long)([](cudaStream_t stream) { "
+        f"{output_type} value{{}}; "
+        f"int status = (int){function}(stream, &value); "
+        "return ((unsigned long long)(unsigned int)status << 32) "
+        "| (unsigned int)value; "
+        f"}})((cudaStream_t){handle:#x})",
+    )
+    if not result.IsValid() or result.GetError().Fail():
+        return None
+
+    packed = result.GetValueAsUnsigned((1 << 64) - 1)
+    status = packed >> _UINT32_BITS
+    if status != 0:
+        return None
+
+    output = packed & _UINT32_MASK
+    if signed and output & (1 << (_UINT32_BITS - 1)):
+        return output - (1 << _UINT32_BITS)
+    return output
+
+
 def _query_stream_property(
     value: lldb.SBValue,
     handle: int,
@@ -83,6 +118,11 @@ def _query_stream_property(
     *,
     signed: bool,
 ) -> int | None:
+    if output_type in ("int", "unsigned int"):
+        return _query_stream_property_32(
+            value, handle, function, output_type, signed=signed
+        )
+
     output = _evaluate(value, f"({output_type}*)malloc(sizeof({output_type}))")
     if not output.IsValid() or output.GetError().Fail():
         return None
@@ -133,67 +173,37 @@ def _unique_id(value: lldb.SBValue, handle: int) -> int | None:
 
 
 def _stream_device(value: lldb.SBValue, handle: int) -> int | None:
-    output = _evaluate(value, "(void**)malloc(sizeof(void*))")
-    if not output.IsValid() or output.GetError().Fail():
+    result = _evaluate(
+        value,
+        "(unsigned long long)([](void* stream) { "
+        "void* context{}; "
+        "int status = "
+        "((int (*)(void*, void**))cuStreamGetCtx)(stream, &context); "
+        "if (status != 0) "
+        "return (unsigned long long)(unsigned int)status << 32; "
+        "status = ((int (*)(void*))cuCtxPushCurrent)(context); "
+        "if (status != 0) "
+        "return (unsigned long long)(unsigned int)status << 32; "
+        "int device{}; "
+        "status = ((int (*)(int*))cuCtxGetDevice)(&device); "
+        "void* popped{}; "
+        "(void)((int (*)(void**))cuCtxPopCurrent)(&popped); "
+        "return ((unsigned long long)(unsigned int)status << 32) "
+        "| (unsigned int)device; "
+        f"}})((void*){handle:#x})",
+    )
+    if not result.IsValid() or result.GetError().Fail():
         return None
 
-    address = output.GetValueAsUnsigned(0)
-    if address == 0:
+    packed = result.GetValueAsUnsigned((1 << 64) - 1)
+    status = packed >> _UINT32_BITS
+    if status != 0:
         return None
 
-    context_pushed = False
-    try:
-        status = _evaluate(
-            value,
-            "(int)((int (*)(void*, void**))cuStreamGetCtx)"
-            f"((void*){handle:#x}, (void**){address:#x})",
-        )
-        if (
-            not status.IsValid()
-            or status.GetError().Fail()
-            or status.GetValueAsSigned(-1) != 0
-        ):
-            return None
-
-        context_value = _evaluate(value, f"*(void**){address:#x}")
-        if not context_value.IsValid() or context_value.GetError().Fail():
-            return None
-        context = context_value.GetValueAsUnsigned(0)
-
-        status = _evaluate(
-            value,
-            f"(int)((int (*)(void*))cuCtxPushCurrent)((void*){context:#x})",
-        )
-        if (
-            not status.IsValid()
-            or status.GetError().Fail()
-            or status.GetValueAsSigned(-1) != 0
-        ):
-            return None
-        context_pushed = True
-
-        status = _evaluate(
-            value,
-            f"(int)((int (*)(int*))cuCtxGetDevice)((int*){address:#x})",
-        )
-        if (
-            not status.IsValid()
-            or status.GetError().Fail()
-            or status.GetValueAsSigned(-1) != 0
-        ):
-            return None
-
-        device = _evaluate(value, f"*(int*){address:#x}")
-        if not device.IsValid() or device.GetError().Fail():
-            return None
-        return device.GetValueAsSigned(0)
-    finally:
-        if context_pushed:
-            _evaluate(
-                value,
-                f"(int)((int (*)(void**))cuCtxPopCurrent)((void**){address:#x})",
-            )
-        _evaluate(value, f"(void)free((void*){address:#x})")
+    device = packed & _UINT32_MASK
+    if device & (1 << (_UINT32_BITS - 1)):
+        return device - (1 << _UINT32_BITS)
+    return device
 
 
 def _stream_info(value: lldb.SBValue, handle: int) -> StreamInfo:
