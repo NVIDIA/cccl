@@ -65,7 +65,7 @@ static_assert(
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_id_t::type, int>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_type_t::type, cudaMemLocationType>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::location_t::type, cuda::memory_location>);
-static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::max_pool_size_t::type, ::cuuint64_t>);
+static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::max_pool_size_t::type, size_t>);
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::hw_decompress_enabled_t::type, bool>);
 #endif // _CCCL_CTK_AT_LEAST(13, 3)
 
