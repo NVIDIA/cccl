@@ -7,7 +7,9 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: c++17
-// XFAIL: dylib-has-no-filesystem
+
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
 
 // Due to C++17 inline variables ASAN flags this test as containing an ODR
 // violation because Clock::is_steady is defined in both the dylib and this TU.
@@ -25,7 +27,7 @@
 #include <cuda/std/chrono>
 
 template <class T>
-TEST_FUNC void test(const T&)
+TEST_HOST_DEVICE_FUNC void test(const T&)
 {}
 
 int main(int, char**)
