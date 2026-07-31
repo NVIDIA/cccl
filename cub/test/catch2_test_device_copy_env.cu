@@ -24,7 +24,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, device_copy_batched);
 
 #include <cuda/__execution/require.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -50,7 +50,7 @@ struct get_size
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][device]")
+CUB_TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][device]", CUB_SMALL)
 {
   // 3 ranges: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
@@ -73,7 +73,7 @@ TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][device]"
 
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceCopy::Batched uses environment", "[copy][device]")
+CUB_TEST("DeviceCopy::Batched uses environment", "[copy][device]", CUB_SMALL)
 {
   // 3 ranges: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
@@ -100,7 +100,7 @@ C2H_TEST("DeviceCopy::Batched uses environment", "[copy][device]")
   REQUIRE(d_dst == d_src);
 }
 
-TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]")
+CUB_TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]", CUB_SMALL)
 {
   // 3 ranges: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
@@ -139,8 +139,11 @@ struct batch_copy_tuning
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::BatchedCopyPolicy
   {
     return {
-      {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
-      {256, 32},
+      cub::BatchedCopyAlgorithm::lookback,
+      {
+        {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
+        {256, 32},
+      },
     };
   }
 };
@@ -150,7 +153,7 @@ using block_sizes =
 
 #if TEST_LAUNCH != 1
 
-C2H_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", block_sizes)
+CUB_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 

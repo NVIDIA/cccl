@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/complex>
 
@@ -28,21 +28,21 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-TEST_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
+TEST_HOST_DEVICE_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::proj(x)), cuda::std::complex<double>>::value));
   assert(cuda::std::proj(x) == proj(cuda::std::complex<double>(x, 0)));
 }
 
 template <class T>
-TEST_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_floating_point<T>::value>::type* = 0)
+TEST_HOST_DEVICE_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_floating_point<T>::value>::type* = 0)
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::proj(x)), cuda::std::complex<T>>::value));
   assert(cuda::std::proj(x) == proj(cuda::std::complex<T>(x, 0)));
 }
 
 template <class T>
-TEST_FUNC void test(
+TEST_HOST_DEVICE_FUNC void test(
   T x,
   typename cuda::std::enable_if<!cuda::std::is_integral<T>::value && !cuda::std::is_floating_point<T>::value>::type* = 0)
 {
@@ -51,7 +51,7 @@ TEST_FUNC void test(
 }
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<T>(0);
   test<T>(1);

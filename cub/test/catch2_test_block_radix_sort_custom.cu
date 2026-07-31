@@ -7,6 +7,7 @@
 
 #include "catch2_test_block_radix_sort.cuh"
 #include "cub/block/radix_rank_sort_operations.cuh"
+#include "cub_test_macros.h"
 
 // example-begin custom-type
 struct custom_t
@@ -938,7 +939,7 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
   REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
 }
 
-TEST_CASE("Block radix sort works in some corner cases", "[radix][sort][block]")
+CUB_TEST_CASE("Block radix sort works in some corner cases", "[radix][sort][block]", CUB_SMALL)
 {
   sort_keys<<<1, 2>>>();
   REQUIRE(cudaSuccess == cudaGetLastError());

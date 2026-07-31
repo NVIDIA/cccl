@@ -454,12 +454,14 @@ TEST_FUNC void test(const float val)
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if !_CCCL_TILE_COMPILATION()
+#  if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(val);
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // !_CCCL_TILE_COMPILATION()
 
   test<unsigned short>(static_cast<unsigned short>(val));
   test<int>(static_cast<int>(val));

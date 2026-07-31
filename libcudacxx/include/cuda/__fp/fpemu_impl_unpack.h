@@ -51,6 +51,8 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/__bit/countl.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -65,7 +67,7 @@ namespace cuda::experimental
 //!
 //! @param  x The packed 64-bit value to unpack
 //! @return The unpacked representation
-_CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
 {
   __fpbits64_unpacked __a_unpacked;
   __uint32x2 __a32  = ::cuda::std::bit_cast<__uint32x2>(__x);
@@ -127,7 +129,7 @@ _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) 
 //! @param  x  The unpacked value to pack
 //! @return The packed 64-bit value
 template <__fpemu_rounding _Rm = __fpemu_rounding::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
 {
   const bool __sign   = __x.sign != 0;
   const bool __is_inf = (static_cast<int32_t>(__x.exponent) >= 0x2000);
@@ -135,9 +137,8 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) no
   int32_t __exponent  = __e > 0 ? __e : 0;
 
   int __shift = __e > 0 ? 0 : -__e;
-#ifndef __CUDA_ARCH__
-  __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
-#endif
+  NV_IF_TARGET(NV_IS_HOST, ({ __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0; }))
+
   if (__shift > 0)
   {
     const uint64_t __mask                 = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);

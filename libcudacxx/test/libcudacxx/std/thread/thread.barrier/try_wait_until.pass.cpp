@@ -6,12 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-80
+
+// UNSUPPORTED: force-tile
+// error: asm statement is not supported
 
 // <cuda/std/barrier>
 
@@ -22,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Barrier, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-TEST_FUNC void test(bool add_delay = false)
+TEST_HOST_DEVICE_FUNC void test(bool add_delay = false)
 {
   Selector<Barrier, Initializer> sel;
   SHARED Barrier* b;
