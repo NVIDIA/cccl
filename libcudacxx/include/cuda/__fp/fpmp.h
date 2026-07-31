@@ -92,7 +92,7 @@
         auto root = sqrt(a);                     // High-precision square root
         double d = static_cast<double>(result);  // Convert to double
         float f  = static_cast<float>(result);   // Convert to float (high part only)
-        uint64_t bits = bit_cast<uint64_t>(result); // Bit-cast to 64-bit integer (IEEE-754 format)
+        float hi = result.hi(), lo = result.lo(); // The two components, to inspect or store
 
         // Accuracy-explicit operations: override arithmetic accuracy for a single operation
         fp32mp2_low x = ..., y = ...;
@@ -243,7 +243,7 @@ namespace cuda::experimental
 //! fp32mp2 b = 2.0f;
 //! auto c = a + b; // High-precision addition
 //! float f = static_cast<float>(c); // Convert back to float
-//! uint64_t bits = bit_cast<uint64_t>(c); // Bit-cast to 64-bit integer (IEEE-754 format)
+//! float hi = c.hi(), lo = c.lo(); // The two components that make up the value
 //! @endcode
 //!
 //! ## Motivation
@@ -1106,10 +1106,10 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 inline constexpr bool __fpmp_is_fpmp2_v<fpmp2<_FpType, _TypeAcc>> = true;
 
 /*********************************************************************
- * Standard-named math free functions (sqrt / rsqrt / fma / mad) and
- * bit_cast. These are plain non-friend free functions: they read the
- * operands through the public hi()/lo() accessors and build the result
- * with the public (hi, lo) constructor, so they need no friendship.
+ * Standard-named math free functions (sqrt / rsqrt / fma / mad). These
+ * are plain non-friend free functions: they read the operands through
+ * the public hi()/lo() accessors and build the result with the public
+ * (hi, lo) constructor, so they need no friendship.
  * (The arithmetic/comparison operators and renormalize remain friends.)
  *********************************************************************/
 
@@ -1193,13 +1193,6 @@ _CCCL_REQUIRES(
   using mp2 =
     ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T2>, _T2, _T3>>;
   return mad(mp2(__x), mp2(__y), mp2(__z));
-}
-
-// C++20-style bit_cast for the fpmp2 pair (to a 64-bit integer, IEEE-754 format).
-template <typename _To, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_API inline _To bit_cast(const fpmp2<_FpType, _TypeAcc>& __from) noexcept
-{
-  return static_cast<_To>(__fpmp2_bit_cast(__from.hi(), __from.lo()));
 }
 
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>

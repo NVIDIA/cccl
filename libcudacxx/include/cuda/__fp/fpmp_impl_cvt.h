@@ -436,19 +436,6 @@ _CCCL_FPMP_CORE_API uint64_t __fpmp2_to_ull(const _FpType __x_hi, const _FpType 
   }
 } // __fpmp2_to_ull
 
-/*
- * --------------------------------------------------------------------
- * Bit cast operations (IEEE-754 format)
- * --------------------------------------------------------------------
- */
-// bit_cast to IEEE-754 format bits
-template <typename _FpType>
-_CCCL_FPMP_CORE_API uint64_t __fpmp2_bit_cast(const _FpType __x_hi, const _FpType __x_lo) noexcept
-{
-  double __d = __fpmp2_to_double(__x_hi, __x_lo);
-  return ::cuda::std::bit_cast<uint64_t>(__d);
-}
-
 // __fpmp_fp128 operations (only for FpType == double)
 // available only for CUDA architectures >= 1000 or when _CCCL_FPMP_FP128_ENABLE is defined
 #  if _CCCL_FPMP_FP128_ENABLE == 1
@@ -480,7 +467,6 @@ _CCCL_FPMP_BUILTIN_DECL int32_t __fp32mp2_to_int(const float __x_hi, const float
 _CCCL_FPMP_BUILTIN_DECL uint32_t __fp32mp2_to_uint(const float __x_hi, const float __x_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL int64_t __fp32mp2_to_ll(const float __x_hi, const float __x_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL uint64_t __fp32mp2_to_ull(const float __x_hi, const float __x_lo) noexcept;
-_CCCL_FPMP_BUILTIN_DECL uint64_t __fp32mp2_bit_cast(const float __x_hi, const float __x_lo) noexcept;
 
 // -- fp64 (double precision) built-in declarations --
 _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_from_double(const double __x, double* __res_hi, double* __res_lo) noexcept;
@@ -494,7 +480,6 @@ _CCCL_FPMP_BUILTIN_DECL int32_t __fp64mp2_to_int(const double __x_hi, const doub
 _CCCL_FPMP_BUILTIN_DECL uint32_t __fp64mp2_to_uint(const double __x_hi, const double __x_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL int64_t __fp64mp2_to_ll(const double __x_hi, const double __x_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL uint64_t __fp64mp2_to_ull(const double __x_hi, const double __x_lo) noexcept;
-_CCCL_FPMP_BUILTIN_DECL uint64_t __fp64mp2_bit_cast(const double __x_hi, const double __x_lo) noexcept;
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_from_quad(const __fpmp_fp128 __x, double* __res_hi, double* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL __fpmp_fp128 __fp64mp2_to_quad(const double __x_hi, const double __x_lo) noexcept;
@@ -523,8 +508,6 @@ template <typename _Tp>
 _CCCL_API inline int64_t __fpmp2_to_ll(const _Tp __x_hi, const _Tp __x_lo) noexcept;
 template <typename _Tp>
 _CCCL_API inline uint64_t __fpmp2_to_ull(const _Tp __x_hi, const _Tp __x_lo) noexcept;
-template <typename _Tp>
-_CCCL_API inline uint64_t __fpmp2_bit_cast(const _Tp __x_hi, const _Tp __x_lo) noexcept;
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 template <typename _Tp>
 _CCCL_API inline void __fpmp2_from_quad(const __fpmp_fp128 __x, _Tp* __res_hi, _Tp* __res_lo) noexcept;
@@ -588,11 +571,6 @@ _CCCL_API inline uint64_t __fpmp2_to_ull<float>(const float __x_hi, const float 
 {
   return __fp32mp2_to_ull(__x_hi, __x_lo);
 }
-template <>
-_CCCL_API inline uint64_t __fpmp2_bit_cast<float>(const float __x_hi, const float __x_lo) noexcept
-{
-  return __fp32mp2_bit_cast(__x_hi, __x_lo);
-}
 
 // -- fp64 template specializations --
 template <>
@@ -649,11 +627,6 @@ template <>
 _CCCL_API inline uint64_t __fpmp2_to_ull<double>(const double __x_hi, const double __x_lo) noexcept
 {
   return __fp64mp2_to_ull(__x_hi, __x_lo);
-}
-template <>
-_CCCL_API inline uint64_t __fpmp2_bit_cast<double>(const double __x_hi, const double __x_lo) noexcept
-{
-  return __fp64mp2_bit_cast(__x_hi, __x_lo);
 }
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 template <>

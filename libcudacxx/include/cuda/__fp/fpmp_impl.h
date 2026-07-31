@@ -58,9 +58,6 @@
         * __fpmp2_cmp_lt, __fpmp2_cmp_gt
         * __fpmp2_cmp_le, __fpmp2_cmp_ge
 
-    - Utility Operations:
-        * __fpmp2_bit_cast : IEEE-754 format bit representation
-
     - Atomic Operations (CUDA device only):
         * __fpmp2_atomicAdd : Atomic addition with CAS loop
         * __fpmp2_atomicSub : Atomic subtraction with CAS loop
