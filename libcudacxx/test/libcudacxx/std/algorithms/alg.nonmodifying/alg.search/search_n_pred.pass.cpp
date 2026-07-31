@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: a return statement inside a loop is not currently supported in a tile function
 
 // <algorithm>
@@ -29,12 +29,12 @@ TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 struct count_equal
 {
-  TEST_FUNC constexpr count_equal(int& count) noexcept
+  TEST_HOST_DEVICE_FUNC constexpr count_equal(int& count) noexcept
       : count(count)
   {}
 
   template <class T>
-  TEST_FUNC constexpr bool operator()(const T& x, const T& y)
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(const T& x, const T& y)
   {
     ++count;
     return x == y;
@@ -44,7 +44,7 @@ struct count_equal
 };
 
 template <class Iter>
-TEST_FUNC constexpr void test()
+TEST_HOST_DEVICE_FUNC constexpr void test()
 {
   int ia[]              = {0, 1, 2, 3, 4, 5};
   const unsigned sa     = sizeof(ia) / sizeof(ia[0]);
@@ -161,15 +161,15 @@ TEST_FUNC constexpr void test()
 class A
 {
 public:
-  TEST_FUNC constexpr A(int x, int y)
+  TEST_HOST_DEVICE_FUNC constexpr A(int x, int y)
       : x_(x)
       , y_(y)
   {}
-  TEST_FUNC constexpr int x() const
+  TEST_HOST_DEVICE_FUNC constexpr int x() const
   {
     return x_;
   }
-  TEST_FUNC constexpr int y() const
+  TEST_HOST_DEVICE_FUNC constexpr int y() const
   {
     return y_;
   }
@@ -181,13 +181,13 @@ private:
 
 struct Pred
 {
-  TEST_FUNC constexpr bool operator()(const A& l, int r) const
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(const A& l, int r) const
   {
     return l.x() == r;
   }
 };
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();
@@ -196,9 +196,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   // test bug reported in https://reviews.llvm.org/D124079?#3661721
   {

@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: a return statement inside a loop is not currently supported in a tile function
 
 // <algorithm>
@@ -28,12 +28,12 @@ TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 struct count_equal
 {
-  TEST_FUNC constexpr count_equal(int& count) noexcept
+  TEST_HOST_DEVICE_FUNC constexpr count_equal(int& count) noexcept
       : count(count)
   {}
 
   template <class T>
-  TEST_FUNC constexpr bool operator()(const T& x, const T& y)
+  TEST_HOST_DEVICE_FUNC constexpr bool operator()(const T& x, const T& y)
   {
     ++count;
     return x == y;
@@ -43,7 +43,7 @@ struct count_equal
 };
 
 template <class Iter1, class Iter2>
-TEST_FUNC constexpr void test()
+TEST_HOST_DEVICE_FUNC constexpr void test()
 {
   int ia[]              = {0, 1, 2, 3, 4, 5};
   const unsigned sa     = sizeof(ia) / sizeof(ia[0]);
@@ -128,7 +128,7 @@ TEST_FUNC constexpr void test()
   assert(count_equal_count <= sh * 3);
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>, forward_iterator<const int*>>();
   test<forward_iterator<const int*>, bidirectional_iterator<const int*>>();
@@ -143,9 +143,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   return true;
 }

@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: function-to-pointer decay is unsupported in tile code
-
 // <algorithm>
 
 // template<InputIterator InIter1, InputIterator InIter2, typename OutIter,
@@ -40,7 +37,8 @@ TEST_FUNC constexpr void test4()
     T expected[] = {11, 22, 31, 42, 52};
     OutIter end  = cuda::std::set_symmetric_difference(
       Iter1(a), Iter1(a + 4), Iter2(b), Iter2(b + 5), OutIter(result), typename T::Comparator());
-    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, T::less) == 0);
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, SortableLessComparator<T>{})
+           == 0);
     for (const T* it = base(end); it != result + 20; ++it)
     {
       assert(it->value == 0);
@@ -51,7 +49,8 @@ TEST_FUNC constexpr void test4()
     T expected[] = {11, 22, 31, 42, 52};
     OutIter end  = cuda::std::set_symmetric_difference(
       Iter1(b), Iter1(b + 5), Iter2(a), Iter2(a + 4), OutIter(result), typename T::Comparator());
-    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, T::less) == 0);
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, SortableLessComparator<T>{})
+           == 0);
     for (const T* it = base(end); it != result + 20; ++it)
     {
       assert(it->value == 0);
@@ -91,9 +90,9 @@ TEST_FUNC constexpr void test1()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test2<T, host_only_iterator<const T*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test2<T, device_only_iterator<const T*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 }
 
 TEST_FUNC constexpr bool test()
