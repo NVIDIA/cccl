@@ -51,9 +51,7 @@ namespace cuda::experimental::stf
 template <class T>
 struct with_location
 {
-  with_location(const with_location&)            = delete;
-  with_location& operator=(const with_location&) = delete;
-  with_location& operator=(with_location&&)      = delete;
+  with_location(const with_location&) = delete;
 
   // Required so a converting temporary can initialize a by-value parameter.
   with_location(with_location&&) = default;
@@ -71,7 +69,7 @@ struct with_location
   {}
 
   T payload;
-  ::cuda::std::source_location loc;
+  const ::cuda::std::source_location loc;
 };
 
 // Two-arg form only: CTAD cannot see `T` in the converting constructor, and a
