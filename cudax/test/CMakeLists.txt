@@ -82,6 +82,7 @@ cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
     utility/unstable_unique.cu
     utility/optionally_static.cu
+    utility/scope.cu
 )
 
 cudax_add_catch2_test(test_target containers

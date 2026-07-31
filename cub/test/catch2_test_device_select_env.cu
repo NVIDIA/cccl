@@ -1345,7 +1345,8 @@ CUB_TEST("Test SelectPolicy properties", "[select][device]", CUB_SMALL)
      cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
      cub::CacheLoadModifier::LOAD_DEFAULT,
      cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
+     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
+     cub::detail::LoadPrefetch::l2}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -1357,8 +1358,10 @@ CUB_TEST("Test SelectPolicy properties", "[select][device]", CUB_SMALL)
        .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
        .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
        .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-       .lookback_delay    = cub::LookbackDelayPolicy{
-            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}}};
+       .lookback_delay =
+        cub::LookbackDelayPolicy{
+           .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
+       ._load_prefetch = cub::detail::LoadPrefetch::l2}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1372,12 +1375,14 @@ CUB_TEST("Test SelectPolicy properties", "[select][device]", CUB_SMALL)
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
-             ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 350, .l2_write_latency = 450 } } }");
+  REQUIRE(
+    to_string(p1)
+    == "SelectPolicy { .algorithm = SelectAlgorithm::lookback"
+       ", .lookback = SelectLookbackPolicy { .threads_per_block = 128, .items_per_thread = 10"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", ._load_prefetch = detail::LoadPrefetch::l2 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

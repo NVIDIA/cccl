@@ -10,7 +10,7 @@
 
 /**
  * @file
- * @brief Implements the SCOPE mechanism
+ * @brief SCOPE guards and throw sinks (`throw_proof`, `throw_defer`)
  */
 
 #pragma once
@@ -25,11 +25,92 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/forward.h>
+
+#include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
-#include <cuda/experimental/__utility/scope_exit.cuh>
+
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
+#include <stdexcept>
+#include <string_view>
+#include <utility>
 
 namespace cuda::experimental::stf
 {
+/**
+ * @brief Invokes a callable and aborts if it throws.
+ *
+ * Use around code that must not let an exception escape into backend state
+ * that cannot recover (e.g. after a CUDA stream capture has begun).
+ *
+ * Usage: `throw_proof->*[&] { ... };`
+ *
+ * `throw_proof` converts to `with_location`, which captures the call-site
+ * `source_location` (overloaded operators cannot take default arguments). An
+ * explicit `with_location{throw_proof, loc}` can forward a previously captured
+ * location (CTAD, C++17).
+ */
+struct throw_proof_t
+{
+} inline constexpr throw_proof{};
+
+template <class F>
+decltype(auto) operator->*(with_location<throw_proof_t> s, F&& f) noexcept
+{
+  _CCCL_TRY
+  {
+    return ::cuda::std::forward<F>(f)();
+  }
+  _CCCL_CATCH (const ::std::exception& e)
+  {
+    ::fprintf(
+      stderr, "%s(%u) throw_proof in %s: %s\n", s.loc.file_name(), s.loc.line(), s.loc.function_name(), e.what());
+  }
+  _CCCL_CATCH_ALL
+  {
+    ::fprintf(
+      stderr, "%s(%u) throw_proof in %s: unknown exception\n", s.loc.file_name(), s.loc.line(), s.loc.function_name());
+  }
+  ::std::abort();
+}
+
+/**
+ * @brief Invokes a callable and returns any thrown exception as an `exception_ptr`.
+ *
+ * Use around best-effort code where a failure should not escape (e.g. optional DOT
+ * timing annotations) but the caller may still want to inspect or rethrow later.
+ * The callable's return value must be `void` (enforced at compile time); the
+ * result is empty if nothing was thrown.
+ *
+ * Usage: `auto e = throw_defer->*[&] { ... };`
+ *
+ * The result is `[[nodiscard]]` so the caller must acknowledge it (store it, test it,
+ * or deliberately discard it, e.g. by assigning to std::ignore).
+ */
+struct throw_defer_t
+{
+} inline constexpr throw_defer{};
+
+template <class F>
+[[nodiscard]] ::std::exception_ptr operator->*(throw_defer_t, F&& f) noexcept
+{
+  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<F>(f)())>,
+                "throw_defer requires a void-returning callable");
+  _CCCL_TRY
+  {
+    ::cuda::std::forward<F>(f)();
+    return {};
+  }
+  _CCCL_CATCH_ALL
+  {
+    return ::std::current_exception();
+  }
+}
+
 /**
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
@@ -78,10 +159,7 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc)
   static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
 #  ifndef NDEBUG
   // Forward the SCOPE call-site location into throw_proof.
-  ::cuda::experimental::with_location<::cuda::experimental::throw_proof_t>{::cuda::experimental::throw_proof, loc}->*
-    [&] {
-      f();
-    };
+  with_location{throw_proof, loc}->*f;
 #  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
   (void) loc;
   f();
@@ -89,13 +167,14 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 }
 
 template <typename F>
-auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
+auto operator->*(with_location<exit> where, F&& f)
 {
   struct result
   {
     F f;
     const ::cuda::std::source_location loc;
-    bool active = true;
+    // Armed when != -1; move sets -1 to disarm. Value is otherwise unused for exit.
+    int exceptions = 0;
 
     result(F&& f, ::cuda::std::source_location loc)
         : f(::std::forward<F>(f))
@@ -105,14 +184,12 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , active(rhs.active)
-    {
-      rhs.active = false;
-    }
+        , exceptions(::std::exchange(rhs.exceptions, -1))
+    {}
 
     ~result() noexcept
     {
-      if (active)
+      if (exceptions != -1)
       {
         invoke_nothrow(f, loc);
       }
@@ -123,14 +200,14 @@ auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
 }
 
 template <typename F>
-auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
+auto operator->*(with_location<fail> where, F&& f)
 {
   struct result
   {
     F f;
     const ::cuda::std::source_location loc;
-    const int exceptions;
-    bool active = true;
+    // Expected uncaught count, or -1 when disarmed by move.
+    int exceptions;
 
     result(F&& f, ::cuda::std::source_location loc, int exceptions)
         : f(::std::forward<F>(f))
@@ -141,15 +218,12 @@ auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
     result(result&& rhs)
         : f(mv(rhs.f))
         , loc(rhs.loc)
-        , exceptions(rhs.exceptions)
-        , active(rhs.active)
-    {
-      rhs.active = false;
-    }
+        , exceptions(::std::exchange(rhs.exceptions, -1))
+    {}
 
     ~result() noexcept
     {
-      if (active && ::std::uncaught_exceptions() == exceptions)
+      if (::std::uncaught_exceptions() == exceptions)
       {
         invoke_nothrow(f, loc);
       }
@@ -169,8 +243,8 @@ auto operator->*(success, F&& f)
   struct result
   {
     F f;
-    const int exceptions;
-    bool active = true;
+    // Expected uncaught count, or -1 when disarmed by move.
+    int exceptions;
 
     result(F&& f, int exceptions)
         : f(::std::forward<F>(f))
@@ -179,16 +253,13 @@ auto operator->*(success, F&& f)
     result(result&) = delete;
     result(result&& rhs)
         : f(mv(rhs.f))
-        , exceptions(rhs.exceptions)
-        , active(rhs.active)
-    {
-      rhs.active = false;
-    }
+        , exceptions(::std::exchange(rhs.exceptions, -1))
+    {}
 
     // May throw — unlike exit/fail.
     ~result() noexcept(false)
     {
-      if (active && ::std::uncaught_exceptions() == exceptions)
+      if (::std::uncaught_exceptions() == exceptions)
       {
         f();
       }
@@ -202,6 +273,64 @@ auto operator->*(success, F&& f)
 } // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE
+UNITTEST("throw_proof")
+{
+  using namespace cuda::experimental::stf;
+  //! [throw_proof]
+  int value = 0;
+  throw_proof->*[&] {
+    value = 42; // would abort the application if this code threw
+  };
+  EXPECT(value == 42);
+  //! [throw_proof]
+  EXPECT((throw_proof->*
+          [] {
+            return 7;
+          })
+         == 7);
+
+  // Empty tag lvalues must remain convertible — that is how `throw_proof->*f`
+  // captures source_location via with_location.
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, const throw_proof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t>);
+
+  const auto loc = ::cuda::std::source_location::current();
+  auto wl        = with_location{throw_proof, loc};
+  static_assert(::std::is_same_v<decltype(wl), with_location<throw_proof_t>>);
+  EXPECT(wl.loc.line() == loc.line());
+};
+
+UNITTEST("throw_defer")
+{
+  using namespace cuda::experimental::stf;
+  //! [throw_defer]
+  int value = 0;
+  auto e    = throw_defer->*[&] {
+    value = 42; // if this threw, e would hold the exception_ptr
+  };
+  EXPECT(!e);
+  EXPECT(value == 42);
+  //! [throw_defer]
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  e = throw_defer->*[] {
+    throw ::std::runtime_error("boom");
+  };
+  EXPECT(static_cast<bool>(e));
+  try
+  {
+    ::std::rethrow_exception(e);
+  }
+  catch (const ::std::runtime_error& ex)
+  {
+    EXPECT(::std::string_view(ex.what()) == "boom");
+    return;
+  }
+  EXPECT(false, "rethrow should have transferred control");
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
 UNITTEST("SCOPE(exit)")
 {
   //! [SCOPE(exit)]

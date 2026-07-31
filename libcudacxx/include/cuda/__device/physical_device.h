@@ -40,7 +40,23 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices();
+struct __physical_devices_view
+{
+  // This deliberately stays much smaller than `span<__physical_device>`. The physical-device cache is included by many
+  // public entrypoints, and instantiating `span` here makes the trivial `__physical_devices()` accessor expensive to
+  // parse in every TU. This internal view only provides the operations needed below.
+  __physical_device* __data_;
+  ::cuda::std::size_t __size_;
+
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
+  {
+    return __size_;
+  }
+
+  [[nodiscard]] _CCCL_HOST_API __physical_device& operator[](::cuda::std::size_t __idx) const noexcept;
+};
+
+[[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices();
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -172,6 +188,12 @@ public:
   }
 };
 
+[[nodiscard]] _CCCL_HOST_API inline __physical_device&
+__physical_devices_view::operator[](::cuda::std::size_t __idx) const noexcept
+{
+  return __data_[__idx];
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
 __make_physical_devices(::cuda::std::size_t __device_count)
 {
@@ -183,17 +205,17 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   return __devices;
 }
 
-[[nodiscard]] inline ::cuda::std::size_t __physical_devices_count()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __physical_devices_count()
 {
   static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
   return __device_count;
 }
 
-[[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices()
+[[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices()
 {
   static const auto __device_count = __physical_devices_count();
   static const auto __devices      = ::cuda::__make_physical_devices(__device_count);
-  return ::cuda::std::span<__physical_device>{__devices.get(), __device_count};
+  return {__devices.get(), __device_count};
 }
 
 // device_ref methods dependent on __physical_device
