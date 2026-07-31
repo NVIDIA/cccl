@@ -244,14 +244,16 @@ public:
 
   TEST_FUNC constexpr bool is_unique() const noexcept
   {
+    bool result = true;
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {
       if (extents_.extent(r) > Wrap)
       {
-        return false;
+        result = false;
+        break;
       }
     }
-    return true;
+    return result;
   }
   TEST_FUNC static constexpr bool is_exhaustive() noexcept
   {
@@ -259,14 +261,16 @@ public:
   }
   TEST_FUNC constexpr bool is_strided() const noexcept
   {
+    bool result = true;
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {
       if (extents_.extent(r) > Wrap)
       {
-        return false;
+        result = false;
+        break;
       }
     }
-    return true;
+    return result;
   }
 
   template <size_t Rank = extents_type::rank(), cuda::std::enable_if_t<(Rank > 0), int> = 0>

@@ -26,20 +26,23 @@ _CCCL_TEMPLATE(class MDSpan)
 _CCCL_REQUIRES((MDSpan::rank() == 1))
 TEST_FUNC constexpr bool equal_to(const MDSpan& mdspan, const char* expected)
 {
+  bool result = true;
   for (size_t i = 0; i != mdspan.size(); ++i)
   {
     if (mdspan[i] != expected[i])
     {
-      return false;
+      result = false;
+      break;
     }
   }
-  return true;
+  return result;
 }
 
 _CCCL_TEMPLATE(class MDSpan)
 _CCCL_REQUIRES((MDSpan::rank() == 2))
 TEST_FUNC constexpr bool equal_to(const MDSpan& mdspan, cuda::std::array<const char*, 2> expected)
 {
+  bool result = true;
   for (size_t i = 0; i != mdspan.extent(0); ++i)
   {
     for (size_t j = 0; j != mdspan.extent(1); ++j)
@@ -47,11 +50,16 @@ TEST_FUNC constexpr bool equal_to(const MDSpan& mdspan, cuda::std::array<const c
       const cuda::std::array<size_t, 2> indices{i, j};
       if (mdspan[indices] != expected[i][j])
       {
-        return false;
+        result = false;
+        break;
       }
     }
+    if (!result)
+    {
+      break;
+    }
   }
-  return true;
+  return result;
 }
 
 #endif // TEST_STD_CONTAINERS_VIEWS_MDSPAN_SUBMDSPAN_HELPER_H

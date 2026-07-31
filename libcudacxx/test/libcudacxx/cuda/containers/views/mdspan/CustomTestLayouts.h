@@ -90,16 +90,18 @@ private:
   template <class Extents2 = Extents, cuda::std::enable_if_t<Extents2::rank() != 0, int> = 0>
   TEST_FUNC static constexpr bool required_span_size_is_representable(const extents_type& ext)
   {
+    bool result     = true;
     index_type prod = ext.extent(0);
     for (rank_type r = 1; r < extents_type::rank(); r++)
     {
       bool overflowed = mul_overflow(prod, Min(ext.extent(r), Wrap), &prod);
       if (overflowed)
       {
-        return false;
+        result = false;
+        break;
       }
     }
-    return true;
+    return result;
   }
 
 public:
@@ -244,14 +246,16 @@ public:
 
   TEST_FUNC constexpr bool is_unique() const noexcept
   {
+    bool result = true;
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {
       if (extents_.extent(r) > Wrap)
       {
-        return false;
+        result = false;
+        break;
       }
     }
-    return true;
+    return result;
   }
   TEST_FUNC static constexpr bool is_exhaustive() noexcept
   {
@@ -259,14 +263,16 @@ public:
   }
   TEST_FUNC constexpr bool is_strided() const noexcept
   {
+    bool result = true;
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {
       if (extents_.extent(r) > Wrap)
       {
-        return false;
+        result = false;
+        break;
       }
     }
-    return true;
+    return result;
   }
 
   template <size_t Rank = extents_type::rank(), cuda::std::enable_if_t<(Rank > 0), int> = 0>

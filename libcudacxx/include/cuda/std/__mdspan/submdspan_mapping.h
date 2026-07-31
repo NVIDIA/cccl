@@ -116,14 +116,19 @@ __submdspan_offset(index_sequence<_SliceIndices...>, const _LayoutMapping& __map
     ::cuda::std::__first_extent_from_slice<_IndexType, _SliceIndices>(__slices...)...};
 
   using _SubExtents = __get_subextents_t<_Extents, _Slices...>;
+  bool __found      = false;
   for (size_t __index = 0; __index != _SubExtents::rank(); ++__index)
   {
     // If first_<index_type, k>(slices...) equals extents().extent(k) for any rank index k of extents()
     if (__offsets[__index] == __mapping.extents().extent(__index))
     {
-      // then let offset be a value of type size_t equal to (*this).required_span_size()
-      return static_cast<size_t>(__mapping.required_span_size());
+      __found = true;
+      break;
     }
+  }
+  if (__found)
+  { // then let offset be a value of type size_t equal to (*this).required_span_size()
+    return static_cast<size_t>(__mapping.required_span_size());
   }
   // Otherwise, let offset be a value of type size_t equal to (*this)(first_<index_type, P>(slices...)...).
   return static_cast<size_t>(__mapping(__offsets[_SliceIndices]...));

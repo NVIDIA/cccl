@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: calling a __device__ function("__isShared(const void *)") is not allowed
 
 #include <cuda/mdspan>
