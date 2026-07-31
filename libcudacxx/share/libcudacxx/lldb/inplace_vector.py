@@ -23,6 +23,28 @@ def is_cuda_inplace_vector(
     return _INPLACE_VECTOR_PATTERN.fullmatch(type_name) is not None
 
 
+def inplace_vector_summary(
+    value: lldb.SBValue, _internal_dict: InternalDict
+) -> str | None:
+    """Summarize size and capacity like LLDB's std::vector formatter."""
+    value = value.GetNonSyntheticValue()
+    type_name = (
+        value.GetType().GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName()
+        or ""
+    )
+    match = _INPLACE_VECTOR_PATTERN.fullmatch(type_name)
+    if match is None:
+        return None
+    capacity = int(match.group(1))
+    # The zero-capacity specialization has no members at all; do not read any.
+    size = (
+        0
+        if capacity == 0
+        else value.GetChildMemberWithName("__size_").GetValueAsUnsigned(0)
+    )
+    return f"size={size}, capacity={capacity}"
+
+
 class InplaceVectorSyntheticProvider:
     """Expose constructed cuda::std::inplace_vector elements as LLDB children."""
 
@@ -88,6 +110,10 @@ class InplaceVectorSyntheticProvider:
 
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
     """Register the cuda::std::inplace_vector formatter in an LLDB category."""
+    debugger.HandleCommand(
+        f"type summary add --category {category} --expand --python-function {module}.inplace_vector_summary "
+        f"--recognizer-function {module}.is_cuda_inplace_vector"
+    )
     debugger.HandleCommand(
         f"type synthetic add --category {category} --python-class {module}.InplaceVectorSyntheticProvider "
         f"--recognizer-function {module}.is_cuda_inplace_vector"

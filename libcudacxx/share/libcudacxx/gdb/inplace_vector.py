@@ -49,7 +49,8 @@ class InplaceVectorPrinter:
             yield f"[{index}]", first[index]
 
     def to_string(self) -> str:
-        return f"{self.type_name} of size {self.size}"
+        # Match the libstdc++ std::vector printer: "X of length N, capacity M".
+        return f"{self.type_name} of length {self.size}, capacity {self.capacity}"
 
 
 class InplaceVectorPrinterLookup(gdb.printing.PrettyPrinter):
