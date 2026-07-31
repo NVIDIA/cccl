@@ -241,7 +241,8 @@ set(
 message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
-  # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
+  # Build but don't run the tests. CI may preserve the executables for GPU test jobs
+  # via LIT_OPTS.
   # Only executed if explicitly requested.
   add_custom_target(
     libcudacxx.test.lit.precompile
@@ -289,8 +290,7 @@ add_test(
         ${libcudacxx_LIT_FLAGS}
         -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
         "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-    # gersemi: on
-    USES_TERMINAL
+  # gersemi: on
 )
 
 set_tests_properties(
