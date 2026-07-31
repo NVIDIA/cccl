@@ -157,9 +157,7 @@ struct [[nodiscard]] scope_fail
                   "scope_fail move requires EF to be nothrow-move or copy constructible.");
   }
 
-  scope_fail(const scope_fail&)            = delete;
-  scope_fail& operator=(const scope_fail&) = delete;
-  scope_fail& operator=(scope_fail&&)      = delete;
+  scope_fail(const scope_fail&) = delete;
 
   _CCCL_HOST_API ~scope_fail() noexcept
   {
@@ -212,7 +210,7 @@ private:
   }
 
   _Fn __fn_;
-  int __uncaught_;
+  const int __uncaught_;
   bool __active_ = true;
 };
 
@@ -245,9 +243,7 @@ struct [[nodiscard]] scope_success
                   "scope_success move requires EF to be nothrow-move or copy constructible.");
   }
 
-  scope_success(const scope_success&)            = delete;
-  scope_success& operator=(const scope_success&) = delete;
-  scope_success& operator=(scope_success&&)      = delete;
+  scope_success(const scope_success&) = delete;
 
   // TS: unlike exit/fail, the destructor may throw.
   _CCCL_HOST_API ~scope_success() noexcept(noexcept(::cuda::std::declval<_Fn&>()()))
@@ -296,7 +292,7 @@ private:
   }
 
   _Fn __fn_;
-  int __uncaught_;
+  const int __uncaught_;
   bool __active_ = true;
 };
 
