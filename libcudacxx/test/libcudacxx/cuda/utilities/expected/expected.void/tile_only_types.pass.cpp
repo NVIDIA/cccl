@@ -7,9 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: enable-tile
+// REQUIRES: enable-tile || force-tile
 
+// We cannot suppress execution checks in cuda::std::construct_at
 // UNSUPPORTED: clang-14
+// UNSUPPORTED: enable-tile && !c++17
+// UNSUPPORTED: force-tile && !c++17
 
 #include <cuda/std/cassert>
 #include <cuda/std/expected>

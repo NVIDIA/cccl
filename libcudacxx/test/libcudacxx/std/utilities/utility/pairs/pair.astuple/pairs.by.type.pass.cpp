@@ -34,6 +34,7 @@ int main(int, char**)
     assert(i2 == 2);
   }
 
+#if !_CCCL_TILE_COMPILATION() && defined(CCCL_FORCE_TILE_TESTS) // dynamic allocation is unsupported
   {
     using upint = cuda::std::unique_ptr<int>;
     cuda::std::pair<upint, int> t(upint(new int(4)), 42);
@@ -55,6 +56,7 @@ int main(int, char**)
     assert(i == 42);
     assert(cuda::std::get<upint>(t) != nullptr);
   }
+#endif // !_CCCL_TILE_COMPILATION() && defined(CCCL_FORCE_TILE_TESTS)
 
   {
     int x       = 42;
