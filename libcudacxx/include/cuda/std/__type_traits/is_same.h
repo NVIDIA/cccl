@@ -24,10 +24,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_HAS_BUILTIN(__is_same_as) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_IS_SAME_AS(...) __is_same_as(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_same_as) || _CCCL_COMPILER(GCC)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_SAME_AS)

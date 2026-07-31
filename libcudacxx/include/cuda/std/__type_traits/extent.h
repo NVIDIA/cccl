@@ -26,10 +26,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CHECK_BUILTIN(array_extent)
-#  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(array_extent)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_ARRAY_EXTENT)

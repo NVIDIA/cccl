@@ -83,9 +83,13 @@
 #endif // _CCCL_HAS_BUILTIN(__add_rvalue_reference)  && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 
 // TODO: Enable using the builtin __array_rank when https://llvm.org/PR57133 is resolved
-#if 0 // _CCCL_CHECK_BUILTIN(array_rank)
+#if _CCCL_CHECK_BUILTIN(array_rank)
 #  define _CCCL_BUILTIN_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(array_rank)
+
+#if _CCCL_CHECK_BUILTIN(array_extent)
+#  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(array_extent)
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
@@ -267,7 +271,7 @@
 #  define _CCCL_BUILTIN_PREFETCH(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
-#if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_BUILTIN(__decay)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
 
@@ -470,5 +474,18 @@
 #else // ^^^ has intrinsics ^^^ / vvv no intrinsics
 #  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 0
 #endif // no intrinsics
+
+#if _CCCL_CHECK_BUILTIN(is_void)
+#  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_void)
+
+// clang + nvcc fails with '_Tp does not refer to a value' or 'identifier __is_void is undefined'
+#if _CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_IS_VOID
+#endif // _CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)
+
+#if _CCCL_HAS_BUILTIN(__is_same_as) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_IS_SAME_AS(...) __is_same_as(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_same_as) || _CCCL_COMPILER(GCC)
 
 #endif // __CCCL_BUILTIN_H

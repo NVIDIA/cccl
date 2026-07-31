@@ -26,15 +26,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CHECK_BUILTIN(is_void)
-#  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_void)
-
-// clang + nvcc fails with '_Tp does not refer to a value' or 'identifier __is_void is undefined'
-#if _CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_IS_VOID
-#endif // _CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)
-
 // if we put this trait to cuda::std::, it colides with libstdc++, putting it to to global namespace seems to work fine
 #if defined(_CCCL_BUILTIN_IS_VOID)
 template <class _Tp>
