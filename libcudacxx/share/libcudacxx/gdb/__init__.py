@@ -19,10 +19,11 @@ if _SCRIPT_DIRECTORY not in sys.path:
     sys.path.insert(0, _SCRIPT_DIRECTORY)
 
 import buffer  # noqa: E402
+import complex  # noqa: E402
 import memory_resource  # noqa: E402
 import std_array  # noqa: E402
 
-_PRINTERS = (memory_resource, buffer, std_array)
+_PRINTERS = (memory_resource, buffer, std_array, complex)
 
 
 def register() -> None:
