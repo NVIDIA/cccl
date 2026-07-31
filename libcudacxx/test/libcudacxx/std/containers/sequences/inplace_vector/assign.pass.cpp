@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6080486 : error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
+// UNSUPPORTED: force-tile
+// nvbug6537343: error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
 
 #include <cuda/std/algorithm>
 #include <cuda/std/array>

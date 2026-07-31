@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+// UNSUPPORTED: force-tile
+// nvbug6537343: error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
 
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
