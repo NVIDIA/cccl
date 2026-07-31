@@ -110,7 +110,7 @@ struct HistogramPolicy
 namespace detail::histogram
 {
 // Maximum number of bins per channel for the compile-time-sized shared-memory tier.
-static constexpr int max_privatized_smem_bins = 256;
+static constexpr int max_privatized_smem_bins = 512;
 
 // Leave 4096 bytes of the SM100 opt-in shared-memory limit available for static storage.
 static constexpr int sm100_dynamic_smem_bytes             = 232448 - 4096;
