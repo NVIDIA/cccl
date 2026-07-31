@@ -201,9 +201,7 @@ function(
       )
       set_tests_properties(
         ${test_target}.large
-        PROPERTIES
-          SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
-          ENVIRONMENT SCCACHE_NO_CACHE=1
+        PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
       )
     endif()
 
