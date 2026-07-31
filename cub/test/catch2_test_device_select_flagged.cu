@@ -3,7 +3,9 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/prefetch.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
 #include <thrust/count.h>
 #include <thrust/partition.h>
@@ -294,6 +296,75 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
     cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_flagged(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
+
+#if TEST_LAUNCH == 0
+template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
+struct flagged_prefetch_policy_selector
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
+  {
+    auto policy = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
+    policy.lookback._load_prefetch = Prefetch;
+    return policy;
+  }
+};
+
+using prefetch_policies =
+  c2h::enum_type_list<cub::detail::LoadPrefetch, cub::detail::LoadPrefetch::l2, cub::detail::LoadPrefetch::bulk_l2>;
+
+using selection_policies =
+  c2h::enum_type_list<cub::SelectImpl, cub::SelectImpl::Select, cub::SelectImpl::SelectPotentiallyInPlace>;
+
+CUB_TEST("DeviceSelect::Flagged works with explicit prefetch policies",
+         "[device][select_flagged][prefetch]",
+         CUB_SMALL,
+         prefetch_policies,
+         selection_policies)
+{
+  constexpr auto prefetch     = c2h::get<0, TestType>::value;
+  constexpr auto selection_op = c2h::get<1, TestType>::value;
+  constexpr int num_items     = 100003;
+
+  c2h::device_vector<int> in(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
+
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<int> reference = get_reference(in, flags);
+
+  c2h::device_vector<int> num_selected_out(1, 0);
+
+  int* const d_in               = thrust::raw_pointer_cast(in.data());
+  int* const d_flags            = thrust::raw_pointer_cast(flags.data());
+  int* const d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  const auto tuned_execution    = cuda::execution::tune(flagged_prefetch_policy_selector<prefetch, selection_op>{});
+
+  if constexpr (selection_op == cub::SelectImpl::SelectPotentiallyInPlace)
+  {
+    REQUIRE(cudaSuccess == cub::DeviceSelect::Flagged(d_in, d_flags, d_num_selected_out, num_items, tuned_execution));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    in.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == in);
+  }
+  else
+  {
+    c2h::device_vector<int> out(num_items);
+    int* const d_out = thrust::raw_pointer_cast(out.data());
+
+    REQUIRE(
+      cudaSuccess == cub::DeviceSelect::Flagged(d_in, d_flags, d_out, d_num_selected_out, num_items, tuned_execution));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    out.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == out);
   }
 }
 #endif // TEST_LAUNCH == 0
