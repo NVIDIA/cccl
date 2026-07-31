@@ -44,7 +44,7 @@ namespace cuda::experimental
  * Division operations
  * --------------------------------------------------------------------
  */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   const _FpType __a_hi,
   const _FpType __a_lo,
@@ -86,7 +86,7 @@ Fast Quadruple Precision Arithmetic Library on Parallel Computer SR11000/J2.
 In Proceedings of the 8th International Conference on Computational Science,
 ICCS '08, Part I, pp. 446-455.
 */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_div(
   const _FpType __a_hi,
   const _FpType __a_lo,
@@ -143,7 +143,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_div(
  *   Arithmetic Library on Parallel Computer SR11000/J2.
  *   Conditional scaling adapted from QD library techniques.
  */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_high_div(
   const _FpType __a_hi,
   const _FpType __a_lo,
@@ -259,7 +259,7 @@ iteration based on equation 4 from a paper by Alan Karp and Peter Markstein,
 High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4, December
 1997, pp. 561-589.
 */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_rsqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
@@ -294,7 +294,7 @@ iteration based on equation 4 from a paper by Alan Karp and Peter Markstein,
 High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4, December
 1997, pp. 561-589.
 */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {

@@ -505,7 +505,7 @@ _CCCL_TRIVIAL_API uint64_t __fpmp_fp2ull_rz(float __x) noexcept
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
 }
 
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(
@@ -519,7 +519,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
 // exactly -- and if so steps one representable value back toward zero via nextafter.
 // The templates serve both float and double.
 */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rz(__x));), ({
@@ -539,7 +539,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
                       return __f;
                     }))
 }
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__uint2float_rz(__x));), ({
@@ -559,7 +559,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
                       return __f;
                     }))
 }
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__ll2float_rz(__x));), ({
@@ -579,7 +579,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
                       return __f;
                     }))
 }
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__ull2float_rz(__x));), ({
@@ -728,7 +728,7 @@ _CCCL_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexcept
 // Intentionally __fpmp_-prefixed: they back the dedicated fp32mp2 rounding
 // implementations rather than being part of the public surface.
 */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_internal_trunc(const _FpType __x) noexcept
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
@@ -755,7 +755,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_internal_trunc(const _FpType __x) noexcept
   }
 }
 
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_internal_floor(const _FpType __x) noexcept
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
@@ -778,7 +778,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_internal_floor(const _FpType __x) noexcept
   }
 }
 
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_internal_ceil(const _FpType __x) noexcept
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
@@ -805,7 +805,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_internal_ceil(const _FpType __x) noexcept
 // Internal operations for 2-precision arithmetic
 */
 // Multiply 2 floats exactly, assuming no over/underflow.
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_two_mult_fma(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
   _FpType __res_hi = __fpmp_mul_rn(__x, __y);
@@ -817,7 +817,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_two_mult_fma(const _FpType __x, const _FpType _
 // Assumes the exponent of 'x' is >= exponent of 'y'.
 // (Usually we just check if |x| >= |y|).
 // If this is not known use the function below.
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_fast_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
   _FpType __res_hi = __fpmp_add_rn(__x, __y);
@@ -828,7 +828,7 @@ _CCCL_TRIVIAL_API _FpType __fpmp_fast_two_sum(const _FpType __x, const _FpType _
 
 // Add 2 floats, returning the answer exactly in 'hi' and 'lo' parts.
 // This makes no assumptions on the magnitudes of |x| and |y|.
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_TRIVIAL_API _FpType __fpmp_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
   _FpType __res_hi  = __fpmp_add_rn(__x, __y);

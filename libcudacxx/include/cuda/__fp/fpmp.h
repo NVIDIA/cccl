@@ -239,8 +239,8 @@ namespace cuda::experimental
 //!
 //! **Example Usage**:
 //! @code
-//! fpmp2<> a = 1.0f;
-//! fpmp2<> b = 2.0f;
+//! fp32mp2 a = 1.0f; // fpmp2<float>, the double-float type
+//! fp32mp2 b = 2.0f;
 //! auto c = a + b; // High-precision addition
 //! float f = static_cast<float>(c); // Convert back to float
 //! uint64_t bits = bit_cast<uint64_t>(c); // Bit-cast to 64-bit integer (IEEE-754 format)
@@ -259,11 +259,14 @@ namespace cuda::experimental
 //! - Performance depends on template parameters and underlying hardware.
 
 // fpmp2 class template
+// _FpType: the component type, float (double-float) or double (double-double).
+//     Not defaulted: neither precision is the natural fallback for the other, so
+//     the choice is always spelled out -- use the fp32mp2 / fp64mp2 aliases below.
 // met: arithmetic accuracy level
 //     - fpmp2_accuracy::mid (default): Dekker-based split and error accumulation technique
 //     - fpmp2_accuracy::high: Thall-based and other techniques
 //     - fpmp2_accuracy::low: fast arithmetic operation without re-normalizations
-template <typename _FpType = float, fpmp2_accuracy _TypeAcc = fpmp2_accuracy::def>
+template <typename _FpType, fpmp2_accuracy _TypeAcc = fpmp2_accuracy::def>
 class alignas(2 * alignof(_FpType)) fpmp2
 {
 public:

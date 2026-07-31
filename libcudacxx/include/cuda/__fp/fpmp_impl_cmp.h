@@ -44,7 +44,7 @@ namespace cuda::experimental
  * --------------------------------------------------------------------
  */
 // == comparison
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API bool
 __fpmp2_cmp_eq(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi, const _FpType __y_lo) noexcept
 {
@@ -52,7 +52,7 @@ __fpmp2_cmp_eq(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi,
 }
 
 // != comparison
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API bool
 __fpmp2_cmp_ne(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi, const _FpType __y_lo) noexcept
 {
@@ -60,7 +60,7 @@ __fpmp2_cmp_ne(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi,
 }
 
 // < comparison (assumes normalized inputs where |lo| < ulp(hi)/2)
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API bool
 __fpmp2_cmp_lt(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi, const _FpType __y_lo) noexcept
 {
@@ -68,7 +68,7 @@ __fpmp2_cmp_lt(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi,
 }
 
 // > comparison (assumes normalized inputs where |lo| < ulp(hi)/2)
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API bool
 __fpmp2_cmp_gt(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi, const _FpType __y_lo) noexcept
 {
@@ -76,7 +76,7 @@ __fpmp2_cmp_gt(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi,
 }
 
 // <= comparison (assumes normalized inputs where |lo| < ulp(hi)/2)
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API bool
 __fpmp2_cmp_le(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi, const _FpType __y_lo) noexcept
 {
@@ -84,7 +84,7 @@ __fpmp2_cmp_le(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi,
 }
 
 // >= comparison (assumes normalized inputs where |lo| < ulp(hi)/2)
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API bool
 __fpmp2_cmp_ge(const _FpType __x_hi, const _FpType __x_lo, const _FpType __y_hi, const _FpType __y_lo) noexcept
 {

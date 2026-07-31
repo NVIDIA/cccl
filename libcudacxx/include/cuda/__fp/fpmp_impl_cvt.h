@@ -85,7 +85,7 @@ namespace cuda::experimental
 //   - lo: bottom 29 bits → second float  (bits [0:28] of double mantissa)
 // -----------------------------------------------------------------------
 */
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_double(const double __x, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
 #  if _CCCL_FPMP_USE_OPT_FROM_DOUBLE == 1
@@ -179,7 +179,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_double(const double __x, _FpType* __res_hi
 } // __fpmp2_from_double
 
 // int -> (hi, lo) conversions
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_int(const int32_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   *__res_hi = __fpmp_int2fp_rz<_FpType>(__i);
@@ -189,7 +189,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_int(const int32_t __i, _FpType* __res_hi, 
 // uint -> (hi, lo) conversions
 // Note: Use signed arithmetic to compute residual, since __fpmp_fp2uint_rz(*res_hi)
 // might be larger than i when rounding direction differs
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_uint(const uint32_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   *__res_hi = __fpmp_uint2fp_rz<_FpType>(__i);
@@ -201,7 +201,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_uint(const uint32_t __i, _FpType* __res_hi
 // ll -> (hi, lo) conversions
 // With __fpmp_ll2fp_rz properly rounding toward zero, hi is always <= i for positive i
 // and >= i for negative i, so __fpmp_fp2ll_rz(hi) is always representable as int64_t.
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_ll(const int64_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   *__res_hi = __fpmp_ll2fp_rz<_FpType>(__i);
@@ -211,7 +211,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_ll(const int64_t __i, _FpType* __res_hi, _
 // ull -> (hi, lo) conversions
 // With ull2fp_rz properly rounding toward zero, hi <= i always,
 // so the residual i - hi is always non-negative.
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_ull(const uint64_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   *__res_hi = __fpmp_ull2fp_rz<_FpType>(__i);
@@ -272,7 +272,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_ull(const uint64_t __i, _FpType* __res_hi,
 //   static_cast<double>(x_hi) + static_cast<double>(x_lo)
 //   (2x F2D + 1x DADD = 3 FP64 operations)
 //
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API double __fpmp2_to_double(const _FpType __x_hi_in, const _FpType __x_lo_in) noexcept
 {
 #  if _CCCL_FPMP_USE_OPT_TO_DOUBLE == 1
@@ -340,14 +340,14 @@ _CCCL_FPMP_CORE_API double __fpmp2_to_double(const _FpType __x_hi_in, const _FpT
 }
 
 // (hi, lo) -> float conversions (returns the sum as single FpType)
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API _FpType __fpmp2_to_float(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   return __x_hi + __x_lo;
 }
 
 // (hi, lo) -> int conversions
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API int32_t __fpmp2_to_int(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   _FpType __abs_hi = __fpmp_internal_fabs(__x_hi);
@@ -370,7 +370,7 @@ _CCCL_FPMP_CORE_API int32_t __fpmp2_to_int(const _FpType __x_hi, const _FpType _
 } // __fpmp2_to_int
 
 // (hi, lo) -> uint conversions
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API uint32_t __fpmp2_to_uint(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   // Check threshold BEFORE computing sum
@@ -392,7 +392,7 @@ _CCCL_FPMP_CORE_API uint32_t __fpmp2_to_uint(const _FpType __x_hi, const _FpType
 } // __fpmp2_to_uint
 
 // (hi, lo) -> ll conversions
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API int64_t __fpmp2_to_ll(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   _FpType __abs_hi = __fpmp_internal_fabs(__x_hi);
@@ -415,7 +415,7 @@ _CCCL_FPMP_CORE_API int64_t __fpmp2_to_ll(const _FpType __x_hi, const _FpType __
 } // __fpmp2_to_ll
 
 // (hi, lo) -> ull conversions
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API uint64_t __fpmp2_to_ull(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   // Check threshold BEFORE computing sum
@@ -442,7 +442,7 @@ _CCCL_FPMP_CORE_API uint64_t __fpmp2_to_ull(const _FpType __x_hi, const _FpType 
  * --------------------------------------------------------------------
  */
 // bit_cast to IEEE-754 format bits
-template <typename _FpType = float>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API uint64_t __fpmp2_bit_cast(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   double __d = __fpmp2_to_double(__x_hi, __x_lo);
@@ -452,7 +452,7 @@ _CCCL_FPMP_CORE_API uint64_t __fpmp2_bit_cast(const _FpType __x_hi, const _FpTyp
 // __fpmp_fp128 operations (only for FpType == double)
 // available only for CUDA architectures >= 1000 or when _CCCL_FPMP_FP128_ENABLE is defined
 #  if _CCCL_FPMP_FP128_ENABLE == 1
-template <typename _FpType = double>
+template <typename _FpType>
 constexpr _CCCL_FPMP_CORE_API void
 __fpmp2_from_quad(const __fpmp_fp128 __x, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
@@ -460,7 +460,7 @@ __fpmp2_from_quad(const __fpmp_fp128 __x, _FpType* __res_hi, _FpType* __res_lo) 
   *__res_lo = static_cast<_FpType>(__x - static_cast<__fpmp_fp128>(*__res_hi));
 }
 
-template <typename _FpType = double>
+template <typename _FpType>
 _CCCL_FPMP_CORE_API __fpmp_fp128 __fpmp2_to_quad(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   return static_cast<__fpmp_fp128>(__x_hi) + static_cast<__fpmp_fp128>(__x_lo);
