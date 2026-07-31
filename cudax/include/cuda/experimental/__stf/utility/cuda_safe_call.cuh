@@ -34,6 +34,7 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/scope_exit.cuh>
 
 #include <cstdlib>
 #include <exception>
@@ -324,77 +325,11 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
   abort();
 }
 
-/**
- * @brief Value (or reference) plus the call-site `source_location` of its construction.
- *
- * Intended as a function parameter type: write `with_location<widget>` instead of `widget`
- * so the callee can report file/line. Construction from an argument captures
- * `source_location::current()` at that call site (overloaded operators cannot take
- * defaulted `source_location` parameters themselves).
- *
- * Move-only: may be constructed as a temporary and moved into a by-value parameter,
- * but not copied. `T` may be a value, lvalue reference, or rvalue reference.
- */
-template <class T>
-struct with_location
-{
-  with_location(const with_location&)            = delete;
-  with_location& operator=(const with_location&) = delete;
-  with_location& operator=(with_location&&)      = delete;
-
-  // Required so a converting temporary can initialize a by-value parameter.
-  with_location(with_location&&) = default;
-
-  // Constrained so that ill-formed reference bindings are detected by
-  // `is_constructible_v` instead of erroring inside the mem-initializer, and so
-  // that this template does not hijack the move constructor.
-  template <typename U,
-            ::std::enable_if_t<!::std::is_same_v<::std::decay_t<U>, with_location> && ::std::is_constructible_v<T, U&&>,
-                               int> = 0>
-  constexpr with_location(U&& payload, ::cuda::std::source_location loc = ::cuda::std::source_location::current())
-      : payload(::std::forward<U>(payload))
-      , loc(loc)
-  {}
-
-  T payload;
-  ::cuda::std::source_location loc;
-};
-
-/**
- * @brief Invokes a callable and aborts if it throws.
- *
- * Use around code that must not let an exception escape into backend state
- * that cannot recover (e.g. after a CUDA stream capture has begun).
- *
- * Usage: `throwproof->*[&] { ... };`
- *
- * `throwproof` converts to `with_location`, which captures the call-site
- * `source_location` (overloaded operators cannot take default arguments).
- *
- * @snippet this throwproof
- */
-struct throwproof_t
-{
-} inline constexpr throwproof{};
-
-template <class F>
-decltype(auto) operator->*(with_location<throwproof_t> s, F&& f) noexcept
-{
-  _CCCL_TRY
-  {
-    return ::std::forward<F>(f)();
-  }
-  _CCCL_CATCH (const ::std::exception& e)
-  {
-    fprintf(stderr, "%s(%u) throwproof in %s: %s\n", s.loc.file_name(), s.loc.line(), s.loc.function_name(), e.what());
-  }
-  _CCCL_CATCH_ALL
-  {
-    fprintf(
-      stderr, "%s(%u) throwproof in %s: unknown exception\n", s.loc.file_name(), s.loc.line(), s.loc.function_name());
-  }
-  ::std::abort();
-}
+using ::cuda::experimental::throw_defer;
+using ::cuda::experimental::throw_defer_t;
+using ::cuda::experimental::throw_proof;
+using ::cuda::experimental::throw_proof_t;
+using ::cuda::experimental::with_location;
 
 #ifdef UNITTESTED_FILE
 UNITTEST("with_location")
@@ -430,11 +365,11 @@ UNITTEST("with_location")
   static_assert(!::std::is_constructible_v<with_location<widget&&>, const widget&>);
   static_assert(::std::is_move_constructible_v<with_location<widget&&>>);
 
-  // Empty tag lvalues (e.g. throwproof) must remain convertible — that is how
-  // `throwproof->*f` captures source_location.
-  static_assert(::std::is_constructible_v<with_location<throwproof_t>, throwproof_t&>);
-  static_assert(::std::is_constructible_v<with_location<throwproof_t>, const throwproof_t&>);
-  static_assert(::std::is_constructible_v<with_location<throwproof_t>, throwproof_t>);
+  // Empty tag lvalues (e.g. throw_proof) must remain convertible — that is how
+  // `throw_proof->*f` captures source_location.
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, const throw_proof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t>);
 
   auto consume_value = [](with_location<widget> w) {
     EXPECT(w.payload.x == 42);
@@ -456,20 +391,49 @@ UNITTEST("with_location")
   consume_rref(widget{3});
 };
 
-UNITTEST("throwproof")
+UNITTEST("throw_proof")
 {
-  //! [throwproof]
+  //! [throw_proof]
   int value = 0;
-  throwproof->*[&] {
+  throw_proof->*[&] {
     value = 42; // would abort the application if this code threw
   };
   EXPECT(value == 42);
-  //! [throwproof]
-  EXPECT((throwproof->*
+  //! [throw_proof]
+  EXPECT((throw_proof->*
           [] {
             return 7;
           })
          == 7);
+};
+
+UNITTEST("throw_defer")
+{
+  //! [throw_defer]
+  int value = 0;
+  auto e    = throw_defer->*[&] {
+    value = 42; // if this threw, e would hold the exception_ptr
+  };
+  EXPECT(!e);
+  EXPECT(value == 42);
+  //! [throw_defer]
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  e = throw_defer->*[] {
+    throw ::std::runtime_error("boom");
+  };
+  EXPECT(static_cast<bool>(e));
+  try
+  {
+    ::std::rethrow_exception(e);
+  }
+  catch (const ::std::runtime_error& ex)
+  {
+    EXPECT(::std::string_view(ex.what()) == "boom");
+    return;
+  }
+  EXPECT(false, "rethrow should have transferred control");
+#  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
 UNITTEST("cuda_safe_call")

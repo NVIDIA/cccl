@@ -21,10 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/source_location>
+
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 
 namespace cuda::experimental
 {
@@ -95,6 +106,120 @@ private:
 
 template <class _Fn>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES scope_exit(_Fn) -> scope_exit<_Fn>;
+
+/**
+ * @brief Value (or reference) plus the call-site `source_location` of its construction.
+ *
+ * Intended as a function parameter type: write `with_location<widget>` instead of `widget`
+ * so the callee can report file/line. Construction from an argument captures
+ * `source_location::current()` at that call site (overloaded operators cannot take
+ * defaulted `source_location` parameters themselves).
+ *
+ * Move-only: may be constructed as a temporary and moved into a by-value parameter,
+ * but not copied. `T` may be a value, lvalue reference, or rvalue reference.
+ */
+template <class _Tp>
+struct with_location
+{
+  with_location(const with_location&)            = delete;
+  with_location& operator=(const with_location&) = delete;
+  with_location& operator=(with_location&&)      = delete;
+
+  // Required so a converting temporary can initialize a by-value parameter.
+  with_location(with_location&&) = default;
+
+  // Constrained so that ill-formed reference bindings are detected by
+  // `is_constructible_v` instead of erroring inside the mem-initializer, and so
+  // that this template does not hijack the move constructor.
+  template <typename _Up,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::decay_t<_Up>, with_location>
+                                       && ::cuda::std::is_constructible_v<_Tp, _Up&&>,
+                                     int> = 0>
+  constexpr with_location(_Up&& __payload, ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
+      : payload(::cuda::std::forward<_Up>(__payload))
+      , loc(__loc)
+  {}
+
+  _Tp payload;
+  ::cuda::std::source_location loc;
+};
+
+/**
+ * @brief Invokes a callable and aborts if it throws.
+ *
+ * Use around code that must not let an exception escape into backend state
+ * that cannot recover (e.g. after a CUDA stream capture has begun).
+ *
+ * Usage: `throw_proof->*[&] { ... };`
+ *
+ * `throw_proof` converts to `with_location`, which captures the call-site
+ * `source_location` (overloaded operators cannot take default arguments). An
+ * explicit `with_location<throw_proof_t>{throw_proof, loc}` can forward a
+ * previously captured location.
+ */
+struct throw_proof_t
+{
+} inline constexpr throw_proof{};
+
+template <class _Fn>
+decltype(auto) operator->*(with_location<throw_proof_t> __s, _Fn&& __f) noexcept
+{
+  _CCCL_TRY
+  {
+    return ::cuda::std::forward<_Fn>(__f)();
+  }
+  _CCCL_CATCH (const ::std::exception& __e)
+  {
+    ::fprintf(stderr,
+              "%s(%u) throw_proof in %s: %s\n",
+              __s.loc.file_name(),
+              __s.loc.line(),
+              __s.loc.function_name(),
+              __e.what());
+  }
+  _CCCL_CATCH_ALL
+  {
+    ::fprintf(stderr,
+              "%s(%u) throw_proof in %s: unknown exception\n",
+              __s.loc.file_name(),
+              __s.loc.line(),
+              __s.loc.function_name());
+  }
+  ::std::abort();
+}
+
+/**
+ * @brief Invokes a callable and returns any thrown exception as an `exception_ptr`.
+ *
+ * Use around best-effort code where a failure should not escape (e.g. optional DOT
+ * timing annotations) but the caller may still want to inspect or rethrow later.
+ * The callable's return value must be `void` (enforced at compile time); the
+ * result is empty if nothing was thrown.
+ *
+ * Usage: `auto e = throw_defer->*[&] { ... };`
+ *
+ * The result is `[[nodiscard]]` so the caller must acknowledge it (store it, test it,
+ * or deliberately discard it, e.g. by assigning to std::ignore).
+ */
+struct throw_defer_t
+{
+} inline constexpr throw_defer{};
+
+template <class _Fn>
+[[nodiscard]] ::std::exception_ptr operator->*(throw_defer_t, _Fn&& __f) noexcept
+{
+  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<_Fn>(__f)())>,
+                "throw_defer requires a void-returning callable");
+  _CCCL_TRY
+  {
+    ::cuda::std::forward<_Fn>(__f)();
+    return {};
+  }
+  _CCCL_CATCH_ALL
+  {
+    return ::std::current_exception();
+  }
+}
 } // namespace cuda::experimental
 
 #endif // _CUDAX__EXPERIMENTAL_UTILITY_SCOPE_EXIT
