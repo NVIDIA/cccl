@@ -146,6 +146,21 @@ struct DeviceHistogramKernelSource
       OffsetT>;
   }
 
+  template <typename PolicyT, typename PrivatizedDecodeOpT, bool UseSecondProbe, int CountReplicas>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramCacheKernel()
+  {
+    return &DeviceHistogramCacheKernel<
+      PolicyT,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OffsetT,
+      UseSecondProbe,
+      CountReplicas>;
+  }
+
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
   {
     return sizeof(CounterT);
@@ -251,6 +266,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   const int threads_per_block = active_policy.threads_per_block;
   const int pixels_per_thread = active_policy.pixels_per_thread;
 
+  constexpr int cache_count_replicas = IsEven ? 1 : (NUM_ACTIVE_CHANNELS == 1 ? 2 : 4);
+
   // Get SM count
   int sm_count;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
@@ -271,21 +288,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
   {
-    using output_decode_op_t     = typename FirstLevelArrayT::value_type;
     using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-    const auto persistent_kernel = kernel_source.template HistogramSweepKernelPersistent<
-      PolicySelector,
-      PRIVATIZED_SMEM_BINS,
-      privatized_decode_op_t,
-      output_decode_op_t>();
+    const auto cache_kernel =
+      kernel_source.template HistogramCacheKernel<PolicySelector, privatized_decode_op_t, true, cache_count_replicas>();
 
-    int persistent_sm_occupancy = 0;
-    if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(persistent_sm_occupancy, persistent_kernel, threads_per_block)))
+    constexpr int cache_slots_per_channel = NUM_ACTIVE_CHANNELS == 1 ? (IsEven ? 4096 : 2048) : 512;
+    constexpr int cache_smem_bytes =
+      NUM_ACTIVE_CHANNELS * cache_slots_per_channel * (sizeof(int) + cache_count_replicas * sizeof(CounterT));
+
+    int cache_sm_occupancy = 0;
+    if (const auto error = CubDebug(
+          launcher_factory.MaxSmOccupancy(cache_sm_occupancy, cache_kernel, threads_per_block, cache_smem_bytes)))
     {
       return error;
     }
-    histogram_sweep_occupancy = persistent_sm_occupancy * sm_count;
+    histogram_sweep_occupancy = cache_sm_occupancy * sm_count;
   }
 
   if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
@@ -366,11 +383,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
 
       dim3 persistent_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
-      const auto persistent_kernel = kernel_source.template HistogramSweepKernelPersistent<
-        PolicySelector,
-        PRIVATIZED_SMEM_BINS,
-        privatized_decode_op_t,
-        output_decode_op_t>();
+      constexpr int cache_slots_per_channel = NUM_ACTIVE_CHANNELS == 1 ? (IsEven ? 4096 : 2048) : 512;
+      constexpr int cache_smem_bytes =
+        NUM_ACTIVE_CHANNELS * cache_slots_per_channel * (sizeof(int) + cache_count_replicas * sizeof(CounterT));
+      const bool use_second_probe = max_num_output_bins < 262144;
 
       bool cooperative_supported = false;
       if (const auto error = CubDebug(launcher_factory.CooperativeLaunchSupported(cooperative_supported)))
@@ -379,24 +395,32 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       }
       if (cooperative_supported)
       {
-        if (const auto error = CubDebug(launcher_factory.LaunchCooperative(
-              persistent_grid_dims,
-              dim3{static_cast<unsigned int>(threads_per_block)},
-              0,
-              stream,
-              persistent_kernel,
-              d_samples,
-              num_output_bins_wrapper,
-              num_privatized_bins_wrapper,
-              d_output_histograms,
-              d_privatized_histograms_wrapper,
-              first_level_array,
-              second_level_array,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              tiles_per_row,
-              tile_queue)))
+        const auto launch_cache = [&](auto cache_kernel) {
+          return launcher_factory.LaunchCooperative(
+            persistent_grid_dims,
+            dim3{static_cast<unsigned int>(threads_per_block)},
+            cache_smem_bytes,
+            stream,
+            cache_kernel,
+            d_samples,
+            num_output_bins_wrapper,
+            d_output_histograms,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            cache_slots_per_channel);
+        };
+
+        const auto error =
+          use_second_probe
+            ? launch_cache(
+                kernel_source
+                  .template HistogramCacheKernel<PolicySelector, privatized_decode_op_t, true, cache_count_replicas>())
+            : launch_cache(
+                kernel_source
+                  .template HistogramCacheKernel<PolicySelector, privatized_decode_op_t, false, cache_count_replicas>());
+        if (CubDebug(error) != cudaSuccess)
         {
           return error;
         }
@@ -1197,7 +1221,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
                                          NUM_ACTIVE_CHANNELS,
                                          PRIVATIZED_SMEM_BINS,
                                          /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
+                                         /* IsEven = */ true,
                                          /* IsByteSample = */ false>(
               d_temp_storage,
               temp_storage_bytes,
@@ -1228,7 +1252,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
                                          NUM_ACTIVE_CHANNELS,
                                          PRIVATIZED_SMEM_BINS,
                                          /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
+                                         /* IsEven = */ true,
                                          /* IsByteSample = */ false>(
               d_temp_storage,
               temp_storage_bytes,
