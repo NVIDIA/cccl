@@ -81,8 +81,7 @@ elseif (NOT MODE)
 endif()
 
 if (MODE STREQUAL "none")
-  set(command_to_run ${TEST})
-  set(command_args ${ARGS})
+  run_command(${TEST} ${ARGS})
 elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
   set(tool ${CMAKE_MATCH_1})
 
@@ -160,17 +159,12 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     set(cs_tool_args)
   endif()
 
-  set(command_to_run compute-sanitizer)
-  # gersemi: off
-  set(command_args
+  run_command(compute-sanitizer
     ${cs_general_args}
     ${cs_tool_args}
     ${TEST} ${ARGS}
   )
-  # gersemi: on
 else()
   usage()
   message(FATAL_ERROR "Invalid MODE: ${MODE}")
 endif()
-
-run_command(${command_to_run} ${command_args})
