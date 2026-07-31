@@ -68,19 +68,19 @@
 #define _CCCL_CHECK_BUILTIN(__x) (_CCCL_HAS_BUILTIN(__##__x) || _CCCL_HAS_KEYWORD(__##__x) || _CCCL_HAS_FEATURE(__x))
 
 // NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_lvalue_reference)
+#if _CCCL_HAS_BUILTIN(__add_lvalue_reference) && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 #  define _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(...) __add_lvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_lvalue_reference)
+#endif // _CCCL_HAS_BUILTIN(__add_lvalue_reference) && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 
 // NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_pointer)
+#if _CCCL_HAS_BUILTIN(__add_pointer) && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 #  define _CCCL_BUILTIN_ADD_POINTER(...) __add_pointer(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_pointer)
+#endif // _CCCL_HAS_BUILTIN(__add_pointer)  && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 
 // NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_rvalue_reference)
+#if _CCCL_HAS_BUILTIN(__add_rvalue_reference) && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 #  define _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(...) __add_rvalue_reference(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__add_rvalue_reference)
+#endif // _CCCL_HAS_BUILTIN(__add_rvalue_reference)  && (_CCCL_CUDA_COMPILER(CLANG) || _CCCL_HOST_COMPILATION())
 
 // TODO: Enable using the builtin __array_rank when https://llvm.org/PR57133 is resolved
 #if 0 // _CCCL_CHECK_BUILTIN(array_rank)
