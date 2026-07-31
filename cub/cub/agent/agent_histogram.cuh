@@ -328,13 +328,11 @@ struct AgentHistogram
       // Bin pixels
       int bins[pixels_per_thread];
 
-      typename PrivatizedDecodeOpT::BinSelectState bin_select_state;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
       {
         bins[pixel] = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(
-          samples[pixel][ch], bins[pixel], is_valid[pixel], bin_select_state);
+        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
       }
 
       CounterT accumulator = 1;
