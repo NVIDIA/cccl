@@ -51,6 +51,7 @@ inline constexpr bool __can_apply<_Fn, _Tuple, true> = __can_apply_impl<_Fn, __m
     return __VA_ARGS__;                  \
   }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fn, class _Tuple, size_t... _Id>
 _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
   _LIBCUDACXX_NOEXCEPT_RETURN(

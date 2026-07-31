@@ -11,7 +11,7 @@
 
 #include <sstream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace thrust::placeholders;
 
@@ -131,7 +131,7 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   REQUIRE(cudaGraphDestroy(graph) == cudaSuccess);
 }
 
-C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -146,7 +146,7 @@ C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
   CHECK(thrust::equal(result.begin(), result.end(), cuda::counting_iterator<type>{42 + 13}));
 }
 
-C2H_TEST("DeviceTransform::Transform (single argument) custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform (single argument) custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -160,7 +160,7 @@ C2H_TEST("DeviceTransform::Transform (single argument) custom stream", "[device]
   CHECK(thrust::equal(result.begin(), result.end(), cuda::counting_iterator<type>{42 + 13}));
 }
 
-C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Generate custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -177,7 +177,7 @@ C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
   CHECK(thrust::equal(result.begin(), result.end(), cuda::constant_iterator<type>{1337}));
 }
 
-C2H_TEST("DeviceTransform::Fill custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Fill custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -199,7 +199,7 @@ struct reference_func
   }
 };
 
-C2H_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -216,7 +216,7 @@ C2H_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]")
   CHECK(thrust::equal(result.begin(), result.end(), reference_it));
 }
 
-C2H_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -231,7 +231,7 @@ C2H_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[devic
   CHECK(thrust::equal(result.begin(), result.end(), reference_it));
 }
 
-C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -267,7 +267,7 @@ struct get_thread_id
   }
 };
 
-C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
+CUB_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]", CUB_SMALL)
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
@@ -280,7 +280,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
   REQUIRE(result == expected);
 }
 
-C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce][device]")
+CUB_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce][device]", CUB_SMALL)
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
@@ -295,7 +295,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test TransformPolicy properties", "[transform][device]")
+CUB_TEST("Test TransformPolicy properties", "[transform][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformPolicy>);

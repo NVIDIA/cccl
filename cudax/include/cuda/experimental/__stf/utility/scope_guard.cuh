@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/scope_exit.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -33,8 +34,10 @@ namespace cuda::experimental::stf
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
- * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw, otherwise the application will be terminated.
- * The code controlled by `SCOPE(exit)` may throw.
+ * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
+ * defined) those lambdas are invoked via `throw_proof` using the `SCOPE` call-site location; in release
+ * builds they are called directly. The code controlled by `SCOPE(success)` may throw. In all cases the
+ * controlled code must return `void` (enforced at compile time).
  *
  * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
  *
@@ -52,60 +55,149 @@ namespace cuda::experimental::stf
  * https://en.cppreference.com/w/cpp/experimental/scope_success
  */
 ///@{
-#define SCOPE(kind)                                                                      \
-  auto CUDASTF_UNIQUE_NAME(scope_guard) =                                                \
-    ::std::integral_constant<::cuda::experimental::stf::scope_guard_condition,           \
-                             (::cuda::experimental::stf::scope_guard_condition::kind)>() \
-      ->*[&]()
+#define SCOPE(kind) \
+  auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
 ///@}
 
-enum class scope_guard_condition
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail::scope_guard_handler
 {
-  exit,
-  fail,
-  success
+enum class exit
+{
+};
+enum class fail
+{
+};
+enum class success
+{
 };
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <scope_guard_condition cond, typename F>
-auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
+template <class F>
+void invoke_nothrow(F& f, ::cuda::std::source_location loc)
+{
+  static_assert(::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
+#  ifndef NDEBUG
+  // Forward the SCOPE call-site location into throw_proof.
+  ::cuda::experimental::with_location<::cuda::experimental::throw_proof_t>{::cuda::experimental::throw_proof, loc}->*
+    [&] {
+      f();
+    };
+#  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
+  (void) loc;
+  f();
+#  endif // NDEBUG
+}
+
+template <typename F>
+auto operator->*(::cuda::experimental::with_location<exit> where, F&& f)
 {
   struct result
   {
-    result(F&& f, int threshold)
+    F f;
+    const ::cuda::std::source_location loc;
+    bool active = true;
+
+    result(F&& f, ::cuda::std::source_location loc)
         : f(::std::forward<F>(f))
-        , threshold(threshold)
+        , loc(loc)
     {}
     result(result&) = delete;
     result(result&& rhs)
         : f(mv(rhs.f))
-        , threshold(rhs.threshold)
+        , loc(rhs.loc)
+        , active(rhs.active)
     {
-      // Disable call to lambda in rhs's destructor in all cases, we don't want double calls
-      rhs.threshold = -2;
+      rhs.active = false;
     }
 
-    // Destructor (i.e. user's lambda) may throw exceptions if and only if we're in `SCOPE(success)`.
-    ~result() noexcept(cond != scope_guard_condition::success)
+    ~result() noexcept
     {
-      // By convention, call always if threshold is -1, never if threshold < -1
-      if (threshold == -1 || ::std::uncaught_exceptions() == threshold)
+      if (active)
+      {
+        invoke_nothrow(f, loc);
+      }
+    }
+  };
+
+  return result{::std::forward<F>(f), where.loc};
+}
+
+template <typename F>
+auto operator->*(::cuda::experimental::with_location<fail> where, F&& f)
+{
+  struct result
+  {
+    F f;
+    const ::cuda::std::source_location loc;
+    const int exceptions;
+    bool active = true;
+
+    result(F&& f, ::cuda::std::source_location loc, int exceptions)
+        : f(::std::forward<F>(f))
+        , loc(loc)
+        , exceptions(exceptions)
+    {}
+    result(result&) = delete;
+    result(result&& rhs)
+        : f(mv(rhs.f))
+        , loc(rhs.loc)
+        , exceptions(rhs.exceptions)
+        , active(rhs.active)
+    {
+      rhs.active = false;
+    }
+
+    ~result() noexcept
+    {
+      if (active && ::std::uncaught_exceptions() == exceptions)
+      {
+        invoke_nothrow(f, loc);
+      }
+    }
+  };
+
+  // Run only if an exception is in flight: uncaught count is one above creation-time count.
+  return result{::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
+}
+
+template <typename F>
+auto operator->*(success, F&& f)
+{
+  // success may throw, so it does not go through invoke_nothrow; keep the same void check.
+  static_assert(::std::is_void_v<decltype(::std::forward<F>(f)())>, "SCOPE requires a void-returning callable");
+
+  struct result
+  {
+    F f;
+    const int exceptions;
+    bool active = true;
+
+    result(F&& f, int exceptions)
+        : f(::std::forward<F>(f))
+        , exceptions(exceptions)
+    {}
+    result(result&) = delete;
+    result(result&& rhs)
+        : f(mv(rhs.f))
+        , exceptions(rhs.exceptions)
+        , active(rhs.active)
+    {
+      rhs.active = false;
+    }
+
+    // May throw — unlike exit/fail.
+    ~result() noexcept(false)
+    {
+      if (active && ::std::uncaught_exceptions() == exceptions)
       {
         f();
       }
     }
-
-  private:
-    F f;
-    int threshold;
   };
 
-  // Threshold is -1 for SCOPE(exit), the same as current exceptions count for SCOPE(success), and 1 above the current
-  // exception count for SCOPE(fail).
-  return result(
-    ::std::forward<F>(f),
-    cond == scope_guard_condition::exit ? -1 : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
+  return result{::std::forward<F>(f), ::std::uncaught_exceptions()};
 }
+} // namespace detail::scope_guard_handler
 #endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental::stf
 
@@ -137,7 +229,7 @@ UNITTEST("SCOPE(fail)")
     };
     EXPECT(!done, "SCOPE_FAIL should not run early.");
   }
-  assert(!done);
+  EXPECT(!done);
 
   try
   {

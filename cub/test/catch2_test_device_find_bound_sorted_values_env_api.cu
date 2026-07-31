@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceFind::LowerBoundSortedValues accepts env with stream", "[find][env][binary-search]")
+CUB_TEST("cub::DeviceFind::LowerBoundSortedValues accepts env with stream", "[find][env][binary-search]", CUB_SMALL)
 {
   // example-begin lower-bound-sorted-values-env
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};
@@ -46,7 +46,7 @@ C2H_TEST("cub::DeviceFind::LowerBoundSortedValues accepts env with stream", "[fi
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("cub::DeviceFind::UpperBoundSortedValues accepts env with stream", "[find][env][binary-search]")
+CUB_TEST("cub::DeviceFind::UpperBoundSortedValues accepts env with stream", "[find][env][binary-search]", CUB_SMALL)
 {
   // example-begin upper-bound-sorted-values-env
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};
@@ -91,7 +91,9 @@ struct FindBoundSortedValuesPolicySelector
 };
 // example-end lower-bound-sorted-values-policy-selector
 
-C2H_TEST("cub::DeviceFind::LowerBoundSortedValues accepts a custom policy selector", "[find][env][binary-search]")
+CUB_TEST("cub::DeviceFind::LowerBoundSortedValues accepts a custom policy selector",
+         "[find][env][binary-search]",
+         CUB_SMALL)
 {
   // example-begin lower-bound-sorted-values-tuning
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};

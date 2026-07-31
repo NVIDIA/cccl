@@ -16,9 +16,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-batched-env
   // 3 contiguous ranges copied via Batched API
@@ -90,7 +90,7 @@ struct BatchedCopyPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-batched-tuning
   // 3 contiguous ranges copied via Batched API with custom tuning
@@ -127,7 +127,7 @@ C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][en
 
 #endif // _CCCL_STD_VER >= 2020
 
-C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-mdspan-env
   // Copy a 2D array using mdspan
