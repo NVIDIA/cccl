@@ -54,12 +54,6 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
-  ::cuda::std::uint64_t __N = 0;
-
-  // TODO (jfaibussowit): maybe can combine some of these
-  __all_local_offsets.reserve(__num_local_inputs);
-
   ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_sizes;
 
   __all_local_sizes.reserve(__num_local_inputs);
@@ -103,61 +97,71 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
     }
   }
 
+  // TODO (jfaibussowit): maybe can combine this with all_local_sizes
+  ::std::vector<__buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
+
+  __all_local_offsets.reserve(__num_local_inputs);
   // TODO(jfaibussowit)
   //
   // Consider deferring this. We end up doing a very similar computation later on on the root
   // and could potentially merge it there.
-  bool __N_computed = false;
+  ::cuda::std::optional<::cuda::std::uint64_t> __N;
 
-  auto __comm_it = ::cuda::std::ranges::begin(__comms);
-  auto __env_it  = ::cuda::std::ranges::begin(__envs);
-
-  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
-    auto& __offsets = __all_local_offsets.emplace_back(
-      __all_local_sizes[__idx].stream(),
-      __all_local_sizes[__idx].memory_resource(),
-      __comm_size,
-      ::cuda::no_init,
-      ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+    auto __comm_it = ::cuda::std::ranges::begin(__comms);
+    auto __env_it  = ::cuda::std::ranges::begin(__envs);
 
-    __CUDAX_MULTI_GPU_DISPATCH(
-      __comm_it->logical_device(),
-      CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
-      __all_local_sizes[__idx].begin(),
-      __offsets.begin(),
-      __all_local_sizes[__idx].size(),
-      *__env_it);
-
-    if (!__N_computed)
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
+         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
     {
-      ::cuda::std::uint64_t __last_offset = 0;
-      ::cuda::std::uint64_t __last_size   = 0;
-
-      // The desired-offset scan already encodes the global extent: N =
-      // offset[p - 1] + size[p - 1].
-      ::cuda::copy_bytes(
-        __offsets.stream(),
-        __offsets.subspan(__comm_size - 1, 1),
-        ::cuda::std::span{&__last_offset, ::cuda::std::size_t{1}},
-        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
-      ::cuda::copy_bytes(
+      auto& __offsets = __all_local_offsets.emplace_back(
         __all_local_sizes[__idx].stream(),
-        __all_local_sizes[__idx].subspan(__comm_size - 1, 1),
-        ::cuda::std::span{&__last_size, ::cuda::std::size_t{1}},
-        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
+        __all_local_sizes[__idx].memory_resource(),
+        __comm_size,
+        ::cuda::no_init,
+        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
-      __all_local_sizes[__idx].stream().sync();
-      __N          = __last_offset + __last_size;
-      __N_computed = true;
+      __CUDAX_MULTI_GPU_DISPATCH(
+        __comm_it->logical_device(),
+        CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
+        __all_local_sizes[__idx].begin(),
+        __offsets.begin(),
+        __all_local_sizes[__idx].size(),
+        *__env_it);
+
+      if (!__N.has_value())
+      {
+        ::cuda::std::uint64_t __last_offset = 0;
+        ::cuda::std::uint64_t __last_size   = 0;
+
+        // The desired-offset scan already encodes the global extent:
+        //
+        // N = offset[p - 1] + size[p - 1].
+        ::cuda::copy_bytes(
+          __offsets.stream(),
+          __offsets.subspan(__comm_size - 1, 1),
+          ::cuda::std::span{&__last_offset, ::cuda::std::size_t{1}},
+          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
+                                     ::cuda::host_memory_location,
+                                     ::cuda::source_access_order::stream});
+        ::cuda::copy_bytes(
+          __all_local_sizes[__idx].stream(),
+          __all_local_sizes[__idx].subspan(__comm_size - 1, 1),
+          ::cuda::std::span{&__last_size, ::cuda::std::size_t{1}},
+          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
+                                     ::cuda::host_memory_location,
+                                     ::cuda::source_access_order::stream});
+
+        __all_local_sizes[__idx].stream().sync();
+        __N = __last_offset + __last_size;
+      }
     }
   }
 
-  return __local_setup_result_type{::cuda::std::move(__all_local_offsets), __N, __comm_size};
+  _CCCL_ASSERT(__N.has_value(),
+               "If we are here and didn't compute N then it means we had no local items, "
+               "but we should have exited far earlier");
+  return __local_setup_result_type{::cuda::std::move(__all_local_offsets), *__N, __comm_size};
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT

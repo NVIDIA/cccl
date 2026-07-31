@@ -48,22 +48,47 @@ struct _Bracket
   ::cuda::std::optional<_Tp> __key; // < the key, if found. If nullopt means either +/- inf
 };
 
+//! @brief One splitter's `[L, U]` rank bracket pair.
+//!
+//! `__L` and `__U` bracket the splitter's ideal rank from below and from above. The pair of
+//! keys `(__L.__key, __U.__key)` is also that splitter's sampling interval for the following
+//! round, so the histogramming phase rewrites these in place rather than projecting the keys
+//! out into a separate interval array.
+template <class _Tp>
+struct _Splitter
+{
+  _Bracket<_Tp> __L;
+  _Bracket<_Tp> __U;
+};
+
 template <class _Tp, template <class> class _Buffer>
 struct _PerCommSplitters
 {
-  _Buffer<_Bracket<_Tp>> __Ls;
-  _Buffer<_Bracket<_Tp>> __Us;
+  _Buffer<_Splitter<_Tp>> __I_j;
   _Buffer<_Tp> __probes;
 };
 
 template <class _Tp, template <class> class _Buffer>
 struct _PerCommSamplingScratch
 {
-  _Buffer<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>> __I_j;
   _Buffer<_Tp> __samples;
+  // A size-1 (or __comm_size if on root) array that holds the actual sizes of __samples as it
+  // is filled on the device, so __samples.size() is not necessarily accuracte.
   _Buffer<::cuda::std::size_t> __samples_size;
-  ::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible> __probe_counts;
-  ::cuda::std::size_t __sample_sendcount{};
+  // Slot 0 is the probe count, slot 1 is the sample sendcount. They share one allocation but
+  // cannot share one slot: round j's sendcount is read by round j+1, after round j writes the
+  // probe count.
+  ::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible> __counts;
+
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::uint64_t* __probe_count_ptr() noexcept
+  {
+    return __counts.data();
+  }
+
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::uint64_t* __sample_sendcount_ptr() noexcept
+  {
+    return __counts.data() + 1;
+  }
 };
 
 template <template <class> class _Buffer>
@@ -130,7 +155,8 @@ private:
     ::cuda::std::int32_t __j,
     double __sampling_probability,
     const _BinaryOp& __cmp,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
+    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
+    const ::std::vector<__per_comm_histogramming_result_type>& __local_hist_results);
 
   template <class _CommRange, class _EnvRange>
   [[nodiscard]]
@@ -177,8 +203,7 @@ private:
     _CommRange&& __comms,
     _EnvRange&& __envs,
     ::cuda::std::uint64_t __N,
-    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
+    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
   // ------------------------------------------------------------------------------------------
 

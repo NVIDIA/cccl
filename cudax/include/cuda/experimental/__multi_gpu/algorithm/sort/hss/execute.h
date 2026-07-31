@@ -79,12 +79,11 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
 #endif
 
   // First and foremost, kick off the local sorts...
-  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
-
   {
-    auto __comm_it  = ::cuda::std::ranges::begin(__comms);
-    auto __env_it   = ::cuda::std::ranges::begin(__envs);
-    auto __input_it = ::cuda::std::ranges::begin(__local_inputs);
+    const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+    auto __comm_it                = ::cuda::std::ranges::begin(__comms);
+    auto __env_it                 = ::cuda::std::ranges::begin(__envs);
+    auto __input_it               = ::cuda::std::ranges::begin(__local_inputs);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
          (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
@@ -109,6 +108,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
 
   const auto __setup = __local_setup(__comms, __envs, __local_inputs, __comm_size);
 
+  // 0 global elements, or all global elements are on the local rank
   if (__setup.__N == 0)
   {
     return;

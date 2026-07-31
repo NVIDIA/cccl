@@ -59,8 +59,7 @@ namespace cuda::experimental::__detail::__hss_sort
 template <class _Tp>
 struct __bucket_to_splitter_key_fn
 {
-  const _Bracket<_Tp>* const __Ls;
-  const _Bracket<_Tp>* const __Us;
+  const _Splitter<_Tp>* const __I_j;
   const _Tp* const __probes;
   const ::cuda::std::uint64_t __num_probes;
   const ::cuda::std::uint64_t* const __hist;
@@ -77,9 +76,9 @@ struct __bucket_to_splitter_key_fn
   {
     if (__use_lower(__i))
     {
-      return __Ls[__i].__key.value_or(__probes[0]);
+      return __I_j[__i].__L.__key.value_or(__probes[0]);
     }
-    return __Us[__i].__key.value_or(__probes[__num_probes - 1]);
+    return __I_j[__i].__U.__key.value_or(__probes[__num_probes - 1]);
   }
 
   // Returns the global rank of a bucket index
@@ -89,18 +88,21 @@ struct __bucket_to_splitter_key_fn
     // A keyless bracket means the splitter realizes to a probe extremum, whose rank is a histogram
     // bucket rather than the bracket's 0 / N placeholder. Reporting the placeholder here hangs the
     // exchange's all_to_all_v.
+    const auto& [__L_i, __U_i] = __I_j[__bucket];
+
     if (__use_lower(__bucket))
     {
-      return __Ls[__bucket].__key.has_value() ? __Ls[__bucket].__rank : __hist[0];
+      return __L_i.__key.has_value() ? __L_i.__rank : __hist[0];
     }
-    return __Us[__bucket].__key.has_value() ? __Us[__bucket].__rank : (__ideal_rank.__N - __hist[__num_probes]);
+    return __U_i.__key.has_value() ? __U_i.__rank : (__ideal_rank.__N - __hist[__num_probes]);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr bool __use_lower(const ::cuda::std::uint64_t __i) const noexcept
   {
-    const auto __target_rank = __ideal_rank(__i);
+    const auto __target_rank   = __ideal_rank(__i);
+    const auto& [__L_i, __U_i] = __I_j[__i];
 
-    return (__target_rank - __Ls[__i].__rank) <= (__Us[__i].__rank - __target_rank);
+    return (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
   }
 };
 
@@ -189,19 +191,18 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
          (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it)
     {
       const auto& __hist   = __hist_results[__idx].__hist;
-      const auto& __Ls     = __hist_results[__idx].__splitters.__Ls;
-      const auto& __Us     = __hist_results[__idx].__splitters.__Us;
+      const auto& __I_j    = __hist_results[__idx].__splitters.__I_j;
       const auto& __probes = __hist_results[__idx].__splitters.__probes;
 
       auto& __counts = __local_counts.emplace_back(
-        __Ls.stream(),
-        __Ls.memory_resource(),
+        __I_j.stream(),
+        __I_j.memory_resource(),
         2 * __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
       auto& __offsets = __local_current_offsets->emplace_back(
-        __Ls.stream(),
-        __Ls.memory_resource(),
+        __I_j.stream(),
+        __I_j.memory_resource(),
         __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
@@ -249,13 +250,12 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
            // This is doing double duty here. Not only do we use it to calculate the actual size
            // of each bin, but we also use the __rank() function to calculate the offsets.
            __bucket_to_splitter_key_fn<_Tp>{
-             __Ls.data(),
-             __Us.data(),
+             __I_j.data(),
              __probes.data(),
              static_cast<::cuda::std::uint64_t>(__probes.size()),
              __hist.data(),
              __ideal_rank_fn{__N, static_cast<::cuda::std::uint64_t>(__comm_size)}},
-           __Ls.size(),
+           __I_j.size(),
            __cmp}};
 
       const auto __send_counts = __send_span(__counts);
