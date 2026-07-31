@@ -123,6 +123,11 @@ template <bool IsEven>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
 should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter_size, int num_active_channels)
 {
+  // Single-channel limits are intentionally byte-derived: the B200 tuning
+  // characterized that path through the full opt-in shared-memory budget.
+  // Multi-channel paths use explicit per-channel caps in addition to the byte
+  // budget because their channel-interleaved launch shapes have distinct
+  // measured crossover points.
   if (policy.dynamic_smem_bytes <= 0 || num_bins <= 0 || counter_size <= 0 || num_active_channels <= 0)
   {
     return false;
@@ -383,16 +388,25 @@ struct policy_hub
     using AgentHistogramPolicyT =
       ::cuda::std::_If<use_sm100_multi_channel_policy, MultiChannelAgentHistogramPolicyT, SelectedAgentHistogramPolicyT>;
 
+    static constexpr bool has_dynamic_smem_tuning =
+      sizeof(CounterT) == 4 && is_primitive<SampleT>::value
+      && ((NumChannels == 1 && NumActiveChannels == 1
+           && (sizeof(SampleT) == 1 || sizeof(SampleT) == 4 || sizeof(SampleT) == 8))
+          || NumChannels >= 2);
+
     static constexpr int init_kernel_pdl_trigger_max_bins =
       NumChannels == 1 && NumActiveChannels == 1 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
           && (sizeof(SampleT) == 1 || sizeof(SampleT) == 2 || sizeof(SampleT) == 4 || sizeof(SampleT) == 8)
         ? 2048
         : 0;
-    static constexpr int dynamic_smem_bytes             = sm100_dynamic_smem_bytes;
-    static constexpr int dynamic_smem_range_max_bins    = sm100_dynamic_smem_range_max_bins;
-    static constexpr int dynamic_smem_even_2ch_max_bins = sm100_dynamic_smem_even_2ch_max_bins;
-    static constexpr int dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
-    static constexpr int dynamic_smem_even_4ch_max_bins = sm100_dynamic_smem_even_4ch_max_bins;
+    static constexpr int dynamic_smem_bytes          = has_dynamic_smem_tuning ? sm100_dynamic_smem_bytes : 0;
+    static constexpr int dynamic_smem_range_max_bins = has_dynamic_smem_tuning ? sm100_dynamic_smem_range_max_bins : 0;
+    static constexpr int dynamic_smem_even_2ch_max_bins =
+      has_dynamic_smem_tuning ? sm100_dynamic_smem_even_2ch_max_bins : 0;
+    static constexpr int dynamic_smem_even_3ch_max_bins =
+      has_dynamic_smem_tuning ? sm100_dynamic_smem_even_3ch_max_bins : 0;
+    static constexpr int dynamic_smem_even_4ch_max_bins =
+      has_dynamic_smem_tuning ? sm100_dynamic_smem_even_4ch_max_bins : 0;
     static constexpr int static_smem_threads_per_block =
       !IsEven && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
         ? (NumChannels >= 2
@@ -443,6 +457,14 @@ private:
     policy.dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
     policy.dynamic_smem_even_4ch_max_bins = sm100_dynamic_smem_even_4ch_max_bins;
     return policy;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool has_sm100_dynamic_smem_tuning() const
+  {
+    return sample_is_primitive && counter_size == 4
+        && ((num_channels == 1 && num_active_channels == 1
+             && (sample_size == 1 || sample_size == 4 || sample_size == 8))
+            || num_channels >= 2);
   }
 
 public:
@@ -507,9 +529,8 @@ public:
         return sm100_policy(HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048});
       }
 
-      // Even when no SM100 launch-shape specialization applies, retain the
-      // architecture's dynamic shared-memory budget on the inherited fallback.
-      return sm100_policy(HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0});
+      auto fallback = HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0};
+      return has_sm100_dynamic_smem_tuning() ? sm100_policy(fallback) : fallback;
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})

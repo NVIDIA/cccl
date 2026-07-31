@@ -785,8 +785,9 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
 
 //! Histogram sweep kernel with the privatized histogram in dynamic shared memory.
 //!
-//! The host supplies `num_privatized_bins * sizeof(CounterT)` bytes of dynamic
-//! shared memory. Keeping the runtime-sized histogram outside `TempStorage`
+//! The host supplies `sum(num_privatized_bins[ch]) * sizeof(CounterT)` bytes of
+//! dynamic shared memory, which the agent partitions per channel. Keeping the
+//! runtime-sized histogram outside `TempStorage`
 //! allows one kernel instantiation to cover larger histograms without a ladder
 //! of statically sized kernels.
 template <typename PolicySelector,
