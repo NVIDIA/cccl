@@ -1645,7 +1645,6 @@ struct mixed_counter_histogram_tuning
     cub::HistogramPolicy policy{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
     policy.dynamic_smem_bytes             = 228352;
     policy.dynamic_smem_even_4ch_max_bins = 8192;
-    policy.range_interpolation_min_bins   = 512;
     return policy;
   }
 };
@@ -1822,8 +1821,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     1024,
     4096,
     8192,
-    16384,
-    512};
+    16384};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -1844,8 +1842,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     .dynamic_smem_range_max_bins      = 1024,
     .dynamic_smem_even_2ch_max_bins   = 4096,
     .dynamic_smem_even_3ch_max_bins   = 8192,
-    .dynamic_smem_even_4ch_max_bins   = 16384,
-    .range_interpolation_min_bins     = 512};
+    .dynamic_smem_even_4ch_max_bins   = 16384};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1867,8 +1864,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
        ", .dynamic_smem_bytes = 12345, .static_smem_threads_per_block = 96"
        ", .static_smem_items_per_thread = 3, .static_smem_min_blocks_per_sm = 2"
        ", .dynamic_smem_range_max_bins = 1024, .dynamic_smem_even_2ch_max_bins = 4096"
-       ", .dynamic_smem_even_3ch_max_bins = 8192, .dynamic_smem_even_4ch_max_bins = 16384"
-       ", .range_interpolation_min_bins = 512 }");
+       ", .dynamic_smem_even_3ch_max_bins = 8192, .dynamic_smem_even_4ch_max_bins = 16384 }");
 }
 
 C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget", "[histogram][device]")
@@ -1888,7 +1884,6 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
   STATIC_REQUIRE(sm100_policy.dynamic_smem_even_2ch_max_bins == 28544);
   STATIC_REQUIRE(sm100_policy.dynamic_smem_even_3ch_max_bins == 19029);
   STATIC_REQUIRE(sm100_policy.dynamic_smem_even_4ch_max_bins == 8192);
-  STATIC_REQUIRE(sm100_policy.range_interpolation_min_bins == 512);
 
   STATIC_REQUIRE(cub::detail::histogram::should_use_dynamic_smem<false>(sm100_policy, 57088, 4, 1));
   STATIC_REQUIRE_FALSE(cub::detail::histogram::should_use_dynamic_smem<false>(sm100_policy, 57089, 4, 1));

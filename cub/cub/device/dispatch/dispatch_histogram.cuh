@@ -69,9 +69,6 @@ struct local_counter<PolicySelector, OutputCounterT, ::cuda::std::void_t<typenam
 template <typename PolicySelector, typename OutputCounterT>
 using local_counter_t = typename local_counter<PolicySelector, OutputCounterT>::type;
 
-// Maximum number of bins per channel for which we will use a privatized smem strategy
-static constexpr int max_privatized_smem_bins = 256;
-
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           typename SampleIteratorT,
@@ -194,38 +191,6 @@ struct DeviceHistogramKernelSource
   }
 };
 
-template <bool IsEven>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
-should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter_size, int num_active_channels)
-{
-  if (policy.dynamic_smem_bytes <= 0 || num_bins <= 0 || counter_size <= 0 || num_active_channels <= 0)
-  {
-    return false;
-  }
-
-  const bool prefer_dynamic_smem = counter_size > int{sizeof(unsigned int)} || num_bins > max_privatized_smem_bins;
-  const size_t required_bytes    = size_t(num_bins) * size_t(num_active_channels) * size_t(counter_size);
-
-  int max_bins = num_bins;
-  if (num_active_channels > 1)
-  {
-    if constexpr (IsEven)
-    {
-      max_bins = num_active_channels == 2 ? policy.dynamic_smem_even_2ch_max_bins
-               : num_active_channels == 3
-                 ? policy.dynamic_smem_even_3ch_max_bins
-                 : policy.dynamic_smem_even_4ch_max_bins;
-    }
-    else
-    {
-      max_bins = policy.dynamic_smem_range_max_bins;
-    }
-  }
-
-  return prefer_dynamic_smem && max_bins > 0 && num_bins <= max_bins
-      && required_bytes <= static_cast<size_t>(policy.dynamic_smem_bytes);
-}
-
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           int PRIVATIZED_SMEM_BINS,
@@ -314,7 +279,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   constexpr bool use_static_smem = PRIVATIZED_SMEM_BINS > 0 && !UseDynamicSmem;
   const int threads_per_block = use_static_smem ? active_policy.static_smem_threads() : active_policy.threads_per_block;
-  const int pixels_per_thread = use_static_smem ? active_policy.static_smem_items() : active_policy.pixels_per_thread;
+  const int items_per_thread  = use_static_smem ? active_policy.static_smem_items() : active_policy.pixels_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (UseDynamicSmem)
@@ -359,7 +324,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  int pixels_per_tile = threads_per_block * pixels_per_thread;
+  int pixels_per_tile = threads_per_block * items_per_thread;
   int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
   int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   int blocks_per_col =
@@ -459,7 +424,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           threads_per_block,
           dynamic_smem_bytes,
           (long long) stream,
-          pixels_per_thread,
+          items_per_thread,
           histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
@@ -944,19 +909,6 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_4ch_max_bins(long
   return 0;
 }
 
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_range_interpolation_min_bins(int)
-  -> decltype(ActivePolicy::range_interpolation_min_bins)
-{
-  return ActivePolicy::range_interpolation_min_bins;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_range_interpolation_min_bins(long)
-{
-  return 0;
-}
-
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
@@ -979,8 +931,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     convert_dynamic_smem_range_max_bins<ActivePolicy>(0),
     convert_dynamic_smem_even_2ch_max_bins<ActivePolicy>(0),
     convert_dynamic_smem_even_3ch_max_bins<ActivePolicy>(0),
-    convert_dynamic_smem_even_4ch_max_bins<ActivePolicy>(0),
-    convert_range_interpolation_min_bins<ActivePolicy>(0)};
+    convert_dynamic_smem_even_4ch_max_bins<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -1141,8 +1092,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
-        privatized_decode_op[channel].Init(
-          d_levels[channel], num_output_levels[channel], active_policy.range_interpolation_min_bins);
+        privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
       }
 
       return CubDebug(
