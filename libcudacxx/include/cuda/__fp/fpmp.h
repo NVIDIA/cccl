@@ -258,6 +258,25 @@ namespace cuda::experimental
 //! - Denormals, NaN, and Inf handling may differ from IEEE 754 strict standards, depending on accuracy level.
 //! - Performance depends on template parameters and underlying hardware.
 
+#if _CCCL_CUDA_COMPILATION()
+/*
+// The freestanding atomics defined at the end of this header are declared up here
+// so the class can befriend them. Both the inline implementation and the library
+// ABI take the target as a flat (hi*, lo*) pair, which means the atomics need the
+// addresses of the two components; those are private members.
+*/
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+class fpmp2;
+
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_DEVICE_API fpmp2<_FpType, _TypeAcc>
+atomicAdd(fpmp2<_FpType, _TypeAcc>* __address, const fpmp2<_FpType, _TypeAcc>& __val) noexcept;
+
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_DEVICE_API fpmp2<_FpType, _TypeAcc>
+atomicSub(fpmp2<_FpType, _TypeAcc>* __address, const fpmp2<_FpType, _TypeAcc>& __val) noexcept;
+#endif // _CCCL_CUDA_COMPILATION()
+
 // fpmp2 class template
 // _FpType: the component type, float (double-float) or double (double-double).
 //     Not defaulted: neither precision is the natural fallback for the other, so
@@ -936,6 +955,15 @@ public:
   }
 
 private:
+#if _CCCL_CUDA_COMPILATION()
+  // See the note on the forward declarations above: the atomics pass the addresses
+  // of __mp2_hi_ and __mp2_lo_ to the flat (hi*, lo*) interface.
+  template <typename _Up, fpmp2_accuracy _Acc>
+  friend _CCCL_DEVICE_API fpmp2<_Up, _Acc> atomicAdd(fpmp2<_Up, _Acc>*, const fpmp2<_Up, _Acc>&) noexcept;
+  template <typename _Up, fpmp2_accuracy _Acc>
+  friend _CCCL_DEVICE_API fpmp2<_Up, _Acc> atomicSub(fpmp2<_Up, _Acc>*, const fpmp2<_Up, _Acc>&) noexcept;
+#endif // _CCCL_CUDA_COMPILATION()
+
   // Wider-than-FpType splits, used by the delegating constructors above. Plain casts
   // during constant evaluation, the arithmetic primitive at run time.
   [[nodiscard]] _CCCL_API static constexpr fpmp2 __split_double(double __d) noexcept
@@ -1405,26 +1433,26 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 atomicAdd(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val) noexcept
 {
-  fpmp2<_FpType, _TypeAcc> result;
-  // Class layout: alignas(2*alignof(FpType)) with __mp2_hi_ at offset 0, __mp2_lo_ at offset sizeof(FpType)
-  _FpType* addr_hi  = reinterpret_cast<_FpType*>(address);
-  _FpType* addr_lo  = addr_hi + 1;
-  _FpType* __res_hi = reinterpret_cast<_FpType*>(&result);
-  _FpType* __res_lo = __res_hi + 1;
+  // The (hi*, lo*) pair comes from the members' own addresses, and the old value is
+  // collected into locals and assembled on return. The two components are distinct
+  // members rather than an array, so reaching the second one by incrementing a
+  // pointer to the first is not valid, however the class happens to be laid out.
+  _FpType __old_hi{};
+  _FpType __old_lo{};
 #  if defined(_CCCL_FPMP_USE_LIB)
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    __fp32mp2_atomicAdd(addr_hi, addr_lo, val.hi(), val.lo(), __res_hi, __res_lo);
+    __fp32mp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
   else if constexpr (__fpmp2_is_fp64_v<_FpType>)
   {
-    __fp64mp2_atomicAdd(addr_hi, addr_lo, val.hi(), val.lo(), __res_hi, __res_lo);
+    __fp64mp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
 #  else
-  __fpmp2_atomicAdd(addr_hi, addr_lo, val.hi(), val.lo(), __res_hi, __res_lo);
+  __fpmp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
 #  endif
-  return result;
+  return fpmp2<_FpType, _TypeAcc>{__old_hi, __old_lo};
 }
 
 // atomicSub: Atomic subtraction for fpmp2
@@ -1433,26 +1461,23 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
 atomicSub(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val) noexcept
 {
-  fpmp2<_FpType, _TypeAcc> result;
-  // Class layout: alignas(2*alignof(FpType)) with __mp2_hi_ at offset 0, __mp2_lo_ at offset sizeof(FpType)
-  _FpType* addr_hi  = reinterpret_cast<_FpType*>(address);
-  _FpType* addr_lo  = addr_hi + 1;
-  _FpType* __res_hi = reinterpret_cast<_FpType*>(&result);
-  _FpType* __res_lo = __res_hi + 1;
+  // Same shape as atomicAdd above.
+  _FpType __old_hi{};
+  _FpType __old_lo{};
 #  if defined(_CCCL_FPMP_USE_LIB)
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    __fp32mp2_atomicSub(addr_hi, addr_lo, val.hi(), val.lo(), __res_hi, __res_lo);
+    __fp32mp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
   else if constexpr (__fpmp2_is_fp64_v<_FpType>)
   {
-    __fp64mp2_atomicSub(addr_hi, addr_lo, val.hi(), val.lo(), __res_hi, __res_lo);
+    __fp64mp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
 #  else
-  __fpmp2_atomicSub(addr_hi, addr_lo, val.hi(), val.lo(), __res_hi, __res_lo);
+  __fpmp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
 #  endif
-  return result;
+  return fpmp2<_FpType, _TypeAcc>{__old_hi, __old_lo};
 }
 
 #endif // _CCCL_CUDA_COMPILATION()
