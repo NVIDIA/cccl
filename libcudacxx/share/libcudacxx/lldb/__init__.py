@@ -12,12 +12,13 @@ from __future__ import annotations
 import buffer
 import complex
 import memory_resource
+import shared_resource
 import std_array
 
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer, std_array, complex)
+_FORMATTERS = (memory_resource, buffer, std_array, complex, shared_resource)
 InternalDict = dict[str, object]
 
 
