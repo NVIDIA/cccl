@@ -20,8 +20,11 @@ _CUDA_STREAM_CAPTURE_STATUS_NONE = 0
 _CUDA_STREAM_CAPTURE_STATUS_ACTIVE = 1
 _CUDA_STREAM_IS_CAPTURING = "((int (*)(cudaStream_t, int*))cudaStreamIsCapturing)"
 _CU_STREAM_GET_ID = "((int (*)(void*, unsigned long long*))cuStreamGetId)"
+_SUMMARY_UNIQUE_ID_CHILD = "__cccl_summary_unique_id"
 _UINT32_BITS = 32
 _UINT32_MASK = (1 << _UINT32_BITS) - 1
+_UINT64_BITS = 64
+_UINT64_MASK = (1 << _UINT64_BITS) - 1
 InternalDict = dict[str, object]
 
 
@@ -30,6 +33,11 @@ class StreamInfo(NamedTuple):
     priority: int | None
     is_capturing: bool | None
     flags: int | None
+
+
+class StreamSnapshot(NamedTuple):
+    unique_id: int | None
+    info: StreamInfo
 
 
 def is_cuda_stream(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
@@ -123,6 +131,23 @@ def _query_stream_property(
             value, handle, function, output_type, signed=signed
         )
 
+    if output_type == "unsigned long long":
+        result = _evaluate(
+            value,
+            "(unsigned __int128)([](cudaStream_t stream) { "
+            "unsigned long long value{}; "
+            f"int status = (int){function}(stream, &value); "
+            "return ((unsigned __int128)(unsigned int)status << 64) "
+            "| value; "
+            f"}})((cudaStream_t){handle:#x})",
+        )
+        if result.IsValid() and not result.GetError().Fail():
+            raw_value = result.GetValue()
+            if raw_value is not None:
+                packed = int(raw_value, 0)
+                if packed >> _UINT64_BITS == 0:
+                    return packed & _UINT64_MASK
+
     output = _evaluate(value, f"({output_type}*)malloc(sizeof({output_type}))")
     if not output.IsValid() or output.GetError().Fail():
         return None
@@ -215,8 +240,6 @@ def _stream_info(value: lldb.SBValue, handle: int) -> StreamInfo:
         if capture_status is not None
         else None
     )
-    # Invoking the metadata query paths below as inferior calls invalidates
-    # global graph capture in GDB and LLDB. Preserve it until capture ends.
     if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
         return StreamInfo(None, None, is_capturing, None)
 
@@ -232,9 +255,98 @@ def _stream_info(value: lldb.SBValue, handle: int) -> StreamInfo:
         ),
         is_capturing,
         _query_stream_property(
-            value, handle, "cudaStreamGetFlags", "unsigned int", signed=False
+            value,
+            handle,
+            "cudaStreamGetFlags",
+            "unsigned int",
+            signed=False,
         ),
     )
+
+
+def _query_stream_snapshot(value: lldb.SBValue, handle: int) -> StreamSnapshot | None:
+    # A wide scalar carries every value and validity bit without target
+    # allocations. The caller retains the regular query path as a fallback for
+    # expression parsers that do not support _BitInt.
+    result = _evaluate(
+        value,
+        "(unsigned _BitInt(256))(([](cudaStream_t stream) { "
+        "using U256 = unsigned _BitInt(256); "
+        "int capture_status{}; "
+        f"if ((int){_CUDA_STREAM_IS_CAPTURING}(stream, &capture_status) != 0) "
+        "return (U256)0; "
+        "U256 result = (U256)1 << 160; "
+        "if (capture_status == 1) result |= (U256)1 << 161; "
+        "if (capture_status != 0) return result | ((U256)1 << 162); "
+        "unsigned long long unique_id{}; "
+        f"if ((int){_CU_STREAM_GET_ID}((void*)stream, &unique_id) == 0) "
+        "result |= ((U256)1 << 163) | unique_id; "
+        "int device{}; "
+        "void* context{}; "
+        "int status = "
+        "((int (*)(void*, void**))cuStreamGetCtx)((void*)stream, &context); "
+        "if (status == 0) { "
+        "status = ((int (*)(void*))cuCtxPushCurrent)(context); "
+        "if (status == 0) { "
+        "status = ((int (*)(int*))cuCtxGetDevice)(&device); "
+        "void* popped{}; "
+        "(void)((int (*)(void**))cuCtxPopCurrent)(&popped); "
+        "} "
+        "} "
+        "if (status != 0) status = (int)cudaStreamGetDevice(stream, &device); "
+        "if (status == 0) "
+        "result |= ((U256)1 << 164) | ((U256)(unsigned int)device << 64); "
+        "int priority{}; "
+        "status = (int)cudaStreamGetPriority(stream, &priority); "
+        "if (status == 0) "
+        "result |= ((U256)1 << 165) | ((U256)(unsigned int)priority << 96); "
+        "unsigned int flags{}; "
+        "status = (int)cudaStreamGetFlags(stream, &flags); "
+        "if (status == 0) "
+        "result |= ((U256)1 << 166) | ((U256)flags << 128); "
+        "return result; "
+        f"}})((cudaStream_t){handle:#x}))",
+    )
+    if not result.IsValid() or result.GetError().Fail():
+        return None
+    raw_value = result.GetValue()
+    if raw_value is None:
+        return None
+    packed = int(raw_value, 0)
+
+    if not packed & (1 << 160):
+        return StreamSnapshot(None, StreamInfo(None, None, None, None))
+    is_capturing = bool(packed & (1 << 161))
+    if packed & (1 << 162):
+        return StreamSnapshot(None, StreamInfo(None, None, is_capturing, None))
+
+    def signed32(raw: int) -> int:
+        return raw - (1 << _UINT32_BITS) if raw & (1 << 31) else raw
+
+    unique_id = (
+        packed & _UINT64_MASK
+        if packed & (1 << 163)
+        else _query_stream_property(
+            value,
+            handle,
+            "cudaStreamGetId",
+            "unsigned long long",
+            signed=False,
+        )
+    )
+    device = signed32((packed >> 64) & _UINT32_MASK) if packed & (1 << 164) else None
+    priority = signed32((packed >> 96) & _UINT32_MASK) if packed & (1 << 165) else None
+    flags = (packed >> 128) & _UINT32_MASK if packed & (1 << 166) else None
+    return StreamSnapshot(unique_id, StreamInfo(device, priority, is_capturing, flags))
+
+
+def _summary_unique_id(value: lldb.SBValue, handle: int) -> int | None:
+    capture_status = _query_stream_property(
+        value, handle, _CUDA_STREAM_IS_CAPTURING, "int", signed=True
+    )
+    if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
+        return None
+    return _unique_id(value, handle)
 
 
 def stream_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
@@ -245,21 +357,17 @@ def stream_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | N
     byte_size = handle.GetType().GetByteSize()
     description = _handle_description(raw_handle, byte_size)
     invalid_handle = (1 << (byte_size * 8)) - 1
-    capture_status = (
-        None
-        if raw_handle == invalid_handle
-        else _query_stream_property(
-            value, raw_handle, _CUDA_STREAM_IS_CAPTURING, "int", signed=True
-        )
-    )
-    unique_id = (
-        None
-        if (
-            raw_handle == invalid_handle
-            or capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE
-        )
-        else _unique_id(value, raw_handle)
-    )
+    unique_id = None
+    if raw_handle != invalid_handle:
+        synthetic_value = value.GetSyntheticValue()
+        if synthetic_value.IsValid():
+            unique_id_child = synthetic_value.GetChildMemberWithName(
+                _SUMMARY_UNIQUE_ID_CHILD
+            )
+            if unique_id_child.IsValid() and not unique_id_child.GetError().Fail():
+                unique_id = unique_id_child.GetValueAsUnsigned(0)
+        else:
+            unique_id = _summary_unique_id(value, raw_handle)
     unique_id_description = str(unique_id) if unique_id is not None else "unavailable"
     return f"handle={description}, unique_id={unique_id_description}"
 
@@ -270,10 +378,20 @@ class StreamSyntheticProvider:
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
         self.value = value.GetNonSyntheticValue()
         self.children: list[tuple[str, int, str]] = []
-        self.update()
+        self.summary_unique_id: int | None = None
+        self.stop_id: int | None = None
+        self.initialized = False
 
     def update(self) -> bool:
+        process = self.value.GetProcess()
+        stop_id = process.GetStopID() if process.IsValid() else None
+        if self.initialized and stop_id == self.stop_id:
+            return True
+
         self.children = []
+        self.summary_unique_id = None
+        self.stop_id = stop_id
+        self.initialized = True
         handle = _stream_handle(self.value)
         if not handle.IsValid() or handle.GetError().Fail():
             return False
@@ -283,7 +401,14 @@ class StreamSyntheticProvider:
         if raw_handle == (1 << (byte_size * 8)) - 1:
             return True
 
-        info = _stream_info(self.value, raw_handle)
+        snapshot = _query_stream_snapshot(self.value, raw_handle)
+        if snapshot is None:
+            snapshot = StreamSnapshot(
+                _summary_unique_id(self.value, raw_handle),
+                _stream_info(self.value, raw_handle),
+            )
+        self.summary_unique_id = snapshot.unique_id
+        info = snapshot.info
         properties = (
             ("device", info.device, "int"),
             ("priority", info.priority, "int"),
@@ -295,7 +420,9 @@ class StreamSyntheticProvider:
             for name, property_value, property_type in properties
             if property_value is not None
         ]
-        return True
+        # The new children invalidate LLDB's cache. Subsequent update calls at
+        # this stop return True above so LLDB can reuse them.
+        return False
 
     def num_children(self) -> int:
         return len(self.children)
@@ -304,21 +431,48 @@ class StreamSyntheticProvider:
         return bool(self.children)
 
     def get_child_index(self, name: str) -> int:
+        if name == _SUMMARY_UNIQUE_ID_CHILD and self.summary_unique_id is not None:
+            return len(self.children)
         for index, (child_name, _, _) in enumerate(self.children):
             if child_name == name:
                 return index
         return -1
 
     def get_child_at_index(self, index: int) -> lldb.SBValue | None:
-        if index < 0 or index >= len(self.children):
+        if index < 0 or index > len(self.children):
             return None
-        name, property_value, property_type = self.children[index]
+        if index == len(self.children):
+            if self.summary_unique_id is None:
+                return None
+            name = _SUMMARY_UNIQUE_ID_CHILD
+            property_value = self.summary_unique_id
+            property_type = "unsigned long long"
+        else:
+            name, property_value, property_type = self.children[index]
+        child_type = self.value.GetTarget().FindFirstType(property_type)
+        if not child_type.IsValid():
+            return None
         expression_value = (
             int(property_value) if property_type == "bool" else property_value
         )
-        return self.value.CreateValueFromExpression(
-            name, f"({property_type}){expression_value}"
+        byte_order = self.value.GetTarget().GetByteOrder()
+        python_byte_order = "big" if byte_order == lldb.eByteOrderBig else "little"
+        raw_data = int(expression_value).to_bytes(
+            child_type.GetByteSize(),
+            byteorder=python_byte_order,
+            signed=property_type == "int",
         )
+        data = lldb.SBData()
+        error = lldb.SBError()
+        data.SetData(
+            error,
+            raw_data,
+            byte_order,
+            self.value.GetTarget().GetAddressByteSize(),
+        )
+        if error.Fail():
+            return None
+        return self.value.CreateValueFromData(name, data, child_type)
 
 
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
