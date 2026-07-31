@@ -36,6 +36,7 @@ check(cuda::std::basic_string_view<CharT> expected, test_format_string<CharT, Ar
       return false;
     }
   }
+#if !defined(TEST_FORMAT_LIMITED_ITERATOR_TESTING)
   {
     cuda::std::inplace_vector<CharT, 4096> out;
     cuda::std::format_to(cuda::std::__back_insert_iterator{out}, fmt, cuda::std::forward<Args>(args)...);
@@ -68,6 +69,7 @@ check(cuda::std::basic_string_view<CharT> expected, test_format_string<CharT, Ar
       return false;
     }
   }
+#endif // !TEST_FORMAT_LIMITED_ITERATOR_TESTING
   return true;
 }
 

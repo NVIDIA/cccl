@@ -202,6 +202,9 @@ struct cuda::std::formatter<parse_call_validator, CharT>
   {
     if (!parse_called)
     {
+#if _CCCL_HAS_EXCEPTIONS()
+      NV_IF_TARGET(NV_IS_HOST, ({ throw parse_call_validator::parse_function_not_called{}; }))
+#endif // _CCCL_HAS_EXCEPTIONS()
       assert(false);
     }
     return ctx.out();

@@ -103,6 +103,9 @@ using wformat_string = basic_format_string<wchar_t, type_identity_t<_Args>...>;
 template <class _OutIt>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT format_to_n_result;
 
+template <class _Tp, class _CharT = char>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter;
+
 enum class range_format
 {
   disabled,

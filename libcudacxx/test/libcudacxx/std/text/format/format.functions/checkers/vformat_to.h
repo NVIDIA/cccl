@@ -32,6 +32,7 @@ check(cuda::std::basic_string_view<CharT> expected, cuda::std::basic_string_view
       return false;
     }
   }
+#if !defined(TEST_FORMAT_LIMITED_ITERATOR_TESTING)
   {
     CharT out[4096];
     CharT* it = cuda::std::vformat_to(out, fmt, cuda::std::make_format_args<context_t<CharT>>(args...));
@@ -44,6 +45,7 @@ check(cuda::std::basic_string_view<CharT> expected, cuda::std::basic_string_view
       return false;
     }
   }
+#endif // !TEST_FORMAT_LIMITED_ITERATOR_TESTING)
   return true;
 }
 
