@@ -189,8 +189,7 @@ struct Transforms
     //! verifies an interpolated guess, checks one adjacent bracket, and finally
     //! falls back to `UpperBound` for arbitrary level distributions.
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
-    BinSelectImpl(_SampleT sample, int& bin, bool valid, BinSelectState& cache) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelectImpl(_SampleT sample, int& bin, bool valid, BinSelectState& cache) const
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
@@ -715,9 +714,8 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
-                                             : current_policy<PolicySelector>().threads_per_block),
-                  int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_min_blocks()
-                                             : (current_policy<PolicySelector>().threads_per_block >= 512 ? 2 : 0)))
+                                             : current_policy<PolicySelector>().sweep_threads_per_block),
+                  int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_min_blocks() : 0))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -735,8 +733,8 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   // Thread block type for compositing input tiles
-  static constexpr int sweep_threads = PrivatizedSmemBins > 0 ? hp.static_smem_threads() : hp.threads_per_block;
-  static constexpr int sweep_items   = PrivatizedSmemBins > 0 ? hp.static_smem_items() : hp.pixels_per_thread;
+  static constexpr int sweep_threads = PrivatizedSmemBins > 0 ? hp.static_smem_threads() : hp.sweep_threads_per_block;
+  static constexpr int sweep_items   = PrivatizedSmemBins > 0 ? hp.static_smem_items() : hp.sweep_items_per_thread;
   using AgentHistogramPolicyT        = agent_histogram_policy<
            sweep_threads,
            sweep_items,
@@ -802,7 +800,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDynamicSmemKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -820,8 +818,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   using AgentHistogramPolicyT = agent_histogram_policy<
-    hp.threads_per_block,
-    hp.pixels_per_thread,
+    hp.sweep_threads_per_block,
+    hp.sweep_items_per_thread,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,
@@ -971,7 +969,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -1016,8 +1014,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = agent_histogram_policy<
-    hp.threads_per_block,
-    hp.pixels_per_thread,
+    hp.sweep_threads_per_block,
+    hp.sweep_items_per_thread,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,

@@ -278,8 +278,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }();
 
   constexpr bool use_static_smem = PRIVATIZED_SMEM_BINS > 0 && !UseDynamicSmem;
-  const int threads_per_block = use_static_smem ? active_policy.static_smem_threads() : active_policy.threads_per_block;
-  const int items_per_thread  = use_static_smem ? active_policy.static_smem_items() : active_policy.pixels_per_thread;
+  const int threads_per_block =
+    use_static_smem ? active_policy.static_smem_threads() : active_policy.sweep_threads_per_block;
+  const int items_per_thread =
+    use_static_smem ? active_policy.static_smem_items() : active_policy.sweep_items_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (UseDynamicSmem)

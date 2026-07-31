@@ -1826,8 +1826,8 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::HistogramPolicy{
-    .threads_per_block                = 128,
-    .pixels_per_thread                = 7,
+    .sweep_threads_per_block          = 128,
+    .sweep_items_per_thread           = 7,
     .vec_size                         = 4,
     .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
     .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
@@ -1858,7 +1858,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   };
   REQUIRE(
     to_string(p1)
-    == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
+    == "HistogramPolicy { .sweep_threads_per_block = 128, .sweep_items_per_thread = 7, .vec_size = 4"
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
        ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
        ", .dynamic_smem_bytes = 12345, .static_smem_threads_per_block = 96"
