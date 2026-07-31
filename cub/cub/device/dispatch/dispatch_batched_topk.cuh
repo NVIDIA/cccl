@@ -626,8 +626,9 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   // One cluster per segment, its CTAs stacked in the grid's y-dimension so the x-extent stays `num_segments`: a
   // flattened x == num_segments * cluster_blocks would overrun the 2^31-1 grid-x limit for a multi-CTA cluster well
   // before `num_segments` reached its INT_MAX maximum (already <= INT_MAX by the entry check in `dispatch`;
-  // `cluster_blocks` is far below the y-dimension limit). The device reads the segment id and CTA rank from
-  // dimension-agnostic cluster SREGs (clusterid.x / cluster_ctarank), so this needs no agent change.
+  // `cluster_blocks` is far below the y-dimension limit). The device reads the segment id from clusterid.x (segments
+  // stay the x-extent) and the CTA rank from cluster_ctarank (linearized across the cluster's dims), so this needs no
+  // agent change.
   const dim3 grid_dim{static_cast<unsigned>(num_seg_val), static_cast<unsigned>(cluster_blocks), 1u};
   const dim3 cluster_dim{1u, static_cast<unsigned>(cluster_blocks), 1u};
 

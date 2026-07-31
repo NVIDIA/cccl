@@ -706,6 +706,66 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+// Disabled for now: even with empty segments the driver still has to schedule ~INT_MAX
+// clusters, so the launch takes minutes -- too slow for a routine test. Re-enable to validate the
+// maximum-batch launch geometry.
+#  if 0
+// Maximum-batch boundary: `num_segments == INT_MAX` through a multi-CTA cluster. A flattened grid.x ==
+// num_segments * cluster_blocks would overrun the 2^31-1 grid-x limit long before num_segments reached INT_MAX; the
+// launch instead keeps num_segments in grid.x and stacks the CTAs in grid.y, so this must dispatch successfully.
+// `cluster_tuning_selector<2, ..., single_block=0>` pins a 2-CTA cluster (width derived on the host from the static
+// bound, independent of the runtime size) so the multi-CTA geometry is reached. The runtime segments are empty
+// (deferred size 0): at INT_MAX clusters the only practical footprint is one where every cluster exits at its earliest
+// point -- an empty segment clamps k to 0 and returns before any cluster barrier or write. A positive static upper
+// bound keeps the batch off the empty-batch no-launch fast path. Per-segment computation is covered by the other
+// cluster tests; this only pins down that the launch geometry is valid at the maximum segment count.
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys handle the maximum number of segments through a multi-CTA cluster",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL)
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  static constexpr auto determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+  static constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+  constexpr auto direction          = cub::detail::topk::select::max;
+
+  const segment_index_t num_segments = cuda::std::numeric_limits<int>::max();
+
+  [[maybe_unused]] constexpr segment_size_t max_segment_size = 512; // msvc warns, only used in nttp
+  constexpr segment_size_t k                                 = 1;
+
+  CAPTURE(num_segments, max_segment_size);
+
+  // One shared dummy input/output buffer for the whole batch (a `constant_iterator` hands every segment the same
+  // pointer), so device memory stays O(1) rather than scaling with INT_MAX segments.
+  c2h::device_vector<key_t> keys_in_buffer(1, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(k, /*canary=*/-1.0f);
+  auto d_keys_in  = cuda::constant_iterator(thrust::raw_pointer_cast(keys_in_buffer.data()));
+  auto d_keys_out = cuda::constant_iterator(thrust::raw_pointer_cast(keys_out_buffer.data()));
+
+  // Uniform device-resident (deferred) size of 0, a single scalar (also O(1) in the batch size).
+  c2h::device_vector<segment_size_t> d_segment_size(1, segment_size_t{0});
+  auto d_segment_size_ptr = thrust::raw_pointer_cast(d_segment_size.data());
+
+  auto env =
+    make_cluster_tune_env<determinism, tie_break>(cluster_tuning_selector<2, 0, 0, cluster_test_chunk_bytes>{});
+  run_cluster_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::deferred{d_segment_size_ptr, cuda::args::bounds<segment_size_t{0}, max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
+    cuda::args::immediate{num_segments},
+    env);
+
+  // `run_cluster_topk_keys` already required cudaSuccess at every dispatch phase; empty segments select nothing, so the
+  // canary output must be untouched (the launch wrote nothing out of bounds).
+  const c2h::device_vector<key_t> untouched_output(k, -1.0f);
+  REQUIRE(untouched_output == keys_out_buffer);
+}
+#  endif // disabled maximum-batch (INT_MAX segments) launch-geometry test
+
 // Cluster-width cap (`cluster_cap_list`) plus a resident-slot cap force a tiny segment to overflow and stream: cap 1
 // streams inside one CTA (barrier-free), cap 2 across a fixed 2-CTA cluster (cross-CTA scan while streaming). The
 // resident capacity is `slots * max_chunk_items` (host-known), so 4 slots x 128 floats = 512 resident floats and the
