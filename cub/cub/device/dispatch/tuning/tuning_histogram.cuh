@@ -47,7 +47,6 @@ struct HistogramPolicy
   int dynamic_smem_even_2ch_max_bins = 0; //!< Two-channel EVEN cap per channel; 0 disables the dynamic path
   int dynamic_smem_even_3ch_max_bins = 0; //!< Three-channel EVEN cap per channel; 0 disables the dynamic path
   int dynamic_smem_even_4ch_max_bins = 0; //!< Four-channel EVEN cap per channel; 0 disables the dynamic path
-  int range_interpolation_min_bins   = 0; //!< Minimum RANGE bin count for interpolation; 0 disables interpolation
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
   {
@@ -79,8 +78,7 @@ struct HistogramPolicy
         && lhs.dynamic_smem_range_max_bins == rhs.dynamic_smem_range_max_bins
         && lhs.dynamic_smem_even_2ch_max_bins == rhs.dynamic_smem_even_2ch_max_bins
         && lhs.dynamic_smem_even_3ch_max_bins == rhs.dynamic_smem_even_3ch_max_bins
-        && lhs.dynamic_smem_even_4ch_max_bins == rhs.dynamic_smem_even_4ch_max_bins
-        && lhs.range_interpolation_min_bins == rhs.range_interpolation_min_bins;
+        && lhs.dynamic_smem_even_4ch_max_bins == rhs.dynamic_smem_even_4ch_max_bins;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -104,21 +102,54 @@ struct HistogramPolicy
         << ", .dynamic_smem_range_max_bins = " << p.dynamic_smem_range_max_bins
         << ", .dynamic_smem_even_2ch_max_bins = " << p.dynamic_smem_even_2ch_max_bins
         << ", .dynamic_smem_even_3ch_max_bins = " << p.dynamic_smem_even_3ch_max_bins
-        << ", .dynamic_smem_even_4ch_max_bins = " << p.dynamic_smem_even_4ch_max_bins
-        << ", .range_interpolation_min_bins = " << p.range_interpolation_min_bins << " }";
+        << ", .dynamic_smem_even_4ch_max_bins = " << p.dynamic_smem_even_4ch_max_bins << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
 namespace detail::histogram
 {
+// Maximum number of bins per channel for the compile-time-sized shared-memory tier.
+static constexpr int max_privatized_smem_bins = 256;
+
 // Leave 4096 bytes of the SM100 opt-in shared-memory limit available for static storage.
 static constexpr int sm100_dynamic_smem_bytes             = 232448 - 4096;
 static constexpr int sm100_dynamic_smem_range_max_bins    = 2048;
 static constexpr int sm100_dynamic_smem_even_2ch_max_bins = 28544;
 static constexpr int sm100_dynamic_smem_even_3ch_max_bins = 19029;
 static constexpr int sm100_dynamic_smem_even_4ch_max_bins = 8192;
-static constexpr int sm100_range_interpolation_min_bins   = 512;
+
+template <bool IsEven>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
+should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter_size, int num_active_channels)
+{
+  if (policy.dynamic_smem_bytes <= 0 || num_bins <= 0 || counter_size <= 0 || num_active_channels <= 0)
+  {
+    return false;
+  }
+
+  const bool prefer_dynamic_smem = counter_size > int{sizeof(unsigned int)} || num_bins > max_privatized_smem_bins;
+  const size_t required_bytes    = size_t(num_bins) * size_t(num_active_channels) * size_t(counter_size);
+
+  int max_bins = num_bins;
+  if (num_active_channels > 1)
+  {
+    if constexpr (IsEven)
+    {
+      max_bins = num_active_channels == 2 ? policy.dynamic_smem_even_2ch_max_bins
+               : num_active_channels == 3
+                 ? policy.dynamic_smem_even_3ch_max_bins
+                 : policy.dynamic_smem_even_4ch_max_bins;
+    }
+    else
+    {
+      max_bins = policy.dynamic_smem_range_max_bins;
+    }
+  }
+
+  return prefer_dynamic_smem && max_bins > 0 && num_bins <= max_bins
+      && required_bytes <= static_cast<size_t>(policy.dynamic_smem_bytes);
+}
 
 // TODO(bgruber): drop in CCCL 4.0
 enum class primitive_sample
@@ -190,8 +221,8 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-  static constexpr bool rle_compress      = false;
-  static constexpr bool use_work_stealing = false;
+  static constexpr bool rle_compress  = false;
+  static constexpr bool work_stealing = false;
 };
 
 template <class SampleT>
@@ -205,8 +236,8 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-  static constexpr bool rle_compress      = true;
-  static constexpr bool use_work_stealing = false;
+  static constexpr bool rle_compress  = true;
+  static constexpr bool work_stealing = false;
 };
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -227,7 +258,7 @@ struct sm100_tuning<true, SampleT, 1, 1, counter_size::_4, primitive_sample::yes
   static constexpr int items                                     = 12;
   static constexpr int threads                                   = 928;
   static constexpr bool rle_compress                             = false;
-  static constexpr bool use_work_stealing                        = false;
+  static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_CA;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
@@ -242,7 +273,7 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr int items                                     = 12;
   static constexpr int threads                                   = 448;
   static constexpr bool rle_compress                             = false;
-  static constexpr bool use_work_stealing                        = false;
+  static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
@@ -255,7 +286,7 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
   static constexpr int items                                     = 12;
   static constexpr int threads                                   = 768;
   static constexpr bool rle_compress                             = true;
-  static constexpr bool use_work_stealing                        = false;
+  static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
@@ -268,7 +299,7 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
   static constexpr int items                                     = 6;
   static constexpr int threads                                   = 768;
   static constexpr bool rle_compress                             = true;
-  static constexpr bool use_work_stealing                        = false;
+  static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
@@ -309,7 +340,7 @@ struct policy_hub
                                 Tuning::load_modifier,
                                 Tuning::rle_compress,
                                 Tuning::mem_preference,
-                                Tuning::use_work_stealing>;
+                                Tuning::work_stealing>;
 
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
@@ -332,7 +363,7 @@ struct policy_hub
       Tuning::load_modifier,
       Tuning::rle_compress,
       Tuning::mem_preference,
-      Tuning::use_work_stealing,
+      Tuning::work_stealing,
       Tuning::vec_size>;
 
     template <typename Tuning>
@@ -362,7 +393,6 @@ struct policy_hub
     static constexpr int dynamic_smem_even_2ch_max_bins = sm100_dynamic_smem_even_2ch_max_bins;
     static constexpr int dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
     static constexpr int dynamic_smem_even_4ch_max_bins = sm100_dynamic_smem_even_4ch_max_bins;
-    static constexpr int range_interpolation_min_bins   = sm100_range_interpolation_min_bins;
     static constexpr int static_smem_threads_per_block =
       !IsEven && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
         ? (NumChannels >= 2
@@ -412,7 +442,6 @@ private:
     policy.dynamic_smem_even_2ch_max_bins = sm100_dynamic_smem_even_2ch_max_bins;
     policy.dynamic_smem_even_3ch_max_bins = sm100_dynamic_smem_even_3ch_max_bins;
     policy.dynamic_smem_even_4ch_max_bins = sm100_dynamic_smem_even_4ch_max_bins;
-    policy.range_interpolation_min_bins   = sm100_range_interpolation_min_bins;
     return policy;
   }
 
