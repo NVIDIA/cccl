@@ -28,8 +28,8 @@ CUB_NAMESPACE_BEGIN
 //! The tuning policy for all algorithms in @ref DeviceHistogram.
 struct HistogramPolicy
 {
-  int threads_per_block; //!< Number of threads in a CUDA block
-  int pixels_per_thread; //!< Number of pixels processed per thread
+  int sweep_threads_per_block; //!< Dynamic shared-memory and global-memory sweep threads
+  int sweep_items_per_thread; //!< Dynamic shared-memory and global-memory sweep items per thread
   int vec_size; //!< Vectorization size for loading samples
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory
@@ -40,9 +40,9 @@ struct HistogramPolicy
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
   int dynamic_smem_bytes             = 0; //!< Tuned byte budget for a runtime-sized privatized histogram; 0 disables it
-  int static_smem_threads_per_block  = 0; //!< Static shared-memory tier threads; 0 inherits threads_per_block
-  int static_smem_items_per_thread   = 0; //!< Static shared-memory tier items; 0 inherits pixels_per_thread
-  int static_smem_min_blocks_per_sm  = 0; //!< Static shared-memory launch bound; 0 derives it from the block size
+  int static_smem_threads_per_block  = 0; //!< Static shared-memory tier threads; 0 inherits the dynamic tier
+  int static_smem_items_per_thread   = 0; //!< Static shared-memory tier items; 0 inherits the dynamic tier
+  int static_smem_min_blocks_per_sm  = 0; //!< Static shared-memory minimum blocks per SM; 0 leaves it unspecified
   int dynamic_smem_range_max_bins    = 0; //!< Multi-channel RANGE cap per channel; 0 disables the dynamic path
   int dynamic_smem_even_2ch_max_bins = 0; //!< Two-channel EVEN cap per channel; 0 disables the dynamic path
   int dynamic_smem_even_3ch_max_bins = 0; //!< Three-channel EVEN cap per channel; 0 disables the dynamic path
@@ -50,26 +50,27 @@ struct HistogramPolicy
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
   {
-    return static_smem_threads_per_block != 0 ? static_smem_threads_per_block : threads_per_block;
+    return static_smem_threads_per_block != 0 ? static_smem_threads_per_block : sweep_threads_per_block;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_items() const
   {
-    return static_smem_items_per_thread != 0 ? static_smem_items_per_thread : pixels_per_thread;
+    return static_smem_items_per_thread != 0 ? static_smem_items_per_thread : sweep_items_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_min_blocks() const
   {
-    return static_smem_min_blocks_per_sm != 0 ? static_smem_min_blocks_per_sm : (static_smem_threads() >= 512 ? 2 : 0);
+    return static_smem_min_blocks_per_sm;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
-        && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
-        && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
+    return lhs.sweep_threads_per_block == rhs.sweep_threads_per_block
+        && lhs.sweep_items_per_thread == rhs.sweep_items_per_thread && lhs.vec_size == rhs.vec_size
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.rle_compress == rhs.rle_compress && lhs.mem_preference == rhs.mem_preference
+        && lhs.use_work_stealing == rhs.use_work_stealing
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.dynamic_smem_bytes == rhs.dynamic_smem_bytes
         && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
@@ -91,12 +92,13 @@ struct HistogramPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
   {
     return os
-        << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
-        << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
-        << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
-        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = "
-        << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
+        << "HistogramPolicy { .sweep_threads_per_block = " << p.sweep_threads_per_block
+        << ", .sweep_items_per_thread = " << p.sweep_items_per_thread << ", .vec_size = " << p.vec_size
+        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference
+        << ", .use_work_stealing = " << p.use_work_stealing << ", .init_kernel_pdl_trigger_max_bins = "
+        << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = " << p.dynamic_smem_bytes
+        << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
         << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread
         << ", .static_smem_min_blocks_per_sm = " << p.static_smem_min_blocks_per_sm
         << ", .dynamic_smem_range_max_bins = " << p.dynamic_smem_range_max_bins
