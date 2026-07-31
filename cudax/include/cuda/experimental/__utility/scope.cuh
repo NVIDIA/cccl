@@ -126,7 +126,7 @@ private:
     __other.release();
   }
 
-  _Fn __fn_;
+  _CCCL_NO_UNIQUE_ADDRESS _Fn __fn_;
   bool __active_ = true;
 };
 
@@ -213,7 +213,7 @@ private:
     __other.release();
   }
 
-  _Fn __fn_;
+  _CCCL_NO_UNIQUE_ADDRESS _Fn __fn_;
   const int __uncaught_;
   bool __active_ = true;
 };
@@ -295,14 +295,13 @@ private:
     __other.release();
   }
 
-  _Fn __fn_;
+  _CCCL_NO_UNIQUE_ADDRESS _Fn __fn_;
   const int __uncaught_;
   bool __active_ = true;
 };
 
 template <class _Fn>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES scope_success(_Fn) -> scope_success<_Fn>;
-
 #endif // _CCCL_HOSTED()
 } // namespace cuda::experimental
 
