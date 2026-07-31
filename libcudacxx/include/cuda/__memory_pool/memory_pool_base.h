@@ -146,7 +146,7 @@ struct __pool_attr<::cudaMemPoolAttrLocationType>
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrMaxPoolSize>
-    : __pool_attr_impl<::cudaMemPoolAttrMaxPoolSize, ::cuuint64_t, __pool_attr_settable{false}, ::cuuint64_t>
+    : __pool_attr_impl<::cudaMemPoolAttrMaxPoolSize, size_t, __pool_attr_settable{false}, ::cuuint64_t>
 {};
 
 template <>
