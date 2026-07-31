@@ -483,20 +483,24 @@ struct AgentHistogram
     LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
     MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
+    auto accumulate_pixels = [&](auto& privatized_histograms) {
+      AccumulatePixels(samples, is_valid, privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+    };
+
     if (prefer_smem)
     {
       if constexpr (UseDynamicSmem)
       {
-        AccumulatePixels(samples, is_valid, smem_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+        accumulate_pixels(smem_histograms);
       }
       else
       {
-        AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+        accumulate_pixels(temp_storage.histograms);
       }
     }
     else
     {
-      AccumulatePixels(samples, is_valid, d_privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      accumulate_pixels(d_privatized_histograms);
     }
   }
 
