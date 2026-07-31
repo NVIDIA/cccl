@@ -35,7 +35,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#include <exception>
+#if _CCCL_HOSTED()
+#  include <exception>
+#endif // _CCCL_HOSTED()
 
 namespace cuda::experimental
 {
@@ -130,6 +132,8 @@ private:
 
 template <class _Fn>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES scope_exit(_Fn) -> scope_exit<_Fn>;
+
+#if _CCCL_HOSTED()
 
 //! @brief Scope guard that invokes its exit function only when destroyed during stack unwinding.
 //!
@@ -298,6 +302,8 @@ private:
 
 template <class _Fn>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES scope_success(_Fn) -> scope_success<_Fn>;
+
+#endif // _CCCL_HOSTED()
 } // namespace cuda::experimental
 
 #endif // _CUDAX__UTILITY_SCOPE

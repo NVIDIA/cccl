@@ -35,6 +35,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace cuda::experimental::stf
