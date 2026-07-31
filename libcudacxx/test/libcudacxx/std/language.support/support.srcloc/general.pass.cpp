@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // The way we currently compile nvrtc is not working with that test
 // UNSUPPORTED: nvrtc && !c++20
 
@@ -83,18 +80,21 @@ static_assert(compare_strings(cur.function_name(), "__builtin_FUNCTION is unsupp
 
 TEST_FUNC bool compare_strings(const char* lhs, const char* rhs) noexcept
 {
+  bool result = true;
   for (size_t index = 0;; ++index)
   {
     if (lhs[index] != rhs[index])
     {
-      return false;
+      result = false;
+      break;
     }
 
     if (lhs[index] == '\0')
     {
-      return true;
+      break;
     }
   }
+  return result;
 }
 
 TEST_FUNC bool find_substring(const char* source, const char* target) noexcept
@@ -104,6 +104,7 @@ TEST_FUNC bool find_substring(const char* source, const char* target) noexcept
     return true;
   }
 
+  bool end_found = false;
   for (size_t index = 0;; ++index)
   {
     if (source[index] == target[index])
@@ -117,15 +118,28 @@ TEST_FUNC bool find_substring(const char* source, const char* target) noexcept
 
         if (target[sub_index] == '\0')
         {
-          return true;
+          end_found = true;
+          break;
         }
       }
+    }
+    if (end_found)
+    {
+      break;
     }
 
     if (target[index] == '\0')
     {
-      return false;
+      break;
     }
+  }
+  if (end_found)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
   }
 }
 
