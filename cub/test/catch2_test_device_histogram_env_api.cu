@@ -418,8 +418,8 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    return {.threads_per_block                = 128,
-            .pixels_per_thread                = cc > cuda::compute_capability{9, 0} ? 16 : 7,
+    return {.sweep_threads_per_block          = 128,
+            .sweep_items_per_thread           = cc > cuda::compute_capability{9, 0} ? 16 : 7,
             .vec_size                         = 4,
             .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
             .load_modifier                    = cub::LOAD_LDG,
