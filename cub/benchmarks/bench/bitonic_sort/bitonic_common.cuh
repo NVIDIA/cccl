@@ -12,10 +12,11 @@
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
-inline constexpr int warp_threads                     = cub::detail::warp_threads;
-inline constexpr int num_iterations                   = 100;
-inline constexpr int block_dim_for_throughput_mode    = 128;
-inline constexpr int grid_threads_for_throughput_mode = 1 << 28;
+inline constexpr int warp_threads                       = cub::detail::warp_threads;
+inline constexpr int num_iterations_for_latency_mode    = 100;
+inline constexpr int num_iterations_for_throughput_mode = 10;
+inline constexpr int block_dim_for_throughput_mode      = 128;
+inline constexpr int grid_threads_for_throughput_mode   = 1 << 27;
 
 enum class Mode
 {
@@ -44,29 +45,31 @@ NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
     return std::string{};
   })
 
-template <Mode mode>
-constexpr int calc_block_dim()
-{
-  return (mode == Mode::Latency) ? warp_threads : block_dim_for_throughput_mode;
-}
-
-template <Mode mode>
-constexpr int calc_grid_dim(int block_dim)
-{
-  return (mode == Mode::Latency) ? 1 : grid_threads_for_throughput_mode / block_dim;
-}
-
 template <typename ActionT, Mode mode, typename KeyT, typename ValueT, int Len>
 void run_bench(nvbench::state& state)
 {
   constexpr int items_per_thread = Len / warp_threads;
   const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
 
-  constexpr int block_dim = calc_block_dim<mode>();
-  constexpr int grid_dim  = calc_grid_dim<mode>(block_dim);
+  int block_dim;
+  int grid_dim;
+  int num_iterations;
+  if (mode == Mode::Latency)
+  {
+    block_dim      = warp_threads;
+    grid_dim       = 1;
+    num_iterations = num_iterations_for_latency_mode;
+  }
+  else
+  {
+    block_dim      = block_dim_for_throughput_mode;
+    grid_dim       = grid_threads_for_throughput_mode / block_dim;
+    num_iterations = num_iterations_for_throughput_mode;
+  }
+
   state.add_element_count(static_cast<size_t>(grid_dim) * (block_dim / warp_threads) * Len * num_iterations);
 
-  state.exec([grid_dim, block_dim, kernel](nvbench::launch& launch) {
+  state.exec([grid_dim, block_dim, kernel, num_iterations](nvbench::launch& launch) {
     kernel<<<grid_dim, block_dim, 0, launch.get_stream()>>>(num_iterations, ActionT{}, Len);
   });
 }
