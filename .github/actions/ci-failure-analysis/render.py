@@ -26,16 +26,12 @@ class ValidationError(ValueError):
     pass
 
 
-def fail(message):
-    raise ValidationError(message)
-
-
 def load_json(path):
     try:
         with path.open(encoding="utf-8-sig") as stream:
             return json.load(stream)
     except (OSError, json.JSONDecodeError) as error:
-        fail(f"could not read JSON from {path}: {error}")
+        raise ValidationError(f"could not read JSON from {path}: {error}") from error
 
 
 def validate_schema(value, schema, location="$"):
@@ -47,26 +43,28 @@ def validate_schema(value, schema, location="$"):
         "string": lambda item: isinstance(item, str),
     }
     if expected_type not in checks or not checks[expected_type](value):
-        fail(f"{location}: expected {expected_type}")
+        raise ValidationError(f"{location}: expected {expected_type}")
     if "enum" in schema and value not in schema["enum"]:
-        fail(f"{location}: value is not one of {schema['enum']}")
+        raise ValidationError(f"{location}: value is not one of {schema['enum']}")
 
     if expected_type == "object":
         properties = schema.get("properties", {})
         missing = [name for name in schema.get("required", []) if name not in value]
         if missing:
-            fail(f"{location}: missing required fields {missing}")
+            raise ValidationError(f"{location}: missing required fields {missing}")
         if schema.get("additionalProperties") is False:
             extra = sorted(set(value) - set(properties))
             if extra:
-                fail(f"{location}: unexpected fields {extra}")
+                raise ValidationError(f"{location}: unexpected fields {extra}")
         for name, item in value.items():
             if name in properties:
                 validate_schema(item, properties[name], f"{location}.{name}")
 
     if expected_type == "array":
         if len(value) < schema.get("minItems", 0):
-            fail(f"{location}: expected at least {schema['minItems']} items")
+            raise ValidationError(
+                f"{location}: expected at least {schema['minItems']} items"
+            )
         for index, item in enumerate(value):
             validate_schema(item, schema["items"], f"{location}[{index}]")
 
@@ -119,7 +117,7 @@ def source_url(repository, head_sha, path, line):
 def load_job_manifest(path):
     job_items = load_json(path)
     if not isinstance(job_items, list):
-        fail("job manifest must be an array")
+        raise ValidationError("job manifest must be an array")
 
     jobs = {}
     step_numbers = {}
@@ -127,29 +125,31 @@ def load_job_manifest(path):
     for index, job in enumerate(job_items):
         location = f"job manifest[{index}]"
         if not isinstance(job, dict):
-            fail(f"{location} must be an object")
+            raise ValidationError(f"{location} must be an object")
         job_id = job.get("id")
         name = job.get("name")
         conclusion = job.get("conclusion")
         steps = job.get("steps", [])
         if not isinstance(job_id, int) or isinstance(job_id, bool) or job_id <= 0:
-            fail(f"{location}.id must be a positive integer")
+            raise ValidationError(f"{location}.id must be a positive integer")
         if job_id in jobs:
-            fail(f"{location}.id duplicates job {job_id}")
+            raise ValidationError(f"{location}.id duplicates job {job_id}")
         if not isinstance(name, str) or not name:
-            fail(f"{location}.name must be a non-empty string")
+            raise ValidationError(f"{location}.name must be a non-empty string")
         if conclusion is not None and not isinstance(conclusion, str):
-            fail(f"{location}.conclusion must be a string or null")
+            raise ValidationError(f"{location}.conclusion must be a string or null")
         if conclusion not in FAILED_CONCLUSIONS:
-            fail(f"{location}.conclusion is not a failed conclusion")
+            raise ValidationError(f"{location}.conclusion is not a failed conclusion")
         if not isinstance(steps, list):
-            fail(f"{location}.steps must be an array")
+            raise ValidationError(f"{location}.steps must be an array")
 
         numbers = set()
         for step_index, step in enumerate(steps):
             number = step.get("number") if isinstance(step, dict) else None
             if not isinstance(number, int) or isinstance(number, bool) or number <= 0:
-                fail(f"{location}.steps[{step_index}].number must be positive")
+                raise ValidationError(
+                    f"{location}.steps[{step_index}].number must be positive"
+                )
             numbers.add(number)
 
         jobs[job_id] = name
@@ -165,14 +165,18 @@ def validate_job_references(analysis, step_numbers, failed_job_ids):
         location = f"$.groups[{group_index}]"
         job_ids = group["job_ids"]
         if not job_ids:
-            fail(f"{location}.job_ids must not be empty")
+            raise ValidationError(f"{location}.job_ids must not be empty")
         if len(job_ids) != len(set(job_ids)):
-            fail(f"{location}.job_ids contains duplicates")
+            raise ValidationError(f"{location}.job_ids contains duplicates")
         for job_id in job_ids:
             if job_id not in failed_job_ids:
-                fail(f"{location}.job_ids references non-failed job {job_id}")
+                raise ValidationError(
+                    f"{location}.job_ids references non-failed job {job_id}"
+                )
             if job_id in grouped_job_ids:
-                fail(f"job {job_id} appears in more than one failure group")
+                raise ValidationError(
+                    f"job {job_id} appears in more than one failure group"
+                )
             grouped_job_ids.add(job_id)
 
         group_job_ids = set(job_ids)
@@ -181,9 +185,13 @@ def validate_job_references(analysis, step_numbers, failed_job_ids):
             job_id = evidence["job_id"]
             step_number = evidence["step_number"]
             if job_id not in group_job_ids:
-                fail(f"{evidence_location}.job_id is not in the failure group")
+                raise ValidationError(
+                    f"{evidence_location}.job_id is not in the failure group"
+                )
             if step_number != 0 and step_number not in step_numbers[job_id]:
-                fail(f"{evidence_location}.step_number does not exist for job {job_id}")
+                raise ValidationError(
+                    f"{evidence_location}.step_number does not exist for job {job_id}"
+                )
 
 
 def job_link(job_id, jobs, repository, run_id, step_number=0):
@@ -307,7 +315,7 @@ def render_report(analysis, jobs, repository, run_id, head_sha):
 
     report = "\n".join(lines) + "\n"
     if len(report.encode("utf-8")) > REPORT_LIMIT:
-        fail(f"rendered report exceeds {REPORT_LIMIT:,} bytes")
+        raise ValidationError(f"rendered report exceeds {REPORT_LIMIT:,} bytes")
     return report
 
 
@@ -328,11 +336,11 @@ def parse_args():
 def main():
     args = parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repository):
-        fail("repository must have the form owner/name")
+        raise ValidationError("repository must have the form owner/name")
     if not re.fullmatch(r"[1-9][0-9]*", args.run_id):
-        fail("run id must be a positive integer")
+        raise ValidationError("run id must be a positive integer")
     if not re.fullmatch(r"[0-9a-f]{40}", args.head_sha):
-        fail("head SHA must be 40 lowercase hexadecimal characters")
+        raise ValidationError("head SHA must be 40 lowercase hexadecimal characters")
 
     schema = load_json(args.schema)
     analysis = load_json(args.analysis)
