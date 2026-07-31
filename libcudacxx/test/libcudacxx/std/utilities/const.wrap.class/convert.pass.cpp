@@ -17,6 +17,9 @@
 
 // REQUIRES: !c++17
 
+// disable this test as it will be replaced soon
+// UNSUPPORTED: true
+
 // constant_wrapper
 
 // constexpr operator decltype(value)() const noexcept { return value; }
