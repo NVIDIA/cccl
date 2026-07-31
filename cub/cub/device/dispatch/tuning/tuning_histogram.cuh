@@ -213,8 +213,8 @@ struct sm90_tuning;
 template <class SampleT>
 struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_1>
 {
-  static constexpr int threads = 768;
-  static constexpr int items   = 12;
+  static constexpr int threads_per_block = 768;
+  static constexpr int items_per_thread  = 12;
 
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
@@ -228,8 +228,8 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
 template <class SampleT>
 struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_2>
 {
-  static constexpr int threads = 960;
-  static constexpr int items   = 10;
+  static constexpr int threads_per_block = 960;
+  static constexpr int items_per_thread  = 10;
 
   static constexpr CacheLoadModifier load_modifier               = LOAD_DEFAULT;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
@@ -255,8 +255,8 @@ template <class SampleT>
 struct sm100_tuning<true, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_1>
 {
   // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-  static constexpr int items                                     = 12;
-  static constexpr int threads                                   = 928;
+  static constexpr int items_per_thread                          = 12;
+  static constexpr int threads_per_block                         = 928;
   static constexpr bool rle_compress                             = false;
   static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
@@ -270,8 +270,8 @@ template <class SampleT>
 struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_1>
 {
   // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-  static constexpr int items                                     = 12;
-  static constexpr int threads                                   = 448;
+  static constexpr int items_per_thread                          = 12;
+  static constexpr int threads_per_block                         = 448;
   static constexpr bool rle_compress                             = false;
   static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
@@ -283,8 +283,8 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
 {
-  static constexpr int items                                     = 12;
-  static constexpr int threads                                   = 768;
+  static constexpr int items_per_thread                          = 12;
+  static constexpr int threads_per_block                         = 768;
   static constexpr bool rle_compress                             = true;
   static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
@@ -296,8 +296,8 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
 {
-  static constexpr int items                                     = 6;
-  static constexpr int threads                                   = 768;
+  static constexpr int items_per_thread                          = 6;
+  static constexpr int threads_per_block                         = 768;
   static constexpr bool rle_compress                             = true;
   static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
@@ -334,8 +334,8 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy500
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(int)
-      -> agent_histogram_policy<Tuning::threads,
-                                Tuning::items,
+      -> agent_histogram_policy<Tuning::threads_per_block,
+                                Tuning::items_per_thread,
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 Tuning::rle_compress,
@@ -357,8 +357,8 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(int) -> agent_histogram_policy<
-      Tuning::threads,
-      Tuning::items,
+      Tuning::threads_per_block,
+      Tuning::items_per_thread,
       Tuning::load_algorithm,
       Tuning::load_modifier,
       Tuning::rle_compress,
