@@ -33,20 +33,18 @@ _CCCL_HOST_DEVICE bool close(double got, double ref)
 
 // Runs each op in float-float precision and verifies it matches the double
 // reference within tolerance. Returns true on success.
-_CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz)
+_CCCL_HOST_DEVICE void run_test(double dx, double dy, double dz)
 {
   // double -> fp32mp2 is a narrowing conversion, so construct explicitly.
   ffloat ex = ffloat(dx);
   ffloat ey = ffloat(dy);
   ffloat ez = ffloat(dz);
 
-  bool ok = true;
-  ok      = ok && close((double) (ex * ey), dx * dy);
-  ok      = ok && close((double) (ex + ey), dx + dy);
-  ok      = ok && close((double) (ex / ey), dx / dy);
-  ok      = ok && close((double) (ex - ey), dx - dy);
-  ok      = ok && close((double) fma(ex, ey, ez), ::cuda::std::fma(dx, dy, dz));
-  return ok;
+  assert(close((double) (ex * ey), dx * dy));
+  assert(close((double) (ex + ey), dx + dy));
+  assert(close((double) (ex / ey), dx / dy));
+  assert(close((double) (ex - ey), dx - dy));
+  assert(close((double) fma(ex, ey, ez), ::cuda::std::fma(dx, dy, dz)));
 }
 
 TEST_FUNC void test()
@@ -56,7 +54,7 @@ TEST_FUNC void test()
   const double dy = 2.234567891234567856;
   const double dz = 3.345678901234567892;
 
-  assert(run_test(dx, dy, dz));
+  run_test(dx, dy, dz);
 }
 
 int main(int, char**)

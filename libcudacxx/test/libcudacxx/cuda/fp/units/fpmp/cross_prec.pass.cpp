@@ -80,7 +80,7 @@ struct F64
 
 // Upconvert must be bit-exact vs an inlined fast_two_sum reference and produce a
 // renormalized (|lo| <= ulp(hi)/2) fp64mp2 pair.
-_CCCL_HOST_DEVICE static bool check_upconvert(const F32& src, const F64& dst)
+_CCCL_HOST_DEVICE static void check_upconvert(const F32& src, const F64& dst)
 {
   const double a      = (double) src.hi;
   const double b      = (double) src.lo;
@@ -88,34 +88,31 @@ _CCCL_HOST_DEVICE static bool check_upconvert(const F32& src, const F64& dst)
   const double z      = ref_hi - a;
   const double ref_lo = b - z;
 
-  const bool bit_exact = (dst.hi == ref_hi) && (dst.lo == ref_lo);
+  assert(dst.hi == ref_hi);
+  assert(dst.lo == ref_lo);
 
-  bool renorm;
   if (dst.hi == 0.0)
   {
-    renorm = (dst.lo == 0.0);
+    assert(dst.lo == 0.0);
   }
   else
   {
     const double ulp_hi = ::cuda::std::ldexp(1.0, ::cuda::std::ilogb(dst.hi) - 52);
-    renorm              = ::cuda::std::fabs(dst.lo) <= 0.5 * ulp_hi;
+    assert(::cuda::std::fabs(dst.lo) <= 0.5 * ulp_hi);
   }
-  return bit_exact && renorm;
 }
 
-_CCCL_HOST_DEVICE static bool check_downconvert(const F64& src, const F32& dst, double tol)
+_CCCL_HOST_DEVICE static void check_downconvert(const F64& src, const F32& dst, double tol)
 {
   const double ref     = (double) src.hi + (double) src.lo;
   const double got     = (double) dst.hi + (double) dst.lo;
   const double abs_ref = ::cuda::std::fabs(ref);
   const double rel_err = (abs_ref > 0.0) ? ::cuda::std::fabs((got - ref) / ref) : ::cuda::std::fabs(got - ref);
-  return rel_err <= tol;
+  assert(rel_err <= tol);
 }
 
-_CCCL_HOST_DEVICE bool run_test()
+_CCCL_HOST_DEVICE void run_test()
 {
-  bool ok = true;
-
   // Upconvert inputs spanning the renormalization spectrum.
   const F32 in32[8] = {
     {1.2345678f, 1.0e-9f}, // ordinary
@@ -132,7 +129,7 @@ _CCCL_HOST_DEVICE bool run_test()
     fp32mp2 src(in32[i].hi, in32[i].lo);
     fp64mp2 dst = src; // implicit upconvert
     F64 o       = {dst.hi(), dst.lo()};
-    ok          = ok && check_upconvert(in32[i], o);
+    check_upconvert(in32[i], o);
   }
 
   // Residual must survive in dst.lo for the non-single-double inputs (1, 3, 4).
@@ -140,7 +137,7 @@ _CCCL_HOST_DEVICE bool run_test()
   {
     fp32mp2 src(in32[i].hi, in32[i].lo);
     fp64mp2 dst = src;
-    ok          = ok && (dst.lo() != 0.0);
+    assert(dst.lo() != 0.0);
   }
 
   // Downconvert inputs (values needing > 24 bits).
@@ -156,7 +153,7 @@ _CCCL_HOST_DEVICE bool run_test()
     fp64mp2 src(in64[i].hi, in64[i].lo);
     fp32mp2 dst(src); // explicit downconvert (direct-init)
     F32 o = {dst.hi(), dst.lo()};
-    ok    = ok && check_downconvert(in64[i], o, tols[i]);
+    check_downconvert(in64[i], o, tols[i]);
   }
 
   // Round trip fp32mp2 -> fp64mp2 -> fp32mp2 must be bit-exact.
@@ -170,7 +167,7 @@ _CCCL_HOST_DEVICE bool run_test()
     fp32mp2 a(rt[i].hi, rt[i].lo);
     fp64mp2 b = a; // implicit upconvert
     fp32mp2 c = static_cast<fp32mp2>(b); // explicit downconvert
-    ok        = ok && (c.hi() == rt[i].hi) && (c.lo() == rt[i].lo);
+    assert((c.hi() == rt[i].hi) && (c.lo() == rt[i].lo));
   }
 
   // Every explicit conversion form (and operator=) must produce the same pair.
@@ -182,17 +179,15 @@ _CCCL_HOST_DEVICE bool run_test()
     fp32mp2 d;
     d = static_cast<fp32mp2>(src); // assign via cast
     fp32mp2 e;
-    e  = src; // operator= overload
-    ok = ok && (a.hi() == b.hi() && a.lo() == b.lo()) && (a.hi() == c.hi() && a.lo() == c.lo())
-      && (a.hi() == d.hi() && a.lo() == d.lo()) && (a.hi() == e.hi() && a.lo() == e.lo());
+    e = src; // operator= overload
+    assert((a.hi() == b.hi() && a.lo() == b.lo()) && (a.hi() == c.hi() && a.lo() == c.lo())
+           && (a.hi() == d.hi() && a.lo() == d.lo()) && (a.hi() == e.hi() && a.lo() == e.lo()));
   }
-
-  return ok;
 }
 
 TEST_FUNC void test()
 {
-  assert(run_test());
+  run_test();
 }
 
 int main(int, char**)

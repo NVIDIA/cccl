@@ -21,7 +21,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 using ffloat = fp32mp2;
 
 // double -> fp32mp2 -> double must be idempotent after the first round trip.
-_CCCL_HOST_DEVICE bool run_test()
+_CCCL_HOST_DEVICE void run_test()
 {
   const double tv[10] = {
     1234.567890123456777,
@@ -36,20 +36,18 @@ _CCCL_HOST_DEVICE bool run_test()
     2.718281828459045235,
   };
 
-  bool ok = true;
   for (int i = 0; i < 10; i++)
   {
     const double d1 = (double) ffloat(tv[i]);
     const double d2 = (double) ffloat(d1);
     const double d3 = (double) ffloat(d2);
-    ok              = ok && (d1 == d2) && (d2 == d3);
+    assert((d1 == d2) && (d2 == d3));
   }
-  return ok;
 }
 
 TEST_FUNC void test()
 {
-  assert(run_test());
+  run_test();
 }
 
 int main(int, char**)

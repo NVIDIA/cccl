@@ -162,6 +162,10 @@ void run_accuracy()
 int main(int, char**)
 {
 #if _CCCL_CUDA_COMPILATION()
+  // force_include.h makes this main __host__ __device__ and runs it twice: on the host,
+  // then inside a kernel. Only the host run can launch kernels and call the runtime API,
+  // so NV_IS_HOST selects the driver of the test, not the code under test -- the atomics
+  // themselves run on the GPU.
   NV_IF_TARGET(NV_IS_HOST, (run_atomicity(); run_accuracy();))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;

@@ -59,7 +59,7 @@ static_assert(ffloat{1.5}.hi() == 1.5f && ffloat{1.5}.lo() == 0.0f,
 
 // Multiply pairs of LUT entries and verify against the double reference; also
 // check the round-trip precision of every stored entry.
-_CCCL_HOST_DEVICE bool run_test()
+_CCCL_HOST_DEVICE void run_test()
 {
   constexpr ffloat lut[] = {LUT_LIST(LUT_FF)};
   constexpr double ref[] = {LUT_LIST(LUT_ID)};
@@ -68,7 +68,6 @@ _CCCL_HOST_DEVICE bool run_test()
   const int num_ops  = (int) (sizeof(idx) / sizeof(idx[0]));
 
   const double tol = 1e-12;
-  bool ok          = true;
 
   for (int i = 0; i < num_ops; i++)
   {
@@ -77,21 +76,19 @@ _CCCL_HOST_DEVICE bool run_test()
     const double prod = (double) (lut[a] * lut[b]);
     const double r    = ref[a] * ref[b];
     const double rel  = (r != 0.0) ? ::cuda::std::fabs(prod - r) / ::cuda::std::fabs(r) : 0.0;
-    ok                = ok && (rel < tol);
+    assert(rel < tol);
   }
 
   for (int i = 0; i < LUT_SIZE; i++)
   {
     const double rel = (ref[i] != 0.0) ? ::cuda::std::fabs((double) lut[i] - ref[i]) / ::cuda::std::fabs(ref[i]) : 0.0;
-    ok               = ok && (rel < tol);
+    assert(rel < tol);
   }
-
-  return ok;
 }
 
 TEST_FUNC void test()
 {
-  assert(run_test());
+  run_test();
 }
 
 int main(int, char**)

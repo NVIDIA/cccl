@@ -42,41 +42,37 @@ static_assert(
 
 // Each mixed-type call must equal the strict form (scalars wrapped in the fpmp2
 // type) bit-for-bit.
-_CCCL_HOST_DEVICE bool run_test()
+_CCCL_HOST_DEVICE void run_test()
 {
   using ff = fp32mp2_low;
   ff a(1.234567890f), b(2.345678901f);
   const float s = 0.5f;
   const float t = 3.0f;
 
-  bool ok = true;
-
   // Binary, both argument orders.
-  ok = ok && ((double) add<fpmp2_accuracy::high>(a, s) == (double) add<fpmp2_accuracy::high>(a, ff(s)));
-  ok = ok && ((double) add<fpmp2_accuracy::high>(s, a) == (double) add<fpmp2_accuracy::high>(ff(s), a));
-  ok = ok && ((double) sub<fpmp2_accuracy::high>(a, s) == (double) sub<fpmp2_accuracy::high>(a, ff(s)));
-  ok = ok && ((double) sub<fpmp2_accuracy::high>(s, a) == (double) sub<fpmp2_accuracy::high>(ff(s), a));
-  ok = ok && ((double) mul<fpmp2_accuracy::low>(a, s) == (double) mul<fpmp2_accuracy::low>(a, ff(s)));
-  ok = ok && ((double) mul<fpmp2_accuracy::low>(s, a) == (double) mul<fpmp2_accuracy::low>(ff(s), a));
-  ok = ok && ((double) div<fpmp2_accuracy::def>(a, s) == (double) div<fpmp2_accuracy::def>(a, ff(s)));
-  ok = ok && ((double) div<fpmp2_accuracy::def>(s, a) == (double) div<fpmp2_accuracy::def>(ff(s), a));
+  assert((double) add<fpmp2_accuracy::high>(a, s) == (double) add<fpmp2_accuracy::high>(a, ff(s)));
+  assert((double) add<fpmp2_accuracy::high>(s, a) == (double) add<fpmp2_accuracy::high>(ff(s), a));
+  assert((double) sub<fpmp2_accuracy::high>(a, s) == (double) sub<fpmp2_accuracy::high>(a, ff(s)));
+  assert((double) sub<fpmp2_accuracy::high>(s, a) == (double) sub<fpmp2_accuracy::high>(ff(s), a));
+  assert((double) mul<fpmp2_accuracy::low>(a, s) == (double) mul<fpmp2_accuracy::low>(a, ff(s)));
+  assert((double) mul<fpmp2_accuracy::low>(s, a) == (double) mul<fpmp2_accuracy::low>(ff(s), a));
+  assert((double) div<fpmp2_accuracy::def>(a, s) == (double) div<fpmp2_accuracy::def>(a, ff(s)));
+  assert((double) div<fpmp2_accuracy::def>(s, a) == (double) div<fpmp2_accuracy::def>(ff(s), a));
 
   // Ternary fma: scalar in every position.
-  ok = ok && ((double) fma<fpmp2_accuracy::high>(a, s, t) == (double) fma<fpmp2_accuracy::high>(a, ff(s), ff(t)));
-  ok = ok && ((double) fma<fpmp2_accuracy::high>(s, a, t) == (double) fma<fpmp2_accuracy::high>(ff(s), a, ff(t)));
-  ok = ok && ((double) fma<fpmp2_accuracy::high>(s, t, a) == (double) fma<fpmp2_accuracy::high>(ff(s), ff(t), a));
+  assert((double) fma<fpmp2_accuracy::high>(a, s, t) == (double) fma<fpmp2_accuracy::high>(a, ff(s), ff(t)));
+  assert((double) fma<fpmp2_accuracy::high>(s, a, t) == (double) fma<fpmp2_accuracy::high>(ff(s), a, ff(t)));
+  assert((double) fma<fpmp2_accuracy::high>(s, t, a) == (double) fma<fpmp2_accuracy::high>(ff(s), ff(t), a));
 
   // Ternary mad: one scalar, two fpmp2 operands.
-  ok = ok && ((double) mad<fpmp2_accuracy::low>(a, b, s) == (double) mad<fpmp2_accuracy::low>(a, b, ff(s)));
-  ok = ok && ((double) mad<fpmp2_accuracy::low>(a, s, b) == (double) mad<fpmp2_accuracy::low>(a, ff(s), b));
-  ok = ok && ((double) mad<fpmp2_accuracy::low>(s, a, b) == (double) mad<fpmp2_accuracy::low>(ff(s), a, b));
-
-  return ok;
+  assert((double) mad<fpmp2_accuracy::low>(a, b, s) == (double) mad<fpmp2_accuracy::low>(a, b, ff(s)));
+  assert((double) mad<fpmp2_accuracy::low>(a, s, b) == (double) mad<fpmp2_accuracy::low>(a, ff(s), b));
+  assert((double) mad<fpmp2_accuracy::low>(s, a, b) == (double) mad<fpmp2_accuracy::low>(ff(s), a, b));
 }
 
 TEST_FUNC void test()
 {
-  assert(run_test());
+  run_test();
 }
 
 int main(int, char**)

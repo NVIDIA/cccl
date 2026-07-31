@@ -76,6 +76,10 @@ __global__ void test_kernel()
 int main(int, char**)
 {
 #if _CCCL_CUDA_COMPILATION()
+  // force_include.h makes this main __host__ __device__ and runs it twice: on the host,
+  // then inside a kernel. Only the host run can launch, so NV_IS_HOST selects the driver
+  // of the test, not the code under test -- the shuffles themselves run on the GPU.
+  //
   // test_kernel is not a template, so the launch can stay inside NV_IF_TARGET: it is
   // instantiated for the device regardless of the host-only block being discarded.
   NV_IF_TARGET(NV_IS_HOST,

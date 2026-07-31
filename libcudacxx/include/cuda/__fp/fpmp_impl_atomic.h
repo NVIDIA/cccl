@@ -39,6 +39,28 @@
 
 namespace cuda::experimental
 {
+#if _CCCL_CUDA_COMPILATION()
+/*
+ * --------------------------------------------------------------------
+ * Atomic operations on fpmp2 - declarations
+ * --------------------------------------------------------------------
+ * Defined at the end of <cuda/__fp/fpmp.h>, in both the inline and the library
+ * mode. They are declared here, ahead of the class, so that fpmp2 can
+ * befriend them: the two implementations take the target as a flat (hi*, lo*)
+ * pair, and those two components are private members.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+class fpmp2;
+
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_DEVICE_API fpmp2<_FpType, _TypeAcc>
+atomicAdd(fpmp2<_FpType, _TypeAcc>* __address, const fpmp2<_FpType, _TypeAcc>& __val) noexcept;
+
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_DEVICE_API fpmp2<_FpType, _TypeAcc>
+atomicSub(fpmp2<_FpType, _TypeAcc>* __address, const fpmp2<_FpType, _TypeAcc>& __val) noexcept;
+#endif // _CCCL_CUDA_COMPILATION()
+
 #if !(defined _CCCL_FPMP_USE_LIB)
 /*
  * --------------------------------------------------------------------

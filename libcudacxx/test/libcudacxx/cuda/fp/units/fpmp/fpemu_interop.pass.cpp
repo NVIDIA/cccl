@@ -38,7 +38,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // those are the names it declares; the fp32 paths are covered too because fpmp
 // qualifies every intrinsic uniformly.
 template <class _Tp>
-TEST_FUNC bool check_fpmp()
+TEST_FUNC void check_fpmp()
 {
   using T = _Tp;
 
@@ -46,40 +46,36 @@ TEST_FUNC bool check_fpmp()
   const T b(4.0);
   const T c(0.5);
 
-  bool ok = true;
-
-  ok = ok && static_cast<double>(a + b) == 7.0;
-  ok = ok && static_cast<double>(a - b) == -1.0;
-  ok = ok && static_cast<double>(a * b) == 12.0;
-  ok = ok && static_cast<double>(b / T(2.0)) == 2.0;
-  ok = ok && static_cast<double>(fma(a, b, c)) == 12.5;
-  ok = ok && static_cast<double>(sqrt(T(16.0))) == 4.0;
+  assert(static_cast<double>(a + b) == 7.0);
+  assert(static_cast<double>(a - b) == -1.0);
+  assert(static_cast<double>(a * b) == 12.0);
+  assert(static_cast<double>(b / T(2.0)) == 2.0);
+  assert(static_cast<double>(fma(a, b, c)) == 12.5);
+  assert(static_cast<double>(sqrt(T(16.0))) == 4.0);
 
   // Round-off sensitive: 2^-30 added to 1 survives in the low word, which native
   // single precision could not hold. A wrong add would collapse this to 1.
   if constexpr (::cuda::std::is_same_v<T, fp32mp2>)
   {
     const T eps(1.0 / 1073741824.0); // 2^-30
-    ok = ok && static_cast<double>((T(1.0) + eps) - T(1.0)) == 1.0 / 1073741824.0;
+    assert(static_cast<double>((T(1.0) + eps) - T(1.0)) == 1.0 / 1073741824.0);
   }
 
   // Float-to-integer conversions: the __double2int_rz / __float2int_rz family.
-  ok = ok && static_cast<int>(T(-2.75)) == -2;
-  ok = ok && static_cast<int>(T(7.9)) == 7;
-  ok = ok && static_cast<unsigned>(T(7.9)) == 7u;
-  ok = ok && static_cast<long long>(T(-7.9)) == -7ll;
-  ok = ok && static_cast<unsigned long long>(T(7.9)) == 7ull;
+  assert(static_cast<int>(T(-2.75)) == -2);
+  assert(static_cast<int>(T(7.9)) == 7);
+  assert(static_cast<unsigned>(T(7.9)) == 7u);
+  assert(static_cast<long long>(T(-7.9)) == -7ll);
+  assert(static_cast<unsigned long long>(T(7.9)) == 7ull);
 
   // Integer-to-float conversions: the __int2float_rn / __ll2double_rz family.
-  ok = ok && static_cast<double>(T(-9)) == -9.0;
-  ok = ok && static_cast<double>(T(123456789ll)) == 123456789.0;
-
-  return ok;
+  assert(static_cast<double>(T(-9)) == -9.0);
+  assert(static_cast<double>(T(123456789ll)) == 123456789.0);
 }
 
 // The other direction: fpemu's intrinsic-named overloads must still be found for
 // fpemu's own types, exactly as fpemu/api.pass.cpp calls them.
-TEST_FUNC bool check_fpemu()
+TEST_FUNC void check_fpemu()
 {
   const double dx = 1.2345;
   const double dy = 2.3456;
@@ -100,17 +96,14 @@ TEST_FUNC bool check_fpemu()
 
   const double tol = 1e-10;
 
-  bool ok = true;
-  ok      = ok && ::cuda::std::fabs(static_cast<double>(__dadd_rn(ex, ey)) - (dx + dy)) <= tol;
-  ok      = ok && ::cuda::std::fabs(static_cast<double>(__dsub_rn(ex, ey)) - (dx - dy)) <= tol;
-  ok      = ok && ::cuda::std::fabs(static_cast<double>(__dmul_rn(ex, ey)) - (dx * dy)) <= tol;
-  ok      = ok && ::cuda::std::fabs(static_cast<double>(__fma_rn(ex, ey, ez)) - (dx * dy + dz)) <= tol;
-
-  return ok;
+  assert(::cuda::std::fabs(static_cast<double>(__dadd_rn(ex, ey)) - (dx + dy)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(__dsub_rn(ex, ey)) - (dx - dy)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(__dmul_rn(ex, ey)) - (dx * dy)) <= tol);
+  assert(::cuda::std::fabs(static_cast<double>(__fma_rn(ex, ey, ez)) - (dx * dy + dz)) <= tol);
 }
 
 // Values crossing between the two libraries, so both are live in one expression.
-TEST_FUNC bool check_mixed()
+TEST_FUNC void check_mixed()
 {
   const double dx = 6.25;
   const double dy = 1.5;
@@ -118,23 +111,21 @@ TEST_FUNC bool check_mixed()
   const fp64emu emu_sum = fp64emu(dx) + fp64emu(dy);
   const fp64mp2 mp_sum  = fp64mp2(dx) + fp64mp2(dy);
 
-  bool ok = static_cast<double>(emu_sum) == dx + dy;
-  ok      = ok && static_cast<double>(mp_sum) == dx + dy;
-  ok      = ok && static_cast<double>(mp_sum) == static_cast<double>(emu_sum);
+  assert(static_cast<double>(emu_sum) == dx + dy);
+  assert(static_cast<double>(mp_sum) == dx + dy);
+  assert(static_cast<double>(mp_sum) == static_cast<double>(emu_sum));
 
   // Feed an fpemu result into fpmp and back.
   const fp64mp2 round_trip = fp64mp2(static_cast<double>(emu_sum)) * fp64mp2(2.0);
-  ok                       = ok && static_cast<double>(round_trip) == 2.0 * (dx + dy);
-
-  return ok;
+  assert(static_cast<double>(round_trip) == 2.0 * (dx + dy));
 }
 
 TEST_FUNC void test()
 {
-  assert(check_fpmp<fp32mp2>());
-  assert(check_fpmp<fp64mp2>());
-  assert(check_fpemu());
-  assert(check_mixed());
+  check_fpmp<fp32mp2>();
+  check_fpmp<fp64mp2>();
+  check_fpemu();
+  check_mixed();
 }
 
 int main(int, char**)

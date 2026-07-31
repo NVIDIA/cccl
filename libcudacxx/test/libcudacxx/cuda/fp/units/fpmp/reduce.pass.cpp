@@ -76,6 +76,9 @@ void run_reduce()
 int main(int, char**)
 {
 #if _CCCL_CUDA_COMPILATION()
+  // force_include.h makes this main __host__ __device__ and runs it twice: on the host,
+  // then inside a kernel. Only the host run can launch, so NV_IS_HOST selects the driver
+  // of the test, not the code under test -- the reductions themselves run on the GPU.
   NV_IF_TARGET(NV_IS_HOST, (run_reduce();))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;

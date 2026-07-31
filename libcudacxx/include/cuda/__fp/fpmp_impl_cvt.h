@@ -437,10 +437,11 @@ _CCCL_FPMP_CORE_API uint64_t __fpmp2_to_ull(const _FpType __x_hi, const _FpType 
 } // __fpmp2_to_ull
 
 // __fpmp_fp128 operations (only for FpType == double)
-// available only for CUDA architectures >= 1000 or when _CCCL_FPMP_FP128_ENABLE is defined
+// declared wherever the 128-bit type can be named (_CCCL_FPMP_FP128_ENABLE), device-callable
+// only where fp128 arithmetic is (_CCCL_FPMP_FP128_DEVICE_OPS)
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 template <typename _FpType>
-constexpr _CCCL_FPMP_CORE_API void
+constexpr _CCCL_FPMP_FP128_CORE_API void
 __fpmp2_from_quad(const __fpmp_fp128 __x, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   *__res_hi = static_cast<_FpType>(__x);
@@ -448,7 +449,7 @@ __fpmp2_from_quad(const __fpmp_fp128 __x, _FpType* __res_hi, _FpType* __res_lo) 
 }
 
 template <typename _FpType>
-_CCCL_FPMP_CORE_API __fpmp_fp128 __fpmp2_to_quad(const _FpType __x_hi, const _FpType __x_lo) noexcept
+_CCCL_FPMP_FP128_CORE_API __fpmp_fp128 __fpmp2_to_quad(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
   return static_cast<__fpmp_fp128>(__x_hi) + static_cast<__fpmp_fp128>(__x_lo);
 }
@@ -481,8 +482,9 @@ _CCCL_FPMP_BUILTIN_DECL uint32_t __fp64mp2_to_uint(const double __x_hi, const do
 _CCCL_FPMP_BUILTIN_DECL int64_t __fp64mp2_to_ll(const double __x_hi, const double __x_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL uint64_t __fp64mp2_to_ull(const double __x_hi, const double __x_lo) noexcept;
 #  if _CCCL_FPMP_FP128_ENABLE == 1
-_CCCL_FPMP_BUILTIN_DECL void __fp64mp2_from_quad(const __fpmp_fp128 __x, double* __res_hi, double* __res_lo) noexcept;
-_CCCL_FPMP_BUILTIN_DECL __fpmp_fp128 __fp64mp2_to_quad(const double __x_hi, const double __x_lo) noexcept;
+_CCCL_FPMP_FP128_BUILTIN_DECL void
+__fp64mp2_from_quad(const __fpmp_fp128 __x, double* __res_hi, double* __res_lo) noexcept;
+_CCCL_FPMP_FP128_BUILTIN_DECL __fpmp_fp128 __fp64mp2_to_quad(const double __x_hi, const double __x_lo) noexcept;
 #  endif // _CCCL_FPMP_FP128_ENABLE == 1
 
 // -- type-generic template declarations (dispatch to fp32/fp64) --
@@ -510,9 +512,9 @@ template <typename _Tp>
 _CCCL_API inline uint64_t __fpmp2_to_ull(const _Tp __x_hi, const _Tp __x_lo) noexcept;
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 template <typename _Tp>
-_CCCL_API inline void __fpmp2_from_quad(const __fpmp_fp128 __x, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+_CCCL_FPMP_FP128_API inline void __fpmp2_from_quad(const __fpmp_fp128 __x, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
-_CCCL_API inline __fpmp_fp128 __fpmp2_to_quad(const _Tp __x_hi, const _Tp __x_lo) noexcept;
+_CCCL_FPMP_FP128_API inline __fpmp_fp128 __fpmp2_to_quad(const _Tp __x_hi, const _Tp __x_lo) noexcept;
 #  endif // _CCCL_FPMP_FP128_ENABLE == 1
 
 // -- fp32 template specializations --
@@ -630,12 +632,13 @@ _CCCL_API inline uint64_t __fpmp2_to_ull<double>(const double __x_hi, const doub
 }
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 template <>
-_CCCL_API inline void __fpmp2_from_quad<double>(const __fpmp_fp128 __x, double* __res_hi, double* __res_lo) noexcept
+_CCCL_FPMP_FP128_API inline void
+__fpmp2_from_quad<double>(const __fpmp_fp128 __x, double* __res_hi, double* __res_lo) noexcept
 {
   __fp64mp2_from_quad(__x, __res_hi, __res_lo);
 }
 template <>
-_CCCL_API inline __fpmp_fp128 __fpmp2_to_quad<double>(const double __x_hi, const double __x_lo) noexcept
+_CCCL_FPMP_FP128_API inline __fpmp_fp128 __fpmp2_to_quad<double>(const double __x_hi, const double __x_lo) noexcept
 {
   return __fp64mp2_to_quad(__x_hi, __x_lo);
 }

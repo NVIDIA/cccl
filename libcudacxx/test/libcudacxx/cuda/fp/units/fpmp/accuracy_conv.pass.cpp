@@ -96,10 +96,8 @@ _CCCL_HOST_DEVICE static bool bit_exact(Src src)
   return (dst.hi() == src.hi()) && (dst.lo() == src.lo());
 }
 
-_CCCL_HOST_DEVICE bool run_test()
+_CCCL_HOST_DEVICE void run_test()
 {
-  bool ok = true;
-
   // Representative (hi, lo) pairs: regular, near-max, tiny, negative.
   const float f32[4][2] = {
     {1.2345678f, 1.0e-9f},
@@ -110,11 +108,11 @@ _CCCL_HOST_DEVICE bool run_test()
   for (int i = 0; i < 4; ++i)
   {
     fp32mp2 sd(f32[i][0], f32[i][1]);
-    ok = ok && bit_exact<fp32mp2_low>(sd) && bit_exact<fp32mp2_high>(sd);
+    assert(bit_exact<fp32mp2_low>(sd) && bit_exact<fp32mp2_high>(sd));
     fp32mp2_low sl(f32[i][0], f32[i][1]);
-    ok = ok && bit_exact<fp32mp2>(sl) && bit_exact<fp32mp2_high>(sl);
+    assert(bit_exact<fp32mp2>(sl) && bit_exact<fp32mp2_high>(sl));
     fp32mp2_high sh(f32[i][0], f32[i][1]);
-    ok = ok && bit_exact<fp32mp2>(sh) && bit_exact<fp32mp2_low>(sh);
+    assert(bit_exact<fp32mp2>(sh) && bit_exact<fp32mp2_low>(sh));
   }
 
   const double f64[4][2] = {
@@ -126,9 +124,9 @@ _CCCL_HOST_DEVICE bool run_test()
   for (int i = 0; i < 4; ++i)
   {
     fp64mp2_high sh(f64[i][0], f64[i][1]);
-    ok = ok && bit_exact<fp64mp2_low>(sh);
+    assert(bit_exact<fp64mp2_low>(sh));
     fp64mp2 sd(f64[i][0], f64[i][1]);
-    ok = ok && bit_exact<fp64mp2_low>(sd);
+    assert(bit_exact<fp64mp2_low>(sd));
   }
 
   // Every explicit-conversion shape routes through the bit-exact ctor.
@@ -140,18 +138,16 @@ _CCCL_HOST_DEVICE bool run_test()
     fp32mp2_low d;
     d = fp32mp2_low(src); // explicit assign (functional)
     fp32mp2_low e;
-    e  = static_cast<fp32mp2_low>(src); // explicit assign (static_cast)
-    ok = ok && (a.hi() == src.hi() && a.lo() == src.lo()) && (b.hi() == src.hi() && b.lo() == src.lo())
-      && (c.hi() == src.hi() && c.lo() == src.lo()) && (d.hi() == src.hi() && d.lo() == src.lo())
-      && (e.hi() == src.hi() && e.lo() == src.lo());
+    e = static_cast<fp32mp2_low>(src); // explicit assign (static_cast)
+    assert((a.hi() == src.hi() && a.lo() == src.lo()) && (b.hi() == src.hi() && b.lo() == src.lo())
+           && (c.hi() == src.hi() && c.lo() == src.lo()) && (d.hi() == src.hi() && d.lo() == src.lo())
+           && (e.hi() == src.hi() && e.lo() == src.lo()));
   }
-
-  return ok;
 }
 
 TEST_FUNC void test()
 {
-  assert(run_test());
+  run_test();
 }
 
 int main(int, char**)

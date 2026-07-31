@@ -89,6 +89,7 @@
 
 #include <cuda/__fp/fpmp_common.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cccl/preprocessor.h> // _CCCL_PP_FOR_EACH, to fold __CUDA_ARCH_LIST__
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -211,36 +212,84 @@ namespace cuda::experimental
 /*
 // Automatic detection of FP128 support based on platform capabilities
 // --------------------------------------------------------------------
-// FP128 is enabled when the platform provides 128-bit IEEE 754 quadruple
-// precision arithmetic, either via:
-//   - the __float128 type (x86 Linux/Unix, PowerPC, ... ; see above)
-//   - 128-bit long double (aarch64, s390x, PowerPC with IEEE long double)
+// Two separate questions, deliberately answered by two macros:
 //
-// Under CUDA this stays device-only and limited to sm_100+ (Blackwell), where nvcc supports
-// __float128 in device code without extra flags. A toolchain that provides device fp128 on
-// earlier architectures can opt in with -D_CCCL_FPMP_FP128_ENABLE=1, which this respects.
+//   _CCCL_FPMP_FP128_ENABLE     - does fpmp2 declare its fp128 constructor and conversion?
+//   _CCCL_FPMP_FP128_DEVICE_OPS - may those members, and the quad math fallback, run on the
+//                                 device?
+//
+// The first one must answer identically in the host pass and in every device pass of a CUDA
+// compilation: it decides the *class definition*, and a class whose member set depends on
+// the pass is an ODR violation between the two halves of the same .cu file. It is therefore
+// derived only from host-toolchain properties - the type detection above, which nvcc reports
+// the same way in both passes - and never from __CUDA_ARCH__. That is also what gives host
+// code inside a .cu file the fp128 interchange it is entitled to, whatever the target
+// architecture.
+//
+// The second one is the question __CUDA_ARCH__ used to be asked, answered instead from
+// __CUDA_ARCH_LIST__, which nvcc exposes in both passes. It is all-or-nothing for the whole
+// compilation: a fatbin that also targets an architecture below sm_100 keeps the fp128
+// members host-only, because nvcc rejects a __host__ __device__ signature naming __float128
+// there. Declaring it anyway and failing at link time - the way the sm_90 atomics do - is
+// not available when the signature itself cannot be parsed.
+//
+// Only nvcc gets this treatment. Clang's NVPTX target has no 128-bit floating-point type at
+// all and rejects the name even in a __host__-only declaration, while still defining
+// __SIZEOF_FLOAT128__ in the device pass, so the detection above cannot see the difference;
+// nvc++ is unverified. Both keep fp128 out of the class in both passes, as they did before.
+// NVRTC compiles a single device pass, so it has no symmetry to preserve and usability
+// remains its gate.
+//
+// A toolchain that provides device fp128 on earlier architectures can still opt in with
+// -D_CCCL_FPMP_FP128_DEVICE_OPS=1, and either macro can be forced off.
 */
 #ifndef _CCCL_FPMP_FP128_ENABLE
-#  if _CCCL_CUDA_COMPILATION()
-#    if _CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_HAS_FLOAT128_TYPE == 1) && (_CCCL_PTX_ARCH() >= 1000)
+#  if _CCCL_COMPILER(NVRTC)
+#    if (_CCCL_FPMP_HAS_FLOAT128_TYPE == 1) && (_CCCL_PTX_ARCH() >= 1000)
 #      define _CCCL_FPMP_FP128_ENABLE 1
 #    else
 #      define _CCCL_FPMP_FP128_ENABLE 0
 #    endif
+#  elif _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVCC)
+#    define _CCCL_FPMP_FP128_ENABLE 0
+#  elif (_CCCL_FPMP_HAS_FLOAT128_TYPE == 1) || (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1)
+#    define _CCCL_FPMP_FP128_ENABLE 1
 #  else
-#    if (_CCCL_FPMP_HAS_FLOAT128_TYPE == 1) || (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1)
-#      define _CCCL_FPMP_FP128_ENABLE 1
+#    define _CCCL_FPMP_FP128_ENABLE 0
+#  endif
+#endif
+
+#ifndef _CCCL_FPMP_FP128_DEVICE_OPS
+#  if (_CCCL_FPMP_FP128_ENABLE == 0) || !_CCCL_CUDA_COMPILATION()
+#    define _CCCL_FPMP_FP128_DEVICE_OPS 0
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_FPMP_FP128_DEVICE_OPS 1
+#  elif defined(__CUDA_ARCH_LIST__)
+// Folds the list into one conjunction: 800,1000 becomes 1 &&(800 >= 1000) &&(1000 >= 1000).
+#    define _CCCL_FPMP_FP128_ARCH_IS_SM100(_Arch) &&((_Arch) >= 1000)
+#    if 1 _CCCL_PP_FOR_EACH(_CCCL_FPMP_FP128_ARCH_IS_SM100, __CUDA_ARCH_LIST__)
+#      define _CCCL_FPMP_FP128_DEVICE_OPS 1
 #    else
-#      define _CCCL_FPMP_FP128_ENABLE 0
+#      define _CCCL_FPMP_FP128_DEVICE_OPS 0
 #    endif
+#    undef _CCCL_FPMP_FP128_ARCH_IS_SM100
+#  else
+#    define _CCCL_FPMP_FP128_DEVICE_OPS 0
 #  endif
 #endif
 
 /*
 // fp128 math functions fallback to system implementation enabling
+//
+// Per-pass, unlike the two macros above: it selects function *bodies*, not declarations.
+// The device pass takes the quad path only where fp128 arithmetic is device-callable, since
+// those bodies go through __fpmp2_to_quad; the host pass of a CUDA compilation stays on the
+// double path, as before, so that a .cu file does not silently acquire a libquadmath
+// dependency its host-only counterpart never had.
 */
 #ifndef _CCCL_FPMP_FP128_MATH_FALLBACK
-#  if (_CCCL_FPMP_FP128_ENABLE == 1)
+#  if (_CCCL_FPMP_FP128_ENABLE == 1) \
+    && (!_CCCL_CUDA_COMPILATION() || (_CCCL_DEVICE_COMPILATION() && (_CCCL_FPMP_FP128_DEVICE_OPS == 1)))
 #    define _CCCL_FPMP_FP128_MATH_FALLBACK 1
 #  else
 #    define _CCCL_FPMP_FP128_MATH_FALLBACK 0
@@ -344,6 +393,34 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 #else
 #  define _CCCL_FPMP_CORE_API        _CCCL_TRIVIAL_API
 #  define _CCCL_FPMP_CORE_DEVICE_API _CCCL_DEVICE_API
+#endif
+
+/*
+// Execution space of the fp128 interchange entry points.
+//
+// The fp128 members and the conversions behind them are declared wherever the 128-bit type
+// can be named (_CCCL_FPMP_FP128_ENABLE), which under nvcc includes every device pass, but
+// they carry __device__ only where fp128 arithmetic is device-callable
+// (_CCCL_FPMP_FP128_DEVICE_OPS). Below that, they are host functions that the device pass
+// parses and discards, so both passes see the same class and device code that reaches for
+// quad precision is diagnosed at the call site.
+*/
+#if (_CCCL_FPMP_FP128_DEVICE_OPS == 1) || !_CCCL_CUDA_COMPILATION()
+#  define _CCCL_FPMP_FP128_API          _CCCL_API
+#  define _CCCL_FPMP_FP128_CORE_API     _CCCL_FPMP_CORE_API
+#  define _CCCL_FPMP_FP128_BUILTIN_DECL _CCCL_FPMP_BUILTIN_DECL
+#else
+#  define _CCCL_FPMP_FP128_API _CCCL_HOST_API
+#  if defined(_CCCL_FPMP_BUILD_LIB)
+#    define _CCCL_FPMP_FP128_CORE_API static _CCCL_TRIVIAL_HOST_API
+#  else
+#    define _CCCL_FPMP_FP128_CORE_API _CCCL_TRIVIAL_HOST_API
+#  endif
+#  if (defined _CCCL_FPMP_BUILD_LIB) || (defined _CCCL_FPMP_USE_LIB)
+#    define _CCCL_FPMP_FP128_BUILTIN_DECL _CCCL_FPMP_ABI extern "C" _CCCL_HOST
+#  else
+#    define _CCCL_FPMP_FP128_BUILTIN_DECL _CCCL_TRIVIAL_HOST_API
+#  endif
 #endif
 
 /*********************************************************************

@@ -33,12 +33,11 @@ static_assert(::cuda::std::is_trivially_copyable<fp64mp2_high>::value, "fp64mp2_
 // tolerance (the double-word truncates the source double); the bit-preserving
 // round-trip is checked exactly on hi/lo.
 template <typename mp_type>
-_CCCL_HOST_DEVICE bool vol_ok()
+_CCCL_HOST_DEVICE void vol_ok()
 {
   const double v1  = 3.141592653589793;
   const double v2  = 2.718281828459045;
   const double tol = 1e-6;
-  bool ok          = true;
 
   // Construct from volatile.
   {
@@ -46,7 +45,7 @@ _CCCL_HOST_DEVICE bool vol_ok()
     const mp_type tmp(v1);
     vol = tmp;
     mp_type non_vol(vol);
-    ok = ok && (::cuda::std::fabs((double) non_vol - v1) < tol);
+    assert(::cuda::std::fabs((double) non_vol - v1) < tol);
   }
 
   // Assign to volatile, read back via construct-from-volatile.
@@ -55,7 +54,7 @@ _CCCL_HOST_DEVICE bool vol_ok()
     volatile mp_type vol;
     vol = src;
     mp_type readback(vol);
-    ok = ok && (::cuda::std::fabs((double) readback - v1) < tol);
+    assert(::cuda::std::fabs((double) readback - v1) < tol);
   }
 
   // Assign from volatile.
@@ -65,7 +64,7 @@ _CCCL_HOST_DEVICE bool vol_ok()
     vol = tmp;
     mp_type dst;
     dst = vol;
-    ok  = ok && (::cuda::std::fabs((double) dst - v2) < tol);
+    assert(::cuda::std::fabs((double) dst - v2) < tol);
   }
 
   // Volatile round-trip preserves hi/lo exactly.
@@ -74,21 +73,23 @@ _CCCL_HOST_DEVICE bool vol_ok()
     volatile mp_type vol;
     vol = src;
     mp_type dst(vol);
-    ok = ok && (src.hi() == dst.hi()) && (src.lo() == dst.lo());
+    assert((src.hi() == dst.hi()) && (src.lo() == dst.lo()));
   }
-
-  return ok;
 }
 
-_CCCL_HOST_DEVICE bool run_test()
+_CCCL_HOST_DEVICE void run_test()
 {
-  return vol_ok<fp32mp2>() && vol_ok<fp32mp2_low>() && vol_ok<fp32mp2_high>() && vol_ok<fp64mp2>()
-      && vol_ok<fp64mp2_low>() && vol_ok<fp64mp2_high>();
+  vol_ok<fp32mp2>();
+  vol_ok<fp32mp2_low>();
+  vol_ok<fp32mp2_high>();
+  vol_ok<fp64mp2>();
+  vol_ok<fp64mp2_low>();
+  vol_ok<fp64mp2_high>();
 }
 
 TEST_FUNC void test()
 {
-  assert(run_test());
+  run_test();
 }
 
 int main(int, char**)
