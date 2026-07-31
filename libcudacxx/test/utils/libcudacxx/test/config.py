@@ -135,7 +135,8 @@ class Configuration(object):
         else:
             raise OSError("could not load any of: " + " ".join(libnames))
 
-        self.lit_config.note('compute_archs set to "native", computing available archs')
+        self.lit_config.note(
+            'compute_archs set to "native", computing available archs')
         CUDA_SUCCESS = 0
         nGpus = ctypes.c_int()
         cc_major = ctypes.c_int()
@@ -182,7 +183,8 @@ class Configuration(object):
                     "Deduced compute capability of device %d to: %d%d"
                     % (i + 1, cc_major.value, cc_minor.value)
                 )
-                deduced_compute_archs.append(cc_major.value * 10 + cc_minor.value)
+                deduced_compute_archs.append(
+                    cc_major.value * 10 + cc_minor.value)
 
         self.lit_config.note(
             "Deduced compute capabilities are: %s" % deduced_compute_archs
@@ -238,7 +240,8 @@ class Configuration(object):
 
         archs = ";".join(archs)
 
-        self.lit_config.note("Deduced major compute capabilities are: %s" % archs)
+        self.lit_config.note(
+            "Deduced major compute capabilities are: %s" % archs)
 
         return archs
 
@@ -305,20 +308,24 @@ class Configuration(object):
         )
         self.lit_config.note("Using flags: %s" % self.cxx.flags)
         if self.cxx.use_modules:
-            self.lit_config.note("Using modules flags: %s" % self.cxx.modules_flags)
-        self.lit_config.note("Using compile flags: %s" % self.cxx.compile_flags)
+            self.lit_config.note("Using modules flags: %s" %
+                                 self.cxx.modules_flags)
+        self.lit_config.note("Using compile flags: %s" %
+                             self.cxx.compile_flags)
         if len(self.cxx.warning_flags):
             self.lit_config.note("Using warnings: %s" % self.cxx.warning_flags)
         self.lit_config.note("Using link flags: %s" % self.cxx.link_flags)
         # Print as list to prevent "set([...])" from being printed.
         self.lit_config.note(
-            "Using available_features: %s" % list(self.config.available_features)
+            "Using available_features: %s" % list(
+                self.config.available_features)
         )
         show_env_vars = {}
         for k, v in self.exec_env.items():
             if k not in os.environ or os.environ[k] != v:
                 show_env_vars[k] = v
-        self.lit_config.note("Adding environment variables: %r" % show_env_vars)
+        self.lit_config.note(
+            "Adding environment variables: %r" % show_env_vars)
         sys.stderr.flush()  # Force flushing to avoid broken output on Windows
 
     def get_test_format(self):
@@ -353,7 +360,8 @@ class Configuration(object):
                 te.timeout = exec_timeout
             if self.lit_config.useValgrind:
                 # te = ValgrindExecutor(self.lit_config.valgrindArgs, te)
-                self.lit_config.fatal("ValgrindExecutor never existed in CCCL.")
+                self.lit_config.fatal(
+                    "ValgrindExecutor never existed in CCCL.")
         self.executor = te
 
     def configure_target_info(self):
@@ -383,17 +391,21 @@ class Configuration(object):
             self.cxx.source_lang = "cu"
             maj_v, min_v, patch_v = self.cxx.version
             self.config.available_features.add("nvrtc")
-            self.config.available_features.add("%s-%s" % (self.cxx.type, maj_v))
+            self.config.available_features.add(
+                "%s-%s" % (self.cxx.type, maj_v))
             self.config.available_features.add(
                 "%s-%s.%s" % (self.cxx.type, maj_v, min_v)
             )
             self.config.available_features.add(
                 "%s-%s.%s.%s" % (self.cxx.type, maj_v, min_v, patch_v)
             )
-            self.lit_config.note("detected cxx.type as: {}".format(self.cxx.type))
-            self.lit_config.note("detected cxx.version as: {}".format(self.cxx.version))
             self.lit_config.note(
-                "detected cxx.default_dialect as: {}".format(self.cxx.default_dialect)
+                "detected cxx.type as: {}".format(self.cxx.type))
+            self.lit_config.note(
+                "detected cxx.version as: {}".format(self.cxx.version))
+            self.lit_config.note(
+                "detected cxx.default_dialect as: {}".format(
+                    self.cxx.default_dialect)
             )
             self.cxx.compile_env = dict(os.environ)
         # If compiler is *not* NVRTCC
@@ -407,7 +419,8 @@ class Configuration(object):
                 clangxx = libcudacxx.util.which("clang++", search_paths)
                 if clangxx:
                     cxx = clangxx
-                    self.lit_config.note("inferred cxx_under_test as: %r" % cxx)
+                    self.lit_config.note(
+                        "inferred cxx_under_test as: %r" % cxx)
                 elif self.cxx_is_clang_cl:
                     self.lit_config.fatal(
                         "Failed to find clang++ substitution for clang-cl"
@@ -438,10 +451,13 @@ class Configuration(object):
                 self.config.available_features.add(
                     "%s-%s.%s.%s" % (cxx_type, maj_v, min_v, patch_v)
                 )
-            self.lit_config.note("detected cxx.type as: {}".format(self.cxx.type))
-            self.lit_config.note("detected cxx.version as: {}".format(self.cxx.version))
             self.lit_config.note(
-                "detected cxx.default_dialect as: {}".format(self.cxx.default_dialect)
+                "detected cxx.type as: {}".format(self.cxx.type))
+            self.lit_config.note(
+                "detected cxx.version as: {}".format(self.cxx.version))
+            self.lit_config.note(
+                "detected cxx.default_dialect as: {}".format(
+                    self.cxx.default_dialect)
             )
             self.cxx.compile_env = dict(os.environ)
             # 'CCACHE_CPP2' prevents ccache from stripping comments while
@@ -472,10 +488,12 @@ class Configuration(object):
                         "%s-%s.%s" % (self.host_cxx_type, maj_v, min_v)
                     )
                 self.lit_config.note(
-                    "detected host_cxx.type as: {}".format(self.cxx.host_cxx.type)
+                    "detected host_cxx.type as: {}".format(
+                        self.cxx.host_cxx.type)
                 )
                 self.lit_config.note(
-                    "detected host_cxx.version as: {}".format(self.cxx.host_cxx.version)
+                    "detected host_cxx.version as: {}".format(
+                        self.cxx.host_cxx.version)
                 )
                 self.lit_config.note(
                     "detected host_cxx.default_dialect as: {}".format(
@@ -491,7 +509,8 @@ class Configuration(object):
             from itertools import chain
 
             return list(
-                chain.from_iterable((prefix, path) for path in _split_env_var(var))
+                chain.from_iterable((prefix, path)
+                                    for path in _split_env_var(var))
             )
 
         assert self.cxx_is_clang_cl
@@ -519,7 +538,8 @@ class Configuration(object):
 
     def configure_src_root(self):
         self.libcudacxx_src_root = self.get_lit_conf(
-            "libcudacxx_src_root", os.path.dirname(self.config.test_source_root)
+            "libcudacxx_src_root", os.path.dirname(
+                self.config.test_source_root)
         )
 
     def configure_obj_root(self):
@@ -596,7 +616,8 @@ class Configuration(object):
             use_lit_shell_default = self.target_info.use_lit_shell_default()
         # Check for the command line parameter using the default value if it is
         # not present.
-        use_lit_shell = self.get_lit_bool("use_lit_shell", use_lit_shell_default)
+        use_lit_shell = self.get_lit_bool(
+            "use_lit_shell", use_lit_shell_default)
         self.execute_external = not use_lit_shell
 
     def configure_no_execute(self):
@@ -604,7 +625,8 @@ class Configuration(object):
             self.config.available_features.add("no_execute")
 
     def configure_ccache(self):
-        use_ccache_default = os.environ.get("CMAKE_CUDA_COMPILER_LAUNCHER") is not None
+        use_ccache_default = os.environ.get(
+            "CMAKE_CUDA_COMPILER_LAUNCHER") is not None
         use_ccache = self.get_lit_bool("use_ccache", use_ccache_default)
         if use_ccache and not self.cxx.type == "nvrtcc":
             self.cxx.use_ccache = True
@@ -614,7 +636,8 @@ class Configuration(object):
         (arch, name, version) = self.config.deployment
         self.config.available_features.add("%s=%s-%s" % (feature, arch, name))
         self.config.available_features.add("%s=%s" % (feature, name))
-        self.config.available_features.add("%s=%s%s" % (feature, name, version))
+        self.config.available_features.add(
+            "%s=%s%s" % (feature, name, version))
 
     def configure_features(self):
         additional_features = self.get_lit_conf("additional_features")
@@ -641,7 +664,8 @@ class Configuration(object):
         if self.long_tests is None:
             # Default to running long tests.
             self.long_tests = True
-            self.lit_config.note("inferred long_tests as: %r" % self.long_tests)
+            self.lit_config.note(
+                "inferred long_tests as: %r" % self.long_tests)
 
         if self.long_tests:
             self.config.available_features.add("long_tests")
@@ -667,19 +691,24 @@ class Configuration(object):
         if self.get_lit_bool("enable_tile", False):
             self.config.available_features.add("enable-tile")
 
+        if self.get_lit_bool("force_tile", False):
+            self.config.available_features.add("force-tile")
+
         if "msvc" not in self.config.available_features:
             macros = self._dump_macros_verbose()
             if "__cpp_if_constexpr" not in macros:
                 self.config.available_features.add("libcpp-no-if-constexpr")
 
             if "__cpp_structured_bindings" not in macros:
-                self.config.available_features.add("libcpp-no-structured-bindings")
+                self.config.available_features.add(
+                    "libcpp-no-structured-bindings")
 
             if (
                 "__cpp_deduction_guides" not in macros
                 or intMacroValue(macros["__cpp_deduction_guides"]) < 201611
             ):
-                self.config.available_features.add("libcpp-no-deduction-guides")
+                self.config.available_features.add(
+                    "libcpp-no-deduction-guides")
 
         if self.is_windows:
             self.config.available_features.add("windows")
@@ -699,7 +728,8 @@ class Configuration(object):
                 maj_v, min_v = (macros["__GLIBC__"], macros["__GLIBC_MINOR__"])
                 self.config.available_features.add("glibc")
                 self.config.available_features.add("glibc-%s" % maj_v)
-                self.config.available_features.add("glibc-%s.%s" % (maj_v, min_v))
+                self.config.available_features.add(
+                    "glibc-%s.%s" % (maj_v, min_v))
 
         libcudacxx_gdb = self.get_lit_conf("libcudacxx_gdb")
         if libcudacxx_gdb and "NOTFOUND" not in libcudacxx_gdb:
@@ -713,6 +743,8 @@ class Configuration(object):
         self.cxx.compile_flags += shlex.split(compile_flags_str)
         if self.get_lit_bool("enable_pedantic_warnings", default=True):
             self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
+        if self.get_lit_bool("force_tile", default=False):
+            self.cxx.compile_flags += ["-DCCCL_FORCE_TILE_TESTS"]
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ["-D_CRT_SECURE_NO_WARNINGS"]
@@ -865,7 +897,8 @@ class Configuration(object):
 
                 if success:
                     std = s
-                    self.lit_config.note("inferred language dialect as: %s" % std)
+                    self.lit_config.note(
+                        "inferred language dialect as: %s" % std)
                     break
 
         if std:
@@ -876,12 +909,14 @@ class Configuration(object):
 
             extraflags = []
             if self.cxx.type == "clang":
-                extraflags = ["-Wno-unknown-cuda-version", "--no-cuda-version-check"]
+                extraflags = ["-Wno-unknown-cuda-version",
+                              "--no-cuda-version-check"]
 
             # Do a check with the user/config flag to ensure that the flag is supported.
             if not self.cxx.hasCompileFlag([stdflag] + extraflags):
                 raise OSError(
-                    "Configured compiler does not support flag {0}".format(stdflag)
+                    "Configured compiler does not support flag {0}".format(
+                        stdflag)
                 )
 
             self.cxx.flags += [stdflag]
@@ -938,18 +973,21 @@ class Configuration(object):
             self.cxx.flags += ["-m" + name + "-version-min=" + version]
 
         # Add includes for support headers used in the tests.
-        support_path = os.path.join(self.libcudacxx_src_root, "test", "support")
+        support_path = os.path.join(
+            self.libcudacxx_src_root, "test", "support")
         self.cxx.compile_flags += ["-I" + support_path]
 
         # Add includes for the PSTL headers
         pstl_src_root = self.get_lit_conf("pstl_src_root")
         pstl_obj_root = self.get_lit_conf("pstl_obj_root")
         if pstl_src_root is not None and pstl_obj_root is not None:
-            self.cxx.compile_flags += ["-I" + os.path.join(pstl_src_root, "include")]
+            self.cxx.compile_flags += ["-I" +
+                                       os.path.join(pstl_src_root, "include")]
             self.cxx.compile_flags += [
                 "-I" + os.path.join(pstl_obj_root, "generated_headers")
             ]
-            self.cxx.compile_flags += ["-I" + os.path.join(pstl_src_root, "test")]
+            self.cxx.compile_flags += ["-I" +
+                                       os.path.join(pstl_src_root, "test")]
             self.config.available_features.add("parallel-algorithms")
 
         # FIXME(EricWF): variant_size.pass.cpp requires a slightly larger
@@ -961,7 +999,8 @@ class Configuration(object):
             self.config.available_features.add("no_execute")
 
     def configure_compile_flags_header_includes(self):
-        support_path = os.path.join(self.libcudacxx_src_root, "test", "support")
+        support_path = os.path.join(
+            self.libcudacxx_src_root, "test", "support")
         self.configure_config_site_header()
         if self.cxx_stdlib_under_test != "libstdc++" and not self.is_windows:
             self.cxx.compile_flags += [
@@ -986,10 +1025,12 @@ class Configuration(object):
         #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, "include")
-            thrust_headers = os.path.join(self.libcudacxx_src_root, "../thrust/")
+            thrust_headers = os.path.join(
+                self.libcudacxx_src_root, "../thrust/")
             cub_headers = os.path.join(self.libcudacxx_src_root, "../cub/")
         if not os.path.isdir(cxx_headers):
-            self.lit_config.fatal("cxx_headers='%s' is not a directory." % cxx_headers)
+            self.lit_config.fatal(
+                "cxx_headers='%s' is not a directory." % cxx_headers)
         self.cxx.compile_flags += ["-I" + cxx_headers]
         self.cxx.compile_flags += ["-I" + thrust_headers]
         self.cxx.compile_flags += ["-I" + cub_headers]
@@ -1005,10 +1046,12 @@ class Configuration(object):
         # use this if it exists.
         if self.libcudacxx_obj_root is None:
             return
-        config_site_header = os.path.join(self.libcudacxx_obj_root, "__config_site")
+        config_site_header = os.path.join(
+            self.libcudacxx_obj_root, "__config_site")
         if not os.path.isfile(config_site_header):
             return
-        contained_macros = self.parse_config_site_and_add_features(config_site_header)
+        contained_macros = self.parse_config_site_and_add_features(
+            config_site_header)
         self.lit_config.note(
             "Using __config_site header %s with macros: %r"
             % (config_site_header, contained_macros)
@@ -1053,7 +1096,8 @@ class Configuration(object):
         # Transform each macro name into the feature name used in the tests.
         # Ex. _LIBCUDACXX_HAS_NO_THREADS -> libcpp-has-no-threads
         for m in feature_macros:
-            assert m.startswith("_LIBCUDACXX_HAS_") or m.startswith("_LIBCUDACXX_ABI_")
+            assert m.startswith("_LIBCUDACXX_HAS_") or m.startswith(
+                "_LIBCUDACXX_ABI_")
             m = m.lower()[1:].replace("_", "-")
             self.config.available_features.add(m)
         return feature_macros
@@ -1151,7 +1195,8 @@ class Configuration(object):
                         '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                     ]
                 else:
-                    self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
+                    self.cxx.link_flags += ["-Wl,-rpath," +
+                                            self.cxx_runtime_root]
         additional_flags = self.get_lit_conf("test_linker_flags")
         if additional_flags:
             self.cxx.link_flags += shlex.split(additional_flags)
@@ -1168,7 +1213,8 @@ class Configuration(object):
                         '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                     ]
                 else:
-                    self.cxx.link_flags += ["-Wl,-rpath," + self.abi_library_root]
+                    self.cxx.link_flags += ["-Wl,-rpath," +
+                                            self.abi_library_root]
             else:
                 self.add_path(self.exec_env, self.abi_library_root)
 
@@ -1198,7 +1244,8 @@ class Configuration(object):
         if not debug_level:
             return
         if debug_level not in ["0", "1"]:
-            self.lit_config.fatal('Invalid value for debug_level "%s".' % debug_level)
+            self.lit_config.fatal(
+                'Invalid value for debug_level "%s".' % debug_level)
 
     def configure_warnings(self):
         default_enable_warnings = (
@@ -1206,8 +1253,10 @@ class Configuration(object):
             or "msvc" in self.config.available_features
             or "nvcc" in self.config.available_features
         )
-        enable_warnings = self.get_lit_bool("enable_warnings", default_enable_warnings)
-        enable_pedantic = self.get_lit_bool("enable_pedantic_warnings", default=True)
+        enable_warnings = self.get_lit_bool(
+            "enable_warnings", default_enable_warnings)
+        enable_pedantic = self.get_lit_bool(
+            "enable_pedantic_warnings", default=True)
         self.cxx.useWarnings(enable_warnings)
         if "nvcc" in self.config.available_features:
             self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
@@ -1282,13 +1331,15 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]
                 self.config.available_features.add("diagnose-if-support")
             self.cxx.addWarningFlagIfSupported("-Wshadow")
-            self.cxx.addWarningFlagIfSupported("-Wno-unused-command-line-argument")
+            self.cxx.addWarningFlagIfSupported(
+                "-Wno-unused-command-line-argument")
             self.cxx.addWarningFlagIfSupported("-Wno-attributes")
             self.cxx.addWarningFlagIfSupported("-Wno-pessimizing-move")
             self.cxx.addWarningFlagIfSupported("-Wno-c++11-extensions")
             self.cxx.addWarningFlagIfSupported("-Wno-user-defined-literals")
             self.cxx.addWarningFlagIfSupported("-Wno-noexcept-type")
-            self.cxx.addWarningFlagIfSupported("-Wno-aligned-allocation-unavailable")
+            self.cxx.addWarningFlagIfSupported(
+                "-Wno-aligned-allocation-unavailable")
             # These warnings should be enabled in order to support the MSVC
             # team using the test suite; They enable the warnings below and
             # expect the test suite to be clean.
@@ -1302,19 +1353,22 @@ class Configuration(object):
             if "nvcc" not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedefs")
+                self.cxx.addWarningFlagIfSupported(
+                    "-Wno-unused-local-typedefs")
 
     def configure_sanitizer(self):
         san = self.get_lit_conf("use_sanitizer", "").strip()
         if san:
-            self.target_info.add_sanitizer_features(san, self.config.available_features)
+            self.target_info.add_sanitizer_features(
+                san, self.config.available_features)
             # Search for llvm-symbolizer along the compiler path first
             # and then along the PATH env variable.
             symbolizer_search_paths = os.environ.get("PATH", "")
             cxx_path = libcudacxx.util.which(self.cxx.path)
             if cxx_path is not None:
                 symbolizer_search_paths = (
-                    os.path.dirname(cxx_path) + os.pathsep + symbolizer_search_paths
+                    os.path.dirname(cxx_path) + os.pathsep +
+                    symbolizer_search_paths
                 )
             llvm_symbolizer = libcudacxx.util.which(
                 "llvm-symbolizer", symbolizer_search_paths
@@ -1350,7 +1404,8 @@ class Configuration(object):
             elif san == "Memory" or san == "MemoryWithOrigins":
                 self.cxx.flags += ["-fsanitize=memory"]
                 if san == "MemoryWithOrigins":
-                    self.cxx.compile_flags += ["-fsanitize-memory-track-origins"]
+                    self.cxx.compile_flags += [
+                        "-fsanitize-memory-track-origins"]
                 if llvm_symbolizer is not None:
                     self.exec_env["MSAN_SYMBOLIZER_PATH"] = llvm_symbolizer
                 self.config.available_features.add("msan")
@@ -1375,7 +1430,8 @@ class Configuration(object):
                         '"-Wl,-rpath,' + os.path.dirname(san_lib) + '"',
                     ]
                 else:
-                    self.cxx.link_flags += ["-Wl,-rpath," + os.path.dirname(san_lib)]
+                    self.cxx.link_flags += ["-Wl,-rpath," +
+                                            os.path.dirname(san_lib)]
 
     def configure_coroutines(self):
         if self.cxx.hasCompileFlag("-fcoroutines-ts"):
@@ -1392,7 +1448,8 @@ class Configuration(object):
     def configure_modules(self):
         modules_flags = ["-fmodules"]
         if platform.system() != "Darwin":
-            modules_flags += ["-Xclang", "-fmodules-local-submodule-visibility"]
+            modules_flags += ["-Xclang",
+                              "-fmodules-local-submodule-visibility"]
         supports_modules = self.cxx.hasCompileFlag(modules_flags)
         enable_modules = self.get_modules_enabled()
         if enable_modules and not supports_modules:
@@ -1402,7 +1459,8 @@ class Configuration(object):
         if not supports_modules:
             return
         self.config.available_features.add("modules-support")
-        module_cache = os.path.join(self.config.test_exec_root, "modules.cache")
+        module_cache = os.path.join(
+            self.config.test_exec_root, "modules.cache")
         module_cache = os.path.realpath(module_cache)
         if os.path.isdir(module_cache):
             shutil.rmtree(module_cache)
@@ -1422,8 +1480,10 @@ class Configuration(object):
         sub.append(("%libcxx_src_root", self.libcudacxx_src_root))
         # Configure flags substitutions
         flags_str = " ".join([shlex.quote(f) for f in self.cxx.flags])
-        compile_flags_str = " ".join([shlex.quote(f) for f in self.cxx.compile_flags])
-        link_flags_str = " ".join([shlex.quote(f) for f in self.cxx.link_flags])
+        compile_flags_str = " ".join([shlex.quote(f)
+                                     for f in self.cxx.compile_flags])
+        link_flags_str = " ".join([shlex.quote(f)
+                                  for f in self.cxx.link_flags])
         all_flags = "%s %s %s" % (flags_str, compile_flags_str, link_flags_str)
         sub.append(("%flags", flags_str))
         sub.append(("%compile_flags", compile_flags_str))
@@ -1451,7 +1511,8 @@ class Configuration(object):
         # Configure run env substitution.
         sub.append(("%run", "%t.exe"))
         # Configure not program substitutions
-        not_py = os.path.join(self.libcudacxx_src_root, "test", "utils", "not.py")
+        not_py = os.path.join(self.libcudacxx_src_root,
+                              "test", "utils", "not.py")
         not_str = "%s %s " % (shlex.quote(sys.executable), shlex.quote(not_py))
         sub.append(("not ", not_str))
         if self.get_lit_conf("libcudacxx_gdb"):
@@ -1472,7 +1533,8 @@ class Configuration(object):
         target_triple = self.get_lit_conf("target_triple")
         self.use_target = self.get_lit_bool("use_target", False)
         if self.use_target and target_triple:
-            self.lit_config.warning("use_target is true but no triple is specified")
+            self.lit_config.warning(
+                "use_target is true but no triple is specified")
 
         # Use deployment if possible.
         self.use_deployment = not self.use_target and self.can_use_deployment()
@@ -1490,7 +1552,8 @@ class Configuration(object):
             if self.get_lit_conf("arch"):
                 self.lit_config.warning("ignoring arch, using target_triple")
             if self.get_lit_conf("platform"):
-                self.lit_config.warning("ignoring platform, using target_triple")
+                self.lit_config.warning(
+                    "ignoring platform, using target_triple")
             return
 
         assert not self.use_target
@@ -1528,4 +1591,5 @@ class Configuration(object):
             dest_env["PATH"] = new_path
         else:
             split_char = ";" if self.is_windows else ":"
-            dest_env["PATH"] = "%s%s%s" % (new_path, split_char, dest_env["PATH"])
+            dest_env["PATH"] = "%s%s%s" % (
+                new_path, split_char, dest_env["PATH"])
