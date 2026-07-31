@@ -623,21 +623,22 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   const int dynamic_smem_bytes        = shape.dynamic_smem_bytes;
   const auto max_block_resident_items = layout_t::max_block_resident_items(dynamic_smem_bytes);
 
-  const auto grid_blocks =
-    static_cast<::cuda::std::uint64_t>(num_seg_val) * static_cast<::cuda::std::uint64_t>(cluster_blocks);
-  if (grid_blocks > static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<int>::max()))
-  {
-    return cudaErrorInvalidValue;
-  }
+  // One cluster per segment, its CTAs stacked in the grid's y-dimension so the x-extent stays `num_segments`: a
+  // flattened x == num_segments * cluster_blocks would overrun the 2^31-1 grid-x limit for a multi-CTA cluster well
+  // before `num_segments` reached its INT_MAX maximum (already <= INT_MAX by the entry check in `dispatch`;
+  // `cluster_blocks` is far below the y-dimension limit). The device reads the segment id and CTA rank from
+  // dimension-agnostic cluster SREGs (clusterid.x / cluster_ctarank), so this needs no agent change.
+  const dim3 grid_dim{static_cast<unsigned>(num_seg_val), static_cast<unsigned>(cluster_blocks), 1u};
+  const dim3 cluster_dim{1u, static_cast<unsigned>(cluster_blocks), 1u};
 
   // The cluster dimension routes the host launch through `cudaLaunchKernelEx`.
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<unsigned>(grid_blocks),
-                         static_cast<unsigned>(threads_per_block),
+        launcher_factory(grid_dim,
+                         dim3{static_cast<unsigned>(threads_per_block)},
                          static_cast<::cuda::std::size_t>(dynamic_smem_bytes),
                          stream,
                          /*dependent_launch=*/false,
-                         static_cast<unsigned>(cluster_blocks))
+                         cluster_dim)
           .doit(kernel_ptr,
                 d_key_segments_it,
                 d_key_segments_out_it,
@@ -1041,11 +1042,11 @@ _CCCL_HOST_API cudaError_t dispatch(
     return error;
   }
 
-  // `num_segments` is the grid extent of both host launch arms (the baseline arm launches one block per segment; the
-  // cluster arm launches `num_segments * cluster_blocks`), so it must fit a positive 32-bit grid dimension. A count
-  // above INT_MAX cannot, so reject it as an out-of-contract value at this single host boundary: otherwise the baseline
-  // arm would silently narrow it to `int` and the cluster arm's 64-bit grid-size product could overflow before its own
-  // range check.
+  // `num_segments` maps to the grid's x-extent in both host launch arms (the baseline arm launches one block per
+  // segment; the cluster arm launches one cluster per segment, stacking the cluster's CTAs in the grid's y-dimension),
+  // so it must fit a positive 32-bit grid dimension. A count above INT_MAX cannot, so reject it as an out-of-contract
+  // value at this single host boundary: otherwise the baseline arm would silently narrow it to `int` and the cluster
+  // arm would build an out-of-range grid.x.
   using num_segments_val_t                  = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   const num_segments_val_t num_segments_val = detail::params::get_param(num_segments, num_segments_val_t{0});
   // Unary `+` integer-promotes the count to a standard integer type so the sign-safe `cmp_*` comparators accept it:
