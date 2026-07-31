@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr auto iter_move(const iterator& i) noexcept(see below);
 
 #include <cuda/std/array>
@@ -21,10 +24,10 @@
 struct ThrowingMove
 {
   ThrowingMove() = default;
-  TEST_FUNC constexpr ThrowingMove(ThrowingMove&&){}; // NOLINT(performance-noexcept-move-constructor)
+  TEST_HOST_DEVICE_FUNC constexpr ThrowingMove(ThrowingMove&&){}; // NOLINT(performance-noexcept-move-constructor)
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     // underlying iter_move noexcept
