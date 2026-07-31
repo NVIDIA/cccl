@@ -30,7 +30,8 @@ TEST_CASE("scope_exit runs on normal exit", "[utility][scope]")
 
 TEST_CASE("scope_exit runs on exceptional exit", "[utility][scope]")
 {
-  int count = 0;
+  int count   = 0;
+  bool caught = false;
   try
   {
     cudax::scope_exit guard{[&]() noexcept {
@@ -39,7 +40,10 @@ TEST_CASE("scope_exit runs on exceptional exit", "[utility][scope]")
     throw 42;
   }
   catch (...)
-  {}
+  {
+    caught = true;
+  }
+  CHECK(caught);
   CHECK(count == 1);
 }
 
@@ -78,6 +82,7 @@ TEST_CASE("scope_fail runs only on exceptional exit", "[utility][scope]")
   }
   CHECK(count == 0);
 
+  bool caught = false;
   try
   {
     cudax::scope_fail guard{[&]() noexcept {
@@ -86,13 +91,17 @@ TEST_CASE("scope_fail runs only on exceptional exit", "[utility][scope]")
     throw 42;
   }
   catch (...)
-  {}
+  {
+    caught = true;
+  }
+  CHECK(caught);
   CHECK(count == 1);
 }
 
 TEST_CASE("scope_fail release disables the guard", "[utility][scope]")
 {
-  int count = 0;
+  int count   = 0;
+  bool caught = false;
   try
   {
     cudax::scope_fail guard{[&]() noexcept {
@@ -102,13 +111,17 @@ TEST_CASE("scope_fail release disables the guard", "[utility][scope]")
     throw 42;
   }
   catch (...)
-  {}
+  {
+    caught = true;
+  }
+  CHECK(caught);
   CHECK(count == 0);
 }
 
 TEST_CASE("scope_fail move releases the source", "[utility][scope]")
 {
-  int count = 0;
+  int count   = 0;
+  bool caught = false;
   try
   {
     cudax::scope_fail first{[&]() noexcept {
@@ -118,7 +131,10 @@ TEST_CASE("scope_fail move releases the source", "[utility][scope]")
     throw 42;
   }
   catch (...)
-  {}
+  {
+    caught = true;
+  }
+  CHECK(caught);
   CHECK(count == 1);
 }
 
@@ -132,7 +148,8 @@ TEST_CASE("scope_success runs only on normal exit", "[utility][scope]")
   }
   CHECK(count == 1);
 
-  count = 0;
+  count       = 0;
+  bool caught = false;
   try
   {
     cudax::scope_success guard{[&] {
@@ -141,7 +158,10 @@ TEST_CASE("scope_success runs only on normal exit", "[utility][scope]")
     throw 42;
   }
   catch (...)
-  {}
+  {
+    caught = true;
+  }
+  CHECK(caught);
   CHECK(count == 0);
 }
 
