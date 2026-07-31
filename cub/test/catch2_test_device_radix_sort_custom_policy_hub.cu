@@ -11,6 +11,7 @@
 #include <cub/device/device_radix_sort.cuh>
 
 #include "catch2_radix_sort_helper.cuh"
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -97,7 +98,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][device]")
+CUB_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][device]", CUB_SMALL)
 {
   using key_t              = int;
   using offset_t           = unsigned;

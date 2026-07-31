@@ -9,7 +9,7 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: windows
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // <cuda/atomic>
@@ -22,13 +22,13 @@
 #include "test_macros.h"
 
 template <typename T>
-TEST_FUNC constexpr T combine_literal(uint64_t lower, uint64_t upper)
+TEST_HOST_DEVICE_FUNC constexpr T combine_literal(uint64_t lower, uint64_t upper)
 {
   return T(lower) | (T(upper) << 64);
 }
 
 template <template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   {
     using T = __int128_t;

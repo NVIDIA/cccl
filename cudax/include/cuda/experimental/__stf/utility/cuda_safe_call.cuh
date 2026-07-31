@@ -30,9 +30,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/scope_exit.cuh>
+
+#include <cstdlib>
+#include <exception>
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
@@ -320,7 +325,117 @@ void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::c
   abort();
 }
 
+using ::cuda::experimental::throw_defer;
+using ::cuda::experimental::throw_defer_t;
+using ::cuda::experimental::throw_proof;
+using ::cuda::experimental::throw_proof_t;
+using ::cuda::experimental::with_location;
+
 #ifdef UNITTESTED_FILE
+UNITTEST("with_location")
+{
+  struct widget
+  {
+    int x = 0;
+  };
+
+  // Move-only wrapper (independent of whether T is copyable).
+  static_assert(!::std::is_copy_constructible_v<with_location<widget>>);
+  static_assert(!::std::is_copy_assignable_v<with_location<widget>>);
+  static_assert(::std::is_move_constructible_v<with_location<widget>>);
+  static_assert(!::std::is_move_assignable_v<with_location<widget>>);
+  static_assert(!::std::is_default_constructible_v<with_location<widget>>);
+
+  // Value T: takes lvalues (copy) or rvalues (move).
+  static_assert(::std::is_constructible_v<with_location<widget>, widget>);
+  static_assert(::std::is_constructible_v<with_location<widget>, widget&>);
+  static_assert(::std::is_constructible_v<with_location<widget>, const widget&>);
+  static_assert(::std::is_constructible_v<with_location<widget>, widget&&>);
+
+  // Lvalue-reference T: binds only to lvalues.
+  static_assert(::std::is_constructible_v<with_location<widget&>, widget&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&>, widget>);
+  static_assert(!::std::is_constructible_v<with_location<widget&>, widget&&>);
+  static_assert(::std::is_move_constructible_v<with_location<widget&>>);
+
+  // Rvalue-reference T: binds only to rvalues.
+  static_assert(::std::is_constructible_v<with_location<widget&&>, widget>);
+  static_assert(::std::is_constructible_v<with_location<widget&&>, widget&&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&&>, widget&>);
+  static_assert(!::std::is_constructible_v<with_location<widget&&>, const widget&>);
+  static_assert(::std::is_move_constructible_v<with_location<widget&&>>);
+
+  // Empty tag lvalues (e.g. throw_proof) must remain convertible — that is how
+  // `throw_proof->*f` captures source_location.
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, const throw_proof_t&>);
+  static_assert(::std::is_constructible_v<with_location<throw_proof_t>, throw_proof_t>);
+
+  auto consume_value = [](with_location<widget> w) {
+    EXPECT(w.payload.x == 42);
+    EXPECT(w.loc.line() != 0);
+  };
+  consume_value(widget{42});
+
+  widget live{7};
+  auto consume_lref = [](with_location<widget&> w) {
+    EXPECT(w.payload.x == 7);
+    w.payload.x = 9;
+  };
+  consume_lref(live);
+  EXPECT(live.x == 9);
+
+  auto consume_rref = [](with_location<widget&&> w) {
+    EXPECT(w.payload.x == 3);
+  };
+  consume_rref(widget{3});
+};
+
+UNITTEST("throw_proof")
+{
+  //! [throw_proof]
+  int value = 0;
+  throw_proof->*[&] {
+    value = 42; // would abort the application if this code threw
+  };
+  EXPECT(value == 42);
+  //! [throw_proof]
+  EXPECT((throw_proof->*
+          [] {
+            return 7;
+          })
+         == 7);
+};
+
+UNITTEST("throw_defer")
+{
+  //! [throw_defer]
+  int value = 0;
+  auto e    = throw_defer->*[&] {
+    value = 42; // if this threw, e would hold the exception_ptr
+  };
+  EXPECT(!e);
+  EXPECT(value == 42);
+  //! [throw_defer]
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  e = throw_defer->*[] {
+    throw ::std::runtime_error("boom");
+  };
+  EXPECT(static_cast<bool>(e));
+  try
+  {
+    ::std::rethrow_exception(e);
+  }
+  catch (const ::std::runtime_error& ex)
+  {
+    EXPECT(::std::string_view(ex.what()) == "boom");
+    return;
+  }
+  EXPECT(false, "rethrow should have transferred control");
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
 UNITTEST("cuda_safe_call")
 {
   //! [cuda_safe_call]
