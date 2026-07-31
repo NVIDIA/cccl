@@ -73,7 +73,7 @@ endfunction()
 # If the test source declares a CUB_LARGE test or contains the legacy
 # "[large-mem]" marker, `result_var` will be set to TRUE.
 function(_cub_has_large_tests result_var test_src)
-  file(READ "${CUB_SOURCE_DIR}/test/${test_src}" test_source)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
   string(FIND "${test_source}" "CUB_LARGE" cub_large_test)
   string(FIND "${test_source}" "[large-mem]" legacy_large_test)
   if (cub_large_test EQUAL -1 AND legacy_large_test EQUAL -1)
