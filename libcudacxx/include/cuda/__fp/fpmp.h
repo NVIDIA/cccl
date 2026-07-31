@@ -499,10 +499,24 @@ public:
       : fpmp2(__split_double(__d))
   {}
 
-//  __fpmp_fp128  operations (only for FpType == double)
+//  __fpmp_fp128  operations, both directions restricted to FpType == double
 // available only for CUDA architectures >= 1000 or when _CCCL_FPMP_FP128_ENABLE is defined
 #if _CCCL_FPMP_FP128_ENABLE == 1
-  // Constructor from __fpmp_fp128 (only for FpType == double).
+  /*
+  // fp128 is the interchange type for quad-precision host code (libquadmath,
+  // Fortran real(16)), and the pair that carries meaning is double-double against
+  // binary128: 106 significand bits against 113. A double-float holds ~48 bits,
+  // fewer than a double, so its interchange type is double -- which is why both
+  // directions below are restricted to FpType == double rather than only the
+  // constructor. Library mode declares the fp64 entry points alone
+  // (__fp64mp2_from_quad / __fp64mp2_to_quad), so an fp32 path would not link
+  // there either.
+  //
+  // A caller who wants the quad image of an fp32mp2 asks for it through double,
+  // which is exact for any pair within the double-float contract
+  // (|lo| <= 1/2 ulp(hi)): (__fpmp_fp128) (double) x.
+  */
+  // Constructor from __fpmp_fp128.
   // Compile-time evaluation uses plain casts; at run time the split goes through
   // __fpmp2_from_quad. Delegates to a static helper for the same reason as the
   // double constructor above.
@@ -512,10 +526,24 @@ public:
       : fpmp2(__split_quad(__d))
   {}
   // Explicit conversion to __fpmp_fp128
-  _CCCL_API explicit operator __fpmp_fp128() const noexcept
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
+  [[nodiscard]] _CCCL_API explicit operator __fpmp_fp128() const noexcept
   {
     return __fpmp2_to_quad(__mp2_hi_, __mp2_lo_);
   }
+
+  // fp32mp2 has no fp128 interchange in either direction, deleted rather than
+  // merely absent so the diagnostic names the rule. Without these, the constructor
+  // would report an ambiguity (quad converts to both float and double equally
+  // well) and the conversion would silently succeed through operator double().
+  // Callers who want the double image can spell it: (__fpmp_fp128) (double) x.
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
+  _CCCL_API _CCCL_FPMP_EXPLICIT fpmp2(__fpmp_fp128) = delete;
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
+  _CCCL_API explicit operator __fpmp_fp128() const = delete;
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
   // Constructor from any standard integer type (int / long / long long + unsigned).

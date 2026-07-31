@@ -46,6 +46,15 @@ static_assert(::cuda::std::is_constructible_v<int64_t, ffloat>, "");
 // wherever _CCCL_HAS_FLOAT128() and long double on IEEE-128 long double platforms.
 static_assert(::cuda::std::is_constructible_v<fp64mp2, __fpmp_fp128>, "");
 static_assert(::cuda::std::is_constructible_v<__fpmp_fp128, fp64mp2>, "");
+
+// fp32mp2 carries ~48 bits, fewer than a double, so quad is not its interchange
+// type: both directions are deliberately deleted, like the 128-bit integers above.
+// Without the deletions the constructor would report an ambiguity and the
+// conversion would silently route through operator double().
+static_assert(!::cuda::std::is_constructible_v<ffloat, __fpmp_fp128>, "");
+static_assert(!::cuda::std::is_constructible_v<__fpmp_fp128, ffloat>, "");
+// The double image stays reachable, spelled out.
+static_assert(::cuda::std::is_constructible_v<__fpmp_fp128, double>, "");
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
 _CCCL_HOST_DEVICE bool run_test()
