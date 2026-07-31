@@ -2,9 +2,6 @@
 
 set -eo pipefail
 
-target_dir=$(realpath "$1")
-mkdir -p "$target_dir"
-
 # Move script to the root directory of the project
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
@@ -17,7 +14,7 @@ function usage {
     echo "Installs CCCL to the provided directory"
 
     echo "Options:"
-    echo "  -v/-verbose: Enable shell echo for debugging"
+    echo "  -v/--verbose/-verbose: Enable shell echo for debugging"
     echo
     echo "Examples:"
     echo "  $ $0 ~/my/prefix"
@@ -28,10 +25,18 @@ while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --verbose) VERBOSE=true; ;;
         -v) VERBOSE=true; ;;
+        -verbose) VERBOSE=true; ;;
         *) break ;;
     esac
     shift
 done
+
+if [[ "$#" -ne 1 ]]; then
+    usage
+fi
+
+target_dir=$(realpath "$1")
+mkdir -p "$target_dir"
 
 if [[ -n "$VERBOSE" ]]; then
     set -x
