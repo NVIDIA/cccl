@@ -40,9 +40,6 @@ struct Transforms
   template <typename LevelIteratorT>
   struct SearchTransform
   {
-    struct BinSelectState
-    {};
-
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
@@ -52,17 +49,10 @@ struct Transforms
       num_output_levels = num_output_levels_;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice() {}
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
 
     template <CacheLoadModifier LoadModifier, typename SampleT2>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT2 sample, int& bin, bool valid) const
-    {
-      BinSelectState state;
-      BinSelect<LoadModifier>(sample, bin, valid, state);
-    }
-
-    template <CacheLoadModifier LoadModifier, typename SampleT2>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT2 sample, int& bin, bool valid, BinSelectState&) const
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
@@ -82,7 +72,7 @@ struct Transforms
     }
   };
 
-  //! @brief Finds a RANGE bin with interpolation and a per-thread bracket cache.
+  //! @brief Finds a RANGE bin with piecewise-linear interpolation and a per-thread bracket cache.
   //!
   //! This transform is used by the runtime-sized shared-memory kernel. It
   //! precomputes interpolation parameters once per thread, verifies each
@@ -115,10 +105,10 @@ struct Transforms
       int bin = -1; // cached bin; < 0 means empty
     };
 
+    mutable BinSelectState mru;
+
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
-    int interpolation_min_bins; // policy-selected minimum bin count for interpolation
-
     // Interpolation state shared by all samples processed by a thread.
     float m_inv_scale; // num_bins / (float)(last - first); valid iff m_have_precompute
     LevelT m_first; // cached d_levels[0]
@@ -135,32 +125,25 @@ struct Transforms
     //!
     //! @param d_levels_ Pointer to levels array
     //! @param num_output_levels_ Number of levels in array
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
-    Init(LevelIteratorT d_levels_, int num_output_levels_, int interpolation_min_bins_)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
-      this->d_levels               = d_levels_;
-      this->num_output_levels      = num_output_levels_;
-      this->interpolation_min_bins = interpolation_min_bins_;
-      this->m_have_precompute      = false;
-      this->m_inv_scale            = 0.0f;
-      this->m_first                = LevelT{};
-      this->m_last                 = LevelT{};
-      this->m_mid                  = LevelT{};
-      this->m_inv_scale_lo         = 0.0f;
-      this->m_inv_scale_hi         = 0.0f;
-      this->m_mid_bin              = 0;
+      this->d_levels          = d_levels_;
+      this->num_output_levels = num_output_levels_;
+      this->m_have_precompute = false;
+      this->m_inv_scale       = 0.0f;
+      this->m_first           = LevelT{};
+      this->m_last            = LevelT{};
+      this->m_mid             = LevelT{};
+      this->m_inv_scale_lo    = 0.0f;
+      this->m_inv_scale_hi    = 0.0f;
+      this->m_mid_bin         = 0;
+      this->mru               = BinSelectState{};
     }
 
     //! @brief Precomputes interpolation slopes from the device level array.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute()
     {
       const int num_bins = num_output_levels - 1;
-      if (num_bins < interpolation_min_bins)
-      {
-        m_have_precompute = false;
-        return;
-      }
-
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
                          CacheModifiedInputIterator<LOAD_LDG, LevelT, OffsetT>,
@@ -201,23 +184,19 @@ struct Transforms
     }
 
   private:
-    struct NoBinSelectState
-    {};
-
     //! @brief Implements cached/interpolated bin selection.
     //!
     //! A cached-bracket hit returns immediately. Otherwise, this computes and
     //! verifies an interpolated guess, checks one adjacent bracket, and finally
     //! falls back to `UpperBound` for arbitrary level distributions.
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT, typename CacheT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelectImpl(_SampleT sample, int& bin, bool valid, CacheT& cache) const
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+    BinSelectImpl(_SampleT sample, int& bin, bool valid, BinSelectState& cache) const
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
                          CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
-      constexpr bool use_cache = ::cuda::std::is_same_v<CacheT, BinSelectState>;
-
       WrappedLevelIteratorT wrapped_levels(d_levels);
       const int num_bins = num_output_levels - 1;
       if (!valid)
@@ -227,22 +206,9 @@ struct Transforms
 
       const LevelT s = static_cast<LevelT>(sample);
 
-      if constexpr (use_cache)
+      if (cache.bin >= 0 && !(s < cache.lo) && (s < cache.hi))
       {
-        if (cache.bin >= 0 && !(s < cache.lo) && (s < cache.hi))
-        {
-          bin = cache.bin;
-          return;
-        }
-      }
-
-      if (interpolation_min_bins <= 0 || num_bins < interpolation_min_bins)
-      {
-        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
-        if (bin >= num_bins)
-        {
-          bin = -1;
-        }
+        bin = cache.bin;
         return;
       }
 
@@ -289,12 +255,8 @@ struct Transforms
       else
       {
         const auto range = interpolation_difference(last_level, first_level);
-        NV_IF_ELSE_TARGET(
-          NV_IS_DEVICE,
-          (guess = static_cast<int>(
-             __fdividef(static_cast<float>(delta) * static_cast<float>(num_bins), static_cast<float>(range)));),
-          (guess = static_cast<int>(
-             (static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));));
+        guess =
+          static_cast<int>((static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));
       }
       if (guess < 0)
       {
@@ -310,11 +272,8 @@ struct Transforms
 
       if (!(s < lvl_lo) && (s < lvl_hi))
       {
-        bin = guess;
-        if constexpr (use_cache)
-        {
-          cache = BinSelectState{lvl_lo, lvl_hi, guess};
-        }
+        bin   = guess;
+        cache = BinSelectState{lvl_lo, lvl_hi, guess};
         return;
       }
 
@@ -326,11 +285,8 @@ struct Transforms
           const LevelT lvl2_lo = wrapped_levels[g2];
           if (!(s < lvl2_lo))
           {
-            bin = g2;
-            if constexpr (use_cache)
-            {
-              cache = BinSelectState{lvl2_lo, lvl_lo, g2};
-            }
+            bin   = g2;
+            cache = BinSelectState{lvl2_lo, lvl_lo, g2};
             return;
           }
         }
@@ -343,11 +299,8 @@ struct Transforms
           const LevelT lvl2_hi = wrapped_levels[g2 + 1];
           if (s < lvl2_hi)
           {
-            bin = g2;
-            if constexpr (use_cache)
-            {
-              cache = BinSelectState{lvl_hi, lvl2_hi, g2};
-            }
+            bin   = g2;
+            cache = BinSelectState{lvl_hi, lvl2_hi, g2};
             return;
           }
         }
@@ -359,27 +312,16 @@ struct Transforms
         bin = -1;
         return;
       }
-      if constexpr (use_cache)
+      if (bin >= 0)
       {
-        if (bin >= 0)
-        {
-          cache = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
-        }
+        cache = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
       }
     }
 
   public:
-    //! @brief Selects a bin without retaining bracket state.
+    //! @brief Selects a bin and retains the most recently used bracket in this thread's transform copy.
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
-    {
-      NoBinSelectState cache;
-      BinSelectImpl<LOAD_MODIFIER>(sample, bin, valid, cache);
-    }
-
-    //! @brief Selects a bin and updates the per-thread bracket state.
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BinSelectState& mru) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
     {
       BinSelectImpl<LOAD_MODIFIER>(sample, bin, valid, mru);
     }
@@ -629,10 +571,7 @@ struct Transforms
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice() {}
-
-    struct BinSelectState
-    {};
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER>
@@ -644,12 +583,6 @@ struct Transforms
       {
         bin = this->ComputeBin(common_sample, m_min, m_scale);
       }
-    }
-
-    template <CacheLoadModifier LOAD_MODIFIER>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid, BinSelectState&) const
-    {
-      this->template BinSelect<LOAD_MODIFIER>(sample, bin, valid);
     }
   };
 
@@ -672,10 +605,7 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(T, int)
     {}
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice() {}
-
-    struct BinSelectState
-    {};
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LoadModifier, typename Sample>
@@ -685,12 +615,6 @@ struct Transforms
       {
         bin = static_cast<int>(sample);
       }
-    }
-
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BinSelectState&) const
-    {
-      this->template BinSelect<LOAD_MODIFIER>(sample, bin, valid);
     }
   };
 };
@@ -980,8 +904,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     output_decode_op[channel]     = output_decode_op_wrapper[channel];
     privatized_decode_op[channel] = privatized_decode_op_wrapper[channel];
-    output_decode_op[channel].PrecomputeOnDevice();
-    privatized_decode_op[channel].PrecomputeOnDevice();
+    output_decode_op[channel].Precompute();
+    privatized_decode_op[channel].Precompute();
   }
 
   AgentHistogramT agent(
