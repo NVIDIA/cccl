@@ -28,10 +28,15 @@ static_assert(::cuda::std::is_constructible_v<fp32mp2, char>, "");
 static_assert(::cuda::std::is_constructible_v<fp32mp2, signed char>, "");
 static_assert(::cuda::std::is_constructible_v<fp32mp2, unsigned char>, "");
 static_assert(::cuda::std::is_constructible_v<fp32mp2, wchar_t>, "");
+static_assert(::cuda::std::is_constructible_v<fp32mp2, char16_t>, "");
+static_assert(::cuda::std::is_constructible_v<fp32mp2, char32_t>, "");
 static_assert(::cuda::std::is_constructible_v<fp64mp2, bool>, "");
 static_assert(::cuda::std::is_constructible_v<fp64mp2, char>, "");
 static_assert(::cuda::std::is_constructible_v<fp64mp2, signed char>, "");
 static_assert(::cuda::std::is_constructible_v<fp64mp2, unsigned char>, "");
+static_assert(::cuda::std::is_constructible_v<fp64mp2, wchar_t>, "");
+static_assert(::cuda::std::is_constructible_v<fp64mp2, char16_t>, "");
+static_assert(::cuda::std::is_constructible_v<fp64mp2, char32_t>, "");
 
 template <class FP>
 _CCCL_HOST_DEVICE bool run_test()
@@ -45,6 +50,14 @@ _CCCL_HOST_DEVICE bool run_test()
   ok = ok && ((double) FP('a') == 97.0);
   ok = ok && ((double) FP((signed char) -5) == -5.0);
   ok = ok && ((double) FP((unsigned char) 200) == 200.0);
+
+  // The wide character types are unsigned, and char32_t is as wide as int32_t: values
+  // above 2^31 - 1 must stay positive rather than wrap through a signed widening.
+  // Each of these is exactly representable, so the comparisons are exact.
+  ok = ok && ((double) FP((char16_t) 0xFFFF) == 65535.0);
+  ok = ok && ((double) FP((char32_t) 0x10FFFF) == 1114111.0);
+  ok = ok && ((double) FP((char32_t) 0x80000000u) == 2147483648.0);
+  ok = ok && ((double) FP((char32_t) 0xFFFFFFFFu) == 4294967295.0);
 
   // Mixed arithmetic mirrors double: 1.0 + true + 'a' == 1 + 1 + 97 == 99.
   {

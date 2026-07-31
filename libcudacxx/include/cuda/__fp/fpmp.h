@@ -588,12 +588,15 @@ public:
     }
   }
   // bool and character types are excluded from __cccl_is_integer_v, but `1.0 + true`
-  // and `1.0 + 'a'` are valid for double, so mirror that behavior: widen the value to
-  // int32 and reuse the int32 constructor path (no dedicated char/bool handling).
+  // and `1.0 + 'a'` are valid for double, so mirror that behavior by delegating to the
+  // integer constructor above. The widened type keeps the source's signedness, which
+  // matters for char32_t: it is unsigned and as wide as int32_t, so a plain cast to
+  // int32_t would turn values above 2^31 - 1 into negative ones.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
   _CCCL_API _CCCL_FPMP_EXPLICIT fpmp2(_Tp __i) noexcept
-      : fpmp2(static_cast<int32_t>(__i))
+      : fpmp2(static_cast<::cuda::std::__make_nbit_int_t<(::cuda::std::__num_bits_v<_Tp> <= 32) ? 32 : 64,
+                                                         ::cuda::std::is_signed_v<_Tp>>>(__i))
   {}
 #if _CCCL_HAS_INT128()
   // 128-bit integers would silently truncate to 64 bits, so they are deleted until
@@ -603,19 +606,45 @@ public:
   _CCCL_API _CCCL_FPMP_EXPLICIT fpmp2(__uint128_t) = delete;
 #endif // _CCCL_HAS_INT128()
 
+  /*
   // ==== Conversion from fpmp2 to other types:
-  // Conversion to double is ALWAYS implicit (never gated by CCCL_FPMP_EXPLICIT_CASTS).
-  // It is a value-preserving widening conversion (the analog of the implicit
-  // IEEE-754 float -> double), so it stays implicit for ergonomics. This does NOT
-  // cause hidden FP64 in fpmp<->fpmp conversions or fpmp arithmetic: cross-method
-  // conversions use a direct (hi,lo) copy, and mixed fpmp/scalar operators promote
-  // the scalar up to fpmp. It only takes effect when an fpmp value is fed into a
-  // double-typed sink.
+  // Conversion to double follows the value: implicit out of fp32mp2, explicit out of
+  // fp64mp2. Neither is gated by CCCL_FPMP_EXPLICIT_CASTS.
+  //
+  // For a double-float the pair sums into a double exactly -- two 24-bit
+  // significands that do not overlap fit inside 53 bits -- so the conversion is a
+  // widening one, the analog of the implicit IEEE-754 float -> double, and stays
+  // implicit for ergonomics. For a double-double it is not: 106 significand bits are
+  // being asked to fit in 53, and the low word is simply dropped. That is a narrowing
+  // conversion and says so, which is the same reason operator float() is explicit for
+  // both.
+  //
+  // Implicitness here does not put FP64 into fpmp<->fpmp conversions or fpmp
+  // arithmetic: cross-method conversions copy (hi, lo) directly, and mixed
+  // fpmp/scalar operators promote the scalar up to fpmp. It only takes effect when an
+  // fp32mp2 value is fed into a double-typed sink.
+  */
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
   _CCCL_API operator double() const noexcept
   {
     return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
   }
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
   _CCCL_API operator double() const volatile noexcept
+  {
+    return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
+  }
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
+  _CCCL_API explicit operator double() const noexcept
+  {
+    return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
+  }
+  _CCCL_TEMPLATE(typename _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
+  _CCCL_API explicit operator double() const volatile noexcept
   {
     return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
   }

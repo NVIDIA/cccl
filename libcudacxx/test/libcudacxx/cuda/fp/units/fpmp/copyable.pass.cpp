@@ -21,13 +21,18 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 
 static_assert(::cuda::std::is_trivially_copyable<fp32mp2>::value, "fp32mp2 must be trivially copyable");
 
-// Assign through a volatile object and confirm the value is preserved.
+// Assign through a volatile object and confirm the value is preserved. The value is
+// read back through the volatile copy constructor and compared as an fpmp2: comparing
+// the volatile object directly would have gone through operator double(), which comes
+// down to the rounded double image rather than the pair that was stored.
 _CCCL_HOST_DEVICE bool run_test()
 {
   volatile fp32mp2 vx[1];
   fp32mp2 x[1] = {fp32mp2(1.0e+20)};
   vx[0]        = x[0];
-  return !(vx[0] != x[0]);
+
+  const fp32mp2 read_back = vx[0];
+  return !(read_back != x[0]) && read_back.hi() == x[0].hi() && read_back.lo() == x[0].lo();
 }
 
 TEST_FUNC void test()
