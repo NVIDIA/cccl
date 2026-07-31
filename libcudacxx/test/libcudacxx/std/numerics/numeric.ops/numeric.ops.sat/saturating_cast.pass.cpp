@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// UNSUPPORTED: enable-tile
+// blows up the tile compiler
+
 // <cuda/std/numeric>
 
 // template<class R, class T>

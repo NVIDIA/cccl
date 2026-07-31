@@ -7,8 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile && !c++17
-// nvbug6085768: compiler hangs
+// UNSUPPORTED: force-tile
+// UNSUPPORTED: enable-tile
+// blows up the tile compiler
 
 #include <cuda/numeric>
 #include <cuda/std/cassert>

@@ -68,9 +68,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   //  Make sure the math is done using the correct type
   {

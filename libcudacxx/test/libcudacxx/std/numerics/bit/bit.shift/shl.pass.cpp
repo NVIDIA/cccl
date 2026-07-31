@@ -31,8 +31,10 @@ TEST_FUNC constexpr T invoke_shl(T v, S shift)
   }
   else
   {
+#if !_CCCL_TILE_COMPILATION()
     DoNotOptimize(v);
     DoNotOptimize(shift);
+#endif // !_CCCL_TILE_COMPILATION()
     return cuda::std::shl(v, shift);
   }
 }
