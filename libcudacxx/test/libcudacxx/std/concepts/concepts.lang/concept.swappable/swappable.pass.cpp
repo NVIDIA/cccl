@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // template<class T>
 // concept swappable = // see below
 
@@ -52,13 +49,15 @@ TEST_FUNC constexpr bool check_swap_22(T (&x)[N], T (&y)[N]) {
   }
 
   cuda::std::ranges::swap(x, y);
+  bool result = true;
   for (cuda::std::size_t i = 0; i < N; ++i) {
     if (x[i] == e.x[i] && y[i] == e.y[i]) {
       continue;
     }
-    return false;
+    result = false;
+    break;
   }
-  return true;
+  return result;
 }
 
 // Checks [concept.swappable]/2.3
