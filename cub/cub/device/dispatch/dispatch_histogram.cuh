@@ -289,8 +289,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       dynamic_smem_bytes += (num_privatized_levels[channel] - 1) * static_cast<int>(kernel_source.CounterSize());
     }
     NV_IF_TARGET(NV_IS_HOST, ({
-                   if (const auto error =
-                         CubDebug(launcher_factory.set_max_dynamic_smem_size_for(sweep_kernel, dynamic_smem_bytes)))
+                   if (const auto error = CubDebug(launcher_factory.set_max_dynamic_smem_size_for(
+                         sweep_kernel, active_policy.dynamic_smem_bytes)))
                    {
                      return error;
                    }
@@ -1002,13 +1002,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
 {
   using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
 
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
-  {
-    return error;
-  }
-  const HistogramPolicy active_policy = policy_selector(cc);
-
   if constexpr (IsByteSample)
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
@@ -1068,6 +1061,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   }
   else
   {
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
+    const HistogramPolicy active_policy = policy_selector(cc);
+
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
     // Use the pass-thru transform op for converting privatized bins to output bins
@@ -1085,40 +1085,45 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
     int max_num_output_bins = max_levels - 1;
 
-    if (should_use_dynamic_smem<false>(
-          active_policy, max_num_output_bins, int{kernel_source.CounterSize()}, NUM_ACTIVE_CHANNELS))
+    constexpr bool supports_cached_search =
+      ::cuda::std::is_integral_v<LevelT> || ::cuda::std::is_floating_point_v<LevelT>;
+    if constexpr (supports_cached_search)
     {
-      using PrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      if (should_use_dynamic_smem<false>(
+            active_policy, max_num_output_bins, int{kernel_source.CounterSize()}, NUM_ACTIVE_CHANNELS))
       {
-        privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
-      }
+        using PrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
+        ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+        for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+        {
+          privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+        }
 
-      return CubDebug(
-        (detail::histogram::dispatch<NUM_CHANNELS,
-                                     NUM_ACTIVE_CHANNELS,
-                                     /* PRIVATIZED_SMEM_BINS = */ 0,
-                                     /* UseDynamicSmem = */ true,
-                                     /* IsDeviceInit = */ false,
-                                     /* IsEven = */ false,
-                                     /* IsByteSample = */ false>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_output_histograms,
-          num_output_levels,
-          num_output_levels,
-          output_decode_op,
-          privatized_decode_op,
-          max_num_output_bins,
-          num_row_pixels,
-          num_rows,
-          row_stride_samples,
-          stream,
-          policy_selector,
-          kernel_source,
-          launcher_factory)));
+        return CubDebug(
+          (detail::histogram::dispatch<NUM_CHANNELS,
+                                       NUM_ACTIVE_CHANNELS,
+                                       /* PRIVATIZED_SMEM_BINS = */ 0,
+                                       /* UseDynamicSmem = */ true,
+                                       /* IsDeviceInit = */ false,
+                                       /* IsEven = */ false,
+                                       /* IsByteSample = */ false>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            output_decode_op,
+            privatized_decode_op,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory)));
+      }
     }
 
     using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;

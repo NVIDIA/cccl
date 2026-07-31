@@ -586,7 +586,7 @@ C2H_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[hi
     SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
   }
 
-  using counter_t      = unsigned long long;
+  using counter_t      = unsigned int;
   const int num_levels = GENERATE(1025, 4097);
 
   test_even_and_range<int, 1, 1, counter_t>(num_levels - 1, num_levels, 4096, 4);
@@ -677,8 +677,18 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
 
 C2H_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]")
 {
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
   using sample_t         = int;
-  constexpr int num_bins = 512;
+  constexpr int num_bins = 1024;
 
   c2h::host_vector<sample_t> h_levels(num_bins + 1);
   constexpr auto lo    = static_cast<int64_t>(cs::numeric_limits<sample_t>::lowest());

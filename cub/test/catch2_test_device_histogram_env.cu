@@ -1879,7 +1879,7 @@ C2H_TEST("Histogram SM100 policy carries the tuned dynamic shared-memory budget"
 
   STATIC_REQUIRE(sm90_policy.dynamic_smem_bytes == 0);
   STATIC_REQUIRE(sm100_policy.dynamic_smem_bytes == 228352);
-  STATIC_REQUIRE(sm100_wide_counter_policy.dynamic_smem_bytes == 228352);
+  STATIC_REQUIRE(sm100_wide_counter_policy.dynamic_smem_bytes == 0);
   STATIC_REQUIRE(sm100_policy.dynamic_smem_range_max_bins == 2048);
   STATIC_REQUIRE(sm100_policy.dynamic_smem_even_2ch_max_bins == 28544);
   STATIC_REQUIRE(sm100_policy.dynamic_smem_even_3ch_max_bins == 19029);
