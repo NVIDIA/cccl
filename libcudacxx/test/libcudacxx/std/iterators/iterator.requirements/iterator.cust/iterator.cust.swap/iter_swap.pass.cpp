@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // template<class I>
@@ -26,18 +26,18 @@ using IterSwapT = decltype(cuda::std::ranges::iter_swap);
 struct HasIterSwap
 {
   int& value_;
-  TEST_FUNC constexpr explicit HasIterSwap(int& value)
+  TEST_HOST_DEVICE_FUNC constexpr explicit HasIterSwap(int& value)
       : value_(value)
   {
     assert(value == 0);
   }
 
-  TEST_FUNC friend constexpr void iter_swap(HasIterSwap& a, HasIterSwap& b)
+  TEST_HOST_DEVICE_FUNC friend constexpr void iter_swap(HasIterSwap& a, HasIterSwap& b)
   {
     a.value_ = 1;
     b.value_ = 1;
   }
-  TEST_FUNC friend constexpr void iter_swap(HasIterSwap& a, int& b)
+  TEST_HOST_DEVICE_FUNC friend constexpr void iter_swap(HasIterSwap& a, int& b)
   {
     a.value_ = 2;
     b        = 2;
@@ -58,13 +58,13 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>);
 
 struct NodiscardIterSwap
 {
-  [[nodiscard]] TEST_FUNC friend int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&)
+  [[nodiscard]] TEST_HOST_DEVICE_FUNC friend int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&)
   {
     return 0;
   }
 };
 
-TEST_FUNC void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap& b)
+TEST_HOST_DEVICE_FUNC void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap& b)
 {
   cuda::std::ranges::iter_swap(a, b);
 }
@@ -72,18 +72,18 @@ TEST_FUNC void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap& b)
 struct HasRangesSwap
 {
   int& value_;
-  TEST_FUNC constexpr explicit HasRangesSwap(int& value)
+  TEST_HOST_DEVICE_FUNC constexpr explicit HasRangesSwap(int& value)
       : value_(value)
   {
     assert(value == 0);
   }
 
-  TEST_FUNC friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b)
+  TEST_HOST_DEVICE_FUNC friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b)
   {
     a.value_ = 1;
     b.value_ = 1;
   }
-  TEST_FUNC friend constexpr void swap(HasRangesSwap& a, int& b)
+  TEST_HOST_DEVICE_FUNC friend constexpr void swap(HasRangesSwap& a, int& b)
   {
     a.value_ = 2;
     b        = 2;
@@ -95,11 +95,11 @@ struct HasRangesSwapWrapper
   using value_type = HasRangesSwap;
 
   HasRangesSwap& value_;
-  TEST_FUNC constexpr explicit HasRangesSwapWrapper(HasRangesSwap& value)
+  TEST_HOST_DEVICE_FUNC constexpr explicit HasRangesSwapWrapper(HasRangesSwap& value)
       : value_(value)
   {}
 
-  TEST_FUNC constexpr HasRangesSwap& operator*() const
+  TEST_HOST_DEVICE_FUNC constexpr HasRangesSwap& operator*() const
   {
     return value_;
   }
@@ -115,7 +115,7 @@ struct B;
 struct A
 {
   bool value = false;
-  TEST_FUNC constexpr A& operator=(const B&)
+  TEST_HOST_DEVICE_FUNC constexpr A& operator=(const B&)
   {
     value = true;
     return *this;
@@ -125,7 +125,7 @@ struct A
 struct B
 {
   bool value = false;
-  TEST_FUNC constexpr B& operator=(const A&)
+  TEST_HOST_DEVICE_FUNC constexpr B& operator=(const A&)
   {
     value = true;
     return *this;
@@ -144,7 +144,7 @@ struct MoveOnly1
   MoveOnly1(const MoveOnly1&)            = delete;
   MoveOnly1& operator=(const MoveOnly1&) = delete;
 
-  TEST_FUNC constexpr MoveOnly1& operator=(MoveOnly2&&)
+  TEST_HOST_DEVICE_FUNC constexpr MoveOnly1& operator=(MoveOnly2&&)
   {
     value = true;
     return *this;
@@ -161,14 +161,14 @@ struct MoveOnly2
   MoveOnly2(const MoveOnly2&)            = delete;
   MoveOnly2& operator=(const MoveOnly2&) = delete;
 
-  TEST_FUNC constexpr MoveOnly2& operator=(MoveOnly1&&)
+  TEST_HOST_DEVICE_FUNC constexpr MoveOnly2& operator=(MoveOnly1&&)
   {
     value = true;
     return *this;
   };
 };
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   {
     int value1 = 0;
