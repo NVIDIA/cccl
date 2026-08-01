@@ -742,7 +742,7 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
            hp.load_modifier,
            hp.rle_compress,
            hp.mem_preference,
-           hp.use_work_stealing,
+           hp.work_stealing,
            hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
@@ -824,7 +824,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
     hp.load_modifier,
     hp.rle_compress,
     hp.mem_preference,
-    hp.use_work_stealing,
+    hp.work_stealing,
     hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
@@ -1020,7 +1020,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
     hp.load_modifier,
     hp.rle_compress,
     hp.mem_preference,
-    hp.use_work_stealing,
+    hp.work_stealing,
     hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,

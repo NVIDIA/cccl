@@ -1833,7 +1833,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
     .rle_compress                     = false,
     .mem_preference                   = cub::SMEM,
-    .use_work_stealing                = false,
+    .work_stealing                    = false,
     .init_kernel_pdl_trigger_max_bins = 2048,
     .dynamic_smem_bytes               = 12345,
     .static_smem_threads_per_block    = 96,
@@ -1860,7 +1860,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     to_string(p1)
     == "HistogramPolicy { .sweep_threads_per_block = 128, .sweep_items_per_thread = 7, .vec_size = 4"
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-       ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+       ", .mem_preference = SMEM, .work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
        ", .dynamic_smem_bytes = 12345, .static_smem_threads_per_block = 96"
        ", .static_smem_items_per_thread = 3, .static_smem_min_blocks_per_sm = 2"
        ", .dynamic_smem_range_max_bins = 1024, .dynamic_smem_even_2ch_max_bins = 4096"
