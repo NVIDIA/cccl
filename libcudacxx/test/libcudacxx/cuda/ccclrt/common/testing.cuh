@@ -24,22 +24,6 @@
 #include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
-#define CUDART(call) REQUIRE((call) == cudaSuccess)
-
-#define CCCLRT_REQUIRE(condition) REQUIRE(condition)
-
-#define CCCLRT_CHECK(condition) CHECK(condition)
-
-#define CCCLRT_FAIL(message) FAIL(message)
-
-#define CCCLRT_CHECK_FALSE(condition) CHECK_FALSE(condition)
-
-// Explicit device side require macros for clang-cuda
-#define CCCLRT_REQUIRE_DEVICE(condition)     REQUIRE_DEVICE(condition)
-#define CCCLRT_CHECK_DEVICE(condition)       CHECK(condition)
-#define CCCLRT_FAIL_DEVICE(message)          FAIL(message)
-#define CCCLRT_CHECK_FALSE_DEVICE(condition) CHECK_FALSE(condition)
-
 TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
@@ -101,7 +85,7 @@ struct ccclrt_test_fixture
   }
   ~ccclrt_test_fixture()
   {
-    CCCLRT_CHECK(count_driver_stack() == 0);
+    CHECK(count_driver_stack() == 0);
   }
 };
 } // namespace test

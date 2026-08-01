@@ -24,8 +24,8 @@ __managed__ bool kernel_run_proof = false;
 
 void check_kernel_run(cudaStream_t stream)
 {
-  CUDART(cudaStreamSynchronize(stream));
-  CCCLRT_CHECK(kernel_run_proof);
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
+  CHECK(kernel_run_proof);
   kernel_run_proof = false;
 }
 
@@ -33,7 +33,7 @@ struct kernel_run_proof_check
 {
   TEST_DEVICE_FUNC void operator()()
   {
-    CCCLRT_CHECK_DEVICE(kernel_run_proof);
+    REQUIRE_DEVICE(kernel_run_proof);
     kernel_run_proof = false;
   }
 };
@@ -53,7 +53,7 @@ struct functor_taking_config
   TEST_DEVICE_FUNC void operator()(Config config, int grid_size)
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == BlockSize);
-    CCCLRT_REQUIRE_DEVICE(cuda::block.count(cuda::grid, config) == grid_size);
+    REQUIRE_DEVICE(cuda::block.count(cuda::grid, config) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -87,7 +87,7 @@ struct dynamic_smem_single
   {
     decltype(auto) dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
+    REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -101,8 +101,8 @@ struct dynamic_smem_span
     auto dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
-    CCCLRT_REQUIRE_DEVICE(dynamic_smem.size() == size);
-    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
+    REQUIRE_DEVICE(dynamic_smem.size() == size);
+    REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -122,7 +122,7 @@ struct launch_transform_to_int_convertible
     {
       // Check that the constructor runs before the kernel is launched
       // Disabled for now because we don't handle it with graphs
-      // CUDAX_CHECK_FALSE(kernel_run_proof);
+      // CHECK_FALSE(kernel_run_proof);
     }
 
     // Immovable to ensure that launch_transform doesn't copy the returned
@@ -133,8 +133,8 @@ struct launch_transform_to_int_convertible
     {
       // Check that the destructor runs after the kernel is launched
       // Disabled for now because we don't handle it with graphs
-      // CUDART(cudaStreamSynchronize(stream_));
-      // CCCLRT_CHECK(kernel_run_proof);
+      // REQUIRE_CUDART(cudaStreamSynchronize(stream_));
+      // CHECK(kernel_run_proof);
     }
 
     // This is the value that will be passed to the kernel
@@ -159,7 +159,7 @@ void launch_smoke_test(cudaStream_t dst)
   // launch
   cudaStream_t stream;
 
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   // Spell out all overloads to make sure they compile, include a check for
   // implicit conversions
   {
@@ -261,15 +261,15 @@ C2H_CCCLRT_TEST("Launch smoke stream", "[launch]")
 
   {
     ::cuda::__ensure_current_context guard(cuda::device_ref{0});
-    CUDART(cudaStreamCreate(&stream));
+    REQUIRE_CUDART(cudaStreamCreate(&stream));
   }
 
   launch_smoke_test(stream);
 
   {
     ::cuda::__ensure_current_context guard(cuda::device_ref{0});
-    CUDART(cudaStreamSynchronize(stream));
-    CUDART(cudaStreamDestroy(stream));
+    REQUIRE_CUDART(cudaStreamSynchronize(stream));
+    REQUIRE_CUDART(cudaStreamDestroy(stream));
   }
 }
 
@@ -300,7 +300,7 @@ struct verify_callable
   TEST_DEVICE_FUNC void operator()(Config config)
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 256);
-    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, config) == 4);
+    REQUIRE(cuda::block.count(cuda::grid, config) == 4);
     cooperative_groups::this_grid().sync();
   }
 };
@@ -363,7 +363,7 @@ C2H_CCCLRT_TEST("Launch functor with __restrict__ pointer arg", "[launch]")
   launch_with_restrict_param(stream, val.get());
   stream.sync();
 
-  CCCLRT_CHECK(*val == 42);
+  CHECK(*val == 42);
 }
 
 C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[launch][multi_gpu]")
@@ -381,8 +381,8 @@ C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[l
   int* device_value{};
   {
     cuda::__ensure_current_context guard(explicit_device);
-    CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
-    CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
+    REQUIRE_CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
+    REQUIRE_CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
   }
 
   {
@@ -396,11 +396,11 @@ C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[l
   int value{};
   {
     cuda::__ensure_current_context guard(explicit_device);
-    CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
-    CUDART(cudaFree(device_value));
+    REQUIRE_CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
+    REQUIRE_CUDART(cudaFree(device_value));
   }
 
-  CCCLRT_CHECK(value == 42);
+  CHECK(value == 42);
 }
 
 __managed__ cuda::std::size_t launched_nthreads;
@@ -445,13 +445,13 @@ void test_launch_dims(cuda::stream_ref stream, GridDesc grid_desc, BlockDesc blo
   stream.sync();
 
   const auto exp_nclusters = cuda::std::size_t{grid_exts.extent(0)} * grid_exts.extent(1) * grid_exts.extent(2);
-  CCCLRT_CHECK(launched_nclusters == exp_nclusters);
+  CHECK(launched_nclusters == exp_nclusters);
 
   const auto exp_nblocks = exp_nclusters;
-  CCCLRT_CHECK(launched_nblocks == exp_nblocks);
+  CHECK(launched_nblocks == exp_nblocks);
 
   const auto exp_nthreads = exp_nblocks * block_exts.extent(0) * block_exts.extent(1) * block_exts.extent(2);
-  CCCLRT_CHECK(launched_nthreads == exp_nthreads);
+  CHECK(launched_nthreads == exp_nthreads);
 }
 
 template <class GridDesc, class ClusterDesc, class BlockDesc>
@@ -470,13 +470,13 @@ void test_launch_dims(cuda::stream_ref stream, GridDesc grid_desc, ClusterDesc c
   stream.sync();
 
   const auto exp_nclusters = cuda::std::size_t{grid_exts.extent(0)} * grid_exts.extent(1) * grid_exts.extent(2);
-  CCCLRT_CHECK(launched_nclusters == exp_nclusters);
+  CHECK(launched_nclusters == exp_nclusters);
 
   const auto exp_nblocks = exp_nclusters * cluster_exts.extent(0) * cluster_exts.extent(1) * cluster_exts.extent(2);
-  CCCLRT_CHECK(launched_nblocks == exp_nblocks);
+  CHECK(launched_nblocks == exp_nblocks);
 
   const auto exp_nthreads = exp_nblocks * block_exts.extent(0) * block_exts.extent(1) * block_exts.extent(2);
-  CCCLRT_CHECK(launched_nthreads == exp_nthreads);
+  CHECK(launched_nthreads == exp_nthreads);
 }
 
 C2H_TEST("Launch dims", "[launch]")

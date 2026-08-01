@@ -30,15 +30,15 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
   replacementCalled = true;
   bool has_cluster  = false;
 
-  CCCLRT_CHECK(expectedConfig.gridDimX == config.gridDimX);
-  CCCLRT_CHECK(expectedConfig.gridDimY == config.gridDimY);
-  CCCLRT_CHECK(expectedConfig.gridDimZ == config.gridDimZ);
-  CCCLRT_CHECK(expectedConfig.blockDimX == config.blockDimX);
-  CCCLRT_CHECK(expectedConfig.blockDimY == config.blockDimY);
-  CCCLRT_CHECK(expectedConfig.blockDimZ == config.blockDimZ);
-  CCCLRT_CHECK(expectedConfig.sharedMemBytes == config.sharedMemBytes);
-  CCCLRT_CHECK(expectedConfig.hStream == config.hStream);
-  CCCLRT_CHECK(expectedConfig.numAttrs == config.numAttrs);
+  CHECK(expectedConfig.gridDimX == config.gridDimX);
+  CHECK(expectedConfig.gridDimY == config.gridDimY);
+  CHECK(expectedConfig.gridDimZ == config.gridDimZ);
+  CHECK(expectedConfig.blockDimX == config.blockDimX);
+  CHECK(expectedConfig.blockDimY == config.blockDimY);
+  CHECK(expectedConfig.blockDimZ == config.blockDimZ);
+  CHECK(expectedConfig.sharedMemBytes == config.sharedMemBytes);
+  CHECK(expectedConfig.hStream == config.hStream);
+  CHECK(expectedConfig.numAttrs == config.numAttrs);
 
   for (unsigned int i = 0; i < expectedConfig.numAttrs; ++i)
   {
@@ -52,26 +52,26 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
         switch (expectedAttr.id)
         {
           case CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION:
-            CCCLRT_CHECK(expectedAttr.value.clusterDim.x == actualAttr.value.clusterDim.x);
-            CCCLRT_CHECK(expectedAttr.value.clusterDim.y == actualAttr.value.clusterDim.y);
-            CCCLRT_CHECK(expectedAttr.value.clusterDim.z == actualAttr.value.clusterDim.z);
+            CHECK(expectedAttr.value.clusterDim.x == actualAttr.value.clusterDim.x);
+            CHECK(expectedAttr.value.clusterDim.y == actualAttr.value.clusterDim.y);
+            CHECK(expectedAttr.value.clusterDim.z == actualAttr.value.clusterDim.z);
             has_cluster = true;
             break;
           case CU_LAUNCH_ATTRIBUTE_COOPERATIVE:
-            CCCLRT_CHECK(expectedAttr.value.cooperative == actualAttr.value.cooperative);
+            CHECK(expectedAttr.value.cooperative == actualAttr.value.cooperative);
             break;
           case CU_LAUNCH_ATTRIBUTE_PRIORITY:
-            CCCLRT_CHECK(expectedAttr.value.priority == actualAttr.value.priority);
+            CHECK(expectedAttr.value.priority == actualAttr.value.priority);
             break;
           default:
-            CCCLRT_CHECK(false);
+            CHECK(false);
             break;
         }
         break;
       }
     }
     INFO("Searched attribute is " << expectedAttr.id);
-    CCCLRT_CHECK(j != expectedConfig.numAttrs);
+    CHECK(j != expectedConfig.numAttrs);
   }
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
@@ -184,7 +184,7 @@ auto configuration_test(
 C2H_TEST("Launch configuration", "[launch]")
 {
   cudaStream_t stream;
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   SECTION("No cluster")
   {
     configuration_test<false>(stream, 8, 64);
@@ -194,8 +194,8 @@ C2H_TEST("Launch configuration", "[launch]")
     configuration_test<true>(stream, 8, 32, 2);
   }
 
-  CUDART(cudaStreamDestroy(stream));
-  CCCLRT_CHECK(replacementCalled);
+  REQUIRE_CUDART(cudaStreamDestroy(stream));
+  CHECK(replacementCalled);
 }
 
 C2H_TEST("Hierarchy construction in config", "[launch]")
@@ -204,10 +204,10 @@ C2H_TEST("Hierarchy construction in config", "[launch]")
   static_assert(cuda::block.count(cuda::grid, config) == 2);
 
   auto config_larger = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims(256), cuda::cooperative_launch());
-  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, config_larger) == 512);
+  REQUIRE(cuda::gpu_thread.count(cuda::grid, config_larger) == 512);
 
   auto config_no_options = cuda::make_config(cuda::grid_dims(2), cuda::block_dims<128>());
-  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, config_no_options) == 256);
+  REQUIRE(cuda::gpu_thread.count(cuda::grid, config_no_options) == 256);
 
   [[maybe_unused]] auto config_no_dims = cuda::make_config(cuda::cooperative_launch());
   static_assert(
@@ -232,19 +232,19 @@ C2H_TEST("Configuration combine", "[launch]")
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_other_way)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_with_empty)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, combined) == 512);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, combined) == 512);
   }
   SECTION("Combine with overlap")
   {
     auto config_part1 = make_config(grid, cluster, cuda::launch_priority(2));
     auto config_part2 = make_config(cuda::cluster_dims<256>(), block, cuda::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, combined) == 2048);
-    CCCLRT_REQUIRE(cuda::std::get<0>(combined.options()).priority == 2);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, combined) == 2048);
+    REQUIRE(cuda::std::get<0>(combined.options()).priority == 2);
 
     auto replaced_one_option = cuda::make_config(cuda::launch_priority(3)).combine(combined);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, replaced_one_option) == 2048);
-    CCCLRT_REQUIRE(cuda::std::get<0>(replaced_one_option.options()).priority == 3);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, replaced_one_option) == 2048);
+    REQUIRE(cuda::std::get<0>(replaced_one_option.options()).priority == 3);
 
     [[maybe_unused]] auto combined_with_extra_option = combined.combine(cuda::make_config(cuda::cooperative_launch()));
     static_assert(
@@ -258,29 +258,29 @@ C2H_TEST("Configuration combine", "[launch]")
 template <typename Config>
 TEST_FUNC void test_queries_on_config(const Config& config)
 {
-  CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, config) == dim3(1024));
+  REQUIRE(cuda::gpu_thread.dims(cuda::grid, config) == dim3(1024));
   {
     auto dims = cuda::gpu_thread.dims_as<int>(cuda::grid, config);
-    CCCLRT_REQUIRE(dims.x == 1024);
-    CCCLRT_REQUIRE(dims.y == 1);
-    CCCLRT_REQUIRE(dims.z == 1);
+    REQUIRE(dims.x == 1024);
+    REQUIRE(dims.y == 1);
+    REQUIRE(dims.z == 1);
   }
-  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
-  CCCLRT_REQUIRE(cuda::gpu_thread.count_as<int>(cuda::block, config) == 256);
-  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, config) == 1024);
-  CCCLRT_REQUIRE(cuda::gpu_thread.count_as<int>(cuda::grid, config) == 1024);
-  CCCLRT_REQUIRE(cuda::block.extents(cuda::grid, config).extent(0) == 4);
-  CCCLRT_REQUIRE(cuda::block.extents_as<int>(cuda::grid, config).extent(0) == 4);
+  REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
+  REQUIRE(cuda::gpu_thread.count_as<int>(cuda::block, config) == 256);
+  REQUIRE(cuda::gpu_thread.count(cuda::grid, config) == 1024);
+  REQUIRE(cuda::gpu_thread.count_as<int>(cuda::grid, config) == 1024);
+  REQUIRE(cuda::block.extents(cuda::grid, config).extent(0) == 4);
+  REQUIRE(cuda::block.extents_as<int>(cuda::grid, config).extent(0) == 4);
   NV_IF_TARGET(
     NV_IS_DEVICE,
-    (CCCLRT_REQUIRE(cuda::block.rank(cuda::grid, config) == blockIdx.x);
-     CCCLRT_REQUIRE(cuda::block.rank_as<int>(cuda::grid, config) == blockIdx.x);
-     CCCLRT_REQUIRE(cuda::gpu_thread.index(cuda::block, config) == threadIdx);
+    (REQUIRE(cuda::block.rank(cuda::grid, config) == blockIdx.x);
+     REQUIRE(cuda::block.rank_as<int>(cuda::grid, config) == blockIdx.x);
+     REQUIRE(cuda::gpu_thread.index(cuda::block, config) == threadIdx);
      {
        auto idx = cuda::gpu_thread.index_as<int>(cuda::block, config);
-       CCCLRT_REQUIRE(idx.x == static_cast<int>(threadIdx.x));
-       CCCLRT_REQUIRE(idx.y == static_cast<int>(threadIdx.y));
-       CCCLRT_REQUIRE(idx.z == static_cast<int>(threadIdx.z));
+       REQUIRE(idx.x == static_cast<int>(threadIdx.x));
+       REQUIRE(idx.y == static_cast<int>(threadIdx.y));
+       REQUIRE(idx.z == static_cast<int>(threadIdx.z));
      }));
 }
 
@@ -295,7 +295,7 @@ C2H_TEST("Queries on config", "[launch]")
   auto config = cuda::make_config(cuda::grid_dims(4), cuda::block_dims<256>(), cuda::cooperative_launch());
   test_queries_on_config(config);
   test_kernel<<<4, 256>>>(config);
-  CUDART(cudaGetLastError());
-  CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
