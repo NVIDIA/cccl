@@ -49,7 +49,6 @@ void do_test(const Tester& tester)
   {
     tester(cub::BlockHistogramMemoryPreference::GMEM, "GMEM");
     tester(cub::BlockHistogramMemoryPreference::SMEM, "SMEM");
-    tester(cub::BlockHistogramMemoryPreference::BLEND, "BLEND");
 
     tester(cub::BlockHistogramMemoryPreference(100), "<unknown BlockHistogramMemoryPreference>");
   }
