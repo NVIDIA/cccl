@@ -1626,7 +1626,7 @@ struct histogram_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
-    return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0, 0};
+    return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false, 0, 0};
   }
 };
 
@@ -1642,7 +1642,7 @@ struct mixed_counter_histogram_tuning
 
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
-    cub::HistogramPolicy policy{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
+    cub::HistogramPolicy policy{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false, 0};
     policy.dynamic_smem_bytes             = 228352;
     policy.dynamic_smem_even_4ch_max_bins = 8192;
     return policy;
@@ -1811,7 +1811,6 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     cub::BLOCK_LOAD_DIRECT,
     cub::CacheLoadModifier::LOAD_LDG,
     false,
-    cub::SMEM,
     false,
     2048,
     12345,
@@ -1832,7 +1831,6 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
     .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
     .rle_compress                     = false,
-    .mem_preference                   = cub::SMEM,
     .work_stealing                    = false,
     .init_kernel_pdl_trigger_max_bins = 2048,
     .dynamic_smem_bytes               = 12345,
@@ -1860,7 +1858,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     to_string(p1)
     == "HistogramPolicy { .sweep_threads_per_block = 128, .sweep_items_per_thread = 7, .vec_size = 4"
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-       ", .mem_preference = SMEM, .work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+       ", .work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
        ", .dynamic_smem_bytes = 12345, .static_smem_threads_per_block = 96"
        ", .static_smem_items_per_thread = 3, .static_smem_min_blocks_per_sm = 2"
        ", .dynamic_smem_range_max_bins = 1024, .dynamic_smem_even_2ch_max_bins = 4096"

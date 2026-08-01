@@ -345,9 +345,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
 
-  const bool requires_global_privatization =
-    !UseDynamicSmem
-    && (PRIVATIZED_SMEM_BINS == 0 || active_policy.mem_preference != BlockHistogramMemoryPreference::SMEM);
+  constexpr bool requires_global_privatization = !UseDynamicSmem && PRIVATIZED_SMEM_BINS == 0;
   for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
     allocation_sizes[CHANNEL] =
@@ -927,7 +925,6 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     ap::LOAD_ALGORITHM,
     ap::LOAD_MODIFIER,
     ap::IS_RLE_COMPRESS,
-    ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
     convert_pdl_trigger<ActivePolicy>(0),
     convert_dynamic_smem_bytes<ActivePolicy>(0),
