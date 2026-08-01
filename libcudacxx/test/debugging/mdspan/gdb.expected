@@ -76,6 +76,11 @@ cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615, 18446744073
   [1,2] = 3012
 }
 =============== mdspan.layout_stride end ===============
+=============== mdspan.rank0_layout_stride begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_stride, cuda::std::default_accessor<int>> of extents [] = {
+  [] = 55
+}
+=============== mdspan.rank0_layout_stride end ===============
 =============== mdspan.const_element begin ===============
 cuda::std::mdspan<int const, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int const>> of extents [3] = {
   [0] = 5,

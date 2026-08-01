@@ -11,6 +11,7 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_empty 1 mdspan.empty empty_span
     --case inspect_layout_left 1 mdspan.layout_left layout_left_span
     --case inspect_layout_stride 1 mdspan.layout_stride layout_stride_span
+    --case inspect_rank0_layout_stride 1 mdspan.rank0_layout_stride rank0_stride_span
     --case inspect_const_element 1 mdspan.const_element const_element
     --case inspect_pointer_element 1 mdspan.pointer_element pointer_element
     --case inspect_nested 1 mdspan.nested nested
