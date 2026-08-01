@@ -39,7 +39,8 @@ CUB_NAMESPACE_BEGIN
 enum BlockHistogramMemoryPreference // NOLINT(cppcoreguidelines-use-enum-class)
 {
   GMEM,
-  SMEM
+  SMEM,
+  BLEND
 };
 
 #if _CCCL_HOSTED()
@@ -53,6 +54,8 @@ namespace detail
       return "GMEM";
     case SMEM:
       return "SMEM";
+    case BLEND:
+      return "BLEND";
   }
   return "<unknown BlockHistogramMemoryPreference>";
 }
@@ -88,6 +91,7 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           bool RleCompress,
+          BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
           int VecSize = 4>
 struct agent_histogram_policy
@@ -99,6 +103,9 @@ struct agent_histogram_policy
 
   /// Whether to perform localized RLE to compress samples before histogramming
   static constexpr bool IS_RLE_COMPRESS = RleCompress;
+
+  /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
+  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = MemoryPreference;
 
   /// Whether to dequeue tiles from a global work queue
   static constexpr bool IS_WORK_STEALING = WorkStealing;
@@ -124,8 +131,16 @@ template <int ThreadsPerBlock,
           BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
           int VecSize = 4>
-using AgentHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::
-  agent_histogram_policy<ThreadsPerBlock, PixelsPerThread, LoadAlgorithm, LoadModifier, RleCompress, WorkStealing, VecSize>;
+using AgentHistogramPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::agent_histogram_policy<
+    ThreadsPerBlock,
+    PixelsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    RleCompress,
+    MemoryPreference,
+    WorkStealing,
+    VecSize>;
 
 namespace detail::histogram
 {
@@ -207,6 +222,10 @@ struct AgentHistogram
   static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
   static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
   static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
+  static constexpr auto mem_preference =
+    (UseDynamicSmem || PrivatizedSmemBins > 0)
+      ? BlockHistogramMemoryPreference{AgentHistogramPolicyT::MEM_PREFERENCE}
+      : GMEM;
 
   using SampleT = it_value_t<SampleIteratorT>;
   using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
@@ -253,20 +272,23 @@ struct AgentHistogram
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
   PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
+  bool prefer_smem; // whether this block uses shared-memory privatization
+
   _CCCL_DEVICE _CCCL_FORCEINLINE CounterT* PrivatizedHistogram(int channel)
   {
-    if constexpr (UseDynamicSmem)
+    if (prefer_smem)
     {
-      return dyn_smem_histograms[channel];
+      if constexpr (UseDynamicSmem)
+      {
+        return dyn_smem_histograms[channel];
+      }
+      else
+      {
+        return temp_storage.histograms[channel];
+      }
     }
-    else if constexpr (PrivatizedSmemBins > 0)
-    {
-      return temp_storage.histograms[channel];
-    }
-    else
-    {
-      return d_privatized_histograms[channel];
-    }
+
+    return d_privatized_histograms[channel];
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters()
@@ -620,6 +642,7 @@ struct AgentHistogram
       , d_output_histograms(d_output_histograms)
       , output_decode_op(output_decode_op)
       , privatized_decode_op(privatized_decode_op)
+      , prefer_smem(mem_preference == SMEM || (mem_preference == BLEND && (blockIdx.x & 1)))
   {
     static_assert(!UseDynamicSmem,
                   "AgentHistogram with UseDynamicSmem=true requires the dynamic-SMEM "
@@ -655,6 +678,7 @@ struct AgentHistogram
       , d_output_histograms(d_output_histograms)
       , output_decode_op(output_decode_op)
       , privatized_decode_op(privatized_decode_op)
+      , prefer_smem(mem_preference == SMEM || (mem_preference == BLEND && (blockIdx.x & 1)))
   {
     static_assert(UseDynamicSmem, "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmem=true.");
 
@@ -664,6 +688,16 @@ struct AgentHistogram
     {
       this->dyn_smem_histograms[ch] = p;
       p += num_privatized_bins[ch];
+    }
+
+    if (!prefer_smem)
+    {
+      const int block_id = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        const auto offset                 = static_cast<::cuda::std::int64_t>(block_id) * num_privatized_bins[ch];
+        this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
+      }
     }
   }
 
