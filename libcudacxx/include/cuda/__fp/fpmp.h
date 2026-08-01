@@ -201,7 +201,6 @@
 #include <cuda/__fp/fpmp_impl_cvt.h>
 #include <cuda/__fp/fpmp_impl_divsqrt.h>
 #include <cuda/__fp/fpmp_impl_muladd.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -994,31 +993,39 @@ private:
   // Wider-than-FpType splits, used by the delegating constructors above. Plain casts
   // during constant evaluation, the arithmetic primitive at run time. Where the
   // compiler cannot tell the two apart (no __builtin_is_constant_evaluated, so
-  // pre-GCC-9 hosts and tile mode) the default is the cast, which keeps the
-  // constructors usable in a constant expression.
+  // pre-GCC-9 hosts and tile mode) _CCCL_IF_CONSTEVAL_DEFAULT selects the cast and
+  // discards the run-time branch, which GCC 7 needs in order to accept the split as
+  // constexpr at all: it rejects the function as soon as the body mentions a
+  // non-constexpr call, reachable or not.
   [[nodiscard]] _CCCL_API static constexpr fpmp2 __split_double(double __d) noexcept
   {
-    if (::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL_DEFAULT
     {
       return fpmp2{(_FpType) __d, (_FpType) (__d - (double) (_FpType) __d)};
     }
-    _FpType __hi{};
-    _FpType __lo{};
-    __fpmp2_from_double(__d, &__hi, &__lo);
-    return fpmp2{__hi, __lo};
+    else
+    {
+      _FpType __hi{};
+      _FpType __lo{};
+      __fpmp2_from_double(__d, &__hi, &__lo);
+      return fpmp2{__hi, __lo};
+    }
   }
 
 #if _CCCL_FPMP_FP128_ENABLE == 1
   [[nodiscard]] _CCCL_FPMP_FP128_API static constexpr fpmp2 __split_quad(__fpmp_fp128 __d) noexcept
   {
-    if (::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL_DEFAULT
     {
       return fpmp2{(_FpType) __d, (_FpType) (__d - (__fpmp_fp128) (_FpType) __d)};
     }
-    _FpType __hi{};
-    _FpType __lo{};
-    __fpmp2_from_quad(__d, &__hi, &__lo);
-    return fpmp2{__hi, __lo};
+    else
+    {
+      _FpType __hi{};
+      _FpType __lo{};
+      __fpmp2_from_quad(__d, &__hi, &__lo);
+      return fpmp2{__hi, __lo};
+    }
   }
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
