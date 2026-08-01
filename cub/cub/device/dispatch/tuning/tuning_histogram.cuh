@@ -46,21 +46,6 @@ struct HistogramPolicy
   int dynamic_smem_even_3ch_max_bins = 0; //!< Three-channel EVEN cap per channel; 0 disables the dynamic path
   int dynamic_smem_even_4ch_max_bins = 0; //!< Four-channel EVEN cap per channel; 0 disables the dynamic path
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
-  {
-    return static_smem_threads_per_block != 0 ? static_smem_threads_per_block : sweep_threads_per_block;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_items() const
-  {
-    return static_smem_items_per_thread != 0 ? static_smem_items_per_thread : sweep_items_per_thread;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_min_blocks() const
-  {
-    return static_smem_min_blocks_per_sm;
-  }
-
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
@@ -107,6 +92,49 @@ struct HistogramPolicy
 
 namespace detail::histogram
 {
+template <int PrivatizedSmemBins>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int threads_per_block(const HistogramPolicy& policy)
+{
+  if constexpr (PrivatizedSmemBins > 0)
+  {
+    return policy.static_smem_threads_per_block != 0
+           ? policy.static_smem_threads_per_block
+           : policy.sweep_threads_per_block;
+  }
+  else
+  {
+    return policy.sweep_threads_per_block;
+  }
+}
+
+template <int PrivatizedSmemBins>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_thread(const HistogramPolicy& policy)
+{
+  if constexpr (PrivatizedSmemBins > 0)
+  {
+    return policy.static_smem_items_per_thread != 0
+           ? policy.static_smem_items_per_thread
+           : policy.sweep_items_per_thread;
+  }
+  else
+  {
+    return policy.sweep_items_per_thread;
+  }
+}
+
+template <int PrivatizedSmemBins>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int min_blocks_per_sm(const HistogramPolicy& policy)
+{
+  if constexpr (PrivatizedSmemBins > 0)
+  {
+    return policy.static_smem_min_blocks_per_sm;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
 // Maximum number of bins per channel for the compile-time-sized shared-memory tier.
 static constexpr int max_privatized_smem_bins = 512;
 
