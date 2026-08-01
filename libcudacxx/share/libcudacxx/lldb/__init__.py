@@ -12,6 +12,7 @@ from __future__ import annotations
 import buffer
 import complex
 import inplace_vector
+import mdspan
 import memory_resource
 import std_array
 import tuple
@@ -19,7 +20,7 @@ import tuple
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer, std_array, complex, tuple, inplace_vector)
+_FORMATTERS = (memory_resource, buffer, std_array, complex, tuple, inplace_vector, mdspan)
 InternalDict = dict[str, object]
 
 

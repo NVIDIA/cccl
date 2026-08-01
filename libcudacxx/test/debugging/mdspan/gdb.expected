@@ -1,0 +1,135 @@
+=============== mdspan.rank1_dynamic begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [4] = {
+  [0] = 10,
+  [1] = -3,
+  [2] = 7,
+  [3] = 42
+}
+=============== mdspan.rank1_dynamic end ===============
+=============== mdspan.rank2_static begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 3, 4>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [3, 4] = {
+  [0,0] = 0,
+  [0,1] = 1,
+  [0,2] = 2,
+  [0,3] = 3,
+  [1,0] = 10,
+  [1,1] = 11,
+  [1,2] = 12,
+  [1,3] = 13,
+  [2,0] = 20,
+  [2,1] = 21,
+  [2,2] = 22,
+  [2,3] = 23
+}
+=============== mdspan.rank2_static end ===============
+=============== mdspan.rank2_mixed begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 3, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [3, 4] = {
+  [0,0] = 100,
+  [0,1] = 101,
+  [0,2] = 102,
+  [0,3] = 103,
+  [1,0] = 110,
+  [1,1] = 111,
+  [1,2] = 112,
+  [1,3] = 113,
+  [2,0] = 120,
+  [2,1] = 121,
+  [2,2] = 122,
+  [2,3] = 123
+}
+=============== mdspan.rank2_mixed end ===============
+=============== mdspan.rank2_dynamic begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [2, 3] = {
+  [0,0] = 1000,
+  [0,1] = 1001,
+  [0,2] = 1002,
+  [1,0] = 1010,
+  [1,1] = 1011,
+  [1,2] = 1012
+}
+=============== mdspan.rank2_dynamic end ===============
+=============== mdspan.rank0 begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [] = {
+  [] = 77
+}
+=============== mdspan.rank0 end ===============
+=============== mdspan.empty begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 0, 3>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [0, 3]
+=============== mdspan.empty end ===============
+=============== mdspan.layout_left begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615, 18446744073709551615>, cuda::std::layout_left, cuda::std::default_accessor<int>> of extents [2, 3] = {
+  [0,0] = 2000,
+  [0,1] = 2001,
+  [0,2] = 2002,
+  [1,0] = 2010,
+  [1,1] = 2011,
+  [1,2] = 2012
+}
+=============== mdspan.layout_left end ===============
+=============== mdspan.layout_stride begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615, 18446744073709551615>, cuda::std::layout_stride, cuda::std::default_accessor<int>> of extents [2, 3] = {
+  [0,0] = 3000,
+  [0,1] = 3001,
+  [0,2] = 3002,
+  [1,0] = 3010,
+  [1,1] = 3011,
+  [1,2] = 3012
+}
+=============== mdspan.layout_stride end ===============
+=============== mdspan.const_element begin ===============
+cuda::std::mdspan<int const, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int const>> of extents [3] = {
+  [0] = 5,
+  [1] = 6,
+  [2] = 7
+}
+=============== mdspan.const_element end ===============
+=============== mdspan.pointer_element begin ===============
+cuda::std::mdspan<int*, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int*>> of extents [3] = {
+  [0] = <address>,
+  [1] = <address>,
+  [2] = <address>
+}
+=============== mdspan.pointer_element end ===============
+=============== mdspan.nested begin ===============
+cuda::std::mdspan<cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>>, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> >> of extents [2] = {
+  [0] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [2] = {
+    [0] = 1,
+    [1] = 2
+  },
+  [1] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [2] = {
+    [0] = 3,
+    [1] = 4
+  }
+}
+=============== mdspan.nested end ===============
+=============== mdspan.custom_accessor begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::aligned_accessor<int, 16>> of extents [4] = {
+  [0] = -7,
+  [1] = 8,
+  [2] = -9,
+  [3] = 10
+}
+=============== mdspan.custom_accessor end ===============
+=============== mdspan.vector begin ===============
+std::vector of length 2, capacity 2 = {[0] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [2] = {
+    [0] = -2,
+    [1] = 4
+  }, [1] = cuda::std::mdspan<int, cuda::std::extents<int, 2>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [2] = {
+    [0] = 11,
+    [1] = -9
+  }}
+=============== mdspan.vector end ===============
+=============== mdspan.update.before begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [3] = {
+  [0] = 1,
+  [1] = 2,
+  [2] = 3
+}
+=============== mdspan.update.before end ===============
+=============== mdspan.update.after begin ===============
+cuda::std::mdspan<int, cuda::std::extents<int, 18446744073709551615>, cuda::std::layout_right, cuda::std::default_accessor<int>> of extents [3] = {
+  [0] = 9,
+  [1] = -3,
+  [2] = 15
+}
+=============== mdspan.update.after end ===============
