@@ -14,11 +14,14 @@ import complex
 import inplace_vector
 import memory_resource
 import std_array
+import tuple
 
 import lldb
 
 _CATEGORY = "cccl"
+
 _FORMATTERS = (memory_resource, buffer, std_array, complex, inplace_vector)
+
 InternalDict = dict[str, object]
 
 

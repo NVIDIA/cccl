@@ -23,8 +23,10 @@ import complex  # noqa: E402
 import inplace_vector  # noqa: E402
 import memory_resource  # noqa: E402
 import std_array  # noqa: E402
+import tuple  # noqa: E402
 
 _PRINTERS = (memory_resource, buffer, std_array, complex, inplace_vector)
+
 
 
 def register() -> None:
