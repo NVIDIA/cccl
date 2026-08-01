@@ -104,7 +104,7 @@ struct Transforms
       int bin = -1; // cached bin; < 0 means empty
     };
 
-    mutable BinSelectState mru;
+    BinSelectState mru;
 
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
@@ -182,14 +182,13 @@ struct Transforms
       }
     }
 
-  private:
     //! @brief Implements cached/interpolated bin selection.
     //!
     //! A cached-bracket hit returns immediately. Otherwise, this computes and
     //! verifies an interpolated guess, checks one adjacent bracket, and finally
     //! falls back to `UpperBound` for arbitrary level distributions.
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelectImpl(_SampleT sample, int& bin, bool valid, BinSelectState& cache) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid)
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
@@ -204,9 +203,9 @@ struct Transforms
 
       const LevelT s = static_cast<LevelT>(sample);
 
-      if (cache.bin >= 0 && !(s < cache.lo) && (s < cache.hi))
+      if (mru.bin >= 0 && !(s < mru.lo) && (s < mru.hi))
       {
-        bin = cache.bin;
+        bin = mru.bin;
         return;
       }
 
@@ -270,8 +269,8 @@ struct Transforms
 
       if (!(s < lvl_lo) && (s < lvl_hi))
       {
-        bin   = guess;
-        cache = BinSelectState{lvl_lo, lvl_hi, guess};
+        bin = guess;
+        mru = BinSelectState{lvl_lo, lvl_hi, guess};
         return;
       }
 
@@ -283,8 +282,8 @@ struct Transforms
           const LevelT lvl2_lo = wrapped_levels[g2];
           if (!(s < lvl2_lo))
           {
-            bin   = g2;
-            cache = BinSelectState{lvl2_lo, lvl_lo, g2};
+            bin = g2;
+            mru = BinSelectState{lvl2_lo, lvl_lo, g2};
             return;
           }
         }
@@ -297,8 +296,8 @@ struct Transforms
           const LevelT lvl2_hi = wrapped_levels[g2 + 1];
           if (s < lvl2_hi)
           {
-            bin   = g2;
-            cache = BinSelectState{lvl_hi, lvl2_hi, g2};
+            bin = g2;
+            mru = BinSelectState{lvl_hi, lvl2_hi, g2};
             return;
           }
         }
@@ -312,16 +311,8 @@ struct Transforms
       }
       if (bin >= 0)
       {
-        cache = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
+        mru = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
       }
-    }
-
-  public:
-    //! @brief Selects a bin and retains the most recently used bracket in this thread's transform copy.
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
-    {
-      BinSelectImpl<LOAD_MODIFIER>(sample, bin, valid, mru);
     }
   };
 
@@ -713,9 +704,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
-                                             : current_policy<PolicySelector>().sweep_threads_per_block),
-                  int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_min_blocks() : 0))
+__launch_bounds__(int(threads_per_block<PrivatizedSmemBins>(current_policy<PolicySelector>())),
+                  int(min_blocks_per_sm<PrivatizedSmemBins>(current_policy<PolicySelector>())))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -723,7 +713,7 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
     ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
-    const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
     const OffsetT num_row_pixels,
     const OffsetT num_rows,
     const OffsetT row_stride_samples,
@@ -733,11 +723,11 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   // Thread block type for compositing input tiles
-  static constexpr int sweep_threads = PrivatizedSmemBins > 0 ? hp.static_smem_threads() : hp.sweep_threads_per_block;
-  static constexpr int sweep_items   = PrivatizedSmemBins > 0 ? hp.static_smem_items() : hp.sweep_items_per_thread;
+  static constexpr int threads_per_block = histogram::threads_per_block<PrivatizedSmemBins>(hp);
+  static constexpr int items_per_thread  = histogram::items_per_thread<PrivatizedSmemBins>(hp);
   using AgentHistogramPolicyT =
-    agent_histogram_policy<sweep_threads,
-                           sweep_items,
+    agent_histogram_policy<threads_per_block,
+                           items_per_thread,
                            hp.load_algorithm,
                            hp.load_modifier,
                            hp.rle_compress,
