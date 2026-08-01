@@ -422,7 +422,11 @@ struct policy_hub
     using StaticSmemPolicy  = static_smem_policy<AgentHistogramPolicyT, 256>;
     using DynamicSmemPolicy = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0, 0>;
 
-    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
+    static constexpr int init_kernel_pdl_trigger_max_bins =
+      NumChannels == 1 && NumActiveChannels == 1 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
+          && (sizeof(SampleT) == 1 || sizeof(SampleT) == 2)
+        ? 2048
+        : 0;
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
