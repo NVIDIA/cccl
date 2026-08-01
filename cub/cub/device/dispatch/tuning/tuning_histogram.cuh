@@ -34,8 +34,6 @@ struct HistogramPolicy
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory
   bool rle_compress; //!< Whether to perform localized RLE to compress samples before histogramming
-  BlockHistogramMemoryPreference mem_preference; //!< Whether to prefer privatized shared-memory or global-memory bins,
-                                                 //!< or a mix of both
   bool work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
@@ -69,8 +67,7 @@ struct HistogramPolicy
     return lhs.sweep_threads_per_block == rhs.sweep_threads_per_block
         && lhs.sweep_items_per_thread == rhs.sweep_items_per_thread && lhs.vec_size == rhs.vec_size
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.rle_compress == rhs.rle_compress && lhs.mem_preference == rhs.mem_preference
-        && lhs.work_stealing == rhs.work_stealing
+        && lhs.rle_compress == rhs.rle_compress && lhs.work_stealing == rhs.work_stealing
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.dynamic_smem_bytes == rhs.dynamic_smem_bytes
         && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
@@ -95,10 +92,10 @@ struct HistogramPolicy
         << "HistogramPolicy { .sweep_threads_per_block = " << p.sweep_threads_per_block
         << ", .sweep_items_per_thread = " << p.sweep_items_per_thread << ", .vec_size = " << p.vec_size
         << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference << ", .work_stealing = "
-        << p.work_stealing << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
-        << ", .dynamic_smem_bytes = " << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = "
-        << p.static_smem_threads_per_block << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread
+        << ", .rle_compress = " << p.rle_compress << ", .work_stealing = " << p.work_stealing
+        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = "
+        << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
+        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread
         << ", .static_smem_min_blocks_per_sm = " << p.static_smem_min_blocks_per_sm
         << ", .dynamic_smem_range_max_bins = " << p.dynamic_smem_range_max_bins
         << ", .dynamic_smem_even_2ch_max_bins = " << p.dynamic_smem_even_2ch_max_bins
@@ -222,8 +219,7 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
   static constexpr int threads_per_block = 768;
   static constexpr int items_per_thread  = 12;
 
-  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+  static constexpr CacheLoadModifier load_modifier = LOAD_LDG;
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -237,8 +233,7 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
   static constexpr int threads_per_block = 960;
   static constexpr int items_per_thread  = 10;
 
-  static constexpr CacheLoadModifier load_modifier               = LOAD_DEFAULT;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -261,14 +256,13 @@ template <class SampleT>
 struct sm100_tuning<true, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_1>
 {
   // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-  static constexpr int items_per_thread                          = 12;
-  static constexpr int threads_per_block                         = 928;
-  static constexpr bool rle_compress                             = false;
-  static constexpr bool work_stealing                            = false;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
-  static constexpr CacheLoadModifier load_modifier               = LOAD_CA;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int vec_size                                  = 1 << 2;
+  static constexpr int items_per_thread              = 12;
+  static constexpr int threads_per_block             = 928;
+  static constexpr bool rle_compress                 = false;
+  static constexpr bool work_stealing                = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr int vec_size                      = 1 << 2;
 };
 
 // range
@@ -276,40 +270,37 @@ template <class SampleT>
 struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_1>
 {
   // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-  static constexpr int items_per_thread                          = 12;
-  static constexpr int threads_per_block                         = 448;
-  static constexpr bool rle_compress                             = false;
-  static constexpr bool work_stealing                            = false;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
-  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int vec_size                                  = 1 << 2;
+  static constexpr int items_per_thread              = 12;
+  static constexpr int threads_per_block             = 448;
+  static constexpr bool rle_compress                 = false;
+  static constexpr bool work_stealing                = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr int vec_size                      = 1 << 2;
 };
 
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
 {
-  static constexpr int items_per_thread                          = 12;
-  static constexpr int threads_per_block                         = 768;
-  static constexpr bool rle_compress                             = true;
-  static constexpr bool work_stealing                            = false;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
-  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int vec_size                                  = 1 << 2;
+  static constexpr int items_per_thread              = 12;
+  static constexpr int threads_per_block             = 768;
+  static constexpr bool rle_compress                 = true;
+  static constexpr bool work_stealing                = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr int vec_size                      = 1 << 2;
 };
 
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
 {
-  static constexpr int items_per_thread                          = 6;
-  static constexpr int threads_per_block                         = 768;
-  static constexpr bool rle_compress                             = true;
-  static constexpr bool work_stealing                            = false;
-  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
-  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
-  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
-  static constexpr int vec_size                                  = 1 << 2;
+  static constexpr int items_per_thread              = 6;
+  static constexpr int threads_per_block             = 768;
+  static constexpr bool rle_compress                 = true;
+  static constexpr bool work_stealing                = false;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr int vec_size                      = 1 << 2;
 };
 
 // sample_size 2 retains the SM90 launch shape while using the SM100 shared-memory policy.
@@ -330,8 +321,7 @@ struct policy_hub
   struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT =
-      agent_histogram_policy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
+    using AgentHistogramPolicyT = agent_histogram_policy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, false>;
   };
 
   // SM90
@@ -345,7 +335,6 @@ struct policy_hub
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 Tuning::rle_compress,
-                                Tuning::mem_preference,
                                 Tuning::work_stealing>;
 
     template <typename Tuning>
@@ -362,15 +351,14 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int) -> agent_histogram_policy<
-      Tuning::threads_per_block,
-      Tuning::items_per_thread,
-      Tuning::load_algorithm,
-      Tuning::load_modifier,
-      Tuning::rle_compress,
-      Tuning::mem_preference,
-      Tuning::work_stealing,
-      Tuning::vec_size>;
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int)
+      -> agent_histogram_policy<Tuning::threads_per_block,
+                                Tuning::items_per_thread,
+                                Tuning::load_algorithm,
+                                Tuning::load_modifier,
+                                Tuning::rle_compress,
+                                Tuning::work_stealing,
+                                Tuning::vec_size>;
 
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
@@ -381,7 +369,7 @@ struct policy_hub
         0));
 
     using MultiChannelAgentHistogramPolicyT =
-      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4>;
+      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 4>;
 
     static constexpr bool use_sm100_multi_channel_policy =
       NumChannels >= 2 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value;
@@ -478,12 +466,12 @@ public:
         if (is_even)
         {
           // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-          return sm100_policy(HistogramPolicy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 2048});
+          return sm100_policy(HistogramPolicy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, false, 2048});
         }
         else
         {
           // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return sm100_policy(HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048});
+          return sm100_policy(HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, false, 2048});
         }
       }
 
@@ -493,7 +481,7 @@ public:
         if (is_even)
         {
           return sm100_policy(
-            HistogramPolicy{768, t_scale(12), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 2048});
+            HistogramPolicy{768, t_scale(12), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 2048});
         }
 
         const int static_threads    = sample_size == 8 ? 384 : 768;
@@ -506,7 +494,6 @@ public:
           BLOCK_LOAD_DIRECT,
           LOAD_LDG,
           true,
-          SMEM,
           false,
           2048,
           0,
@@ -519,18 +506,18 @@ public:
       {
         if (is_even)
         {
-          return sm100_policy(HistogramPolicy{1024, t_scale(8), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0});
+          return sm100_policy(HistogramPolicy{1024, t_scale(8), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 0});
         }
         return sm100_policy(
-          HistogramPolicy{1024, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0, 0, 384, 0, 3});
+          HistogramPolicy{1024, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 0, 0, 384, 0, 3});
       }
 
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 2)
       {
-        return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
+        return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, false, 2048};
       }
 
-      auto fallback = HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0};
+      auto fallback = HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 0};
       return has_sm100_dynamic_smem_tuning() ? sm100_policy(fallback) : fallback;
     }
 
@@ -540,17 +527,17 @@ public:
       {
         if (sample_size == 1)
         {
-          return HistogramPolicy{768, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+          return HistogramPolicy{768, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, false, 2048};
         }
         else if (sample_size == 2)
         {
-          return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
+          return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, false, 2048};
         }
       }
     }
 
     // fallback from SM50
-    return HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0};
+    return HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 0};
   }
 };
 
