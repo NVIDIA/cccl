@@ -345,11 +345,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
 
+  const bool requires_global_privatization =
+    !UseDynamicSmem
+    && (PRIVATIZED_SMEM_BINS == 0 || active_policy.mem_preference != BlockHistogramMemoryPreference::SMEM);
   for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
     allocation_sizes[CHANNEL] =
-      UseDynamicSmem ? 0
-                     : size_t(num_thread_blocks) * (num_privatized_levels[CHANNEL] - 1) * kernel_source.CounterSize();
+      requires_global_privatization
+        ? size_t(num_thread_blocks) * (num_privatized_levels[CHANNEL] - 1) * kernel_source.CounterSize()
+        : 0;
   }
 
   allocation_sizes[NUM_ALLOCATIONS - 1] = GridQueue<int>::AllocationSize();
