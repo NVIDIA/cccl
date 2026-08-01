@@ -36,7 +36,7 @@ struct HistogramPolicy
   bool rle_compress; //!< Whether to perform localized RLE to compress samples before histogramming
   BlockHistogramMemoryPreference mem_preference; //!< Whether to prefer privatized shared-memory or global-memory bins,
                                                  //!< or a mix of both
-  bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
+  bool work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
   int dynamic_smem_bytes             = 0; //!< Tuned byte budget for a runtime-sized privatized histogram; 0 disables it
@@ -70,7 +70,7 @@ struct HistogramPolicy
         && lhs.sweep_items_per_thread == rhs.sweep_items_per_thread && lhs.vec_size == rhs.vec_size
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.rle_compress == rhs.rle_compress && lhs.mem_preference == rhs.mem_preference
-        && lhs.use_work_stealing == rhs.use_work_stealing
+        && lhs.work_stealing == rhs.work_stealing
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.dynamic_smem_bytes == rhs.dynamic_smem_bytes
         && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
@@ -95,11 +95,10 @@ struct HistogramPolicy
         << "HistogramPolicy { .sweep_threads_per_block = " << p.sweep_threads_per_block
         << ", .sweep_items_per_thread = " << p.sweep_items_per_thread << ", .vec_size = " << p.vec_size
         << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference
-        << ", .use_work_stealing = " << p.use_work_stealing << ", .init_kernel_pdl_trigger_max_bins = "
-        << p.init_kernel_pdl_trigger_max_bins << ", .dynamic_smem_bytes = " << p.dynamic_smem_bytes
-        << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
-        << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread
+        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference << ", .work_stealing = "
+        << p.work_stealing << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
+        << ", .dynamic_smem_bytes = " << p.dynamic_smem_bytes << ", .static_smem_threads_per_block = "
+        << p.static_smem_threads_per_block << ", .static_smem_items_per_thread = " << p.static_smem_items_per_thread
         << ", .static_smem_min_blocks_per_sm = " << p.static_smem_min_blocks_per_sm
         << ", .dynamic_smem_range_max_bins = " << p.dynamic_smem_range_max_bins
         << ", .dynamic_smem_even_2ch_max_bins = " << p.dynamic_smem_even_2ch_max_bins
