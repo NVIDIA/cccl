@@ -91,12 +91,12 @@ struct DeviceHistogramKernelSource
   }
 
   /// Returns the default histogram sweep kernel that receives pre-initialized decode operators from the host.
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  template <typename PolicyT, bool UseStaticSmem, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
   {
     return &DeviceHistogramSweepKernel<
       PolicyT,
-      PRIVATIZED_SMEM_BINS,
+      UseStaticSmem,
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       SampleIteratorT,
@@ -124,7 +124,7 @@ struct DeviceHistogramKernelSource
 
   /// Returns the device-init histogram sweep kernel that initializes decode operators from level arrays in the kernel.
   template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
+            bool UseStaticSmem,
             typename FirstLevelArrayT,
             typename SecondLevelArrayT,
             bool IsEven,
@@ -150,7 +150,7 @@ struct DeviceHistogramKernelSource
 
     return &DeviceHistogramSweepDeviceInitKernel<
       PolicyT,
-      PRIVATIZED_SMEM_BINS,
+      UseStaticSmem,
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       SampleIteratorT,
@@ -193,7 +193,7 @@ struct DeviceHistogramKernelSource
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
-          int PRIVATIZED_SMEM_BINS,
+          bool UseStaticSmem,
           bool UseDynamicSmem,
           bool IsDeviceInit,
           bool IsEven,
@@ -262,7 +262,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       return kernel_source.template HistogramSweepKernelDeviceInit<
         PolicySelector,
-        PRIVATIZED_SMEM_BINS,
+        UseStaticSmem,
         FirstLevelArrayT,
         SecondLevelArrayT,
         IsEven,
@@ -273,13 +273,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
       return kernel_source
-        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
+        .template HistogramSweepKernel<PolicySelector, UseStaticSmem, privatized_decode_op_t, output_decode_op_t>();
     }
   }();
 
-  constexpr int privatized_smem_bins = UseDynamicSmem ? 0 : PRIVATIZED_SMEM_BINS;
-  const int threads_per_block        = detail::histogram::threads_per_block<privatized_smem_bins>(active_policy);
-  const int items_per_thread         = detail::histogram::items_per_thread<privatized_smem_bins>(active_policy);
+  constexpr auto tier =
+    UseDynamicSmem  ? privatization_tier::dynamic_smem
+    : UseStaticSmem ? privatization_tier::static_smem
+                    : privatization_tier::gmem;
+  const HistogramSweepPolicy sweep = sweep_policy<tier>(active_policy);
+  const int threads_per_block      = sweep.threads_per_block;
+  const int items_per_thread       = sweep.items_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (UseDynamicSmem)
@@ -290,7 +294,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (const auto error = CubDebug(launcher_factory.set_max_dynamic_smem_size_for(
-                         sweep_kernel, active_policy.dynamic_smem_bytes)))
+                         sweep_kernel, active_policy.dynamic_smem.max_bytes)))
                    {
                      return error;
                    }
@@ -343,7 +347,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
 
-  constexpr bool requires_global_privatization = !UseDynamicSmem && PRIVATIZED_SMEM_BINS == 0;
+  constexpr bool requires_global_privatization = !UseDynamicSmem && !UseStaticSmem;
   for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
     allocation_sizes[CHANNEL] =
@@ -581,15 +585,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   }
   int max_num_output_bins = max_levels - 1;
 
-  if (max_num_output_bins > detail::histogram::max_privatized_smem_bins)
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+  const HistogramPolicy active_policy = policy_selector(cc);
+
+  if (!should_use_static_smem(active_policy, max_num_output_bins))
   {
     // Dispatch global-memory-privatized approach
-    constexpr int PRIVATIZED_SMEM_BINS = 0;
-
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
+                                       /* UseStaticSmem = */ false,
                                        /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
@@ -617,12 +626,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   else
   {
     // Dispatch shared-privatized approach
-    constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::max_privatized_smem_bins;
-
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
+                                       /* UseStaticSmem = */ true,
                                        /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
@@ -758,12 +765,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   }
   int max_num_output_bins = max_levels - 1;
 
-  constexpr int PRIVATIZED_SMEM_BINS = 256;
-
   if (const auto error = CubDebug(
         (detail::histogram::dispatch<NUM_CHANNELS,
                                      NUM_ACTIVE_CHANNELS,
-                                     PRIVATIZED_SMEM_BINS,
+                                     /* UseStaticSmem = */ true,
                                      /* UseDynamicSmem = */ false,
                                      /* IsDeviceInit = */ true,
                                      /* IsEven = */ true,
@@ -793,146 +798,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
-  -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy(int)
+  -> decltype(typename ActivePolicy::GmemPolicy{}, HistogramPolicy{})
 {
-  return ActivePolicy::init_kernel_pdl_trigger_max_bins;
+  return convert_chained_policy<ActivePolicy>();
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy(long) -> HistogramPolicy
 {
-  return 0;
-}
-
-// TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_bytes(int) -> decltype(ActivePolicy::dynamic_smem_bytes)
-{
-  return ActivePolicy::dynamic_smem_bytes;
-}
-
-// TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_bytes(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_threads_per_block(int)
-  -> decltype(ActivePolicy::static_smem_threads_per_block)
-{
-  return ActivePolicy::static_smem_threads_per_block;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_threads_per_block(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_items_per_thread(int)
-  -> decltype(ActivePolicy::static_smem_items_per_thread)
-{
-  return ActivePolicy::static_smem_items_per_thread;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_items_per_thread(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_min_blocks_per_sm(int)
-  -> decltype(ActivePolicy::static_smem_min_blocks_per_sm)
-{
-  return ActivePolicy::static_smem_min_blocks_per_sm;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_static_smem_min_blocks_per_sm(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(int)
-  -> decltype(ActivePolicy::dynamic_smem_range_max_bins)
-{
-  return ActivePolicy::dynamic_smem_range_max_bins;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_range_max_bins(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_2ch_max_bins(int)
-  -> decltype(ActivePolicy::dynamic_smem_even_2ch_max_bins)
-{
-  return ActivePolicy::dynamic_smem_even_2ch_max_bins;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_2ch_max_bins(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_3ch_max_bins(int)
-  -> decltype(ActivePolicy::dynamic_smem_even_3ch_max_bins)
-{
-  return ActivePolicy::dynamic_smem_even_3ch_max_bins;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_3ch_max_bins(long)
-{
-  return 0;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_4ch_max_bins(int)
-  -> decltype(ActivePolicy::dynamic_smem_even_4ch_max_bins)
-{
-  return ActivePolicy::dynamic_smem_even_4ch_max_bins;
-}
-
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_dynamic_smem_even_4ch_max_bins(long)
-{
-  return 0;
-}
-
-// TODO(bgruber): drop in CCCL 4.0
-template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
-{
-  using ap = typename ActivePolicy::AgentHistogramPolicyT;
-  return HistogramPolicy{
-    ap::BLOCK_THREADS,
-    ap::PIXELS_PER_THREAD,
-    ap::VEC_SIZE,
-    ap::LOAD_ALGORITHM,
-    ap::LOAD_MODIFIER,
-    ap::IS_RLE_COMPRESS,
-    ap::IS_WORK_STEALING,
-    convert_pdl_trigger<ActivePolicy>(0),
-    convert_dynamic_smem_bytes<ActivePolicy>(0),
-    convert_static_smem_threads_per_block<ActivePolicy>(0),
-    convert_static_smem_items_per_thread<ActivePolicy>(0),
-    convert_static_smem_min_blocks_per_sm<ActivePolicy>(0),
-    convert_dynamic_smem_range_max_bins<ActivePolicy>(0),
-    convert_dynamic_smem_even_2ch_max_bins<ActivePolicy>(0),
-    convert_dynamic_smem_even_3ch_max_bins<ActivePolicy>(0),
-    convert_dynamic_smem_even_4ch_max_bins<ActivePolicy>(0)};
+  using sweep             = typename ActivePolicy::AgentHistogramPolicyT;
+  const auto sweep_policy = HistogramSweepPolicy{
+    sweep::BLOCK_THREADS,
+    sweep::PIXELS_PER_THREAD,
+    sweep::VEC_SIZE,
+    sweep::LOAD_ALGORITHM,
+    sweep::LOAD_MODIFIER,
+    sweep::IS_RLE_COMPRESS,
+    sweep::IS_WORK_STEALING};
+  return {sweep_policy, {sweep_policy, 256, 0}, {sweep_policy, 0, 0, 0, 0, 0, 0}, 0};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -940,14 +825,14 @@ template <typename MaxPolicy>
 struct policy_selector_from_max_policy
 {
 private:
-  struct extract_policy_dispatch_t
+  struct dispatch_t
   {
     HistogramPolicy& policy;
 
-    template <typename ActivePolicyT>
+    template <typename ActivePolicy>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
-      policy = convert_policy<ActivePolicyT>();
+      policy = convert_policy<ActivePolicy>(0);
       return cudaSuccess;
     }
   };
@@ -958,11 +843,11 @@ public:
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
                         HistogramPolicy policy{};
-                        extract_policy_dispatch_t dispatch{policy};
+                        dispatch_t dispatch{policy};
                         _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
-                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
+                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(0); }));
   }
 };
 
@@ -1030,12 +915,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
     int max_num_output_bins = max_levels - 1;
 
-    constexpr int PRIVATIZED_SMEM_BINS = 256;
-
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
+                                       /* UseStaticSmem = */ true,
                                        /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ false,
                                        /* IsEven = (unused for host-init) */ false,
@@ -1103,7 +986,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
         return CubDebug(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
-                                       /* PRIVATIZED_SMEM_BINS = */ 0,
+                                       /* UseStaticSmem = */ false,
                                        /* UseDynamicSmem = */ true,
                                        /* IsDeviceInit = */ false,
                                        /* IsEven = */ false,
@@ -1135,15 +1018,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
 
     // Dispatch
-    if (max_num_output_bins > max_privatized_smem_bins)
+    if (!should_use_static_smem(active_policy, max_num_output_bins))
     {
       // Too many bins to keep in shared memory.
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
+                                         /* UseStaticSmem = */ false,
                                          /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = (unused for host-init) */ false,
@@ -1171,12 +1052,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     else
     {
       // Dispatch shared-privatized approach
-      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
+                                         /* UseStaticSmem = */ true,
                                          /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = (unused for host-init) */ false,
@@ -1284,12 +1163,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     }
     int max_num_output_bins = max_levels - 1;
 
-    constexpr int PRIVATIZED_SMEM_BINS = 256;
-
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NUM_CHANNELS,
                                        NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
+                                       /* UseStaticSmem = */ true,
                                        /* UseDynamicSmem = */ false,
                                        /* IsDeviceInit = */ false,
                                        /* IsEven = */ false,
@@ -1364,7 +1241,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
       return CubDebug(
         (detail::histogram::dispatch<NUM_CHANNELS,
                                      NUM_ACTIVE_CHANNELS,
-                                     /* PRIVATIZED_SMEM_BINS = */ 0,
+                                     /* UseStaticSmem = */ false,
                                      /* UseDynamicSmem = */ true,
                                      /* IsDeviceInit = */ false,
                                      /* IsEven = */ true,
@@ -1387,14 +1264,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
           launcher_factory)));
     }
 
-    if (max_num_output_bins > max_privatized_smem_bins)
+    if (!should_use_static_smem(active_policy, max_num_output_bins))
     {
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
+                                         /* UseStaticSmem = */ false,
                                          /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
@@ -1421,12 +1296,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     }
     else
     {
-      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
                                          NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
+                                         /* UseStaticSmem = */ true,
                                          /* UseDynamicSmem = */ false,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
