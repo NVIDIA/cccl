@@ -681,8 +681,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //! @tparam PolicySelector
 //!   Selects the tuning policy
 //!
-//! @tparam PrivatizedSmemBins
-//!   Maximum number of histogram bins per channel (e.g., up to 256)
+//! @tparam UseStaticSmem
+//!   Whether the privatized histogram is stored in compile-time-sized shared memory
 //!
 //! @tparam NumChannels
 //!   Number of channels interleaved in the input data (may be greater than the number of channels
@@ -746,7 +746,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
 template <typename PolicySelector,
-          int PrivatizedSmemBins,
+          bool UseStaticSmem,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
@@ -758,8 +758,10 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(threads_per_block<PrivatizedSmemBins>(current_policy<PolicySelector>())),
-                  int(min_blocks_per_sm<PrivatizedSmemBins>(current_policy<PolicySelector>())))
+__launch_bounds__(int(sweep_policy<UseStaticSmem ? privatization_tier::static_smem : privatization_tier::gmem>(
+                        current_policy<PolicySelector>())
+                        .threads_per_block),
+                  int(UseStaticSmem ? current_policy<PolicySelector>().static_smem.min_blocks_per_sm : 0))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -775,21 +777,22 @@ __launch_bounds__(int(threads_per_block<PrivatizedSmemBins>(current_policy<Polic
     GridQueue<int> tile_queue)
 {
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
+  static constexpr auto sweep =
+    sweep_policy<UseStaticSmem ? privatization_tier::static_smem : privatization_tier::gmem>(hp);
+  static constexpr int privatized_smem_bins = UseStaticSmem ? hp.static_smem.max_bins : 0;
 
   // Thread block type for compositing input tiles
-  static constexpr int threads_per_block = histogram::threads_per_block<PrivatizedSmemBins>(hp);
-  static constexpr int items_per_thread  = histogram::items_per_thread<PrivatizedSmemBins>(hp);
   using AgentHistogramPolicyT =
-    agent_histogram_policy<threads_per_block,
-                           items_per_thread,
-                           hp.load_algorithm,
-                           hp.load_modifier,
-                           hp.rle_compress,
-                           hp.work_stealing,
-                           hp.vec_size>;
+    agent_histogram_policy<sweep.threads_per_block,
+                           sweep.items_per_thread,
+                           sweep.load_algorithm,
+                           sweep.load_modifier,
+                           sweep.rle_compress,
+                           sweep.work_stealing,
+                           sweep.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
-                   PrivatizedSmemBins,
+                   privatized_smem_bins,
                    NumChannels,
                    NumActiveChannels,
                    SampleIteratorT,
@@ -799,7 +802,7 @@ __launch_bounds__(int(threads_per_block<PrivatizedSmemBins>(current_policy<Polic
                    OffsetT,
                    false,
                    OutputCounterT>;
-  static_assert(AgentHistogramT::privatized_smem_bins == PrivatizedSmemBins);
+  static_assert(AgentHistogramT::privatized_smem_bins == privatized_smem_bins);
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
@@ -843,7 +846,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.sweep.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDynamicSmemKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -858,16 +861,17 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
     const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp         = current_policy<PolicySelector>();
+  static constexpr HistogramSweepPolicy sweep = hp.dynamic_smem.sweep;
 
   using AgentHistogramPolicyT =
-    agent_histogram_policy<hp.sweep_threads_per_block,
-                           hp.sweep_items_per_thread,
-                           hp.load_algorithm,
-                           hp.load_modifier,
-                           hp.rle_compress,
-                           hp.work_stealing,
-                           hp.vec_size>;
+    agent_histogram_policy<sweep.threads_per_block,
+                           sweep.items_per_thread,
+                           sweep.load_algorithm,
+                           sweep.load_modifier,
+                           sweep.rle_compress,
+                           sweep.work_stealing,
+                           sweep.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    0,
@@ -918,8 +922,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
 //! @tparam PolicySelector
 //!   Selects the tuning policy
 //!
-//! @tparam PrivatizedSmemBins
-//!   Maximum number of histogram bins per channel (e.g., up to 256)
+//! @tparam UseStaticSmem
+//!   Whether the privatized histogram is stored in compile-time-sized shared memory
 //!
 //! @tparam NumChannels
 //!   Number of channels interleaved in the input data (may be greater than the number of channels
@@ -995,7 +999,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
 template <typename PolicySelector,
-          int PrivatizedSmemBins,
+          bool UseStaticSmem,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
@@ -1011,7 +1015,9 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
+__launch_bounds__(int(sweep_policy<UseStaticSmem ? privatization_tier::static_smem : privatization_tier::gmem>(
+                        current_policy<PolicySelector>())
+                        .threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -1027,6 +1033,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
     const GridQueue<int> tile_queue)
 {
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
+  static constexpr auto sweep =
+    sweep_policy<UseStaticSmem ? privatization_tier::static_smem : privatization_tier::gmem>(hp);
+  static constexpr int privatized_smem_bins = UseStaticSmem ? hp.static_smem.max_bins : 0;
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
@@ -1056,16 +1065,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().sweep_threads_per_block))
 
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT =
-    agent_histogram_policy<hp.sweep_threads_per_block,
-                           hp.sweep_items_per_thread,
-                           hp.load_algorithm,
-                           hp.load_modifier,
-                           hp.rle_compress,
-                           hp.work_stealing,
-                           hp.vec_size>;
+    agent_histogram_policy<sweep.threads_per_block,
+                           sweep.items_per_thread,
+                           sweep.load_algorithm,
+                           sweep.load_modifier,
+                           sweep.rle_compress,
+                           sweep.work_stealing,
+                           sweep.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
-                   PrivatizedSmemBins,
+                   privatized_smem_bins,
                    NumChannels,
                    NumActiveChannels,
                    SampleIteratorT,
