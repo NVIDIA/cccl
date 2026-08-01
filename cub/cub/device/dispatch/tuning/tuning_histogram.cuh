@@ -34,6 +34,7 @@ struct HistogramSweepPolicy
   BlockLoadAlgorithm load_algorithm; //!< Algorithm used for loading samples
   CacheLoadModifier load_modifier; //!< Cache modifier used for loading samples
   bool rle_compress; //!< Whether to locally run-length encode samples
+  BlockHistogramMemoryPreference mem_preference; //!< Preferred storage for privatized bins
   bool work_stealing; //!< Whether blocks dequeue tiles from a global queue
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -42,7 +43,7 @@ struct HistogramSweepPolicy
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
-        && lhs.work_stealing == rhs.work_stealing;
+        && lhs.mem_preference == rhs.mem_preference && lhs.work_stealing == rhs.work_stealing;
   }
 };
 
@@ -109,7 +110,7 @@ struct HistogramPolicy
           << "{ .threads_per_block = " << sweep.threads_per_block << ", .items_per_thread = " << sweep.items_per_thread
           << ", .vec_size = " << sweep.vec_size << ", .load_algorithm = " << sweep.load_algorithm
           << ", .load_modifier = " << sweep.load_modifier << ", .rle_compress = " << sweep.rle_compress
-          << ", .work_stealing = " << sweep.work_stealing << " }";
+          << ", .mem_preference = " << sweep.mem_preference << ", .work_stealing = " << sweep.work_stealing << " }";
     };
     os << "HistogramPolicy { .gmem = ";
     print_sweep(p.gmem);
@@ -390,10 +391,11 @@ struct policy_hub
   struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT = agent_histogram_policy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, false>;
-    using GmemPolicy            = AgentHistogramPolicyT;
-    using StaticSmemPolicy      = static_smem_policy<AgentHistogramPolicyT, 256>;
-    using DynamicSmemPolicy     = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0, 0>;
+    using AgentHistogramPolicyT =
+      agent_histogram_policy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
+    using GmemPolicy        = AgentHistogramPolicyT;
+    using StaticSmemPolicy  = static_smem_policy<AgentHistogramPolicyT, 256>;
+    using DynamicSmemPolicy = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0, 0>;
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 0;
   };
@@ -409,6 +411,7 @@ struct policy_hub
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 Tuning::rle_compress,
+                                SMEM,
                                 Tuning::work_stealing>;
 
     template <typename Tuning>
@@ -433,14 +436,15 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int)
-      -> agent_histogram_policy<Tuning::threads_per_block,
-                                Tuning::items_per_thread,
-                                Tuning::load_algorithm,
-                                Tuning::load_modifier,
-                                Tuning::rle_compress,
-                                Tuning::work_stealing,
-                                Tuning::vec_size>;
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int) -> agent_histogram_policy<
+      Tuning::threads_per_block,
+      Tuning::items_per_thread,
+      Tuning::load_algorithm,
+      Tuning::load_modifier,
+      Tuning::rle_compress,
+      SMEM,
+      Tuning::work_stealing,
+      Tuning::vec_size>;
 
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
@@ -451,7 +455,7 @@ struct policy_hub
         0));
 
     using MultiChannelAgentHistogramPolicyT =
-      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 4>;
+      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4>;
 
     static constexpr bool use_sm100_multi_channel_policy =
       NumChannels >= 2 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value;
@@ -489,14 +493,15 @@ struct policy_hub
     static constexpr int static_smem_min_blocks_per_sm =
       use_range_multi_static_smem_policy || use_range_u64_static_smem_policy ? 3 : 0;
 
-    using StaticSmemSweepPolicy =
-      agent_histogram_policy<static_smem_threads_per_block,
-                             static_smem_items_per_thread,
-                             AgentHistogramPolicyT::LOAD_ALGORITHM,
-                             AgentHistogramPolicyT::LOAD_MODIFIER,
-                             AgentHistogramPolicyT::IS_RLE_COMPRESS,
-                             AgentHistogramPolicyT::IS_WORK_STEALING,
-                             AgentHistogramPolicyT::VEC_SIZE>;
+    using StaticSmemSweepPolicy = agent_histogram_policy<
+      static_smem_threads_per_block,
+      static_smem_items_per_thread,
+      AgentHistogramPolicyT::LOAD_ALGORITHM,
+      AgentHistogramPolicyT::LOAD_MODIFIER,
+      AgentHistogramPolicyT::IS_RLE_COMPRESS,
+      AgentHistogramPolicyT::MEM_PREFERENCE,
+      AgentHistogramPolicyT::IS_WORK_STEALING,
+      AgentHistogramPolicyT::VEC_SIZE>;
 
     using GmemPolicy       = AgentHistogramPolicyT;
     using StaticSmemPolicy = static_smem_policy<StaticSmemSweepPolicy, 512, static_smem_min_blocks_per_sm>;
@@ -529,6 +534,7 @@ template <class StaticSweepPolicy>
           StaticSweepPolicy::LOAD_ALGORITHM,
           StaticSweepPolicy::LOAD_MODIFIER,
           StaticSweepPolicy::IS_RLE_COMPRESS,
+          StaticSweepPolicy::MEM_PREFERENCE,
           StaticSweepPolicy::IS_WORK_STEALING};
 }
 

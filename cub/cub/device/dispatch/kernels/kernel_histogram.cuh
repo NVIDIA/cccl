@@ -728,14 +728,15 @@ __launch_bounds__(int(sweep_policy<UseStaticSmem ? privatization_tier::static_sm
   static constexpr int privatized_smem_bins = UseStaticSmem ? hp.static_smem.max_bins : 0;
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    agent_histogram_policy<sweep.threads_per_block,
-                           sweep.items_per_thread,
-                           sweep.load_algorithm,
-                           sweep.load_modifier,
-                           sweep.rle_compress,
-                           sweep.work_stealing,
-                           sweep.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    sweep.threads_per_block,
+    sweep.items_per_thread,
+    sweep.load_algorithm,
+    sweep.load_modifier,
+    sweep.rle_compress,
+    sweep.mem_preference,
+    sweep.work_stealing,
+    sweep.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    privatized_smem_bins,
@@ -810,14 +811,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().dynamic_smem.sweep.thread
   static constexpr HistogramPolicy hp         = current_policy<PolicySelector>();
   static constexpr HistogramSweepPolicy sweep = hp.dynamic_smem.sweep;
 
-  using AgentHistogramPolicyT =
-    agent_histogram_policy<sweep.threads_per_block,
-                           sweep.items_per_thread,
-                           sweep.load_algorithm,
-                           sweep.load_modifier,
-                           sweep.rle_compress,
-                           sweep.work_stealing,
-                           sweep.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    sweep.threads_per_block,
+    sweep.items_per_thread,
+    sweep.load_algorithm,
+    sweep.load_modifier,
+    sweep.rle_compress,
+    sweep.mem_preference,
+    sweep.work_stealing,
+    sweep.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    0,
@@ -1010,14 +1012,15 @@ __launch_bounds__(int(sweep_policy<UseStaticSmem ? privatization_tier::static_sm
   }
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    agent_histogram_policy<sweep.threads_per_block,
-                           sweep.items_per_thread,
-                           sweep.load_algorithm,
-                           sweep.load_modifier,
-                           sweep.rle_compress,
-                           sweep.work_stealing,
-                           sweep.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    sweep.threads_per_block,
+    sweep.items_per_thread,
+    sweep.load_algorithm,
+    sweep.load_modifier,
+    sweep.rle_compress,
+    sweep.mem_preference,
+    sweep.work_stealing,
+    sweep.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    privatized_smem_bins,
