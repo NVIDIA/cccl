@@ -270,35 +270,32 @@ struct AgentHistogram
                                                    // channel
   bool prefer_smem; // for privatized counterss
 
-  template <typename F>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WithPrivatizedHistograms(F&& f)
+  _CCCL_DEVICE _CCCL_FORCEINLINE CounterT* PrivatizedHistogram(int channel)
   {
     if (prefer_smem)
     {
       if constexpr (UseDynamicSmem)
       {
-        f(dyn_smem_histograms);
+        return dyn_smem_histograms[channel];
       }
       else
       {
-        f(temp_storage.histograms);
+        return temp_storage.histograms[channel];
       }
     }
-    else
-    {
-      f(d_privatized_histograms);
-    }
+
+    return d_privatized_histograms[channel];
   }
 
-  template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
+      CounterT* privatized_histogram = PrivatizedHistogram(ch);
       for (int bin = static_cast<int>(threadIdx.x); bin < num_privatized_bins[ch]; bin += threads_per_block)
       {
-        privatized_histograms[ch][bin] = 0;
+        privatized_histogram[bin] = 0;
       }
     }
 
@@ -308,8 +305,7 @@ struct AgentHistogram
   }
 
   // Update final output histograms from privatized histograms
-  template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(TwoDimSubscriptableCounterT& privatized_histograms)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutputImpl()
   {
     // Barrier to make sure all threads are done updating counters
     __syncthreads();
@@ -318,11 +314,12 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      const int channel_bins = num_privatized_bins[ch];
+      CounterT* privatized_histogram = PrivatizedHistogram(ch);
+      const int channel_bins         = num_privatized_bins[ch];
       for (int bin = static_cast<int>(threadIdx.x); bin < channel_bins; bin += threads_per_block)
       {
         int output_bin       = -1;
-        const CounterT count = privatized_histograms[ch][bin];
+        const CounterT count = privatized_histogram[bin];
         const bool is_valid  = count > 0;
         output_decode_op[ch].template BinSelect<load_modifier>(static_cast<SampleT>(bin), output_bin, is_valid);
 
@@ -335,16 +332,15 @@ struct AgentHistogram
   }
 
   // Accumulate pixels.  Specialized for RLE compression.
-  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
     bool is_valid[pixels_per_thread],
-    TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::true_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
+      CounterT* privatized_histogram = PrivatizedHistogram(ch);
       // Bin pixels
       int bins[pixels_per_thread];
 
@@ -365,8 +361,8 @@ struct AgentHistogram
           if (bins[pixel] >= 0)
           {
             NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                              (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
-                              (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+                              (atomicAdd_block(privatized_histogram + bins[pixel], accumulator);),
+                              (atomicAdd(privatized_histogram + bins[pixel], accumulator);));
           }
 
           accumulator = 0;
@@ -378,18 +374,16 @@ struct AgentHistogram
       if (bins[pixels_per_thread - 1] >= 0)
       {
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                          (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
-                          (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+                          (atomicAdd_block(privatized_histogram + bins[pixels_per_thread - 1], accumulator);),
+                          (atomicAdd(privatized_histogram + bins[pixels_per_thread - 1], accumulator);));
       }
     }
   }
 
   // Accumulate pixels.  Specialized for individual accumulation of each pixel.
-  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
     bool is_valid[pixels_per_thread],
-    TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::false_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -398,13 +392,14 @@ struct AgentHistogram
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
-        int bin = -1;
+        CounterT* privatized_histogram = PrivatizedHistogram(ch);
+        int bin                        = -1;
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
           NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                            (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
-                            (atomicAdd(privatized_histograms[ch] + bin, 1);));
+                            (atomicAdd_block(privatized_histogram + bin, 1);),
+                            (atomicAdd(privatized_histogram + bin, 1);));
         }
       }
     }
@@ -503,9 +498,7 @@ struct AgentHistogram
     LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
     MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
-    WithPrivatizedHistograms([&](auto& privatized_histograms) {
-      AccumulatePixels(samples, is_valid, privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
-    });
+    AccumulatePixels(samples, is_valid, ::cuda::std::bool_constant<is_rle_compress>{});
   }
 
   //! @brief Consume row tiles. Specialized for work-stealing from queue
@@ -661,14 +654,14 @@ struct AgentHistogram
                   "AgentHistogram with UseDynamicSmem=true requires the dynamic-SMEM "
                   "constructor that takes an extern __shared__ base pointer.");
 
-    const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
-
-    // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
-    // Initialize the locations of this block's privatized histograms
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    if (!prefer_smem)
     {
-      const auto offset                 = static_cast<::cuda::std::int64_t>(blockId) * num_privatized_bins[ch];
-      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
+      const int block_id = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        const auto offset                 = static_cast<::cuda::std::int64_t>(block_id) * num_privatized_bins[ch];
+        this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
+      }
     }
   }
 
@@ -694,11 +687,6 @@ struct AgentHistogram
       , prefer_smem(true)
   {
     static_assert(UseDynamicSmem, "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmem=true.");
-
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
-    {
-      this->d_privatized_histograms[ch] = d_privatized_histograms[ch];
-    }
 
     CounterT* p = dyn_smem_histogram_base;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -764,17 +752,13 @@ struct AgentHistogram
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCounters()
   {
-    WithPrivatizedHistograms([&](auto& privatized_histograms) {
-      ZeroBinCounters(privatized_histograms);
-    });
+    ZeroBinCounters();
   }
 
   //! Store privatized histogram to device-accessible memory.  Specialized for privatized shared-memory counters
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput()
   {
-    WithPrivatizedHistograms([&](auto& privatized_histograms) {
-      StoreOutput(privatized_histograms);
-    });
+    StoreOutputImpl();
   }
 };
 } // namespace detail::histogram
