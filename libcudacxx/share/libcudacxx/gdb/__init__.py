@@ -20,11 +20,12 @@ if _SCRIPT_DIRECTORY not in sys.path:
 
 import buffer  # noqa: E402
 import complex  # noqa: E402
+import event  # noqa: E402
 import memory_resource  # noqa: E402
 import std_array  # noqa: E402
 import tuple  # noqa: E402
 
-_PRINTERS = (memory_resource, buffer, std_array, complex, tuple)
+_PRINTERS = (memory_resource, buffer, std_array, complex, tuple, event)
 
 
 def register() -> None:
