@@ -425,7 +425,7 @@ struct HistogramPolicySelector
             .load_modifier                    = cub::LOAD_LDG,
             .rle_compress                     = false,
             .mem_preference                   = cub::SMEM,
-            .use_work_stealing                = false,
+            .work_stealing                    = false,
             .init_kernel_pdl_trigger_max_bins = 2048};
   }
 };
