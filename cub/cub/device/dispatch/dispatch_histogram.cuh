@@ -587,7 +587,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
   if (max_num_output_bins > detail::histogram::max_privatized_smem_bins)
   {
-    // Dispatch shared-privatized approach
+    // Dispatch global-memory-privatized approach
     constexpr int PRIVATIZED_SMEM_BINS = 0;
 
     if (const auto error = CubDebug(
