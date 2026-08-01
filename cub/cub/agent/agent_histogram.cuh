@@ -249,8 +249,7 @@ struct AgentHistogram
   OutputCounterT** d_output_histograms; // final output, in global memory
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
-  const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
-                                                   // channel
+  PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
   _CCCL_DEVICE _CCCL_FORCEINLINE CounterT* PrivatizedHistogram(int channel)
   {
     if constexpr (UseDynamicSmem)
@@ -339,9 +338,7 @@ struct AgentHistogram
         {
           if (bins[pixel] >= 0)
           {
-            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                              (atomicAdd_block(privatized_histogram + bins[pixel], accumulator);),
-                              (atomicAdd(privatized_histogram + bins[pixel], accumulator);));
+            atomicAdd_block(privatized_histogram + bins[pixel], accumulator);
           }
 
           accumulator = 0;
@@ -352,9 +349,7 @@ struct AgentHistogram
       // Last pixel
       if (bins[pixels_per_thread - 1] >= 0)
       {
-        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                          (atomicAdd_block(privatized_histogram + bins[pixels_per_thread - 1], accumulator);),
-                          (atomicAdd(privatized_histogram + bins[pixels_per_thread - 1], accumulator);));
+        atomicAdd_block(privatized_histogram + bins[pixels_per_thread - 1], accumulator);
       }
     }
   }
@@ -376,9 +371,7 @@ struct AgentHistogram
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
-          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                            (atomicAdd_block(privatized_histogram + bin, 1);),
-                            (atomicAdd(privatized_histogram + bin, 1);));
+          atomicAdd_block(privatized_histogram + bin, 1);
         }
       }
     }
@@ -615,7 +608,7 @@ struct AgentHistogram
     OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
-    const PrivatizedDecodeOpT* privatized_decode_op)
+    PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
@@ -649,7 +642,7 @@ struct AgentHistogram
     OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
-    const PrivatizedDecodeOpT* privatized_decode_op,
+    PrivatizedDecodeOpT* privatized_decode_op,
     CounterT* dyn_smem_histogram_base)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
