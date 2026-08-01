@@ -58,6 +58,12 @@ inspect_layout_stride(const cuda::std::mdspan<int, cuda::std::dextents<int, 2>, 
   keep_for_debugger(values);
 }
 
+[[gnu::noinline]] void
+inspect_rank0_layout_stride(const cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_stride>& values)
+{
+  keep_for_debugger(values);
+}
+
 [[gnu::noinline]] void inspect_const_element(const cuda::std::mdspan<const int, cuda::std::dextents<int, 1>>& values)
 {
   keep_for_debugger(values);
@@ -153,10 +159,10 @@ int main()
   }
   inspect_layout_left(layout_left_span);
 
-  int layout_stride_data[6];
+  int layout_stride_data[7] = {-1, -1, -1, -1, -1, -1, -1};
   const cuda::std::dextents<int, 2> layout_stride_extents(2, 3);
   const cuda::std::layout_stride::mapping<cuda::std::dextents<int, 2>> layout_stride_mapping(
-    layout_stride_extents, cuda::std::array<int, 2>{1, 2});
+    layout_stride_extents, cuda::std::array<int, 2>{4, 1});
   cuda::std::mdspan<int, cuda::std::dextents<int, 2>, cuda::std::layout_stride> layout_stride_span(
     layout_stride_data, layout_stride_mapping);
   for (int row = 0; row < 2; ++row)
@@ -167,6 +173,14 @@ int main()
     }
   }
   inspect_layout_stride(layout_stride_span);
+
+  int rank0_stride_data[1] = {55};
+  const cuda::std::extents<int> rank0_stride_extents;
+  const cuda::std::layout_stride::mapping<cuda::std::extents<int>> rank0_stride_mapping(
+    rank0_stride_extents, cuda::std::array<int, 0>{});
+  const cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_stride> rank0_stride_span(
+    rank0_stride_data, rank0_stride_mapping);
+  inspect_rank0_layout_stride(rank0_stride_span);
 
   int const_element_data[3] = {5, 6, 7};
   const cuda::std::mdspan<const int, cuda::std::dextents<int, 1>> const_element(const_element_data, 3);

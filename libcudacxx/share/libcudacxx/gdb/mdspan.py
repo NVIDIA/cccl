@@ -113,8 +113,7 @@ def _split_top_level(text: str) -> list[str]:
 def _static_extents(extents_type: gdb.Type) -> list[int] | None:
     """Parse the static extents (dynamic_extent sentinel kept) out of an
     ``extents<IndexType, Values...>`` type's name."""
-    match = _EXTENTS_PATTERN.search(
-        memory_resource.public_type_name(extents_type))
+    match = _EXTENTS_PATTERN.search(memory_resource.public_type_name(extents_type))
     if match is None:
         return None
     parts = _split_top_level(match.group(1))
@@ -167,10 +166,12 @@ def _offset(
     kind: str, extents: list[int], strides: list[int] | None, indices: tuple[int, ...]
 ) -> int:
     if kind == "layout_stride":
+        # Rank 0 has no indices to stride over, so strides may legitimately be None.
+        if not indices:
+            return 0
         return sum(index * stride for index, stride in zip(indices, strides))
     positions = (
-        range(len(extents)) if kind == "layout_right" else reversed(
-            range(len(extents)))
+        range(len(extents)) if kind == "layout_right" else reversed(range(len(extents)))
     )
     result = 0
     for pos in positions:
@@ -206,8 +207,7 @@ class MdspanPrinter:
         static_values = _static_extents(extents_type)
         if static_values is None:
             return
-        rank_dynamic = sum(
-            1 for value in static_values if value == _DYNAMIC_EXTENT)
+        rank_dynamic = sum(1 for value in static_values if value == _DYNAMIC_EXTENT)
 
         mapping_ebco = _find_ebco_base(mapping)
         dynamic_values: list[int] = []
@@ -237,7 +237,9 @@ class MdspanPrinter:
     def _can_index(self) -> bool:
         if self.extents is None or self.data is None or self.layout is None:
             return False
-        return self.layout != "layout_stride" or self.strides is not None
+        if self.layout != "layout_stride":
+            return True
+        return len(self.extents) == 0 or self.strides is not None
 
     def _size(self) -> int:
         size = 1
@@ -282,5 +284,4 @@ class MdspanPrinterLookup(gdb.printing.PrettyPrinter):
 
 def register(objfile: ModuleType) -> None:
     """Register the cuda::std::mdspan printer with GDB."""
-    gdb.printing.register_pretty_printer(
-        objfile, MdspanPrinterLookup(), replace=True)
+    gdb.printing.register_pretty_printer(objfile, MdspanPrinterLookup(), replace=True)

@@ -158,6 +158,9 @@ def _offset(
     kind: str, extents: list[int], strides: list[int] | None, indices: tuple[int, ...]
 ) -> int:
     if kind == "layout_stride":
+        # Rank 0 has no indices to stride over, so strides may legitimately be None.
+        if not indices:
+            return 0
         return sum(index * stride for index, stride in zip(indices, strides))
     positions = (
         range(len(extents)) if kind == "layout_right" else reversed(range(len(extents)))
@@ -178,7 +181,9 @@ class MdspanInfo(NamedTuple):
     def can_index(self) -> bool:
         if self.extents is None or self.data is None or self.layout is None:
             return False
-        return self.layout != "layout_stride" or self.strides is not None
+        if self.layout != "layout_stride":
+            return True
+        return len(self.extents) == 0 or self.strides is not None
 
     def size(self) -> int:
         size = 1
@@ -295,6 +300,13 @@ class MdspanSyntheticProvider:
                 tuple(int(index) for index in stripped.split(",")) if stripped else ()
             )
         except ValueError:
+            return -1
+        if len(parsed) != len(self.info.extents):
+            return -1
+        if any(
+            index < 0 or index >= extent
+            for extent, index in zip(self.info.extents, parsed)
+        ):
             return -1
         flat = 0
         for extent, index in zip(self.info.extents, parsed):
