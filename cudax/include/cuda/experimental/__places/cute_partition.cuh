@@ -442,6 +442,16 @@ public:
     const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
     if (max_runs == 0)
     {
+      // Auto budget, proportional to the OUTPUT size rather than a fixed
+      // constant: 16 owner() evaluations per placement block produced keeps
+      // the walk within a small factor of what the sampled fallback would
+      // spend on the same allocation (localized_placement_default_probes per
+      // block), so accepting the analytic path is never a meaningful cost
+      // regression at any allocation size, while dense layouts (runs at
+      // element pitch, i.e. thousands of runs per block) are declined
+      // immediately. The floor keeps small allocations permissive: below it
+      // the walk costs microseconds either way, and declining fine-grained
+      // small cases would forfeit exact plans for no measurable saving.
       max_runs = ::std::max<size_t>(16 * nblocks, size_t(1) << 16);
     }
     if (misplaced_bytes)
