@@ -1945,6 +1945,31 @@ UNITTEST("cute_partition validation rejects inexact layouts")
   EXPECT(thrown);
 };
 
+UNITTEST("min_owner_run_bytes reports the certified run granularity")
+{
+  // blocked: the smallest place-leaf stride is the chunk -> chunk * elemsize
+  const auto blocked_part = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  EXPECT(blocked_part.min_owner_run_bytes(4) == 8 * 4);
+
+  // cyclic: ownership can change every element -> elemsize
+  const auto cyclic_part = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::cyclic, 0, 0}}, dim4(2));
+  EXPECT(cyclic_part.min_owner_run_bytes(4) == 4);
+
+  // block_cyclic(b): ownership changes at block pitch -> b * elemsize
+  const auto bc_part = make_partition_descriptor(dim4(32), {dim_spec{dim_policy::block_cyclic, 0, 4}}, dim4(2));
+  EXPECT(bc_part.min_owner_run_bytes(2) == 4 * 2);
+
+  // no place mode (nothing distributed): 0 by convention
+  const auto whole_part = make_partition_descriptor(dim4(16), {dim_spec{}}, dim4(1));
+  EXPECT(whole_part.min_owner_run_bytes(4) == 0);
+
+  // consistency: a run granularity at or above the block size admits an
+  // analytic plan; far below it (with a tight budget) it declines
+  size_t mis           = 0;
+  const auto fine_plan = cyclic_part.try_block_owners(64, 4, &mis); // small case: still analyzable
+  EXPECT(fine_plan.has_value() == true);
+};
+
 UNITTEST("try_block_owners: exact plan when boundaries align")
 {
   // 16 elements of 4 B blocked over 2 places, 8 B blocks: the ownership
