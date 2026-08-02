@@ -57,7 +57,7 @@ namespace cuda::experimental::stf
  * @param[in] __exception The caught exception, or `nullptr` if it does not derive from
  *            `std::exception`, in which case the report carries no message.
  * @param[in] __loc The location to report.
- * @return `::std::ignore`, which marks this handler as suppressing.
+ * @return `std::ignore`, which marks this handler as suppressing.
  */
 inline decltype(::std::ignore)
 notify(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
@@ -97,9 +97,10 @@ struct __on_throw_policy
   _Reaction __reaction_;
   ::cuda::std::source_location __loc_;
 
-  // Runs with the exception in flight and produces what `operator<<` returns in its stead.
+  // Runs with the exception in flight and produces what `operator<<` returns in its stead. The
+  // reactions that say nothing never read the exception, which gcc 9 flags without the attribute.
   template <class _Result>
-  _Result __report(const ::std::exception* __exception) noexcept
+  _Result __report([[maybe_unused]] const ::std::exception* __exception) noexcept
   {
     // A handler is anything callable with the caught exception and a location; the other three
     // reactions are recognized in the branches below.
@@ -189,11 +190,11 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *   exception that does not derive from `std::exception`, along with `__loc`. Its return type
  *   says what happens next: returning `decltype(::std::ignore)` resumes execution with a
  *   default-constructed result, and returning `void` claims the handler ends the program, with
- *   `::std::abort` running right after it in case it does not. `notify` is such a handler.
- * - A terminating action: any nullary `noexcept` callable returning `void`, `::std::abort` and
- *   `::std::terminate` being the obvious ones. The exception is reported through `notify`, the
- *   action runs, and `::std::abort` follows in case it returns.
- * - `::std::ignore`, which suppresses the exception silently and resumes execution with a
+ *   `std::abort` running right after it in case it does not. `notify` is such a handler.
+ * - A terminating action: any nullary `noexcept` callable returning `void`, `std::abort` and
+ *   `std::terminate` being the obvious ones. The exception is reported through `notify`, the
+ *   action runs, and `std::abort` follows in case it returns.
+ * - `std::ignore`, which suppresses the exception silently and resumes execution with a
  *   default-constructed result.
  * - Anything else, taken as a replacement value for the result. It must be convertible to the
  *   callable's result type, and is moved into the result.
