@@ -33,4 +33,19 @@ CompilerConfig detectDefaultConfig();
 
 // Validate that the configuration is usable
 bool validateConfig(const CompilerConfig& config, std::string* error_message = nullptr);
+
+// Locate the CUDA runtime shared library on this machine. Used both at link
+// time (embedding it as an explicit linker input, since pip-installed CUDA
+// Toolkits often lack an unversioned `libcudart.so` symlink that `-lcudart`
+// needs) and at AoT load time (to pre-resolve the dependency by SONAME
+// before dlopen'ing a persisted artifact whose baked RPATH may point at a
+// different machine's CUDA Toolkit install. Returns an empty string if not
+// found.
+//
+// Linux: returns a full path to a `libcudart.so*` file (found by scanning
+// `config.library_paths`).
+// Windows: returns a bare DLL filename (e.g. "cudart64_13.dll") — Windows
+// resolves DLLs by name via the standard search order, not by baked path,
+// so a full path isn't needed here.
+std::string findCudaRuntimeLibrary(const CompilerConfig& config);
 } // namespace hostjit

@@ -66,4 +66,33 @@ foreach (test_src IN LISTS test_srcs)
   cccl_c_parallel_v2_add_test(test_target "${v1_test_dir}/${test_src}")
 endforeach()
 
+# AoT (compile/load/serialize/deserialize) coverage. Not part of the
+# v1-shared test_srcs glob above (it exercises v2-only C API surface:
+# cccl_device_reduce_compile/_load/_serialize/_deserialize).
+add_executable(cccl.c.parallel.v2.test.aot_reduce aot/test_aot_reduce.cpp)
+cccl_configure_target(cccl.c.parallel.v2.test.aot_reduce DIALECT 20)
+set_target_properties(
+  cccl.c.parallel.v2.test.aot_reduce
+  PROPERTIES CUDA_RUNTIME_LIBRARY STATIC
+)
+target_link_libraries(
+  cccl.c.parallel.v2.test.aot_reduce
+  PRIVATE
+    cccl.compiler_interface
+    cccl.c.parallel.v2
+    cccl.c.parallel.v2.hostjit_lib
+    CUDA::cudart_static
+)
+target_compile_definitions(
+  cccl.c.parallel.v2.test.aot_reduce
+  PRIVATE
+    TEST_CUB_PATH="-I${CCCL_SOURCE_DIR}/cub"
+    TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/thrust"
+    TEST_LIBCUDACXX_PATH="-I${CCCL_SOURCE_DIR}/libcudacxx/include"
+)
+add_test(
+  NAME cccl.c.parallel.v2.test.aot_reduce
+  COMMAND cccl.c.parallel.v2.test.aot_reduce
+)
+
 add_subdirectory(freestanding)

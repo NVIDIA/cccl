@@ -10,11 +10,14 @@
 
 #include <cstdio>
 #include <cstring>
+#include <memory>
+#include <vector>
 
 #include <cccl/c/unique_by_key.h>
 #include <hostjit/codegen/cub_call.hpp>
 #include <hostjit/jit_compiler.hpp>
 #include <util/build_utils.h>
+#include <util/serialization.h>
 
 using namespace hostjit::codegen;
 
@@ -71,8 +74,9 @@ try
             stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->cc      = cc_major * 10 + cc_minor;
+  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
+  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler     = result.compiler;
   build_ptr->unique_by_key_fn = result.fn_ptr;
 
@@ -81,6 +85,150 @@ try
 catch (const std::exception& exc)
 {
   fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_build_ex(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unique_by_key_compile(
+  cccl_device_unique_by_key_build_result_t* build_ptr,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t d_keys_out,
+  cccl_iterator_t d_values_out,
+  cccl_iterator_t d_num_selected_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+  cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
+
+  auto result =
+    CubCall::from("cub/device/device_select.cuh")
+      .run("cub::DeviceSelect::UniqueByKey")
+      .name("cccl_jit_unique_by_key")
+      .with(temp_storage,
+            temp_bytes,
+            in(d_keys_in),
+            in(d_values_in),
+            out(d_keys_out),
+            out(d_values_out),
+            out(d_num_selected_out),
+            num_items,
+            cmp(op),
+            stream)
+      .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_bytes(result.library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->jit_compiler     = nullptr;
+  build_ptr->unique_by_key_fn = nullptr;
+
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_compile(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unique_by_key_load(cccl_device_unique_by_key_build_result_t* build_ptr, const char* ctk_path)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  hostjit::CompilerConfig jit_config = cccl::detail::make_load_jit_config(ctk_path);
+  auto compiler                      = std::make_unique<hostjit::JITCompiler>(jit_config);
+  std::vector<char> library_bytes(
+    static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
+  if (!compiler->loadFromBytes(library_bytes))
+  {
+    fprintf(stderr, "\nERROR in cccl_device_unique_by_key_load(): %s\n", compiler->getLastError().c_str());
+    return CUDA_ERROR_UNKNOWN;
+  }
+  auto fn = compiler->getFunction<unique_by_key_fn_t>("cccl_jit_unique_by_key");
+  if (!fn)
+  {
+    fprintf(stderr, "\nERROR in cccl_device_unique_by_key_load(): %s\n", compiler->getLastError().c_str());
+    return CUDA_ERROR_UNKNOWN;
+  }
+  build_ptr->jit_compiler     = compiler.release();
+  build_ptr->unique_by_key_fn = reinterpret_cast<void*>(fn);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_load(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unique_by_key_serialize(
+  const cccl_device_unique_by_key_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  *out_buf  = nullptr;
+  *out_size = 0;
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  std::vector<char> blob = cccl::serialization_v2::write_blob(
+    CCCL_SERIALIZATION_V2_ALGO_UNIQUE_BY_KEY,
+    build_ptr->cc,
+    {"cccl_jit_unique_by_key"},
+    /*extra=*/{},
+    build_ptr->payload,
+    build_ptr->payload_size);
+  auto* buf = new char[blob.size()];
+  std::memcpy(buf, blob.data(), blob.size());
+  *out_buf  = buf;
+  *out_size = blob.size();
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_serialize(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_unique_by_key_deserialize(cccl_device_unique_by_key_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  cccl::serialization_v2::parsed_blob parsed =
+    cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_UNIQUE_BY_KEY, buf, size);
+
+  cccl_device_unique_by_key_build_result_t result{};
+  result.cc = parsed.cc;
+  cccl::detail::copy_bytes(
+    std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
+  result.jit_compiler     = nullptr;
+  result.unique_by_key_fn = nullptr;
+
+  *build_ptr = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key_deserialize(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 
