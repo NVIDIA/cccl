@@ -144,7 +144,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             raise RuntimeError(
                 f"Expected exactly one dist-info directory in {base_wheel}"
             )
-        dist_name, dist_version = dist_infos[0].name[: -len(".dist-info")].split("-")
+        dist_name, dist_version = dist_infos[0].name[: -len(".dist-info")].rsplit("-", 1)
         wheel_text = (dist_infos[0] / "WHEEL").read_text()
         wheel_tags = [
             line.split(":", 1)[1].strip()
