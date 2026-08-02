@@ -54,7 +54,16 @@ struct bench_policy_selector
       TUNE_RLE_COMPRESS,
       MEM_PREFERENCE,
       TUNE_WORK_STEALING};
-    return {sweep, {sweep, 256, 0}, {sweep, 0, 0, 0, 0, 0, 0}, 2048}; // TODO(bgruber): make tunable
+    return {sweep,
+            {sweep, TUNE_STATIC_SMEM_MAX_BINS, TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM},
+            {sweep,
+             TUNE_DYNAMIC_SMEM_MAX_BINS,
+             TUNE_DYNAMIC_SMEM_MAX_BYTES,
+             TUNE_DYNAMIC_SMEM_RANGE_MAX_BINS,
+             TUNE_DYNAMIC_SMEM_EVEN_2CH_MAX_BINS,
+             TUNE_DYNAMIC_SMEM_EVEN_3CH_MAX_BINS,
+             TUNE_DYNAMIC_SMEM_EVEN_4CH_MAX_BINS},
+            TUNE_INIT_KERNEL_PDL_TRIGGER_MAX_BINS};
   }
 };
 #endif // !TUNE_BASE
