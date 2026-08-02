@@ -70,7 +70,7 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
   const size_t total_elems = data_dims.size();
 
   size_t misplaced = 0;
-  auto plan        = part.try_block_owners(block, elemsize, total_elems, &misplaced);
+  auto plan        = part.try_block_owners(block, elemsize, &misplaced);
   if (!plan)
   {
     return; // dense: sampled tier takes over (covered elsewhere)
@@ -135,7 +135,7 @@ void property_suite()
   // dense detection: element-cyclic far below the block size must decline
   const auto dense = make_partition_descriptor(dim4(1 << 22), {{dim_policy::cyclic, 0, 0}}, dim4(2));
   size_t mis       = 0;
-  EXPECT(!dense.try_block_owners(2 * 1024 * 1024, 4, size_t(1) << 22, &mis).has_value());
+  EXPECT(!dense.try_block_owners(2 * 1024 * 1024, 4, &mis).has_value());
 }
 
 void end_to_end_allocation()
@@ -156,7 +156,7 @@ void end_to_end_allocation()
   // exact plan: sample counters hold byte counts
   EXPECT(st.total_samples == n * sizeof(int));
   size_t mis        = 0;
-  const auto owners = part.try_block_owners(st.block_size, sizeof(int), n, &mis);
+  const auto owners = part.try_block_owners(st.block_size, sizeof(int), &mis);
   EXPECT(owners.has_value() == true);
   EXPECT(st.matching_samples == st.total_samples - mis);
   EXPECT(st.nallocs <= 3); // two shards + at most one straddle merge break

@@ -397,13 +397,12 @@ public:
    *         element-cyclic): callers fall back to sampled majority.
    */
   ::std::optional<::std::vector<pos4>> try_block_owners(
-    size_t block_size_bytes,
-    size_t elemsize,
-    size_t total_elems,
-    size_t* misplaced_bytes,
-    size_t max_runs = size_t(1) << 22) const
+    size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = size_t(1) << 22) const
   {
     _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
+    // the allocation always covers exactly the partition's true extents
+    // (composite allocation asserts this before reaching us)
+    const size_t total_elems = true_dims_.size();
     const size_t total_bytes = total_elems * elemsize;
     const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
     if (misplaced_bytes)
@@ -432,7 +431,6 @@ public:
 
     const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
     const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
-    _CCCL_ASSERT(total_elems == t0 * t1 * t2 * t3, "total size does not match the partition's true extents");
     const size_t nrows = t1 * t2 * t3;
     // worst case: one run per s-boundary per row, plus the row cut itself
     if (nrows * (t0 / s + 2) > max_runs)
@@ -1569,7 +1567,7 @@ inline auto make_partition_owner_provider(
   return [partition, data_dims, total_size, elemsize](
            size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<pos4> {
     size_t misplaced = 0;
-    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, total_size, &misplaced))
+    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced))
     {
       stats.total_samples    = total_size * elemsize;
       stats.matching_samples = stats.total_samples - misplaced;
@@ -1908,7 +1906,7 @@ UNITTEST("try_block_owners: exact plan when boundaries align")
   // boundary (element 8 == byte 32) is block-aligned -> exact plan.
   const auto part   = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
   size_t misplaced  = ~size_t(0);
-  const auto owners = part.try_block_owners(/* block */ 8, /* elemsize */ 4, /* total */ 16, &misplaced);
+  const auto owners = part.try_block_owners(/* block */ 8, /* elemsize */ 4, &misplaced);
   EXPECT(owners.has_value() == true);
   EXPECT(misplaced == 0); // factors through blocks: no placement error
   EXPECT(owners->size() == 8);
@@ -1926,7 +1924,7 @@ UNITTEST("try_block_owners: straddling block goes to the byte majority")
   // exactly 1 misplaced byte; every other block is pure.
   const auto part   = make_partition_descriptor(dim4(13), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
   size_t misplaced  = 0;
-  const auto owners = part.try_block_owners(4, 1, 13, &misplaced);
+  const auto owners = part.try_block_owners(4, 1, &misplaced);
   EXPECT(owners.has_value() == true);
   EXPECT(misplaced == 1);
   EXPECT(owners->size() == 4);
@@ -1943,7 +1941,7 @@ UNITTEST("try_block_owners: dense element-cyclic declines (sampled fallback)")
   // run per element -> the analytic plan must decline via max_runs.
   const auto part  = make_partition_descriptor(dim4(1 << 20), {dim_spec{dim_policy::cyclic, 0, 0}}, dim4(2));
   size_t misplaced = 0;
-  EXPECT(!part.try_block_owners(1 << 16, 4, 1 << 20, &misplaced, /* max_runs */ 1 << 10).has_value());
+  EXPECT(!part.try_block_owners(1 << 16, 4, &misplaced, /* max_runs */ 1 << 10).has_value());
 };
 
 UNITTEST("try_block_owners: coarse block_cyclic is analyzable and majority-correct")
@@ -1954,7 +1952,7 @@ UNITTEST("try_block_owners: coarse block_cyclic is analyzable and majority-corre
   // is exactly half the payload.
   const auto part   = make_partition_descriptor(dim4(32), {dim_spec{dim_policy::block_cyclic, 0, 4}}, dim4(2));
   size_t misplaced  = 0;
-  const auto owners = part.try_block_owners(32, 4, 32, &misplaced);
+  const auto owners = part.try_block_owners(32, 4, &misplaced);
   EXPECT(owners.has_value() == true);
   EXPECT(owners->size() == 4);
   EXPECT(misplaced == 32 * 4 / 2);
@@ -1964,7 +1962,7 @@ UNITTEST("try_block_owners: single place is one exact run")
 {
   const auto part   = make_partition_descriptor(dim4(1000), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
   size_t misplaced  = 0;
-  const auto owners = part.try_block_owners(64, 4, 1000, &misplaced);
+  const auto owners = part.try_block_owners(64, 4, &misplaced);
   EXPECT(owners.has_value() == true);
   EXPECT(misplaced == 0);
   for (const auto& o : *owners)
@@ -1981,7 +1979,7 @@ UNITTEST("try_block_owners: 2-D expert-major rows stay exact")
   // here means dim 1 indexes the expert row.
   const auto part  = make_partition_descriptor(dim4(64, 8), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
   size_t misplaced = 0;
-  const auto owners = part.try_block_owners(256, 4, 64 * 8, &misplaced);
+  const auto owners = part.try_block_owners(256, 4, &misplaced);
   EXPECT(owners.has_value() == true);
   EXPECT(misplaced == 0);
   EXPECT(owners->size() == 8);
