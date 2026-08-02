@@ -396,6 +396,36 @@ public:
    *         exceed max_runs (dense sub-block interleavings such as
    *         element-cyclic): callers fall back to sampled majority.
    */
+  /**
+   * @brief Certified owner-run granularity in bytes: the smallest place-leaf
+   * stride times the element size.
+   *
+   * Ownership is constant on padded-linear intervals of this size (see
+   * try_block_owners), so it is the "smallest part" of the placement layout:
+   *  - >= the placement-block size: blocks straddle at most one ownership
+   *    boundary and the analytic plan is exact or near-exact;
+   *  - <  the placement-block size: NO block can be provably pure -- the
+   *    plan is all-straddles with closed-form misplacement, a signal that
+   *    identity storage is block-hostile for this spec (prefer a relayout);
+   *  - the analytic walk costs ~total_bytes / this many owner() calls,
+   *    which is what try_block_owners' max_runs guards.
+   *
+   * Returns 0 when there is no place mode (single-owner layouts).
+   */
+  size_t min_owner_run_bytes(size_t elemsize) const
+  {
+    if (num_place_leaves_ == 0)
+    {
+      return 0;
+    }
+    size_t s = static_cast<size_t>(place_leaves_[0].stride);
+    for (size_t k = 1; k < num_place_leaves_; k++)
+    {
+      s = ::std::min(s, static_cast<size_t>(place_leaves_[k].stride));
+    }
+    return s * elemsize;
+  }
+
   ::std::optional<::std::vector<pos4>> try_block_owners(
     size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = size_t(1) << 22) const
   {
@@ -420,19 +450,20 @@ public:
       return owners;
     }
 
-    // Smallest place-leaf stride: the certified run granularity (elements of
-    // the padded space).
-    size_t s = static_cast<size_t>(place_leaves_[0].stride);
-    for (size_t k = 1; k < num_place_leaves_; k++)
-    {
-      s = ::std::min(s, static_cast<size_t>(place_leaves_[k].stride));
-    }
+    // Certified run granularity: the "smallest part" of the placement
+    // layout (see min_owner_run_bytes).
+    const size_t s = min_owner_run_bytes(1); // in elements: elemsize folded below
     _CCCL_ASSERT(s > 0, "place leaves must have positive strides");
 
     const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
     const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
     const size_t nrows = t1 * t2 * t3;
-    // worst case: one run per s-boundary per row, plus the row cut itself
+    // COST guard, not a quality judgment: the walk costs one owner() call
+    // per run and there are ~total_bytes / min_owner_run_bytes of them
+    // (worst case per row: one run per s-boundary plus the row cut). Plans
+    // whose smallest part is below the block size are still computed -- the
+    // closed-form misplacement is exactly what placement evaluation needs;
+    // whether to relayout on that signal is the caller's decision.
     if (nrows * (t0 / s + 2) > max_runs)
     {
       return ::std::nullopt;
