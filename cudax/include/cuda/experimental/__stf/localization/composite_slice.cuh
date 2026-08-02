@@ -156,11 +156,17 @@ struct cached_cute_localized_array
       , data_dims(data_dims_)
       , elemsize(elem_size)
   {
-    const auto owner_of = ::std::function<pos4(size_t)>(
-      [partition = this->partition, delinearize = ::cuda::std::forward<F>(delinearize)](size_t ind) {
-        return partition.owner(delinearize(ind));
-      });
-    array = ::std::make_unique<localized_array>(grid, owner_of, total_size, elem_size, data_dims);
+    // Structured tier: the descriptor computes block owners analytically when
+    // its layout admits it (falling back to sampled majority internally); the
+    // caller's delinearize is not needed -- the provider uses
+    // dim4::index_to_pos, the same convention (see slice.cuh).
+    ::cuda::std::ignore = delinearize;
+    array               = ::std::make_unique<localized_array>(
+      grid,
+      ::cuda::experimental::places::make_partition_owner_provider(this->partition, data_dims_, total_size, elem_size),
+      total_size,
+      elem_size,
+      data_dims_);
   }
 
   explicit cached_cute_localized_array(

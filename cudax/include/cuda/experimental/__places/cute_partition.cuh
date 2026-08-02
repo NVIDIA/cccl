@@ -66,6 +66,7 @@
 #include <cuda/experimental/__places/places.cuh>
 
 #include <algorithm>
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
@@ -373,6 +374,160 @@ public:
   _CCCL_HOST_DEVICE const dim4& grid_dims() const
   {
     return grid_dims_;
+  }
+
+  /**
+   * @brief Analytic per-placement-block owners: divide the ownership layout
+   * by the placement-block layout, without sampling.
+   *
+   * Owners are derived with one owner() evaluation per provably-constant
+   * run. The certificate comes from the leaf algebra: in an exact tiling the
+   * sorted leaf strides form a divisibility chain, so every place-mode
+   * coordinate is constant on intervals of the padded linear space aligned
+   * to the smallest place-leaf stride. Blocks straddling an ownership
+   * boundary are assigned by exact byte majority and their error is
+   * accumulated in *misplaced_bytes (0 means the partition factors through
+   * placement blocks and the plan is exact).
+   *
+   * The linearization convention matches the composite allocation path
+   * (dimension 0 varies fastest, see dim4::index_to_pos).
+   *
+   * @return per-block owners, or nullopt when the run enumeration would
+   *         exceed max_runs (dense sub-block interleavings such as
+   *         element-cyclic): callers fall back to sampled majority.
+   */
+  ::std::optional<::std::vector<pos4>> try_block_owners(
+    size_t block_size_bytes,
+    size_t elemsize,
+    size_t total_elems,
+    size_t* misplaced_bytes,
+    size_t max_runs = size_t(1) << 22) const
+  {
+    _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
+    const size_t total_bytes = total_elems * elemsize;
+    const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
+    if (misplaced_bytes)
+    {
+      *misplaced_bytes = 0;
+    }
+
+    ::std::vector<pos4> owners;
+    owners.reserve(nblocks);
+
+    // No place mode: a single owner for everything.
+    if (num_place_leaves_ == 0)
+    {
+      owners.assign(nblocks, owner(pos4(0, 0, 0, 0)));
+      return owners;
+    }
+
+    // Smallest place-leaf stride: the certified run granularity (elements of
+    // the padded space).
+    size_t s = static_cast<size_t>(place_leaves_[0].stride);
+    for (size_t k = 1; k < num_place_leaves_; k++)
+    {
+      s = ::std::min(s, static_cast<size_t>(place_leaves_[k].stride));
+    }
+    _CCCL_ASSERT(s > 0, "place leaves must have positive strides");
+
+    const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
+    const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
+    _CCCL_ASSERT(total_elems == t0 * t1 * t2 * t3, "total size does not match the partition's true extents");
+    const size_t nrows = t1 * t2 * t3;
+    // worst case: one run per s-boundary per row, plus the row cut itself
+    if (nrows * (t0 / s + 2) > max_runs)
+    {
+      return ::std::nullopt;
+    }
+
+    const size_t ps1 = padded_dims_.get(0);
+    const size_t ps2 = ps1 * padded_dims_.get(1);
+    const size_t ps3 = ps2 * padded_dims_.get(2);
+
+    // Streaming block census over the certified runs (emitted in increasing
+    // linear order: x1 innermost of the row loops since dim 0 is fastest).
+    ::std::vector<::std::pair<pos4, size_t>> hist; // bytes per owner, current block
+    size_t cur_block = 0;
+
+    auto close_block = [&]() {
+      pos4 best;
+      size_t best_bytes = 0, sum = 0;
+      for (const auto& e : hist)
+      {
+        sum += e.second;
+        if (e.second > best_bytes)
+        {
+          best_bytes = e.second;
+          best       = e.first;
+        }
+      }
+      _CCCL_ASSERT(!hist.empty(), "empty placement block census");
+      owners.push_back(best);
+      if (misplaced_bytes)
+      {
+        *misplaced_bytes += sum - best_bytes;
+      }
+      hist.clear();
+    };
+
+    auto feed = [&](size_t byte_start, size_t byte_len, pos4 o) {
+      while (byte_len > 0)
+      {
+        const size_t block_end = (cur_block + 1) * block_size_bytes;
+        if (byte_start >= block_end)
+        {
+          close_block();
+          cur_block++;
+          continue;
+        }
+        const size_t chunk = ::std::min(byte_len, block_end - byte_start);
+        bool found         = false;
+        for (auto& e : hist)
+        {
+          if (e.first == o)
+          {
+            e.second += chunk;
+            found = true;
+            break;
+          }
+        }
+        if (!found)
+        {
+          hist.emplace_back(o, chunk);
+        }
+        byte_start += chunk;
+        byte_len -= chunk;
+      }
+    };
+
+    size_t ind = 0; // linear element index in the allocation
+    for (size_t x3 = 0; x3 < t3; x3++)
+    {
+      for (size_t x2 = 0; x2 < t2; x2++)
+      {
+        for (size_t x1 = 0; x1 < t1; x1++)
+        {
+          const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
+          size_t x0                 = 0;
+          while (x0 < t0)
+          {
+            const size_t pad_pos = row_pad_base + x0;
+            const size_t seg     = ::std::min(t0 - x0, s - (pad_pos % s));
+            feed((ind + x0) * elemsize,
+                 seg * elemsize,
+                 owner(pos4(static_cast<int>(x0), static_cast<int>(x1), static_cast<int>(x2), static_cast<int>(x3))));
+            x0 += seg;
+          }
+          ind += t0;
+        }
+      }
+    }
+    if (!hist.empty())
+    {
+      close_block();
+    }
+    _CCCL_ASSERT(owners.size() == nblocks, "placement block census incomplete");
+    return owners;
   }
 
   //! Leaves of the place mode (leaf 0 fastest)
@@ -1400,6 +1555,34 @@ template <typename Partition>
  * This place supports both shaped raw allocations
  * (allocate_nd(data_dims, elemsize)) and STF logical data.
  */
+
+/**
+ * @brief Owner provider for localized_array from a partition descriptor.
+ *
+ * Tries the analytic block plan first (exact owners, byte-true placement
+ * statistics: the sample counters then hold byte counts); falls back to the
+ * sampled majority vote for layouts denser than the placement blocks.
+ */
+inline auto make_partition_owner_provider(
+  const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
+{
+  return [partition, data_dims, total_size, elemsize](
+           size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<pos4> {
+    size_t misplaced = 0;
+    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, total_size, &misplaced))
+    {
+      stats.total_samples    = total_size * elemsize;
+      stats.matching_samples = stats.total_samples - misplaced;
+      return mv(*owners);
+    }
+    const auto owner_of = ::std::function<pos4(size_t)>([&partition, data_dims](size_t ind) {
+      return partition.owner(data_dims.index_to_pos(ind));
+    });
+    return compute_block_owners(
+      owner_of, nblocks, block_size_bytes, elemsize, total_size, localized_placement_default_probes, stats);
+  };
+}
+
 class data_place_cute_composite final : public data_place_interface
 {
 public:
@@ -1475,9 +1658,7 @@ public:
 
     auto arr = ::std::make_unique<localized_array>(
       grid_,
-      ::std::function<pos4(size_t)>([this, data_dims](size_t index) {
-        return partition_.owner(data_dims.index_to_pos(index));
-      }),
+      make_partition_owner_provider(partition_, data_dims, data_dims.size(), elemsize),
       data_dims.size(),
       elemsize,
       data_dims);

@@ -28,6 +28,7 @@
 
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/type_traits>
 
 #include <cuda/experimental/__places/places.cuh>
 
@@ -285,6 +286,29 @@ public:
     init(owner_of, total_size, probes);
   }
 
+  /**
+   * @brief Construct from an owner PROVIDER: a callable
+   * `(size_t block_size_bytes, size_t nblocks, localized_stats&) ->
+   * std::vector<pos4>` producing one owner per placement block.
+   *
+   * This is the structured-tier entry point: providers derived from
+   * partition descriptors compute block owners analytically (see
+   * cute_partition_descriptor::try_block_owners and
+   * make_partition_owner_provider) and only fall back to the sampled
+   * majority vote when the layout is denser than the placement blocks.
+   */
+  template <typename OwnerProvider,
+            typename = ::cuda::std::enable_if_t<
+              ::cuda::std::is_invocable_r_v<::std::vector<pos4>, OwnerProvider, size_t, size_t, localized_stats&>>>
+  localized_array(exec_place grid, OwnerProvider&& owner_provider, size_t total_size, size_t elemsize, dim4 data_dims)
+      : grid(mv(grid))
+      , total_size_bytes(total_size * elemsize)
+      , data_dims(data_dims)
+      , elemsize(elemsize)
+  {
+    init(::cuda::std::forward<OwnerProvider>(owner_provider), total_size);
+  }
+
   localized_array()                                  = delete;
   localized_array(const localized_array&)            = delete;
   localized_array(localized_array&&)                 = delete;
@@ -339,6 +363,18 @@ public:
 private:
   void init(const ::std::function<pos4(size_t)>& owner_of, size_t total_size, size_t probes)
   {
+    init(
+      [&](size_t block_size_bytes_, size_t nblocks_, localized_stats& stats_) {
+        return compute_block_owners(owner_of, nblocks_, block_size_bytes_, elemsize, total_size, probes, stats_);
+      },
+      total_size);
+  }
+
+  //! Shared allocation body: `owner_provider(block_size_bytes, nblocks,
+  //! stats)` returns one owner per placement block.
+  template <typename OwnerProvider>
+  void init(OwnerProvider&& owner_provider, [[maybe_unused]] size_t total_size)
+  {
     if (elemsize == 0)
     {
       throw ::std::invalid_argument("localized_array requires an element size of at least 1 byte");
@@ -381,8 +417,8 @@ private:
     stats.block_size  = block_size_bytes;
     stats.nblocks     = nblocks;
 
-    const ::std::vector<pos4> owners =
-      compute_block_owners(owner_of, nblocks, block_size_bytes, elemsize, total_size, probes, stats);
+    const ::std::vector<pos4> owners = owner_provider(block_size_bytes, nblocks, stats);
+    _CCCL_ASSERT(owners.size() == nblocks, "owner provider must cover every placement block");
 
     meta.reserve(nblocks);
 
