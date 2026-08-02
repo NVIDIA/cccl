@@ -1598,7 +1598,12 @@ inline auto make_partition_owner_provider(
   return [partition, data_dims, total_size, elemsize](
            size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<pos4> {
     size_t misplaced = 0;
-    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced))
+    // Budget the analytic walk against what the sampled fallback would spend
+    // anyway (probes owner() evaluations per block): when the walk fits this
+    // budget it is BOTH cheaper and exact, so choosing it can never be a
+    // performance regression. The floor keeps small allocations permissive.
+    const size_t budget = ::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
+    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
     {
       stats.total_samples    = total_size * elemsize;
       stats.matching_samples = stats.total_samples - misplaced;
