@@ -392,6 +392,11 @@ public:
    * The linearization convention matches the composite allocation path
    * (dimension 0 varies fastest, see dim4::index_to_pos).
    *
+   * @param max_runs evaluation budget for the walk; 0 (the default)
+   *        self-scales to max(16 x nblocks, 1 << 16) -- a small constant of
+   *        owner() evaluations per placement block produced, so the budget
+   *        grows with the allocation instead of being an arbitrary constant.
+   *
    * @return per-block owners, or nullopt when the run enumeration would
    *         exceed max_runs (dense sub-block interleavings such as
    *         element-cyclic): callers fall back to sampled majority.
@@ -426,8 +431,8 @@ public:
     return s * elemsize;
   }
 
-  ::std::optional<::std::vector<pos4>> try_block_owners(
-    size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = size_t(1) << 22) const
+  ::std::optional<::std::vector<pos4>>
+  try_block_owners(size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = 0) const
   {
     _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
     // the allocation always covers exactly the partition's true extents
@@ -435,6 +440,10 @@ public:
     const size_t total_elems = true_dims_.size();
     const size_t total_bytes = total_elems * elemsize;
     const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
+    if (max_runs == 0)
+    {
+      max_runs = ::std::max<size_t>(16 * nblocks, size_t(1) << 16);
+    }
     if (misplaced_bytes)
     {
       *misplaced_bytes = 0;
