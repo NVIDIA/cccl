@@ -345,4 +345,9 @@ _CCCL_DIAG_SUPPRESS_NVCC(3206) // "if consteval" and "if not consteval" are mean
 _CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
                                // produces "false"
 
+// suppress warnings about auto(expr)
+_CCCL_DIAG_SUPPRESS_NVHPC(auto_cast_is_cpp23)
+
+_CCCL_DIAG_SUPPRESS_NVCC(3347)
+
 // NO include guards here (this file is included multiple times)
