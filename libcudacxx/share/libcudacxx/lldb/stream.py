@@ -23,9 +23,67 @@ _CU_STREAM_GET_ID = "((int (*)(void*, unsigned long long*))cuStreamGetId)"
 _SUMMARY_UNIQUE_ID_CHILD = "__cccl_summary_unique_id"
 _UINT32_BITS = 32
 _UINT32_MASK = (1 << _UINT32_BITS) - 1
-_UINT64_BITS = 64
-_UINT64_MASK = (1 << _UINT64_BITS) - 1
+_CAPTURE_STATUS_VALID = 1 << 0
+_UNIQUE_ID_VALID = 1 << 1
+_DEVICE_VALID = 1 << 2
+_PRIORITY_VALID = 1 << 3
+_FLAGS_VALID = 1 << 4
 InternalDict = dict[str, object]
+
+
+# LLDB cannot materialize a locally declared struct returned by an expression.
+# A Clang vector keeps this to one inferior call and exposes six stable lanes:
+# unique ID, device, priority, capture status, flags, and a validity mask.
+_STREAM_SNAPSHOT_EXPRESSION = """
+(unsigned long long __attribute__((ext_vector_type(6))))(([](cudaStream_t stream) {
+  using Snapshot = unsigned long long __attribute__((ext_vector_type(6)));
+  constexpr unsigned long long capture_status_valid = 1 << 0;
+  constexpr unsigned long long unique_id_valid = 1 << 1;
+  constexpr unsigned long long device_valid = 1 << 2;
+  constexpr unsigned long long priority_valid = 1 << 3;
+  constexpr unsigned long long flags_valid = 1 << 4;
+
+  int capture_status{};
+  if (__CAPTURE_QUERY__(stream, &capture_status) != 0) {
+    return Snapshot{};
+  }
+
+  unsigned long long validity = capture_status_valid;
+  if (capture_status != 0) {
+    return Snapshot{0, 0, 0, (unsigned int)capture_status, 0, validity};
+  }
+
+  unsigned long long unique_id{};
+  if (__UNIQUE_ID_QUERY__((void*)stream, &unique_id) == 0) {
+    validity |= unique_id_valid;
+  }
+  int device{};
+__DEVICE_QUERY__
+  int priority{};
+  if ((int)cudaStreamGetPriority(stream, &priority) == 0) {
+    validity |= priority_valid;
+  }
+  unsigned int flags{};
+  if ((int)cudaStreamGetFlags(stream, &flags) == 0) {
+    validity |= flags_valid;
+  }
+
+  return Snapshot{
+    unique_id,
+    (unsigned int)device,
+    (unsigned int)priority,
+    (unsigned int)capture_status,
+    flags,
+    validity,
+  };
+})((cudaStream_t)__HANDLE__))
+"""
+
+_STREAM_DEVICE_QUERY = """
+  if ((int)cudaStreamGetDevice(stream, &device) == 0) {
+    validity |= device_valid;
+  }
+"""
 
 
 class StreamInfo(NamedTuple):
@@ -85,268 +143,73 @@ def _evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
     return frame.EvaluateExpression(expression, options)
 
 
-def _query_stream_property_32(
-    value: lldb.SBValue,
-    handle: int,
-    function: str,
-    output_type: str,
-    *,
-    signed: bool,
-) -> int | None:
-    # Expression evaluation dominates LLDB formatter runtime. Pack the CUDA
-    # status and result into one scalar to avoid inferior malloc/read/free calls.
-    result = _evaluate(
-        value,
-        "(unsigned long long)([](cudaStream_t stream) { "
-        f"{output_type} value{{}}; "
-        f"int status = (int){function}(stream, &value); "
-        "return ((unsigned long long)(unsigned int)status << 32) "
-        "| (unsigned int)value; "
-        f"}})((cudaStream_t){handle:#x})",
+def _evaluate_stream_snapshot(
+    value: lldb.SBValue, handle: int, *, include_device: bool
+) -> lldb.SBValue:
+    expression = (
+        _STREAM_SNAPSHOT_EXPRESSION.replace(
+            "__CAPTURE_QUERY__", _CUDA_STREAM_IS_CAPTURING
+        )
+        .replace("__UNIQUE_ID_QUERY__", _CU_STREAM_GET_ID)
+        .replace("__DEVICE_QUERY__", _STREAM_DEVICE_QUERY if include_device else "")
+        .replace("__HANDLE__", f"{handle:#x}")
     )
-    if not result.IsValid() or result.GetError().Fail():
+    return _evaluate(value, expression)
+
+
+def _snapshot_values(
+    result: lldb.SBValue,
+) -> tuple[int, int, int, int, int, int] | None:
+    if result.GetNumChildren() != 6:
         return None
 
-    packed = result.GetValueAsUnsigned((1 << 64) - 1)
-    status = packed >> _UINT32_BITS
-    if status != 0:
-        return None
-
-    output = packed & _UINT32_MASK
-    if signed and output & (1 << (_UINT32_BITS - 1)):
-        return output - (1 << _UINT32_BITS)
-    return output
-
-
-def _query_stream_property(
-    value: lldb.SBValue,
-    handle: int,
-    function: str,
-    output_type: str,
-    *,
-    signed: bool,
-) -> int | None:
-    if output_type in ("int", "unsigned int"):
-        return _query_stream_property_32(
-            value, handle, function, output_type, signed=signed
-        )
-
-    if output_type == "unsigned long long":
-        result = _evaluate(
-            value,
-            "(unsigned __int128)([](cudaStream_t stream) { "
-            "unsigned long long value{}; "
-            f"int status = (int){function}(stream, &value); "
-            "return ((unsigned __int128)(unsigned int)status << 64) "
-            "| value; "
-            f"}})((cudaStream_t){handle:#x})",
-        )
-        if result.IsValid() and not result.GetError().Fail():
-            raw_value = result.GetValue()
-            if raw_value is not None:
-                packed = int(raw_value, 0)
-                if packed >> _UINT64_BITS == 0:
-                    return packed & _UINT64_MASK
-
-    output = _evaluate(value, f"({output_type}*)malloc(sizeof({output_type}))")
-    if not output.IsValid() or output.GetError().Fail():
-        return None
-
-    address = output.GetValueAsUnsigned(0)
-    if address == 0:
-        return None
-
-    try:
-        status = _evaluate(
-            value,
-            f"(int){function}((cudaStream_t){handle:#x}, ({output_type}*){address:#x})",
-        )
-        if (
-            not status.IsValid()
-            or status.GetError().Fail()
-            or status.GetValueAsSigned(-1) != 0
-        ):
+    lanes: list[int] = []
+    for index in range(6):
+        lane = result.GetChildAtIndex(index)
+        if not lane.IsValid() or lane.GetError().Fail():
             return None
-
-        result = _evaluate(value, f"*({output_type}*){address:#x}")
-        if not result.IsValid() or result.GetError().Fail():
-            return None
-        if signed:
-            return result.GetValueAsSigned(0)
-        return result.GetValueAsUnsigned(0)
-    finally:
-        _evaluate(value, f"(void)free((void*){address:#x})")
+        lanes.append(lane.GetValueAsUnsigned(0))
+    return lanes[0], lanes[1], lanes[2], lanes[3], lanes[4], lanes[5]
 
 
-def _unique_id(value: lldb.SBValue, handle: int) -> int | None:
-    unique_id = _query_stream_property(
-        value,
-        handle,
-        _CU_STREAM_GET_ID,
-        "unsigned long long",
-        signed=False,
-    )
-    if unique_id is not None:
-        return unique_id
-    return _query_stream_property(
-        value,
-        handle,
-        "cudaStreamGetId",
-        "unsigned long long",
-        signed=False,
-    )
-
-
-def _stream_device(value: lldb.SBValue, handle: int) -> int | None:
-    result = _evaluate(
-        value,
-        "(unsigned long long)([](void* stream) { "
-        "void* context{}; "
-        "int status = "
-        "((int (*)(void*, void**))cuStreamGetCtx)(stream, &context); "
-        "if (status != 0) "
-        "return (unsigned long long)(unsigned int)status << 32; "
-        "status = ((int (*)(void*))cuCtxPushCurrent)(context); "
-        "if (status != 0) "
-        "return (unsigned long long)(unsigned int)status << 32; "
-        "int device{}; "
-        "status = ((int (*)(int*))cuCtxGetDevice)(&device); "
-        "void* popped{}; "
-        "(void)((int (*)(void**))cuCtxPopCurrent)(&popped); "
-        "return ((unsigned long long)(unsigned int)status << 32) "
-        "| (unsigned int)device; "
-        f"}})((void*){handle:#x})",
-    )
-    if not result.IsValid() or result.GetError().Fail():
-        return None
-
-    packed = result.GetValueAsUnsigned((1 << 64) - 1)
-    status = packed >> _UINT32_BITS
-    if status != 0:
-        return None
-
-    device = packed & _UINT32_MASK
-    if device & (1 << (_UINT32_BITS - 1)):
-        return device - (1 << _UINT32_BITS)
-    return device
-
-
-def _stream_info(value: lldb.SBValue, handle: int) -> StreamInfo:
-    capture_status = _query_stream_property(
-        value, handle, _CUDA_STREAM_IS_CAPTURING, "int", signed=True
-    )
-    is_capturing = (
-        capture_status == _CUDA_STREAM_CAPTURE_STATUS_ACTIVE
-        if capture_status is not None
-        else None
-    )
-    if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
-        return StreamInfo(None, None, is_capturing, None)
-
-    device = _stream_device(value, handle)
-    if device is None:
-        device = _query_stream_property(
-            value, handle, "cudaStreamGetDevice", "int", signed=True
-        )
-    return StreamInfo(
-        device,
-        _query_stream_property(
-            value, handle, "cudaStreamGetPriority", "int", signed=True
-        ),
-        is_capturing,
-        _query_stream_property(
-            value,
-            handle,
-            "cudaStreamGetFlags",
-            "unsigned int",
-            signed=False,
-        ),
-    )
+def _signed32(value: int) -> int:
+    value &= _UINT32_MASK
+    return value - (1 << _UINT32_BITS) if value & (1 << 31) else value
 
 
 def _query_stream_snapshot(value: lldb.SBValue, handle: int) -> StreamSnapshot | None:
-    # A wide scalar carries every value and validity bit without target
-    # allocations. The caller retains the regular query path as a fallback for
-    # expression parsers that do not support _BitInt.
-    result = _evaluate(
-        value,
-        "(unsigned _BitInt(256))(([](cudaStream_t stream) { "
-        "using U256 = unsigned _BitInt(256); "
-        "int capture_status{}; "
-        f"if ((int){_CUDA_STREAM_IS_CAPTURING}(stream, &capture_status) != 0) "
-        "return (U256)0; "
-        "U256 result = (U256)1 << 160; "
-        "if (capture_status == 1) result |= (U256)1 << 161; "
-        "if (capture_status != 0) return result | ((U256)1 << 162); "
-        "unsigned long long unique_id{}; "
-        f"if ((int){_CU_STREAM_GET_ID}((void*)stream, &unique_id) == 0) "
-        "result |= ((U256)1 << 163) | unique_id; "
-        "int device{}; "
-        "void* context{}; "
-        "int status = "
-        "((int (*)(void*, void**))cuStreamGetCtx)((void*)stream, &context); "
-        "if (status == 0) { "
-        "status = ((int (*)(void*))cuCtxPushCurrent)(context); "
-        "if (status == 0) { "
-        "status = ((int (*)(int*))cuCtxGetDevice)(&device); "
-        "void* popped{}; "
-        "(void)((int (*)(void**))cuCtxPopCurrent)(&popped); "
-        "} "
-        "} "
-        "if (status != 0) status = (int)cudaStreamGetDevice(stream, &device); "
-        "if (status == 0) "
-        "result |= ((U256)1 << 164) | ((U256)(unsigned int)device << 64); "
-        "int priority{}; "
-        "status = (int)cudaStreamGetPriority(stream, &priority); "
-        "if (status == 0) "
-        "result |= ((U256)1 << 165) | ((U256)(unsigned int)priority << 96); "
-        "unsigned int flags{}; "
-        "status = (int)cudaStreamGetFlags(stream, &flags); "
-        "if (status == 0) "
-        "result |= ((U256)1 << 166) | ((U256)flags << 128); "
-        "return result; "
-        f"}})((cudaStream_t){handle:#x}))",
-    )
+    # One vector-valued expression avoids target allocations and
+    # debugger-visible state changes.
+    result = _evaluate_stream_snapshot(value, handle, include_device=True)
+    if not result.IsValid() or result.GetError().Fail():
+        # cudaStreamGetDevice was added in CUDA 12.8. Older runtimes can still
+        # provide the remaining metadata without changing the current context.
+        result = _evaluate_stream_snapshot(value, handle, include_device=False)
     if not result.IsValid() or result.GetError().Fail():
         return None
-    raw_value = result.GetValue()
-    if raw_value is None:
-        return None
-    packed = int(raw_value, 0)
 
-    if not packed & (1 << 160):
+    snapshot = _snapshot_values(result)
+    if snapshot is None:
+        return None
+    unique_id, device, priority, capture_status, flags, validity = snapshot
+
+    if not validity & _CAPTURE_STATUS_VALID:
         return StreamSnapshot(None, StreamInfo(None, None, None, None))
-    is_capturing = bool(packed & (1 << 161))
-    if packed & (1 << 162):
+
+    capture_status = _signed32(capture_status)
+    is_capturing = capture_status == _CUDA_STREAM_CAPTURE_STATUS_ACTIVE
+    if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
         return StreamSnapshot(None, StreamInfo(None, None, is_capturing, None))
 
-    def signed32(raw: int) -> int:
-        return raw - (1 << _UINT32_BITS) if raw & (1 << 31) else raw
-
-    unique_id = (
-        packed & _UINT64_MASK
-        if packed & (1 << 163)
-        else _query_stream_property(
-            value,
-            handle,
-            "cudaStreamGetId",
-            "unsigned long long",
-            signed=False,
-        )
+    return StreamSnapshot(
+        unique_id if validity & _UNIQUE_ID_VALID else None,
+        StreamInfo(
+            _signed32(device) if validity & _DEVICE_VALID else None,
+            _signed32(priority) if validity & _PRIORITY_VALID else None,
+            is_capturing,
+            flags if validity & _FLAGS_VALID else None,
+        ),
     )
-    device = signed32((packed >> 64) & _UINT32_MASK) if packed & (1 << 164) else None
-    priority = signed32((packed >> 96) & _UINT32_MASK) if packed & (1 << 165) else None
-    flags = (packed >> 128) & _UINT32_MASK if packed & (1 << 166) else None
-    return StreamSnapshot(unique_id, StreamInfo(device, priority, is_capturing, flags))
-
-
-def _summary_unique_id(value: lldb.SBValue, handle: int) -> int | None:
-    capture_status = _query_stream_property(
-        value, handle, _CUDA_STREAM_IS_CAPTURING, "int", signed=True
-    )
-    if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
-        return None
-    return _unique_id(value, handle)
 
 
 def stream_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
@@ -367,7 +230,9 @@ def stream_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | N
             if unique_id_child.IsValid() and not unique_id_child.GetError().Fail():
                 unique_id = unique_id_child.GetValueAsUnsigned(0)
         else:
-            unique_id = _summary_unique_id(value, raw_handle)
+            snapshot = _query_stream_snapshot(value, raw_handle)
+            if snapshot is not None:
+                unique_id = snapshot.unique_id
     unique_id_description = str(unique_id) if unique_id is not None else "unavailable"
     return f"handle={description}, unique_id={unique_id_description}"
 
@@ -403,10 +268,7 @@ class StreamSyntheticProvider:
 
         snapshot = _query_stream_snapshot(self.value, raw_handle)
         if snapshot is None:
-            snapshot = StreamSnapshot(
-                _summary_unique_id(self.value, raw_handle),
-                _stream_info(self.value, raw_handle),
-            )
+            return True
         self.summary_unique_id = snapshot.unique_id
         info = snapshot.info
         properties = (

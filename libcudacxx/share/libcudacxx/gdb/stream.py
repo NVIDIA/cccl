@@ -86,56 +86,9 @@ def _query_stream_id(handle: int) -> int | None:
     return _query_stream_property(handle, "cudaStreamGetId", "unsigned long long")
 
 
-def _query_stream_device_from_context(handle: int) -> int | None:
-    output: gdb.Value | None = None
-    context_pushed = False
-    try:
-        output = gdb.parse_and_eval("(void**)malloc(sizeof(void*))")
-        address = int(output)
-        if address == 0:
-            return None
-
-        status = gdb.parse_and_eval(
-            "(int)((int (*)(void*, void**))cuStreamGetCtx)"
-            f"((void*){handle:#x}, (void**){address:#x})"
-        )
-        if int(status) != 0:
-            return None
-        context = int(output.dereference())
-
-        status = gdb.parse_and_eval(
-            f"(int)((int (*)(void*))cuCtxPushCurrent)((void*){context:#x})"
-        )
-        if int(status) != 0:
-            return None
-        context_pushed = True
-
-        status = gdb.parse_and_eval(
-            f"(int)((int (*)(int*))cuCtxGetDevice)((int*){address:#x})"
-        )
-        if int(status) != 0:
-            return None
-        device = gdb.Value(address).cast(gdb.lookup_type("int").pointer())
-        return int(device.dereference())
-    except (gdb.error, TypeError, ValueError):
-        return None
-    finally:
-        if output is not None:
-            try:
-                if context_pushed:
-                    gdb.parse_and_eval(
-                        "(int)((int (*)(void**))cuCtxPopCurrent)"
-                        f"((void**){int(output):#x})"
-                    )
-                gdb.parse_and_eval(f"(void)free((void*){int(output):#x})")
-            except (gdb.error, TypeError, ValueError):
-                pass
-
-
 def _query_stream_device(handle: int) -> int | None:
-    device = _query_stream_device_from_context(handle)
-    if device is not None:
-        return device
+    # cudaStreamGetDevice is unavailable before CUDA 12.8. Reporting no device
+    # there is safer than changing the current CUDA context from a formatter.
     return _query_stream_property(handle, "cudaStreamGetDevice", "int")
 
 
