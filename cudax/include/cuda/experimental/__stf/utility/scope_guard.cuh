@@ -26,10 +26,10 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -48,70 +48,11 @@
 namespace cuda::experimental::stf
 {
 /**
- * @brief Creates a policy that suppresses exceptions.
- *
- * Apply the policy to a callable with `on_throw(::std::ignore) << callable`.
- * If the callable throws, a `void` result is simply suppressed and a non-void
- * result is replaced with a default-constructed value. Consequently, a
- * non-void callable must return a default-constructible type.
- *
- * @return A policy object consumed by `operator<<`.
- */
-inline auto on_throw(decltype(::std::ignore)) noexcept
-{
-  struct __result
-  {};
-  return __result{};
-}
-
-template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(::std::ignore)), _Fn&& __fn) noexcept
-{
-  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
-  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
-                "on_throw(std::ignore) requires a default-constructible result");
-  _CCCL_TRY
-  {
-    return ::cuda::std::forward<_Fn>(__fn)();
-  }
-  _CCCL_CATCH_ALL
-  {
-    if constexpr (!::cuda::std::is_void_v<_Result>)
-    {
-      return _Result{};
-    }
-  }
-}
-
-/**
- * @brief The type of a handler that reports an exception and lets execution resume.
- *
- * The `decltype(::std::ignore)` return type marks the handler as suppressing; the returned
- * value itself is discarded. The handler receives a pointer to the caught `std::exception`,
- * or `nullptr` if the exception does not derive from `std::exception`, together with the
- * location captured at the `on_throw` call site.
- */
-using throw_handler_ignore_t =
-  decltype(::std::ignore) (*)(const ::std::exception*, ::cuda::std::source_location) noexcept;
-
-/**
- * @brief The type of a handler that reports an exception and is expected not to return.
- *
- * The `void` return type marks the handler as terminating. `[[noreturn]]` appertains to a
- * function declaration rather than to a function type, so it cannot be part of this alias
- * and the contract is unenforceable; `::std::abort` runs if the handler returns anyway. The
- * handler receives a pointer to the caught `std::exception`, or `nullptr` if the exception
- * does not derive from `std::exception`, together with the location captured at the
- * `on_throw` call site.
- */
-using throw_handler_terminate_t = void (*)(const ::std::exception*, ::cuda::std::source_location) noexcept;
-
-/**
  * @brief A suppressing handler that reports an exception on `stderr` and flushes it.
  *
  * Use it as in `on_throw(notify) << callable` to report an exception and carry on.
- * Reporting to a destination other than `stderr` is a matter of defining another
- * `throw_handler_ignore_t`.
+ * Reporting to a destination other than `stderr` is a matter of writing another
+ * handler, which this function doubles as the model for.
  *
  * @param[in] __exception The caught exception, or `nullptr` if it does not derive from
  *            `std::exception`, in which case the report carries no message.
@@ -142,205 +83,132 @@ notify(const ::std::exception* __exception, const ::cuda::std::source_location _
   return ::std::ignore;
 }
 
-/**
- * @brief Creates a policy that hands an exception to a handler and then suppresses it.
- *
- * Apply the policy with `on_throw(handler) << callable`. If the callable throws, the handler
- * is invoked with the caught exception (or `nullptr` for an exception that does not derive
- * from `std::exception`) and `__loc`. Execution then resumes: a `void` result is suppressed
- * and a non-void result is replaced with a default-constructed value. Consequently, a
- * non-void callable must return a default-constructible type.
- *
- * @param[in] __handler A non-null suppressing handler.
- * @param[in] __loc The location passed to the handler; defaults to the call site.
- * @return A policy object consumed by `operator<<`.
- */
-inline auto on_throw(throw_handler_ignore_t __handler,
-                     const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
-{
-  struct __result
-  {
-    throw_handler_ignore_t __handler_;
-    ::cuda::std::source_location __loc_;
-  };
-  return __result{__handler, __loc};
-}
-
-template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(throw_handler_ignore_t{})) __policy, _Fn&& __fn) noexcept
-{
-  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
-  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
-                "on_throw(throw_handler_ignore_t) requires a default-constructible result");
-  _CCCL_TRY
-  {
-    return ::cuda::std::forward<_Fn>(__fn)();
-  }
-  _CCCL_CATCH (const ::std::exception& __exception)
-  {
-    __policy.__handler_(&__exception, __policy.__loc_);
-  }
-  _CCCL_CATCH_ALL
-  {
-    __policy.__handler_(nullptr, __policy.__loc_);
-  }
-
-  if constexpr (!::cuda::std::is_void_v<_Result>)
-  {
-    return _Result{};
-  }
-}
-
-/**
- * @brief Creates a policy that hands an exception to a handler that must not return.
- *
- * Apply the policy with `on_throw(handler) << callable`. If the callable throws, the handler
- * is invoked with the caught exception (or `nullptr` for an exception that does not derive
- * from `std::exception`) and `__loc`. The handler is assumed to terminate; `::std::abort`
- * runs immediately afterwards in case it returns.
- *
- * @param[in] __handler A non-null terminating handler.
- * @param[in] __loc The location passed to the handler; defaults to the call site.
- * @return A policy object consumed by `operator<<`.
- */
-inline auto on_throw(throw_handler_terminate_t __handler,
-                     const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
-{
-  struct __result
-  {
-    throw_handler_terminate_t __handler_;
-    ::cuda::std::source_location __loc_;
-  };
-  return __result{__handler, __loc};
-}
-
-template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(throw_handler_terminate_t{})) __policy, _Fn&& __fn) noexcept
-{
-  _CCCL_TRY
-  {
-    return ::cuda::std::forward<_Fn>(__fn)();
-  }
-  _CCCL_CATCH (const ::std::exception& __exception)
-  {
-    __policy.__handler_(&__exception, __policy.__loc_);
-  }
-  _CCCL_CATCH_ALL
-  {
-    __policy.__handler_(nullptr, __policy.__loc_);
-  }
-  ::std::abort();
-  _CCCL_UNREACHABLE();
-}
-
-/**
- * @brief Creates a policy that reports an exception and terminates.
- *
- * Apply the policy with `on_throw(::std::abort) << callable` or
- * `on_throw(::std::terminate) << callable`. If the callable throws, the policy
- * reports the exception through `notify` and invokes the chosen handler. Passing
- * any other function pointer reports the invalid handler and terminates
- * immediately.
- *
- * @param[in] __handler The address of `std::abort` or `std::terminate`.
- * @param[in] __loc The location reported on failure; defaults to the call site.
- * @return A policy object consumed by `operator<<`.
- */
-inline auto on_throw(void (*__handler)() noexcept,
-                     const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
-{
-  struct local
-  {
-    static void abort(const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept
-    {
-      notify(__exception, __where);
-      ::std::abort();
-    }
-    static void terminate(const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept
-    {
-      notify(__exception, __where);
-      ::std::terminate();
-    }
-  };
-  if (__handler == &::std::abort)
-  {
-    return on_throw(local::abort, __loc);
-  }
-  if (__handler == &::std::terminate)
-  {
-    return on_throw(local::terminate, __loc);
-  }
-  // The function-pointer type also accepts any other `void() noexcept` function,
-  // so overload resolution alone cannot restrict this argument to these two values.
-  ::fprintf(stderr,
-            "%s(%u) invalid on_throw termination handler in %s; expected std::abort or std::terminate\n",
-            __loc.file_name(),
-            __loc.line(),
-            __loc.function_name());
-  ::fflush(stderr);
-  ::std::terminate();
-  _CCCL_UNREACHABLE();
-}
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-// Unlike the other policies this one cannot keep its state in a local struct, because
-// `operator<<` has to deduce the value type and could not do so from a parameter spelled
-// `decltype(on_throw(...))`. Its `operator<<` lives here as well, so that argument-dependent
-// lookup, which only searches the innermost namespace enclosing the policy, still finds it.
-template <class _Value>
-struct __on_throw_value
+// One policy for all four reactions: the alternative is constraining the `on_throw` overloads
+// against one another, which is fragile, because clang keeps `[[noreturn]]` in the type of
+// `std::abort` and thereby makes a `void (*)() noexcept` parameter an inexact match that a
+// catch-all template would win. `operator<<` lives here too, since argument-dependent lookup
+// only searches the innermost namespace enclosing the policy type.
+template <class _Reaction>
+struct __on_throw_policy
 {
-  _Value __value_;
+  _Reaction __reaction_;
+  ::cuda::std::source_location __loc_;
+
+  // Runs with the exception in flight and produces what `operator<<` returns in its stead.
+  template <class _Result>
+  _Result __report(const ::std::exception* __exception) noexcept
+  {
+    // A handler is anything callable with the caught exception and a location; the other three
+    // reactions are recognized in the branches below.
+    constexpr bool __handles =
+      ::cuda::std::is_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>;
+    constexpr bool __drops = ::cuda::std::is_same_v<const _Reaction, const decltype(::std::ignore)>;
+    // Whether the exception is answered rather than fatal, which `::std::ignore` decides by being
+    // what it is and a handler decides by returning it. Asking the same of `void` would be
+    // useless, every result type being convertible to `void`, but nothing except `::std::ignore`
+    // itself converts to its type.
+    constexpr bool __resumes =
+      __handles
+        ? ::cuda::std::
+            is_invocable_r_v<decltype(::std::ignore), _Reaction&, const ::std::exception*, ::cuda::std::source_location>
+        : __drops;
+
+    if constexpr (__handles)
+    {
+      static_assert(
+        ::cuda::std::is_nothrow_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>,
+        "an on_throw handler runs while an exception is in flight and must be noexcept");
+      __reaction_(__exception, __loc_);
+      if constexpr (!__resumes)
+      {
+        static_assert(
+          ::cuda::std::is_void_v<
+            ::cuda::std::invoke_result_t<_Reaction&, const ::std::exception*, ::cuda::std::source_location>>,
+          "an on_throw handler must return void, to end the program, or ::std::ignore, to go on");
+        ::std::abort(); // the handler was supposed to see to that itself
+        _CCCL_UNREACHABLE();
+      }
+    }
+    else if constexpr (::cuda::std::is_convertible_v<_Reaction, void (*)() noexcept>)
+    {
+      // A terminating action, `::std::abort` and `::std::terminate` being the ones worth naming.
+      notify(__exception, __loc_);
+      __reaction_();
+      ::std::abort(); // in case it returns after all
+      _CCCL_UNREACHABLE();
+    }
+    else if constexpr (!__drops)
+    {
+      static_assert(::cuda::std::is_convertible_v<_Reaction, _Result>,
+                    "on_throw(value) requires a value convertible to the result of the callable");
+      return static_cast<_Result>(::cuda::std::move(__reaction_));
+    }
+
+    // Left over are the two reactions that resume, both of which owe the caller a result.
+    if constexpr (__resumes && !::cuda::std::is_void_v<_Result>)
+    {
+      static_assert(::cuda::std::is_default_constructible_v<_Result>,
+                    "an on_throw reaction that resumes requires a default-constructible result");
+      return _Result{};
+    }
+  }
 };
 
-// Anything the other overloads accept must be kept away from the value overload. Preferring a
-// non-template overload on a tie is not enough: clang keeps `[[noreturn]]` in the type of
-// `std::abort`, which makes the termination overload an inexact match that the value overload
-// would win.
-template <class _Tp>
-inline constexpr bool __selects_on_throw_policy_v =
-  ::cuda::std::is_convertible_v<_Tp, decltype(::std::ignore)> //
-  || ::cuda::std::is_convertible_v<_Tp, throw_handler_ignore_t> //
-  || ::cuda::std::is_convertible_v<_Tp, throw_handler_terminate_t> //
-  || ::cuda::std::is_convertible_v<_Tp, void (*)() noexcept>;
-
-template <class _Value, class _Fn>
-decltype(auto) operator<<(__on_throw_value<_Value> __policy, _Fn&& __fn) noexcept
+template <class _Reaction, class _Fn>
+decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept
 {
   using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
-  static_assert(::cuda::std::is_convertible_v<_Value, _Result>,
-                "on_throw(value) requires a value convertible to the result of the callable");
   _CCCL_TRY
   {
     return ::cuda::std::forward<_Fn>(__fn)();
   }
+  _CCCL_CATCH (const ::std::exception& __exception)
+  {
+    return __policy.template __report<_Result>(&__exception);
+  }
   _CCCL_CATCH_ALL
   {
-    return static_cast<_Result>(::cuda::std::move(__policy.__value_));
+    return __policy.template __report<_Result>(nullptr);
   }
 }
 } // namespace detail
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
- * @brief Creates a policy that replaces a thrown exception with a value.
+ * @brief Creates a policy saying how to react if a callable throws.
  *
- * `on_throw(value) << callable` evaluates to the result of the callable, or to `value`
- * converted to that result type if the callable throws. The value is stored in the policy,
- * so a temporary is safe, and it is moved into the result. Handlers are not values: an
- * argument convertible to `throw_handler_ignore_t` or `throw_handler_terminate_t` selects
- * the corresponding handler overload instead.
+ * Apply the policy with `on_throw(reaction) << callable`, which evaluates to the result of the
+ * callable when nothing goes wrong. The reaction is one of four things, recognized by type:
  *
- * @param[in] __value The replacement, which must be convertible to the callable's result
- *            and must not throw while being converted.
+ * - A handler: any `noexcept` callable accepting a `const std::exception*` and a
+ *   `cuda::std::source_location`, be it a function, a function pointer, or a function object,
+ *   capturing or not. It is invoked with the caught exception, or with `nullptr` for an
+ *   exception that does not derive from `std::exception`, along with `__loc`. Its return type
+ *   says what happens next: returning `decltype(::std::ignore)` resumes execution with a
+ *   default-constructed result, and returning `void` claims the handler ends the program, with
+ *   `::std::abort` running right after it in case it does not. `notify` is such a handler.
+ * - A terminating action: any nullary `noexcept` callable returning `void`, `::std::abort` and
+ *   `::std::terminate` being the obvious ones. The exception is reported through `notify`, the
+ *   action runs, and `::std::abort` follows in case it returns.
+ * - `::std::ignore`, which suppresses the exception silently and resumes execution with a
+ *   default-constructed result.
+ * - Anything else, taken as a replacement value for the result. It must be convertible to the
+ *   callable's result type, and is moved into the result.
+ *
+ * The two resuming reactions leave a `void` result alone and require a default-constructible
+ * type of a non-void one.
+ *
+ * @param[in] __reaction The reaction, which the policy stores.
+ * @param[in] __loc The location passed to the handler; defaults to the call site.
  * @return A policy object consumed by `operator<<`.
  */
-template <class _Value, ::cuda::std::enable_if_t<!detail::__selects_on_throw_policy_v<_Value>, int> = 0>
-auto on_throw(_Value&& __value)
+template <class _Reaction>
+auto on_throw(_Reaction __reaction, const ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  return detail::__on_throw_value<::cuda::std::decay_t<_Value>>{::cuda::std::forward<_Value>(__value)};
+  return detail::__on_throw_policy<_Reaction>{::cuda::std::move(__reaction), __loc};
 }
 
 #ifdef UNITTESTED_FILE
@@ -361,8 +229,9 @@ UNITTEST("on_throw")
   EXPECT(answer == 42);
   //! [on_throw]
 
-  // A terminating handler stays out of the way as long as nothing throws.
-  const throw_handler_terminate_t die = [](const ::std::exception*, ::cuda::std::source_location) noexcept {
+  // A terminating handler, recognized by its void return, stays out of the way as long as
+  // nothing throws.
+  const auto die = [](const ::std::exception*, ::cuda::std::source_location) noexcept {
     ::std::abort();
   };
   const int untouched = on_throw(die) << [] {
@@ -380,10 +249,11 @@ UNITTEST("on_throw")
   };
 
   // Reporting somewhere other than stderr is what defining a handler is for; `notify` is the
-  // same code writing to stderr, which a test cannot capture portably.
-  static ::FILE* log = nullptr;
-  const throw_handler_ignore_t to_log =
-    [](const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept -> decltype(::std::ignore) {
+  // same code writing to stderr, which a test cannot capture portably. A handler may capture,
+  // so the destination needs no static storage.
+  ::FILE* const log = ::tmpfile();
+  EXPECT(log != nullptr);
+  const auto to_log = [log](const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept {
     ::fprintf(log,
               "%s(%u) in %s: %s\n",
               __where.file_name(),
@@ -393,8 +263,6 @@ UNITTEST("on_throw")
     return ::std::ignore;
   };
 
-  log = ::tmpfile();
-  EXPECT(log != nullptr);
   const auto site  = ::cuda::std::source_location::current();
   const int logged = on_throw(to_log, site) << []() -> int {
     throw ::std::runtime_error("boom");
