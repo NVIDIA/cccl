@@ -88,9 +88,9 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           bool RleCompress,
-          BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
-          int VecSize = 4>
+          int VecSize                = 4,
+          int PrivatizedSmemMaxBytes = 0>
 struct agent_histogram_policy
 {
   /// Threads per thread block
@@ -101,11 +101,11 @@ struct agent_histogram_policy
   /// Whether to perform localized RLE to compress samples before histogramming
   static constexpr bool IS_RLE_COMPRESS = RleCompress;
 
-  /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
-  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = MemoryPreference;
-
   /// Whether to dequeue tiles from a global work queue
   static constexpr bool IS_WORK_STEALING = WorkStealing;
+
+  /// Maximum compile-time-sized shared-memory allocation for privatized bins
+  static constexpr int PRIVATIZED_SMEM_MAX_BYTES = PrivatizedSmemMaxBytes;
 
   /// Vector size for samples loading (1, 2, 4)
   static constexpr int VEC_SIZE = VecSize;
@@ -128,19 +128,40 @@ template <int ThreadsPerBlock,
           BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
           int VecSize = 4>
-using AgentHistogramPolicy
-  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::agent_histogram_policy<
-    ThreadsPerBlock,
-    PixelsPerThread,
-    LoadAlgorithm,
-    LoadModifier,
-    RleCompress,
-    MemoryPreference,
-    WorkStealing,
-    VecSize>;
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") AgentHistogramPolicy
+    : detail::agent_histogram_policy<ThreadsPerBlock,
+                                     PixelsPerThread,
+                                     LoadAlgorithm,
+                                     LoadModifier,
+                                     RleCompress,
+                                     WorkStealing,
+                                     VecSize>
+{
+  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = MemoryPreference;
+};
 
 namespace detail::histogram
 {
+struct HistogramPrivatizedStaticSmem
+{};
+
+struct HistogramPrivatizedDynamicSmem
+{};
+
+struct HistogramPrivatizedGmem
+{};
+
+template <class PrivatizationMode>
+inline constexpr bool is_privatized_static_smem_v =
+  ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedStaticSmem>;
+
+template <class PrivatizationMode>
+inline constexpr bool is_privatized_dynamic_smem_v =
+  ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedDynamicSmem>;
+
+template <class PrivatizationMode>
+inline constexpr bool is_privatized_gmem_v = ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedGmem>;
+
 // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
 template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
@@ -188,13 +209,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //! @tparam OffsetT
 //!   Signed integer type for global offsets
 //!
-//! @tparam UseDynamicSmem
-//!   Whether the privatized histogram is supplied separately in dynamic shared memory.
+//! @tparam PrivatizationMode
+//!   Storage mode for the privatized histogram.
 //!
 //! @tparam OutputCounterT
 //!   Integer type for final output histogram bins. May be wider than `CounterT`.
 template <typename AgentHistogramPolicyT,
-          int PrivatizedSmemBins,
+          typename PrivatizationMode,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
@@ -202,13 +223,21 @@ template <typename AgentHistogramPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool UseDynamicSmem     = false,
           typename OutputCounterT = CounterT>
 struct AgentHistogram
 {
   static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
                 "The output histogram counter must be at least as wide as the local counter");
-  static constexpr int privatized_smem_bins        = PrivatizedSmemBins;
+  static_assert(is_privatized_static_smem_v<PrivatizationMode> || is_privatized_dynamic_smem_v<PrivatizationMode>
+                || is_privatized_gmem_v<PrivatizationMode>);
+  static constexpr bool uses_static_smem  = is_privatized_static_smem_v<PrivatizationMode>;
+  static constexpr bool uses_dynamic_smem = is_privatized_dynamic_smem_v<PrivatizationMode>;
+  static constexpr bool uses_gmem         = is_privatized_gmem_v<PrivatizationMode>;
+  static constexpr int static_smem_slots_per_channel =
+    uses_static_smem ? AgentHistogramPolicyT::PRIVATIZED_SMEM_MAX_BYTES / int{sizeof(CounterT)} / NumActiveChannels : 1;
+  static_assert(!uses_static_smem || static_smem_slots_per_channel > 1,
+                "Static-SMEM privatization requires room for at least one bin and its padding counter");
+  static constexpr int privatized_smem_bins        = uses_static_smem ? static_smem_slots_per_channel - 1 : 0;
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
   static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
@@ -219,10 +248,6 @@ struct AgentHistogram
   static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
   static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
   static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
-  static constexpr auto mem_preference =
-    (UseDynamicSmem || PrivatizedSmemBins > 0)
-      ? BlockHistogramMemoryPreference{AgentHistogramPolicyT::MEM_PREFERENCE}
-      : GMEM;
 
   using SampleT = it_value_t<SampleIteratorT>;
   using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
@@ -245,7 +270,7 @@ struct AgentHistogram
 
   struct _TempStorage
   {
-    CounterT histograms[NumActiveChannels][PrivatizedSmemBins + 1];
+    CounterT histograms[NumActiveChannels][privatized_smem_bins + 1];
     int tile_idx;
 
     union
@@ -269,23 +294,20 @@ struct AgentHistogram
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
   PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
-  bool prefer_smem; // whether this block uses shared-memory privatization
-
   _CCCL_DEVICE _CCCL_FORCEINLINE CounterT* PrivatizedHistogram(int channel)
   {
-    if (prefer_smem)
+    if constexpr (uses_dynamic_smem)
     {
-      if constexpr (UseDynamicSmem)
-      {
-        return dyn_smem_histograms[channel];
-      }
-      else
-      {
-        return temp_storage.histograms[channel];
-      }
+      return dyn_smem_histograms[channel];
     }
-
-    return d_privatized_histograms[channel];
+    else if constexpr (uses_static_smem)
+    {
+      return temp_storage.histograms[channel];
+    }
+    else
+    {
+      return d_privatized_histograms[channel];
+    }
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters()
@@ -639,13 +661,12 @@ struct AgentHistogram
       , d_output_histograms(d_output_histograms)
       , output_decode_op(output_decode_op)
       , privatized_decode_op(privatized_decode_op)
-      , prefer_smem(mem_preference == SMEM || (mem_preference == BLEND && (blockIdx.x & 1)))
   {
-    static_assert(!UseDynamicSmem,
-                  "AgentHistogram with UseDynamicSmem=true requires the dynamic-SMEM "
+    static_assert(!uses_dynamic_smem,
+                  "AgentHistogram with dynamic-SMEM privatization requires the dynamic-SMEM "
                   "constructor that takes an extern __shared__ base pointer.");
 
-    if constexpr (PrivatizedSmemBins == 0)
+    if constexpr (uses_gmem)
     {
       const int block_id = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
       for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -675,9 +696,8 @@ struct AgentHistogram
       , d_output_histograms(d_output_histograms)
       , output_decode_op(output_decode_op)
       , privatized_decode_op(privatized_decode_op)
-      , prefer_smem(mem_preference == SMEM || (mem_preference == BLEND && (blockIdx.x & 1)))
   {
-    static_assert(UseDynamicSmem, "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmem=true.");
+    static_assert(uses_dynamic_smem, "Dynamic-SMEM AgentHistogram constructor requires dynamic-SMEM mode.");
 
     CounterT* p = dyn_smem_histogram_base;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -685,16 +705,6 @@ struct AgentHistogram
     {
       this->dyn_smem_histograms[ch] = p;
       p += num_privatized_bins[ch];
-    }
-
-    if (!prefer_smem)
-    {
-      const int block_id = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        const auto offset                 = static_cast<::cuda::std::int64_t>(block_id) * num_privatized_bins[ch];
-        this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
-      }
     }
   }
 
