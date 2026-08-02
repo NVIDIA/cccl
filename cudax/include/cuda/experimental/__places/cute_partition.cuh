@@ -1902,6 +1902,95 @@ UNITTEST("cute_partition validation rejects inexact layouts")
   EXPECT(thrown);
 };
 
+UNITTEST("try_block_owners: exact plan when boundaries align")
+{
+  // 16 elements of 4 B blocked over 2 places, 8 B blocks: the ownership
+  // boundary (element 8 == byte 32) is block-aligned -> exact plan.
+  const auto part   = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  size_t misplaced  = ~size_t(0);
+  const auto owners = part.try_block_owners(/* block */ 8, /* elemsize */ 4, /* total */ 16, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0); // factors through blocks: no placement error
+  EXPECT(owners->size() == 8);
+  for (size_t b = 0; b < 8; b++)
+  {
+    EXPECT((*owners)[b] == pos4(b < 4 ? 0 : 1));
+  }
+};
+
+UNITTEST("try_block_owners: straddling block goes to the byte majority")
+{
+  // 13 one-byte elements blocked over 2 places: chunk = ceil(13/2) = 7, so
+  // the boundary falls at byte 7. With 4 B blocks, block 1 (bytes 4..7)
+  // holds 3 bytes of place 0 and 1 byte of place 1 -> majority place 0,
+  // exactly 1 misplaced byte; every other block is pure.
+  const auto part   = make_partition_descriptor(dim4(13), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  size_t misplaced  = 0;
+  const auto owners = part.try_block_owners(4, 1, 13, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 1);
+  EXPECT(owners->size() == 4);
+  EXPECT((*owners)[0] == pos4(0));
+  EXPECT((*owners)[1] == pos4(0)); // straddle: 3 bytes p0 vs 1 byte p1
+  EXPECT((*owners)[2] == pos4(1));
+  EXPECT((*owners)[3] == pos4(1)); // tail block (bytes 12..12), pure p1
+};
+
+UNITTEST("try_block_owners: dense element-cyclic declines (sampled fallback)")
+{
+  // Element-cyclic over 2 places interleaves owners at element pitch: far
+  // below any realistic block size, and the run enumeration would need one
+  // run per element -> the analytic plan must decline via max_runs.
+  const auto part  = make_partition_descriptor(dim4(1 << 20), {dim_spec{dim_policy::cyclic, 0, 0}}, dim4(2));
+  size_t misplaced = 0;
+  EXPECT(!part.try_block_owners(1 << 16, 4, 1 << 20, &misplaced, /* max_runs */ 1 << 10).has_value());
+};
+
+UNITTEST("try_block_owners: coarse block_cyclic is analyzable and majority-correct")
+{
+  // block_cyclic(4) over 2 places, 4 B elements, 32 B blocks: each block
+  // holds two 16 B owner runs (4 elements each) -> every block is a 50/50
+  // straddle; majority tie-breaks deterministically and the misplaced count
+  // is exactly half the payload.
+  const auto part   = make_partition_descriptor(dim4(32), {dim_spec{dim_policy::block_cyclic, 0, 4}}, dim4(2));
+  size_t misplaced  = 0;
+  const auto owners = part.try_block_owners(32, 4, 32, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(owners->size() == 4);
+  EXPECT(misplaced == 32 * 4 / 2);
+};
+
+UNITTEST("try_block_owners: single place is one exact run")
+{
+  const auto part   = make_partition_descriptor(dim4(1000), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
+  size_t misplaced  = 0;
+  const auto owners = part.try_block_owners(64, 4, 1000, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0);
+  for (const auto& o : *owners)
+  {
+    EXPECT(o == pos4(0));
+  }
+};
+
+UNITTEST("try_block_owners: 2-D expert-major rows stay exact")
+{
+  // (8 x 64) 4 B tensor, dimension 0 blocked over 2 places, rows of 256 B:
+  // with 256 B blocks each row IS a block -> exact, first half place 0.
+  // NB dimension 0 varies fastest in the linearization, so "expert-major"
+  // here means dim 1 indexes the expert row.
+  const auto part  = make_partition_descriptor(dim4(64, 8), {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  size_t misplaced = 0;
+  const auto owners = part.try_block_owners(256, 4, 64 * 8, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0);
+  EXPECT(owners->size() == 8);
+  for (size_t b = 0; b < 8; b++)
+  {
+    EXPECT((*owners)[b] == pos4(b < 4 ? 0 : 1));
+  }
+};
+
 UNITTEST("make_partition rejects partitions that leave grid places unused")
 {
   const dim4 true_dims(64);
