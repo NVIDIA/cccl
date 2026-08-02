@@ -19,6 +19,14 @@
 
 #  define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
 
+#  if TUNE_MEM_PREFERENCE == 0
+constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::GMEM;
+#  elif TUNE_MEM_PREFERENCE == 1
+constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::SMEM;
+#  else // TUNE_MEM_PREFERENCE == 2
+constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
+#  endif // TUNE_MEM_PREFERENCE
+
 #  if TUNE_LOAD_ALGORITHM_ID == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
 #  elif TUNE_LOAD_ALGORITHM_ID == 1
@@ -37,14 +45,16 @@ struct bench_policy_selector
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    return {TUNE_THREADS,
-            TUNE_ITEMS,
-            TUNE_VEC_SIZE,
-            load_algorithm,
-            TUNE_LOAD_MODIFIER,
-            TUNE_RLE_COMPRESS,
-            TUNE_WORK_STEALING,
-            2048}; // TODO(bgruber): make tunable
+    constexpr auto sweep = cub::HistogramSweepPolicy{
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_VEC_SIZE,
+      load_algorithm,
+      TUNE_LOAD_MODIFIER,
+      TUNE_RLE_COMPRESS,
+      MEM_PREFERENCE,
+      TUNE_WORK_STEALING};
+    return {sweep, {sweep, 256, 0}, {sweep, 0, 0, 0, 0, 0, 0}, 2048}; // TODO(bgruber): make tunable
   }
 };
 #endif // !TUNE_BASE
