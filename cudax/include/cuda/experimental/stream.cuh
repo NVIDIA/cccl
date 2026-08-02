@@ -13,5 +13,6 @@
 
 #include <cuda/experimental/__execution/stream/scheduler.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/experimental/__stream/stream_utils.cuh>
 
 #endif // __CUDAX_STREAM__

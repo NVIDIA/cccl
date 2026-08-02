@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,8 +24,12 @@
 #endif // no system header
 
 #include <cuda/__device/device_ref.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/invalid_stream.h>
+#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
