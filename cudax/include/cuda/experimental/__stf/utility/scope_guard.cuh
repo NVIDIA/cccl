@@ -26,9 +26,13 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
@@ -101,6 +105,42 @@ using throw_handler_ignore_t =
  * `on_throw` call site.
  */
 using throw_handler_terminate_t = void (*)(const ::std::exception*, ::cuda::std::source_location) noexcept;
+
+/**
+ * @brief A suppressing handler that reports an exception on `stderr` and flushes it.
+ *
+ * Use it as in `on_throw(notify) << callable` to report an exception and carry on.
+ * Reporting to a destination other than `stderr` is a matter of defining another
+ * `throw_handler_ignore_t`.
+ *
+ * @param[in] __exception The caught exception, or `nullptr` if it does not derive from
+ *            `std::exception`, in which case the report carries no message.
+ * @param[in] __loc The location to report.
+ * @return `::std::ignore`, which marks this handler as suppressing.
+ */
+inline decltype(::std::ignore)
+notify(const ::std::exception* __exception, const ::cuda::std::source_location __loc) noexcept
+{
+  if (__exception != nullptr)
+  {
+    ::fprintf(stderr,
+              "%s(%u) on_throw violation in %s: %s\n",
+              __loc.file_name(),
+              __loc.line(),
+              __loc.function_name(),
+              __exception->what());
+  }
+  else
+  {
+    ::fprintf(stderr,
+              "%s(%u) on_throw violation in %s: nonstandard exception\n",
+              __loc.file_name(),
+              __loc.line(),
+              __loc.function_name());
+  }
+  ::fflush(stderr);
+  return ::std::ignore;
+}
 
 /**
  * @brief Creates a policy that hands an exception to a handler and then suppresses it.
@@ -194,71 +234,13 @@ decltype(auto) operator<<(decltype(on_throw(throw_handler_terminate_t{})) __poli
 }
 
 /**
- * @brief Creates a policy that reports and suppresses exceptions.
- *
- * Apply the policy with `on_throw(stream) << callable`. If the callable throws,
- * the policy writes the captured call-site location and exception message to
- * `stream`, flushes it, and returns a default-constructed result for a non-void
- * callable. Non-standard exceptions are reported without a message.
- *
- * @param[in] __stream A non-null writable C stream.
- * @param[in] __loc The location reported on failure; defaults to the call site.
- * @return A policy object consumed by `operator<<`.
- */
-inline auto on_throw(::FILE* __stream,
-                     const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
-{
-  struct __result
-  {
-    ::FILE* __stream_;
-    ::cuda::std::source_location __loc_;
-  };
-  return __result{__stream, __loc};
-}
-
-template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(stderr)) __policy, _Fn&& __fn) noexcept
-{
-  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
-  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
-                "on_throw(FILE*) requires a default-constructible result");
-  _CCCL_TRY
-  {
-    return ::cuda::std::forward<_Fn>(__fn)();
-  }
-  _CCCL_CATCH (const ::std::exception& __exception)
-  {
-    ::fprintf(__policy.__stream_,
-              "%s(%u) on_throw violation in %s: %s\n",
-              __policy.__loc_.file_name(),
-              __policy.__loc_.line(),
-              __policy.__loc_.function_name(),
-              __exception.what());
-  }
-  _CCCL_CATCH_ALL
-  {
-    ::fprintf(__policy.__stream_,
-              "%s(%u) on_throw violation in %s: nonstandard exception\n",
-              __policy.__loc_.file_name(),
-              __policy.__loc_.line(),
-              __policy.__loc_.function_name());
-  }
-  ::fflush(__policy.__stream_);
-
-  if constexpr (!::cuda::std::is_void_v<_Result>)
-  {
-    return _Result{};
-  }
-}
-
-/**
  * @brief Creates a policy that reports an exception and terminates.
  *
  * Apply the policy with `on_throw(::std::abort) << callable` or
  * `on_throw(::std::terminate) << callable`. If the callable throws, the policy
- * reports the exception to `stderr`, flushes the stream, and invokes the chosen
- * handler. Passing any other function pointer reports the invalid handler and
- * terminates immediately.
+ * reports the exception through `notify` and invokes the chosen handler. Passing
+ * any other function pointer reports the invalid handler and terminates
+ * immediately.
  *
  * @param[in] __handler The address of `std::abort` or `std::terminate`.
  * @param[in] __loc The location reported on failure; defaults to the call site.
@@ -267,41 +249,98 @@ decltype(auto) operator<<(decltype(on_throw(stderr)) __policy, _Fn&& __fn) noexc
 inline auto on_throw(void (*__handler)() noexcept,
                      const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
+  struct local
+  {
+    static void abort(const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept
+    {
+      notify(__exception, __where);
+      ::std::abort();
+    }
+    static void terminate(const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept
+    {
+      notify(__exception, __where);
+      ::std::terminate();
+    }
+  };
+  if (__handler == &::std::abort)
+  {
+    return on_throw(local::abort, __loc);
+  }
+  if (__handler == &::std::terminate)
+  {
+    return on_throw(local::terminate, __loc);
+  }
   // The function-pointer type also accepts any other `void() noexcept` function,
   // so overload resolution alone cannot restrict this argument to these two values.
-  if (__handler != &::std::abort && __handler != &::std::terminate)
-  {
-    ::fprintf(stderr,
-              "%s(%u) invalid on_throw termination handler in %s; expected std::abort or std::terminate\n",
-              __loc.file_name(),
-              __loc.line(),
-              __loc.function_name());
-    ::fflush(stderr);
-    ::std::terminate();
-  }
-  struct __result
-  {
-    void (*__handler_)() noexcept;
-    ::cuda::std::source_location __loc_;
-  };
-  return __result{__handler, __loc};
+  ::fprintf(stderr,
+            "%s(%u) invalid on_throw termination handler in %s; expected std::abort or std::terminate\n",
+            __loc.file_name(),
+            __loc.line(),
+            __loc.function_name());
+  ::fflush(stderr);
+  ::std::terminate();
+  _CCCL_UNREACHABLE();
 }
 
-template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(::std::abort)) __policy, _Fn&& __fn) noexcept
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail
 {
+// Unlike the other policies this one cannot keep its state in a local struct, because
+// `operator<<` has to deduce the value type and could not do so from a parameter spelled
+// `decltype(on_throw(...))`. Its `operator<<` lives here as well, so that argument-dependent
+// lookup, which only searches the innermost namespace enclosing the policy, still finds it.
+template <class _Value>
+struct __on_throw_value
+{
+  _Value __value_;
+};
+
+// Anything the other overloads accept must be kept away from the value overload. Preferring a
+// non-template overload on a tie is not enough: clang keeps `[[noreturn]]` in the type of
+// `std::abort`, which makes the termination overload an inexact match that the value overload
+// would win.
+template <class _Tp>
+inline constexpr bool __selects_on_throw_policy_v =
+  ::cuda::std::is_convertible_v<_Tp, decltype(::std::ignore)> //
+  || ::cuda::std::is_convertible_v<_Tp, throw_handler_ignore_t> //
+  || ::cuda::std::is_convertible_v<_Tp, throw_handler_terminate_t> //
+  || ::cuda::std::is_convertible_v<_Tp, void (*)() noexcept>;
+
+template <class _Value, class _Fn>
+decltype(auto) operator<<(__on_throw_value<_Value> __policy, _Fn&& __fn) noexcept
+{
+  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  static_assert(::cuda::std::is_convertible_v<_Value, _Result>,
+                "on_throw(value) requires a value convertible to the result of the callable");
   _CCCL_TRY
   {
     return ::cuda::std::forward<_Fn>(__fn)();
   }
   _CCCL_CATCH_ALL
   {
-    on_throw(stderr, __policy.__loc_) << [] {
-      throw;
-    };
+    return static_cast<_Result>(::cuda::std::move(__policy.__value_));
   }
-  __policy.__handler_();
-  _CCCL_UNREACHABLE();
+}
+} // namespace detail
+#endif // !_CCCL_DOXYGEN_INVOKED
+
+/**
+ * @brief Creates a policy that replaces a thrown exception with a value.
+ *
+ * `on_throw(value) << callable` evaluates to the result of the callable, or to `value`
+ * converted to that result type if the callable throws. The value is stored in the policy,
+ * so a temporary is safe, and it is moved into the result. Handlers are not values: an
+ * argument convertible to `throw_handler_ignore_t` or `throw_handler_terminate_t` selects
+ * the corresponding handler overload instead.
+ *
+ * @param[in] __value The replacement, which must be convertible to the callable's result
+ *            and must not throw while being converted.
+ * @return A policy object consumed by `operator<<`.
+ */
+template <class _Value, ::cuda::std::enable_if_t<!detail::__selects_on_throw_policy_v<_Value>, int> = 0>
+auto on_throw(_Value&& __value)
+{
+  return detail::__on_throw_value<::cuda::std::decay_t<_Value>>{::cuda::std::forward<_Value>(__value)};
 }
 
 #ifdef UNITTESTED_FILE
@@ -314,8 +353,12 @@ UNITTEST("on_throw")
     value = 42; // would abort the application if this code threw
   };
   on_throw(::std::terminate) << [] {};
-  on_throw(stderr) << [] {};
+  on_throw(notify) << [] {}; // would report the exception on stderr and carry on
+  const int answer = on_throw(-1) << [] {
+    return 42; // would yield -1 instead if this code threw
+  };
   EXPECT(value == 42);
+  EXPECT(answer == 42);
   //! [on_throw]
 
   // A terminating handler stays out of the way as long as nothing throws.
@@ -336,49 +379,73 @@ UNITTEST("on_throw")
     throw 42;
   };
 
-  ::FILE* const log = ::tmpfile();
-  EXPECT(log != nullptr);
-  const auto loc   = ::cuda::std::source_location::current();
-  const int logged = on_throw(log, loc) << []() -> int {
-    throw ::std::runtime_error("boom");
-  };
-  EXPECT(logged == 0);
-  ::rewind(log);
-  char message[1024]{};
-  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
-  char expected[1024]{};
-  ::snprintf(expected,
-             sizeof(expected),
-             "%s(%u) on_throw violation in %s: boom\n",
-             loc.file_name(),
-             loc.line(),
-             loc.function_name());
-  EXPECT(::std::string_view{message} == expected);
-  ::fclose(log);
-
-  // A suppressing handler sees the exception and the call site, then execution resumes.
-  static bool saw_std_exception = false;
-  static unsigned reported_line = 0;
-  const throw_handler_ignore_t note =
+  // Reporting somewhere other than stderr is what defining a handler is for; `notify` is the
+  // same code writing to stderr, which a test cannot capture portably.
+  static ::FILE* log = nullptr;
+  const throw_handler_ignore_t to_log =
     [](const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept -> decltype(::std::ignore) {
-    saw_std_exception = __exception != nullptr;
-    reported_line     = __where.line();
+    ::fprintf(log,
+              "%s(%u) in %s: %s\n",
+              __where.file_name(),
+              __where.line(),
+              __where.function_name(),
+              __exception != nullptr ? __exception->what() : "nonstandard exception");
     return ::std::ignore;
   };
 
-  const auto site = ::cuda::std::source_location::current();
-  const int noted = on_throw(note, site) << []() -> int {
-    throw ::std::runtime_error("noted");
+  log = ::tmpfile();
+  EXPECT(log != nullptr);
+  const auto site  = ::cuda::std::source_location::current();
+  const int logged = on_throw(to_log, site) << []() -> int {
+    throw ::std::runtime_error("boom");
   };
-  EXPECT(noted == 0);
-  EXPECT(saw_std_exception);
-  EXPECT(reported_line == site.line());
+  EXPECT(logged == 0);
 
   // An exception that does not derive from std::exception reaches the handler as nullptr.
-  on_throw(note, site) << [] {
+  on_throw(to_log, site) << [] {
     throw 42;
   };
-  EXPECT(!saw_std_exception);
+
+  ::rewind(log);
+  char message[1024]{};
+  char expected[1024]{};
+  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
+  ::snprintf(expected, sizeof(expected), "%s(%u) in %s: boom\n", site.file_name(), site.line(), site.function_name());
+  EXPECT(::std::string_view{message} == expected);
+  EXPECT(::fgets(message, sizeof(message), log) != nullptr);
+  ::snprintf(expected,
+             sizeof(expected),
+             "%s(%u) in %s: nonstandard exception\n",
+             site.file_name(),
+             site.line(),
+             site.function_name());
+  EXPECT(::std::string_view{message} == expected);
+  ::fclose(log);
+
+  // A replacement value stands in for the result, converted to the callable's result type.
+  const int replaced = on_throw(42) << []() -> int {
+    throw ::std::runtime_error("replaced");
+  };
+  EXPECT(replaced == 42);
+  const double widened = on_throw(42) << []() -> double {
+    throw 42;
+  };
+  EXPECT(widened == 42.0);
+
+  // The value is moved into the result, so a move-only replacement works.
+  struct movable
+  {
+    int v;
+    explicit movable(int value_)
+        : v(value_)
+    {}
+    movable(const movable&) = delete;
+    movable(movable&&)      = default;
+  };
+  const movable moved = on_throw(movable{7}) << []() -> movable {
+    throw 42;
+  };
+  EXPECT(moved.v == 7);
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE

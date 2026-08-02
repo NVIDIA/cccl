@@ -107,7 +107,7 @@ public:
   {
     // Calibration is diagnostic only; allocation failures must not interfere
     // with task teardown.
-    ::cuda::experimental::stf::on_throw(stderr, loc) << [&] {
+    ::cuda::experimental::stf::on_throw(::cuda::experimental::stf::notify, loc) << [&] {
       auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
       auto it = statistics.find(key);

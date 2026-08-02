@@ -558,7 +558,7 @@ public:
   {
     // Timing metadata is diagnostic only; allocation or locking failures must
     // not interfere with task teardown.
-    ::cuda::experimental::stf::on_throw(stderr, loc) << [&] {
+    ::cuda::experimental::stf::on_throw(::cuda::experimental::stf::notify, loc) << [&] {
       ::std::scoped_lock guard(mtx);
 
       if (!tracing_enabled)
