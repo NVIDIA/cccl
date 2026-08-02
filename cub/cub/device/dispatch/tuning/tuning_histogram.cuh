@@ -34,7 +34,6 @@ struct HistogramSweepPolicy
   BlockLoadAlgorithm load_algorithm; //!< Algorithm used for loading samples
   CacheLoadModifier load_modifier; //!< Cache modifier used for loading samples
   bool rle_compress; //!< Whether to locally run-length encode samples
-  BlockHistogramMemoryPreference mem_preference; //!< Preferred storage for privatized bins
   bool work_stealing; //!< Whether blocks dequeue tiles from a global queue
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -43,7 +42,7 @@ struct HistogramSweepPolicy
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
-        && lhs.mem_preference == rhs.mem_preference && lhs.work_stealing == rhs.work_stealing;
+        && lhs.work_stealing == rhs.work_stealing;
   }
 };
 
@@ -51,13 +50,14 @@ struct HistogramSweepPolicy
 struct HistogramStaticSmemPolicy
 {
   HistogramSweepPolicy sweep;
-  int max_bins; //!< Maximum number of bins per channel
+  int max_privatized_smem_bytes; //!< Maximum compile-time-sized shared-memory allocation
   int min_blocks_per_sm; //!< Minimum blocks per SM requested through launch bounds
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramStaticSmemPolicy& lhs, const HistogramStaticSmemPolicy& rhs) noexcept
   {
-    return lhs.sweep == rhs.sweep && lhs.max_bins == rhs.max_bins && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm;
+    return lhs.sweep == rhs.sweep && lhs.max_privatized_smem_bytes == rhs.max_privatized_smem_bytes
+        && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm;
   }
 };
 
@@ -65,8 +65,7 @@ struct HistogramStaticSmemPolicy
 struct HistogramDynamicSmemPolicy
 {
   HistogramSweepPolicy sweep;
-  int max_bins; //!< Maximum bins per channel for a single-channel histogram
-  int max_bytes; //!< Maximum total dynamic shared-memory allocation
+  int max_privatized_smem_bytes; //!< Maximum runtime-sized shared-memory allocation
   int range_max_bins; //!< Maximum bins per channel for multi-channel HistogramRange
   int even_2ch_max_bins; //!< Maximum bins per channel for two-channel HistogramEven
   int even_3ch_max_bins; //!< Maximum bins per channel for three-channel HistogramEven
@@ -75,7 +74,7 @@ struct HistogramDynamicSmemPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramDynamicSmemPolicy& lhs, const HistogramDynamicSmemPolicy& rhs) noexcept
   {
-    return lhs.sweep == rhs.sweep && lhs.max_bins == rhs.max_bins && lhs.max_bytes == rhs.max_bytes
+    return lhs.sweep == rhs.sweep && lhs.max_privatized_smem_bytes == rhs.max_privatized_smem_bytes
         && lhs.range_max_bins == rhs.range_max_bins && lhs.even_2ch_max_bins == rhs.even_2ch_max_bins
         && lhs.even_3ch_max_bins == rhs.even_3ch_max_bins && lhs.even_4ch_max_bins == rhs.even_4ch_max_bins;
   }
@@ -110,19 +109,19 @@ struct HistogramPolicy
           << "{ .threads_per_block = " << sweep.threads_per_block << ", .items_per_thread = " << sweep.items_per_thread
           << ", .vec_size = " << sweep.vec_size << ", .load_algorithm = " << sweep.load_algorithm
           << ", .load_modifier = " << sweep.load_modifier << ", .rle_compress = " << sweep.rle_compress
-          << ", .mem_preference = " << sweep.mem_preference << ", .work_stealing = " << sweep.work_stealing << " }";
+          << ", .work_stealing = " << sweep.work_stealing << " }";
     };
     os << "HistogramPolicy { .gmem = ";
     print_sweep(p.gmem);
     os << ", .static_smem = { .sweep = ";
     print_sweep(p.static_smem.sweep);
-    os << ", .max_bins = " << p.static_smem.max_bins << ", .min_blocks_per_sm = " << p.static_smem.min_blocks_per_sm
-       << " }, .dynamic_smem = { .sweep = ";
+    os << ", .max_privatized_smem_bytes = " << p.static_smem.max_privatized_smem_bytes
+       << ", .min_blocks_per_sm = " << p.static_smem.min_blocks_per_sm << " }, .dynamic_smem = { .sweep = ";
     print_sweep(p.dynamic_smem.sweep);
     return os
-        << ", .max_bins = " << p.dynamic_smem.max_bins << ", .max_bytes = " << p.dynamic_smem.max_bytes
-        << ", .range_max_bins = " << p.dynamic_smem.range_max_bins << ", .even_2ch_max_bins = "
-        << p.dynamic_smem.even_2ch_max_bins << ", .even_3ch_max_bins = " << p.dynamic_smem.even_3ch_max_bins
+        << ", .max_privatized_smem_bytes = " << p.dynamic_smem.max_privatized_smem_bytes << ", .range_max_bins = "
+        << p.dynamic_smem.range_max_bins << ", .even_2ch_max_bins = " << p.dynamic_smem.even_2ch_max_bins
+        << ", .even_3ch_max_bins = " << p.dynamic_smem.even_3ch_max_bins
         << ", .even_4ch_max_bins = " << p.dynamic_smem.even_4ch_max_bins
         << " }, .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
   }
@@ -131,30 +130,28 @@ struct HistogramPolicy
 
 namespace detail::histogram
 {
-template <class SweepPolicy, int MaxBins, int MinBlocksPerSm = 0>
+template <class SweepPolicy, int MaxPrivatizedSmemBytes, int MinBlocksPerSm = 0>
 struct static_smem_policy
 {
-  using SweepPolicyT                     = SweepPolicy;
-  static constexpr int MAX_BINS          = MaxBins;
-  static constexpr int MIN_BLOCKS_PER_SM = MinBlocksPerSm;
+  using SweepPolicyT                             = SweepPolicy;
+  static constexpr int MAX_PRIVATIZED_SMEM_BYTES = MaxPrivatizedSmemBytes;
+  static constexpr int MIN_BLOCKS_PER_SM         = MinBlocksPerSm;
 };
 
 template <class SweepPolicy,
-          int MaxBins,
-          int MaxBytes,
+          int MaxPrivatizedSmemBytes,
           int RangeMaxBins,
           int Even2chMaxBins,
           int Even3chMaxBins,
           int Even4chMaxBins>
 struct dynamic_smem_policy
 {
-  using SweepPolicyT                     = SweepPolicy;
-  static constexpr int MAX_BINS          = MaxBins;
-  static constexpr int MAX_BYTES         = MaxBytes;
-  static constexpr int RANGE_MAX_BINS    = RangeMaxBins;
-  static constexpr int EVEN_2CH_MAX_BINS = Even2chMaxBins;
-  static constexpr int EVEN_3CH_MAX_BINS = Even3chMaxBins;
-  static constexpr int EVEN_4CH_MAX_BINS = Even4chMaxBins;
+  using SweepPolicyT                             = SweepPolicy;
+  static constexpr int MAX_PRIVATIZED_SMEM_BYTES = MaxPrivatizedSmemBytes;
+  static constexpr int RANGE_MAX_BINS            = RangeMaxBins;
+  static constexpr int EVEN_2CH_MAX_BINS         = Even2chMaxBins;
+  static constexpr int EVEN_3CH_MAX_BINS         = Even3chMaxBins;
+  static constexpr int EVEN_4CH_MAX_BINS         = Even4chMaxBins;
 };
 
 enum class privatization_tier
@@ -181,9 +178,33 @@ template <privatization_tier Tier>
   }
 }
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool should_use_static_smem(const HistogramPolicy& policy, int num_bins)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int max_privatized_smem_bins(
+  int max_privatized_smem_bytes, int counter_size, int num_active_channels, int padding_bins_per_channel = 0)
 {
-  return num_bins > 0 && num_bins <= policy.static_smem.max_bins;
+  if (max_privatized_smem_bytes <= 0 || counter_size <= 0 || num_active_channels <= 0)
+  {
+    return 0;
+  }
+  const int slots_per_channel = max_privatized_smem_bytes / counter_size / num_active_channels;
+  return slots_per_channel > padding_bins_per_channel ? slots_per_channel - padding_bins_per_channel : 0;
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int
+max_privatized_static_smem_bins(const HistogramPolicy& policy, int counter_size, int num_active_channels)
+{
+  return max_privatized_smem_bins(policy.static_smem.max_privatized_smem_bytes, counter_size, num_active_channels, 1);
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int
+max_privatized_dynamic_smem_bins(const HistogramPolicy& policy, int counter_size, int num_active_channels)
+{
+  return max_privatized_smem_bins(policy.dynamic_smem.max_privatized_smem_bytes, counter_size, num_active_channels);
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
+should_use_static_smem(const HistogramPolicy& policy, int num_bins, int counter_size, int num_active_channels)
+{
+  return num_bins > 0 && num_bins <= max_privatized_static_smem_bins(policy, counter_size, num_active_channels);
 }
 
 template <bool IsEven>
@@ -195,16 +216,15 @@ should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter
   // Multi-channel paths use explicit per-channel caps in addition to the byte
   // budget because their channel-interleaved launch shapes have distinct
   // measured crossover points.
-  if (policy.dynamic_smem.max_bytes <= 0 || num_bins <= 0 || counter_size <= 0 || num_active_channels <= 0)
+  if (num_bins <= 0)
   {
     return false;
   }
 
-  const bool prefer_dynamic_smem =
-    counter_size > int{sizeof(unsigned int)} || !should_use_static_smem(policy, num_bins);
-  const size_t required_bytes = size_t(num_bins) * size_t(num_active_channels) * size_t(counter_size);
+  const bool prefer_dynamic_smem = counter_size > int{sizeof(unsigned int)}
+                                || !should_use_static_smem(policy, num_bins, counter_size, num_active_channels);
 
-  int max_bins = policy.dynamic_smem.max_bins;
+  int max_bins = max_privatized_dynamic_smem_bins(policy, counter_size, num_active_channels);
   if (num_active_channels > 1)
   {
     if constexpr (IsEven)
@@ -220,8 +240,7 @@ should_use_dynamic_smem(const HistogramPolicy& policy, int num_bins, int counter
     }
   }
 
-  return prefer_dynamic_smem && max_bins > 0 && num_bins <= max_bins
-      && required_bytes <= static_cast<size_t>(policy.dynamic_smem.max_bytes);
+  return prefer_dynamic_smem && max_bins > 0 && num_bins <= max_bins;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -391,11 +410,10 @@ struct policy_hub
   struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT =
-      agent_histogram_policy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
-    using GmemPolicy        = AgentHistogramPolicyT;
-    using StaticSmemPolicy  = static_smem_policy<AgentHistogramPolicyT, 256>;
-    using DynamicSmemPolicy = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0, 0>;
+    using AgentHistogramPolicyT = agent_histogram_policy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, false>;
+    using GmemPolicy            = AgentHistogramPolicyT;
+    using StaticSmemPolicy      = static_smem_policy<AgentHistogramPolicyT, 257 * sizeof(CounterT) * NumActiveChannels>;
+    using DynamicSmemPolicy     = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0>;
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 0;
   };
@@ -411,7 +429,6 @@ struct policy_hub
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 Tuning::rle_compress,
-                                SMEM,
                                 Tuning::work_stealing>;
 
     template <typename Tuning>
@@ -422,8 +439,8 @@ struct policy_hub
                sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
 
     using GmemPolicy        = AgentHistogramPolicyT;
-    using StaticSmemPolicy  = static_smem_policy<AgentHistogramPolicyT, 256>;
-    using DynamicSmemPolicy = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0, 0>;
+    using StaticSmemPolicy  = static_smem_policy<AgentHistogramPolicyT, 257 * sizeof(CounterT) * NumActiveChannels>;
+    using DynamicSmemPolicy = dynamic_smem_policy<AgentHistogramPolicyT, 0, 0, 0, 0, 0>;
 
     static constexpr int init_kernel_pdl_trigger_max_bins =
       NumChannels == 1 && NumActiveChannels == 1 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value
@@ -436,15 +453,14 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int) -> agent_histogram_policy<
-      Tuning::threads_per_block,
-      Tuning::items_per_thread,
-      Tuning::load_algorithm,
-      Tuning::load_modifier,
-      Tuning::rle_compress,
-      SMEM,
-      Tuning::work_stealing,
-      Tuning::vec_size>;
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int)
+      -> agent_histogram_policy<Tuning::threads_per_block,
+                                Tuning::items_per_thread,
+                                Tuning::load_algorithm,
+                                Tuning::load_modifier,
+                                Tuning::rle_compress,
+                                Tuning::work_stealing,
+                                Tuning::vec_size>;
 
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
@@ -455,7 +471,7 @@ struct policy_hub
         0));
 
     using MultiChannelAgentHistogramPolicyT =
-      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4>;
+      agent_histogram_policy<1024, t_scale(IsEven ? 8 : 16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, false, 4>;
 
     static constexpr bool use_sm100_multi_channel_policy =
       NumChannels >= 2 && sizeof(CounterT) == 4 && is_primitive<SampleT>::value;
@@ -499,17 +515,17 @@ struct policy_hub
       AgentHistogramPolicyT::LOAD_ALGORITHM,
       AgentHistogramPolicyT::LOAD_MODIFIER,
       AgentHistogramPolicyT::IS_RLE_COMPRESS,
-      AgentHistogramPolicyT::MEM_PREFERENCE,
       AgentHistogramPolicyT::IS_WORK_STEALING,
-      AgentHistogramPolicyT::VEC_SIZE>;
+      AgentHistogramPolicyT::VEC_SIZE,
+      513 * sizeof(CounterT) * NumActiveChannels>;
 
-    using GmemPolicy       = AgentHistogramPolicyT;
-    using StaticSmemPolicy = static_smem_policy<StaticSmemSweepPolicy, 512, static_smem_min_blocks_per_sm>;
+    using GmemPolicy = AgentHistogramPolicyT;
+    using StaticSmemPolicy =
+      static_smem_policy<StaticSmemSweepPolicy, 513 * sizeof(CounterT) * NumActiveChannels, static_smem_min_blocks_per_sm>;
 
     static constexpr int dynamic_smem_max_bytes = has_dynamic_smem_tuning ? 232448 - 4096 : 0;
     using DynamicSmemPolicy =
       dynamic_smem_policy<AgentHistogramPolicyT,
-                          has_dynamic_smem_tuning ? dynamic_smem_max_bytes / int{sizeof(CounterT)} : 0,
                           dynamic_smem_max_bytes,
                           has_dynamic_smem_tuning ? 2048 : 0,
                           has_dynamic_smem_tuning ? 28544 : 0,
@@ -534,7 +550,6 @@ template <class StaticSweepPolicy>
           StaticSweepPolicy::LOAD_ALGORITHM,
           StaticSweepPolicy::LOAD_MODIFIER,
           StaticSweepPolicy::IS_RLE_COMPRESS,
-          StaticSweepPolicy::MEM_PREFERENCE,
           StaticSweepPolicy::IS_WORK_STEALING};
 }
 
@@ -545,10 +560,11 @@ template <class ActivePolicy>
   using dynamic_smem = typename ActivePolicy::DynamicSmemPolicy;
   return {
     convert_sweep_policy<typename ActivePolicy::GmemPolicy>(),
-    {convert_sweep_policy<typename static_smem::SweepPolicyT>(), static_smem::MAX_BINS, static_smem::MIN_BLOCKS_PER_SM},
+    {convert_sweep_policy<typename static_smem::SweepPolicyT>(),
+     static_smem::MAX_PRIVATIZED_SMEM_BYTES,
+     static_smem::MIN_BLOCKS_PER_SM},
     {convert_sweep_policy<typename dynamic_smem::SweepPolicyT>(),
-     dynamic_smem::MAX_BINS,
-     dynamic_smem::MAX_BYTES,
+     dynamic_smem::MAX_PRIVATIZED_SMEM_BYTES,
      dynamic_smem::RANGE_MAX_BINS,
      dynamic_smem::EVEN_2CH_MAX_BINS,
      dynamic_smem::EVEN_3CH_MAX_BINS,
