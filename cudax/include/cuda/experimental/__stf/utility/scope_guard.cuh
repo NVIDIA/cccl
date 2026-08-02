@@ -80,6 +80,120 @@ decltype(auto) operator<<(decltype(on_throw(::std::ignore)), _Fn&& __fn) noexcep
 }
 
 /**
+ * @brief The type of a handler that reports an exception and lets execution resume.
+ *
+ * The `decltype(::std::ignore)` return type marks the handler as suppressing; the returned
+ * value itself is discarded. The handler receives a pointer to the caught `std::exception`,
+ * or `nullptr` if the exception does not derive from `std::exception`, together with the
+ * location captured at the `on_throw` call site.
+ */
+using throw_handler_ignore_t =
+  decltype(::std::ignore) (*)(const ::std::exception*, ::cuda::std::source_location) noexcept;
+
+/**
+ * @brief The type of a handler that reports an exception and is expected not to return.
+ *
+ * The `void` return type marks the handler as terminating. `[[noreturn]]` appertains to a
+ * function declaration rather than to a function type, so it cannot be part of this alias
+ * and the contract is unenforceable; `::std::abort` runs if the handler returns anyway. The
+ * handler receives a pointer to the caught `std::exception`, or `nullptr` if the exception
+ * does not derive from `std::exception`, together with the location captured at the
+ * `on_throw` call site.
+ */
+using throw_handler_terminate_t = void (*)(const ::std::exception*, ::cuda::std::source_location) noexcept;
+
+/**
+ * @brief Creates a policy that hands an exception to a handler and then suppresses it.
+ *
+ * Apply the policy with `on_throw(handler) << callable`. If the callable throws, the handler
+ * is invoked with the caught exception (or `nullptr` for an exception that does not derive
+ * from `std::exception`) and `__loc`. Execution then resumes: a `void` result is suppressed
+ * and a non-void result is replaced with a default-constructed value. Consequently, a
+ * non-void callable must return a default-constructible type.
+ *
+ * @param[in] __handler A non-null suppressing handler.
+ * @param[in] __loc The location passed to the handler; defaults to the call site.
+ * @return A policy object consumed by `operator<<`.
+ */
+inline auto on_throw(throw_handler_ignore_t __handler,
+                     const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
+{
+  struct __result
+  {
+    throw_handler_ignore_t __handler_;
+    ::cuda::std::source_location __loc_;
+  };
+  return __result{__handler, __loc};
+}
+
+template <class _Fn>
+decltype(auto) operator<<(decltype(on_throw(throw_handler_ignore_t{})) __policy, _Fn&& __fn) noexcept
+{
+  using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
+                "on_throw(throw_handler_ignore_t) requires a default-constructible result");
+  _CCCL_TRY
+  {
+    return ::cuda::std::forward<_Fn>(__fn)();
+  }
+  _CCCL_CATCH (const ::std::exception& __exception)
+  {
+    __policy.__handler_(&__exception, __policy.__loc_);
+  }
+  _CCCL_CATCH_ALL
+  {
+    __policy.__handler_(nullptr, __policy.__loc_);
+  }
+
+  if constexpr (!::cuda::std::is_void_v<_Result>)
+  {
+    return _Result{};
+  }
+}
+
+/**
+ * @brief Creates a policy that hands an exception to a handler that must not return.
+ *
+ * Apply the policy with `on_throw(handler) << callable`. If the callable throws, the handler
+ * is invoked with the caught exception (or `nullptr` for an exception that does not derive
+ * from `std::exception`) and `__loc`. The handler is assumed to terminate; `::std::abort`
+ * runs immediately afterwards in case it returns.
+ *
+ * @param[in] __handler A non-null terminating handler.
+ * @param[in] __loc The location passed to the handler; defaults to the call site.
+ * @return A policy object consumed by `operator<<`.
+ */
+inline auto on_throw(throw_handler_terminate_t __handler,
+                     const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
+{
+  struct __result
+  {
+    throw_handler_terminate_t __handler_;
+    ::cuda::std::source_location __loc_;
+  };
+  return __result{__handler, __loc};
+}
+
+template <class _Fn>
+decltype(auto) operator<<(decltype(on_throw(throw_handler_terminate_t{})) __policy, _Fn&& __fn) noexcept
+{
+  _CCCL_TRY
+  {
+    return ::cuda::std::forward<_Fn>(__fn)();
+  }
+  _CCCL_CATCH (const ::std::exception& __exception)
+  {
+    __policy.__handler_(&__exception, __policy.__loc_);
+  }
+  _CCCL_CATCH_ALL
+  {
+    __policy.__handler_(nullptr, __policy.__loc_);
+  }
+  ::std::abort();
+  _CCCL_UNREACHABLE();
+}
+
+/**
  * @brief Creates a policy that reports and suppresses exceptions.
  *
  * Apply the policy with `on_throw(stream) << callable`. If the callable throws,
@@ -204,6 +318,15 @@ UNITTEST("on_throw")
   EXPECT(value == 42);
   //! [on_throw]
 
+  // A terminating handler stays out of the way as long as nothing throws.
+  const throw_handler_terminate_t die = [](const ::std::exception*, ::cuda::std::source_location) noexcept {
+    ::std::abort();
+  };
+  const int untouched = on_throw(die) << [] {
+    return 7;
+  };
+  EXPECT(untouched == 7);
+
 #  if _CCCL_HAS_EXCEPTIONS()
   const int ignored = on_throw(::std::ignore) << []() -> int {
     throw ::std::runtime_error("ignored");
@@ -232,6 +355,30 @@ UNITTEST("on_throw")
              loc.function_name());
   EXPECT(::std::string_view{message} == expected);
   ::fclose(log);
+
+  // A suppressing handler sees the exception and the call site, then execution resumes.
+  static bool saw_std_exception = false;
+  static unsigned reported_line = 0;
+  const throw_handler_ignore_t note =
+    [](const ::std::exception* __exception, ::cuda::std::source_location __where) noexcept -> decltype(::std::ignore) {
+    saw_std_exception = __exception != nullptr;
+    reported_line     = __where.line();
+    return ::std::ignore;
+  };
+
+  const auto site = ::cuda::std::source_location::current();
+  const int noted = on_throw(note, site) << []() -> int {
+    throw ::std::runtime_error("noted");
+  };
+  EXPECT(noted == 0);
+  EXPECT(saw_std_exception);
+  EXPECT(reported_line == site.line());
+
+  // An exception that does not derive from std::exception reaches the handler as nullptr.
+  on_throw(note, site) << [] {
+    throw 42;
+  };
+  EXPECT(!saw_std_exception);
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 #endif // UNITTESTED_FILE
