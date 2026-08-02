@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
@@ -93,19 +94,23 @@ public:
   }
 
   template <typename task_type>
-  void log_task_time(const task_type& t, double time)
+  void log_task_time(const task_type& t, double time) noexcept
   {
-    auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
+    // Calibration is diagnostic only; allocation failures must not interfere
+    // with task teardown.
+    ::cuda::experimental::stf::on_throw(stderr) << [&] {
+      auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
-    auto it = statistics.find(key);
-    if (it == statistics.end())
-    {
-      statistics.emplace(key, statistic(time));
-    }
-    else
-    {
-      it->second.update(time);
-    }
+      auto it = statistics.find(key);
+      if (it == statistics.end())
+      {
+        statistics.emplace(key, statistic(time));
+      }
+      else
+      {
+        it->second.update(time);
+      }
+    };
   }
 
   class statistic

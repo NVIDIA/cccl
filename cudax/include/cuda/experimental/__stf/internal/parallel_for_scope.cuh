@@ -653,6 +653,18 @@ public:
 
     SCOPE(exit)
     {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    SCOPE(success)
+    {
       t.end_uncleared();
       if constexpr (::std::is_same_v<context, stream_ctx>)
       {
@@ -677,6 +689,11 @@ public:
       }
 
       t.clear();
+    };
+
+    SCOPE(fail)
+    {
+      t.end();
     };
 
     if constexpr (::std::is_same_v<context, stream_ctx>)

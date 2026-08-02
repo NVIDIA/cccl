@@ -40,6 +40,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
@@ -542,17 +543,21 @@ public:
   }
 
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
+  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1) noexcept
   {
-    ::std::scoped_lock guard(mtx);
+    // Timing metadata is diagnostic only; allocation or locking failures must
+    // not interfere with task teardown.
+    ::cuda::experimental::stf::on_throw(stderr) << [&] {
+      ::std::scoped_lock guard(mtx);
 
-    if (!tracing_enabled)
-    {
-      return;
-    }
+      if (!tracing_enabled)
+      {
+        return;
+      }
 
-    // Save timing information for this task
-    metadata[t.get_unique_id()].timing = time_ms;
+      // Save timing information for this task
+      metadata[t.get_unique_id()].timing = time_ms;
+    };
   }
 
   // Take a reference to an (unused) `::std::scoped_lock<::std::mutex>` to make sure someone did take a lock.
