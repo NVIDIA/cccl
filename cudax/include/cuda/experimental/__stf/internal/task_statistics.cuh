@@ -32,6 +32,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
@@ -93,12 +95,19 @@ public:
     calibrating = true;
   }
 
+  //! @brief Records calibration data without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time The task duration in milliseconds.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void log_task_time(const task_type& t, double time) noexcept
+  void log_task_time(const task_type& t,
+                     double time,
+                     const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
     // Calibration is diagnostic only; allocation failures must not interfere
     // with task teardown.
-    ::cuda::experimental::stf::on_throw(stderr) << [&] {
+    ::cuda::experimental::stf::on_throw(stderr, loc) << [&] {
       auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
       auto it = statistics.find(key);

@@ -36,6 +36,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
@@ -542,12 +544,21 @@ public:
     }
   }
 
+  //! @brief Records task timing metadata without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time_ms The task duration in milliseconds.
+  //! @param[in] device The device that executed the task, or `-1` if unspecified.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1) noexcept
+  void add_vertex_timing(const task_type& t,
+                         float time_ms,
+                         [[maybe_unused]] int device            = -1,
+                         const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
     // Timing metadata is diagnostic only; allocation or locking failures must
     // not interfere with task teardown.
-    ::cuda::experimental::stf::on_throw(stderr) << [&] {
+    ::cuda::experimental::stf::on_throw(stderr, loc) << [&] {
       ::std::scoped_lock guard(mtx);
 
       if (!tracing_enabled)

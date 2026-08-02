@@ -28,7 +28,6 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/experimental/__stf/utility/source_location.cuh>
@@ -45,10 +44,14 @@
 namespace cuda::experimental::stf
 {
 /**
- * @brief Suppresses exceptions thrown by the callable on the right-hand side.
+ * @brief Creates a policy that suppresses exceptions.
  *
- * A non-void callable must return a default-constructible type; that default
- * value is returned after an exception.
+ * Apply the policy to a callable with `on_throw(::std::ignore) << callable`.
+ * If the callable throws, a `void` result is simply suppressed and a non-void
+ * result is replaced with a default-constructed value. Consequently, a
+ * non-void callable must return a default-constructible type.
+ *
+ * @return A policy object consumed by `operator<<`.
  */
 inline auto on_throw(decltype(::std::ignore)) noexcept
 {
@@ -61,14 +64,14 @@ template <class _Fn>
 decltype(auto) operator<<(decltype(on_throw(::std::ignore)), _Fn&& __fn) noexcept
 {
   using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
+                "on_throw(std::ignore) requires a default-constructible result");
   _CCCL_TRY
   {
     return ::cuda::std::forward<_Fn>(__fn)();
   }
   _CCCL_CATCH_ALL
   {
-    static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
-                  "on_throw(std::ignore) requires a default-constructible result");
     if constexpr (!::cuda::std::is_void_v<_Result>)
     {
       return _Result{};
@@ -77,11 +80,16 @@ decltype(auto) operator<<(decltype(on_throw(::std::ignore)), _Fn&& __fn) noexcep
 }
 
 /**
- * @brief Logs exceptions thrown by the callable on the right-hand side.
+ * @brief Creates a policy that reports and suppresses exceptions.
  *
- * Diagnostics are written to the supplied C stream. A non-void callable must
- * return a default-constructible type; that default value is returned after an
- * exception.
+ * Apply the policy with `on_throw(stream) << callable`. If the callable throws,
+ * the policy writes the captured call-site location and exception message to
+ * `stream`, flushes it, and returns a default-constructed result for a non-void
+ * callable. Non-standard exceptions are reported without a message.
+ *
+ * @param[in] __stream A non-null writable C stream.
+ * @param[in] __loc The location reported on failure; defaults to the call site.
+ * @return A policy object consumed by `operator<<`.
  */
 inline auto on_throw(::FILE* __stream,
                      const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
@@ -95,26 +103,23 @@ inline auto on_throw(::FILE* __stream,
 }
 
 template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(stderr)) __policy,
-                          _Fn&& __fn) noexcept(noexcept(::cuda::std::forward<_Fn>(__fn)()))
+decltype(auto) operator<<(decltype(on_throw(stderr)) __policy, _Fn&& __fn) noexcept
 {
   using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
+                "on_throw(FILE*) requires a default-constructible result");
   _CCCL_TRY
   {
     return ::cuda::std::forward<_Fn>(__fn)();
   }
   _CCCL_CATCH (const ::std::exception& __exception)
   {
-    const auto& __type = type_name<::cuda::std::remove_cvref_t<decltype(__exception)>>;
-    ::fprintf(
-      __policy.__stream_,
-      "%s(%u) on_throw violation in %s with exception of type %.*s: %s\n",
-      __policy.__loc_.file_name(),
-      __policy.__loc_.line(),
-      __policy.__loc_.function_name(),
-      static_cast<int>(__type.size()),
-      __type.data(),
-      __exception.what());
+    ::fprintf(__policy.__stream_,
+              "%s(%u) on_throw violation in %s: %s\n",
+              __policy.__loc_.file_name(),
+              __policy.__loc_.line(),
+              __policy.__loc_.function_name(),
+              __exception.what());
   }
   _CCCL_CATCH_ALL
   {
@@ -126,8 +131,6 @@ decltype(auto) operator<<(decltype(on_throw(stderr)) __policy,
   }
   ::fflush(__policy.__stream_);
 
-  static_assert(::cuda::std::is_void_v<_Result> || ::cuda::std::is_default_constructible_v<_Result>,
-                "on_throw(FILE*) requires a default-constructible result");
   if constexpr (!::cuda::std::is_void_v<_Result>)
   {
     return _Result{};
@@ -135,10 +138,17 @@ decltype(auto) operator<<(decltype(on_throw(stderr)) __policy,
 }
 
 /**
- * @brief Reports an exception and invokes `std::abort` or `std::terminate`.
+ * @brief Creates a policy that reports an exception and terminates.
  *
- * The source location defaults to the call site. No other function pointer is
- * accepted by this overload.
+ * Apply the policy with `on_throw(::std::abort) << callable` or
+ * `on_throw(::std::terminate) << callable`. If the callable throws, the policy
+ * reports the exception to `stderr`, flushes the stream, and invokes the chosen
+ * handler. Passing any other function pointer reports the invalid handler and
+ * terminates immediately.
+ *
+ * @param[in] __handler The address of `std::abort` or `std::terminate`.
+ * @param[in] __loc The location reported on failure; defaults to the call site.
+ * @return A policy object consumed by `operator<<`.
  */
 inline auto on_throw(void (*__handler)() noexcept,
                      const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
@@ -164,8 +174,7 @@ inline auto on_throw(void (*__handler)() noexcept,
 }
 
 template <class _Fn>
-decltype(auto) operator<<(decltype(on_throw(::std::abort)) __policy,
-                          _Fn&& __fn) noexcept(noexcept(::cuda::std::forward<_Fn>(__fn)()))
+decltype(auto) operator<<(decltype(on_throw(::std::abort)) __policy, _Fn&& __fn) noexcept
 {
   _CCCL_TRY
   {
@@ -177,7 +186,6 @@ decltype(auto) operator<<(decltype(on_throw(::std::abort)) __policy,
       throw;
     };
   }
-  ::fflush(stderr);
   __policy.__handler_();
   _CCCL_UNREACHABLE();
 }
@@ -216,16 +224,12 @@ UNITTEST("on_throw")
   char message[1024]{};
   EXPECT(::fgets(message, sizeof(message), log) != nullptr);
   char expected[1024]{};
-  const auto& exception_type = type_name<::std::exception>;
-  ::snprintf(
-    expected,
-    sizeof(expected),
-    "%s(%u) on_throw violation in %s with exception of type %.*s: boom\n",
-    loc.file_name(),
-    loc.line(),
-    loc.function_name(),
-    static_cast<int>(exception_type.size()),
-    exception_type.data());
+  ::snprintf(expected,
+             sizeof(expected),
+             "%s(%u) on_throw violation in %s: boom\n",
+             loc.file_name(),
+             loc.line(),
+             loc.function_name());
   EXPECT(::std::string_view{message} == expected);
   ::fclose(log);
 #  endif // _CCCL_HAS_EXCEPTIONS()
