@@ -137,6 +137,6 @@ int main()
   updated.store(99);
   inspect_after_update(updated);
   inspect_reference_before_update(updated_reference);
-  updated_target = 73;
+  updated_reference.store(73);
   inspect_reference_after_update(updated_reference);
 }
