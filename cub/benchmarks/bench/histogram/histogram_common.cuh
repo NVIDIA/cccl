@@ -19,14 +19,6 @@
 
 #  define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
 
-#  if TUNE_MEM_PREFERENCE == 0
-constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::GMEM;
-#  elif TUNE_MEM_PREFERENCE == 1
-constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::SMEM;
-#  else // TUNE_MEM_PREFERENCE == 2
-constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
-#  endif // TUNE_MEM_PREFERENCE
-
 #  if TUNE_LOAD_ALGORITHM_ID == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
 #  elif TUNE_LOAD_ALGORITHM_ID == 1
@@ -52,12 +44,10 @@ struct bench_policy_selector
       load_algorithm,
       TUNE_LOAD_MODIFIER,
       TUNE_RLE_COMPRESS,
-      MEM_PREFERENCE,
       TUNE_WORK_STEALING};
     return {sweep,
-            {sweep, TUNE_STATIC_SMEM_MAX_BINS, TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM},
+            {sweep, TUNE_STATIC_SMEM_MAX_BYTES, TUNE_STATIC_SMEM_MIN_BLOCKS_PER_SM},
             {sweep,
-             TUNE_DYNAMIC_SMEM_MAX_BINS,
              TUNE_DYNAMIC_SMEM_MAX_BYTES,
              TUNE_DYNAMIC_SMEM_RANGE_MAX_BINS,
              TUNE_DYNAMIC_SMEM_EVEN_2CH_MAX_BINS,
