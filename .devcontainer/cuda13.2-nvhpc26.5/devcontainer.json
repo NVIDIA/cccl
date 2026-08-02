@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:26.08-cpp-nvhpc26.1",
+  "image": "rapidsai/devcontainers:26.10-cpp-nvhpc26.5",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.1-nvhpc26.1",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.2-nvhpc26.5",
     "--ulimit",
     "nofile=500000"
   ],
@@ -36,12 +36,12 @@
     "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda13.1-nvhpc26.1",
+    "DEVCONTAINER_NAME": "cuda13.2-nvhpc26.5",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
-    "CCCL_CUDA_VERSION": "13.1",
+    "CCCL_CUDA_VERSION": "13.2",
     "CCCL_HOST_COMPILER": "nvhpc",
-    "CCCL_HOST_COMPILER_VERSION": "26.1",
-    "CCCL_BUILD_INFIX": "cuda13.1-nvhpc26.1",
+    "CCCL_HOST_COMPILER_VERSION": "26.5",
+    "CCCL_BUILD_INFIX": "cuda13.2-nvhpc26.5",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -79,5 +79,5 @@
       }
     }
   },
-  "name": "cuda13.1-nvhpc26.1"
+  "name": "cuda13.2-nvhpc26.5"
 }

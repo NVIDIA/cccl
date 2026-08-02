@@ -1,3 +1,46 @@
+compile_time:
+  pull_request:
+    - id: public-headers-gcc13
+      name: Public headers compile-time bench
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc13"
+      baseline_ref: origin/main
+      preset: all-dev
+      targets:
+        - cub.headers.base
+        - thrust.cpp.cuda.headers.base
+        - libcudacxx.test.public_headers
+      args: "-arch native"
+      slices:
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 3.0
+        - id: file-processing
+          title: Direct file processing
+          filter: file-processing
+          timing: exclusive
+          sort: total
+          top: 15
+          threshold: 0.2
+        - id: function-bodies
+          title: Function-body parsing
+          filter: scanning-function-body
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.25
+        - id: template-instantiation
+          title: Template instantiation
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.2
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -406,7 +449,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.08'
+devcontainer_version: '26.10'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 15
@@ -425,7 +468,8 @@ ctk_versions:
   12.0: { stds: [17, 20] }
   12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda', 'clang_preview-cuda'] }
   13.0: { stds: [17, 20] }
-  13.1: { stds: [17, 20], alias: ['nvhpc-prev', 'nvhpc']}
+  13.1: { stds: [17, 20], alias: ['nvhpc-prev']}
+  13.2: { stds: [17, 20], alias: ['nvhpc']}
   13.3: { stds: [17, 20], alias: ['13.X'] }
 
 device_compilers:
@@ -486,8 +530,8 @@ host_compilers:
     exe: nvc++
     versions:
       # !! Update the ctk_versions 'nvhpc*' aliases when updating NVHPC versions:
-      26.1: { stds: [17, 20], alias: 'prev' }
-      26.3: { stds: [17, 20] }
+      26.3: { stds: [17, 20], alias: 'prev' }
+      26.5: { stds: [17, 20] }
 
 # Jobs support the following properties:
 #
