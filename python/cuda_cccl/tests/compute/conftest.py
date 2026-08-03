@@ -127,6 +127,46 @@ def raise_on_numba_import(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", guarded_import)
 
 
+# --- Known numba-cuda-mlir upstream failures -------------------------------
+#
+# These tests fail because of bugs/limitations in numba-cuda-mlir (not in
+# cuda.compute).  Each is xfail'd against the tracking issue.  strict=False
+# because some are data-dependent and may pass; an xpass simply flags that the
+# issue is resolved.  Remove a rule once its upstream issue is fixed.
+#
+# As of numba-cuda-mlir 0.4.2 only one issue remains.  #119 (duplicate
+# error_code on multi-op link) and #123 (`**` operator) are fixed; #124
+# (device array-from-pointer) is fixed too and cuda.compute now uses the new
+# `cuda.carray` for captured-array state; #120 (complex through a CPointer) is
+# still open upstream but our tests pass on it.  Those rules have been dropped.
+_UNSIGNED_DTYPES = ("uint8", "uint16", "uint32", "uint64")
+
+
+def _upstream_xfail_reason(name: str, nodeid: str):
+    """Return ``(issue_number, reason)`` for a known numba-cuda-mlir failure,
+    else None.
+
+    ``name`` is the test function name (without parametrization); ``nodeid``
+    carries the parametrization, used where only some parameter sets fail.
+    """
+
+    def issue(num, text):
+        return (num, f"numba-cuda-mlir#{num}: {text}")
+
+    # #121 (reopened case): an unsigned value compared against a *signed integer
+    # literal* is still compiled as a signed comparison.  `positive_op` here is
+    # `x > 0`, and the wrapping `random_array(...) - 50` produces unsigned values
+    # with the top bit set, which then wrongly test <= 0 -- so the selected count
+    # is wrong.  (Same-signedness compares were fixed in 0.4.x; signed and float
+    # dtypes are unaffected.)
+    if name == "test_select_reuse_object" and any(
+        f"[{d}]" in nodeid for d in _UNSIGNED_DTYPES
+    ):
+        return issue(121, "unsigned value compared against a signed literal is signed")
+
+    return None
+
+
 def pytest_collection_modifyitems(config, items):
     """Runs after pytest collects the tests. Makes a test marked no_numba fail
     if it imports numba, and skips a test marked serialization when running on
@@ -167,3 +207,10 @@ def pytest_collection_modifyitems(config, items):
         # serialization is unsupported on v2 (HostJIT); skip those tests there
         if USING_V2 and item.get_closest_marker("serialization"):
             item.add_marker(serialization_skip)
+
+        name = getattr(item, "originalname", None) or item.name.split("[")[0]
+        result = _upstream_xfail_reason(name, item.nodeid)
+        if result is None:
+            continue
+        _, reason = result
+        item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
