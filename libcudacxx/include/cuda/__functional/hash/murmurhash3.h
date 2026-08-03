@@ -35,6 +35,8 @@
 #include <cuda/__functional/hash/utils.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -89,7 +91,7 @@ struct __murmurhash3_32
 
   //! @brief Constructs a MurmurHash3 32-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0) noexcept
       : __seed_{__seed}
   {}
 
@@ -98,24 +100,34 @@ struct __murmurhash3_32
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
-    return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+    using _Holder _CCCL_NODEBUG_ALIAS =
+      __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
+    if constexpr (sizeof(_Holder) == sizeof(_Key))
+    {
+      return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+    }
+    else
+    {
+      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
+    }
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
+  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  template <::cuda::std::size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
-  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
+  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
+  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::uint32_t __h1 = __seed_;
 
@@ -126,7 +138,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::size_t __i = 0; __i < _Holder::__num_blocks; ++__i)
       {
-        ::cuda::std::uint32_t __k1 = __holder.__blocks[__i];
+        ::cuda::std::uint32_t __k1 = __holder.__blocks_[__i];
         __k1 *= __c1;
         __k1 = ::cuda::std::rotl(__k1, 15);
         __k1 *= __c2;
@@ -144,13 +156,13 @@ private:
       switch (__holder.__tail_size)
       {
         case 3:
-          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes[2]) << 16;
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[2]) << 16;
           [[fallthrough]];
         case 2:
-          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes[1]) << 8;
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[1]) << 8;
           [[fallthrough]];
         case 1:
-          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes[0]);
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes_[0]);
           __k1 *= __c1;
           __k1 = ::cuda::std::rotl(__k1, 15);
           __k1 *= __c2;
@@ -177,7 +189,7 @@ private:
 
     //----------
     // body
-    for (::cuda::std::remove_const_t<decltype(__nblocks)> __i = 0; __i < __nblocks; __i++)
+    for (::cuda::std::size_t __i = 0; __i < __nblocks; __i++)
     {
       ::cuda::std::uint32_t __k1 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, __i);
       __k1 *= __c1;
@@ -207,7 +219,7 @@ private:
     };
     //----------
     // finalization
-    __h1 ^= __size;
+    __h1 ^= static_cast<::cuda::std::uint32_t>(__size);
     __h1 = ::cuda::__fmix32(__h1);
     return __h1;
   }
@@ -232,7 +244,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 x86 128-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0) noexcept
       : __seed_{__seed}
   {}
 
@@ -241,17 +253,26 @@ public:
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
-    return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+    using _Holder _CCCL_NODEBUG_ALIAS =
+      __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
+    if constexpr (sizeof(_Holder) == sizeof(_Key))
+    {
+      return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+    }
+    else
+    {
+      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
+    }
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  template <::cuda::std::size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t
-  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
+  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
@@ -261,17 +282,17 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> __h{__seed_, __seed_, __seed_, __seed_};
-    const auto __size = ::cuda::std::uint32_t{sizeof(_Holder)};
+    constexpr auto __size = ::cuda::std::uint32_t{sizeof(_Holder)};
 
     if constexpr (_Holder::__num_chunks > 0)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
       {
-        ::cuda::std::uint32_t __k1 = __holder.__blocks[4 * __i];
-        ::cuda::std::uint32_t __k2 = __holder.__blocks[4 * __i + 1];
-        ::cuda::std::uint32_t __k3 = __holder.__blocks[4 * __i + 2];
-        ::cuda::std::uint32_t __k4 = __holder.__blocks[4 * __i + 3];
+        ::cuda::std::uint32_t __k1 = __holder.__blocks_[4 * __i];
+        ::cuda::std::uint32_t __k2 = __holder.__blocks_[4 * __i + 1];
+        ::cuda::std::uint32_t __k3 = __holder.__blocks_[4 * __i + 2];
+        ::cuda::std::uint32_t __k4 = __holder.__blocks_[4 * __i + 3];
 
         __k1 *= __c1;
         __k1 = ::cuda::std::rotl(__k1, 15);
@@ -318,7 +339,7 @@ private:
       ::cuda::std::uint32_t __k3 = 0;
       ::cuda::std::uint32_t __k4 = 0;
 
-      const auto __tail = __holder.__bytes;
+      const auto __tail = __holder.__bytes_;
       switch (__size % __chunk_size)
       {
         case 15:
@@ -388,10 +409,11 @@ private:
     }
 
     // finalization
-    __h[0] ^= __size;
-    __h[1] ^= __size;
-    __h[2] ^= __size;
-    __h[3] ^= __size;
+    const auto __size32 = static_cast<::cuda::std::uint32_t>(__size);
+    __h[0] ^= __size32;
+    __h[1] ^= __size32;
+    __h[2] ^= __size32;
+    __h[3] ^= __size32;
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -415,7 +437,7 @@ private:
     return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
@@ -426,7 +448,7 @@ private:
     ::cuda::std::array<::cuda::std::uint32_t, 4> __h{__seed_, __seed_, __seed_, __seed_};
 
     // body
-    for (::cuda::std::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
+    for (::cuda::std::size_t __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
       ::cuda::std::uint32_t __k1 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i);
       ::cuda::std::uint32_t __k2 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 1);
@@ -546,10 +568,11 @@ private:
     };
 
     // finalization
-    __h[0] ^= __size;
-    __h[1] ^= __size;
-    __h[2] ^= __size;
-    __h[3] ^= __size;
+    const auto __size32 = static_cast<::cuda::std::uint32_t>(__size);
+    __h[0] ^= __size32;
+    __h[1] ^= __size32;
+    __h[2] ^= __size32;
+    __h[3] ^= __size32;
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -590,7 +613,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 x64 128-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0) noexcept
       : __seed_{__seed}
   {}
 
@@ -599,17 +622,26 @@ public:
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
-    return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+    using _Holder _CCCL_NODEBUG_ALIAS =
+      __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
+    if constexpr (sizeof(_Holder) == sizeof(_Key))
+    {
+      return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+    }
+    else
+    {
+      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
+    }
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  template <::cuda::std::size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t
-  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
+  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
@@ -619,15 +651,15 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::array<::cuda::std::uint64_t, 2> __h{__seed_, __seed_};
-    const auto __size = ::cuda::std::uint64_t{sizeof(_Holder)};
+    constexpr auto __size = ::cuda::std::uint64_t{sizeof(_Holder)};
 
     if constexpr (_Holder::__num_chunks > 0)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
       {
-        ::cuda::std::uint64_t __k1 = __holder.__blocks[2 * __i];
-        ::cuda::std::uint64_t __k2 = __holder.__blocks[2 * __i + 1];
+        ::cuda::std::uint64_t __k1 = __holder.__blocks_[2 * __i];
+        ::cuda::std::uint64_t __k2 = __holder.__blocks_[2 * __i + 1];
 
         __k1 *= __c1;
         __k1 = ::cuda::std::rotl(__k1, 31);
@@ -654,7 +686,7 @@ private:
       ::cuda::std::uint64_t __k1 = 0;
       ::cuda::std::uint64_t __k2 = 0;
 
-      const auto __tail = __holder.__bytes;
+      const auto __tail = __holder.__bytes_;
       switch (__size % __chunk_size)
       {
         case 15:
@@ -728,7 +760,7 @@ private:
     return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
@@ -739,7 +771,7 @@ private:
     ::cuda::std::array<::cuda::std::uint64_t, 2> __h{__seed_, __seed_};
 
     // body
-    for (::cuda::std::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
+    for (::cuda::std::size_t __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
       ::cuda::std::uint64_t __k1 = ::cuda::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i);
       ::cuda::std::uint64_t __k2 = ::cuda::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i + 1);

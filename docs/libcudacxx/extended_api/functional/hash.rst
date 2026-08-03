@@ -18,9 +18,64 @@ Defined in the header ``<cuda/functional>``.
     template <typename Key, hash_algorithm Algorithm = hash_algorithm::xxhash_32>
     class hash;
 
+    template <typename Key>
+    class hash<Key, hash_algorithm::xxhash_32> {
+    public:
+        constexpr hash(cuda::std::uint32_t seed = 0) noexcept;
+        constexpr cuda::std::uint32_t operator()(const Key& key) const noexcept;
+
+        template <typename SpanKey, cuda::std::size_t Extent>
+        cuda::std::uint32_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+    };
+
+    template <typename Key>
+    class hash<Key, hash_algorithm::xxhash_64> {
+    public:
+        constexpr hash(cuda::std::uint64_t seed = 0) noexcept;
+        cuda::std::uint64_t operator()(const Key& key) const noexcept;
+
+        template <typename SpanKey, cuda::std::size_t Extent>
+        cuda::std::uint64_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+    };
+
+    template <typename Key>
+    class hash<Key, hash_algorithm::murmurhash3_32> {
+    public:
+        constexpr hash(cuda::std::uint32_t seed = 0) noexcept;
+        constexpr cuda::std::uint32_t operator()(const Key& key) const noexcept;
+
+        template <typename SpanKey, cuda::std::size_t Extent>
+        cuda::std::uint32_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+    };
+
+    // Available when the compiler supports 128-bit integers.
+    template <typename Key>
+    class hash<Key, hash_algorithm::murmurhash3_x86_128> {
+    public:
+        constexpr hash(cuda::std::uint32_t seed = 0) noexcept;
+        constexpr __uint128_t operator()(const Key& key) const noexcept;
+
+        template <typename SpanKey, cuda::std::size_t Extent>
+        __uint128_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+    };
+
+    template <typename Key>
+    class hash<Key, hash_algorithm::murmurhash3_x64_128> {
+    public:
+        constexpr hash(cuda::std::uint64_t seed = 0) noexcept;
+        constexpr __uint128_t operator()(const Key& key) const noexcept;
+
+        template <typename SpanKey, cuda::std::size_t Extent>
+        __uint128_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+    };
+
 ``cuda::hash`` provides host/device implementations of xxHash and MurmurHash3.
-``Key`` must be trivially copyable. Each specialization accepts an optional seed
-and hashes either one key or a contiguous ``cuda::std::span`` of keys.
+``Key`` must be trivially copyable; this requirement is enforced when the class is
+instantiated. The hash is computed from the raw object representation of a key.
+
+Each specialization accepts an optional seed and hashes either one key or the
+concatenated object representations in a contiguous ``cuda::std::span`` of keys.
+Both mutable and const spans, with static or dynamic extent, are accepted.
 
 The supported algorithms and result types are:
 

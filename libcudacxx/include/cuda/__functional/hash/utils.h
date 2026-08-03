@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @param[in] __index The index of the chunk to load
 //! @return The loaded chunk of type _Tp
 template <typename _Tp, typename _Extent>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Tp __load_chunk(const ::cuda::std::byte* const __bytes, _Extent __index) noexcept
 {
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
 
@@ -76,10 +76,10 @@ template <typename _Tp, typename _Extent>
 //! @tparam _UseTailBlock Whether to use a tail block for the last bytes
 //! @tparam _BlockT The type of the block
 //! @tparam _HasBlocksOrChunks Whether the key size is larger than the chunk size or block size
-//! @tparam _HasTail Whether the key size is larger than the block size
+//! @tparam _HasTail Whether the key has trailing bytes
 //!
-//! @note _UseTailBlock is true for xxhash and false for murmurhash, as xxhash consider's tail as blocks for the last
-//! bytes, where as murmurhash considers the tail as a bytes
+//! @note `_UseTailBlock` is true for xxHash and false for MurmurHash. xxHash treats trailing bytes as blocks
+//! from incomplete chunks, whereas MurmurHash treats them as individual bytes
 template <::cuda::std::size_t _KeySize,
           ::cuda::std::size_t _ChunkSize,
           ::cuda::std::size_t _BlockSize,
@@ -102,8 +102,8 @@ struct __byte_holder
   static constexpr ::cuda::std::size_t __num_blocks =
     _UseTailBlock ? _KeySize / _BlockSize : __num_chunks * __blocks_per_chunk;
 
-  _BlockT __blocks[__num_blocks];
-  ::cuda::std::byte __bytes[__tail_size];
+  _BlockT __blocks_[__num_blocks];
+  ::cuda::std::byte __bytes_[__tail_size];
 };
 
 //! @brief Type erased holder of small types < _BlockSize
@@ -127,7 +127,7 @@ struct __byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, f
   static constexpr ::cuda::std::size_t __num_blocks =
     _UseTailBlock ? _KeySize / _BlockSize : __num_chunks * __blocks_per_chunk;
 
-  ::cuda::std::byte __bytes[__tail_size];
+  ::cuda::std::byte __bytes_[__tail_size];
 };
 
 //! @brief Type erased holder of types without trailing bytes
@@ -151,7 +151,7 @@ struct __byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, t
   static constexpr ::cuda::std::size_t __num_blocks =
     _UseTailBlock ? _KeySize / _BlockSize : __num_chunks * __blocks_per_chunk;
 
-  _BlockT __blocks[__num_blocks];
+  _BlockT __blocks_[__num_blocks];
 };
 _CCCL_END_NAMESPACE_CUDA
 

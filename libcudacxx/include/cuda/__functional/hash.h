@@ -23,6 +23,7 @@
 
 #include <cuda/__functional/hash/murmurhash3.h>
 #include <cuda/__functional/hash/xxhash.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -51,6 +52,8 @@ class hash;
 template <typename _Key>
 class hash<_Key, hash_algorithm::xxhash_32> : private ::cuda::__xxhash_32<_Key>
 {
+  static_assert(::cuda::std::is_trivially_copyable_v<_Key>, "cuda::hash requires a trivially copyable key type.");
+
 public:
   using ::cuda::__xxhash_32<_Key>::__xxhash_32;
   using ::cuda::__xxhash_32<_Key>::operator();
@@ -59,6 +62,8 @@ public:
 template <typename _Key>
 class hash<_Key, hash_algorithm::xxhash_64> : private ::cuda::__xxhash_64<_Key>
 {
+  static_assert(::cuda::std::is_trivially_copyable_v<_Key>, "cuda::hash requires a trivially copyable key type.");
+
 public:
   using ::cuda::__xxhash_64<_Key>::__xxhash_64;
   using ::cuda::__xxhash_64<_Key>::operator();
@@ -67,6 +72,8 @@ public:
 template <typename _Key>
 class hash<_Key, hash_algorithm::murmurhash3_32> : private ::cuda::__murmurhash3_32<_Key>
 {
+  static_assert(::cuda::std::is_trivially_copyable_v<_Key>, "cuda::hash requires a trivially copyable key type.");
+
 public:
   using ::cuda::__murmurhash3_32<_Key>::__murmurhash3_32;
   using ::cuda::__murmurhash3_32<_Key>::operator();
@@ -77,6 +84,8 @@ public:
 template <typename _Key>
 class hash<_Key, hash_algorithm::murmurhash3_x86_128> : private ::cuda::__murmurhash3_x86_128<_Key>
 {
+  static_assert(::cuda::std::is_trivially_copyable_v<_Key>, "cuda::hash requires a trivially copyable key type.");
+
 public:
   using ::cuda::__murmurhash3_x86_128<_Key>::__murmurhash3_x86_128;
   using ::cuda::__murmurhash3_x86_128<_Key>::operator();
@@ -85,6 +94,8 @@ public:
 template <typename _Key>
 class hash<_Key, hash_algorithm::murmurhash3_x64_128> : private ::cuda::__murmurhash3_x64_128<_Key>
 {
+  static_assert(::cuda::std::is_trivially_copyable_v<_Key>, "cuda::hash requires a trivially copyable key type.");
+
 public:
   using ::cuda::__murmurhash3_x64_128<_Key>::__murmurhash3_x64_128;
   using ::cuda::__murmurhash3_x64_128<_Key>::operator();

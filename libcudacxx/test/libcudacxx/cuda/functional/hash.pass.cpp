@@ -4,12 +4,15 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: nvcc-12.0
+
 #include <cuda/functional>
 #include <cuda/std/array>
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -17,12 +20,16 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda_runtime_api.h>
+#endif // _CCCL_CUDA_COMPILATION()
+
 #include "test_macros.h"
 
 template <cuda::std::int32_t Words>
 struct large_key
 {
-  TEST_FUNC constexpr large_key(cuda::std::int32_t value)
+  TEST_HOST_DEVICE_FUNC constexpr large_key(cuda::std::int32_t value)
   {
     for (cuda::std::int32_t i = 0; i < Words; ++i)
     {
@@ -35,20 +42,67 @@ private:
 };
 
 template <cuda::hash_algorithm Algorithm>
+struct hash_result;
+
+template <>
+struct hash_result<cuda::hash_algorithm::xxhash_32>
+{
+  using type = cuda::std::uint32_t;
+};
+
+template <>
+struct hash_result<cuda::hash_algorithm::xxhash_64>
+{
+  using type = cuda::std::uint64_t;
+};
+
+template <>
+struct hash_result<cuda::hash_algorithm::murmurhash3_32>
+{
+  using type = cuda::std::uint32_t;
+};
+
+#if _CCCL_HAS_INT128()
+template <>
+struct hash_result<cuda::hash_algorithm::murmurhash3_x86_128>
+{
+  using type = __uint128_t;
+};
+
+template <>
+struct hash_result<cuda::hash_algorithm::murmurhash3_x64_128>
+{
+  using type = __uint128_t;
+};
+#endif // _CCCL_HAS_INT128()
+
+template <cuda::hash_algorithm Algorithm>
 struct hash_test
 {
   template <typename Key, typename ResultT, typename... HashConstructorArgs>
-  TEST_FUNC void operator()(Key const& key, ResultT expected, HashConstructorArgs&&... hash_constructor_args)
+  TEST_HOST_DEVICE_FUNC void operator()(const Key& key, ResultT expected, HashConstructorArgs&&... hash_constructor_args)
   {
+    using result_type = typename hash_result<Algorithm>::type;
+
     cuda::hash<Key, Algorithm> hasher(::cuda::std::forward<HashConstructorArgs>(hash_constructor_args)...);
 
-    cuda::std::array<Key, 1> arr_keys = {key};
+    cuda::std::array<Key, 1> arr_keys             = {key};
+    const cuda::std::array<Key, 1> const_arr_keys = {key};
+    auto keys_span                                = cuda::std::span<Key, 1>{arr_keys};
+    auto const_keys_span                          = cuda::std::span<const Key, 1>{const_arr_keys};
 
-    static_assert(cuda::std::is_same_v<decltype(hasher(key)),
-                                       decltype(hasher(cuda::std::span<Key>(arr_keys.data(), arr_keys.size())))>);
+    static_assert(cuda::std::is_same_v<decltype(hasher(key)), result_type>);
+    static_assert(cuda::std::is_same_v<decltype(hasher(keys_span)), result_type>);
+    static_assert(cuda::std::is_same_v<decltype(hasher(const_keys_span)), result_type>);
+    static_assert(
+      noexcept(cuda::hash<Key, Algorithm>(::cuda::std::forward<HashConstructorArgs>(hash_constructor_args)...)));
+    static_assert(noexcept(hasher(key)));
+    static_assert(noexcept(hasher(keys_span)));
+    static_assert(noexcept(hasher(const_keys_span)));
 
     assert(hasher(key) == expected);
-    assert(hasher(cuda::std::span<Key>(arr_keys.data(), arr_keys.size())) == expected);
+    assert(hasher(keys_span) == expected);
+    assert(hasher(const_keys_span) == expected);
   }
 };
 
@@ -56,7 +110,7 @@ struct test_xxhash32
 {
   hash_test<cuda::hash_algorithm::xxhash_32> xxhash32_test;
 
-  TEST_FUNC void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     xxhash32_test(static_cast<char>(0), 3479547966u, 0);
     xxhash32_test(static_cast<char>(42), 3774771295u, 0);
@@ -80,7 +134,7 @@ struct test_xxhash64
 {
   hash_test<cuda::hash_algorithm::xxhash_64> xxhash64_test;
 
-  TEST_FUNC void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     xxhash64_test(static_cast<char>(0), 16804241149081757544ull, 0);
     xxhash64_test(static_cast<char>(42), 765293966243412708ull, 0);
@@ -104,7 +158,7 @@ struct test_murmurhash3_32
 {
   hash_test<cuda::hash_algorithm::murmurhash3_32> murmurhash3_32_test;
 
-  TEST_FUNC void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     murmurhash3_32_test(static_cast<char>(0), 1364076727u, 0);
     murmurhash3_32_test(static_cast<char>(42), 338914844u, 0);
@@ -129,12 +183,12 @@ struct test_murmurhash3_x86_128
 {
   hash_test<cuda::hash_algorithm::murmurhash3_x86_128> murmurhash3_x86_128_test;
 
-  TEST_FUNC __uint128_t conv(cuda::std::array<cuda::std::uint32_t, 4> const& arr) const
+  TEST_HOST_DEVICE_FUNC __uint128_t conv(const cuda::std::array<cuda::std::uint32_t, 4>& arr) const
   {
     return cuda::std::bit_cast<__uint128_t>(arr);
   }
 
-  TEST_FUNC void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     murmurhash3_x86_128_test(cuda::std::int32_t(0), conv({3422973727u, 2656139328u, 2656139328u, 2656139328u}), 0);
     murmurhash3_x86_128_test(cuda::std::int32_t(9), conv({2808089785u, 314604614u, 314604614u, 314604614u}), 0);
@@ -171,12 +225,12 @@ struct test_murmurhash3_x64_128
 {
   hash_test<cuda::hash_algorithm::murmurhash3_x64_128> murmurhash3_x64_128_test;
 
-  TEST_FUNC __uint128_t conv(cuda::std::array<cuda::std::uint64_t, 2> const& arr) const
+  TEST_HOST_DEVICE_FUNC __uint128_t conv(const cuda::std::array<cuda::std::uint64_t, 2>& arr) const
   {
     return cuda::std::bit_cast<__uint128_t>(arr);
   }
 
-  TEST_FUNC void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     murmurhash3_x64_128_test(cuda::std::int32_t(0), conv({14961230494313510588ull, 6383328099726337777ull}), 0);
     murmurhash3_x64_128_test(cuda::std::int32_t(9), conv({1779292183511753683ull, 16298496441448380334ull}), 0);
@@ -210,15 +264,103 @@ struct test_murmurhash3_x64_128
 };
 #endif // _CCCL_HAS_INT128()
 
-TEST_FUNC void test()
+struct noncopyable_key
+{
+  TEST_HOST_DEVICE_FUNC constexpr explicit noncopyable_key(cuda::std::int32_t value)
+      : value_{value}
+  {}
+
+  noncopyable_key(const noncopyable_key&) = delete;
+  noncopyable_key(noncopyable_key&&)      = default;
+
+  cuda::std::int32_t value_;
+};
+
+static_assert(cuda::std::is_trivially_copyable_v<noncopyable_key>);
+
+template <cuda::hash_algorithm Algorithm>
+TEST_HOST_DEVICE_FUNC void test_noncopyable_key()
+{
+  noncopyable_key key{42};
+  cuda::hash<noncopyable_key, Algorithm> hasher;
+  assert(hasher(key) == hasher(cuda::std::span<const noncopyable_key, 1>{&key, 1}));
+}
+
+template <cuda::std::size_t Size>
+struct byte_key
+{
+  cuda::std::byte data_[Size];
+};
+
+template <cuda::hash_algorithm Algorithm, cuda::std::size_t Size>
+TEST_HOST_DEVICE_FUNC void test_sized_key()
+{
+  byte_key<Size> key{};
+  for (cuda::std::size_t i = 0; i < Size; ++i)
+  {
+    key.data_[i] = static_cast<cuda::std::byte>(i);
+  }
+
+  cuda::hash<byte_key<Size>, Algorithm> hasher;
+  cuda::std::array<byte_key<Size>, 2> keys             = {key, key};
+  keys[1].data_[0]                                     = static_cast<cuda::std::byte>(42);
+  const cuda::std::array<byte_key<Size>, 2> const_keys = keys;
+
+  assert(hasher(key) == hasher(cuda::std::span<const byte_key<Size>, 1>{&key, 1}));
+  assert(hasher(cuda::std::span<byte_key<Size>, 2>{keys})
+         == hasher(cuda::std::span<const byte_key<Size>, 2>{const_keys}));
+}
+
+template <cuda::hash_algorithm Algorithm>
+TEST_HOST_DEVICE_FUNC void test_sized_keys()
+{
+  test_sized_key<Algorithm, 2>();
+  test_sized_key<Algorithm, 3>();
+  test_sized_key<Algorithm, 5>();
+  test_sized_key<Algorithm, 6>();
+  test_sized_key<Algorithm, 7>();
+  test_sized_key<Algorithm, 9>();
+  test_sized_key<Algorithm, 15>();
+  test_sized_key<Algorithm, 17>();
+}
+
+TEST_HOST_DEVICE_FUNC void test_empty_spans()
+{
+  cuda::std::span<const cuda::std::uint32_t> empty;
+  assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::xxhash_32>{}(empty) == 0x02cc5d05u));
+  assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::xxhash_64>{}(empty) == 0xef46db3751d8e999ull));
+  assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_32>{}(empty) == 0u));
+#if _CCCL_HAS_INT128()
+  assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_x86_128>{}(empty) == 0));
+  assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_x64_128>{}(empty) == 0));
+#endif // _CCCL_HAS_INT128()
+}
+
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
+static_assert(cuda::hash<cuda::std::uint32_t>{}(0u) == 148298089u);
+static_assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_32>{}(0u) == 593689054u));
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
+
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_xxhash32{}();
   test_xxhash64{}();
   test_murmurhash3_32{}();
+  test_sized_keys<cuda::hash_algorithm::xxhash_32>();
+  test_sized_keys<cuda::hash_algorithm::xxhash_64>();
+  test_sized_keys<cuda::hash_algorithm::murmurhash3_32>();
+  test_noncopyable_key<cuda::hash_algorithm::xxhash_32>();
+  test_noncopyable_key<cuda::hash_algorithm::xxhash_64>();
+  test_noncopyable_key<cuda::hash_algorithm::murmurhash3_32>();
 #if _CCCL_HAS_INT128()
   test_murmurhash3_x86_128{}();
   test_murmurhash3_x64_128{}();
+  test_sized_keys<cuda::hash_algorithm::murmurhash3_x86_128>();
+  test_sized_keys<cuda::hash_algorithm::murmurhash3_x64_128>();
+  test_noncopyable_key<cuda::hash_algorithm::murmurhash3_x86_128>();
+  test_noncopyable_key<cuda::hash_algorithm::murmurhash3_x64_128>();
 #endif // _CCCL_HAS_INT128()
+  test_empty_spans();
 }
 
 #if _CCCL_CUDA_COMPILATION()
@@ -231,5 +373,8 @@ __global__ void test_kernel()
 int main(int, char**)
 {
   test();
+#if _CCCL_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>(); assert(cudaDeviceSynchronize() == cudaSuccess);))
+#endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }
