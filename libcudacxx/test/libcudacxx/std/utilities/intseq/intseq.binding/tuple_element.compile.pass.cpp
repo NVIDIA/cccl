@@ -20,23 +20,31 @@
 #include "test_macros.h"
 
 template <class T, T... Vs>
-TEST_FUNC constexpr bool test_tuple_element()
+struct TestTupleElement
 {
-  using Seq = cuda::std::integer_sequence<T, Vs...>;
+  template <cuda::std::size_t I>
+  TEST_FUNC constexpr void operator()(cuda::std::integral_constant<cuda::std::size_t, I>) const
+  {
+    using Seq = cuda::std::integer_sequence<T, Vs...>;
 
-  cuda::static_for<sizeof...(Vs)>([](auto i) {
     // Test std::tuple_element.
-    static_assert(cuda::std::is_same_v<T, typename std::tuple_element<i(), Seq>::type>);
-    static_assert(cuda::std::is_same_v<T, typename std::tuple_element<i(), const Seq>::type>);
+    static_assert(cuda::std::is_same_v<T, typename std::tuple_element<I, Seq>::type>);
+    static_assert(cuda::std::is_same_v<T, typename std::tuple_element<I, const Seq>::type>);
 
     // Test cuda::std::tuple_element.
-    static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<i(), Seq>::type>);
-    static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<i(), const Seq>::type>);
+    static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<I, Seq>::type>);
+    static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<I, const Seq>::type>);
 
     // Test cuda::std::tuple_element_t.
-    static_assert(cuda::std::is_same_v<T, cuda::std::tuple_element_t<i(), Seq>>);
-    static_assert(cuda::std::is_same_v<T, cuda::std::tuple_element_t<i(), const Seq>>);
-  });
+    static_assert(cuda::std::is_same_v<T, cuda::std::tuple_element_t<I, Seq>>);
+    static_assert(cuda::std::is_same_v<T, cuda::std::tuple_element_t<I, const Seq>>);
+  }
+};
+
+template <class T, T... Vs>
+TEST_FUNC constexpr bool test_tuple_element()
+{
+  cuda::static_for<sizeof...(Vs)>(TestTupleElement<T, Vs...>{});
 
   return true;
 }
