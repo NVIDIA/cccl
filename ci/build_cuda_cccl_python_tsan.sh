@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thin wrapper around build_cuda_cccl_python.sh that builds the cuda_cccl wheel
+# Thin wrapper around build_cuda_cccl_python.sh that builds the cuda-compute wheel
 # with ThreadSanitizer instrumentation on the c.parallel (v1) host code, for the
 # free-threaded (3.14t) TSan nightly lane. The shared build script honors
 # CCCL_C_PARALLEL_SANITIZE_THREAD (passes -DCCCL_C_PARALLEL_SANITIZE_THREAD=ON to

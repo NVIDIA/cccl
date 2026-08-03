@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$ci_dir/.." && pwd)"
 source "$ci_dir/pyenv_helper.sh"
 
 # Parse common arguments
@@ -18,7 +19,7 @@ setup_python_env "${py_version}"
 # Fetch or build the cuda_cccl wheel:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
+  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
 else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
@@ -27,18 +28,25 @@ fi
 # pytest-benchmark for the host-overhead benchmark smoke test below. (cuda-bench,
 # for the throughput smoke, is installed best-effort further down since it does
 # not always ship a wheel for the newest Python.)
-CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
+CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
+CUDA_COMPUTE_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_compute-*.whl)"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cccl_headers-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark
+python -m pip install --find-links "${repo_root}/wheelhouse" \
+  "${CCCL_HEADERS_WHEEL_PATH}" \
+  "${CUDA_COMPUTE_WHEEL_PATH}" \
+  "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" \
+  "cupy-cuda${cuda_major_version}x" pytest-benchmark
+python -m pip check
 
 # Run tests for parallel module
-cd "/home/coder/cccl/python/cuda_cccl/tests/"
+cd "${repo_root}/python/cuda_compute/tests/"
 python -m pytest -n 6 test_examples.py
 
 # Smoke-test the host-overhead benchmark harness: run every benchmark case
 # exactly once (pass/fail only, no timing) so harness rot fails CI here instead
 # of silently surviving until someone runs the perf suite.
-cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/host/"
+cd "${repo_root}/python/cuda_compute/benchmarks/compute/host/"
 python -m pytest -v --benchmark-disable .
 
 # Smoke-test the throughput (nvbench) benchmarks the same way. --profile runs
@@ -53,7 +61,7 @@ python -m pytest -v --benchmark-disable .
 # grep checks below (pipefail keeps pip's exit status, not tee's).
 install_log="$(mktemp)"
 if python -m pip install "cuda-bench[cu${cuda_major_version}]" pyyaml 2>&1 | tee "${install_log}"; then
-  cd "/home/coder/cccl/python/cuda_cccl/benchmarks/compute/"
+  cd "${repo_root}/python/cuda_compute/benchmarks/compute/"
   python run_benchmarks.py --py --profile --quick
 elif grep -qiE "Could not fetch URL|Retrying \(Retry|connection broken|Failed to establish a new connection|Name or service not known|timed out|SSLError|certificate verify failed|ProxyError" "${install_log}"; then
   echo "::error::cuda-bench install failed because pip could not reach the package index (network/DNS/TLS/auth); not skipping." >&2

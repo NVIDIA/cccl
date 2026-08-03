@@ -743,9 +743,11 @@ For readers who want to connect this overview back to the source tree:
 
 * The Python-facing API, operator compilation, and the logic for
   constructing and invoking reusable algorithm objects live under
-  ``python/cuda_cccl/cuda/compute/``.
+  ``python/cuda_compute/cuda/compute/``.
+* Header discovery for the same-version ``cccl-headers`` dependency lives
+  under ``python/cccl_headers/cuda/cccl/headers/``.
 * The lower-level C/C++ runtime compilation and kernel-building
   machinery lives under ``c/parallel/`` (and ``c/parallel.v2/`` for the v2
   HostJIT backend).
 * User-facing examples for ``cuda.compute`` live under
-  ``python/cuda_cccl/tests/compute/examples/``.
+  ``python/cuda_compute/tests/compute/examples/``.

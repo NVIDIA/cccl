@@ -13,7 +13,7 @@ CCCL is a collection of CUDA C++ libraries and Python packages:
 * **Thrust** — High-level parallel algorithms
 * **cudax** — Experimental features
 * **C Parallel Library** — C bindings for CCCL algorithms
-* **Python CCCL packages** (`cuda-cccl`) — Python APIs for parallel primitives and programmatic access to CCCL headers
+* **Python CCCL packages** — `cccl-headers`, `cuda-compute`, and the aggregate `cuda-cccl` metapackage
 
 The repository uses **CMake** with the **Ninja** generator and provides standardized presets for consistent builds.
 
@@ -201,7 +201,7 @@ Options:
 
 Python components require different parameters than C++ builds. Use `-py-version` instead of compiler flags.
 
-Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
+Supported versions: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`
 
 ### Modules
 
@@ -226,8 +226,10 @@ From source:
 
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
-cd cccl/python/cuda_cccl
-pip install -e .[test-cu13] # or [test-cu12] for CTK 12.X
+cd cccl
+pip install -e python/cccl_headers
+pip install -e 'python/cuda_compute[test-cu13]' # or test-cu12 for CTK 12.X
+pip install -e python/cuda_cccl
 ```
 
 Requirements:
@@ -235,7 +237,7 @@ Requirements:
 * Python 3.10+
 * CUDA Toolkit 12.x or 13.x
 * NVIDIA GPU (CC 7.5+)
-* Base dependencies: `numba>=0.60.0`, `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
+* Base dependencies: `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
 * CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
 
 ### Usage Examples
@@ -259,9 +261,9 @@ include_paths = headers.get_include_paths()
 
 Test organization:
 
-* `tests/compute` — Algorithms and iterators
-* `tests/headers` — Header integration
-* `test_examples.py` — Runs compute examples
+* `python/cuda_compute/tests/compute` — Algorithms and iterators
+* `python/cccl_headers/tests` — Header and installed-package integration
+* `python/cuda_compute/tests/test_examples.py` — Runs compute examples
 
 ---
 
@@ -379,7 +381,9 @@ cccl/
 ├── thrust/             # Thrust algorithms
 ├── cudax/              # Experimental features
 ├── c/                  # C Parallel library
-├── python/cuda_cccl/   # Python bindings
+├── python/cccl_headers/ # CCCL header wheel
+├── python/cuda_compute/ # cuda.compute implementation wheel
+├── python/cuda_cccl/   # Aggregate metapackage
 ├── ci/                 # Build/test scripts
 ├── examples/           # Usage examples
 └── CMakePresets.json   # Preset configurations
@@ -388,15 +392,15 @@ cccl/
 Python package layout:
 
 ```
-python/cuda_cccl/
-├── cuda/
-│   ├── compute/
-│   └── cccl/
-│       ├── parallel/
-│       └── headers/
-├── tests/
-├── benchmarks/
-└── pyproject.toml
+python/
+├── cccl_headers/
+│   └── cuda/cccl/
+├── cuda_compute/
+│   ├── cuda/compute/
+│   ├── tests/
+│   └── benchmarks/
+└── cuda_cccl/
+    └── pyproject.toml
 ```
 
 ---

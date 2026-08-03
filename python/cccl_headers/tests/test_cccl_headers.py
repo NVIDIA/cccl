@@ -140,6 +140,22 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
                 message(FATAL_ERROR "cudax::cudax is missing ${required_feature}")
               endif()
             endforeach()
+
+            get_target_property(cudax_includes _cudax_cudax INTERFACE_INCLUDE_DIRECTORIES)
+            file(REAL_PATH "${EXPECTED_CUDAX_INCLUDE}" expected_cudax_include)
+            set(found_expected_cudax_include FALSE)
+            foreach (cudax_include IN LISTS cudax_includes)
+              file(REAL_PATH "${cudax_include}" resolved_cudax_include)
+              if (resolved_cudax_include STREQUAL expected_cudax_include)
+                set(found_expected_cudax_include TRUE)
+              endif()
+            endforeach()
+            if (NOT found_expected_cudax_include)
+              message(FATAL_ERROR
+                "cudax::cudax selected '${cudax_includes}', expected wheel headers "
+                "at '${EXPECTED_CUDAX_INCLUDE}'"
+              )
+            endif()
             """
         ),
         encoding="utf-8",
@@ -153,6 +169,7 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             "-B",
             str(tmp_path / "build"),
             f"-Dcudax_DIR={cudax_cmake_dir}",
+            f"-DEXPECTED_CUDAX_INCLUDE={(package_root / 'include').as_posix()}",
         ],
         check=False,
         capture_output=True,

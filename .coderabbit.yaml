@@ -94,7 +94,7 @@ reviews:
         Focus on C API/ABI stability, error/status handling, lifetime ownership, runtime policy handling,
         build-result caching, C/C++ boundary behavior, and coverage for public C parallel APIs.
 
-    - path: "python/cuda_cccl/**/*"
+    - path: "python/**/*"
       instructions: |
         Focus on Python API stability, CUDA array interoperability, memory ownership, JIT/NVRTC/nvJitLink
         behavior, package boundaries, user-defined operator correctness, tests, and examples. Avoid style-only

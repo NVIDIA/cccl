@@ -31,7 +31,7 @@ else
   action_mounts=()
 fi
 
-# cuda_cccl must be built in a container that can produce manylinux wheels,
+# cuda_compute must be built in a container that can produce manylinux wheels,
 # and has the CUDA toolkit installed. We use the rapidsai/ci-wheel image for this.
 # We build separate wheels using separate containers for each CUDA version,
 # then merge them into a single wheel.
@@ -58,6 +58,7 @@ readonly cuda12_image
 # shellcheck disable=SC2034
 readonly cuda13_image
 
+rm -rf wheelhouse wheelhouse_merged wheelhouse_final
 mkdir -p wheelhouse
 
 # Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
@@ -75,6 +76,10 @@ host_cpm_cache_dir="${HOST_WORKSPACE:?}/.cpm-cache"
 for ctk in 12 13; do
   image="cuda${ctk}_image"
   image="${!image}"
+  build_universal_wheels=0
+  if [[ "$ctk" == 12 ]]; then
+    build_universal_wheels=1
+  fi
   echo "::group::⚒️ Building CUDA $ctk wheel on $image"
   (
     set -x
@@ -91,6 +96,7 @@ for ctk in 12 13; do
         --env "JOB_ID=${JOB_ID:-}" \
         --env "CCCL_PYTHON_USE_V2=${CCCL_PYTHON_USE_V2:-}" \
         --env "CCCL_C_PARALLEL_SANITIZE_THREAD=${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" \
+        --env "BUILD_UNIVERSAL_WHEELS=${build_universal_wheels}" \
         --env "CCACHE_DIR=/root/.ccache" \
         --env "CPM_SOURCE_CACHE=/root/.cpm-cache" \
         "$image" \
@@ -132,7 +138,7 @@ echo "Found CUDA 12 wheel: $cu12_wheel"
 echo "Found CUDA 13 wheel: $cu13_wheel"
 
 # Merge the wheels
-python python/cuda_cccl/merge_cuda_wheels.py "$cu12_wheel" "$cu13_wheel" --output-dir wheelhouse_merged
+python python/cuda_compute/merge_cuda_wheels.py "$cu12_wheel" "$cu13_wheel" --output-dir wheelhouse_merged
 
 # A ThreadSanitizer wheel links libtsan; keep it external (excluded) so it is
 # NOT bundled -- the TSan test lane LD_PRELOADs the runner's matching libtsan
@@ -143,8 +149,8 @@ if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 
 # Install auditwheel and repair the merged wheel
-python -m pip install patchelf auditwheel
-for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
+python -m pip install patchelf auditwheel twine
+for wheel in wheelhouse_merged/cuda_compute-*.whl; do
     echo "Repairing merged wheel: $wheel"
     python -m auditwheel repair \
         --exclude 'libnvrtc.so.12' \
@@ -159,17 +165,17 @@ for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
         --wheel-dir wheelhouse_final
 done
 
-# Clean up intermediate files and move only the final merged wheel to wheelhouse
-rm -rf wheelhouse/*  # Clean existing wheelhouse
-mkdir -p wheelhouse
+# Remove the CUDA-major intermediates while preserving the universal header and
+# metapackage wheels built by the CUDA 12 producer.
+find wheelhouse -maxdepth 1 -name 'cuda_compute-*.cu*.whl' -delete
 
 # Move only the final repaired merged wheel
-if ls wheelhouse_final/cuda_cccl-*.whl 1> /dev/null 2>&1; then
-    mv wheelhouse_final/cuda_cccl-*.whl wheelhouse/
+if ls wheelhouse_final/cuda_compute-*.whl 1> /dev/null 2>&1; then
+    mv wheelhouse_final/cuda_compute-*.whl wheelhouse/
     echo "Final merged wheel moved to wheelhouse"
 else
     echo "No final repaired wheel found, moving unrepaired merged wheel"
-    mv wheelhouse_merged/cuda_cccl-*.whl wheelhouse/
+    mv wheelhouse_merged/cuda_compute-*.whl wheelhouse/
 fi
 
 # Clean up temporary directories
@@ -177,6 +183,8 @@ rm -rf wheelhouse_merged wheelhouse_final
 
 echo "Final wheels in wheelhouse:"
 ls -la wheelhouse/
+python ci/util/python/validate_cccl_wheel_set.py wheelhouse
+python -m twine check wheelhouse/*.whl
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name="$(ci/util/workflow/get_wheel_artifact_name.sh)"

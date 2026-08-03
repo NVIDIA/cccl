@@ -6,7 +6,7 @@ Examples
 
 For recipes and patterns, see our examples:
 
-* ``cuda.compute`` `examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples>`_
+* ``cuda.compute`` `examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_compute/tests/compute/examples>`_
 
 CUB and Thrust Documentation
 ----------------------------
@@ -29,8 +29,9 @@ We welcome contributions! Please see the
 `contributing guide <https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md>`_
 for instructions on how to set up a development environment and submit a pull request.
 
-Once you have a development environment set up, see :doc:`setup` for instructions
-on how to install `cuda.cccl` in development mode.
+Once you have a development environment set up, see :doc:`setup` for
+instructions on installing the ``cccl-headers``, ``cuda-compute``, and
+``cuda-cccl`` projects in development mode.
 
 License
 -------

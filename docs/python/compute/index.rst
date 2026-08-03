@@ -69,7 +69,7 @@ Full Example
 The following example uses :func:`reduce_into <cuda.compute.algorithms.reduce_into>`
 to compute the sum of a sequence of integers:
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/reduction/sum_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Sum reduction example.
@@ -125,7 +125,7 @@ A powerful feature is the ability to use algorithms with user-defined operators.
 For example, to compute the sum of only the even values in a sequence,
 we can use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a custom binary operation:
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/reduction/sum_custom_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Reduction with a custom binary operation.
@@ -168,7 +168,7 @@ To compute the sum of the first 100 integers, we can pass a
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>`. No memory is allocated
 to store the input sequence—the values are generated as needed.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/iterator/counting_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Counting iterator example.
@@ -183,7 +183,7 @@ Because the square is evaluated on demand during the reduction, there is no need
 to create or store an intermediate array of squared values. The transform and the
 reduction are fused into a single pass over the data.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/iterator/transform_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Transform iterator example.
@@ -193,7 +193,7 @@ a :func:`TransformOutputIterator <cuda.compute.iterators.TransformOutputIterator
 applies the square-root operation to the result of a reduction before writing
 it into the underlying array.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/iterator/transform_output_iterator.py
    :language: python
    :start-after: # example-begin
    :caption: Transform output iterator example.
@@ -205,7 +205,7 @@ pairs. This combined iterator is then used as the input to
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>` to compute the index of
 the maximum value in the array.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_counting.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/iterator/zip_iterator_counting.py
    :language: python
    :start-after: # example-begin
    :caption: Argmax using a zip iterator.
@@ -222,7 +222,7 @@ The :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator defines
 GPU-compatible struct types. These are useful when you have data laid out
 as an "array of structures", similar to `NumPy structured arrays <https://numpy.org/doc/stable/user/basics.rec.html>`_.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/struct/struct_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Custom struct type in a reduction.
@@ -308,7 +308,7 @@ Free-threaded Python
 
    .. code-block:: bash
 
-      pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+      pip install cuda-compute[minimal-cu13]  # or minimal-cu12
 
    The full ``cu12`` and ``cu13`` extras and Python-callable operators that
    require Numba CUDA are not currently
@@ -343,12 +343,12 @@ of the ``minimal`` extras, so install it separately (``pip install
 cupy-cuda13x`` or ``cupy-cuda12x``; free-threaded Linux wheels are available
 starting with CuPy 14.1).
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/direct_api.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/free_threading/direct_api.py
    :language: python
    :start-after: # example-begin
    :caption: Concurrent reductions through the direct API from multiple threads.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/object_api.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/free_threading/object_api.py
    :language: python
    :start-after: # example-begin
    :caption: Per-thread algorithm objects created with a ``make_*`` factory.
@@ -410,7 +410,7 @@ performs no JIT compilation—it neither invokes Numba nor recompiles device cod
 In practice you would write the blob to a file and load it in a later run or on
 another machine.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/serialization/serialize_roundtrip.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/serialization/serialize_roundtrip.py
    :language: python
    :start-after: # example-begin
    :caption: Serializing a built algorithm and reconstructing it without recompiling.
@@ -420,7 +420,7 @@ to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
 Blobs are versioned and self-describing, but they are not a long-term storage
-format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
+format: compatibility across ``cuda-compute`` versions is not guaranteed, and
 loading a blob produced by a different version may be rejected with a clear
 error. Persist the inputs needed to rebuild (or re-serialize) rather than
 relying on old blobs surviving an upgrade.
@@ -480,7 +480,7 @@ GPU—for example, in CI—pass :class:`ProxyArray <cuda.compute.ProxyArray>` an
 arrays and scalars. A proxy describes *only* the dtype (and, for arrays, shape
 and contiguity); it holds no GPU memory.
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/serialization/ahead_of_time_compilation.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/serialization/ahead_of_time_compilation.py
    :language: python
    :start-after: # example-begin
    :caption: Compiling for two architectures with no GPU present.
@@ -507,7 +507,7 @@ to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/lates
 
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>`:
 
-.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
+.. literalinclude:: ../../../python/cuda_compute/tests/compute/examples/raw_op/cpp_stateless.py
    :language: python
    :start-after: # example-begin
 
@@ -534,12 +534,12 @@ to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/lates
 
 If you wish to use ``cuda.compute`` solely with externally compiled operators
 (i.e., without native JIT support), you can install a
-minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA dependencies:
+minimal ``cuda-compute`` installation that omits Numba and Numba CUDA:
 
 .. code-block:: bash
 
-   pip install cuda-cccl[minimal-cu13]      # or minimal-cu12  (pip-installed cuda-toolkit)
-   pip install cuda-cccl[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA toolkit)
+   pip install cuda-compute[minimal-cu13]      # or minimal-cu12  (pip-installed CUDA Toolkit)
+   pip install cuda-compute[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA Toolkit)
 
 
 
@@ -547,7 +547,7 @@ Examples
 --------
 
 For complete runnable examples and additional usage patterns, see the
-`examples directory <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples>`_.
+`examples directory <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_compute/tests/compute/examples>`_.
 
 API Reference
 -------------

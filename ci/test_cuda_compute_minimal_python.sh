@@ -31,12 +31,16 @@ fi
 # Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
 # full cu*/sysctk* extras because those pull in numba/numba-cuda. The flavor is
 # "cu" (pip toolkit) or "sysctk" (system toolkit) per the -ctk-mode arg.
-CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
+CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cccl_headers-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
+python -m pip install --find-links "${wheelhouse_dir}" \
+  "${CCCL_HEADERS_WHEEL_PATH}" \
+  "${CUDA_COMPUTE_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
+python -m pip check
 python -m pip install pytest pytest-xdist
 
-cd "${repo_root}/python/cuda_cccl/tests/"
+cd "${repo_root}/python/cuda_compute/tests/"
 python -m pytest -n 6 -v compute/test_no_numba.py
 if [[ "${py_version}" == "3.14t" ]]; then
   # Select only tests that support the minimal extra so pytest does not collect

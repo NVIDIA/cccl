@@ -23,7 +23,8 @@ Compare benchmark performance between two checked-out CCCL trees.
 At least one --cub-filter or --python-filter must be provided.
 CUB filters are regex patterns matched against ninja target names.
 Python filters are regex patterns matched against benchmark script paths
-under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
+under python/cuda_compute/benchmarks/ or, for older refs,
+python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
 
 Arguments:
   <base-path>  Path to baseline CCCL source tree.
@@ -338,34 +339,79 @@ select_python_targets() {
   fi
 }
 
+# Invoked indirectly through run_grouped_logged_command.
+# shellcheck disable=SC2329
+install_python_benchmark_environment() {
+  local venv_path="$1"
+  local package_dir="$2"
+  local headers_dir="$3"
+  local package_extra="$4"
+
+  python3 -m venv "${venv_path}"
+  "${venv_path}/bin/pip" install --upgrade pip
+  if [[ -n "${headers_dir}" ]]; then
+    # cuda-compute has an exact-version dependency on cccl-headers. Install the
+    # sibling project first so comparisons do not consult PyPI for an
+    # unreleased or mismatched header wheel.
+    "${venv_path}/bin/pip" install -e "${headers_dir}"
+  fi
+  "${venv_path}/bin/pip" install -e "${package_dir}[${package_extra}]"
+  # nvbench-compare runtime deps (until cuda-bench declares them):
+  "${venv_path}/bin/pip" install colorama jsondiff tabulate
+}
+
 setup_python_venv() {
   local venv_path="$1"
   local src_path="$2"
   local side="$3"
   local log_path="$4"
   local cuda_major="$5"
+  local compute_dir="${src_path}/python/cuda_compute"
+  local headers_dir="${src_path}/python/cccl_headers"
   local cuda_cccl_dir="${src_path}/python/cuda_cccl"
+  local package_dir=""
+  local local_headers_dir=""
 
-  if [[ ! -d "${cuda_cccl_dir}" ]]; then
-    die "cuda_cccl source directory not found: ${cuda_cccl_dir}"
+  if [[ -f "${compute_dir}/pyproject.toml" ]]; then
+    package_dir="${compute_dir}"
+    local_headers_dir="${headers_dir}"
+    if [[ ! -f "${local_headers_dir}/pyproject.toml" ]]; then
+      die "cccl-headers source directory not found: ${local_headers_dir}"
+    fi
+  elif [[ -f "${cuda_cccl_dir}/pyproject.toml" ]]; then
+    # Before the package split, cuda.compute and the benchmark extras lived in
+    # the cuda-cccl project.
+    package_dir="${cuda_cccl_dir}"
+  else
+    die "Python compute package source not found under: ${src_path}/python"
   fi
 
-  local -a setup_cmds
-  setup_cmds=(
-    bash -c "
-      set -euo pipefail
-      python3 -m venv '${venv_path}'
-      '${venv_path}/bin/pip' install --upgrade pip
-      '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      # nvbench-compare runtime deps (until cuda-bench declares them):
-      '${venv_path}/bin/pip' install colorama jsondiff tabulate
-    "
-  )
+  echo "Python package for ${side}: ${package_dir}"
 
   run_grouped_logged_command \
     "[py-venv:${side}]" \
     "${log_path}" \
-    "${setup_cmds[@]}"
+    install_python_benchmark_environment \
+    "${venv_path}" \
+    "${package_dir}" \
+    "${local_headers_dir}" \
+    "bench-cu${cuda_major}"
+}
+
+resolve_python_benchmarks_dir() {
+  local src_path="$1"
+  local benchmarks_dir=""
+
+  for benchmarks_dir in \
+    "${src_path}/python/cuda_compute/benchmarks" \
+    "${src_path}/python/cuda_cccl/benchmarks"; do
+    if [[ -d "${benchmarks_dir}" ]]; then
+      printf "%s" "${benchmarks_dir}"
+      return 0
+    fi
+  done
+
+  die "Python benchmarks directory not found under: ${src_path}/python" 1
 }
 
 run_python_target_for_side() {
@@ -943,16 +989,10 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   echo "=== Python Benchmark Pipeline ==="
   echo
 
-  py_benchmarks_subdir="python/cuda_cccl/benchmarks"
-  base_py_bench_dir="${BASE_PATH}/${py_benchmarks_subdir}"
-  test_py_bench_dir="${TEST_PATH}/${py_benchmarks_subdir}"
-
-  if [[ ! -d "${base_py_bench_dir}" ]]; then
-    die "Python benchmarks directory not found in base tree: ${base_py_bench_dir}"
-  fi
-  if [[ ! -d "${test_py_bench_dir}" ]]; then
-    die "Python benchmarks directory not found in test tree: ${test_py_bench_dir}"
-  fi
+  base_py_bench_dir="$(resolve_python_benchmarks_dir "${BASE_PATH}")"
+  test_py_bench_dir="$(resolve_python_benchmarks_dir "${TEST_PATH}")"
+  echo "Python benchmarks for base: ${base_py_bench_dir}"
+  echo "Python benchmarks for test: ${test_py_bench_dir}"
 
   cuda_major="$(detect_cuda_major_version)"
   echo "Detected CUDA major version: ${cuda_major}"

@@ -10,6 +10,12 @@ abstractions for CUDA Python developers.
 
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
+* :doc:`cuda.cccl.headers <headers_api>` — Programmatic access to the bundled
+  libcu++, CUB, Thrust, and CUDAX headers and their relocatable CMake packages.
+
+These import packages are distributed separately. ``cuda-compute`` provides
+``cuda.compute``, ``cccl-headers`` provides ``cuda.cccl.headers``, and the
+``cuda-cccl`` metapackage installs the complete supported set.
 
 These libraries expose the generic, highly-optimized algorithms from the
 `CCCL C++ libraries <https://nvidia.github.io/cccl/cpp.html>`_,

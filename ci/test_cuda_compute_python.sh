@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$ci_dir/.." && pwd)"
 source "$ci_dir/pyenv_helper.sh"
 
 # Parse common arguments
@@ -18,16 +19,31 @@ setup_python_env "${py_version}"
 # Fetch or build the cuda_cccl wheel:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
+  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
 else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
+# Install cuda-compute directly. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
 # (system-provided toolkit) depending on the -ctk-mode arg.
-CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
+CUDA_COMPUTE_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_compute-*.whl)"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cccl_headers-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
+python -m pip install --find-links "${repo_root}/wheelhouse" \
+  "${CCCL_HEADERS_WHEEL_PATH}" \
+  "${CUDA_COMPUTE_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
+python -m pip check
+python -c "import importlib.util; assert importlib.util.find_spec('cuda.cccl.headers')"
+python - <<'PY'
+import importlib.metadata
+
+try:
+    importlib.metadata.distribution("cuda-cccl")
+except importlib.metadata.PackageNotFoundError:
+    pass
+else:
+    raise AssertionError("direct cuda-compute install must not install cuda-cccl")
+PY
 
 # Run tests for compute module.
 # On the v2 (HostJIT) backend, abort on first failure — the suite is still
@@ -38,7 +54,7 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   pytest_extra+=(-x)
 fi
 
-cd "/home/coder/cccl/python/cuda_cccl/tests/"
+cd "${repo_root}/python/cuda_compute/tests/"
 if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   # The test isolates itself in a fresh subprocess (LLVM initialization is
   # process-wide and only cold once), but it carries the free_threading marker,

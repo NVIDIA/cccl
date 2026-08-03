@@ -41,19 +41,86 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.wheel-dst }}
-      url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/p/${{ inputs.component }}/
+      url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/
     permissions:
+      actions: read
       id-token: write
+      contents: read
     steps:
-      - name: Download component wheels
+      - name: Validate source wheel workflow run
+        id: source-run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ inputs.run-id }}
         run: |
-          gh run download ${RUN_ID} -D dl -R ${{ github.repository }} -p 'wheel-*'
-          mkdir dist
-          mv dl/*/*/*.whl dist/
-          rm -rf dl
+          if [[ ! "${RUN_ID}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid GitHub Actions run ID: ${RUN_ID}"
+            exit 1
+          fi
+
+          expected_workflow_id=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/build-and-test-python-wheels.yml" \
+            --jq '.id')
+          run_json=$(gh run view "${RUN_ID}" -R "${{ github.repository }}" \
+            --json conclusion,headSha,status,workflowDatabaseId,workflowName)
+          workflow_name=$(jq -r '.workflowName // ""' <<< "${run_json}")
+          workflow_id=$(jq -r '.workflowDatabaseId // ""' <<< "${run_json}")
+          status=$(jq -r '.status // ""' <<< "${run_json}")
+          conclusion=$(jq -r '.conclusion // ""' <<< "${run_json}")
+          head_sha=$(jq -r '.headSha // ""' <<< "${run_json}")
+
+          if [[ "${workflow_id}" != "${expected_workflow_id}" || \
+                "${workflow_name}" != "Build and Test Python Wheels" ]]; then
+            echo "::error::Run ${RUN_ID} is for '${workflow_name}', not 'Build and Test Python Wheels'"
+            exit 1
+          fi
+          if [[ "${status}" != "completed" || "${conclusion}" != "success" ]]; then
+            echo "::error::Run ${RUN_ID} is not a completed successful run (status=${status}, conclusion=${conclusion})"
+            exit 1
+          fi
+          if [[ ! "${head_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::Run ${RUN_ID} has an invalid head SHA: ${head_sha}"
+            exit 1
+          fi
+          echo "Validated successful ${workflow_name} run ${RUN_ID} at ${head_sha}"
+          echo "head-sha=${head_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout exact wheel source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ steps.source-run.outputs.head-sha }}
+
+      - name: Download CCCL Python wheels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ steps.source-run.outputs.head-sha }}
+          RUN_ID: ${{ inputs.run-id }}
+        run: |
+          checkout_sha=$(git rev-parse HEAD)
+          if [[ "${checkout_sha}" != "${HEAD_SHA}" ]]; then
+            echo "::error::Checked out ${checkout_sha}, expected ${HEAD_SHA}"
+            exit 1
+          fi
+
+          gh run download "${RUN_ID}" -D run-metadata \
+            -R "${{ github.repository }}" -n workflow
+          mapfile -t workflow_files < <(find run-metadata -type f -name workflow.json)
+          if [[ "${#workflow_files[@]}" -ne 1 ]]; then
+            echo "::error::Expected one generated workflow.json, found ${#workflow_files[@]}"
+            exit 1
+          fi
+          workflow_file=${workflow_files[0]}
+
+          gh run download "${RUN_ID}" -D dl -R "${{ github.repository }}" \
+            -p 'wheel-cccl-linux-*' \
+            -p 'wheel-cccl-windows-*'
+          python ci/util/python/collect_wheel_artifacts.py dl dist \
+            --canonical-artifact wheel-cccl-linux-amd64-py3.10 \
+            --workflow "${workflow_file}"
+          python ci/util/python/validate_cccl_wheel_set.py dist \
+            --workflow "${workflow_file}"
+          rm -rf dl run-metadata
           ls -lh dist/
 
       - name: Publish package distributions to PyPI

@@ -2,6 +2,7 @@
 
 set -euo pipefail
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$ci_dir/.." && pwd)"
 
 source "$ci_dir/pyenv_helper.sh"
 
@@ -18,16 +19,28 @@ setup_python_env "${py_version}"
 # Fetch or build the cuda_cccl wheel:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
+  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" "${repo_root}/"
 else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl
-CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
+# Install only the header distribution to verify that it does not require the
+# compute wheel, metapackage, or CUDA Python bindings.
+wheelhouse_dir="${repo_root}/wheelhouse"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cccl_headers-*.whl)"
+python -m pip install --find-links "${wheelhouse_dir}" "${CCCL_HEADERS_WHEEL_PATH}" pytest pytest-xdist
+python -m pip check
+python - <<'PY'
+import importlib.metadata
 
-# Run tests for core package
-cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n auto -v headers/
+for distribution in ("cuda-compute", "cuda-cccl"):
+    try:
+        importlib.metadata.distribution(distribution)
+    except importlib.metadata.PackageNotFoundError:
+        pass
+    else:
+        raise AssertionError(f"{distribution} must not be installed by cccl-headers")
+PY
+
+cd "${repo_root}/python/cccl_headers"
+python -m pytest -n auto -v tests/

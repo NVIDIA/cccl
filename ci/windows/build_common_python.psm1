@@ -149,11 +149,11 @@ function Convert-ToUnixPath {
     return ($p -replace "\\", "/")
 }
 
-function Get-CudaCcclWheel {
+function Get-CcclPythonWheelhouse {
     <#
     .SYNOPSIS
-        Returns the path of the cuda-cccl wheel artifact to use in the context
-        of a GitHub Actions CI test script.
+        Downloads the coordinated CCCL Python wheel artifact when running in
+        GitHub Actions and returns its local wheelhouse directory.
     #>
     Param()
 
@@ -172,8 +172,38 @@ function Get-CudaCcclWheel {
     }
 
     $wheelhouse = Join-Path $repoRoot 'wheelhouse'
-    $wheelPath = Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
-    return $wheelPath
+    if (-not (Test-Path -LiteralPath $wheelhouse -PathType Container)) {
+        throw "Wheelhouse not found: $wheelhouse"
+    }
+    return $wheelhouse
+}
+
+function Get-CcclHeadersWheel {
+    <#
+    .SYNOPSIS
+        Returns the cccl-headers wheel from the coordinated local wheelhouse.
+    #>
+    $wheelhouse = Get-CcclPythonWheelhouse
+    return Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
+}
+
+function Get-CudaComputeWheel {
+    <#
+    .SYNOPSIS
+        Returns the cuda-compute wheel from the coordinated local wheelhouse.
+    #>
+    $wheelhouse = Get-CcclPythonWheelhouse
+    return Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_compute-.*\.whl' -File
+}
+
+function Get-CudaCcclWheel {
+    <#
+    .SYNOPSIS
+        Returns the cuda-cccl metapackage wheel from the coordinated local
+        wheelhouse.
+    #>
+    $wheelhouse = Get-CcclPythonWheelhouse
+    return Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
 }
 
 function Get-OnePathMatch {
@@ -243,4 +273,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CcclPythonWheelhouse, Get-CcclHeadersWheel, Get-CudaComputeWheel, Get-CudaCcclWheel, Get-OnePathMatch

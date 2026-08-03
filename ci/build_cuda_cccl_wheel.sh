@@ -58,10 +58,12 @@ fi
 export PACKAGE_VERSION_PREFIX="0.1."
 package_version=$(/workspace/ci/generate_version.sh)
 echo "Using package version ${package_version}"
-# Override the version used by setuptools_scm to the custom version
+# Override setuptools-scm with one version for the coordinated wheel set.
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CCCL_HEADERS="${package_version}"
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_COMPUTE="${package_version}"
 export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_CCCL="${package_version}"
-
-cd /workspace/python/cuda_cccl
+SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+export SOURCE_DATE_EPOCH
 
 # Determine CUDA version from nvcc
 cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f1)
@@ -112,11 +114,29 @@ if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   echo "Building wheel with ThreadSanitizer-instrumented c.parallel: CMAKE_ARGS=${CMAKE_ARGS}"
 fi
 
-# Build the wheel
+# Build the two universal wheels in only one of the CUDA-major containers.
+# They are included beside the platform wheel so every test artifact is a
+# self-contained local dependency wheelhouse.
+if [[ "${BUILD_UNIVERSAL_WHEELS:-1}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  for package in cccl_headers cuda_cccl; do
+    package_dir="/workspace/python/${package}"
+    rm -rf "${package_dir}/dist"
+    CMAKE_ARGS="" python -m pip wheel \
+      --no-deps \
+      --verbose \
+      --wheel-dir "${package_dir}/dist" \
+      "${package_dir}"
+    mv "${package_dir}"/dist/*.whl /workspace/wheelhouse/
+  done
+fi
+
+# Build the CUDA-major-specific compute wheel.
+cd /workspace/python/cuda_compute
+rm -rf dist
 python -m pip wheel --no-deps --verbose --wheel-dir dist .
 
 # Rename wheel to include CUDA version suffix
-for wheel in dist/cuda_cccl-*.whl; do
+for wheel in dist/cuda_compute-*.whl; do
     if [[ -f "$wheel" ]]; then
         base_name=$(basename "$wheel" .whl)
         new_name="${base_name}.cu${cuda_version}.whl"
@@ -127,4 +147,4 @@ done
 
 # Move wheel to output directory
 mkdir -p /workspace/wheelhouse
-mv dist/cuda_cccl-*.cu*.whl /workspace/wheelhouse/
+mv dist/cuda_compute-*.cu*.whl /workspace/wheelhouse/

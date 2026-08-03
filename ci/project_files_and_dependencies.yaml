@@ -128,13 +128,12 @@ projects:
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
     matrix_project: "python_v2"
-    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust, so listing
-    # it here transitively triggers python_v2 on any of those upstream
-    # changes too. Direct includes catch Python-only edits.
-    lite_dependencies: [cccl_c_parallel_v2]
+    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust. The standalone
+    # header wheel also packages CUDAX, so CUDAX public changes must trigger it.
+    lite_dependencies: [cccl_c_parallel_v2, cudax_public]
     full_dependencies: []
     include_regexes:
-      - "python/cuda_cccl/"
+      - "python/(cccl_headers|cuda_cccl|cuda_compute)/"
       - "pyproject\\.toml"
 
   python_tsan:
@@ -146,10 +145,10 @@ projects:
     # is listed directly because the TSan build config (the -fsanitize=thread option)
     # lives there and is owned by cccl_c_parallel_internal, which this lane otherwise
     # does not depend on -- without it a change to the TSan flags would skip this lane.
-    lite_dependencies: [cccl_c_parallel_public]
+    lite_dependencies: [cccl_c_parallel_public, cudax_public]
     full_dependencies: []
     include_regexes:
-      - "python/cuda_cccl/"
+      - "python/(cccl_headers|cuda_cccl|cuda_compute)/"
       - "pyproject\\.toml"
       - "c/parallel/CMakeLists\\.txt"
 
@@ -164,7 +163,7 @@ projects:
   python:
     name: "Python"
     matrix_project: "python"
-    lite_dependencies: [cccl_c_parallel_public]
+    lite_dependencies: [cccl_c_parallel_public, cudax_public]
     full_dependencies: []
     include_regexes:
     - "python/"

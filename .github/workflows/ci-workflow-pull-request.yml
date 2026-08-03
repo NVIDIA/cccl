@@ -395,7 +395,13 @@ jobs:
         run: |
           echo "Artifact contents:"
           find artifact -name "*.whl" -type f
-          pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
+          headers_wheel="$(find artifact -name 'cccl_headers-*.whl' -type f -print -quit)"
+          compute_wheel="$(find artifact -name 'cuda_compute-*.whl' -type f -print -quit)"
+          meta_wheel="$(find artifact -name 'cuda_cccl-*.whl' -type f -print -quit)"
+          test -n "${headers_wheel}" && test -n "${compute_wheel}" && test -n "${meta_wheel}"
+          pip install --find-links "$(dirname "${meta_wheel}")" \
+            "${headers_wheel}" "${compute_wheel}" "${meta_wheel}[cu13]"
+          pip check
 
       - name: Test CPU-only import
         if: steps.check-wheel.outputs.skip != 'true'
