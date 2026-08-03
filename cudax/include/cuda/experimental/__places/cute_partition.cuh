@@ -627,8 +627,8 @@ public:
    *
    * SCOPE NOTE: this computes the EXTENSION of the quotient (its runs,
    * enumerated by the certified walk with alignment verified a
-   * posteriori), not the quotient as a layout object. A leaf-level
-   * intensional quotient -- existence decided a priori by congruences on
+   * posteriori), not the quotient as a layout object. A symbolic, leaf-level
+   * quotient -- existence decided a priori by congruences on
    * the place-leaf strides/offsets, construction by dividing the strides
    * through, O(leaves) regardless of run count -- is possible future work;
    * what stands in the way is that the allocation is the RESTRICTION of
