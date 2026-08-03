@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -28,7 +28,7 @@
 
 struct Deleter
 {
-  TEST_FUNC void operator()(int* p) const
+  TEST_HOST_DEVICE_FUNC void operator()(int* p) const
   {
     delete p;
   }
