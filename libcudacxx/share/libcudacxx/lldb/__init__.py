@@ -20,7 +20,15 @@ import tuple
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer, std_array, complex, tuple, inplace_vector, mdspan)
+_FORMATTERS = (
+    memory_resource,
+    buffer,
+    std_array,
+    complex,
+    tuple,
+    inplace_vector,
+    mdspan,
+)
 InternalDict = dict[str, object]
 
 
