@@ -18,8 +18,15 @@ Canonical branches
   - Created via release automation.
   - Changes should be made via the :doc:`backport process <backport_process>`.
 
+- ``ctk/X.Y.x``
+
+  - Branches from ``branch/X.Y.x`` meant for representing exact contents of CUDA Toolkit Releases
+  - Created by NVIDIA. May contain internally developed features that are additive with the release it was based on.
+  - This is a read-only branch.
+
 Tagging conventions
 -------------------
-- ``vX.Y.Z`` finalized release tags on release branches
+- ``vX.Y.Z``: finalized release tags on release branches
+- ``vX.Y.Z-ctkN.M``: release tags based on NVIDIA CUDA Toolkit releases.
 - ``vX.Y.Z-rcN``: release-candidate tags for pre-release validation.
 - ``vX.Y.Z.dev``: the first commit of development for ``X.Y.Z`` (the commit that increments the library version)
