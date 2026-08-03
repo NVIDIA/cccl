@@ -351,39 +351,6 @@ C2H_TEST("device_default_nccl_memory_pool matches ncclMemAlloc properties", "[mu
 
 #if _CCCL_HAS_NCCL()
 
-namespace
-{
-// Registers every rank's buffer as a window. Registration is collective, so all ranks of the
-// communicator must take part.
-template <class T>
-[[nodiscard]] std::vector<::ncclWindow_t> register_windows(
-  cuda::std::span<cudax::nccl_communicator_ref> comms, std::vector<cuda::device_buffer<T>>& buffers, int flags)
-{
-  std::vector<::ncclWindow_t> windows(comms.size(), nullptr);
-
-  for (std::size_t i = 0; i < comms.size(); ++i)
-  {
-    INFO("rank: " << i);
-    REQUIRE(::ncclCommWindowRegister(
-              comms[i].native_handle(), buffers[i].data(), buffers[i].size() * sizeof(T), &windows[i], flags)
-            == ::ncclSuccess);
-    REQUIRE(windows[i] != nullptr);
-  }
-
-  return windows;
-}
-
-void deregister_windows(cuda::std::span<cudax::nccl_communicator_ref> comms, std::vector<::ncclWindow_t>& windows)
-{
-  REQUIRE(windows.size() == comms.size());
-  for (std::size_t i = 0; i < comms.size(); ++i)
-  {
-    INFO("rank: " << i);
-    REQUIRE(::ncclCommWindowDeregister(comms[i].native_handle(), windows[i]) == ::ncclSuccess);
-  }
-}
-} // namespace
-
 MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with ncclCommRegister", )
 {
   using value_type = cuda::std::int32_t;
@@ -421,6 +388,39 @@ MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with ncclCommRe
 }
 
 #  if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
+
+namespace
+{
+// Registers every rank's buffer as a window. Registration is collective, so all ranks of the
+// communicator must take part.
+template <class T>
+[[nodiscard]] std::vector<::ncclWindow_t> register_windows(
+  cuda::std::span<cudax::nccl_communicator_ref> comms, std::vector<cuda::device_buffer<T>>& buffers, int flags)
+{
+  std::vector<::ncclWindow_t> windows(comms.size(), nullptr);
+
+  for (std::size_t i = 0; i < comms.size(); ++i)
+  {
+    INFO("rank: " << i);
+    REQUIRE(::ncclCommWindowRegister(
+              comms[i].native_handle(), buffers[i].data(), buffers[i].size() * sizeof(T), &windows[i], flags)
+            == ::ncclSuccess);
+    REQUIRE(windows[i] != nullptr);
+  }
+
+  return windows;
+}
+
+void deregister_windows(cuda::std::span<cudax::nccl_communicator_ref> comms, std::vector<::ncclWindow_t>& windows)
+{
+  REQUIRE(windows.size() == comms.size());
+  for (std::size_t i = 0; i < comms.size(); ++i)
+  {
+    INFO("rank: " << i);
+    REQUIRE(::ncclCommWindowDeregister(comms[i].native_handle(), windows[i]) == ::ncclSuccess);
+  }
+}
+} // namespace
 
 MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with the window API", )
 {
