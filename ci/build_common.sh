@@ -160,7 +160,7 @@ declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=$((N_CPUS - 1))}"
 
 # If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
 # concurrent preprocessor calls we think we can do without OOM'ing the machine
-if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
+if "${USE_SCCACHE_DIST:-false}" && [[ -n "${SCCACHE_DIST_URL:+x}" ]] && [[ "$PARALLEL_LEVEL" -le 0 ]]; then
     # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
     # * 1.5Mb for the shell launched by ninja
     # * 6MiB for each sccache client process
