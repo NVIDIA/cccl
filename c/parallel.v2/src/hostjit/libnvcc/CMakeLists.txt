@@ -90,13 +90,15 @@ target_include_directories(
     ${llvm_project_BINARY_DIR}/tools/lld/include
 )
 
-target_compile_definitions(
-  libnvcc
-  PRIVATE
-    CLANG_RESOURCE_DIR="${llvm_project_BINARY_DIR}/lib/clang/${LLVM_VERSION_MAJOR}"
-    CLANG_HEADERS_DIR="${llvm_project_SOURCE_DIR}/clang/lib/Headers"
-    HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
-)
+if (NOT CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS)
+  target_compile_definitions(
+    libnvcc
+    PRIVATE
+      CLANG_RESOURCE_DIR="${llvm_project_BINARY_DIR}/lib/clang/${LLVM_VERSION_MAJOR}"
+      CLANG_HEADERS_DIR="${llvm_project_SOURCE_DIR}/clang/lib/Headers"
+      HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+  )
+endif()
 
 # A toolkit is required because we need to call into nvfatbin/nvjitlink.
 # FIXME: Statically link against those libraries individually rather than

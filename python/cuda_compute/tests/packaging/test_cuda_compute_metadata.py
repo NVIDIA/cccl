@@ -89,3 +89,38 @@ def test_hostjit_install_root_is_private_to_cuda_compute() -> None:
         '"${CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT}/hostjit/cuda_minimal"'
         in hostjit_cmake
     )
+
+
+def test_hostjit_build_paths_are_disabled_only_for_wheels() -> None:
+    compute_cmake = (PROJECT_ROOT / "CMakeLists.txt").read_text()
+    parallel_cmake = (REPOSITORY_ROOT / "c/parallel.v2/CMakeLists.txt").read_text()
+    hostjit_cmake = (
+        REPOSITORY_ROOT / "c/parallel.v2/src/hostjit/CMakeLists.txt"
+    ).read_text()
+    libnvcc_cmake = (
+        REPOSITORY_ROOT / "c/parallel.v2/src/hostjit/libnvcc/CMakeLists.txt"
+    ).read_text()
+
+    runtime_paths = "CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS"
+    assert (
+        f'option(\n  {runtime_paths}\n  "Resolve HostJIT resource paths at runtime '
+        'instead of embedding build-tree defaults."\n  OFF\n)' in parallel_cmake
+    )
+    assert (
+        f'if (SKBUILD_STATE STREQUAL "wheel")\n  set({runtime_paths} ON)\nendif()'
+        in compute_cmake
+    )
+    assert f"if (NOT {runtime_paths})" in hostjit_cmake
+    assert f"if (NOT {runtime_paths})" in libnvcc_cmake
+
+
+def test_cython_generated_sources_use_logical_package_paths() -> None:
+    compute_cmake = (PROJECT_ROOT / "CMakeLists.txt").read_text()
+
+    assert 'set(CYTHON_FLAGS -3 -M -w "${cuda_compute_BINARY_DIR}")' in compute_cmake
+    assert (
+        'set(_cython_package_dir "${cuda_compute_BINARY_DIR}/cuda/compute")'
+        in compute_cmake
+    )
+    assert '"cuda/compute/_bindings_impl.pyx"' in compute_cmake
+    assert '-I "${CMAKE_CURRENT_BINARY_DIR}"' not in compute_cmake

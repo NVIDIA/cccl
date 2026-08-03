@@ -71,13 +71,22 @@ target_include_directories(
 
 target_compile_definitions(
   cccl.c.parallel.v2.hostjit_lib
-  PRIVATE
-    CCCL_C_EXPERIMENTAL=1
-    CCCL_SOURCE_DIR="${_cccl_root}"
-    HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+  PRIVATE CCCL_C_EXPERIMENTAL=1
 )
 
-if (DEFINED CLANG_HEADERS_DIR)
+if (NOT CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS)
+  target_compile_definitions(
+    cccl.c.parallel.v2.hostjit_lib
+    PRIVATE
+      CCCL_SOURCE_DIR="${_cccl_root}"
+      HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+  )
+endif()
+
+if (
+  DEFINED CLANG_HEADERS_DIR
+  AND NOT CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS
+)
   target_compile_definitions(
     cccl.c.parallel.v2.hostjit_lib
     PRIVATE CLANG_HEADERS_DIR="${CLANG_HEADERS_DIR}"
