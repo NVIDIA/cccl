@@ -377,31 +377,6 @@ public:
   }
 
   /**
-   * @brief Analytic per-placement-block owners: divide the ownership layout
-   * by the placement-block layout, without sampling.
-   *
-   * Owners are derived with one owner() evaluation per provably-constant
-   * run. The certificate comes from the leaf algebra: in an exact tiling the
-   * sorted leaf strides form a divisibility chain, so every place-mode
-   * coordinate is constant on intervals of the padded linear space aligned
-   * to the smallest place-leaf stride. Blocks straddling an ownership
-   * boundary are assigned by exact byte majority and their error is
-   * accumulated in *misplaced_bytes (0 means the partition factors through
-   * placement blocks and the plan is exact).
-   *
-   * The linearization convention matches the composite allocation path
-   * (dimension 0 varies fastest, see dim4::index_to_pos).
-   *
-   * @param max_runs evaluation budget for the walk; 0 (the default)
-   *        self-scales to max(16 x nblocks, 1 << 16) -- a small constant of
-   *        owner() evaluations per placement block produced, so the budget
-   *        grows with the allocation instead of being an arbitrary constant.
-   *
-   * @return per-block owners, or nullopt when the run enumeration would
-   *         exceed max_runs (dense sub-block interleavings such as
-   *         element-cyclic): callers fall back to sampled majority.
-   */
-  /**
    * @brief Enumerate the certified constant-owner byte runs of the flat
    * allocation, merged across adjacent equal-owner segments, in increasing
    * byte order: calls `emit(byte_start, byte_len, owner)` per run.
@@ -418,14 +393,13 @@ public:
     const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
     const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
 
-    if (num_place_leaves_ == 0)
+    const size_t s = min_owner_run_bytes(1); // in elements; elemsize folded below
+    if (s == 0)
     {
+      // no place mode, or every place leaf has extent <= 1: single owner
       emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
       return true;
     }
-
-    const size_t s = min_owner_run_bytes(1); // in elements; elemsize folded below
-    _CCCL_ASSERT(s > 0, "place leaves must have positive strides");
     const size_t nrows = t1 * t2 * t3;
     if (nrows * (t0 / s + 2) > max_runs)
     {
@@ -467,9 +441,8 @@ public:
           {
             const size_t pad_pos = row_pad_base + x0;
             const size_t seg     = ::std::min(t0 - x0, s - (pad_pos % s));
-            push((ind + x0) * elemsize,
-                 seg * elemsize,
-                 owner(pos4(static_cast<int>(x0), static_cast<int>(x1), static_cast<int>(x2), static_cast<int>(x3))));
+            push((ind + x0) * elemsize, seg * elemsize, owner(pos4(x0, x1, x2, x3))); // pos4 widens to ssize_t; dims
+                                                                                      // may exceed INT_MAX
             x0 += seg;
           }
           ind += t0;
@@ -501,18 +474,48 @@ public:
    */
   size_t min_owner_run_bytes(size_t elemsize) const
   {
-    if (num_place_leaves_ == 0)
+    // Leaves with extent <= 1 never change the owning coordinate (owner()
+    // skips them); including them would drag the minimum down -- extent-1
+    // leaves from unit grid axes carry stride 1 (or 0 from the expert
+    // constructor) and would falsely collapse the granularity to the element
+    // pitch (or trip a division by zero downstream).
+    size_t s = 0;
+    for (size_t k = 0; k < num_place_leaves_; k++)
     {
-      return 0;
+      if (place_leaves_[k].extent > 1)
+      {
+        const auto stride = static_cast<size_t>(place_leaves_[k].stride);
+        s                 = (s == 0) ? stride : ::std::min(s, stride);
+      }
     }
-    size_t s = static_cast<size_t>(place_leaves_[0].stride);
-    for (size_t k = 1; k < num_place_leaves_; k++)
-    {
-      s = ::std::min(s, static_cast<size_t>(place_leaves_[k].stride));
-    }
-    return s * elemsize;
+    return s * elemsize; // 0: no ownership boundary at all (single owner)
   }
 
+  /**
+   * @brief Analytic per-placement-block owners: divide the ownership layout
+   * by the placement-block layout, without sampling.
+   *
+   * Owners are derived with one owner() evaluation per provably-constant
+   * run. The certificate comes from the leaf algebra: in an exact tiling the
+   * sorted leaf strides form a divisibility chain, so every place-mode
+   * coordinate is constant on intervals of the padded linear space aligned
+   * to the smallest place-leaf stride. Blocks straddling an ownership
+   * boundary are assigned by exact byte majority and their error is
+   * accumulated in *misplaced_bytes (0 means the partition factors through
+   * placement blocks and the plan is exact).
+   *
+   * The linearization convention matches the composite allocation path
+   * (dimension 0 varies fastest, see dim4::index_to_pos).
+   *
+   * @param max_runs evaluation budget for the walk; 0 (the default)
+   *        self-scales to max(16 x nblocks, 1 << 16) -- a small constant of
+   *        owner() evaluations per placement block produced, so the budget
+   *        grows with the allocation instead of being an arbitrary constant.
+   *
+   * @return per-block owners, or nullopt when the run enumeration would
+   *         exceed max_runs (dense sub-block interleavings such as
+   *         element-cyclic): callers fall back to sampled majority.
+   */
   ::std::optional<::std::vector<pos4>>
   try_block_owners(size_t block_size_bytes, size_t elemsize, size_t* misplaced_bytes, size_t max_runs = 0) const
   {
@@ -2090,6 +2093,27 @@ UNITTEST("min_owner_run_bytes reports the certified run granularity")
   EXPECT(fine_plan.has_value() == true);
 };
 
+UNITTEST("extent-1 place leaves carry no ownership boundary")
+{
+  // expert-form descriptor with a degenerate {extent 1, stride 0} place
+  // leaf: owner() ignores it, so the granularity and the walks must too
+  // (a raw minimum over strides would divide by zero downstream).
+  const dim4 dims(16);
+  const auto part = cute_partition_descriptor({{1, 0}}, /* axes */ {0}, /* local */ {{16, 1}}, dims, dims, dim4(1));
+  EXPECT(part.min_owner_run_bytes(4) == 0);
+  size_t misplaced  = ~size_t(0);
+  const auto owners = part.try_block_owners(8, 4, &misplaced);
+  EXPECT(owners.has_value() == true);
+  EXPECT(misplaced == 0);
+  for (const auto& o : *owners)
+  {
+    EXPECT(o == pos4(0));
+  }
+  const auto runs = part.try_block_runs(8, 4);
+  EXPECT(runs.has_value() == true);
+  EXPECT(runs->size() == 1);
+};
+
 UNITTEST("try_block_runs: strict quotient emitted directly as runs")
 {
   // 16 elements of 4 B blocked over 2 places, 8 B blocks: boundary at byte
@@ -2186,7 +2210,11 @@ UNITTEST("try_block_owners: coarse block_cyclic is analyzable and majority-corre
 
 UNITTEST("try_block_owners: single place is one exact run")
 {
-  const auto part   = make_partition_descriptor(dim4(1000), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
+  const auto part = make_partition_descriptor(dim4(1000), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
+  // a unit grid axis contributes an extent-1 place leaf, which carries no
+  // ownership boundary: the certified granularity must report "no
+  // boundary" (0), not collapse to the leaf's stride
+  EXPECT(part.min_owner_run_bytes(4) == 0);
   size_t misplaced  = 0;
   const auto owners = part.try_block_owners(64, 4, &misplaced);
   EXPECT(owners.has_value() == true);

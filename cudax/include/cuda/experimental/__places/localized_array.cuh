@@ -71,8 +71,12 @@ struct localized_stats
   size_t nblocks     = 0; //!< number of placement blocks
   size_t nallocs     = 0; //!< physical allocations after merging same-owner runs
 
-  size_t total_samples    = 0; //!< probes drawn by the block-owner sampler
-  size_t matching_samples = 0; //!< probes agreeing with the chosen block owner
+  //! Placement-evidence counters. Units depend on how owners were computed:
+  //! sampled tier -- probes drawn / probes agreeing with the chosen owner;
+  //! analytic tiers (exact runs, census majority) -- total bytes / bytes
+  //! placed on their true owner (closed form, so accuracy() is exact).
+  size_t total_samples    = 0;
+  size_t matching_samples = 0;
 
   //! Bytes backed by each place, keyed by data_place::to_string()
   ::std::unordered_map<::std::string, size_t> bytes_per_place;
@@ -81,9 +85,9 @@ struct localized_stats
   //! (dim4::get_index of the pos4; friendlier than strings across FFI)
   ::std::unordered_map<size_t, size_t> bytes_per_grid_index;
 
-  //! Fraction of sampled elements whose owner matches the block-majority
-  //! owner: an estimate of the fraction of bytes that end up local to their
-  //! owner once ownership is quantized to blocks.
+  //! Fraction of bytes local to their owner once ownership is quantized to
+  //! placement blocks: exact on the analytic tiers, a sampled estimate on
+  //! the fallback tier (see total_samples).
   double accuracy() const
   {
     return total_samples == 0 ? 1.0 : static_cast<double>(matching_samples) / static_cast<double>(total_samples);
@@ -430,8 +434,6 @@ private:
 
     size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
 
-    base_ptr = cuda_try<cuMemAddressReserve>(vm_total_size_bytes, 0ULL, 0ULL, 0ULL);
-
     ::std::vector<CUmemAccessDesc> accessDesc(ndevs);
     for (int d = 0; d < ndevs; d++)
     {
@@ -446,9 +448,27 @@ private:
     stats.nblocks     = nblocks;
 
     const ::std::vector<block_run> runs = placement_provider(block_size_bytes, nblocks, stats);
-    _CCCL_ASSERT(!runs.empty() && runs.front().first_block == 0, "placement runs must start at block 0");
-    _CCCL_ASSERT(runs.back().first_block + runs.back().num_blocks == nblocks,
-                 "placement runs must cover every placement block");
+    // The provider is caller-supplied through a public constructor: validate
+    // the full contract and throw (asserts vanish in release, and a gap,
+    // overlap, or zero-length run would surface as unmapped holes or a
+    // double cuMemMap far from its cause).
+    size_t cursor = 0;
+    for (const auto& r : runs)
+    {
+      if (r.num_blocks == 0 || r.first_block != cursor)
+      {
+        throw ::std::invalid_argument("placement runs must be non-empty, ordered, and tile the blocks exactly");
+      }
+      cursor += r.num_blocks;
+    }
+    if (cursor != nblocks)
+    {
+      throw ::std::invalid_argument("placement runs must cover every placement block");
+    }
+
+    // Reserve the virtual range only once the placement plan is validated:
+    // a throw above must not leak the reservation.
+    base_ptr = cuda_try<cuMemAddressReserve>(vm_total_size_bytes, 0ULL, 0ULL, 0ULL);
 
     meta.reserve(runs.size());
 
