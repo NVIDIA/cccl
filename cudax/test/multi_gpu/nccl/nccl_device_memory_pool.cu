@@ -10,18 +10,26 @@
 
 #include <cuda/__device/attributes.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__multi_gpu/nccl_device_memory_pool.h>
+#include <cuda/experimental/__nccl/nccl_api.h>
 #include <cuda/experimental/stream.cuh>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+
+#if _CCCL_HAS_NCCL()
+#  include <nccl_test_common.h>
+#endif // _CCCL_HAS_NCCL()
 
 #include <c2h/catch2_test_helper.h>
 
@@ -255,10 +263,11 @@ C2H_TEST("device_default_nccl_memory_pool matches ncclMemAlloc properties", "[mu
 
   SECTION("pool is exportable through the handle types NCCL requires")
   {
-    [[maybe_unused]] ::cuda::std::size_t exported{};
+    [[maybe_unused]] ::CUmemAllocationHandleType exported = ::CU_MEM_HANDLE_TYPE_NONE;
 
 #if _CCCL_CTK_AT_LEAST(13, 1)
-    exported = cuda::__driver::__mempoolGetAttribute(pool.get(), ::CU_MEMPOOL_ATTR_EXPORT_HANDLE_TYPES);
+    exported = cuda::__driver::__mempoolGetAttribute<::CUmemAllocationHandleType>(
+      pool.get(), ::CU_MEMPOOL_ATTR_EXPORT_HANDLE_TYPES);
 
     REQUIRE((exported & ::CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR) != 0);
 
@@ -339,3 +348,260 @@ C2H_TEST("device_default_nccl_memory_pool matches ncclMemAlloc properties", "[mu
     stream.sync();
   }
 }
+
+#if _CCCL_HAS_NCCL()
+
+namespace
+{
+// Registers every rank's buffer as a window. Registration is collective, so all ranks of the
+// communicator must take part.
+template <class T>
+[[nodiscard]] std::vector<::ncclWindow_t> register_windows(
+  cuda::std::span<cudax::nccl_communicator_ref> comms, std::vector<cuda::device_buffer<T>>& buffers, int flags)
+{
+  std::vector<::ncclWindow_t> windows(comms.size(), nullptr);
+
+  for (std::size_t i = 0; i < comms.size(); ++i)
+  {
+    INFO("rank: " << i);
+    REQUIRE(::ncclCommWindowRegister(
+              comms[i].native_handle(), buffers[i].data(), buffers[i].size() * sizeof(T), &windows[i], flags)
+            == ::ncclSuccess);
+    REQUIRE(windows[i] != nullptr);
+  }
+
+  return windows;
+}
+
+void deregister_windows(cuda::std::span<cudax::nccl_communicator_ref> comms, std::vector<::ncclWindow_t>& windows)
+{
+  REQUIRE(windows.size() == comms.size());
+  for (std::size_t i = 0; i < comms.size(); ++i)
+  {
+    INFO("rank: " << i);
+    REQUIRE(::ncclCommWindowDeregister(comms[i].native_handle(), windows[i]) == ::ncclSuccess);
+  }
+}
+} // namespace
+
+MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with ncclCommRegister", )
+{
+  using value_type = cuda::std::int32_t;
+
+  const std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(value_type);
+
+  auto streams = nccl_test_util::make_streams();
+  auto comms   = this->communicators();
+
+  std::vector<cuda::device_buffer<value_type>> buffers;
+
+  for (std::size_t i = 0; i < cuda::devices.size(); ++i)
+  {
+    auto& pool = cudax::device_default_nccl_memory_pool(cuda::devices[i]);
+
+    buffers.emplace_back(cuda::make_buffer(streams[i], pool, count, value_type{0}));
+  }
+
+  std::vector<void*> handles(comms.size(), nullptr);
+
+  for (std::size_t i = 0; i < comms.size(); ++i)
+  {
+    INFO("rank: " << i);
+    REQUIRE(::ncclCommRegister(
+              comms[i].native_handle(), buffers[i].data(), buffers[i].size() * sizeof(value_type), &handles[i])
+            == ::ncclSuccess);
+    REQUIRE(handles[i] != nullptr);
+  }
+
+  for (std::size_t i = 0; i < comms.size(); ++i)
+  {
+    INFO("rank: " << i);
+    REQUIRE(::ncclCommDeregister(comms[i].native_handle(), handles[i]) == ::ncclSuccess);
+  }
+}
+
+#  if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
+
+MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with the window API", )
+{
+  using value_type = cuda::std::int32_t;
+
+  const std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(value_type);
+
+  auto streams = nccl_test_util::make_streams();
+  auto comms   = this->communicators();
+
+  std::vector<cuda::device_buffer<value_type>> buffers;
+
+  for (std::size_t i = 0; i < cuda::devices.size(); ++i)
+  {
+    auto& pool = cudax::device_default_nccl_memory_pool(cuda::devices[i]);
+
+    buffers.emplace_back(cuda::make_buffer(streams[i], pool, count, value_type{0}));
+  }
+
+  SECTION("registers and deregisters with NCCL_WIN_DEFAULT")
+  {
+    auto windows = register_windows(comms, buffers, NCCL_WIN_DEFAULT);
+
+    deregister_windows(comms, windows);
+  }
+
+  SECTION("registers and deregisters with NCCL_WIN_COLL_SYMMETRIC")
+  {
+    auto windows = register_windows(comms, buffers, NCCL_WIN_COLL_SYMMETRIC);
+
+    deregister_windows(comms, windows);
+  }
+
+  SECTION("head address satisfies the window alignment requirement")
+  {
+    for (std::size_t i = 0; i < comms.size(); ++i)
+    {
+      INFO("rank: " << i);
+      REQUIRE(reinterpret_cast<std::uintptr_t>(buffers[i].data()) % NCCL_WIN_REQUIRED_ALIGNMENT == 0);
+    }
+  }
+
+  SECTION("a window reports back the pointer it was registered with")
+  {
+    auto windows = register_windows(comms, buffers, NCCL_WIN_COLL_SYMMETRIC);
+
+    for (std::size_t i = 0; i < comms.size(); ++i)
+    {
+      INFO("rank: " << i);
+
+      void* user_ptr = nullptr;
+
+      REQUIRE(::ncclWinGetUserPtr(comms[i].native_handle(), windows[i], &user_ptr) == ::ncclSuccess);
+      REQUIRE(user_ptr == buffers[i].data());
+    }
+
+    deregister_windows(comms, windows);
+  }
+}
+
+MULTI_GPU_TEST("device_default_nccl_memory_pool window registered buffers work in a collective", )
+{
+  // Registration succeeding is not sufficient: the registered memory must also give correct
+  // results when a collective reads and writes it. Both the source and the destination must be
+  // registered, so each gets its own window. Rank r contributes r+1 to every element, so the sum
+  // is the n-th triangular number.
+  using value_type = cuda::std::int32_t;
+
+  const std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(value_type);
+
+  auto streams = nccl_test_util::make_streams();
+  auto comms   = this->communicators();
+
+  std::vector<cuda::device_buffer<value_type>> send;
+  std::vector<cuda::device_buffer<value_type>> recv;
+
+  for (std::size_t i = 0; i < cuda::devices.size(); ++i)
+  {
+    auto& pool = cudax::device_default_nccl_memory_pool(cuda::devices[i]);
+
+    send.emplace_back(cuda::make_buffer(streams[i], pool, count, static_cast<value_type>(i + 1)));
+    recv.emplace_back(cuda::make_buffer(streams[i], pool, count, value_type{-1}));
+  }
+
+  auto send_windows = register_windows(comms, send, NCCL_WIN_COLL_SYMMETRIC);
+  auto recv_windows = register_windows(comms, recv, NCCL_WIN_COLL_SYMMETRIC);
+
+  {
+    auto g = comms.front().group_guard();
+
+    for (std::size_t i = 0; i < comms.size(); ++i)
+    {
+      comms[i].all_reduce(g, send[i].data(), recv[i].data(), count, ::cuda::std::plus<>{}, streams[i]);
+    }
+  }
+
+  for (auto& stream : streams)
+  {
+    stream.sync();
+  }
+
+  const auto n   = static_cast<value_type>(cuda::devices.size());
+  const auto sum = static_cast<value_type>(n * (n + 1) / 2);
+
+  for (auto& buf : recv)
+  {
+    auto host_pool      = cuda::mr::legacy_pinned_memory_resource{};
+    const auto expected = cuda::make_buffer(buf.stream(), host_pool, buf.size(), sum);
+    const auto actual   = cuda::make_buffer(buf.stream(), host_pool, buf);
+
+    REQUIRE_THAT(actual, Equals(expected));
+  }
+
+  deregister_windows(comms, send_windows);
+  deregister_windows(comms, recv_windows);
+}
+
+MULTI_GPU_TEST("device_default_nccl_memory_pool supports sub-allocated windows", )
+{
+  // The documentation permits registering one large buffer and sub-dividing it, provided every
+  // rank uses the same offset from the head address. Register the whole block, then run the
+  // collective on the second half of it.
+  using value_type = cuda::std::int32_t;
+
+  const std::size_t count = recommended_granularity(cuda::devices[0]) / sizeof(value_type);
+  const std::size_t half  = count / 2;
+
+  REQUIRE(half != 0);
+
+  auto streams = nccl_test_util::make_streams();
+  auto comms   = this->communicators();
+
+  std::vector<cuda::device_buffer<value_type>> send;
+  std::vector<cuda::device_buffer<value_type>> recv;
+
+  for (std::size_t i = 0; i < cuda::devices.size(); ++i)
+  {
+    auto& pool = cudax::device_default_nccl_memory_pool(cuda::devices[i]);
+
+    send.emplace_back(cuda::make_buffer(streams[i], pool, count, static_cast<value_type>(i + 1)));
+    recv.emplace_back(cuda::make_buffer(streams[i], pool, count, value_type{-1}));
+  }
+
+  auto send_windows = register_windows(comms, send, NCCL_WIN_COLL_SYMMETRIC);
+  auto recv_windows = register_windows(comms, recv, NCCL_WIN_COLL_SYMMETRIC);
+
+  {
+    auto g = comms.front().group_guard();
+
+    for (std::size_t i = 0; i < comms.size(); ++i)
+    {
+      comms[i].all_reduce(g, send[i].data() + half, recv[i].data() + half, half, ::cuda::std::plus<>{}, streams[i]);
+    }
+  }
+
+  for (auto& stream : streams)
+  {
+    stream.sync();
+  }
+
+  const auto n   = static_cast<value_type>(cuda::devices.size());
+  const auto sum = static_cast<value_type>(n * (n + 1) / 2);
+
+  // The untouched first half must still hold the fill value, the reduced second half the sum.
+  std::vector<value_type> expected_values(count, value_type{-1});
+
+  std::fill(expected_values.begin() + half, expected_values.end(), sum);
+
+  for (auto& buf : recv)
+  {
+    auto host_pool      = cuda::mr::legacy_pinned_memory_resource{};
+    const auto expected = cuda::make_buffer<value_type>(buf.stream(), host_pool, expected_values);
+    const auto actual   = cuda::make_buffer(buf.stream(), host_pool, buf);
+
+    REQUIRE_THAT(actual, Equals(expected));
+  }
+
+  deregister_windows(comms, send_windows);
+  deregister_windows(comms, recv_windows);
+}
+
+#  endif // NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
+
+#endif // _CCCL_HAS_NCCL()
