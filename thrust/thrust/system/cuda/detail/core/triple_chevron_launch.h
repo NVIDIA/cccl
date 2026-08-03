@@ -15,6 +15,7 @@
 #include <thrust/system/cuda/config.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__cccl/assert.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -45,7 +46,12 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
       , dependent_launch(dependent_launch)
       , stream(stream_)
       , cluster_dim(cluster_dim_)
-  {}
+  {
+    // A mix such as {1, 0, 0} is not launchable and surfaces a bug in the code that built `cluster_dim`.
+    _CCCL_ASSERT((cluster_dim.x == 0u && cluster_dim.y == 0u && cluster_dim.z == 0u)
+                   || (cluster_dim.x != 0u && cluster_dim.y != 0u && cluster_dim.z != 0u),
+                 "cluster_dim must be all-zero (no cluster) or nonzero in every axis");
+  }
 
   // cudaLaunchKernelEx requires C++11, but unfortunately <cuda_runtime.h> checks this using the __cplusplus macro,
   // which is reported wrongly for MSVC. CTK 12.3 fixed this by additionally detecting _MSV_VER. As a workaround, we
@@ -68,12 +74,12 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
 #  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
-    const bool has_cluster = cluster_dim.x != 0;
+    const bool has_cluster = cluster_dim.x != 0u;
 #  else // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
-    // Dynamic cluster launch is disabled (_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH). A requested cluster width cannot be
-    // honored; fail loudly rather than silently launching without a cluster. A `x` of 0 (no cluster) or 1 (degenerate
-    // single-block cluster) is harmless and proceeds as a non-cluster launch.
-    if (cluster_dim.x > 1)
+    // Dynamic cluster launch is disabled (_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH): any requested cluster fails rather
+    // than silently launching without one. This includes a single-block cluster ({1, 1, 1}), whose presence still
+    // affects launch/occupancy, so demoting it to a plain launch is not a safe silent default.
+    if (cluster_dim.x != 0u)
     {
       return cudaErrorNotSupported;
     }
@@ -171,6 +177,12 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_DEVICE doit_device(K k, Args const&... args) const
   {
+    // Device-side launch (cudaLaunchDevice) cannot honor a thread-block cluster; a requested one would otherwise be
+    // silently dropped.
+    if (cluster_dim.x != 0u)
+    {
+      return cudaErrorNotSupported;
+    }
     const size_t size  = argument_pack_size(0, args...);
     void* param_buffer = cudaGetParameterBuffer(64, size);
     fill_arguments((char*) param_buffer, 0, args...);

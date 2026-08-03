@@ -972,10 +972,12 @@ private:
 
   // Consume the `i`-th visit on the block-load path (its ping-pong-ordered position is `overflow_idx`): wait for its
   // slot, consume its keys via `block_apply`, then prefetch the chunk `num_stream_stages` visits ahead into the
-  // just-freed slot (a barrier orders the block's read ahead of the overwriting copy). Returns false once
-  // `should_continue()` reports the top-k fully placed -- polled before the prefetch so we never launch a copy we would
-  // only drain again; the prefetches already in flight are drained after `run_overflow_pass`'s consume loops.
-  template <typename BlockApply, typename Continue>
+  // just-freed slot. A block barrier must separate every lane's read of that slot (in `block_apply`) from the copy
+  // that overwrites it; when `PollLeadsWithBarrier` the `should_continue` poll already issued one (its leading
+  // barrier sits between the two), so we skip a redundant one here. Returns false once `should_continue()` reports the
+  // top-k fully placed -- polled before the prefetch so we never launch a copy we would only drain again; the
+  // prefetches already in flight are drained after `run_overflow_pass`'s consume loops.
+  template <bool PollLeadsWithBarrier, typename BlockApply, typename Continue>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool
   consume_overflow_visit(offset_t overflow_visit_idx, int& stage, BlockApply&& block_apply, Continue&& should_continue)
   {
@@ -1004,7 +1006,11 @@ private:
       const offset_t next_overflow_idx =
         stream_is_forward ? next_step : (layout.num_local_overflow_chunks - 1 - next_step);
       _CCCL_ASSERT(next_overflow_idx < layout.num_local_overflow_chunks, "overflow chunk index out of range");
-      __syncthreads();
+      // Slot-reuse fence (see header): order the read of `stage` ahead of its overwrite, unless the poll self-led.
+      if constexpr (!PollLeadsWithBarrier)
+      {
+        __syncthreads();
+      }
       _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
                    "cannot issue a load into a streaming stage that is still in flight");
       char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
@@ -1035,10 +1041,12 @@ private:
   // polled once after each consumed chunk (before its refill copy is issued); returning false breaks the stream so the
   // final filter bails once the top-k is placed. Its result must be block-uniform (all lanes break together, else the
   // post-break barrier deadlocks) and it is evaluated by every lane, so it may contain a barrier (both final filters'
-  // do, to read their placement counters block-wide); the histogram passes an always-true predicate. An early break
-  // can leave prefetches in flight, so the pass drains the remaining stages before returning (a full pass ends with an
-  // empty `stream_inflight_mask`, so the drain is a no-op).
-  template <typename BlockApply, typename GenericApply, typename OverlapWork, typename Continue>
+  // do, to read their placement counters block-wide); the histogram passes an always-true predicate.
+  // `PollLeadsWithBarrier` declares the poll opens with a block barrier (both final filters' do), letting
+  // `consume_overflow_visit` drop its own slot-reuse barrier; the histogram's barrier-free poll passes false. An early
+  // break can leave prefetches in flight, so the pass drains the remaining stages before returning (a full pass ends
+  // with an empty `stream_inflight_mask`, so the drain is a no-op).
+  template <bool PollLeadsWithBarrier, typename BlockApply, typename GenericApply, typename OverlapWork, typename Continue>
   _CCCL_DEVICE _CCCL_FORCEINLINE void run_overflow_pass(
     BlockApply&& block_apply, GenericApply&& generic_apply, OverlapWork&& overlap_work, Continue&& should_continue)
   {
@@ -1076,7 +1084,7 @@ private:
       _CCCL_PRAGMA_NOUNROLL()
       for (offset_t i = 0; i < num_phase1_chunks; ++i)
       {
-        if (!consume_overflow_visit(i, stage, block_apply, should_continue))
+        if (!consume_overflow_visit<PollLeadsWithBarrier>(i, stage, block_apply, should_continue))
         {
           is_stopped = true;
           break;
@@ -1094,7 +1102,7 @@ private:
         _CCCL_PRAGMA_NOUNROLL()
         for (offset_t i = num_phase1_chunks; i < layout.num_local_overflow_chunks; ++i)
         {
-          if (!consume_overflow_visit(i, stage, block_apply, should_continue))
+          if (!consume_overflow_visit<PollLeadsWithBarrier>(i, stage, block_apply, should_continue))
           {
             break;
           }
@@ -1143,7 +1151,8 @@ private:
   template <int UnrollFactor, typename KeyConsumer, typename OverlapWork>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_overflow_keys(KeyConsumer&& consume_key, OverlapWork&& overlap_work)
   {
-    run_overflow_pass(
+    // The histogram poll is barrier-free, so `consume_overflow_visit` keeps its own slot-reuse barrier.
+    run_overflow_pass</*PollLeadsWithBarrier=*/false>(
       [&](int stage, offset_t overflow_idx) {
         const auto keys = stage_span(stage, overflow_idx);
         for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), consume_key);
@@ -1419,9 +1428,9 @@ private:
   }
 
   // Uniform "all placed" predicate: true once this block has emitted all `num_local_selected` strictly-selected keys
-  // and resolved its ties. Callers must `__syncthreads()` first (the counter reads are block-wide and must
-  // resynchronize lanes that raced ahead through the barrier-free tiles). Polled only at critical points -- between
-  // regions and before each streaming bulk copy -- never per tile.
+  // and resolved its ties. Brackets its block-wide counter reads with two barriers, so callers neither pre- nor
+  // post-sync; every lane must reach it. Polled only at critical points -- between regions and after each consumed
+  // overflow chunk -- never per tile.
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE bool final_filter_should_stop(const det_filter_state<SelectDirection>& state)
   {
@@ -1431,12 +1440,18 @@ private:
       static_cast<offset_t>(k) - static_cast<offset_t>(state.num_cluster_tie_winners);
     const offset_t selected_end = state.selected_prefix + static_cast<offset_t>(state.num_local_selected);
     const offset_t tie_end      = num_cluster_selected + state.tie_prefix + state.num_local_tied;
+    // Bracket the counter reads against both placement waves: the leading barrier publishes the prior wave's
+    // `place_one` atomics (a region or a single overflow chunk; also resyncs lanes that drifted through its
+    // barrier-free tiles); the trailing barrier keeps the next wave's atomics from overtaking a read still in flight
+    // (UB, and could diverge the returned predicate).
+    __syncthreads();
     _CCCL_ASSERT(temp_storage.selected_offset_counter <= selected_end && temp_storage.tie_offset_counter <= tie_end,
                  "final-filter placement counters exceeded this CTA's assigned work");
     const bool is_selected_done = temp_storage.selected_offset_counter >= selected_end;
     // Straddling/above CTAs finish the tie region when `is_tie_active` clears; a `block_selects_all_tied` (which never
     // clears it) finishes once all `num_local_tied` of its candidates are placed.
     const bool is_tie_done = !state.is_tie_active || (temp_storage.tie_offset_counter >= tie_end);
+    __syncthreads();
     return is_selected_done && is_tie_done;
   }
 
@@ -1754,7 +1769,8 @@ private:
                  "preselected ping-pong parity mismatch: the straddling CTA entered the deterministic filter with "
                  "the wrong streaming direction");
 
-    run_overflow_pass(
+    // `final_filter_should_stop` opens with a block barrier, so `consume_overflow_visit` drops its slot-reuse barrier.
+    run_overflow_pass</*PollLeadsWithBarrier=*/true>(
       // Block-load: consume the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
       // `stage_span` returns the slot's aligned-bulk view (a peeled tail suffix is handled by `process_tail_edge`).
       [&](int stage, offset_t overflow_idx) {
@@ -1784,10 +1800,9 @@ private:
       },
       // No interleaved resident work: the deterministic filter consumes its resident span separately.
       [] {},
-      // Break the stream once the whole top-k is placed. The barrier makes the counter reads block-wide and resyncs
-      // lanes that drifted through the just-consumed chunk's barrier-free tiles (polled before each refill copy).
+      // Break the stream once the whole top-k is placed (polled before each refill copy). `final_filter_should_stop`
+      // self-syncs, so the just-consumed chunk's placement atomics cannot race its read.
       [&] {
-        __syncthreads();
         return !final_filter_should_stop(state);
       });
   }
@@ -1846,9 +1861,8 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void run_filter(det_filter_state<SelectDirection>& state)
   {
     const auto step = [&](auto&& region) {
-      // Barrier before polling: makes the placement-counter reads block-wide and resynchronizes lanes that raced
-      // ahead through the previous region's barrier-free tiles.
-      __syncthreads();
+      // No explicit barrier: `final_filter_should_stop` self-syncs, isolating its read from `region`'s placement
+      // atomics and the prior region's.
       if (!final_filter_should_stop(state))
       {
         region();
@@ -2044,7 +2058,8 @@ private:
     nondet_filter_state<IdentifyOp, KeyOutIt> state{
       identify_op, block_keys_out, num_cluster_tie_winners, selected_prefix, num_local_selected, resident_keys};
 
-    run_overflow_pass(
+    // The nondet stop poll opens with a block barrier, so `consume_overflow_visit` drops its slot-reuse barrier.
+    run_overflow_pass</*PollLeadsWithBarrier=*/true>(
       // Block-load: consume the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
       [&](int stage, offset_t overflow_idx) {
         const auto keys = stage_span(stage, overflow_idx);
@@ -2073,16 +2088,19 @@ private:
       },
       // Break the stream once this CTA's whole contribution is placed: its front is full (`selected_offset_counter`
       // reached `selected_prefix + num_local_selected`) and its tie region is full (`tie_offset_counter >= k`, so
-      // further candidates fail `place_one`'s `out < k` guard). The barrier makes the counter reads block-wide,
-      // resyncing lanes that raced through the barrier-free tiles. The stop needs both conditions, so a CTA whose
-      // candidates never fill its tie region to `k` simply never stops early.
+      // further candidates fail `place_one`'s `out < k` guard). The stop needs both conditions, so a CTA whose
+      // candidates never fill its tie region to `k` simply never stops early. The barriers bracket the counter reads
+      // against both placement waves (same pattern as `final_filter_should_stop`): the leading one publishes the
+      // just-consumed chunk's atomics, the trailing one keeps the next chunk's from overtaking a read still in flight.
       [&] {
         __syncthreads();
         const offset_t selected_end = state.selected_prefix + state.num_local_selected;
         _CCCL_ASSERT(temp_storage.selected_offset_counter <= selected_end,
                      "selected counter must stay within this CTA's selected region");
-        return !(temp_storage.selected_offset_counter >= selected_end
-                 && temp_storage.tie_offset_counter >= static_cast<offset_t>(k));
+        const bool is_placed = temp_storage.selected_offset_counter >= selected_end
+                            && temp_storage.tie_offset_counter >= static_cast<offset_t>(k);
+        __syncthreads();
+        return !is_placed;
       });
   }
 

@@ -56,6 +56,7 @@
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/expected>
 #include <cuda/std/limits>
 
 #include <cuda_runtime.h>
@@ -234,18 +235,11 @@ _CCCL_HOST_API cudaError_t max_dynamic_smem_size_for_fixed(int& max_dynamic_smem
   return cudaSuccess;
 }
 
-// Result of an occupancy probe: the queried count (`value`) and the CUDA status of the query.
-struct cluster_probe_result
-{
-  cudaError_t error;
-  int value;
-};
-
 // Largest number of CTA blocks per cluster the kernel/architecture admits at `dynamic_smem_bytes` of dynamic SMEM. The
 // config's cluster dimension is ignored by the query (placeholder here); the non-portable opt-in must already be set
 // for it to report sizes beyond the portable ceiling.
 template <class KernelPtr>
-_CCCL_HOST_API cluster_probe_result
+_CCCL_HOST_API ::cuda::std::expected<int, cudaError_t>
 probe_max_cluster_blocks(KernelPtr kernel_ptr, cudaStream_t stream, int threads_per_block, int dynamic_smem_bytes)
 {
   ::cudaLaunchAttribute cluster_attr{};
@@ -261,16 +255,19 @@ probe_max_cluster_blocks(KernelPtr kernel_ptr, cudaStream_t stream, int threads_
   cfg.numAttrs         = 1;
 
   int cluster_blocks = 0;
-  const auto error =
-    CubDebug(::cudaOccupancyMaxPotentialClusterSize(&cluster_blocks, reinterpret_cast<const void*>(kernel_ptr), &cfg));
-  return {error, cluster_blocks};
+  if (const auto error = CubDebug(
+        ::cudaOccupancyMaxPotentialClusterSize(&cluster_blocks, reinterpret_cast<const void*>(kernel_ptr), &cfg)))
+  {
+    return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
+  }
+  return cluster_blocks;
 }
 
 // Device-wide count of `cluster_blocks`-CTA clusters that can be co-resident at `dynamic_smem_bytes` of dynamic SMEM
 // (clusters per wave). `cudaOccupancyMaxActiveClusters` rejects a grid that is not a multiple of the cluster, so the
 // grid is set to exactly one cluster; the returned capacity is independent of the actual grid size.
 template <class KernelPtr>
-_CCCL_HOST_API cluster_probe_result probe_clusters_per_wave(
+_CCCL_HOST_API ::cuda::std::expected<int, cudaError_t> probe_clusters_per_wave(
   KernelPtr kernel_ptr, cudaStream_t stream, int threads_per_block, int cluster_blocks, int dynamic_smem_bytes)
 {
   ::cudaLaunchAttribute cluster_attr{};
@@ -286,16 +283,17 @@ _CCCL_HOST_API cluster_probe_result probe_clusters_per_wave(
   cfg.numAttrs         = 1;
 
   int clusters_per_wave = 0;
-  const auto error =
-    CubDebug(::cudaOccupancyMaxActiveClusters(&clusters_per_wave, reinterpret_cast<const void*>(kernel_ptr), &cfg));
-  return {error, clusters_per_wave};
+  if (const auto error =
+        CubDebug(::cudaOccupancyMaxActiveClusters(&clusters_per_wave, reinterpret_cast<const void*>(kernel_ptr), &cfg)))
+  {
+    return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
+  }
+  return clusters_per_wave;
 }
 
-// Launch shape for the cluster backend: the number of CTA blocks per cluster and the dynamic shared-memory bytes to
-// launch with, plus the CUDA status of the occupancy probes used to derive them.
+// The cluster backend's launch shape: CTA blocks per cluster and the dynamic-SMEM bytes to launch with.
 struct cluster_launch_shape
 {
-  cudaError_t error      = cudaSuccess;
   int cluster_blocks     = 0;
   int dynamic_smem_bytes = 0;
 };
@@ -304,7 +302,7 @@ struct cluster_launch_shape
 // runtime; the caller has already set the kernel's dynamic-SMEM opt-in to the maximum, so every probed config and the
 // final launch run under one consistent opt-in.
 template <class LayoutT, class KernelPtr>
-_CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
+_CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_cluster_launch_shape(
   ::cuda::std::uint64_t max_segment_size,
   ::cuda::std::uint64_t num_segments,
   int max_dynamic_smem_bytes,
@@ -322,7 +320,7 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
   if (max_block_resident_items <= 0)
   {
     // Not even one load-aligned chunk fits in the opt-in budget; the kernel cannot run.
-    return {cudaErrorInvalidValue};
+    return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
   }
 
   // Smallest cluster block count for full residency: at the largest SMEM each CTA holds `max_block_resident_items`
@@ -349,23 +347,22 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
     // Hardware cluster ceiling (max blocks per cluster), queried at runtime (not hardcoded) so a future device with
     // larger non-portable clusters is not capped. Probed at zero dynamic SMEM for the arch/kernel ceiling alone; each
     // candidate is re-validated against its own SMEM below.
-    const auto hw_cluster_ceiling_opt =
+    const auto hw_cluster_ceiling =
       probe_max_cluster_blocks(kernel_ptr, stream, threads_per_block, /*dynamic_smem_bytes=*/0);
-    if (hw_cluster_ceiling_opt.error != cudaSuccess)
+    if (!hw_cluster_ceiling)
     {
-      return {hw_cluster_ceiling_opt.error};
+      return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(hw_cluster_ceiling.error());
     }
-    const int hw_cluster_ceiling = hw_cluster_ceiling_opt.value;
-    if (hw_cluster_ceiling <= 0)
+    if (*hw_cluster_ceiling <= 0)
     {
-      return {cudaErrorInvalidValue};
+      return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
     }
     // `max_blocks_per_cluster == 0` -> the full hardware ceiling; a non-zero knob narrows it, clamped to that ceiling.
     // A cap narrower than a segment needs pushes it into the oversize/streaming fallback below.
     const int eff_max_blocks_per_cluster =
       (policy.max_blocks_per_cluster == 0)
-        ? hw_cluster_ceiling
-        : (::cuda::std::min) (policy.max_blocks_per_cluster, hw_cluster_ceiling);
+        ? *hw_cluster_ceiling
+        : (::cuda::std::min) (policy.max_blocks_per_cluster, *hw_cluster_ceiling);
 
     // Wave-aware selection: the free variable is the cluster block count (one cluster per segment), paired with the
     // smallest SMEM that keeps the segment fully resident (fewer blocks = more SMEM/fewer clusters-per-wave, more =
@@ -404,19 +401,18 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
           continue;
         }
 
-        const auto clusters_per_wave_opt =
+        const auto clusters_per_wave =
           probe_clusters_per_wave(kernel_ptr, stream, threads_per_block, candidate_blocks, resident_smem_bytes);
-        if (clusters_per_wave_opt.error != cudaSuccess)
+        if (!clusters_per_wave)
         {
-          return {clusters_per_wave_opt.error};
+          return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(clusters_per_wave.error());
         }
-        const int clusters_per_wave = clusters_per_wave_opt.value;
-        if (clusters_per_wave <= 0)
+        if (*clusters_per_wave <= 0)
         {
           continue; // cluster blocks not launchable at this SMEM.
         }
 
-        const auto waves = ::cuda::ceil_div(num_segments, clusters_per_wave);
+        const auto waves = ::cuda::ceil_div(num_segments, *clusters_per_wave);
         // Min waves, tie-break largest count: the loop ascends, so `<=` keeps the largest at equal waves (`best_waves`
         // starts at `UINT64_MAX`, so the first launchable count always wins).
         if (waves <= best_waves)
@@ -441,24 +437,22 @@ _CCCL_HOST_API cluster_launch_shape select_cluster_launch_shape(
       // Oversize (`min_blocks_per_segment > eff_max_blocks_per_cluster`) or nothing launchable: full residency
       // is impossible, so maximize residency with the largest launchable cluster at the largest SMEM and stream the
       // overflow.
-      const auto hw_max_cluster_blocks_opt =
+      const auto hw_max_cluster_blocks =
         probe_max_cluster_blocks(kernel_ptr, stream, threads_per_block, max_dynamic_smem_bytes);
-      if (hw_max_cluster_blocks_opt.error != cudaSuccess)
+      if (!hw_max_cluster_blocks)
       {
-        return {hw_max_cluster_blocks_opt.error};
+        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(hw_max_cluster_blocks.error());
       }
-      const int hw_max_cluster_blocks =
-        (::cuda::std::min) (hw_max_cluster_blocks_opt.value, eff_max_blocks_per_cluster);
-      if (hw_max_cluster_blocks <= 0)
+      cluster_blocks = (::cuda::std::min) (*hw_max_cluster_blocks, eff_max_blocks_per_cluster);
+      if (cluster_blocks <= 0)
       {
-        return {cudaErrorInvalidValue};
+        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
       }
-      cluster_blocks     = hw_max_cluster_blocks;
       dynamic_smem_bytes = max_dynamic_smem_bytes;
     }
   }
 
-  return {cudaSuccess, cluster_blocks, dynamic_smem_bytes};
+  return cluster_launch_shape{cluster_blocks, dynamic_smem_bytes};
 }
 
 // Cluster arm of the dispatch (host-only): after the shared query-pass / CC-guard setup, launches the single kernel
@@ -585,16 +579,15 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
     return error;
   }
   // Optional policy cap on resident chunk slots per block (`max_chunk_slots_per_block == 0` -> unrestricted, i.e.
-  // the full hardware budget). Expressed as the SMEM those slots need (`base_padding + slots * chunk_bytes`), then
-  // clamped to the hardware budget: a cap the hardware cannot satisfy is a no-op (hardware wins). Fewer slots
-  // lowers every CTA's resident dynamic shared-memory request, so a smaller segment overflows into streaming --
-  // useful to leave shared memory free for a concurrent kernel (or to reach the streaming / schedule paths at a
-  // small footprint in tests). A cap below one slot trips the `max_block_resident_items <= 0` guard below.
+  // the full hardware budget). Expressed as the SMEM those slots need, then clamped to the hardware budget: a cap the
+  // hardware cannot satisfy is a no-op (hardware wins). Fewer slots lowers every CTA's resident dynamic shared-memory
+  // request, so a smaller segment overflows into streaming -- useful to leave shared memory free for a concurrent
+  // kernel (or to reach the streaming / schedule paths at a small footprint in tests). A cap below one slot trips the
+  // `max_block_resident_items <= 0` guard below.
   const int max_dynamic_smem_bytes =
     (max_chunk_slots_per_block == 0)
       ? hw_dynamic_smem_bytes
-      : (::cuda::std::min) (hw_dynamic_smem_bytes,
-                            layout_t::base_padding_bytes + max_chunk_slots_per_block * layout_t::chunk_bytes);
+      : (::cuda::std::min) (hw_dynamic_smem_bytes, layout_t::min_smem_bytes_from_num_chunks(max_chunk_slots_per_block));
 
   // Set the kernel's dynamic-SMEM opt-in once, to the per-symbol maximum, before any occupancy probe or launch.
   // `max_dynamic_smem_bytes` is fixed by the compile-time policy and the device, so every thread sharing this kernel
@@ -614,13 +607,13 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
     policy,
     stream,
     kernel_ptr);
-  if (const auto error = shape.error)
+  if (!shape)
   {
-    return error;
+    return shape.error();
   }
 
-  const int cluster_blocks            = shape.cluster_blocks;
-  const int dynamic_smem_bytes        = shape.dynamic_smem_bytes;
+  const int cluster_blocks            = shape->cluster_blocks;
+  const int dynamic_smem_bytes        = shape->dynamic_smem_bytes;
   const auto max_block_resident_items = layout_t::max_block_resident_items(dynamic_smem_bytes);
 
   // One cluster per segment, its CTAs stacked in the grid's y-dimension so the x-extent stays `num_segments`: a
@@ -651,12 +644,6 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
                 num_segments,
                 baseline_kernel_args<num_segments_val_t, LargeSegmentTileOffsetT>{},
                 cluster_kernel_args{static_cast<::cuda::std::uint32_t>(max_block_resident_items)})))
-  {
-    return error;
-  }
-
-  // Cluster launches can fail on the device while reporting success; sync.
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
   {
     return error;
   }
@@ -714,14 +701,14 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     SelectDirectionParameterT,
     NumSegmentsParameterT,
     LargeSegmentTileOffsetT>;
-#if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
+#if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
   && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
   static_assert(
     baseline_can_cover,
     "cub::DeviceBatchedTopK: the forced baseline backend cannot cover the static maximum segment size within the "
     "shared-memory limit. Force the cluster backend, lower the segment-size bound, or define "
     "CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the diagnosis to runtime (cudaErrorNotSupported).");
-#endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
        // && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
   if constexpr (!baseline_can_cover)
   {
@@ -900,7 +887,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
   }
 }
 
-#if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 // Returns true if at least one architecture this translation unit targets (the compile target list exposed as
 // `::cuda::__target_compute_capabilities()`) resolves to the `unsupported` backend for `PolicySelector` -- e.g. a
 // deterministic request while a pre-SM90 target is present in the list. Used to turn a would-be runtime
@@ -915,7 +902,7 @@ template <class PolicySelector>
   }
   return any;
 }
-#endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 
 // Internal entry point: the single dispatch that replaces the standalone baseline / cluster dispatches. It resolves the
 // runtime compute capability, then uses `dispatch_compute_cap` to pick, per architecture, the backend chosen by the
@@ -1009,7 +996,7 @@ _CCCL_HOST_API cudaError_t dispatch(
                 "Invalid policy selector for cub::DeviceBatchedTopK::dispatch");
 #endif // _CCCL_HAS_CONCEPTS()
 
-#if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
+#if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
   && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
   // Strict mode (default): fail at compile time if the request cannot be served on *any* architecture this translation
   // unit targets. Two causes reach here: a deterministic / large-segment request while a pre-SM90 target is present
@@ -1027,7 +1014,7 @@ _CCCL_HOST_API cudaError_t dispatch(
     "_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH undefined, relax the request (non-deterministic and small enough for the "
     "baseline backend), or define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the diagnosis to runtime "
     "(cudaErrorNotSupported).");
-#endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
        // && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
 
   // The supported maximum segment size (2^21) is enforced at compile time at the public entry; a statically negative
@@ -1103,7 +1090,7 @@ _CCCL_HOST_API cudaError_t dispatch(
         // A `tune`d selector forced the baseline backend for a deterministic / tie-break request it cannot serve (only
         // the SM 9.0+ cluster backend is deterministic). Mirror the arch-unsupported / oversize-baseline failure model:
         // a hard compile error by default, deferred to a runtime cudaErrorNotSupported only under the escape hatches.
-#if _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
+#if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC) \
   && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
         static_assert(
           !deterministic,
@@ -1112,7 +1099,7 @@ _CCCL_HOST_API cudaError_t dispatch(
           "the override, relax the determinism / tie-break requirement, or define "
           "CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the diagnosis to runtime "
           "(cudaErrorNotSupported).");
-#endif // _CCCL_CUDA_COMPILATION() && !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
        // && !defined(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT)
        // Report a positive temp-storage size so the two-phase protocol proceeds, then fail the launch explicitly.
         if (d_temp_storage == nullptr)
