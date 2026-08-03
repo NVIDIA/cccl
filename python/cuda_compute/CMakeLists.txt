@@ -107,16 +107,8 @@ endif()
 
 # -3 generates source for Python 3
 # -M generates depfile
-# -t cythonizes if PYX is newer than preexisting output
 # -w sets working directory
-set(
-  CYTHON_FLAGS
-  -3
-  -M
-  -t
-  -w
-  "${cuda_compute_SOURCE_DIR}"
-)
+set(CYTHON_FLAGS -3 -M -w "${cuda_compute_SOURCE_DIR}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(
