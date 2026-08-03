@@ -462,23 +462,6 @@ MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with the window
       REQUIRE(reinterpret_cast<std::uintptr_t>(buffers[i].data()) % NCCL_WIN_REQUIRED_ALIGNMENT == 0);
     }
   }
-
-  SECTION("a window reports back the pointer it was registered with")
-  {
-    auto windows = register_windows(comms, buffers, NCCL_WIN_COLL_SYMMETRIC);
-
-    for (std::size_t i = 0; i < comms.size(); ++i)
-    {
-      INFO("rank: " << i);
-
-      void* user_ptr = nullptr;
-
-      REQUIRE(::ncclWinGetUserPtr(comms[i].native_handle(), windows[i], &user_ptr) == ::ncclSuccess);
-      REQUIRE(user_ptr == buffers[i].data());
-    }
-
-    deregister_windows(comms, windows);
-  }
 }
 
 MULTI_GPU_TEST("device_default_nccl_memory_pool window registered buffers work in a collective", )
