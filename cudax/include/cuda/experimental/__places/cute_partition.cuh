@@ -625,6 +625,19 @@ public:
    * nullopt otherwise -- callers fall through to try_block_owners (census
    * with closed-form majority) and then to sampling.
    *
+   * SCOPE NOTE: this computes the EXTENSION of the quotient (its runs,
+   * enumerated by the certified walk with alignment verified a
+   * posteriori), not the quotient as a layout object. A leaf-level
+   * intensional quotient -- existence decided a priori by congruences on
+   * the place-leaf strides/offsets, construction by dividing the strides
+   * through, O(leaves) regardless of run count -- is possible future work;
+   * what stands in the way is that the allocation is the RESTRICTION of
+   * the padded-space layout to the true extents, and that restriction is
+   * not a pure layout operation (it is exactly what the row walk performs
+   * by hand). Until then the walk's cost is bounded by max_runs and
+   * calibrated against the sampled fallback, so the proxy is never a
+   * performance regression.
+   *
    * @param max_runs walk budget, as in try_block_owners (0 = auto)
    */
   ::std::optional<::std::vector<block_run>>
