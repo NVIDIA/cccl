@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -19,8 +19,8 @@
  * platform, but your performance with the non-native version will be less than optimal.
  */
 
-#ifndef _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_MURMURHASH3_CUH
-#define _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_MURMURHASH3_CUH
+#ifndef _CUDA___FUNCTIONAL_HASH_MURMURHASH3_H
+#define _CUDA___FUNCTIONAL_HASH_MURMURHASH3_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/static_for.h>
+#include <cuda/__functional/hash/utils.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
 #include <cuda/std/array>
@@ -40,12 +40,9 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Key>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
 __fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
@@ -82,7 +79,7 @@ __fmix64(_Key __key, ::cuda::std::uint64_t __seed = 0) noexcept
 //!
 //! @tparam _Key The type of the values to hash
 template <typename _Key>
-struct _MurmurHash3_32
+struct __murmurhash3_32
 {
   static constexpr ::cuda::std::uint32_t __c1 = 0xcc9e2d51;
   static constexpr ::cuda::std::uint32_t __c2 = 0x1b873593;
@@ -90,25 +87,27 @@ struct _MurmurHash3_32
   static constexpr ::cuda::std::uint32_t __block_size = 4;
   static constexpr ::cuda::std::uint32_t __chunk_size = 4;
 
-  _CCCL_HOST_DEVICE_API constexpr _MurmurHash3_32(::cuda::std::uint32_t __seed = 0)
+  //! @brief Constructs a MurmurHash3 32-bit hash function with the given seed.
+  //! @param[in] __seed A custom number to randomize the resulting hash value
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
-  //! @param __key The input argument to hash
+  //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
+    using _Holder = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @tparam _Extent The extent type
-  //! @param __keys span of keys to hash
+  //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  template <size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
+  template <::cuda::std::size_t _Extent>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -124,7 +123,9 @@ private:
     // body
     if constexpr (_Holder::__num_blocks > 0)
     {
-      ::cuda::static_for<_Holder::__num_blocks>([&](auto __i) {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (::cuda::std::size_t __i = 0; __i < _Holder::__num_blocks; ++__i)
+      {
         ::cuda::std::uint32_t __k1 = __holder.__blocks[__i];
         __k1 *= __c1;
         __k1 = ::cuda::std::rotl(__k1, 15);
@@ -132,7 +133,7 @@ private:
         __h1 ^= __k1;
         __h1 = ::cuda::std::rotl(__h1, 13);
         __h1 = __h1 * 5 + 0xe6546b64;
-      });
+      }
     }
 
     //----------
@@ -160,7 +161,7 @@ private:
     //----------
     // finalization
     __h1 ^= ::cuda::std::uint32_t{sizeof(_Holder)};
-    __h1 = ::cuda::experimental::cuco::__fmix32(__h1);
+    __h1 = ::cuda::__fmix32(__h1);
     return __h1;
   }
 
@@ -178,7 +179,7 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nblocks)> __i = 0; __i < __nblocks; __i++)
     {
-      ::cuda::std::uint32_t __k1 = ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __i);
+      ::cuda::std::uint32_t __k1 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, __i);
       __k1 *= __c1;
       __k1 = ::cuda::std::rotl(__k1, 15);
       __k1 *= __c2;
@@ -207,7 +208,7 @@ private:
     //----------
     // finalization
     __h1 ^= __size;
-    __h1 = ::cuda::experimental::cuco::__fmix32(__h1);
+    __h1 = ::cuda::__fmix32(__h1);
     return __h1;
   }
 
@@ -217,7 +218,7 @@ private:
 #if _CCCL_HAS_INT128()
 
 template <typename _Key>
-struct _MurmurHash3_x86_128
+struct __murmurhash3_x86_128
 {
 private:
   static constexpr ::cuda::std::uint32_t __c1 = 0x239b961b;
@@ -229,24 +230,26 @@ private:
   static constexpr ::cuda::std::uint32_t __chunk_size = 16;
 
 public:
-  _CCCL_HOST_DEVICE_API constexpr _MurmurHash3_x86_128(::cuda::std::uint32_t __seed = 0)
+  //! @brief Constructs a MurmurHash3 x86 128-bit hash function with the given seed.
+  //! @param[in] __seed A custom number to randomize the resulting hash value
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
-  //! @param __key The input argument to hash
+  //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
+    using _Holder = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
   //! @tparam _Extent The extent type
-  //! @param __keys span of keys to hash
+  //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  template <size_t _Extent>
+  template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
@@ -262,7 +265,9 @@ private:
 
     if constexpr (_Holder::__num_chunks > 0)
     {
-      ::cuda::static_for<_Holder::__num_chunks>([&](auto __i) {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (::cuda::std::size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
+      {
         ::cuda::std::uint32_t __k1 = __holder.__blocks[4 * __i];
         ::cuda::std::uint32_t __k2 = __holder.__blocks[4 * __i + 1];
         ::cuda::std::uint32_t __k3 = __holder.__blocks[4 * __i + 2];
@@ -303,7 +308,7 @@ private:
         __h[3] = ::cuda::std::rotl(__h[3], 13);
         __h[3] += __h[0];
         __h[3] = __h[3] * 5 + 0x32ac3b17;
-      });
+      }
     }
     // tail
     if constexpr (_Holder::__tail_size > 0)
@@ -395,10 +400,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__fmix32(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__fmix32(__h[1]);
-    __h[2] = ::cuda::experimental::cuco::__fmix32(__h[2]);
-    __h[3] = ::cuda::experimental::cuco::__fmix32(__h[3]);
+    __h[0] = ::cuda::__fmix32(__h[0]);
+    __h[1] = ::cuda::__fmix32(__h[1]);
+    __h[2] = ::cuda::__fmix32(__h[2]);
+    __h[3] = ::cuda::__fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -423,13 +428,10 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
-      ::cuda::std::uint32_t __k1 = ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i);
-      ::cuda::std::uint32_t __k2 =
-        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 1);
-      ::cuda::std::uint32_t __k3 =
-        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 2);
-      ::cuda::std::uint32_t __k4 =
-        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 3);
+      ::cuda::std::uint32_t __k1 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i);
+      ::cuda::std::uint32_t __k2 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 1);
+      ::cuda::std::uint32_t __k3 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 2);
+      ::cuda::std::uint32_t __k4 = ::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 3);
 
       __k1 *= __c1;
       __k1 = ::cuda::std::rotl(__k1, 15);
@@ -556,10 +558,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__fmix32(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__fmix32(__h[1]);
-    __h[2] = ::cuda::experimental::cuco::__fmix32(__h[2]);
-    __h[3] = ::cuda::experimental::cuco::__fmix32(__h[3]);
+    __h[0] = ::cuda::__fmix32(__h[0]);
+    __h[1] = ::cuda::__fmix32(__h[1]);
+    __h[2] = ::cuda::__fmix32(__h[2]);
+    __h[3] = ::cuda::__fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -576,7 +578,7 @@ private:
 };
 
 template <typename _Key>
-struct _MurmurHash3_x64_128
+struct __murmurhash3_x64_128
 {
 private:
   static constexpr ::cuda::std::uint64_t __c1 = 0x87c37b91114253d5ull;
@@ -586,24 +588,26 @@ private:
   static constexpr ::cuda::std::uint32_t __chunk_size = 16;
 
 public:
-  _CCCL_HOST_DEVICE_API constexpr _MurmurHash3_x64_128(::cuda::std::uint64_t __seed = 0)
+  //! @brief Constructs a MurmurHash3 x64 128-bit hash function with the given seed.
+  //! @param[in] __seed A custom number to randomize the resulting hash value
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
-  //! @param __key The input argument to hash
+  //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
+    using _Holder = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
   //! @tparam _Extent The extent type
-  //! @param __keys span of keys to hash
+  //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  template <size_t _Extent>
+  template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
@@ -619,7 +623,9 @@ private:
 
     if constexpr (_Holder::__num_chunks > 0)
     {
-      ::cuda::static_for<_Holder::__num_chunks>([&](auto __i) {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (::cuda::std::size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
+      {
         ::cuda::std::uint64_t __k1 = __holder.__blocks[2 * __i];
         ::cuda::std::uint64_t __k2 = __holder.__blocks[2 * __i + 1];
 
@@ -640,7 +646,7 @@ private:
         __h[1] = ::cuda::std::rotl(__h[1], 31);
         __h[1] += __h[0];
         __h[1] = __h[1] * 5 + 0x38495ab5;
-      });
+      }
     }
     // tail
     if constexpr (_Holder::__tail_size > 0)
@@ -713,8 +719,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__fmix64(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__fmix64(__h[1]);
+    __h[0] = ::cuda::__fmix64(__h[0]);
+    __h[1] = ::cuda::__fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];
@@ -735,9 +741,8 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
-      ::cuda::std::uint64_t __k1 = ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i);
-      ::cuda::std::uint64_t __k2 =
-        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i + 1);
+      ::cuda::std::uint64_t __k1 = ::cuda::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i);
+      ::cuda::std::uint64_t __k2 = ::cuda::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i + 1);
 
       __k1 *= __c1;
       __k1 = ::cuda::std::rotl(__k1, 31);
@@ -827,8 +832,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__fmix64(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__fmix64(__h[1]);
+    __h[0] = ::cuda::__fmix64(__h[0]);
+    __h[1] = ::cuda::__fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];
@@ -841,8 +846,8 @@ private:
 };
 
 #endif // _CCCL_HAS_INT128()
-} // namespace cuda::experimental::cuco
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_MURMURHASH3_CUH
+#endif // _CUDA___FUNCTIONAL_HASH_MURMURHASH3_H
