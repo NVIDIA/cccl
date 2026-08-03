@@ -15,7 +15,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/numeric>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -36,7 +36,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][adjacent_difference]")
+CUB_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][adjacent_difference]", CUB_SMALL)
 {
   using value_t            = int;
   using offset_t           = unsigned;

@@ -147,9 +147,10 @@
 //! function \c G, stepping into \c F in a debugger will skip over \c F and step directly
 //! into \c G. In a stacktrace, \c F will still be shone, but you will not be able to
 //! set the debugger's active frame to \c F.
-#define _CCCL_NODEBUG_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_NODEBUG_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_NODEBUG_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_API             _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_API        _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_DEVICE_API      _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_DEVICE_API _CCCL_HOST_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 
 //! @brief \c _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden,
 //! and causes debuggers to skip it. This is useful for trivial internal functions that do

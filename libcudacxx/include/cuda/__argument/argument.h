@@ -887,9 +887,16 @@ struct __traits : __traits_impl<::cuda::std::remove_cvref_t<_Tp>>
 //! @brief Returns the effective lowest bound, combining static and runtime bounds.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
-[[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp __arg) noexcept
 {
-  return __type_lowest<__element_type_of_t<_Tp>>();
+  if constexpr (__is_sequence_v<_Tp>)
+  {
+    return __type_lowest<__element_type_of_t<_Tp>>();
+  }
+  else
+  {
+    return __arg;
+  }
 }
 
 template <auto _Value, class _Tp>
@@ -940,9 +947,16 @@ template <class _Arg, class _StaticBounds>
 //! @brief Returns the effective highest bound, combining static and runtime bounds.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
-[[nodiscard]] _CCCL_API constexpr auto __highest_(_Tp) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __highest_(_Tp __arg) noexcept
 {
-  return __type_highest<__element_type_of_t<_Tp>>();
+  if constexpr (__is_sequence_v<_Tp>)
+  {
+    return __type_highest<__element_type_of_t<_Tp>>();
+  }
+  else
+  {
+    return __arg;
+  }
 }
 
 template <auto _Value, class _Tp>

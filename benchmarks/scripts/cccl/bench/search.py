@@ -128,7 +128,7 @@ def filter_benchmarks(benchmarks, args):
     if args.run_shard >= args.num_shards:
         raise ValueError("run-shard must be less than num-shards")
 
-    p0_benchmarks = [
+    cub_p0_benchmarks = [
         "cub.bench.merge_sort.keys",
         "cub.bench.merge_sort.pairs",
         "cub.bench.radix_sort.keys",
@@ -148,7 +148,17 @@ def filter_benchmarks(benchmarks, args):
 
     algnames = filter_benchmarks_by_regex(benchmarks.keys(), args.R)
     if args.P0:
-        algnames = [name for name in p0_benchmarks if name in algnames]
+        non_cub_algnames = [name for name in algnames if not name.startswith("cub.")]
+        non_cub_algnames = filter_benchmarks_by_regex(
+            non_cub_algnames,
+            r"^(?!.*segmented).*(scan|reduce|select|sort|transform\.(babelstream|fill)).*",
+        )
+        non_cub_algnames = filter_benchmarks_by_regex(
+            non_cub_algnames, r"^(?!.*P[123456789]\d*).*"
+        )
+
+        algnames = [name for name in cub_p0_benchmarks if name in algnames]
+        algnames.extend(non_cub_algnames)
     algnames.sort()
 
     if args.num_shards > 1:

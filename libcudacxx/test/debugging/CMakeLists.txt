@@ -199,4 +199,7 @@ endfunction()
 
 add_subdirectory(array)
 add_subdirectory(buffer)
+add_subdirectory(complex)
+add_subdirectory(inplace_vector)
 add_subdirectory(memory_resource)
+add_subdirectory(tuple)

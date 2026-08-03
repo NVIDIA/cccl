@@ -8,7 +8,7 @@
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int LocigalWarpSize, typename VectorT, typename ByteOffsetT>
 __global__ void test_vectorized_copy_kernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
@@ -18,7 +18,7 @@ __global__ void test_vectorized_copy_kernel(const void* d_in, void* d_out, ByteO
 
 using vector_type_list = c2h::type_list<uint32_t, uint4>;
 
-C2H_TEST("The vectorized copy used by DeviceMemcpy works", "[memcpy]", vector_type_list)
+CUB_TEST("The vectorized copy used by DeviceMemcpy works", "[memcpy]", CUB_SMALL, vector_type_list)
 {
   using vector_t                            = typename c2h::get<0, TestType>;
   constexpr std::uint32_t threads_per_block = 8;
