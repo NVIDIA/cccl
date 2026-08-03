@@ -38,6 +38,7 @@
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 
+#include <iterator>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -98,15 +99,12 @@ public:
     }
   }
 
-  //! Move every entry of \p other into this pool (\p other ends up empty)
+  //! Move every entry of \p other into this pool (\p other is left in a
+  //! moved-from state)
   void import_from(linear_pool&& other)
   {
-    payload.reserve(payload.size() + other.payload.size());
-    for (auto& ptr : other.payload)
-    {
-      payload.push_back(mv(ptr));
-    }
-    other.payload.clear();
+    payload.insert(
+      payload.end(), ::std::make_move_iterator(other.payload.begin()), ::std::make_move_iterator(other.payload.end()));
   }
 
 private:
