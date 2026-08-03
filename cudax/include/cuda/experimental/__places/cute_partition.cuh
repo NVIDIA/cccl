@@ -379,7 +379,9 @@ public:
   /**
    * @brief Enumerate the certified constant-owner byte runs of the flat
    * allocation, merged across adjacent equal-owner segments, in increasing
-   * byte order: calls `emit(byte_start, byte_len, owner)` per run.
+   * byte order: calls `emit(byte_start, byte_len, owner)` per run; emit
+   * returns false to abort the walk early (the enumeration then also
+   * returns false).
    *
    * Returns false (without emitting) when the walk would exceed max_runs;
    * see try_block_owners for the budget semantics. The certificate for
@@ -397,8 +399,7 @@ public:
     if (s == 0)
     {
       // no place mode, or every place leaf has extent <= 1: single owner
-      emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
-      return true;
+      return emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
     }
     const size_t nrows = t1 * t2 * t3;
     if (nrows * (t0 / s + 2) > max_runs)
@@ -413,7 +414,8 @@ public:
     // pending merged run
     size_t run_start = 0, run_len = 0;
     pos4 run_owner;
-    auto push = [&](size_t start, size_t len, pos4 o) {
+    bool keep_going = true;
+    auto push       = [&](size_t start, size_t len, pos4 o) {
       if (run_len > 0 && run_owner == o && run_start + run_len == start)
       {
         run_len += len;
@@ -421,7 +423,7 @@ public:
       }
       if (run_len > 0)
       {
-        emit(run_start, run_len, run_owner);
+        keep_going = emit(run_start, run_len, run_owner);
       }
       run_start = start;
       run_len   = len;
@@ -429,15 +431,15 @@ public:
     };
 
     size_t ind = 0; // linear element index in the allocation
-    for (size_t x3 = 0; x3 < t3; x3++)
+    for (size_t x3 = 0; keep_going && x3 < t3; x3++)
     {
-      for (size_t x2 = 0; x2 < t2; x2++)
+      for (size_t x2 = 0; keep_going && x2 < t2; x2++)
       {
-        for (size_t x1 = 0; x1 < t1; x1++)
+        for (size_t x1 = 0; keep_going && x1 < t1; x1++)
         {
           const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
           size_t x0                 = 0;
-          while (x0 < t0)
+          while (keep_going && x0 < t0)
           {
             const size_t pad_pos = row_pad_base + x0;
             const size_t seg     = ::std::min(t0 - x0, s - (pad_pos % s));
@@ -449,11 +451,11 @@ public:
         }
       }
     }
-    if (run_len > 0)
+    if (keep_going && run_len > 0)
     {
-      emit(run_start, run_len, run_owner);
+      keep_going = emit(run_start, run_len, run_owner);
     }
-    return true;
+    return keep_going;
   }
 
   /**
@@ -572,7 +574,7 @@ public:
       hist.clear();
     };
 
-    auto feed = [&](size_t byte_start, size_t byte_len, pos4 o) {
+    auto feed = [&](size_t byte_start, size_t byte_len, pos4 o) -> bool {
       while (byte_len > 0)
       {
         const size_t block_end = (cur_block + 1) * block_size_bytes;
@@ -600,6 +602,7 @@ public:
         byte_start += chunk;
         byte_len -= chunk;
       }
+      return true;
     };
 
     if (!for_each_owner_byte_run(elemsize, max_runs, feed))
@@ -628,6 +631,11 @@ public:
    * nullopt otherwise -- callers fall through to try_block_owners (census
    * with closed-form majority) and then to sampling.
    *
+   * NB the number of runs equals the number of physical allocations the
+   * caller will create: a block-aligned fine interleaving (e.g.
+   * block_cyclic at exactly the block size) is EXACT but yields one run
+   * per block -- the plan is honest about that cost rather than hiding it.
+   *
    * SCOPE NOTE: this computes the EXTENSION of the quotient (its runs,
    * enumerated by the certified walk with alignment verified a
    * posteriori), not the quotient as a layout object. A symbolic, leaf-level
@@ -655,23 +663,23 @@ public:
     }
 
     ::std::vector<block_run> runs;
-    bool aligned             = true;
-    const bool within_budget = for_each_owner_byte_run(elemsize, max_runs, [&](size_t start, size_t len, pos4 o) {
-      if (!aligned)
-      {
-        return;
-      }
+    bool aligned = true;
+    // the walk aborts on the first misaligned boundary: the remainder tier
+    // (try_block_owners) re-walks, so wasting the rest of this walk would
+    // double the cost of every remainder allocation for nothing
+    const bool completed = for_each_owner_byte_run(elemsize, max_runs, [&](size_t start, size_t len, pos4 o) -> bool {
       if (start % block_size_bytes != 0)
       {
         aligned = false; // internal boundary inside a block: no strict quotient
-        return;
+        return false;
       }
       const size_t first = start / block_size_bytes;
       // the last run's tail may end mid-block; the block is still pure
       const size_t count = (::std::min(start + len, total_bytes) - start + block_size_bytes - 1) / block_size_bytes;
       runs.push_back(block_run{o, first, count});
+      return true;
     });
-    if (!within_budget || !aligned)
+    if (!completed || !aligned)
     {
       return ::std::nullopt;
     }
@@ -1711,7 +1719,7 @@ template <typename Partition>
  * statistics: the sample counters then hold byte counts); falls back to the
  * sampled majority vote for layouts denser than the placement blocks.
  */
-inline auto make_partition_owner_provider(
+inline auto make_partition_placement_provider(
   const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
 {
   return [partition, data_dims, total_size, elemsize](
@@ -1824,7 +1832,7 @@ public:
 
     auto arr = ::std::make_unique<localized_array>(
       grid_,
-      make_partition_owner_provider(partition_, data_dims, data_dims.size(), elemsize),
+      make_partition_placement_provider(partition_, data_dims, data_dims.size(), elemsize),
       data_dims.size(),
       elemsize,
       data_dims);

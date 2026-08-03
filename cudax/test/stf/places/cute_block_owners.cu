@@ -80,6 +80,25 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
   const auto brute       = brute_block_owners(part, block, elemsize, total_elems, data_dims, &brute_misplaced);
   EXPECT(plan->size() == brute.size());
   EXPECT(misplaced == brute_misplaced);
+
+  // The runs path must agree with the brute-force census wherever the
+  // strict quotient exists: zero misplacement, and every block of every run
+  // owned by the brute owner. Where it declines, the census must have found
+  // at least one straddled (misplaced) block or an in-block boundary.
+  if (const auto runs = part.try_block_runs(block, elemsize))
+  {
+    EXPECT(misplaced == 0);
+    size_t covered = 0;
+    for (const auto& r : *runs)
+    {
+      for (size_t b = r.first_block; b < r.first_block + r.num_blocks; b++)
+      {
+        EXPECT(brute[b] == r.owner);
+      }
+      covered += r.num_blocks;
+    }
+    EXPECT(covered == brute.size());
+  }
   for (size_t b = 0; b < brute.size(); b++)
   {
     // majority may tie: accept the analytic owner iff its byte count ties the
@@ -151,7 +170,7 @@ void end_to_end_allocation()
   const auto part = make_partition_descriptor(data_dims, {{dim_policy::blocked, 0, 0}}, grid.get_dims());
 
   localized_array arr(
-    grid, make_partition_owner_provider(part, data_dims, data_dims.size(), sizeof(int)), n, sizeof(int), data_dims);
+    grid, make_partition_placement_provider(part, data_dims, data_dims.size(), sizeof(int)), n, sizeof(int), data_dims);
   const auto& st = arr.get_stats();
   // exact plan: sample counters hold byte counts
   EXPECT(st.total_samples == n * sizeof(int));
@@ -161,12 +180,46 @@ void end_to_end_allocation()
   EXPECT(st.matching_samples == st.total_samples - mis);
   EXPECT(st.nallocs <= 3); // two shards + at most one straddle merge break
 }
+void malformed_providers_throw()
+{
+  const auto d0 = exec_place::device(cuda_try<cudaGetDevice>());
+  ::std::vector<exec_place> places{d0, d0};
+  const auto grid = make_grid(mv(places));
+  const size_t n  = 4 * 1024 * 1024; // 16 MB of int: 8 blocks at 2 MB
+  const dim4 dims(n);
+
+  auto expect_throw = [&](auto&& provider) {
+    bool thrown = false;
+    try
+    {
+      localized_array arr(grid, provider, n, sizeof(int), dims);
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      thrown = true;
+    }
+    EXPECT(thrown);
+  };
+  // gap: second run skips a block
+  expect_throw([](size_t, size_t nblocks, localized_stats&) {
+    return ::std::vector<block_run>{{pos4(0), 0, 1}, {pos4(1), 2, nblocks - 2}};
+  });
+  // short: does not cover the final block
+  expect_throw([](size_t, size_t nblocks, localized_stats&) {
+    return ::std::vector<block_run>{{pos4(0), 0, nblocks - 1}};
+  });
+  // zero-length run
+  expect_throw([](size_t, size_t nblocks, localized_stats&) {
+    return ::std::vector<block_run>{{pos4(0), 0, 0}, {pos4(1), 0, nblocks}};
+  });
+}
 } // namespace
 
 int main()
 {
   property_suite();
   end_to_end_allocation();
+  malformed_providers_throw();
   printf("cute_block_owners: all checks passed\n");
   return 0;
 }

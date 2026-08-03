@@ -160,7 +160,8 @@ struct cached_cute_localized_array
     // convention -- see slice.cuh).
     array = ::std::make_unique<localized_array>(
       grid,
-      ::cuda::experimental::places::make_partition_owner_provider(this->partition, data_dims_, total_size, elem_size),
+      ::cuda::experimental::places::make_partition_placement_provider(
+        this->partition, data_dims_, total_size, elem_size),
       total_size,
       elem_size,
       data_dims_);

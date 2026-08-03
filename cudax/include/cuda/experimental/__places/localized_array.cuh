@@ -324,7 +324,7 @@ public:
    * one mapping per run). The exact analytic tier emits them directly (see
    * cute_partition_descriptor::try_block_runs); sampled/census tiers return
    * one owner per block and convert via owners_to_block_runs (see
-   * make_partition_owner_provider).
+   * make_partition_placement_provider).
    */
   template <
     typename PlacementProvider,
@@ -488,33 +488,57 @@ private:
       print_stats(runs);
     }
 
-    for (auto& item : meta)
+    // Pre-existing gap made visible by the validation reorder above: a
+    // failure while creating/mapping physical blocks would otherwise leak
+    // the VA reservation and every block mapped so far (a throwing
+    // constructor never runs the destructor).
+    size_t mapped = 0;
+    try
     {
-      int item_dev = device_ordinal(item.place);
-
-      cuda_try(item.place.mem_create(&item.alloc_handle, item.size));
-
-      _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
-      cuda_try(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
-
-      for (int d = 0; d < ndevs; d++)
+      for (auto& item : meta)
       {
-        int set_access = 1;
-        if (item_dev != d)
-        {
-          set_access = cuda_try<cudaDeviceCanAccessPeer>(d, item_dev);
+        int item_dev = device_ordinal(item.place);
 
-          if (!set_access)
+        cuda_try(item.place.mem_create(&item.alloc_handle, item.size));
+
+        _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
+        cuda_try(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
+        mapped++;
+
+        for (int d = 0; d < ndevs; d++)
+        {
+          int set_access = 1;
+          if (item_dev != d)
           {
-            fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item_dev);
+            set_access = cuda_try<cudaDeviceCanAccessPeer>(d, item_dev);
+
+            if (!set_access)
+            {
+              fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item_dev);
+            }
+          }
+
+          if (set_access == 1)
+          {
+            cuda_try(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
           }
         }
-
-        if (set_access == 1)
-        {
-          cuda_try(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
-        }
       }
+    }
+    catch (...)
+    {
+      for (size_t i = 0; i < mapped; i++)
+      {
+        cuMemUnmap(base_ptr + meta[i].offset, meta[i].size);
+        cuMemRelease(meta[i].alloc_handle);
+      }
+      // a created-but-unmapped handle on the failing item
+      if (mapped < meta.size() && meta[mapped].alloc_handle != CUmemGenericAllocationHandle{})
+      {
+        cuMemRelease(meta[mapped].alloc_handle);
+      }
+      cuMemAddressFree(base_ptr, vm_total_size_bytes);
+      throw;
     }
   }
 
