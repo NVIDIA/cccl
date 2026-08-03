@@ -79,6 +79,36 @@ def _query_stream_property(handle: int, function: str, output_type: str) -> int 
                 pass
 
 
+def _current_context() -> int | None:
+    output: gdb.Value | None = None
+    try:
+        output = gdb.parse_and_eval("(void**)malloc(sizeof(void*))")
+        address = int(output)
+        if address == 0:
+            return None
+        status = gdb.parse_and_eval(
+            f"(int)((int (*)(void**))cuCtxGetCurrent)((void**){address:#x})"
+        )
+        if int(status) != 0:
+            return None
+        return int(output.dereference())
+    except (gdb.error, TypeError, ValueError):
+        return None
+    finally:
+        if output is not None:
+            try:
+                gdb.parse_and_eval(f"(void)free((void*){int(output):#x})")
+            except (gdb.error, TypeError, ValueError):
+                pass
+
+
+def _clear_current_context() -> None:
+    try:
+        gdb.parse_and_eval("(int)((int (*)(void*))cuCtxSetCurrent)((void*)0)")
+    except (gdb.error, TypeError, ValueError):
+        pass
+
+
 def _query_stream_id(handle: int) -> int | None:
     unique_id = _query_stream_property(handle, _CU_STREAM_GET_ID, "unsigned long long")
     if unique_id is not None:
@@ -100,26 +130,36 @@ def _stream_info(handle_value: gdb.Value) -> StreamInfo:
     if handle == invalid_handle:
         return StreamInfo(handle, description, None, None, None, None, None)
 
-    capture_status = _query_stream_property(handle, _CUDA_STREAM_IS_CAPTURING, "int")
-    is_capturing = (
-        capture_status == _CUDA_STREAM_CAPTURE_STATUS_ACTIVE
-        if capture_status is not None
-        else None
-    )
-    # Invoking the metadata query paths below as inferior calls invalidates
-    # global graph capture in GDB and LLDB. Preserve it until capture ends.
-    if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
-        return StreamInfo(handle, description, None, None, None, is_capturing, None)
+    original_context = _current_context()
+    if original_context is None:
+        return StreamInfo(handle, description, None, None, None, None, None)
 
-    return StreamInfo(
-        handle,
-        description,
-        _query_stream_id(handle),
-        _query_stream_device(handle),
-        _query_stream_property(handle, "cudaStreamGetPriority", "int"),
-        is_capturing,
-        _query_stream_property(handle, "cudaStreamGetFlags", "unsigned int"),
-    )
+    try:
+        capture_status = _query_stream_property(
+            handle, _CUDA_STREAM_IS_CAPTURING, "int"
+        )
+        is_capturing = (
+            capture_status == _CUDA_STREAM_CAPTURE_STATUS_ACTIVE
+            if capture_status is not None
+            else None
+        )
+        # Invoking the metadata query paths below as inferior calls invalidates
+        # global graph capture in GDB and LLDB. Preserve it until capture ends.
+        if capture_status != _CUDA_STREAM_CAPTURE_STATUS_NONE:
+            return StreamInfo(handle, description, None, None, None, is_capturing, None)
+
+        return StreamInfo(
+            handle,
+            description,
+            _query_stream_id(handle),
+            _query_stream_device(handle),
+            _query_stream_property(handle, "cudaStreamGetPriority", "int"),
+            is_capturing,
+            _query_stream_property(handle, "cudaStreamGetFlags", "unsigned int"),
+        )
+    finally:
+        if original_context == 0:
+            _clear_current_context()
 
 
 class StreamPrinter:

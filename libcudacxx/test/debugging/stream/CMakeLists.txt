@@ -3,6 +3,7 @@ libcudacxx_add_pretty_printer_test(
   SOURCES source.cu
   CASES
     # gersemi: off
+    --case inspect_without_context 1 stream.without_context owning_stream
     --case inspect_owning 1 stream.owning owning_stream
     --case inspect_ref 1 stream.ref stream_reference
     --case inspect_alias 1 stream.alias aliased_stream
@@ -17,4 +18,9 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_capturing 1 stream.capturing capture_stream
     --case inspect_after_capture 1 stream.after_capture capture_stream
     # gersemi: on
+)
+
+target_link_libraries(
+  libcudacxx.test.debugging.stream
+  PRIVATE CUDA::cuda_driver
 )

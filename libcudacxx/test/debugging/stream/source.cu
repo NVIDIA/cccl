@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include <cuda.h>
 #include <cuda_runtime_api.h>
 
 template <class T>
@@ -16,6 +17,11 @@ template <class T>
 }
 
 [[gnu::noinline]] void inspect_owning(const cuda::stream& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_without_context(const cuda::stream& value)
 {
   keep_for_debugger(value);
 }
@@ -97,6 +103,22 @@ int main()
   const std::vector<cuda::stream_ref> summarized_streams{stream_reference, default_stream, invalid_stream};
   cuda::stream_ref updated_stream{default_stream};
   const cuda::stream capture_stream{device};
+
+  CUcontext original_context{};
+  if (cuCtxGetCurrent(&original_context) != CUDA_SUCCESS || cuCtxSetCurrent(nullptr) != CUDA_SUCCESS)
+  {
+    return 1;
+  }
+  inspect_without_context(owning_stream);
+  CUcontext context_after_print{};
+  if (cuCtxGetCurrent(&context_after_print) != CUDA_SUCCESS || context_after_print != nullptr)
+  {
+    return 1;
+  }
+  if (cuCtxSetCurrent(original_context) != CUDA_SUCCESS)
+  {
+    return 1;
+  }
 
   inspect_owning(owning_stream);
   inspect_ref(stream_reference);

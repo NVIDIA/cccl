@@ -1,3 +1,11 @@
+=============== stream.without_context begin ===============
+(const cuda::stream) handle=<address>, unique_id=<id> {
+  device = 0
+  priority = 0
+  is_capturing = false
+  flags = 1
+}
+=============== stream.without_context end ===============
 =============== stream.owning begin ===============
 (const cuda::stream) handle=<address>, unique_id=<id> {
   device = 0

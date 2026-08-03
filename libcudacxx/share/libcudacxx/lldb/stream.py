@@ -18,8 +18,6 @@ _CUDA_STREAM_LEGACY_HANDLE = 1
 _CUDA_STREAM_PER_THREAD_HANDLE = 2
 _CUDA_STREAM_CAPTURE_STATUS_NONE = 0
 _CUDA_STREAM_CAPTURE_STATUS_ACTIVE = 1
-_CUDA_STREAM_IS_CAPTURING = "((int (*)(cudaStream_t, int*))cudaStreamIsCapturing)"
-_CU_STREAM_GET_ID = "((int (*)(void*, unsigned long long*))cuStreamGetId)"
 _SUMMARY_UNIQUE_ID_CHILD = "__cccl_summary_unique_id"
 _UINT32_BITS = 32
 _UINT32_MASK = (1 << _UINT32_BITS) - 1
@@ -43,29 +41,37 @@ _STREAM_SNAPSHOT_EXPRESSION = """
   constexpr unsigned long long priority_valid = 1 << 3;
   constexpr unsigned long long flags_valid = 1 << 4;
 
+  void* original_context{};
+  const int context_status =
+    ((int (*)(void**))cuCtxGetCurrent)(&original_context);
   int capture_status{};
-  if (__CAPTURE_QUERY__(stream, &capture_status) != 0) {
-    return Snapshot{};
-  }
-
-  unsigned long long validity = capture_status_valid;
-  if (capture_status != 0) {
-    return Snapshot{0, 0, 0, (unsigned int)capture_status, 0, validity};
-  }
-
   unsigned long long unique_id{};
-  if (__UNIQUE_ID_QUERY__((void*)stream, &unique_id) == 0) {
-    validity |= unique_id_valid;
-  }
   int device{};
-__DEVICE_QUERY__
   int priority{};
-  if ((int)cudaStreamGetPriority(stream, &priority) == 0) {
-    validity |= priority_valid;
-  }
   unsigned int flags{};
-  if ((int)cudaStreamGetFlags(stream, &flags) == 0) {
-    validity |= flags_valid;
+  unsigned long long validity{};
+
+  if (context_status == 0
+      && ((int (*)(cudaStream_t, int*))cudaStreamIsCapturing)(
+           stream, &capture_status) == 0) {
+    validity |= capture_status_valid;
+    if (capture_status == 0) {
+      if (((int (*)(void*, unsigned long long*))cuStreamGetId)(
+            (void*)stream, &unique_id) == 0) {
+        validity |= unique_id_valid;
+      }
+%s
+      if ((int)cudaStreamGetPriority(stream, &priority) == 0) {
+        validity |= priority_valid;
+      }
+      if ((int)cudaStreamGetFlags(stream, &flags) == 0) {
+        validity |= flags_valid;
+      }
+    }
+  }
+
+  if (context_status == 0 && original_context == nullptr) {
+    (void)((int (*)(void*))cuCtxSetCurrent)(nullptr);
   }
 
   return Snapshot{
@@ -76,7 +82,7 @@ __DEVICE_QUERY__
     flags,
     validity,
   };
-})((cudaStream_t)__HANDLE__))
+})((cudaStream_t)%#x))
 """
 
 _STREAM_DEVICE_QUERY = """
@@ -143,20 +149,6 @@ def _evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
     return frame.EvaluateExpression(expression, options)
 
 
-def _evaluate_stream_snapshot(
-    value: lldb.SBValue, handle: int, *, include_device: bool
-) -> lldb.SBValue:
-    expression = (
-        _STREAM_SNAPSHOT_EXPRESSION.replace(
-            "__CAPTURE_QUERY__", _CUDA_STREAM_IS_CAPTURING
-        )
-        .replace("__UNIQUE_ID_QUERY__", _CU_STREAM_GET_ID)
-        .replace("__DEVICE_QUERY__", _STREAM_DEVICE_QUERY if include_device else "")
-        .replace("__HANDLE__", f"{handle:#x}")
-    )
-    return _evaluate(value, expression)
-
-
 def _snapshot_values(
     result: lldb.SBValue,
 ) -> tuple[int, int, int, int, int, int] | None:
@@ -180,11 +172,13 @@ def _signed32(value: int) -> int:
 def _query_stream_snapshot(value: lldb.SBValue, handle: int) -> StreamSnapshot | None:
     # One vector-valued expression avoids target allocations and
     # debugger-visible state changes.
-    result = _evaluate_stream_snapshot(value, handle, include_device=True)
+    result = _evaluate(
+        value, _STREAM_SNAPSHOT_EXPRESSION % (_STREAM_DEVICE_QUERY, handle)
+    )
     if not result.IsValid() or result.GetError().Fail():
         # cudaStreamGetDevice was added in CUDA 12.8. Older runtimes can still
         # provide the remaining metadata without changing the current context.
-        result = _evaluate_stream_snapshot(value, handle, include_device=False)
+        result = _evaluate(value, _STREAM_SNAPSHOT_EXPRESSION % ("", handle))
     if not result.IsValid() or result.GetError().Fail():
         return None
 
