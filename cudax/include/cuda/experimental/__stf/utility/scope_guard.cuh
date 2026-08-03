@@ -133,9 +133,11 @@ struct __on_throw_policy
         _CCCL_UNREACHABLE();
       }
     }
-    else if constexpr (::cuda::std::is_convertible_v<_Reaction, void (*)() noexcept>)
+    else if constexpr (::cuda::std::is_convertible_v<_Reaction, void (*)()>)
     {
       // A terminating action, `::std::abort` and `::std::terminate` being the ones worth naming.
+      // A `noexcept` pointer is not asked for, even though the action runs during unwinding,
+      // because Microsoft's `abort` is not declared `noexcept` and would miss this branch.
       notify(__exception, __loc_);
       __reaction_();
       ::std::abort(); // in case it returns after all
@@ -191,7 +193,7 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *   says what happens next: returning `decltype(::std::ignore)` resumes execution with a
  *   default-constructed result, and returning `void` claims the handler ends the program, with
  *   `std::abort` running right after it in case it does not. `notify` is such a handler.
- * - A terminating action: any nullary `noexcept` callable returning `void`, `std::abort` and
+ * - A terminating action: anything convertible to `void (*)()`, `std::abort` and
  *   `std::terminate` being the obvious ones. The exception is reported through `notify`, the
  *   action runs, and `std::abort` follows in case it returns.
  * - `std::ignore`, which suppresses the exception silently and resumes execution with a
@@ -239,6 +241,15 @@ UNITTEST("on_throw")
     return 7;
   };
   EXPECT(untouched == 7);
+
+  // A terminating action need not be `noexcept`, which is how Microsoft declares `abort`.
+  void (*const bail)() = [] {
+    ::std::abort();
+  };
+  const int spared = on_throw(bail) << [] {
+    return 9;
+  };
+  EXPECT(spared == 9);
 
 #  if _CCCL_HAS_EXCEPTIONS()
   const int ignored = on_throw(::std::ignore) << []() -> int {
