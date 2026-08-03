@@ -88,6 +88,7 @@ TEST_FUNC constexpr void test_string()
 }
 #endif // _LIBCUDACXX_HAS_STRING
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2, class T>
 TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
@@ -95,6 +96,7 @@ TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T
          == x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
 TEST_FUNC constexpr void test()
 {
@@ -111,6 +113,7 @@ TEST_FUNC constexpr void test()
   test(Iter1(a), Iter1(a + sa), Iter2(b), 10, 1176490);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
