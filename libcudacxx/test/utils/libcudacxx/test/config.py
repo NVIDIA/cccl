@@ -667,6 +667,9 @@ class Configuration(object):
         if self.get_lit_bool("enable_tile", False):
             self.config.available_features.add("enable-tile")
 
+        if self.get_lit_bool("force_tile", False):
+            self.config.available_features.add("force-tile")
+
         if "msvc" not in self.config.available_features:
             macros = self._dump_macros_verbose()
             if "__cpp_if_constexpr" not in macros:
@@ -713,6 +716,8 @@ class Configuration(object):
         self.cxx.compile_flags += shlex.split(compile_flags_str)
         if self.get_lit_bool("enable_pedantic_warnings", default=True):
             self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
+        if self.get_lit_bool("force_tile", default=False):
+            self.cxx.compile_flags += ["-DCCCL_FORCE_TILE_TESTS"]
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ["-D_CRT_SECURE_NO_WARNINGS"]
