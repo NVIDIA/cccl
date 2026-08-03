@@ -120,9 +120,17 @@ def _ebco_element(
         if impl_type.GetNumberOfFields() == 0:
             element_type = impl_type.GetDirectBaseClassAtIndex(0).GetType()
             byte_size = element_type.GetByteSize() or 1
+            target = ebco_value.GetTarget()
             data = lldb.SBData()
             error = lldb.SBError()
-            data.SetData(error, bytes(byte_size), lldb.eByteOrderLittle, 8)
+            data.SetData(
+                error,
+                bytes(byte_size),
+                target.GetByteOrder(),
+                target.GetAddressByteSize(),
+            )
+            if error.Fail():
+                return None
             return ebco_value.CreateValueFromData(name, data, element_type)
         impl = ebco_value.CreateChildAtOffset(name, base.GetOffsetInBytes(), impl_type)
         return impl.GetChildMemberWithName("__elem_")
