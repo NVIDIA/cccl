@@ -27,6 +27,6 @@ Canonical branches
 Tagging conventions
 -------------------
 - ``vX.Y.Z``: finalized release tags on release branches
-- ``vX.Y.Z-ctkN.M``: release tags based on NVIDIA CUDA Toolkit releases.
+- ``vX.Y.Z-ctkN.M.K``: finalized release tags exactly equivalent to the CCCL contents in NVIDIA CUDA Toolkit release `N.M.K`.
 - ``vX.Y.Z-rcN``: release-candidate tags for pre-release validation.
 - ``vX.Y.Z.dev``: the first commit of development for ``X.Y.Z`` (the commit that increments the library version)
