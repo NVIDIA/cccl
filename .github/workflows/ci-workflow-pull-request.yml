@@ -584,3 +584,78 @@ jobs:
           if [[ "$status" != "success" ]]; then
             exit 1
           fi
+
+  # This analyzes the current run. Keep every job whose failures should be included in
+  # this job's direct or transitive `needs` so log collection starts after they finish.
+  analyze-failures:
+    name: Analyze CI failures
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        (
+          needs.build-workflow.result == 'failure' ||
+          needs.ci.result == 'failure' ||
+          needs.build-rapids.result == 'failure' ||
+          needs.build-matx.result == 'failure' ||
+          needs.build-pytorch.result == 'failure' ||
+          needs.bench-results.result == 'failure'
+        )
+      }}
+    needs:
+      - build-workflow
+      - ci
+      - build-rapids
+      - build-matx
+      - build-pytorch
+      - bench-results
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      analysis: ${{ steps.failure-analysis.outputs.markdown }}
+      pr_number: ${{ steps.pull-request.outputs.pr_number }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve pull request number
+        id: pull-request
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^pull-request/([0-9]+)$ ]]; then
+            echo "pr_number=${BASH_REMATCH[1]}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Expected a pull-request/<number> branch, got ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+      - name: Analyze failures
+        id: failure-analysis
+        uses: ./.github/actions/ci-failure-analysis
+        with:
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: ${{ github.run_id }}
+          pr_number: ${{ steps.pull-request.outputs.pr_number }}
+
+  publish-failure-analysis:
+    name: Add failure analysis to CI results
+    if: ${{ always() && needs.analyze-failures.result == 'success' }}
+    needs: analyze-failures
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Append to CI Workflow Results
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: ci-results
+          number: ${{ needs.analyze-failures.outputs.pr_number }}
+          message: ${{ needs.analyze-failures.outputs.analysis }}
+          append: true

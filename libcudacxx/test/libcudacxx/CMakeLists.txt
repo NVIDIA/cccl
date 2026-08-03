@@ -125,6 +125,12 @@ else()
   set(LIBCUDACXX_ENABLE_TILE False)
 endif()
 
+if (CCCL_FORCE_TILE_TESTS)
+  set(LIBCUDACXX_FORCE_TILE_TESTS True)
+else()
+  set(LIBCUDACXX_FORCE_TILE_TESTS False)
+endif()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
 endif()
