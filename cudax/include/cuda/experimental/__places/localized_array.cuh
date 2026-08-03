@@ -297,11 +297,11 @@ public:
     {
       size_t offset = item.offset;
       size_t sz     = item.size;
-      cuda_try(cuMemUnmap(base_ptr + offset, sz));
-      cuda_try(cuMemRelease(item.alloc_handle));
+      cuda_safe_call(cuMemUnmap(base_ptr + offset, sz));
+      cuda_safe_call(cuMemRelease(item.alloc_handle));
     }
 
-    cuda_try(cuMemAddressFree(base_ptr, vm_total_size_bytes));
+    cuda_safe_call(cuMemAddressFree(base_ptr, vm_total_size_bytes));
   }
 
   void* get_base_ptr() const

@@ -939,6 +939,9 @@ public:
     ctx_.push(loc);
   }
 
+  // A push() that cannot be matched by its pop() leaves the context stack inconsistent, so
+  // terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~graph_scope_guard()
   {
     ctx_.pop();
@@ -1033,6 +1036,10 @@ public:
   //!
   //! Runs pop_prologue() (if not already done) and pop_epilogue(). After
   //! release(), further calls to launch()/exec()/stream()/graph() are invalid.
+  //!
+  //! Tearing the graph node down is not something a caller could retry or recover from, so
+  //! a failure here terminates.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   void release() noexcept
   {
     if (released_)
@@ -1204,6 +1211,9 @@ private:
         , handle(mv(h))
     {}
 
+    // As in release(), a failing pop_epilogue() is not recoverable, so terminating is the
+    // intended outcome.
+    // NOLINTNEXTLINE(bugprone-exception-escape)
     ~state()
     {
       // Guard against users who manually called pop_epilogue() on the ctx
