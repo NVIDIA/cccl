@@ -185,7 +185,7 @@
 
 #if _CCCL_HAS_CDP()
 // We have CDP, so host and device APIs can call kernels
-#  define _CCCL_CDP_API _CCCL_API
+#  define _CCCL_CDP_API _CCCL_HOST_DEVICE_API
 #else // ^^^ _CCCL_HAS_CDP() ^^^ / vvv !_CCCL_HAS_CDP() vvv
 // We don't have CDP, only host APIs can call kernels
 #  define _CCCL_CDP_API _CCCL_HOST_API
