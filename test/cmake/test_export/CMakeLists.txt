@@ -143,6 +143,50 @@ foreach (component IN LISTS COMPONENTS)
         "EXPECTED_VERSION=${component_cmake_version}"
     )
   elseif (component STREQUAL "cudax")
+    get_target_property(cudax_aliased_target cudax::cudax ALIASED_TARGET)
+    if (NOT cudax_aliased_target STREQUAL "_cudax_cudax")
+      message(
+        FATAL_ERROR
+        "Expected cudax::cudax to alias the non-imported _cudax_cudax target; got '${cudax_aliased_target}'"
+      )
+    endif()
+
+    get_target_property(cudax_target_imported _cudax_cudax IMPORTED)
+    if (cudax_target_imported)
+      message(FATAL_ERROR "Expected _cudax_cudax to be a non-imported target")
+    endif()
+
+    get_target_property(
+      cudax_compile_features
+      _cudax_cudax
+      INTERFACE_COMPILE_FEATURES
+    )
+    foreach (required_feature IN ITEMS cxx_std_17 cuda_std_17)
+      if (NOT required_feature IN_LIST cudax_compile_features)
+        message(
+          FATAL_ERROR
+          "Expected cudax::cudax to require ${required_feature}; got '${cudax_compile_features}'"
+        )
+      endif()
+    endforeach()
+
+    get_target_property(
+      cudax_compile_definitions
+      _cudax_cudax
+      INTERFACE_COMPILE_DEFINITIONS
+    )
+    if (
+      NOT
+        _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
+          IN_LIST
+          cudax_compile_definitions
+    )
+      message(
+        FATAL_ERROR
+        "Expected cudax::cudax to enable libcu++ group features; got '${cudax_compile_definitions}'"
+      )
+    endif()
+
     math(
       EXPR
       component_cmake_version

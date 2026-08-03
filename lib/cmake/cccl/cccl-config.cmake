@@ -123,9 +123,8 @@ foreach (component IN LISTS components)
     )
     if (TARGET cudax::cudax AND NOT TARGET CCCL::cudax)
       if (TARGET _cudax_cudax)
-        # If `_cudax_cudax` exists, it was created with cudax_NO_IMPORTED_TARGETS set.
-        # In this case, `cudax::cudax` is itself an alias, and CMake won't allow an
-        # alias to be created for another alias target.
+        # `cudax::cudax` is itself an alias, and CMake won't allow an alias to be
+        # created for another alias target.
         # Instead, use `cudax::cudax`'s underlying `_cudax_cudax` target.
         # This happens while building our internal tests, etc.
         add_library(CCCL::cudax ALIAS _cudax_cudax)

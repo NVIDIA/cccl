@@ -4,6 +4,8 @@
 
 import importlib.metadata
 import importlib.util
+import subprocess
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -107,6 +109,56 @@ def test_complete_license_set():
         path = package_root / license_file
         assert path.is_file(), license_file
         assert path.stat().st_size > 1_000, license_file
+
+
+def test_cudax_cmake_target_is_consumer_safe(tmp_path):
+    package_root = Path(headers.__file__).parent
+    cudax_cmake_dir = package_root / "lib" / "cmake" / "cudax"
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    (source_dir / "CMakeLists.txt").write_text(
+        textwrap.dedent(
+            """\
+            cmake_minimum_required(VERSION 3.21)
+            project(cccl_headers_cudax_contract LANGUAGES NONE)
+
+            find_package(cudax CONFIG REQUIRED)
+
+            get_target_property(cudax_alias cudax::cudax ALIASED_TARGET)
+            if (NOT cudax_alias STREQUAL "_cudax_cudax")
+              message(FATAL_ERROR "cudax::cudax must alias a non-imported target")
+            endif()
+
+            get_target_property(cudax_definitions _cudax_cudax INTERFACE_COMPILE_DEFINITIONS)
+            if (NOT "_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX" IN_LIST cudax_definitions)
+              message(FATAL_ERROR "cudax::cudax is missing the group feature definition")
+            endif()
+
+            get_target_property(cudax_features _cudax_cudax INTERFACE_COMPILE_FEATURES)
+            foreach (required_feature IN ITEMS cxx_std_17 cuda_std_17)
+              if (NOT required_feature IN_LIST cudax_features)
+                message(FATAL_ERROR "cudax::cudax is missing ${required_feature}")
+              endif()
+            endforeach()
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(source_dir),
+            "-B",
+            str(tmp_path / "build"),
+            f"-Dcudax_DIR={cudax_cmake_dir}",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
 
 def test_distribution_has_one_runtime_dependency():

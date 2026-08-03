@@ -53,19 +53,20 @@ if (NOT TARGET cudax::libcudacxx)
   target_link_libraries(_cudax_libcudacxx INTERFACE libcudacxx::libcudacxx)
 endif()
 
-# Allow non-imported targets to be used. This treats cudax headers as non-system includes,
-# exposing warnings in them. Used when building cudax tests.
-if (cudax_NO_IMPORTED_TARGETS)
-  # INTERFACE libraries cannot be namespaced; ALIAS libraries can.
-  add_library(_cudax_cudax INTERFACE)
-  add_library(cudax::cudax ALIAS _cudax_cudax)
-  set(cudax_target_name _cudax_cudax)
-else()
-  add_library(cudax::cudax INTERFACE IMPORTED GLOBAL)
-  set(cudax_target_name cudax::cudax)
-endif()
+# Imported targets expose their include directories as system paths. nvcc checks
+# the CUDA Toolkit before system paths, which can silently select the Toolkit's
+# CUDAX and libcu++ headers instead of this package. Keep the implementation
+# target unnamespaced and provide the public name through an alias, matching the
+# other CCCL header packages.
+add_library(_cudax_cudax INTERFACE)
+add_library(cudax::cudax ALIAS _cudax_cudax)
+set(cudax_target_name _cudax_cudax)
 
-target_compile_features(${cudax_target_name} INTERFACE cxx_std_17)
+target_compile_features(${cudax_target_name} INTERFACE cxx_std_17 cuda_std_17)
+target_compile_definitions(
+  ${cudax_target_name}
+  INTERFACE _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
+)
 target_include_directories(
   ${cudax_target_name}
   INTERFACE "${cudax_include_dir}"
