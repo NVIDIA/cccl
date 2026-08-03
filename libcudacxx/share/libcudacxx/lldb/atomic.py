@@ -12,11 +12,33 @@ import lldb
 
 _ATOMIC_PATTERN = re.compile(r"^cuda::(?:std::)?atomic(?:_ref)?<.+>$")
 _ATOMIC_REF_PATTERN = re.compile(r"^cuda::(?:std::)?atomic_ref<.+>$")
+_ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
+_THREAD_SCOPE_VALUE_PATTERN = re.compile(
+    r"\((?:enum )?cuda(?:::std)?::thread_scope\)\s*(10|[012])(?=\s*>)"
+)
+_THREAD_SCOPE_NAMES = {
+    0: "system",
+    1: "device",
+    2: "block",
+    10: "thread",
+}
 InternalDict = dict[str, object]
 
 
 def _type_name(value_type: lldb.SBType) -> str:
     return value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
+
+
+def _complete_type_name(value_type: lldb.SBType) -> str:
+    """Return the complete public type name, including default template arguments."""
+    value_type = value_type.GetCanonicalType().GetUnqualifiedType()
+    type_name = value_type.GetName() or value_type.GetDisplayTypeName() or ""
+    type_name = _ABI_NAMESPACE_PATTERN.sub("", type_name)
+    type_name = type_name.replace("cuda::std::thread_scope_", "cuda::thread_scope_")
+    return _THREAD_SCOPE_VALUE_PATTERN.sub(
+        lambda match: f"cuda::thread_scope_{_THREAD_SCOPE_NAMES[int(match.group(1))]}",
+        type_name,
+    )
 
 
 def is_cuda_atomic(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
@@ -74,7 +96,7 @@ class AtomicSyntheticProvider:
         self.update()
 
     def update(self) -> bool:
-        self.type_name = _type_name(self.value.GetType())
+        self.type_name = _complete_type_name(self.value.GetType())
         self.child = _stored_value(self.value, self.type_name)
         return self.child.IsValid()
 

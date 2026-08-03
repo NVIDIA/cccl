@@ -65,15 +65,30 @@ cuda::std::atomic_ref<payload> ptr=<address> = {
 }
 =============== atomic.locked_reference end ===============
 =============== atomic.cuda_integer begin ===============
-cuda::atomic<int> = {
+cuda::atomic<int, cuda::thread_scope_system> = {
   value = 41
 }
 =============== atomic.cuda_integer end ===============
 =============== atomic.cuda_reference begin ===============
-cuda::atomic_ref<int> ptr=<address> = {
+cuda::atomic_ref<int, cuda::thread_scope_system> ptr=<address> = {
   value = -26
 }
 =============== atomic.cuda_reference end ===============
+=============== atomic.cuda_device_integer begin ===============
+cuda::atomic<int, cuda::thread_scope_device> = {
+  value = 29
+}
+=============== atomic.cuda_device_integer end ===============
+=============== atomic.cuda_block_reference begin ===============
+cuda::atomic_ref<int, cuda::thread_scope_block> ptr=<address> = {
+  value = -38
+}
+=============== atomic.cuda_block_reference end ===============
+=============== atomic.cuda_thread_integer begin ===============
+cuda::atomic<int, cuda::thread_scope_thread> = {
+  value = 17
+}
+=============== atomic.cuda_thread_integer end ===============
 =============== atomic.update.before begin ===============
 cuda::std::atomic<int> = {
   value = 85

@@ -18,6 +18,12 @@ _ATOMIC_NAMES = frozenset(
     {"cuda::atomic", "cuda::atomic_ref", "cuda::std::atomic", "cuda::std::atomic_ref"}
 )
 _ATOMIC_REF_NAMES = frozenset({"cuda::atomic_ref", "cuda::std::atomic_ref"})
+_THREAD_SCOPE_NAMES = {
+    0: "system",
+    1: "device",
+    2: "block",
+    10: "thread",
+}
 
 
 def _template_name(type_name: str) -> str:
@@ -26,6 +32,19 @@ def _template_name(type_name: str) -> str:
 
 def _is_atomic_ref(type_name: str) -> bool:
     return _template_name(type_name) in _ATOMIC_REF_NAMES
+
+
+def _complete_type_name(value_type: gdb.Type) -> str:
+    """Return the complete public type name, including CUDA thread scope."""
+    value_type = value_type.strip_typedefs().unqualified()
+    type_name = memory_resource.public_type_name(value_type)
+    template_name = _template_name(type_name)
+    if template_name not in {"cuda::atomic", "cuda::atomic_ref"}:
+        return type_name
+
+    value_type_name = memory_resource.public_type_name(value_type.template_argument(0))
+    scope = int(value_type.template_argument(1))
+    return f"{template_name}<{value_type_name}, cuda::thread_scope_{_THREAD_SCOPE_NAMES[scope]}>"
 
 
 def _is_cuda_atomic(value_type: gdb.Type) -> bool:
@@ -60,7 +79,7 @@ class AtomicPrinter:
     def __init__(self, value: gdb.Value) -> None:
         self.value = value
         self.type = value.type.strip_typedefs().unqualified()
-        self.type_name = memory_resource.public_type_name(self.type)
+        self.type_name = _complete_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
         yield "value", _stored_value(self.value, self.type_name)

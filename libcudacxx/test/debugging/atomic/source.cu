@@ -91,6 +91,21 @@ using atomic_alias = cuda::std::atomic<long long>;
   keep_for_debugger(value);
 }
 
+[[gnu::noinline]] void inspect_cuda_device_integer(const cuda::atomic<int, cuda::thread_scope_device>& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_cuda_block_reference(const cuda::atomic_ref<int, cuda::thread_scope_block>& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_cuda_thread_integer(const cuda::atomic<int, cuda::thread_scope_thread>& value)
+{
+  keep_for_debugger(value);
+}
+
 [[gnu::noinline]] void inspect_before_update(const cuda::std::atomic<int>& value)
 {
   keep_for_debugger(value);
@@ -133,6 +148,10 @@ int main()
   const cuda::atomic<int> cuda_integer{41};
   int cuda_referenced = -26;
   const cuda::atomic_ref<int> cuda_reference{cuda_referenced};
+  const cuda::atomic<int, cuda::thread_scope_device> cuda_device_integer{29};
+  int cuda_block_referenced = -38;
+  const cuda::atomic_ref<int, cuda::thread_scope_block> cuda_block_reference{cuda_block_referenced};
+  const cuda::atomic<int, cuda::thread_scope_thread> cuda_thread_integer{17};
 
   cuda::std::atomic<int> updated{85};
   int updated_target = -12;
@@ -150,6 +169,9 @@ int main()
   inspect_locked_reference(locked_reference);
   inspect_cuda_integer(cuda_integer);
   inspect_cuda_reference(cuda_reference);
+  inspect_cuda_device_integer(cuda_device_integer);
+  inspect_cuda_block_reference(cuda_block_reference);
+  inspect_cuda_thread_integer(cuda_thread_integer);
   inspect_before_update(updated);
   updated.store(99);
   inspect_after_update(updated);
