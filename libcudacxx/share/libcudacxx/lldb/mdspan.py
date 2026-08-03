@@ -227,7 +227,6 @@ class MdspanInfo(NamedTuple):
     data: lldb.SBValue | None
     layout: str | None
     strides: list[int] | None
-    layout_name: str | None
     accessor_name: str | None
 
     def can_index(self) -> bool:
@@ -271,17 +270,16 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     data_handle = _ebco_element(top_ebco, 0, "__data_handle")
     mapping = _ebco_element(top_ebco, 1, "__mapping")
     if data_handle is None or mapping is None:
-        return MdspanInfo(type_name, None, None, None, None, None, None)
+        return MdspanInfo(type_name, None, None, None, None, None)
 
     mdspan_type = _mdspan_base_type(
         value.GetType().GetCanonicalType().GetUnqualifiedType()
     )
     if mdspan_type is None:
-        return MdspanInfo(type_name, None, None, None, None, None, None)
+        return MdspanInfo(type_name, None, None, None, None, None)
     extents_type = mdspan_type.GetTemplateArgumentType(1)
     layout_type = mdspan_type.GetTemplateArgumentType(2)
     accessor_type = mdspan_type.GetTemplateArgumentType(3)
-    layout_name = layout_type.GetDisplayTypeName() or layout_type.GetName() or None
     accessor_name = (
         accessor_type.GetDisplayTypeName() or accessor_type.GetName() or None
     )
@@ -289,26 +287,20 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     dynamic_extent = _dynamic_extent(value.GetTarget())
     static_values = _static_extents(extents_type)
     if static_values is None:
-        return MdspanInfo(type_name, None, None, None, None, layout_name, accessor_name)
+        return MdspanInfo(type_name, None, None, None, None, accessor_name)
     rank_dynamic = sum(1 for value_ in static_values if value_ == dynamic_extent)
 
     mapping_ebco = _find_ebco_base(mapping)
     dynamic_values: list[int] = []
     if rank_dynamic > 0:
         if mapping_ebco is None:
-            return MdspanInfo(
-                type_name, None, None, None, None, layout_name, accessor_name
-            )
+            return MdspanInfo(type_name, None, None, None, None, accessor_name)
         extents_value = _ebco_element(mapping_ebco, 0, "__extents")
         if extents_value is None:
-            return MdspanInfo(
-                type_name, None, None, None, None, layout_name, accessor_name
-            )
+            return MdspanInfo(type_name, None, None, None, None, accessor_name)
         values = _dynamic_values(extents_value, rank_dynamic)
         if values is None:
-            return MdspanInfo(
-                type_name, None, None, None, None, layout_name, accessor_name
-            )
+            return MdspanInfo(type_name, None, None, None, None, accessor_name)
         dynamic_values = values
     extents = _combined_extents(static_values, dynamic_values, dynamic_extent)
 
@@ -316,18 +308,14 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     strides = None
     if layout == "layout_stride" and len(extents) > 0:
         if mapping_ebco is None:
-            return MdspanInfo(
-                type_name, extents, None, layout, None, layout_name, accessor_name
-            )
+            return MdspanInfo(type_name, extents, None, layout, None, accessor_name)
         strides = _strides(mapping_ebco, len(extents))
 
     data = None
     if data_handle.GetType().GetCanonicalType().IsPointerType():
         data = data_handle
 
-    return MdspanInfo(
-        type_name, extents, data, layout, strides, layout_name, accessor_name
-    )
+    return MdspanInfo(type_name, extents, data, layout, strides, accessor_name)
 
 
 def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
@@ -341,10 +329,6 @@ def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | N
         details.append(f"extents=[{extents_text}]")
     if info.data is not None:
         details.append(f"data={info.data.GetValueAsUnsigned(0):#x}")
-    if info.layout_name is not None:
-        details.append(f"layout={info.layout_name}")
-    if info.accessor_name is not None:
-        details.append(f"accessor={info.accessor_name}")
     if not details:
         return None
     return ", ".join(details)

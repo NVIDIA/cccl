@@ -216,7 +216,6 @@ class MdspanPrinter:
         self.data: gdb.Value | None = None
         self.layout: str | None = None
         self.strides: list[int] | None = None
-        self.layout_name: str | None = None
         self.accessor_name: str | None = None
 
         self._resolve()
@@ -244,7 +243,6 @@ class MdspanPrinter:
         extents_type = mdspan_type.template_argument(1)
         layout_type = mdspan_type.template_argument(2)
         accessor_type = mdspan_type.template_argument(3)
-        self.layout_name = memory_resource.public_type_name(layout_type)
         self.accessor_name = memory_resource.public_type_name(accessor_type)
 
         dynamic_extent = _dynamic_extent()
@@ -320,10 +318,6 @@ class MdspanPrinter:
             details.append(f"extents=[{extents_text}]")
         if self.data is not None:
             details.append(f"data={int(self.data):#x}")
-        if self.layout_name is not None:
-            details.append(f"layout={self.layout_name}")
-        if self.accessor_name is not None:
-            details.append(f"accessor={self.accessor_name}")
         if not details:
             return self.type_name
         return f"{self.type_name} {', '.join(details)}"
