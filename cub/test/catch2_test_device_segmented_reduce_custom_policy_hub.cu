@@ -15,7 +15,7 @@
 #include <cuda/std/functional>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -31,7 +31,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][reduce][device]")
+CUB_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][reduce][device]", CUB_SMALL)
 {
   using input_t     = int;
   using output_t    = int;

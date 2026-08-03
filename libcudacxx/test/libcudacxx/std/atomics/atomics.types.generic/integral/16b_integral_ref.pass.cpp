@@ -10,7 +10,7 @@
 // UNSUPPORTED: windows
 // UNSUPPORTED: aarch64-unknown-linux-gnu
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
@@ -103,7 +103,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC __noinline__ void do_test()
+TEST_HOST_DEVICE_FUNC __noinline__ void do_test()
 {
   Selector<T, constructor_initializer> sel;
   T& val = *sel.construct(T(0));
@@ -162,7 +162,7 @@ TEST_FUNC __noinline__ void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC __noinline__ void test()
+TEST_HOST_DEVICE_FUNC __noinline__ void test()
 {
   do_test<A, T, Selector>();
 }
@@ -170,7 +170,7 @@ TEST_FUNC __noinline__ void test()
 template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename> class Selector>
-TEST_FUNC void test_for_all_types()
+TEST_HOST_DEVICE_FUNC void test_for_all_types()
 {
   test<Atomic<__int128_t, Scope>, __int128_t, Selector>();
   test<Atomic<__uint128_t, Scope>, __uint128_t, Selector>();

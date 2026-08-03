@@ -102,8 +102,11 @@ struct streaming_context
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
 
-    // Otherwise, just write out the number of unique items in this partition
-    *d_num_accumulated_uniques_out = total_uniques;
+    // The double buffer is only read by a subsequent partition and is not allocated for single-partition invocations
+    if (!last_partition)
+    {
+      *d_num_accumulated_uniques_out = total_uniques;
+    }
 
     return total_uniques;
   }

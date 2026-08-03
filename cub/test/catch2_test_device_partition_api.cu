@@ -5,14 +5,14 @@
 
 #include <cub/device/device_partition.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // Guard: the legacy memory-size query call with all defaults (no explicit stream)
 // must resolve unambiguously to the legacy temp-storage overload when the env
 // passthrough overload is also visible. If the env overload's SFINAE is too loose,
 // this becomes "ambiguous overload" or silently dispatches to env.
 
-C2H_TEST("DevicePartition::Flagged legacy size-query is unambiguous", "[partition][device]")
+CUB_TEST("DevicePartition::Flagged legacy size-query is unambiguous", "[partition][device]", CUB_SMALL)
 {
   int* d_in           = nullptr;
   int* d_flags        = nullptr;
@@ -24,7 +24,7 @@ C2H_TEST("DevicePartition::Flagged legacy size-query is unambiguous", "[partitio
   REQUIRE(cudaSuccess == cub::DevicePartition::Flagged(nullptr, bytes, d_in, d_flags, d_out, d_num_selected, n));
 }
 
-C2H_TEST("DevicePartition::If legacy size-query is unambiguous", "[partition][device]")
+CUB_TEST("DevicePartition::If legacy size-query is unambiguous", "[partition][device]", CUB_SMALL)
 {
   int* d_in           = nullptr;
   int* d_out          = nullptr;
@@ -36,7 +36,7 @@ C2H_TEST("DevicePartition::If legacy size-query is unambiguous", "[partition][de
     cudaSuccess == cub::DevicePartition::If(nullptr, bytes, d_in, d_out, d_num_selected, n, ::cuda::always_true{}));
 }
 
-C2H_TEST("DevicePartition::If three-way legacy size-query is unambiguous", "[partition][device]")
+CUB_TEST("DevicePartition::If three-way legacy size-query is unambiguous", "[partition][device]", CUB_SMALL)
 {
   int* d_in           = nullptr;
   int* d_first_part   = nullptr;
