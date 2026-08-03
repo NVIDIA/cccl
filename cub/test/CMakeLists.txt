@@ -70,16 +70,38 @@ endfunction()
 
 ## _cub_has_large_tests
 #
-# If the test source declares a CUB_LARGE test or contains the legacy
-# "[large-mem]" marker, `result_var` will be set to TRUE.
+# If the test source declares a CUB_LARGE test, `result_var` will be set to
+# TRUE.
 function(_cub_has_large_tests result_var test_src)
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
   string(FIND "${test_source}" "CUB_LARGE" cub_large_test)
-  string(FIND "${test_source}" "[large-mem]" legacy_large_test)
-  if (cub_large_test EQUAL -1 AND legacy_large_test EQUAL -1)
+  if (cub_large_test EQUAL -1)
     set(${result_var} FALSE PARENT_SCOPE)
   else()
     set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_validate_non_catch2_memory_class
+#
+# Require a non-Catch2 runtime test to declare exactly one GPU memory class.
+function(_cub_validate_non_catch2_memory_class test_src)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
+  string(
+    REGEX MATCHALL
+    "CUB_TEST_MEMORY_CLASS\\([ \t\r\n]*(CUB_SMALL|CUB_LARGE)[ \t\r\n]*\\)"
+    memory_class_declarations
+    "${test_source}"
+  )
+  list(LENGTH memory_class_declarations memory_class_count)
+
+  if (NOT memory_class_count EQUAL 1)
+    message(
+      FATAL_ERROR
+      "${test_src} must declare exactly one of "
+      "CUB_TEST_MEMORY_CLASS(CUB_SMALL) or "
+      "CUB_TEST_MEMORY_CLASS(CUB_LARGE); found ${memory_class_count}."
+    )
   endif()
 endfunction()
 
@@ -265,6 +287,10 @@ function(
     endif()
   else() # Not catch2:
     _cub_is_fail_test(is_fail_test "${test_src}")
+
+    if (NOT is_fail_test)
+      _cub_validate_non_catch2_memory_class("${test_src}")
+    endif()
 
     if (is_fail_test)
       cccl_add_executable(
