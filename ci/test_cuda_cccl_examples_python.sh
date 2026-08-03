@@ -9,8 +9,8 @@ source "$ci_dir/pyenv_helper.sh"
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
 # Pin cuda-toolkit to the container's CTK minor and set cuda_version /
-# cuda_major_version (CCCL_PYTHON_TEST_LATEST_CTK=1 opts out). See pyenv_helper.sh.
-pin_cuda_toolkit
+# cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
+pin_cuda_toolkit "${ctk_mode}"
 
 # Setup Python environment
 setup_python_env "${py_version}"
@@ -28,7 +28,8 @@ fi
 # for the throughput smoke, is installed best-effort further down since it does
 # not always ship a wheel for the newest Python.)
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark
+ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "cupy-cuda${cuda_major_version}x" pytest-benchmark
 
 # Run tests for parallel module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
