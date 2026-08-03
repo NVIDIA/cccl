@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -94,6 +94,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
     {
       test_resource default_constructed = cuda::device_default_memory_pool(cuda::device_ref{0});
       CHECK(default_constructed.get() == current_default_pool);
+      CHECK(ensure_release_threshold(default_constructed.get(), cuda::std::numeric_limits<size_t>::max()));
     }
 
     // Ensure that the pool was not destroyed by allocating something
