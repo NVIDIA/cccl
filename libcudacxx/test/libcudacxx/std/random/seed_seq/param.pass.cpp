@@ -8,15 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/cassert>
 #include <cuda/std/random>
 
 #include "test_macros.h"
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   cuda::std::array<cuda::std::uint32_t, 3> seeds = {1, 2, 3};
   cuda::std::seed_seq seq1(seeds.begin(), seeds.end());
