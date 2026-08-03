@@ -16,6 +16,10 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_pointer_element 1 mdspan.pointer_element pointer_element
     --case inspect_nested 1 mdspan.nested nested
     --case inspect_custom_accessor 1 mdspan.custom_accessor custom_accessor
+    --case inspect_host_mdspan 1 mdspan.host_mdspan host_mdspan_span
+    --case inspect_device_mdspan 1 mdspan.device_mdspan device_mdspan_span
+    --case inspect_managed_mdspan 1 mdspan.managed_mdspan managed_mdspan_span
+    --case inspect_restrict_mdspan 1 mdspan.restrict_mdspan restrict_mdspan_span
     --case inspect_vector 1 mdspan.vector mdspan_vector
     --case inspect_before_update 1 mdspan.update.before mutable_values
     --case inspect_after_update 1 mdspan.update.after mutable_values

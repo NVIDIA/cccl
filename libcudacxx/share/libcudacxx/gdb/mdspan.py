@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GDB pretty printer for cuda::std::mdspan."""
+"""GDB pretty printer for cuda::std::mdspan and its cuda:: accessibility wrappers."""
 
 from __future__ import annotations
 
@@ -15,13 +15,31 @@ import memory_resource
 import gdb
 import gdb.printing
 
-# static_cast<size_t>(-1), the value of cuda::std::dynamic_extent.
-_DYNAMIC_EXTENT = (1 << 64) - 1
-
 _EBCO_PATTERN = re.compile(r"__mdspan_ebco<")
-_EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<(\d+),")
-_EXTENTS_PATTERN = re.compile(r"extents<([^>]*)>$")
+_EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
+_EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
+# Not host-dereferenceable; never index through these accessors.
+_DEVICE_ONLY_ACCESSOR_MARKERS = ("__device_accessor<", "__shared_memory_accessor<")
+# cuda:: accessibility wrappers around cuda::std::mdspan.
+_WRAPPER_MDSPAN_NAMES = frozenset(
+    {
+        "host_mdspan",
+        "device_mdspan",
+        "managed_mdspan",
+        "restrict_mdspan",
+        "shared_memory_mdspan",
+    }
+)
+
+
+def _dynamic_extent() -> int:
+    """Return cuda::std::dynamic_extent, using the target's real size_t width."""
+    try:
+        size_t_bits = gdb.lookup_type("size_t").sizeof * 8
+    except gdb.error:
+        size_t_bits = 64
+    return (1 << size_t_bits) - 1
 
 
 def _template_name(value_type: gdb.Type) -> str:
@@ -32,9 +50,14 @@ def _is_cuda_mdspan(value_type: gdb.Type) -> bool:
     # strip_typedefs resolves aliases that can hide accessibility properties.
     value_type = value_type.strip_typedefs().unqualified()
     template_name = _template_name(value_type)
-    return (
+    if (
         template_name.startswith("cuda::std::")
         and template_name.rsplit("::", 1)[-1] == "mdspan"
+    ):
+        return True
+    return (
+        template_name.startswith("cuda::")
+        and template_name.rsplit("::", 1)[-1] in _WRAPPER_MDSPAN_NAMES
     )
 
 
@@ -48,7 +71,8 @@ def _find_ebco_base(value: gdb.Value) -> gdb.Value | None:
     ``mdspan`` and ``layout_right``/``layout_left``'s ``mapping`` privately
     inherit ``__mdspan_ebco<...>`` directly. ``layout_stride``'s ``mapping``
     inherits it through one intermediate ``__mapping_base<...>`` wrapper
-    base, which this recurses through.
+    base, which this recurses through (also handles a ``cuda::`` wrapper
+    like ``host_mdspan``).
     """
     bases = _direct_bases(value.type)
     for field in bases:
@@ -135,10 +159,12 @@ def _dynamic_values(extents_value: gdb.Value, count: int) -> list[int] | None:
     return [int(vals[i]) for i in range(count)]
 
 
-def _combined_extents(static_values: list[int], dynamic_values: list[int]) -> list[int]:
+def _combined_extents(
+    static_values: list[int], dynamic_values: list[int], dynamic_extent: int
+) -> list[int]:
     dynamic_iter = iter(dynamic_values)
     return [
-        next(dynamic_iter) if value == _DYNAMIC_EXTENT else value
+        next(dynamic_iter) if value == dynamic_extent else value
         for value in static_values
     ]
 
@@ -185,14 +211,19 @@ class MdspanPrinter:
     def __init__(self, value: gdb.Value) -> None:
         self.value = value
         self.type = value.type.strip_typedefs().unqualified()
-        self.type_name = memory_resource.public_type_name(self.type)
 
         self.extents: list[int] | None = None
         self.data: gdb.Value | None = None
         self.layout: str | None = None
         self.strides: list[int] | None = None
+        self.layout_name: str | None = None
+        self.accessor_name: str | None = None
 
         self._resolve()
+
+        dynamic_extent = _dynamic_extent()
+        type_name = memory_resource.public_type_name(self.type)
+        self.type_name = re.sub(rf"\b{dynamic_extent}\b", "dynamic_extent", type_name)
 
     def _resolve(self) -> None:
         top_ebco = _find_ebco_base(self.value)
@@ -203,11 +234,24 @@ class MdspanPrinter:
         if data_handle is None or mapping is None:
             return
 
-        extents_type = self.type.template_argument(1)
+        # Find the real cuda::std::mdspan type, skipping any cuda:: wrapper.
+        mdspan_type = self.type
+        while _template_name(mdspan_type).rsplit("::", 1)[-1] != "mdspan":
+            bases = _direct_bases(mdspan_type)
+            if len(bases) != 1:
+                return
+            mdspan_type = bases[0].type
+        extents_type = mdspan_type.template_argument(1)
+        layout_type = mdspan_type.template_argument(2)
+        accessor_type = mdspan_type.template_argument(3)
+        self.layout_name = memory_resource.public_type_name(layout_type)
+        self.accessor_name = memory_resource.public_type_name(accessor_type)
+
+        dynamic_extent = _dynamic_extent()
         static_values = _static_extents(extents_type)
         if static_values is None:
             return
-        rank_dynamic = sum(1 for value in static_values if value == _DYNAMIC_EXTENT)
+        rank_dynamic = sum(1 for value in static_values if value == dynamic_extent)
 
         mapping_ebco = _find_ebco_base(mapping)
         dynamic_values: list[int] = []
@@ -221,9 +265,9 @@ class MdspanPrinter:
             if values is None:
                 return
             dynamic_values = values
-        self.extents = _combined_extents(static_values, dynamic_values)
+        self.extents = _combined_extents(static_values, dynamic_values, dynamic_extent)
 
-        self.layout = _layout_kind(self.type.template_argument(2))
+        self.layout = _layout_kind(layout_type)
         if self.layout == "layout_stride" and len(self.extents) > 0:
             if mapping_ebco is None:
                 return
@@ -236,6 +280,11 @@ class MdspanPrinter:
 
     def _can_index(self) -> bool:
         if self.extents is None or self.data is None or self.layout is None:
+            return False
+        # device_mdspan/shared_memory_mdspan: never index, see marker comment above.
+        if self.accessor_name is not None and any(
+            marker in self.accessor_name for marker in _DEVICE_ONLY_ACCESSOR_MARKERS
+        ):
             return False
         if self.layout != "layout_stride":
             return True
@@ -264,17 +313,27 @@ class MdspanPrinter:
             yield label, self._element_at(tuple(indices))
 
     def to_string(self) -> str:
-        if self.extents is None:
+        details = []
+        if self.extents is not None:
+            extents_text = ", ".join(str(extent) for extent in self.extents)
+            details.append(f"rank={len(self.extents)}")
+            details.append(f"extents=[{extents_text}]")
+        if self.data is not None:
+            details.append(f"data={int(self.data):#x}")
+        if self.layout_name is not None:
+            details.append(f"layout={self.layout_name}")
+        if self.accessor_name is not None:
+            details.append(f"accessor={self.accessor_name}")
+        if not details:
             return self.type_name
-        extents_text = ", ".join(str(extent) for extent in self.extents)
-        return f"{self.type_name} of extents [{extents_text}]"
+        return f"{self.type_name} {', '.join(details)}"
 
 
 class MdspanPrinterLookup(gdb.printing.PrettyPrinter):
     """Select the cuda::std::mdspan printer by its public class name."""
 
     def __init__(self) -> None:
-        super().__init__("cuda::std::mdspan")
+        super().__init__("cuda::mdspan")
 
     def __call__(self, value: gdb.Value) -> MdspanPrinter | None:
         if _is_cuda_mdspan(value.type):
