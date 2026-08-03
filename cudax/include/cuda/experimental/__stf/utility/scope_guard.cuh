@@ -95,7 +95,7 @@ template <class _Reaction>
 struct __on_throw_policy
 {
   _Reaction __reaction_;
-  ::cuda::std::source_location __loc_;
+  const ::cuda::std::source_location __loc_;
 
   // Runs with the exception in flight and produces what `operator<<` returns in its stead. The
   // reactions that say nothing never read the exception, which gcc 9 flags without the attribute.
@@ -106,7 +106,8 @@ struct __on_throw_policy
     // reactions are recognized in the branches below.
     constexpr bool __handles =
       ::cuda::std::is_invocable_v<_Reaction&, const ::std::exception*, ::cuda::std::source_location>;
-    constexpr bool __drops = ::cuda::std::is_same_v<const _Reaction, const decltype(::std::ignore)>;
+    constexpr bool __drops =
+      ::cuda::std::is_same_v<const ::cuda::std::remove_reference_t<_Reaction>, const decltype(::std::ignore)>;
     // Whether the exception is answered rather than fatal, which `::std::ignore` decides by being
     // what it is and a handler decides by returning it. Asking the same of `void` would be
     // useless, every result type being convertible to `void`, but nothing except `::std::ignore`
@@ -145,13 +146,20 @@ struct __on_throw_policy
     }
     else if constexpr (!__drops)
     {
-      // The value outlives neither the policy nor this call, so a reference to it would dangle.
-      static_assert(!::cuda::std::is_reference_v<_Result>,
-                    "on_throw(value) cannot stand in for a callable that returns a reference");
+      // A reference result may only name the reaction itself: a value the policy owns dies with
+      // this call, and so does any temporary a conversion would materialize. Pointers convert
+      // exactly when the reference binds directly, which is the question being asked.
+      static_assert(
+        !::cuda::std::is_reference_v<_Result>
+          || (::cuda::std::is_lvalue_reference_v<_Reaction> && ::cuda::std::is_lvalue_reference_v<_Result>
+              && ::cuda::std::is_convertible_v<::cuda::std::remove_reference_t<_Reaction>*,
+                                               ::cuda::std::remove_reference_t<_Result>*>),
+        "a reference result needs an on_throw reaction passed as an lvalue of the same "
+        "type, anything else dying with the call");
       static_assert(::cuda::std::is_convertible_v<_Reaction, _Result>,
                     "an on_throw reaction is a handler, something convertible to void (*)(), "
                     "::std::ignore, or a value convertible to the result of the callable");
-      return static_cast<_Result>(::cuda::std::move(__reaction_));
+      return ::cuda::std::forward<_Reaction>(__reaction_);
     }
 
     // Left over are the two reactions that resume, both of which owe the caller a result.
@@ -205,20 +213,30 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  * - `std::ignore`, which suppresses the exception silently and resumes execution with a
  *   default-constructed result.
  * - Anything else, taken as a replacement value for the result. It must be convertible to the
- *   callable's result type, and is moved into the result.
+ *   callable's result type, and is moved into the result if the policy owns it.
  *
  * The two resuming reactions leave a `void` result alone and require a default-constructible
- * type of a non-void one. Only a terminating action goes with a callable that returns a
- * reference, the other reactions having nothing to refer to.
+ * type of a non-void one, having nothing to refer to for a reference.
  *
- * @param[in] __reaction The reaction, which the policy stores.
+ * A callable returning a reference therefore goes with a terminating action, which never has to
+ * produce a result, or with a replacement passed as an lvalue of the same type, which the policy
+ * refers to rather than copies and which the caller keeps alive:
+ *
+ * @code
+ * int fallback = 42;
+ * int& x = on_throw(fallback) << [] { return returns_a_reference(); }; // x is fallback on a throw
+ * @endcode
+ *
+ * @param[in] __reaction The reaction, which the policy owns if passed an rvalue and refers to if
+ *            passed an lvalue.
  * @param[in] __loc The location passed to the handler; defaults to the call site.
  * @return A policy object consumed by `operator<<`.
  */
 template <class _Reaction>
-auto on_throw(_Reaction __reaction, const ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
+auto on_throw(_Reaction&& __reaction,
+              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  return detail::__on_throw_policy<_Reaction>{::cuda::std::move(__reaction), __loc};
+  return detail::__on_throw_policy<_Reaction>{::cuda::std::forward<_Reaction>(__reaction), __loc};
 }
 
 #ifdef UNITTESTED_FILE
@@ -267,7 +285,20 @@ UNITTEST("on_throw")
   };
   EXPECT(&alias == &target);
 
+  // A replacement passed as an lvalue outlives the call, so it can stand in for a reference
+  // result as well.
+  int fallback = 42;
+  int& picked  = on_throw(fallback) << []() -> int& {
+    return target;
+  };
+  EXPECT(&picked == &target);
+
 #  if _CCCL_HAS_EXCEPTIONS()
+  int& supplanted = on_throw(fallback) << []() -> int& {
+    throw ::std::runtime_error("no reference to give");
+  };
+  EXPECT(&supplanted == &fallback);
+
   const int ignored = on_throw(::std::ignore) << []() -> int {
     throw ::std::runtime_error("ignored");
   };
