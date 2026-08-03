@@ -112,16 +112,10 @@ void ref(const _Tp&&) = delete;
 template <class _Tp>
 void cref(const _Tp&&) = delete;
 
-template <class _Tp>
-inline constexpr bool __is_ref_wrapper = false;
-
-template <class _Tp>
-inline constexpr bool __is_ref_wrapper<reference_wrapper<_Tp>> = true;
-
 // P2655R3: common_reference_t of reference_wrapper<T> and T& is a reference type
 template <class _Rp, class _Tp, class _RpQual, class _TpQual>
 _CCCL_CONCEPT __ref_wrap_common_reference_exists_with = _CCCL_REQUIRES_EXPR((_Rp, _Tp, _RpQual, _TpQual), )(
-  requires(__is_ref_wrapper<_Rp>),
+  requires(__is_cuda_std_reference_wrapper_v<_Rp>),
   typename(common_reference_t<typename _Rp::type&, _TpQual>),
   requires(convertible_to<_RpQual, common_reference_t<typename _Rp::type&, _TpQual>>));
 
