@@ -32,13 +32,23 @@
 }
 =============== atomic.nested end ===============
 =============== atomic.reference begin ===============
-(cuda::std::atomic_ref<int>)  (value = 52)
+(cuda::std::atomic_ref<int>) ptr=<address> {
+  value = 52
+}
 =============== atomic.reference end ===============
 =============== atomic.locked_reference begin ===============
-(cuda::std::atomic_ref<payload>) {
+(cuda::std::atomic_ref<payload>) ptr=<address> {
   value = (first = 6, second = -91, third = 3)
 }
 =============== atomic.locked_reference end ===============
+=============== atomic.cuda_integer begin ===============
+(cuda::atomic<int>)  (value = 41)
+=============== atomic.cuda_integer end ===============
+=============== atomic.cuda_reference begin ===============
+(cuda::atomic_ref<int>) ptr=<address> {
+  value = -26
+}
+=============== atomic.cuda_reference end ===============
 =============== atomic.update.before begin ===============
 (cuda::std::atomic<int>)  (value = 85)
 =============== atomic.update.before end ===============
@@ -46,8 +56,12 @@
 (cuda::std::atomic<int>)  (value = 99)
 =============== atomic.update.after end ===============
 =============== atomic.reference_update.before begin ===============
-(cuda::std::atomic_ref<int>)  (value = -12)
+(cuda::std::atomic_ref<int>) ptr=<address> {
+  value = -12
+}
 =============== atomic.reference_update.before end ===============
 =============== atomic.reference_update.after begin ===============
-(cuda::std::atomic_ref<int>)  (value = 73)
+(cuda::std::atomic_ref<int>) ptr=<address> {
+  value = 73
+}
 =============== atomic.reference_update.after end ===============

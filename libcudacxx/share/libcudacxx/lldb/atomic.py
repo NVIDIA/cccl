@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""LLDB pretty printer for cuda::std::atomic and cuda::std::atomic_ref."""
+"""LLDB pretty printers for CUDA atomic and atomic_ref types."""
 
 from __future__ import annotations
 
@@ -10,7 +10,8 @@ import re
 
 import lldb
 
-_ATOMIC_PATTERN = re.compile(r"^cuda::std::atomic(?:_ref)?<.+>$")
+_ATOMIC_PATTERN = re.compile(r"^cuda::(?:std::)?atomic(?:_ref)?<.+>$")
+_ATOMIC_REF_PATTERN = re.compile(r"^cuda::(?:std::)?atomic_ref<.+>$")
 InternalDict = dict[str, object]
 
 
@@ -22,20 +23,34 @@ def is_cuda_atomic(value_type: lldb.SBType, _internal_dict: InternalDict) -> boo
     return _ATOMIC_PATTERN.fullmatch(_type_name(value_type)) is not None
 
 
-def _stored_value(value: lldb.SBValue) -> lldb.SBValue:
-    value_type = value.GetType().GetCanonicalType().GetUnqualifiedType()
-    type_name = _type_name(value_type)
+def is_cuda_atomic_ref(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
+    return _ATOMIC_REF_PATTERN.fullmatch(_type_name(value_type)) is not None
+
+
+def _reference_pointer(value: lldb.SBValue) -> lldb.SBValue:
     storage = value.GetChildMemberWithName("__a")
     if not storage.IsValid():
         return lldb.SBValue()
+    return storage.GetChildMemberWithName("__a_value")
 
-    stored = storage.GetChildMemberWithName("__a_value")
+
+def atomic_ref_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
+    pointer = _reference_pointer(value.GetNonSyntheticValue())
+    if not pointer.IsValid():
+        return None
+    return f"ptr={pointer.GetValueAsUnsigned(0):#x}"
+
+
+def _stored_value(value: lldb.SBValue, type_name: str) -> lldb.SBValue:
+    value_type = value.GetType().GetCanonicalType().GetUnqualifiedType()
+    stored = _reference_pointer(value)
     if not stored.IsValid():
         return lldb.SBValue()
 
-    if type_name.startswith("cuda::std::atomic_ref<"):
+    if _ATOMIC_REF_PATTERN.fullmatch(type_name) is not None:
         return stored.Dereference().Clone("value")
 
+    storage = value.GetChildMemberWithName("__a")
     storage_type = _type_name(storage.GetType())
     if "__atomic_small_storage<" in storage_type:
         stored = stored.GetChildMemberWithName("__a_value")
@@ -60,7 +75,7 @@ class AtomicSyntheticProvider:
 
     def update(self) -> bool:
         self.type_name = _type_name(self.value.GetType())
-        self.child = _stored_value(self.value)
+        self.child = _stored_value(self.value, self.type_name)
         return self.child.IsValid()
 
     def num_children(self) -> int:
@@ -83,6 +98,10 @@ class AtomicSyntheticProvider:
 
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
     """Register CUDA atomic formatters in an LLDB category."""
+    debugger.HandleCommand(
+        f"type summary add --category {category} --expand --python-function "
+        f"{module}.atomic_ref_summary --recognizer-function {module}.is_cuda_atomic_ref"
+    )
     debugger.HandleCommand(
         f"type synthetic add --category {category} --python-class {module}.AtomicSyntheticProvider "
         f"--recognizer-function {module}.is_cuda_atomic"

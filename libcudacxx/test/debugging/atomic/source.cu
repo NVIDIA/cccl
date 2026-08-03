@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/atomic>
 #include <cuda/std/array>
 #include <cuda/std/atomic>
 
@@ -80,6 +81,16 @@ using atomic_alias = cuda::std::atomic<long long>;
   keep_for_debugger(value);
 }
 
+[[gnu::noinline]] void inspect_cuda_integer(const cuda::atomic<int>& value)
+{
+  keep_for_debugger(value);
+}
+
+[[gnu::noinline]] void inspect_cuda_reference(const cuda::atomic_ref<int>& value)
+{
+  keep_for_debugger(value);
+}
+
 [[gnu::noinline]] void inspect_before_update(const cuda::std::atomic<int>& value)
 {
   keep_for_debugger(value);
@@ -119,6 +130,10 @@ int main()
   payload referenced_payload{6, -91, 3};
   const cuda::std::atomic_ref<payload> locked_reference{referenced_payload};
 
+  const cuda::atomic<int> cuda_integer{41};
+  int cuda_referenced = -26;
+  const cuda::atomic_ref<int> cuda_reference{cuda_referenced};
+
   cuda::std::atomic<int> updated{85};
   int updated_target = -12;
   cuda::std::atomic_ref<int> updated_reference{updated_target};
@@ -133,6 +148,8 @@ int main()
   inspect_nested(nested);
   inspect_reference(reference);
   inspect_locked_reference(locked_reference);
+  inspect_cuda_integer(cuda_integer);
+  inspect_cuda_reference(cuda_reference);
   inspect_before_update(updated);
   updated.store(99);
   inspect_after_update(updated);

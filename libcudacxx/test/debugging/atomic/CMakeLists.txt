@@ -13,6 +13,8 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_nested 1 atomic.nested nested
     --case inspect_reference 1 atomic.reference reference
     --case inspect_locked_reference 1 atomic.locked_reference locked_reference
+    --case inspect_cuda_integer 1 atomic.cuda_integer cuda_integer
+    --case inspect_cuda_reference 1 atomic.cuda_reference cuda_reference
     --case inspect_before_update 1 atomic.update.before updated
     --case inspect_after_update 1 atomic.update.after updated
     --case inspect_reference_before_update 1 atomic.reference_update.before updated_reference
