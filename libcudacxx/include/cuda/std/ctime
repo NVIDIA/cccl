@@ -53,7 +53,7 @@ using ::timespec;
 
 // clock
 
-[[nodiscard]] _CCCL_API inline clock_t clock() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline clock_t clock() noexcept
 {
 #if _CCCL_HOSTJIT() // host-side `clock` is not supported in freestanding
   NV_IF_ELSE_TARGET(
@@ -65,7 +65,7 @@ using ::timespec;
 
 // difftime
 
-[[nodiscard]] _CCCL_API constexpr double difftime(time_t __end, time_t __start) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double difftime(time_t __end, time_t __start) noexcept
 {
   return static_cast<double>(__end - __start);
 }
@@ -84,7 +84,7 @@ using ::timespec;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-_CCCL_API inline time_t time(time_t* __v) noexcept
+_CCCL_HOST_DEVICE_API inline time_t time(time_t* __v) noexcept
 {
 #if _CCCL_HOSTJIT() // host-side `time` is not supported in freestanding
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (return ::cuda::std::__cccl_time_impl_device(__v);))
@@ -111,7 +111,7 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
 }
 #  endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _CCCL_API inline int timespec_get(timespec* __ts, int __base) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline int timespec_get(timespec* __ts, int __base) noexcept
 {
 #  if _CCCL_HOSTJIT() // host-side `timespec_get` is not supported in freestanding
   NV_IF_ELSE_TARGET(
