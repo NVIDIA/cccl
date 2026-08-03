@@ -98,6 +98,17 @@ public:
     }
   }
 
+  //! Move every entry of \p other into this pool (\p other ends up empty)
+  void import_from(linear_pool&& other)
+  {
+    payload.reserve(payload.size() + other.payload.size());
+    for (auto& ptr : other.payload)
+    {
+      payload.push_back(mv(ptr));
+    }
+    other.payload.clear();
+  }
+
 private:
   ::std::vector<::std::unique_ptr<T>> payload;
 };
@@ -221,6 +232,30 @@ public:
       entry.prereqs.clear();
     });
     return result;
+  }
+
+  //! Take every cached allocation from \p other (e.g. the cache of a popped
+  //! nested context), gating any reuse on \p completion.
+  //!
+  //! The localized_array teardown unmaps VMM backing with synchronous driver
+  //! calls that no event can defer, so a nested context's cached arrays must
+  //! not be destroyed with it: they are handed over to the parent so their
+  //! release happens once the parent has synchronized with the nested work
+  //! (the parent's completion depends on the nested context's completion).
+  //! \p completion should carry the nested body's completion events: the
+  //! entries' own prereqs were already harvested by deinit() when the nested
+  //! context was finalized, and a parent-level task reusing an entry must
+  //! wait for the nested graph that last used it.
+  void import_from(composite_slice_cache&& other, const event_list& completion)
+  {
+    other.partition_fn_cache.each([&](auto& entry) {
+      entry.prereqs.merge(completion);
+    });
+    other.cute_partition_cache.each([&](auto& entry) {
+      entry.prereqs.merge(completion);
+    });
+    partition_fn_cache.import_from(mv(other.partition_fn_cache));
+    cute_partition_cache.import_from(mv(other.cute_partition_cache));
   }
 
   void put(const data_place& place,
