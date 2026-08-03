@@ -178,6 +178,12 @@ template <class _Reaction, class _Fn>
 decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept
 {
   using _Result = decltype(::cuda::std::forward<_Fn>(__fn)());
+  // A `noexcept` callable puts the reaction out of reach: an exception raised inside it ends the
+  // program where it stands, so the catch below could never run and the policy would be a promise
+  // nobody keeps.
+  static_assert(!noexcept(::cuda::std::forward<_Fn>(__fn)()),
+                "on_throw has nothing to do for a noexcept callable, which terminates rather than "
+                "throws; call such a callable directly");
   _CCCL_TRY
   {
     return ::cuda::std::forward<_Fn>(__fn)();
@@ -217,6 +223,10 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *
  * The two resuming reactions leave a `void` result alone and require a default-constructible
  * type of a non-void one, having nothing to refer to for a reference.
+ *
+ * The callable itself must not be `noexcept`: an exception raised inside one ends the program
+ * where it stands, leaving the reaction unreachable, so such a pairing is rejected instead of
+ * standing there looking like protection. Call such a callable directly.
  *
  * A callable returning a reference therefore goes with a terminating action, which never has to
  * produce a result, or with a replacement passed as an lvalue of the same type, which the policy
