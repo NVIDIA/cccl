@@ -145,14 +145,20 @@ struct __on_throw_policy
     }
     else if constexpr (!__drops)
     {
+      // The value outlives neither the policy nor this call, so a reference to it would dangle.
+      static_assert(!::cuda::std::is_reference_v<_Result>,
+                    "on_throw(value) cannot stand in for a callable that returns a reference");
       static_assert(::cuda::std::is_convertible_v<_Reaction, _Result>,
-                    "on_throw(value) requires a value convertible to the result of the callable");
+                    "an on_throw reaction is a handler, something convertible to void (*)(), "
+                    "::std::ignore, or a value convertible to the result of the callable");
       return static_cast<_Result>(::cuda::std::move(__reaction_));
     }
 
     // Left over are the two reactions that resume, both of which owe the caller a result.
     if constexpr (__resumes && !::cuda::std::is_void_v<_Result>)
     {
+      static_assert(!::cuda::std::is_reference_v<_Result>,
+                    "an on_throw reaction that resumes has nothing to refer to for a reference result");
       static_assert(::cuda::std::is_default_constructible_v<_Result>,
                     "an on_throw reaction that resumes requires a default-constructible result");
       return _Result{};
@@ -202,7 +208,8 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
  *   callable's result type, and is moved into the result.
  *
  * The two resuming reactions leave a `void` result alone and require a default-constructible
- * type of a non-void one.
+ * type of a non-void one. Only a terminating action goes with a callable that returns a
+ * reference, the other reactions having nothing to refer to.
  *
  * @param[in] __reaction The reaction, which the policy stores.
  * @param[in] __loc The location passed to the handler; defaults to the call site.
@@ -250,6 +257,15 @@ UNITTEST("on_throw")
     return 9;
   };
   EXPECT(spared == 9);
+
+  // A terminating action is also the one reaction that goes with a reference result, since it
+  // never has to produce one. The referent is static because nvcc reads a return of a
+  // by-reference capture as a return of a local.
+  static int target = 5;
+  int& alias        = on_throw(::std::abort) << []() -> int& {
+    return target;
+  };
+  EXPECT(&alias == &target);
 
 #  if _CCCL_HAS_EXCEPTIONS()
   const int ignored = on_throw(::std::ignore) << []() -> int {
