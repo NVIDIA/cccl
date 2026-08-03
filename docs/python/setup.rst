@@ -146,6 +146,7 @@ Run the package tests from the repository root:
 
    pytest python/cccl_headers/tests
    pytest python/cuda_compute/tests
+   pytest python/cuda_cccl/tests
 
 Next Steps
 ----------

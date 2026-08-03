@@ -42,5 +42,7 @@ for distribution in ("cuda-compute", "cuda-cccl"):
         raise AssertionError(f"{distribution} must not be installed by cccl-headers")
 PY
 
-cd "${repo_root}/python/cccl_headers"
-python -m pytest -n auto -v tests/
+# Run from outside the project directory so the installed wheel, rather than
+# the source cuda package, supplies cuda.cccl.headers.
+cd "${repo_root}"
+python -m pytest -n auto -v "${repo_root}/python/cccl_headers/tests/"

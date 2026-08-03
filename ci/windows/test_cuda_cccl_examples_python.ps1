@@ -37,6 +37,10 @@ Invoke-Checked {
 } "Failed to install cuda-cccl test extra / cupy"
 Invoke-Checked { & $python -m pip check } "Installed cuda-cccl environment is inconsistent"
 
+Invoke-Checked {
+    & $python -m pytest -n 0 -v (Join-Path $repoRoot "python/cuda_cccl/tests")
+} "cuda-cccl metadata tests failed"
+
 Push-Location (Join-Path $repoRoot "python/cuda_compute/tests")
 try {
     Invoke-Checked { & $python -m pytest -n 6 test_examples.py } "examples tests failed"

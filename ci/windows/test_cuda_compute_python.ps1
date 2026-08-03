@@ -42,6 +42,7 @@ Invoke-Checked {
 
 Push-Location (Join-Path $repoRoot "python/cuda_compute/tests")
 try {
+    Invoke-Checked { & $python -m pytest -n 0 -v packaging/ } "compute packaging tests failed"
     Invoke-Checked { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"
     Invoke-Checked { & $python -m pytest -n 0 -v compute/ -m "large and not free_threading" } "compute tests (large) failed"
 }

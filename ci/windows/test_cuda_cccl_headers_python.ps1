@@ -29,8 +29,10 @@ Invoke-Checked {
     & $python -c "import importlib.metadata as m; names={d.metadata['Name'] for d in m.distributions()}; assert 'cuda-compute' not in names and 'cuda-cccl' not in names"
 } "Standalone cccl-headers install pulled in compute or the metapackage"
 
-Push-Location (Join-Path $repoRoot "python/cccl_headers")
+Push-Location $repoRoot
 try {
-    Invoke-Checked { & $python -m pytest -n auto -v tests/ } "headers tests failed"
+    Invoke-Checked {
+        & $python -m pytest -n auto -v (Join-Path $repoRoot "python/cccl_headers/tests")
+    } "headers tests failed"
 }
 finally { Pop-Location }

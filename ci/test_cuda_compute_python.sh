@@ -55,6 +55,7 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 
 cd "${repo_root}/python/cuda_compute/tests/"
+python -m pytest "${pytest_extra[@]}" -n 0 -v packaging/
 if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   # The test isolates itself in a fresh subprocess (LLVM initialization is
   # process-wide and only cold once), but it carries the free_threading marker,

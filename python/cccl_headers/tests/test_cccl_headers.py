@@ -36,6 +36,13 @@ def test_public_api():
     assert cccl.__all__ == headers.__all__
 
 
+def test_imported_from_installed_distribution():
+    distribution_root = Path(
+        importlib.metadata.distribution("cccl-headers").locate_file("")
+    ).resolve()
+    assert Path(headers.__file__).resolve().is_relative_to(distribution_root)
+
+
 def test_no_legacy_top_level_package():
     assert importlib.util.find_spec("cccl_headers") is None
 

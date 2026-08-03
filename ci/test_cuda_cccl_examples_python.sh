@@ -39,6 +39,9 @@ python -m pip install --find-links "${repo_root}/wheelhouse" \
   "cupy-cuda${cuda_major_version}x" pytest-benchmark
 python -m pip check
 
+# Validate metapackage dependency and forwarded-extra metadata.
+python -m pytest -n 0 -v "${repo_root}/python/cuda_cccl/tests/"
+
 # Run tests for parallel module
 cd "${repo_root}/python/cuda_compute/tests/"
 python -m pytest -n 6 test_examples.py
