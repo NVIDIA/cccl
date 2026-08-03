@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -35,7 +35,7 @@ template <typename T>
 struct polar_theta_generator
 {
   template <typename I>
-  TEST_FUNC constexpr T operator()(I i) const noexcept
+  TEST_HOST_DEVICE_FUNC constexpr T operator()(I i) const noexcept
   {
     switch (static_cast<int>(i) & 3)
     {
@@ -56,7 +56,7 @@ template <typename T>
 struct pow_exponent_generator
 {
   template <typename I>
-  TEST_FUNC constexpr cuda::std::complex<T> operator()(I i) const noexcept
+  TEST_HOST_DEVICE_FUNC constexpr cuda::std::complex<T> operator()(I i) const noexcept
   {
     switch (static_cast<int>(i) & 3)
     {
@@ -76,7 +76,7 @@ struct pow_exponent_generator
 // real() / imag() free functions
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_real_imag_free()
+TEST_HOST_DEVICE_FUNC constexpr void test_real_imag_free()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -135,7 +135,7 @@ TEST_FUNC constexpr void test_real_imag_free()
 // conj() / norm()
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_conj_norm()
+TEST_HOST_DEVICE_FUNC constexpr void test_conj_norm()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -161,7 +161,7 @@ TEST_FUNC constexpr void test_conj_norm()
 // arg()
 
 template <typename T, int N>
-TEST_FUNC void test_arg()
+TEST_HOST_DEVICE_FUNC void test_arg()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -183,7 +183,7 @@ TEST_FUNC void test_arg()
 // abs()
 
 template <typename T, int N>
-TEST_FUNC void test_abs()
+TEST_HOST_DEVICE_FUNC void test_abs()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -205,7 +205,7 @@ TEST_FUNC void test_abs()
 // proj()
 
 template <typename T, int N>
-TEST_FUNC void test_proj()
+TEST_HOST_DEVICE_FUNC void test_proj()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -226,7 +226,7 @@ TEST_FUNC void test_proj()
 // exp, log, log10
 
 template <typename T, int N>
-TEST_FUNC void test_exp_log()
+TEST_HOST_DEVICE_FUNC void test_exp_log()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -255,7 +255,7 @@ TEST_FUNC void test_exp_log()
 // sqrt()
 
 template <typename T, int N>
-TEST_FUNC void test_sqrt()
+TEST_HOST_DEVICE_FUNC void test_sqrt()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -276,7 +276,7 @@ TEST_FUNC void test_sqrt()
 // polar
 
 template <typename T, int N>
-TEST_FUNC void test_polar()
+TEST_HOST_DEVICE_FUNC void test_polar()
 {
   using Complex    = cuda::std::complex<T>;
   using RealVec    = simd::basic_vec<T, simd::fixed_size<N>>;
@@ -299,7 +299,7 @@ TEST_FUNC void test_polar()
 // pow
 
 template <typename T, int N>
-TEST_FUNC void test_pow()
+TEST_HOST_DEVICE_FUNC void test_pow()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -321,14 +321,14 @@ TEST_FUNC void test_pow()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_constexpr()
+TEST_HOST_DEVICE_FUNC constexpr void test_constexpr()
 {
   test_real_imag_free<T, N>();
   test_conj_norm<T, N>();
 }
 
 template <typename T, int N>
-TEST_FUNC void test_runtime()
+TEST_HOST_DEVICE_FUNC void test_runtime()
 {
   test_arg<T, N>();
   test_abs<T, N>();
@@ -339,7 +339,7 @@ TEST_FUNC void test_runtime()
   test_pow<T, N>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_constexpr<float, 1>();
   test_constexpr<float, 4>();
@@ -351,13 +351,13 @@ TEST_FUNC constexpr bool test()
 }
 
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_constexpr<T, N>();
   test_runtime<T, N>();
 }
 
-TEST_FUNC bool test_runtime()
+TEST_HOST_DEVICE_FUNC bool test_runtime()
 {
   test_runtime<float, 1>();
   test_runtime<float, 4>();
@@ -379,7 +379,9 @@ TEST_FUNC bool test_runtime()
 int main(int, char**)
 {
   assert(test());
+#if !_CCCL_TILE_COMPILATION() // Tile mode currently has no is_constant_evaluated
   static_assert(test());
+#endif // !_CCCL_TILE_COMPILATION()
   assert(test_runtime());
   return 0;
 }
