@@ -11,6 +11,8 @@
 //      inputs like (1.0f, 2^-100f) that are not representable as a single double).
 //    - Downconvert fp64mp2 -> fp32mp2 honors CCCL_FPMP_EXPLICIT_CASTS, is bounded
 //      to ~2 ulp of fp32mp2 precision, and is bit-exact for fp32mp2-born values.
+//    - A precision change that also switches the accuracy tag is explicit in both
+//      directions, and has no assignment form.
 //    - Round trip fp32mp2 -> fp64mp2 -> fp32mp2 is bit-exact.
 //    - Every explicit-conversion form and the assignment overload agree.
 //  The convertibility/assignability matrix is pinned by static_asserts. The same
@@ -31,24 +33,37 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // ---------------------------------------------------------------------------
 // Compile-time contract.
 // ---------------------------------------------------------------------------
-// Upconvert (fp32mp2 -> fp64mp2): implicit, lossless.
+// Upconvert (fp32mp2 -> fp64mp2): implicit and lossless while the accuracy tag
+// is preserved. Note that fpmp2_accuracy::def aliases mid, so fp32mp2 -> fp64mp2
+// is tag-preserving.
 static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2>::value, "");
 static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2_low>::value, "");
 static_assert(::cuda::std::is_constructible<fp64mp2, fp32mp2_high>::value, "");
 static_assert(::cuda::std::is_constructible<fp64mp2_low, fp32mp2>::value, "");
 static_assert(::cuda::std::is_constructible<fp64mp2_high, fp32mp2>::value, "");
 static_assert(::cuda::std::is_convertible<fp32mp2, fp64mp2>::value, "fp32mp2 -> fp64mp2 must be implicit");
-static_assert(::cuda::std::is_convertible<fp32mp2_low, fp64mp2_high>::value,
-              "cross-accuracy upconvert must be implicit");
-static_assert(::cuda::std::is_convertible<fp32mp2_high, fp64mp2_low>::value,
-              "cross-accuracy upconvert must be implicit");
+static_assert(::cuda::std::is_convertible<fp32mp2_low, fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_convertible<fp32mp2_high, fp64mp2_high>::value, "");
 static_assert(::cuda::std::is_assignable<fp64mp2&, fp32mp2>::value, "");
-static_assert(::cuda::std::is_assignable<fp64mp2_low&, fp32mp2_high>::value, "");
-static_assert(::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<fp64mp2_low&, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_high>::value, "");
 static_assert(::cuda::std::is_same<decltype(fp64mp2_low(::cuda::std::declval<fp32mp2_high>())), fp64mp2_low>::value,
               "");
 
-// Downconvert (fp64mp2 -> fp32mp2): explicit-macro-driven.
+// A widening that also switches the accuracy tag is explicit-only: the tag picks
+// the arithmetic algorithm, so it must be opt-in just like the same-precision
+// cross-accuracy conversion. Assignment is not offered across tags at all, which
+// leaves an explicit cast as the only spelling.
+static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp64mp2_high>::value,
+              "cross-accuracy upconvert must NOT be implicit");
+static_assert(!::cuda::std::is_convertible<fp32mp2_high, fp64mp2_low>::value,
+              "cross-accuracy upconvert must NOT be implicit");
+static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp64mp2>::value, "");
+static_assert(!::cuda::std::is_assignable<fp64mp2_low&, fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_low>::value, "");
+
+// Downconvert (fp64mp2 -> fp32mp2): explicit-macro-driven when the accuracy tag
+// is preserved, always explicit when it changes.
 static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2>::value, "");
 static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2_low>::value, "");
 static_assert(::cuda::std::is_constructible<fp32mp2, fp64mp2_high>::value, "");
@@ -60,9 +75,13 @@ static_assert(!::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
 #else
 static_assert(::cuda::std::is_convertible<fp64mp2, fp32mp2>::value, "downconvert is implicit under EXPLICIT_CASTS=0");
 #endif
+static_assert(!::cuda::std::is_convertible<fp64mp2_low, fp32mp2_high>::value,
+              "cross-accuracy downconvert must NOT be implicit");
+static_assert(!::cuda::std::is_convertible<fp64mp2_high, fp32mp2>::value, "");
 static_assert(::cuda::std::is_assignable<fp32mp2&, fp64mp2>::value, "");
-static_assert(::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_high>::value, "");
-static_assert(::cuda::std::is_assignable<fp32mp2_high&, fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_high&, fp64mp2_low>::value, "");
 static_assert(::cuda::std::is_same<decltype(fp32mp2_high(::cuda::std::declval<fp64mp2_low>())), fp32mp2_high>::value,
               "");
 

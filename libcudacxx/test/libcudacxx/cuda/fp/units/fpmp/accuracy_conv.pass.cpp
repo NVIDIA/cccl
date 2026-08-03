@@ -49,9 +49,13 @@ static_assert(::cuda::std::is_convertible<fp32mp2, fp32mp2>::value, "");
 static_assert(::cuda::std::is_convertible<fp32mp2_high, fp32mp2_high>::value, "");
 
 // Cross-FpType conversion contract: upconvert implicit, downconvert honors the
-// CCCL_FPMP_EXPLICIT_CASTS knob.
+// CCCL_FPMP_EXPLICIT_CASTS knob. Both hold only while the accuracy tag is
+// preserved (fpmp2_accuracy::def aliases mid, so fp32mp2 -> fp64mp2 counts as
+// tag-preserving).
 static_assert(::cuda::std::is_convertible<fp32mp2, fp64mp2>::value,
               "fp32mp2 -> fp64mp2 must be implicit (lossless upconvert)");
+static_assert(::cuda::std::is_convertible<fp32mp2_low, fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_convertible<fp32mp2_high, fp64mp2_high>::value, "");
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
 static_assert(!::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
               "fp64mp2 -> fp32mp2 must be explicit under EXPLICIT_CASTS=1");
@@ -59,6 +63,16 @@ static_assert(!::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
 static_assert(::cuda::std::is_convertible<fp64mp2, fp32mp2>::value,
               "fp64mp2 -> fp32mp2 implicit by default (matches double -> fp32mp2)");
 #endif
+
+// Switching the accuracy tag stays explicit-only when the precision changes too,
+// so the rule above holds for every conversion into fpmp2, not just the
+// same-precision one. cross_prec.pass.cpp pins the full matrix.
+static_assert(::cuda::std::is_constructible<fp64mp2_high, fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<fp32mp2_low, fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<fp32mp2_low, fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<fp64mp2_high, fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<fp64mp2_high&, fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<fp32mp2_low&, fp64mp2_high>::value, "");
 
 // Assignment side of the contract: cross-accuracy assignment must fail (the
 // explicit ctor is not visible to copy-assignment); same-type assignment works.
@@ -142,6 +156,20 @@ _CCCL_HOST_DEVICE void run_test()
     assert((a.hi() == src.hi() && a.lo() == src.lo()) && (b.hi() == src.hi() && b.lo() == src.lo())
            && (c.hi() == src.hi() && c.lo() == src.lo()) && (d.hi() == src.hi() && d.lo() == src.lo())
            && (e.hi() == src.hi() && e.lo() == src.lo()));
+  }
+
+  // Changing precision and accuracy at once must give the same pair as changing
+  // the tag first (bit copy) and then the precision.
+  {
+    fp32mp2_low src{1.2345678f, 0x1.0p-30f};
+    fp64mp2_high wide{src};
+    fp64mp2_high wide_ref{fp32mp2_high{src}};
+    assert(wide.hi() == wide_ref.hi() && wide.lo() == wide_ref.lo());
+
+    fp64mp2_low src64{1.234567890123456, 1.0e-18};
+    fp32mp2_high narrow{src64};
+    fp32mp2_high narrow_ref{fp64mp2_high{src64}};
+    assert(narrow.hi() == narrow_ref.hi() && narrow.lo() == narrow_ref.lo());
   }
 }
 

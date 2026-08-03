@@ -409,13 +409,18 @@ public:
   //   fp64mp2's renormalization bound is 2^-53*|hi|. fast_two_sum captures
   //   exactly this residual, so no precision is ever lost.
   //
-  // Implicit on purpose: mirrors the IEEE-754 float -> double widening
-  // (no precision loss). Accepts any source `met2`; the destination
-  // method tag is preserved.
+  // Implicit only while the method tag is preserved: that form mirrors the
+  // IEEE-754 float -> double widening (no precision loss). A widening that
+  // also switches the method tag is `explicit`, matching the same-precision
+  // cross-method constructor above: the tag selects the algorithm used by
+  // downstream arithmetic, so changing it stays an opt-in rather than
+  // something that rides along with a precision conversion. Note that
+  // fpmp2_accuracy::def aliases mid, so fp32mp2 -> fp64mp2 (and
+  // fp32mp2 -> fp64mp2_mid) is the implicit form.
   */
-  _CCCL_TEMPLATE(typename _Up = _FpType, fpmp2_accuracy _TypeAcc2)
+  _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
-  _CCCL_API fpmp2(const fpmp2<float, _TypeAcc2>& __src) noexcept
+  _CCCL_API fpmp2(const fpmp2<float, _TypeAcc>& __src) noexcept
   {
     const double __d_hi_in = static_cast<double>(__src.hi());
     const double __d_lo_in = static_cast<double>(__src.lo());
@@ -423,9 +428,17 @@ public:
     __mp2_hi_ = __fpmp_fast_two_sum(__d_hi_in, __d_lo_in, &__mp2_lo_);
   }
 
+  // Widening across method tags: reinterpret the (hi, lo) pair under the
+  // destination tag, then delegate to the widening constructor above.
   _CCCL_TEMPLATE(typename _Up = _FpType, fpmp2_accuracy _TypeAcc2)
+  _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up> _CCCL_AND(_TypeAcc2 != _TypeAcc))
+  _CCCL_API explicit fpmp2(const fpmp2<float, _TypeAcc2>& __src) noexcept
+      : fpmp2{fpmp2<float, _TypeAcc>{__src.hi(), __src.lo()}}
+  {}
+
+  _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
-  _CCCL_API fpmp2& operator=(const fpmp2<float, _TypeAcc2>& __src) noexcept
+  _CCCL_API fpmp2& operator=(const fpmp2<float, _TypeAcc>& __src) noexcept
   {
     const double __d_hi_in = static_cast<double>(__src.hi());
     const double __d_lo_in = static_cast<double>(__src.lo());
@@ -448,12 +461,15 @@ public:
   // Marked _CCCL_FPMP_EXPLICIT (matches the existing double -> fp32mp2
   // narrowing constructor) so callers must opt in via static_cast or
   // direct-init, mirroring the IEEE-754 double -> float narrowing.
+  // Narrowing that also switches the method tag is always `explicit`,
+  // independent of the CCCL_FPMP_EXPLICIT_CASTS knob, so that a tag change
+  // is opt-in in every direction.
   // The companion assignment operator is provided for symmetry; both
   // perform the same precision-preserving 2-pair add.
   */
-  _CCCL_TEMPLATE(typename _Up = _FpType, fpmp2_accuracy _TypeAcc2)
+  _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
-  _CCCL_API _CCCL_FPMP_EXPLICIT fpmp2(const fpmp2<double, _TypeAcc2>& __src) noexcept
+  _CCCL_API _CCCL_FPMP_EXPLICIT fpmp2(const fpmp2<double, _TypeAcc>& __src) noexcept
   {
     float __a_hi;
     float __a_lo;
@@ -464,9 +480,17 @@ public:
     __fpmp2_add<float>(__a_hi, __a_lo, __b_hi, __b_lo, &__mp2_hi_, &__mp2_lo_);
   }
 
+  // Narrowing across method tags: reinterpret the (hi, lo) pair under the
+  // source precision with the destination tag, then delegate above.
   _CCCL_TEMPLATE(typename _Up = _FpType, fpmp2_accuracy _TypeAcc2)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up> _CCCL_AND(_TypeAcc2 != _TypeAcc))
+  _CCCL_API explicit fpmp2(const fpmp2<double, _TypeAcc2>& __src) noexcept
+      : fpmp2{fpmp2<double, _TypeAcc>{__src.hi(), __src.lo()}}
+  {}
+
+  _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
-  _CCCL_API fpmp2& operator=(const fpmp2<double, _TypeAcc2>& __src) noexcept
+  _CCCL_API fpmp2& operator=(const fpmp2<double, _TypeAcc>& __src) noexcept
   {
     float __a_hi;
     float __a_lo;
