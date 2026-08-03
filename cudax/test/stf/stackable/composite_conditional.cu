@@ -21,13 +21,18 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cstddef>
+#include <cstdio>
+
 using namespace cuda::experimental::stf;
 using namespace cuda::experimental::places;
 
 int main()
 {
-#if _CCCL_CTK_BELOW(12, 4)
-  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+#if _CCCL_CTK_BELOW(12, 4) || defined(CUDASTF_DISABLE_CODE_GENERATION) || !defined(__CUDACC__)
+  // Mirror the availability guard of while_graph_scope / repeat_graph_scope
+  // in stackable_ctx_impl.cuh
+  fprintf(stderr, "Waiving test: conditional graph scopes require CUDA 12.4+ and STF code generation.\n");
   return 0;
 #else
   stackable_ctx ctx;
