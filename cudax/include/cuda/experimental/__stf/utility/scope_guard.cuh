@@ -100,7 +100,7 @@ struct __on_throw_policy
   // Runs with the exception in flight and produces what `operator<<` returns in its stead. The
   // reactions that say nothing never read the exception, which gcc 9 flags without the attribute.
   template <class _Result>
-  _Result __report([[maybe_unused]] const ::std::exception* __exception) noexcept
+  _Result __handle([[maybe_unused]] const ::std::exception* __exception) noexcept
   {
     // A handler is anything callable with the caught exception and a location; the other three
     // reactions are recognized in the branches below.
@@ -184,11 +184,11 @@ decltype(auto) operator<<(__on_throw_policy<_Reaction> __policy, _Fn&& __fn) noe
   }
   _CCCL_CATCH (const ::std::exception& __exception)
   {
-    return __policy.template __report<_Result>(&__exception);
+    return __policy.template __handle<_Result>(&__exception);
   }
   _CCCL_CATCH_ALL
   {
-    return __policy.template __report<_Result>(nullptr);
+    return __policy.template __handle<_Result>(nullptr);
   }
 }
 } // namespace detail
