@@ -6,12 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is not supported
 
 // <cuda/std/semaphore>
 
@@ -22,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Semaphore, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   Selector<Semaphore, Initializer> sel;
   SHARED Semaphore* s;

@@ -28,7 +28,7 @@
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   constexpr double kTol = 1e-10;
 

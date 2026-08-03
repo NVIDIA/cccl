@@ -24,7 +24,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 // Evaluate ((x + x) * x - x) / (x + c) with a chosen accuracy, using the builtins
 // (which deduce the accuracy from their fpemu<double, m> argument types).
 template <fpemu_accuracy m>
-TEST_FUNC void test(double x0, double ref, double tol)
+TEST_HOST_DEVICE_FUNC void test(double x0, double ref, double tol)
 {
   fpemu<double, m> x = x0;
   fpemu<double, m> c = 0.001;
@@ -33,7 +33,7 @@ TEST_FUNC void test(double x0, double ref, double tol)
   assert(::cuda::std::fabs(result - ref) <= tol);
 }
 
-TEST_FUNC void test(double x0)
+TEST_HOST_DEVICE_FUNC void test(double x0)
 {
   const double c   = 0.001;
   const double ref = ((x0 + x0) * x0 - x0) / (x0 + c);

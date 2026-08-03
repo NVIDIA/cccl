@@ -223,7 +223,8 @@ struct make_vsmem_helper
                            active_policy.lookback.scan_algorithm,
                            delay_constructor_t<active_policy.lookback.lookback_delay.kind,
                                                active_policy.lookback.lookback_delay.delay,
-                                               active_policy.lookback.lookback_delay.l2_write_latency>>;
+                                               active_policy.lookback.lookback_delay.l2_write_latency>,
+                           active_policy.lookback._load_prefetch>;
   using type = vsmem_helper_default_fallback_policy_t<
     agent_policy_t,
     bind_selection_opt<SelectionOpt>::template agent_t,
@@ -355,7 +356,7 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     const OffsetT num_items,
     const int num_tiles,
-    const StreamingContextT streaming_context,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<

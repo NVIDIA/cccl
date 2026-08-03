@@ -26,7 +26,7 @@
 #include <tuple>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 #include <c2h/vector.h>
 
@@ -513,7 +513,7 @@ using types =
                  float,
                  double>;
 
-C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
+CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMALL, types)
 {
   using sample_t = c2h::get<0, TestType>;
   using level_t  = cs::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
@@ -525,7 +525,7 @@ C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
 
 // TODO(bgruber): float produces INFs in the HistogramRange test setup AND the HistogramEven implementation
 // This test covers int32 and int64 arithmetic for bin computation
-C2H_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", c2h::remove<types, float>)
+CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", CUB_SMALL, c2h::remove<types, float>)
 {
   using sample_t             = c2h::get<0, TestType>;
   using level_t              = sample_t;
@@ -538,7 +538,7 @@ C2H_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", c2h:
   test_even_and_range<sample_t, 4, 3, int>(max_level, max_level_count, 1920, 1080);
 }
 
-C2H_TEST("DeviceHistogram::Histogram* odd image sizes", "[histogram][device]")
+CUB_TEST("DeviceHistogram::Histogram* odd image sizes", "[histogram][device]", CUB_SMALL)
 {
   using sample_t                = int;
   using level_t                 = int;
@@ -550,7 +550,7 @@ C2H_TEST("DeviceHistogram::Histogram* odd image sizes", "[histogram][device]")
   test_even_and_range<sample_t, 4, 3, int, level_t, int>(max_level, max_level_count, p.first, p.second);
 }
 
-C2H_TEST("DeviceHistogram::Histogram* entropy", "[histogram][device]")
+CUB_TEST("DeviceHistogram::Histogram* entropy", "[histogram][device]", CUB_SMALL)
 {
   const int entropy_reduction = GENERATE(-1, 3, 5); // entropy_reduction = -1 -> all samples == 0
   test_even_and_range<int, 4, 3, int>(256, 256 + 1, 1920, 1080, entropy_reduction);
@@ -563,8 +563,9 @@ struct ChannelConfig
   static constexpr auto active_channels = ActiveChannels;
 };
 
-C2H_TEST_LIST("DeviceHistogram::Histogram* channel configs",
+CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
               "[histogram][device]",
+              CUB_SMALL,
               ChannelConfig<1, 1>,
               ChannelConfig<3, 3>,
               ChannelConfig<4, 3>,
@@ -575,7 +576,7 @@ C2H_TEST_LIST("DeviceHistogram::Histogram* channel configs",
 
 // Testing only HistogramEven is fine, because HistogramRange shares the loading logic and the different binning
 // implementations are not affected by the iterator.
-C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][device]")
+CUB_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][device]", CUB_SMALL)
 {
   using sample_t                 = int;
   const auto width               = 100;
@@ -612,12 +613,12 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][dev
 }
 
 // Regression: https://github.com/NVIDIA/cub/issues/479
-C2H_TEST("DeviceHistogram::Histogram* regression NVIDIA/cub#479", "[histogram][device]")
+CUB_TEST("DeviceHistogram::Histogram* regression NVIDIA/cub#479", "[histogram][device]", CUB_SMALL)
 {
   test_even_and_range<float, 4, 3, int>(12, 7, 1920, 1080);
 }
 
-C2H_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogram][device]")
+CUB_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogram][device]", CUB_SMALL)
 {
   if constexpr (sizeof(size_t) != sizeof(int))
   {
@@ -626,7 +627,7 @@ C2H_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogra
   }
 }
 
-C2H_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_range][device]")
+CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_range][device]", CUB_SMALL)
 {
   constexpr int num_levels = 7;
   constexpr int h_samples[]{
@@ -658,7 +659,7 @@ C2H_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
 
 // Limit this large-memory reproducer to the host launch path.
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]")
+CUB_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]", CUB_LARGE)
 try
 {
   using sample_t  = int64_t;
@@ -697,8 +698,9 @@ catch (const std::exception& e)
 
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not
 // overflow using uint64_t arithmetic. In case of overflow, we expect cudaErrorInvalidValue to be returned.
-C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow",
+CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow",
               "[histogram_even][device]",
+              CUB_SMALL,
               uint8_t,
               uint16_t,
               uint32_t,
@@ -750,8 +752,8 @@ C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
 
 // When the number of bins exceeds what LevelT can represent, the bin computation will overflow
 // during the cast to CommonT. We expect cudaErrorInvalidValue to be returned.
-C2H_TEST_LIST(
-  "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", int8_t, int16_t)
+CUB_TEST_LIST(
+  "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", CUB_SMALL, int8_t, int16_t)
 {
   using level_t   = TestType;
   using sample_t  = level_t; // Common case: LevelT == SampleT
@@ -811,7 +813,7 @@ C2H_TEST_LIST(
 #endif // TEST_LAUNCH == 0
 
 // Regression test for https://github.com/NVIDIA/cub/issues/489: integer rounding errors lead to incorrect bin detection
-C2H_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogram_even][device]")
+CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogram_even][device]", CUB_SMALL)
 {
   constexpr int num_levels   = 8;
   const auto h_histogram_ref = c2h::host_vector<int>{1, 5, 0, 2, 1, 0, 0};

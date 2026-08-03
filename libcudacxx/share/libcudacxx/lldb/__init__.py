@@ -10,13 +10,15 @@ Requires Python 3.12 or newer.
 from __future__ import annotations
 
 import buffer
+import complex
 import memory_resource
 import std_array
+import tuple
 
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer, std_array)
+_FORMATTERS = (memory_resource, buffer, std_array, complex, tuple)
 InternalDict = dict[str, object]
 
 

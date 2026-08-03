@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <deque>
 
@@ -203,12 +204,16 @@ public:
     }
 
     auto& dot = ctx.get_dot();
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
+    // DOT tracing and set_ready_prereqs must not leave the task half-started;
+    // abort instead of letting an exception escape.
+    throw_proof->*[&] {
+      if (dot->is_tracing())
+      {
+        dot->template add_vertex<task, logical_data_untyped>(*this);
+      }
 
-    set_ready_prereqs(mv(ready_prereqs));
+      set_ready_prereqs(mv(ready_prereqs));
+    };
 
     return *this;
   }
