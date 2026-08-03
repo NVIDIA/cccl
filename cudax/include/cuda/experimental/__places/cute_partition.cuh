@@ -395,7 +395,7 @@ public:
     const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
     const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
 
-    const size_t s = min_owner_run_bytes(1); // in elements; elemsize folded below
+    const size_t s = min_owner_run_elems();
     if (s == 0)
     {
       // no place mode, or every place leaf has extent <= 1: single owner
@@ -476,6 +476,13 @@ public:
    */
   size_t min_owner_run_bytes(size_t elemsize) const
   {
+    return min_owner_run_elems() * elemsize;
+  }
+
+  //! The same granularity in ELEMENTS of the padded space (the walk's
+  //! native unit); 0 means no ownership boundary at all (single owner).
+  size_t min_owner_run_elems() const
+  {
     // Leaves with extent <= 1 never change the owning coordinate (owner()
     // skips them); including them would drag the minimum down -- extent-1
     // leaves from unit grid axes carry stride 1 (or 0 from the expert
@@ -490,7 +497,7 @@ public:
         s                 = (s == 0) ? stride : ::std::min(s, stride);
       }
     }
-    return s * elemsize; // 0: no ownership boundary at all (single owner)
+    return s;
   }
 
   /**
