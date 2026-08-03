@@ -402,6 +402,88 @@ public:
    *         element-cyclic): callers fall back to sampled majority.
    */
   /**
+   * @brief Enumerate the certified constant-owner byte runs of the flat
+   * allocation, merged across adjacent equal-owner segments, in increasing
+   * byte order: calls `emit(byte_start, byte_len, owner)` per run.
+   *
+   * Returns false (without emitting) when the walk would exceed max_runs;
+   * see try_block_owners for the budget semantics. The certificate for
+   * one owner() evaluation per segment is the divisibility chain of the
+   * exact tiling's sorted leaf strides (owner constant on intervals of the
+   * padded space aligned to the smallest place-leaf stride).
+   */
+  template <typename F>
+  bool for_each_owner_byte_run(size_t elemsize, size_t max_runs, F&& emit) const
+  {
+    const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
+    const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
+
+    if (num_place_leaves_ == 0)
+    {
+      emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
+      return true;
+    }
+
+    const size_t s = min_owner_run_bytes(1); // in elements; elemsize folded below
+    _CCCL_ASSERT(s > 0, "place leaves must have positive strides");
+    const size_t nrows = t1 * t2 * t3;
+    if (nrows * (t0 / s + 2) > max_runs)
+    {
+      return false;
+    }
+
+    const size_t ps1 = padded_dims_.get(0);
+    const size_t ps2 = ps1 * padded_dims_.get(1);
+    const size_t ps3 = ps2 * padded_dims_.get(2);
+
+    // pending merged run
+    size_t run_start = 0, run_len = 0;
+    pos4 run_owner;
+    auto push = [&](size_t start, size_t len, pos4 o) {
+      if (run_len > 0 && run_owner == o && run_start + run_len == start)
+      {
+        run_len += len;
+        return;
+      }
+      if (run_len > 0)
+      {
+        emit(run_start, run_len, run_owner);
+      }
+      run_start = start;
+      run_len   = len;
+      run_owner = o;
+    };
+
+    size_t ind = 0; // linear element index in the allocation
+    for (size_t x3 = 0; x3 < t3; x3++)
+    {
+      for (size_t x2 = 0; x2 < t2; x2++)
+      {
+        for (size_t x1 = 0; x1 < t1; x1++)
+        {
+          const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
+          size_t x0                 = 0;
+          while (x0 < t0)
+          {
+            const size_t pad_pos = row_pad_base + x0;
+            const size_t seg     = ::std::min(t0 - x0, s - (pad_pos % s));
+            push((ind + x0) * elemsize,
+                 seg * elemsize,
+                 owner(pos4(static_cast<int>(x0), static_cast<int>(x1), static_cast<int>(x2), static_cast<int>(x3))));
+            x0 += seg;
+          }
+          ind += t0;
+        }
+      }
+    }
+    if (run_len > 0)
+    {
+      emit(run_start, run_len, run_owner);
+    }
+    return true;
+  }
+
+  /**
    * @brief Certified owner-run granularity in bytes: the smallest place-leaf
    * stride times the element size.
    *
@@ -462,38 +544,7 @@ public:
     ::std::vector<pos4> owners;
     owners.reserve(nblocks);
 
-    // No place mode: a single owner for everything.
-    if (num_place_leaves_ == 0)
-    {
-      owners.assign(nblocks, owner(pos4(0, 0, 0, 0)));
-      return owners;
-    }
-
-    // Certified run granularity: the "smallest part" of the placement
-    // layout (see min_owner_run_bytes).
-    const size_t s = min_owner_run_bytes(1); // in elements: elemsize folded below
-    _CCCL_ASSERT(s > 0, "place leaves must have positive strides");
-
-    const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
-    const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
-    const size_t nrows = t1 * t2 * t3;
-    // COST guard, not a quality judgment: the walk costs one owner() call
-    // per run and there are ~total_bytes / min_owner_run_bytes of them
-    // (worst case per row: one run per s-boundary plus the row cut). Plans
-    // whose smallest part is below the block size are still computed -- the
-    // closed-form misplacement is exactly what placement evaluation needs;
-    // whether to relayout on that signal is the caller's decision.
-    if (nrows * (t0 / s + 2) > max_runs)
-    {
-      return ::std::nullopt;
-    }
-
-    const size_t ps1 = padded_dims_.get(0);
-    const size_t ps2 = ps1 * padded_dims_.get(1);
-    const size_t ps3 = ps2 * padded_dims_.get(2);
-
-    // Streaming block census over the certified runs (emitted in increasing
-    // linear order: x1 innermost of the row loops since dim 0 is fastest).
+    // Streaming block census over the certified runs.
     ::std::vector<::std::pair<pos4, size_t>> hist; // bytes per owner, current block
     size_t cur_block = 0;
 
@@ -548,27 +599,9 @@ public:
       }
     };
 
-    size_t ind = 0; // linear element index in the allocation
-    for (size_t x3 = 0; x3 < t3; x3++)
+    if (!for_each_owner_byte_run(elemsize, max_runs, feed))
     {
-      for (size_t x2 = 0; x2 < t2; x2++)
-      {
-        for (size_t x1 = 0; x1 < t1; x1++)
-        {
-          const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
-          size_t x0                 = 0;
-          while (x0 < t0)
-          {
-            const size_t pad_pos = row_pad_base + x0;
-            const size_t seg     = ::std::min(t0 - x0, s - (pad_pos % s));
-            feed((ind + x0) * elemsize,
-                 seg * elemsize,
-                 owner(pos4(static_cast<int>(x0), static_cast<int>(x1), static_cast<int>(x2), static_cast<int>(x3))));
-            x0 += seg;
-          }
-          ind += t0;
-        }
-      }
+      return ::std::nullopt;
     }
     if (!hist.empty())
     {
@@ -576,6 +609,57 @@ public:
     }
     _CCCL_ASSERT(owners.size() == nblocks, "placement block census incomplete");
     return owners;
+  }
+
+  /**
+   * @brief Divide the ownership layout by the placement-block layout,
+   * returning the quotient DIRECTLY as maximal same-owner block runs.
+   *
+   * This is the exact tier's natural output: one run per (cuMemCreate,
+   * cuMemMap) pair, with no per-block materialization and no downstream
+   * merge -- the census/merge round-trip of the one-owner-per-block
+   * representation exists only for tiers whose primitive is per-block
+   * (sampling, straddle majority). Succeeds iff every internal ownership
+   * boundary is aligned to the block size (the strict quotient exists, so
+   * the plan is exact and misplacement is zero by construction); returns
+   * nullopt otherwise -- callers fall through to try_block_owners (census
+   * with closed-form majority) and then to sampling.
+   *
+   * @param max_runs walk budget, as in try_block_owners (0 = auto)
+   */
+  ::std::optional<::std::vector<block_run>>
+  try_block_runs(size_t block_size_bytes, size_t elemsize, size_t max_runs = 0) const
+  {
+    _CCCL_ASSERT(elemsize > 0 && block_size_bytes >= elemsize, "invalid block geometry");
+    const size_t total_bytes = true_dims_.size() * elemsize;
+    const size_t nblocks     = (total_bytes + block_size_bytes - 1) / block_size_bytes;
+    if (max_runs == 0)
+    {
+      max_runs = ::std::max<size_t>(16 * nblocks, size_t(1) << 16);
+    }
+
+    ::std::vector<block_run> runs;
+    bool aligned             = true;
+    const bool within_budget = for_each_owner_byte_run(elemsize, max_runs, [&](size_t start, size_t len, pos4 o) {
+      if (!aligned)
+      {
+        return;
+      }
+      if (start % block_size_bytes != 0)
+      {
+        aligned = false; // internal boundary inside a block: no strict quotient
+        return;
+      }
+      const size_t first = start / block_size_bytes;
+      // the last run's tail may end mid-block; the block is still pure
+      const size_t count = (::std::min(start + len, total_bytes) - start + block_size_bytes - 1) / block_size_bytes;
+      runs.push_back(block_run{o, first, count});
+    });
+    if (!within_budget || !aligned)
+    {
+      return ::std::nullopt;
+    }
+    return runs;
   }
 
   //! Leaves of the place mode (leaf 0 fastest)
@@ -1615,24 +1699,37 @@ inline auto make_partition_owner_provider(
   const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
 {
   return [partition, data_dims, total_size, elemsize](
-           size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<pos4> {
-    size_t misplaced = 0;
-    // Budget the analytic walk against what the sampled fallback would spend
-    // anyway (probes owner() evaluations per block): when the walk fits this
-    // budget it is BOTH cheaper and exact, so choosing it can never be a
-    // performance regression. The floor keeps small allocations permissive.
+           size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
+    // Budget the analytic walks against what the sampled fallback would
+    // spend anyway (probes owner() evaluations per block): when a walk fits
+    // this budget it is BOTH cheaper and exact, so choosing it can never be
+    // a performance regression. The floor keeps small allocations
+    // permissive.
     const size_t budget = ::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
+
+    // Exact tier: the strict quotient exists -- runs come straight from the
+    // layout algebra, no per-block work at all.
+    if (auto runs = partition.try_block_runs(block_size_bytes, elemsize, budget))
+    {
+      stats.total_samples    = total_size * elemsize;
+      stats.matching_samples = stats.total_samples; // exact: zero misplacement
+      return mv(*runs);
+    }
+    // Census tier: straddling blocks resolved by exact byte majority with a
+    // closed-form misplaced count (byte-true accuracy in the stats).
+    size_t misplaced = 0;
     if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
     {
       stats.total_samples    = total_size * elemsize;
       stats.matching_samples = stats.total_samples - misplaced;
-      return mv(*owners);
+      return owners_to_block_runs(mv(*owners));
     }
+    // Sampled tier: opaque-density fallback (element-pitch interleavings).
     const auto owner_of = ::std::function<pos4(size_t)>([&partition, data_dims](size_t ind) {
       return partition.owner(data_dims.index_to_pos(ind));
     });
-    return compute_block_owners(
-      owner_of, nblocks, block_size_bytes, elemsize, total_size, localized_placement_default_probes, stats);
+    return owners_to_block_runs(compute_block_owners(
+      owner_of, nblocks, block_size_bytes, elemsize, total_size, localized_placement_default_probes, stats));
   };
 }
 
@@ -1978,6 +2075,42 @@ UNITTEST("min_owner_run_bytes reports the certified run granularity")
   size_t mis           = 0;
   const auto fine_plan = cyclic_part.try_block_owners(64, 4, &mis); // small case: still analyzable
   EXPECT(fine_plan.has_value() == true);
+};
+
+UNITTEST("try_block_runs: strict quotient emitted directly as runs")
+{
+  // 16 elements of 4 B blocked over 2 places, 8 B blocks: boundary at byte
+  // 32 = block 4 -> two runs, no per-block materialization.
+  const auto part = make_partition_descriptor(dim4(16), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  const auto runs = part.try_block_runs(8, 4);
+  EXPECT(runs.has_value() == true);
+  EXPECT(runs->size() == 2);
+  EXPECT((*runs)[0].owner == pos4(0));
+  EXPECT((*runs)[0].first_block == 0);
+  EXPECT((*runs)[0].num_blocks == 4);
+  EXPECT((*runs)[1].owner == pos4(1));
+  EXPECT((*runs)[1].first_block == 4);
+  EXPECT((*runs)[1].num_blocks == 4);
+};
+
+UNITTEST("try_block_runs: declines when a boundary falls inside a block")
+{
+  // 13 one-byte elements blocked over 2: boundary at byte 7, blocks of 4 ->
+  // no strict quotient; the census tier (try_block_owners) handles it.
+  const auto part = make_partition_descriptor(dim4(13), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(2));
+  EXPECT(!part.try_block_runs(4, 1).has_value());
+};
+
+UNITTEST("try_block_runs: single place covers the VM tail")
+{
+  // 10 elements of 4 B on one place, 16 B blocks: 40 B of payload round up
+  // to 3 blocks; the single run must cover the partial tail block too.
+  const auto part = make_partition_descriptor(dim4(10), {dim_spec{dim_policy::blocked, 0, 0}}, dim4(1));
+  const auto runs = part.try_block_runs(16, 4);
+  EXPECT(runs.has_value() == true);
+  EXPECT(runs->size() == 1);
+  EXPECT((*runs)[0].first_block == 0);
+  EXPECT((*runs)[0].num_blocks == 3);
 };
 
 UNITTEST("try_block_owners: exact plan when boundaries align")

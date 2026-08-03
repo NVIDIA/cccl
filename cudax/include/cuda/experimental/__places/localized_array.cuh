@@ -195,6 +195,20 @@ template <typename OwnerFn>
 }
 
 /**
+ * @brief A maximal run of consecutive placement blocks with one owner: the
+ * common currency between placement computations and allocation. The exact
+ * analytic tier emits runs directly (cute_partition_descriptor::
+ * try_block_runs); the sampled and census tiers produce one owner per block
+ * and convert (owners_to_block_runs).
+ */
+struct block_run
+{
+  pos4 owner;
+  size_t first_block;
+  size_t num_blocks;
+};
+
+/**
  * @brief Call `fn(owner, first_block, num_blocks)` for each maximal run of
  * consecutive blocks with the same owner.
  */
@@ -212,6 +226,16 @@ void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
     fn(p, i, j);
     i += j;
   }
+}
+
+//! Merge a one-owner-per-block vector into maximal block runs.
+inline ::std::vector<block_run> owners_to_block_runs(const ::std::vector<pos4>& owners)
+{
+  ::std::vector<block_run> runs;
+  for_each_owner_run(owners, [&](pos4 o, size_t first, size_t count) {
+    runs.push_back(block_run{o, first, count});
+  });
+  return runs;
 }
 
 /**
@@ -287,26 +311,29 @@ public:
   }
 
   /**
-   * @brief Construct from an owner PROVIDER: a callable
+   * @brief Construct from a placement PROVIDER: a callable
    * `(size_t block_size_bytes, size_t nblocks, localized_stats&) ->
-   * std::vector<pos4>` producing one owner per placement block.
+   * std::vector<block_run>` producing the maximal same-owner block runs of
+   * the allocation, in increasing block order.
    *
-   * This is the structured-tier entry point: providers derived from
-   * partition descriptors compute block owners analytically (see
-   * cute_partition_descriptor::try_block_owners and
-   * make_partition_owner_provider) and only fall back to the sampled
-   * majority vote when the layout is denser than the placement blocks.
+   * Runs are the allocation's natural currency (one physical allocation and
+   * one mapping per run). The exact analytic tier emits them directly (see
+   * cute_partition_descriptor::try_block_runs); sampled/census tiers return
+   * one owner per block and convert via owners_to_block_runs (see
+   * make_partition_owner_provider).
    */
-  template <typename OwnerProvider,
-            typename = ::cuda::std::enable_if_t<
-              ::cuda::std::is_invocable_r_v<::std::vector<pos4>, OwnerProvider, size_t, size_t, localized_stats&>>>
-  localized_array(exec_place grid, OwnerProvider&& owner_provider, size_t total_size, size_t elemsize, dim4 data_dims)
+  template <
+    typename PlacementProvider,
+    typename = ::cuda::std::enable_if_t<
+      ::cuda::std::is_invocable_r_v<::std::vector<block_run>, PlacementProvider, size_t, size_t, localized_stats&>>>
+  localized_array(
+    exec_place grid, PlacementProvider&& placement_provider, size_t total_size, size_t elemsize, dim4 data_dims)
       : grid(mv(grid))
       , total_size_bytes(total_size * elemsize)
       , data_dims(data_dims)
       , elemsize(elemsize)
   {
-    init(::cuda::std::forward<OwnerProvider>(owner_provider), total_size);
+    init(::cuda::std::forward<PlacementProvider>(placement_provider), total_size);
   }
 
   localized_array()                                  = delete;
@@ -365,15 +392,16 @@ private:
   {
     init(
       [&](size_t block_size_bytes_, size_t nblocks_, localized_stats& stats_) {
-        return compute_block_owners(owner_of, nblocks_, block_size_bytes_, elemsize, total_size, probes, stats_);
+        return owners_to_block_runs(
+          compute_block_owners(owner_of, nblocks_, block_size_bytes_, elemsize, total_size, probes, stats_));
       },
       total_size);
   }
 
-  //! Shared allocation body: `owner_provider(block_size_bytes, nblocks,
-  //! stats)` returns one owner per placement block.
-  template <typename OwnerProvider>
-  void init(OwnerProvider&& owner_provider, [[maybe_unused]] size_t total_size)
+  //! Shared allocation body: `placement_provider(block_size_bytes, nblocks,
+  //! stats)` returns the allocation's maximal same-owner block runs.
+  template <typename PlacementProvider>
+  void init(PlacementProvider&& placement_provider, [[maybe_unused]] size_t total_size)
   {
     if (elemsize == 0)
     {
@@ -417,24 +445,27 @@ private:
     stats.block_size  = block_size_bytes;
     stats.nblocks     = nblocks;
 
-    const ::std::vector<pos4> owners = owner_provider(block_size_bytes, nblocks, stats);
-    _CCCL_ASSERT(owners.size() == nblocks, "owner provider must cover every placement block");
+    const ::std::vector<block_run> runs = placement_provider(block_size_bytes, nblocks, stats);
+    _CCCL_ASSERT(!runs.empty() && runs.front().first_block == 0, "placement runs must start at block 0");
+    _CCCL_ASSERT(runs.back().first_block + runs.back().num_blocks == nblocks,
+                 "placement runs must cover every placement block");
 
-    meta.reserve(nblocks);
+    meta.reserve(runs.size());
 
-    for_each_owner_run(owners, [&](pos4 p, size_t first_block, size_t num_blocks) {
-      data_place place  = grid_pos_to_place(p);
-      size_t alloc_size = num_blocks * block_size_bytes;
+    for (const auto& r : runs)
+    {
+      data_place place  = grid_pos_to_place(r.owner);
+      size_t alloc_size = r.num_blocks * block_size_bytes;
       stats.bytes_per_place[place.to_string()] += alloc_size;
-      stats.bytes_per_grid_index[this->grid.get_dims().get_index(p)] += alloc_size;
-      meta.emplace_back(mv(place), alloc_size, first_block * block_size_bytes);
-    });
+      stats.bytes_per_grid_index[this->grid.get_dims().get_index(r.owner)] += alloc_size;
+      meta.emplace_back(mv(place), alloc_size, r.first_block * block_size_bytes);
+    }
 
     stats.nallocs = meta.size();
 
     if (localized_alloc_stats_enabled())
     {
-      print_stats(owners);
+      print_stats(runs);
     }
 
     for (auto& item : meta)
@@ -467,7 +498,7 @@ private:
     }
   }
 
-  void print_stats(const ::std::vector<pos4>& owners)
+  void print_stats(const ::std::vector<block_run>& runs)
   {
     fprintf(stderr, "\n=== Localized Array Allocation Statistics ===\n");
     fprintf(stderr, "Total size: %zu bytes (%.2f MB)\n", stats.total_bytes, stats.total_bytes / (1024.0 * 1024.0));
@@ -518,9 +549,10 @@ private:
     fprintf(stderr, "\nBlock ownership map (each char = 1 block, 0-9/a-z = place index):\n  ");
     ::std::unordered_map<::std::string, char> place_to_char;
     char next_char = '0';
-    for (size_t i = 0; i < owners.size(); i++)
+    size_t i       = 0;
+    for (const auto& r : runs)
     {
-      ::std::string place_str = grid_pos_to_place(owners[i]).to_string();
+      ::std::string place_str = grid_pos_to_place(r.owner).to_string();
       if (place_to_char.find(place_str) == place_to_char.end())
       {
         place_to_char[place_str] = next_char;
@@ -533,10 +565,13 @@ private:
           next_char++;
         }
       }
-      fprintf(stderr, "%c", place_to_char[place_str]);
-      if ((i + 1) % 80 == 0)
+      for (size_t b = 0; b < r.num_blocks; b++, i++)
       {
-        fprintf(stderr, "\n  ");
+        fprintf(stderr, "%c", place_to_char[place_str]);
+        if ((i + 1) % 80 == 0)
+        {
+          fprintf(stderr, "\n  ");
+        }
       }
     }
     fprintf(stderr, "\n");
