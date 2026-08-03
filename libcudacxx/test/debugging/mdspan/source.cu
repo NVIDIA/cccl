@@ -2,6 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// Allow constructing device_mdspan below over ordinary host memory.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
+
+#include <cuda/mdspan>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 
@@ -82,6 +86,28 @@ inspect_rank0_layout_stride(const cuda::std::mdspan<int, cuda::std::extents<int>
 [[gnu::noinline]] void inspect_custom_accessor(
   const cuda::std::
     mdspan<int, cuda::std::dextents<int, 1>, cuda::std::layout_right, cuda::std::aligned_accessor<int, 16>>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_host_mdspan(const cuda::host_mdspan<int, cuda::std::extents<int, 2>>& values)
+{
+  keep_for_debugger(values);
+}
+
+// No elements expected: device memory isn't host-dereferenceable.
+[[gnu::noinline]] void inspect_device_mdspan(const cuda::device_mdspan<int, cuda::std::extents<int, 2>>& values)
+{
+  keep_for_debugger(values);
+}
+
+// Unified memory is host-readable: full element display, like host_mdspan.
+[[gnu::noinline]] void inspect_managed_mdspan(const cuda::managed_mdspan<int, cuda::std::extents<int, 2>>& values)
+{
+  keep_for_debugger(values);
+}
+
+[[gnu::noinline]] void inspect_restrict_mdspan(const cuda::restrict_mdspan<int, cuda::std::extents<int, 2>>& values)
 {
   keep_for_debugger(values);
 }
@@ -203,6 +229,22 @@ int main()
   const cuda::std::mdspan<int, cuda::std::dextents<int, 1>, cuda::std::layout_right, cuda::std::aligned_accessor<int, 16>>
     custom_accessor(custom_accessor_data, 4);
   inspect_custom_accessor(custom_accessor);
+
+  int host_mdspan_data[2] = {41, 42};
+  const cuda::host_mdspan<int, cuda::std::extents<int, 2>> host_mdspan_span(host_mdspan_data);
+  inspect_host_mdspan(host_mdspan_span);
+
+  int device_mdspan_data[2] = {51, 52};
+  const cuda::device_mdspan<int, cuda::std::extents<int, 2>> device_mdspan_span(device_mdspan_data);
+  inspect_device_mdspan(device_mdspan_span);
+
+  int managed_mdspan_data[2] = {61, 62};
+  const cuda::managed_mdspan<int, cuda::std::extents<int, 2>> managed_mdspan_span(managed_mdspan_data);
+  inspect_managed_mdspan(managed_mdspan_span);
+
+  int restrict_mdspan_data[2] = {71, 72};
+  const cuda::restrict_mdspan<int, cuda::std::extents<int, 2>> restrict_mdspan_span(restrict_mdspan_data);
+  inspect_restrict_mdspan(restrict_mdspan_span);
 
   int vector_data0[2] = {-2, 4};
   int vector_data1[2] = {11, -9};

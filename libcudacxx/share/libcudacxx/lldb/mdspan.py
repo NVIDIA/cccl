@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""LLDB pretty printer for cuda::std::mdspan."""
+"""LLDB pretty printer for cuda::std::mdspan and its cuda:: accessibility wrappers."""
 
 from __future__ import annotations
 
@@ -13,19 +13,42 @@ import lldb
 
 _MDSPAN_PATTERN = re.compile(r"^cuda::std::mdspan<.+>$")
 _EBCO_PATTERN = re.compile(r"__mdspan_ebco<")
-_EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<(\d+),")
-_EXTENTS_PATTERN = re.compile(r"extents<([^>]*)>$")
+_EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
+_EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
-# static_cast<size_t>(-1), the value of cuda::std::dynamic_extent.
-_DYNAMIC_EXTENT = (1 << 64) - 1
+# Not host-dereferenceable; never index through these accessors.
+_DEVICE_ONLY_ACCESSOR_MARKERS = ("__device_accessor<", "__shared_memory_accessor<")
+# cuda:: accessibility wrappers around cuda::std::mdspan.
+_WRAPPER_MDSPAN_NAMES = frozenset(
+    {
+        "host_mdspan",
+        "device_mdspan",
+        "managed_mdspan",
+        "restrict_mdspan",
+        "shared_memory_mdspan",
+    }
+)
 InternalDict = dict[str, object]
+
+
+def _dynamic_extent(target: lldb.SBTarget) -> int:
+    """Return cuda::std::dynamic_extent, using the target's real size_t width."""
+    size_t_type = target.FindFirstType("size_t")
+    size_t_bits = (size_t_type.GetByteSize() or 8) * 8
+    return (1 << size_t_bits) - 1
 
 
 def is_cuda_mdspan(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     type_name = (
         value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
     )
-    return _MDSPAN_PATTERN.fullmatch(type_name) is not None
+    if _MDSPAN_PATTERN.fullmatch(type_name) is not None:
+        return True
+    template_name = type_name.split("<", 1)[0]
+    return (
+        template_name.startswith("cuda::")
+        and template_name.rsplit("::", 1)[-1] in _WRAPPER_MDSPAN_NAMES
+    )
 
 
 def _direct_bases(sb_type: lldb.SBType) -> list[lldb.SBTypeMember]:
@@ -35,13 +58,30 @@ def _direct_bases(sb_type: lldb.SBType) -> list[lldb.SBTypeMember]:
     ]
 
 
+def _template_name(sb_type: lldb.SBType) -> str:
+    name = sb_type.GetDisplayTypeName() or sb_type.GetName() or ""
+    return name.split("<", 1)[0]
+
+
+def _mdspan_base_type(sb_type: lldb.SBType) -> lldb.SBType | None:
+    """Find the real cuda::std::mdspan type, skipping any cuda:: wrapper."""
+    current = sb_type
+    while _template_name(current).rsplit("::", 1)[-1] != "mdspan":
+        bases = _direct_bases(current)
+        if len(bases) != 1:
+            return None
+        current = bases[0].GetType()
+    return current
+
+
 def _find_ebco_base(value: lldb.SBValue) -> lldb.SBValue | None:
     """Descend through transparent wrapper bases to an ``__mdspan_ebco<...>``.
 
     ``mdspan`` and ``layout_right``/``layout_left``'s ``mapping`` privately
     inherit ``__mdspan_ebco<...>`` directly. ``layout_stride``'s ``mapping``
     inherits it through one intermediate ``__mapping_base<...>`` wrapper
-    base, which this recurses through.
+    base, which this recurses through (also handles a ``cuda::`` wrapper
+    like ``host_mdspan``).
     """
     bases = _direct_bases(value.GetType())
     for base in bases:
@@ -128,10 +168,12 @@ def _dynamic_values(extents_value: lldb.SBValue, count: int) -> list[int] | None
     return [vals.GetChildAtIndex(i).GetValueAsSigned(0) for i in range(count)]
 
 
-def _combined_extents(static_values: list[int], dynamic_values: list[int]) -> list[int]:
+def _combined_extents(
+    static_values: list[int], dynamic_values: list[int], dynamic_extent: int
+) -> list[int]:
     dynamic_iter = iter(dynamic_values)
     return [
-        next(dynamic_iter) if value == _DYNAMIC_EXTENT else value
+        next(dynamic_iter) if value == dynamic_extent else value
         for value in static_values
     ]
 
@@ -177,9 +219,16 @@ class MdspanInfo(NamedTuple):
     data: lldb.SBValue | None
     layout: str | None
     strides: list[int] | None
+    layout_name: str | None
+    accessor_name: str | None
 
     def can_index(self) -> bool:
         if self.extents is None or self.data is None or self.layout is None:
+            return False
+        # device_mdspan/shared_memory_mdspan: never index, see marker comment above.
+        if self.accessor_name is not None and any(
+            marker in self.accessor_name for marker in _DEVICE_ONLY_ACCESSOR_MARKERS
+        ):
             return False
         if self.layout != "layout_stride":
             return True
@@ -199,9 +248,13 @@ def _display_type_name(value: lldb.SBValue) -> str:
     )
 
 
+def _readable_type_name(name: str, dynamic_extent: int) -> str:
+    """Replace the raw dynamic_extent sentinel with a readable name."""
+    return re.sub(rf"\b{dynamic_extent}\b", "dynamic_extent", name)
+
+
 def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     value = value.GetNonSyntheticValue()
-    mdspan_type = value.GetType().GetCanonicalType().GetUnqualifiedType()
     type_name = _display_type_name(value)
 
     top_ebco = _find_ebco_base(value)
@@ -210,48 +263,83 @@ def _mdspan_info(value: lldb.SBValue) -> MdspanInfo | None:
     data_handle = _ebco_element(top_ebco, 0, "__data_handle")
     mapping = _ebco_element(top_ebco, 1, "__mapping")
     if data_handle is None or mapping is None:
-        return MdspanInfo(type_name, None, None, None, None)
+        return MdspanInfo(type_name, None, None, None, None, None, None)
 
+    mdspan_type = _mdspan_base_type(
+        value.GetType().GetCanonicalType().GetUnqualifiedType()
+    )
+    if mdspan_type is None:
+        return MdspanInfo(type_name, None, None, None, None, None, None)
     extents_type = mdspan_type.GetTemplateArgumentType(1)
+    layout_type = mdspan_type.GetTemplateArgumentType(2)
+    accessor_type = mdspan_type.GetTemplateArgumentType(3)
+    layout_name = layout_type.GetDisplayTypeName() or layout_type.GetName() or None
+    accessor_name = (
+        accessor_type.GetDisplayTypeName() or accessor_type.GetName() or None
+    )
+
+    dynamic_extent = _dynamic_extent(value.GetTarget())
     static_values = _static_extents(extents_type)
     if static_values is None:
-        return MdspanInfo(type_name, None, None, None, None)
-    rank_dynamic = sum(1 for value_ in static_values if value_ == _DYNAMIC_EXTENT)
+        return MdspanInfo(type_name, None, None, None, None, layout_name, accessor_name)
+    rank_dynamic = sum(1 for value_ in static_values if value_ == dynamic_extent)
 
     mapping_ebco = _find_ebco_base(mapping)
     dynamic_values: list[int] = []
     if rank_dynamic > 0:
         if mapping_ebco is None:
-            return MdspanInfo(type_name, None, None, None, None)
+            return MdspanInfo(
+                type_name, None, None, None, None, layout_name, accessor_name
+            )
         extents_value = _ebco_element(mapping_ebco, 0, "__extents")
         if extents_value is None:
-            return MdspanInfo(type_name, None, None, None, None)
+            return MdspanInfo(
+                type_name, None, None, None, None, layout_name, accessor_name
+            )
         values = _dynamic_values(extents_value, rank_dynamic)
         if values is None:
-            return MdspanInfo(type_name, None, None, None, None)
+            return MdspanInfo(
+                type_name, None, None, None, None, layout_name, accessor_name
+            )
         dynamic_values = values
-    extents = _combined_extents(static_values, dynamic_values)
+    extents = _combined_extents(static_values, dynamic_values, dynamic_extent)
 
-    layout = _layout_kind(mdspan_type.GetTemplateArgumentType(2))
+    layout = _layout_kind(layout_type)
     strides = None
     if layout == "layout_stride" and len(extents) > 0:
         if mapping_ebco is None:
-            return MdspanInfo(type_name, extents, None, layout, None)
+            return MdspanInfo(
+                type_name, extents, None, layout, None, layout_name, accessor_name
+            )
         strides = _strides(mapping_ebco, len(extents))
 
     data = None
     if data_handle.GetType().GetCanonicalType().IsPointerType():
         data = data_handle
 
-    return MdspanInfo(type_name, extents, data, layout, strides)
+    return MdspanInfo(
+        type_name, extents, data, layout, strides, layout_name, accessor_name
+    )
 
 
 def mdspan_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str | None:
     info = _mdspan_info(value)
-    if info is None or info.extents is None:
+    if info is None:
         return None
-    extents_text = ", ".join(str(extent) for extent in info.extents)
-    return f"of extents [{extents_text}]"
+    details = []
+    if info.extents is not None:
+        extents_text = ", ".join(str(extent) for extent in info.extents)
+        details.append(f"rank={len(info.extents)}")
+        details.append(f"extents=[{extents_text}]")
+    if info.data is not None:
+        details.append(f"data={info.data.GetValueAsUnsigned(0):#x}")
+    if info.layout_name is not None:
+        details.append(f"layout={info.layout_name}")
+    if info.accessor_name is not None:
+        details.append(f"accessor={info.accessor_name}")
+    if not details:
+        return None
+    return ", ".join(details)
 
 
 class MdspanSyntheticProvider:
@@ -289,7 +377,9 @@ class MdspanSyntheticProvider:
         return self.num_children() != 0
 
     def get_type_name(self) -> str:
-        return _display_type_name(self.value)
+        name = _display_type_name(self.value)
+        dynamic_extent = _dynamic_extent(self.value.GetTarget())
+        return _readable_type_name(name, dynamic_extent)
 
     def get_child_index(self, name: str) -> int:
         if self.info is None or not self.info.can_index():
