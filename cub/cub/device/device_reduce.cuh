@@ -979,7 +979,7 @@ public:
 
 private:
   template <class EnvT>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __validate_determinism_streaming_reduce() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL bool __validate_determinism_streaming_reduce() noexcept
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
