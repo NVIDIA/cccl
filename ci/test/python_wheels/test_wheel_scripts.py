@@ -94,7 +94,9 @@ def _write_coordinated_wheel_set(
                     "Requires-Dist: numpy\n"
                     "Requires-Dist: cuda-pathfinder>=1.2.3\n"
                     "Requires-Dist: cuda-core\n"
-                    "Requires-Dist: typing_extensions\n"
+                    # Exercise PEP 503 name normalization: the source project
+                    # spells this equivalent dependency with an underscore.
+                    "Requires-Dist: typing-extensions\n"
                     f"Requires-Dist: cccl-headers=={version}\n"
                 ),
                 "cuda/compute/__init__.py": "",
@@ -533,6 +535,10 @@ class WheelScriptTests(unittest.TestCase):
     def test_rejects_altered_compute_runtime_dependencies(self):
         for dependency, altered_requirement in (
             ("numpy", "numpy<0"),
+            (
+                "cuda-pathfinder>=1.2.3",
+                "cuda-pathfinder>=1.0.0",
+            ),
             (
                 "cuda-core",
                 "cuda-core @ https://example.invalid/cuda_core.whl",

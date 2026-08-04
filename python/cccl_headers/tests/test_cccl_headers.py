@@ -278,6 +278,11 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             / "cudax-consumer"
             / "cudaxConsumerTargets.cmake"
         )
+        export_targets = export_targets_file.read_text(encoding="utf-8")
+        assert export_targets.count('INTERFACE_LINK_LIBRARIES "cudax::cudax"') == 2
+        assert "_cudax_cudax" not in export_targets
+        assert "CCCL::cudax" not in export_targets
+
         result = subprocess.run(
             [
                 "cmake",

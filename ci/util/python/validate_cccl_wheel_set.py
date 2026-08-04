@@ -73,19 +73,46 @@ def _validate_identity(metadata, wheel: Path, expected_name: str) -> str:
     return version
 
 
-def _has_unconditional_requirement(requirements: list[str], expected: str) -> bool:
-    normalized_expected = expected.replace(" ", "").lower()
+def _normalized_specifier(specifier: str) -> str:
+    specifier = specifier.strip()
+    if specifier.startswith("(") and specifier.endswith(")"):
+        specifier = specifier[1:-1]
+    return ",".join(
+        sorted(part for part in re.sub(r"\s+", "", specifier).split(",") if part)
+    )
+
+
+def _parse_unconditional_requirement(requirement: str) -> tuple[str, str] | None:
+    requirement_text, separator, _marker = requirement.partition(";")
+    if separator or "@" in requirement_text or "[" in requirement_text:
+        return None
+
+    match = re.fullmatch(
+        r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(.*?)\s*", requirement_text
+    )
+    if match is None:
+        return None
+    return (
+        _normalized_distribution_name(match.group(1)),
+        _normalized_specifier(match.group(2)),
+    )
+
+
+def _has_unconditional_requirement(
+    requirements: list[str], name: str, specifier: str = ""
+) -> bool:
+    expected = (
+        _normalized_distribution_name(name),
+        _normalized_specifier(specifier),
+    )
     for requirement in requirements:
-        requirement_text, separator, marker = requirement.partition(";")
-        if separator and marker.strip():
-            continue
-        if requirement_text.replace(" ", "").lower() == normalized_expected:
+        if _parse_unconditional_requirement(requirement) == expected:
             return True
     return False
 
 
 def _has_exact_requirement(requirements: list[str], name: str, version: str) -> bool:
-    return _has_unconditional_requirement(requirements, f"{name}=={version}")
+    return _has_unconditional_requirement(requirements, name, f"=={version}")
 
 
 def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
@@ -164,16 +191,19 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
             observed_expectations.add(matching_expectations[0])
 
         compute_requirements = compute_metadata.get_all("Requires-Dist", [])
+        # Keep this runtime contract synchronized with [project].dependencies
+        # in python/cuda_compute/pyproject.toml. The exact cccl-headers pin is
+        # checked separately below because its version is dynamic.
         required_compute_dependencies = (
-            "numpy",
-            "cuda-pathfinder>=1.2.3",
-            "cuda-core",
-            "typing_extensions",
+            ("numpy", ""),
+            ("cuda-pathfinder", ">=1.2.3"),
+            ("cuda-core", ""),
+            ("typing-extensions", ""),
         )
         missing_compute_dependencies = [
-            requirement
-            for requirement in required_compute_dependencies
-            if not _has_unconditional_requirement(compute_requirements, requirement)
+            f"{name}{specifier}"
+            for name, specifier in required_compute_dependencies
+            if not _has_unconditional_requirement(compute_requirements, name, specifier)
         ]
         if missing_compute_dependencies:
             raise RuntimeError(
