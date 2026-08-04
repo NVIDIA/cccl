@@ -24,6 +24,7 @@ if (MSVC)
     /nologo
     /TP
     /P
+    /EP
     /Fi${JIT_TEMPLATE_NATIVE}
     "${cpp_entry}"
   )
@@ -31,7 +32,7 @@ else()
   list(
     APPEND PP_ARGS
     # gersemi: off
-    -E "${cpp_entry}"
+    -E -P "${cpp_entry}"
     -o "${jit_template}"
     -MD -MT "${jit_template}"
     -MF "${jit_template_depfile}"
