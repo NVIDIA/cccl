@@ -143,11 +143,12 @@ foreach (component IN LISTS COMPONENTS)
         "EXPECTED_VERSION=${component_cmake_version}"
     )
   elseif (component STREQUAL "cudax")
-    get_target_property(cudax_aliased_target cudax::cudax ALIASED_TARGET)
-    if (NOT cudax_aliased_target STREQUAL "_cudax_cudax")
+    get_target_property(cudax_imported cudax::cudax IMPORTED)
+    get_target_property(cudax_links cudax::cudax INTERFACE_LINK_LIBRARIES)
+    if (NOT cudax_imported OR NOT "_cudax_cudax" IN_LIST cudax_links)
       message(
         FATAL_ERROR
-        "Expected cudax::cudax to alias the non-imported _cudax_cudax target; got '${cudax_aliased_target}'"
+        "Expected cudax::cudax to wrap the non-imported _cudax_cudax target"
       )
     endif()
 

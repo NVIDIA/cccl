@@ -132,6 +132,7 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             # Discover CUDAX before CUDA is enabled. A repeated find after
             # enabling CUDA must add the CUDA language requirement.
             find_package(cudax CONFIG REQUIRED)
+            find_package(CCCL CONFIG REQUIRED COMPONENTS cudax)
 
             if (ENABLE_CUDA)
               include(CheckLanguage)
@@ -190,7 +191,12 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
 
             add_library(cudax_export_consumer INTERFACE)
             target_link_libraries(cudax_export_consumer INTERFACE cudax::cudax)
-            install(TARGETS cudax_export_consumer EXPORT cudaxConsumerTargets)
+            add_library(cccl_cudax_export_consumer INTERFACE)
+            target_link_libraries(cccl_cudax_export_consumer INTERFACE CCCL::cudax)
+            install(
+              TARGETS cudax_export_consumer cccl_cudax_export_consumer
+              EXPORT cudaxConsumerTargets
+            )
             install(
               EXPORT cudaxConsumerTargets
               DESTINATION lib/cmake/cudax-consumer
@@ -213,6 +219,7 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
                 str(build_dir),
                 f"-DENABLE_CUDA={'ON' if enable_cuda else 'OFF'}",
                 f"-Dcudax_DIR={cudax_cmake_dir}",
+                f"-DCCCL_DIR={(package_root / 'lib' / 'cmake' / 'cccl').as_posix()}",
                 f"-DEXPECTED_CUDAX_INCLUDE={(package_root / 'include').as_posix()}",
                 f"-DCMAKE_INSTALL_PREFIX={build_dir / 'install'}",
             ],

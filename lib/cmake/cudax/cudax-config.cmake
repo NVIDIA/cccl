@@ -2,7 +2,7 @@ if (TARGET cudax::cudax)
   # In case new languages have been enabled:
   libcudacxx_update_language_compat_flags()
   get_property(cudax_enabled_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-  if (CUDA IN_LIST cudax_enabled_languages)
+  if (TARGET _cudax_cudax AND CUDA IN_LIST cudax_enabled_languages)
     target_compile_features(_cudax_cudax INTERFACE cuda_std_17)
   endif()
 

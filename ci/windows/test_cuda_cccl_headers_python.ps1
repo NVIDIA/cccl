@@ -17,6 +17,10 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 $python = Get-Python -Version $PyVersion
 $repoRoot = Get-RepoRoot
 
+# Keep CTK-mode validation and dependency pinning consistent with the other
+# Python lanes. The standalone header wheel itself does not install cuda-toolkit.
+Set-CtkPin $CtkMode
+
 ${wheelPath} = Get-CcclHeadersWheel
 $wheelhouse = Split-Path -Parent $wheelPath
 
