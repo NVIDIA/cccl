@@ -513,6 +513,55 @@ class parallel_for_scope
    * @return A tuple containing the result of `dep.instance(t)` for each dependency,
    *         with `std::ignore` in positions where the result type is `void_interface&`.
    */
+  //! Detects mdspan-like instances (the only ones a replicated place can rebase)
+  template <typename X, typename = void>
+  struct pf_has_data_handle : ::std::false_type
+  {};
+  template <typename X>
+  struct pf_has_data_handle<X, ::std::void_t<decltype(::std::declval<X&>().data_handle())>> : ::std::true_type
+  {};
+
+  //! Rebase one instance onto this place's replica of a replicated data
+  //! place: replica r lives at base + r * stride (stride from the shared
+  //! replicated_replica_stride, the same value the allocation used).
+  template <typename Inst, typename Dep>
+  static void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
+  {
+    const data_place& dp = dep.get_dplace();
+    if (dp.is_invalid() || !dp.is_replicated())
+    {
+      return;
+    }
+    if constexpr (pf_has_data_handle<Inst>::value)
+    {
+      using element_type        = typename Inst::element_type;
+      const size_t bytes        = inst.mapping().required_span_size() * sizeof(element_type);
+      const size_t stride_elems = reserved::replicated_replica_stride(bytes) / sizeof(element_type);
+      inst                      = Inst(inst.data_handle() + place_index * stride_elems, inst.mapping());
+    }
+    else
+    {
+      throw ::std::runtime_error("replicated data places require slice (mdspan) data in parallel_for");
+    }
+  }
+
+  template <size_t... I>
+  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index, ::std::index_sequence<I...>)
+  {
+    (rebase_replicated_one(::std::get<I>(instances), ::std::get<I>(deps), place_index), ...);
+  }
+
+  //! Each shard of a grid dispatch reads its own replica of any dep placed
+  //! at a replicated data place (place 0 uses the instance as fetched).
+  void rebase_replicated_instances(deps_tup_t& instances, size_t place_index)
+  {
+    if (place_index == 0)
+    {
+      return;
+    }
+    rebase_replicated_impl(instances, place_index, ::std::make_index_sequence<sizeof...(deps_ops_t)>());
+  }
+
   static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
   {
     return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
@@ -1018,6 +1067,7 @@ public:
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
+    rebase_replicated_instances(arg_instances, place_index);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {

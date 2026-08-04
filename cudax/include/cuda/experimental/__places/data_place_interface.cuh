@@ -215,6 +215,12 @@ public:
     return false;
   }
 
+  //! Whether this is a replicated data place (one copy per grid member)
+  virtual bool is_replicated() const
+  {
+    return false;
+  }
+
   /**
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place

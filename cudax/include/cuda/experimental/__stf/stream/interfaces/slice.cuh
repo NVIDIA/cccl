@@ -87,6 +87,24 @@ public:
 
     T* base_ptr;
 
+    if (memory_node.is_replicated())
+    {
+      // One padded replica per grid member, each in its member's affine
+      // memory. The instance exposes replica 0, so ordinary copies target
+      // it; copies INTO the place fan out to the other replicas (see the
+      // copy path), and writes at the place are rejected at task creation,
+      // so a valid replicated instance is synced by construction.
+      const auto& grid             = ::cuda::experimental::places::replicated_grid(memory_node);
+      const size_t stride          = reserved::replicated_replica_stride(static_cast<size_t>(s));
+      auto [array, cached_prereqs] = bctx.get_composite_cache().get_replicated(grid, stride);
+      prereqs.merge(mv(cached_prereqs));
+      T* rep_base                        = static_cast<T*>(array->get_base_ptr());
+      *extra_args                        = array.release();
+      local_desc                         = this->shape.create(rep_base);
+      replicated_instances_[instance_id] = grid.size();
+      return;
+    }
+
     if (!memory_node.is_composite())
     {
       base_ptr   = static_cast<T*>(custom_allocator.allocate(bctx, memory_node, s, prereqs));
@@ -144,12 +162,13 @@ public:
     // TODO erase local_desc to avoid future reuse by mistake
     // local_desc = element_type();
 
-    if (!memory_node.is_composite())
+    if (!memory_node.is_composite() && !memory_node.is_replicated())
     {
       custom_allocator.deallocate(bctx, memory_node, prereqs, ptr, sz);
       return;
     }
 
+    replicated_instances_.erase(instance_id);
     assert(extra_args);
 
     // To properly erase a composite data, we would need to synchronize the
@@ -249,8 +268,26 @@ public:
       }
     }
 
+    // Copies INTO a replicated place populate replica 0 above; fan the
+    // payload out to the other replicas on the same stream so a valid
+    // replicated instance is fully synced (writes at the place are
+    // rejected, so no other path can desynchronize individual replicas).
+    if (const auto it = replicated_instances_.find(dst_instance_id); it != replicated_instances_.end())
+    {
+      const size_t bytes  = b.size() * sizeof(T);
+      const size_t stride = reserved::replicated_replica_stride(bytes);
+      char* rep_base      = reinterpret_cast<char*>(dst_ptr);
+      for (size_t r = 1; r < it->second; r++)
+      {
+        cuda_try(cudaMemcpyAsync(rep_base + r * stride, rep_base, bytes, cudaMemcpyDefault, s));
+      }
+    }
+
     prereqs = op.end(bctx);
   }
+
+  //! Replica count of live replicated instances (fan-out in the copy path)
+  ::std::map<instance_id_t, size_t> replicated_instances_;
 
   bool pin_host_memory(instance_id_t instance_id) override
   {

@@ -81,6 +81,24 @@ public:
     s                = this->shape.size() * sizeof(T);
     auto& local_desc = this->instance(instance_id);
 
+    if (memory_node.is_replicated())
+    {
+      // One padded replica per grid member, each in its member's affine
+      // memory. The instance exposes replica 0, so ordinary copies target
+      // it; copies INTO the place fan out to the other replicas (see the
+      // copy path), and writes at the place are rejected at task creation,
+      // so a valid replicated instance is synced by construction.
+      const auto& grid             = ::cuda::experimental::places::replicated_grid(memory_node);
+      const size_t stride          = reserved::replicated_replica_stride(static_cast<size_t>(s));
+      auto [array, cached_prereqs] = bctx.get_composite_cache().get_replicated(grid, stride);
+      prereqs.merge(mv(cached_prereqs));
+      T* rep_base                        = static_cast<T*>(array->get_base_ptr());
+      *extra_args                        = array.release();
+      local_desc                         = this->shape.create(rep_base);
+      replicated_instances_[instance_id] = grid.size();
+      return;
+    }
+
     if (!memory_node.is_composite())
     {
       void* base_ptr = custom_allocator.allocate(bctx, memory_node, s, prereqs);
@@ -140,12 +158,13 @@ public:
     // TODO find a way to erase this variable to facilitate debugging
     // local_desc = slice<T, dimensions>(); // optional, helps with debugging
 
-    if (!memory_node.is_composite())
+    if (!memory_node.is_composite() && !memory_node.is_replicated())
     {
       custom_allocator.deallocate(bctx, memory_node, prereqs, ptr, sz);
       return;
     }
 
+    replicated_instances_.erase(instance_id);
     assert(extra_args);
 
     // To properly erase a composite data, we would need to synchronize the
@@ -241,8 +260,31 @@ public:
         .kind     = kind};
     }
 
-    return cuda_try<cudaGraphAddMemcpyNode>(graph, input_nodes, input_cnt, &cpy_params);
+    cudaGraphNode_t node = cuda_try<cudaGraphAddMemcpyNode>(graph, input_nodes, input_cnt, &cpy_params);
+
+    // Fan a copy into a replicated place out to the other replicas, as a
+    // chain of memcpy nodes (the returned node is the chain's tail, so
+    // downstream dependencies wait for the whole fan-out).
+    if (const auto it = replicated_instances_.find(dst_instance_id); it != replicated_instances_.end())
+    {
+      const size_t bytes  = b.size() * sizeof(T);
+      const size_t stride = reserved::replicated_replica_stride(bytes);
+      char* rep_base      = reinterpret_cast<char*>(dst_ptr);
+      for (size_t r = 1; r < it->second; r++)
+      {
+        cudaMemcpy3DParms fan = {};
+        fan.srcPtr            = make_cudaPitchedPtr(rep_base, bytes, bytes, 1);
+        fan.dstPtr            = make_cudaPitchedPtr(rep_base + r * stride, bytes, bytes, 1);
+        fan.extent            = make_cudaExtent(bytes, 1, 1);
+        fan.kind              = cudaMemcpyDefault;
+        node                  = cuda_try<cudaGraphAddMemcpyNode>(graph, &node, 1, &fan);
+      }
+    }
+    return node;
   }
+
+  //! Replica count of live replicated instances (fan-out in the copy path)
+  ::std::map<instance_id_t, size_t> replicated_instances_;
 
   /// @brief Implementation of interface primitive
   bool pin_host_memory(instance_id_t instance_id) override
