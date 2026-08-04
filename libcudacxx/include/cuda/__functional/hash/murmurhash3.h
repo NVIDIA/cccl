@@ -61,7 +61,6 @@ __fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
   return __h;
 }
 
-#if _CCCL_HAS_INT128()
 template <typename _Key>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
 __fmix64(_Key __key, ::cuda::std::uint64_t __seed = 0) noexcept
@@ -76,7 +75,6 @@ __fmix64(_Key __key, ::cuda::std::uint64_t __seed = 0) noexcept
   __h ^= __h >> 33;
   return __h;
 }
-#endif // _CCCL_HAS_INT128()
 
 //! @brief A `MurmurHash3_32` hash function to hash the given argument on host and device.
 //!
@@ -228,12 +226,12 @@ private:
   ::cuda::std::uint32_t __seed_;
 };
 
-#if _CCCL_HAS_INT128()
-
 template <typename _Key>
 struct __murmurhash3_x86_128
 {
 private:
+  using __result_type _CCCL_NODEBUG_ALIAS = ::cuda::std::array<::cuda::std::uint32_t, 4>;
+
   static constexpr ::cuda::std::uint32_t __c1 = 0x239b961b;
   static constexpr ::cuda::std::uint32_t __c2 = 0xab0e9789;
   static constexpr ::cuda::std::uint32_t __c3 = 0x38b34ae5;
@@ -249,10 +247,10 @@ public:
       : __seed_{__seed}
   {}
 
-  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @brief Returns a hash value for its argument as four 32-bit words.
   //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type operator()(const _Key& __key) const noexcept
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
@@ -266,21 +264,22 @@ public:
     }
   }
 
-  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @brief Returns a hash value for its argument as four 32-bit words.
   //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
   _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
   _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
+  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> __h{__seed_, __seed_, __seed_, __seed_};
     constexpr auto __size = ::cuda::std::uint32_t{sizeof(_Holder)};
@@ -435,10 +434,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return ::cuda::std::bit_cast<__uint128_t>(__h);
+    return __h;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
@@ -594,7 +593,7 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return ::cuda::std::bit_cast<__uint128_t>(__h);
+    return __h;
   }
 
 private:
@@ -605,6 +604,8 @@ template <typename _Key>
 struct __murmurhash3_x64_128
 {
 private:
+  using __result_type _CCCL_NODEBUG_ALIAS = ::cuda::std::array<::cuda::std::uint64_t, 2>;
+
   static constexpr ::cuda::std::uint64_t __c1 = 0x87c37b91114253d5ull;
   static constexpr ::cuda::std::uint64_t __c2 = 0x4cf5ad432745937full;
 
@@ -647,10 +648,10 @@ public:
       : __seed_{__seed}
   {}
 
-  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @brief Returns a hash value for its argument as two 64-bit words.
   //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type operator()(const _Key& __key) const noexcept
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
@@ -664,21 +665,22 @@ public:
     }
   }
 
-  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @brief Returns a hash value for its argument as two 64-bit words.
   //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
   _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
   _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
+  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::array<::cuda::std::uint64_t, 2> __h{__seed_, __seed_};
     constexpr auto __size = ::cuda::std::uint64_t{sizeof(_Holder)};
@@ -761,10 +763,10 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    return ::cuda::std::bit_cast<__uint128_t>(__h);
+    return __h;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __uint128_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
   __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
@@ -874,14 +876,13 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    return ::cuda::std::bit_cast<__uint128_t>(__h);
+    return __h;
   }
 
 private:
   ::cuda::std::uint64_t __seed_;
 };
 
-#endif // _CCCL_HAS_INT128()
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

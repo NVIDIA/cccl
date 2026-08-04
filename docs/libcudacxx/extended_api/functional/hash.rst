@@ -48,25 +48,24 @@ Defined in the header ``<cuda/functional>``.
         [[nodiscard]] __host__ __device__ cuda::std::uint32_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
     };
 
-    // Available when the compiler supports 128-bit integers.
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x86_128> {
     public:
         __host__ __device__ constexpr hash(cuda::std::uint32_t seed = 0) noexcept;
-        [[nodiscard]] __host__ __device__ constexpr __uint128_t operator()(const Key& key) const noexcept;
+        [[nodiscard]] __host__ __device__ constexpr cuda::std::array<cuda::std::uint32_t, 4> operator()(const Key& key) const noexcept;
 
         template <typename SpanKey, cuda::std::size_t Extent>
-        [[nodiscard]] __host__ __device__ __uint128_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+        [[nodiscard]] __host__ __device__ cuda::std::array<cuda::std::uint32_t, 4> operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
     };
 
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x64_128> {
     public:
         __host__ __device__ constexpr hash(cuda::std::uint64_t seed = 0) noexcept;
-        [[nodiscard]] __host__ __device__ constexpr __uint128_t operator()(const Key& key) const noexcept;
+        [[nodiscard]] __host__ __device__ constexpr cuda::std::array<cuda::std::uint64_t, 2> operator()(const Key& key) const noexcept;
 
         template <typename SpanKey, cuda::std::size_t Extent>
-        [[nodiscard]] __host__ __device__ __uint128_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+        [[nodiscard]] __host__ __device__ cuda::std::array<cuda::std::uint64_t, 2> operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
     };
 
 ``cuda::hash`` provides host/device implementations of xxHash and MurmurHash3.
@@ -94,12 +93,12 @@ The supported algorithms and result types are:
    * - ``hash_algorithm::murmurhash3_32``
      - ``cuda::std::uint32_t``
    * - ``hash_algorithm::murmurhash3_x86_128``
-     - ``__uint128_t``
+     - ``cuda::std::array<cuda::std::uint32_t, 4>``
    * - ``hash_algorithm::murmurhash3_x64_128``
-     - ``__uint128_t``
+     - ``cuda::std::array<cuda::std::uint64_t, 2>``
 
-The 128-bit algorithms are available only when the compiler supports 128-bit
-integer types.
+The arrays store words in algorithm output order: ``{h1, h2, h3, h4}`` for
+``murmurhash3_x86_128`` and ``{h1, h2}`` for ``murmurhash3_x64_128``.
 
 Example
 -------

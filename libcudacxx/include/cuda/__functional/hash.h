@@ -34,12 +34,9 @@ enum class hash_algorithm
 {
   xxhash_32,
   xxhash_64,
-  murmurhash3_32
-#if _CCCL_HAS_INT128()
-  ,
+  murmurhash3_32,
   murmurhash3_x86_128,
   murmurhash3_x64_128
-#endif // _CCCL_HAS_INT128()
 };
 
 //! @brief A hash function class specialized for different hash algorithms.
@@ -79,8 +76,6 @@ public:
   using ::cuda::__murmurhash3_32<_Key>::operator();
 };
 
-#if _CCCL_HAS_INT128()
-
 template <typename _Key>
 class hash<_Key, hash_algorithm::murmurhash3_x86_128> : private ::cuda::__murmurhash3_x86_128<_Key>
 {
@@ -100,8 +95,6 @@ public:
   using ::cuda::__murmurhash3_x64_128<_Key>::__murmurhash3_x64_128;
   using ::cuda::__murmurhash3_x64_128<_Key>::operator();
 };
-
-#endif // _CCCL_HAS_INT128()
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
