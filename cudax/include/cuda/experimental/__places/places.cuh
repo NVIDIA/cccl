@@ -87,6 +87,14 @@ void deallocate_composite_data_place(void* ptr);
  * composite, future extensions) implement a common data_place_interface. The data_place class
  * holds a shared_ptr to this interface and delegates operations to it.
  */
+//! Tag selecting which grid axes a replicated data place replicates over
+//! (the remaining axes are SHARED: their fibers use one common instance)
+template <size_t... axes>
+struct replicate_over_t
+{};
+template <size_t... axes>
+inline constexpr replicate_over_t<axes...> replicate_over{};
+
 class data_place
 {
   template <typename T>
@@ -205,9 +213,22 @@ public:
    * @brief Deferred replicated data place: replicated over the grid of
    * whichever task the dependency is used with (materialized at task
    * acquisition; a scalar execution place degenerates to its affine data
-   * place). The counterpart of affine() for replication.
+   * place). The counterpart of affine() for replication. The deferred form
+   * always replicates over every grid axis (axis grouping requires the
+   * explicit replicate_over overload).
    */
   static data_place replicated();
+
+  /**
+   * @brief Axis-grouped replication: one copy per coordinate of the
+   * REPLICATED axes; the remaining (shared) axes' fibers share their
+   * coordinate's instance. Fiber members must be co-located (equal affine
+   * data places) -- validated at construction. Example: on a (K, 2) grid of
+   * K devices x 2 domains, replicated(grid, replicate_over<0>) places one
+   * copy per device, shared by the device's two domains.
+   */
+  template <size_t... axes>
+  static data_place replicated(const exec_place& grid, replicate_over_t<axes...>);
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
@@ -251,13 +272,17 @@ public:
 
   // Defined later after data_place_composite is complete
   bool is_composite() const;
-  bool is_replicated() const;
+  bool is_replicated() const noexcept;
 
   //! Number of data instances a dependency at this place resolves to
   size_t instance_count() const;
   //! Data place of the r-th instance (r < instance_count()); *this when
   //! the place resolves to a single instance
   data_place member(size_t r) const;
+  //! Instance index the given (linear) grid place resolves to; 0 when the
+  //! place resolves to a single instance. With axis-grouped replication,
+  //! places differing only along SHARED axes map to the same instance.
+  size_t instance_of(size_t place_index) const;
 
   bool is_invalid() const
   {
@@ -1955,14 +1980,19 @@ private:
 class data_place_replicated final : public data_place_interface
 {
 public:
-  explicit data_place_replicated(exec_place grid)
+  //! Bit a of \p axes_mask set = grid axis a is REPLICATED; unset axes are
+  //! SHARED (their fibers use one common instance). The default replicates
+  //! over every axis (one copy per grid member).
+  explicit data_place_replicated(exec_place grid, unsigned axes_mask = all_axes)
       : grid_(mv(grid))
       , deferred_(false)
+      , axes_mask_(axes_mask)
   {}
 
   //! Deferred form: the grid is bound at task acquisition
   data_place_replicated()
       : deferred_(true)
+      , axes_mask_(all_axes)
   {}
 
   bool is_resolved() const override
@@ -1970,7 +2000,7 @@ public:
     return true;
   }
 
-  bool is_replicated() const override
+  bool is_replicated() const noexcept override
   {
     return true;
   }
@@ -1981,10 +2011,83 @@ public:
     {
       throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
     }
-    return grid_.size();
+    const dim4 dims = grid_.get_dims();
+    size_t n        = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (axes_mask_ & (1u << a))
+      {
+        n *= dims.get(a);
+      }
+    }
+    return n;
   }
 
-  bool is_deferred() const
+  //! Instance index of a linear grid place: mixed radix over the
+  //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
+  size_t instance_of(size_t place_index) const
+  {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
+    const dim4 dims = grid_.get_dims();
+    const pos4 pos  = dims.index_to_pos(place_index);
+    size_t idx = 0, mult = 1;
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (axes_mask_ & (1u << a))
+      {
+        idx += static_cast<size_t>(pos.get(a)) * mult;
+        mult *= dims.get(a);
+      }
+    }
+    return idx;
+  }
+
+  //! Linear grid place of the instance's representative (shared coords = 0)
+  size_t representative_place(size_t instance_index) const
+  {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
+    const dim4 dims = grid_.get_dims();
+    ssize_t c[4]    = {0, 0, 0, 0};
+    for (size_t a = 0; a < 4; a++)
+    {
+      if (axes_mask_ & (1u << a))
+      {
+        c[a] = static_cast<ssize_t>(instance_index % dims.get(a));
+        instance_index /= dims.get(a);
+      }
+    }
+    return dims.get_index(pos4(c[0], c[1], c[2], c[3]));
+  }
+
+  //! Every fiber member of every instance must live at the SAME affine data
+  //! place -- "share" only means something where a common memory exists
+  void validate_colocation() const
+  {
+    const dim4 dims    = grid_.get_dims();
+    const size_t total = grid_.size();
+    for (size_t p = 0; p < total; p++)
+    {
+      const size_t rep = representative_place(instance_of(p));
+      if (p == rep)
+      {
+        continue;
+      }
+      if (!(grid_.get_place(p).affine_data_place() == grid_.get_place(rep).affine_data_place()))
+      {
+        throw ::std::invalid_argument(
+          "replicated data place: shared axes require co-located fiber members (equal affine data places); "
+          "replicate over that axis too, or build the grid from members with coarser data affinity");
+      }
+    }
+  }
+
+  bool is_deferred() const noexcept
   {
     return deferred_;
   }
@@ -2011,11 +2114,17 @@ public:
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
     const auto& o = static_cast<const data_place_replicated&>(other);
-    if (grid_ == o.grid_)
+    // Deferred places carry no grid: order them before concrete ones and
+    // never dereference grid_ (it has no impl in the deferred form)
+    if (deferred_ || o.deferred_)
     {
-      return 0;
+      return static_cast<int>(o.deferred_) - static_cast<int>(deferred_);
     }
-    return (grid_ < o.grid_) ? -1 : 1;
+    if (axes_mask_ != o.axes_mask_)
+    {
+      return (axes_mask_ < o.axes_mask_) ? -1 : 1;
+    }
+    return (grid_ < o.grid_) ? -1 : (grid_ != o.grid_);
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -2048,14 +2157,17 @@ public:
     return grid_.get_impl();
   }
 
-  const exec_place& get_grid() const
+  const exec_place& get_grid() const noexcept
   {
     return grid_;
   }
 
 private:
+  static constexpr unsigned all_axes = 0xFu;
+
   exec_place grid_;
   bool deferred_;
+  unsigned axes_mask_;
 };
 
 //! Whether this replicated data place still needs its grid bound
@@ -2075,7 +2187,7 @@ inline bool data_place::is_composite() const
   return pimpl_->is_composite();
 }
 
-inline bool data_place::is_replicated() const
+inline bool data_place::is_replicated() const noexcept
 {
   return pimpl_->is_replicated();
 }
@@ -2092,7 +2204,17 @@ inline data_place data_place::member(size_t r) const
   {
     return *this;
   }
-  return replicated_grid(*this).get_place(r).affine_data_place();
+  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
+  return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
+}
+
+inline size_t data_place::instance_of(size_t place_index) const
+{
+  if (!is_replicated())
+  {
+    return 0;
+  }
+  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
@@ -2102,9 +2224,9 @@ inline data_place data_place::composite(partition_fn_t f, const exec_place& grid
 
 inline data_place data_place::replicated(const exec_place& grid)
 {
-  if (grid.size() < 1)
+  if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a non-empty grid");
+    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
   }
   return data_place(::std::make_shared<data_place_replicated>(grid));
 }
@@ -2112,6 +2234,21 @@ inline data_place data_place::replicated(const exec_place& grid)
 inline data_place data_place::replicated()
 {
   return data_place(::std::make_shared<data_place_replicated>());
+}
+
+template <size_t... axes>
+data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes...>)
+{
+  static_assert(sizeof...(axes) >= 1, "replicate_over needs at least one axis");
+  static_assert(((axes < 4) && ...), "grid axes are 0..3");
+  if (!grid.get_impl())
+  {
+    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+  }
+  constexpr unsigned mask = ((1u << axes) | ...);
+  auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);
+  impl->validate_colocation();
+  return data_place(mv(impl));
 }
 
 // User-visible API when the same partitioner as the one of the grid

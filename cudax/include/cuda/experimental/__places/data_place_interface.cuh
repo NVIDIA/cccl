@@ -216,7 +216,7 @@ public:
   }
 
   //! Whether this is a replicated data place (one copy per grid member)
-  virtual bool is_replicated() const
+  virtual bool is_replicated() const noexcept
   {
     return false;
   }

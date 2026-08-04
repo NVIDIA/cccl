@@ -44,20 +44,19 @@ int main()
       ctx = graph_ctx();
     }
 
-    auto grid    = exec_place::repeat(exec_place::current_device(), nplaces);
-    auto rep     = data_place::replicated(grid);
-    auto lin     = ctx.logical_data(&ref[0], {n});
-    auto lout    = ctx.logical_data(shape_of<slice<double>>(n));
-    auto lplaces = ctx.logical_data(shape_of<slice<int>>(n));
+    auto grid = exec_place::repeat(exec_place::current_device(), nplaces);
+    auto rep  = data_place::replicated(grid);
+    auto lin  = ctx.logical_data(&ref[0], {n});
+    auto lout = ctx.logical_data(shape_of<slice<double>>(n));
+    auto tok  = ctx.token(); // a void_interface dep: the instances tuple is
+                            // shorter than the deps tuple, which the
+                            // replicated rebase must tolerate
 
     // read at the replicated place: each shard must see the payload through
     // its own replica, and results must match the reference everywhere
-    ctx.parallel_for(blocked_partition(), grid, lin.shape(), lin.read(rep), lout.write(), lplaces.write())
-        ->*[] __device__(size_t i, auto in, auto out, auto pl) {
+    ctx.parallel_for(blocked_partition(), grid, lin.shape(), lin.read(rep), lout.write(), tok.write())
+        ->*[] __device__(size_t i, auto in, auto out) {
               out(i) = 2.0 * in(i);
-              int smid;
-              asm("mov.u32 %0, %%smid;" : "=r"(smid));
-              pl(i) = smid;
             };
 
     ctx.host_launch(lout.read())->*[&](auto out) {
@@ -79,6 +78,21 @@ int main()
     }
     EXPECT(thrown);
 
+    // merged-mode contract: declaring the SAME data as replicated-read and
+    // writable in one task merges the access modes past read; the combined
+    // dependency must be rejected at acquisition
+    bool thrown_merged = false;
+    try
+    {
+      ctx.parallel_for(blocked_partition(), grid, lout.shape(), lout.read(rep), lout.rw())
+          ->*[] __device__(size_t, auto, auto) {};
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      thrown_merged = true;
+    }
+    EXPECT(thrown_merged);
+
     ctx.finalize();
     printf("replicated data place: %s backend OK\n", use_graph ? "graph" : "stream");
   }
@@ -88,9 +102,18 @@ int main()
   // deduplicates to a single instance by place equality)
 #  if _CCCL_CTK_AT_LEAST(12, 4)
   {
-    green_context_helper gc(8, 0);
-    if (gc.get_count() >= 2)
+    ::std::optional<green_context_helper> gc_opt;
+    try
     {
+      gc_opt.emplace(8, 0);
+    }
+    catch (...)
+    {
+      printf("replicated data place: green-context flavors skipped (unsupported hardware)\n");
+    }
+    if (gc_opt && gc_opt->get_count() >= 2)
+    {
+      auto& gc = *gc_opt;
       context ctx;
       ::std::vector<exec_place> places;
       places.push_back(exec_place::green_ctx(gc.get_view(0), true));
@@ -143,6 +166,62 @@ int main()
       ctx.finalize();
       printf("replicated data place: green-context grid (distinct member instances) OK\n");
       printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) OK\n");
+
+      // ---- axis-grouped replication on a (2, 2) grid: axis 0 = the two
+      // green domains (REPLICATED), axis 1 = two execution slots per domain
+      // (SHARED). One instance per domain, shared by its two slots.
+      {
+        context gctx;
+        ::std::vector<exec_place> ps22;
+        ps22.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,0)
+        ps22.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,0)
+        ps22.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,1)
+        ps22.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,1)
+        auto grid22 = make_grid(mv(ps22), dim4(2, 2));
+        auto rep22  = data_place::replicated(grid22, replicate_over<0>);
+
+        // projection math: one instance per axis-0 coordinate
+        EXPECT(rep22.instance_count() == 2);
+        EXPECT(rep22.instance_of(0) == 0); // (0,0)
+        EXPECT(rep22.instance_of(1) == 1); // (1,0)
+        EXPECT(rep22.instance_of(2) == 0); // (0,1) shares domain 0's instance
+        EXPECT(rep22.instance_of(3) == 1); // (1,1) shares domain 1's instance
+        EXPECT(rep22.member(0) != rep22.member(1));
+
+        auto lgin  = gctx.logical_data(&ref[0], {n});
+        auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
+        gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
+            ->*[] __device__(size_t i, auto in, auto out) {
+                  out(i) = 4.0 * in(i);
+                };
+        gctx.host_launch(lgout.read())->*[&](auto out) {
+          for (size_t i = 0; i < n; i++)
+          {
+            EXPECT(out(i) == 4.0 * ref[i]);
+          }
+        };
+        gctx.finalize();
+
+        // shared axes require co-located fibers: a (2, 2) arrangement whose
+        // axis-1 fiber crosses domains must be rejected at construction
+        ::std::vector<exec_place> bad;
+        bad.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,0)
+        bad.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,0)
+        bad.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (0,1) != (0,0)
+        bad.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (1,1) != (1,0)
+        auto bad_grid = make_grid(mv(bad), dim4(2, 2));
+        bool thrown22 = false;
+        try
+        {
+          auto r = data_place::replicated(bad_grid, replicate_over<0>);
+        }
+        catch (const ::std::invalid_argument&)
+        {
+          thrown22 = true;
+        }
+        EXPECT(thrown22);
+        printf("replicated data place: axis-grouped replication on a (2,2) grid OK\n");
+      }
     }
     else
     {
@@ -201,9 +280,16 @@ int main()
   // exercises the equal-places dedup degenerate)
 #  if _CCCL_CTK_AT_LEAST(12, 4)
   {
-    green_context_helper gc(8, 0);
-    if (gc.get_count() >= 2)
+    ::std::optional<green_context_helper> gc_opt;
+    try
     {
+      gc_opt.emplace(8, 0);
+    }
+    catch (...)
+    {}
+    if (gc_opt && gc_opt->get_count() >= 2)
+    {
+      auto& gc = *gc_opt;
       stackable_ctx ctx;
       ::std::vector<exec_place> places;
       places.push_back(exec_place::green_ctx(gc.get_view(0), true));
@@ -234,6 +320,10 @@ int main()
       };
       ctx.finalize();
       printf("replicated data place: stackable + distinct member replicas OK\n");
+    }
+    else
+    {
+      printf("replicated data place: stackable green flavor skipped\n");
     }
   }
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)
