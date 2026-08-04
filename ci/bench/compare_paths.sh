@@ -23,7 +23,7 @@ Compare benchmark performance between two checked-out CCCL trees.
 At least one --cub-filter or --python-filter must be provided.
 CUB filters are regex patterns matched against ninja target names.
 Python filters are regex patterns matched against benchmark script paths
-under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
+under the tree's Python benchmark project (e.g. compute/reduce/sum.py).
 
 Arguments:
   <base-path>  Path to baseline CCCL source tree.
@@ -85,6 +85,19 @@ validate_repo_path() {
   if [[ ! -f "${repo_path}/cccl-version.json" ]]; then
     die "Path is not a CCCL source tree: ${repo_path}"
   fi
+}
+
+resolve_python_benchmark_project() {
+  local repo_path="$1"
+  local relative_project=""
+  for relative_project in python/cuda_compute python/cuda_cccl; do
+    if [[ -f "${repo_path}/${relative_project}/pyproject.toml" && \
+          -d "${repo_path}/${relative_project}/benchmarks" ]]; then
+      printf "%s" "${repo_path}/${relative_project}"
+      return 0
+    fi
+  done
+  die "Python benchmark project not found in tree: ${repo_path}"
 }
 
 validate_filter_array() {
@@ -340,14 +353,13 @@ select_python_targets() {
 
 setup_python_venv() {
   local venv_path="$1"
-  local src_path="$2"
+  local project_dir="$2"
   local side="$3"
   local log_path="$4"
   local cuda_major="$5"
-  local cuda_cccl_dir="${src_path}/python/cuda_cccl"
 
-  if [[ ! -d "${cuda_cccl_dir}" ]]; then
-    die "cuda_cccl source directory not found: ${cuda_cccl_dir}"
+  if [[ ! -f "${project_dir}/pyproject.toml" ]]; then
+    die "Python benchmark project not found: ${project_dir}"
   fi
 
   local -a setup_cmds
@@ -356,7 +368,7 @@ setup_python_venv() {
       set -euo pipefail
       python3 -m venv '${venv_path}'
       '${venv_path}/bin/pip' install --upgrade pip
-      '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
+      '${venv_path}/bin/pip' install -e '${project_dir}[bench-cu${cuda_major}]'
       # nvbench-compare runtime deps (until cuda-bench declares them):
       '${venv_path}/bin/pip' install colorama jsondiff tabulate
     "
@@ -943,16 +955,10 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   echo "=== Python Benchmark Pipeline ==="
   echo
 
-  py_benchmarks_subdir="python/cuda_cccl/benchmarks"
-  base_py_bench_dir="${BASE_PATH}/${py_benchmarks_subdir}"
-  test_py_bench_dir="${TEST_PATH}/${py_benchmarks_subdir}"
-
-  if [[ ! -d "${base_py_bench_dir}" ]]; then
-    die "Python benchmarks directory not found in base tree: ${base_py_bench_dir}"
-  fi
-  if [[ ! -d "${test_py_bench_dir}" ]]; then
-    die "Python benchmarks directory not found in test tree: ${test_py_bench_dir}"
-  fi
+  base_py_project_dir="$(resolve_python_benchmark_project "${BASE_PATH}")"
+  test_py_project_dir="$(resolve_python_benchmark_project "${TEST_PATH}")"
+  base_py_bench_dir="${base_py_project_dir}/benchmarks"
+  test_py_bench_dir="${test_py_project_dir}/benchmarks"
 
   cuda_major="$(detect_cuda_major_version)"
   echo "Detected CUDA major version: ${cuda_major}"
@@ -960,8 +966,8 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   base_py_venv="${build_root}/py-base-${build_token}"
   test_py_venv="${build_root}/py-test-${build_token}"
 
-  setup_python_venv "${base_py_venv}" "${BASE_PATH}" "base" "${artifact_dir}/logs/py.venv.base.log" "${cuda_major}"
-  setup_python_venv "${test_py_venv}" "${TEST_PATH}" "test" "${artifact_dir}/logs/py.venv.test.log" "${cuda_major}"
+  setup_python_venv "${base_py_venv}" "${base_py_project_dir}" "base" "${artifact_dir}/logs/py.venv.base.log" "${cuda_major}"
+  setup_python_venv "${test_py_venv}" "${test_py_project_dir}" "test" "${artifact_dir}/logs/py.venv.test.log" "${cuda_major}"
 
   select_python_targets "${base_py_bench_dir}" "${test_py_bench_dir}" selected_py_targets
 

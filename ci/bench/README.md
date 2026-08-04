@@ -59,16 +59,16 @@ In `.github/workflows/bench.yml`:
 
 ## Python Benchmarks
 
-Python benchmarks live under `python/cuda_cccl/benchmarks/` and use `cuda.bench` (the Python nvbench bindings). Each benchmark script outputs nvbench-compatible JSON.
+Python benchmarks live under `python/cuda_compute/benchmarks/` and use `cuda.bench` (the Python nvbench bindings). `compare_paths.sh` falls back to the former `python/cuda_cccl/benchmarks/` layout when comparing an older tree. Each benchmark script outputs nvbench-compatible JSON.
 
 For Python benchmarks, `compare_paths.sh`:
 
 1. Creates isolated virtual environments for base and test trees.
-2. Installs `cuda-cccl[bench-cuXX]` (editable, from each worktree), which pulls in `cuda-bench`, `cupy`, and all other benchmark dependencies.
+2. Installs the benchmark-owning project (`cuda-compute[bench-cuXX]`, or the former `cuda-cccl[bench-cuXX]`) editable from each worktree, which pulls in `cuda-bench`, `cupy`, and all other benchmark dependencies.
 3. Runs matching benchmark scripts in each venv.
 4. Compares results using `nvbench-compare` (installed with `cuda-bench`).
 
-Python filters are regex patterns matched against relative paths under `python/cuda_cccl/benchmarks/`, for example:
+Python filters are regex patterns matched against relative paths under the selected benchmark directory, for example:
 - `compute/reduce/sum\.py` — single benchmark
 - `compute/transform/.*\.py` — all transform benchmarks
 
