@@ -351,6 +351,9 @@ C2H_TEST("device_default_nccl_memory_pool matches ncclMemAlloc properties", "[mu
 
 #if _CCCL_HAS_NCCL()
 
+// ncclCommRegister() since 2.19
+#  if NCCL_VERSION_CODE >= NCCL_VERSION(2, 19, 0)
+
 MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with ncclCommRegister", )
 {
   using value_type = cuda::std::int32_t;
@@ -386,6 +389,8 @@ MULTI_GPU_TEST("device_default_nccl_memory_pool buffers register with ncclCommRe
     REQUIRE(::ncclCommDeregister(comms[i].native_handle(), handles[i]) == ::ncclSuccess);
   }
 }
+
+#  endif // NCCL 2.19+
 
 #  if NCCL_VERSION_CODE >= NCCL_VERSION(2, 27, 0)
 
