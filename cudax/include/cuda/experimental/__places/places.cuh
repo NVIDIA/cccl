@@ -1991,12 +1991,22 @@ public:
 
   void deallocate(void*, size_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error("replicated data_place: instances are recycled through the composite cache");
+    throw ::std::runtime_error("replicated data_place: instances deallocate through their member places");
   }
 
   bool allocation_is_stream_ordered() const override
   {
-    return false;
+    // Instances at this place are one ordinary allocation per member, so
+    // teardown is stream-ordered exactly when every member's is: report
+    // the members' conjunction (the place's own allocate() is never used).
+    for (size_t r = 0; r < grid_.size(); r++)
+    {
+      if (!grid_.get_place(r).affine_data_place().allocation_is_stream_ordered())
+      {
+        return false;
+      }
+    }
+    return true;
   }
 
   ::std::shared_ptr<void> get_affine_exec_impl() const override
