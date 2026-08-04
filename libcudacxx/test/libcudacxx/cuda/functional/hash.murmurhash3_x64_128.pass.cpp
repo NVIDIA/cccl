@@ -22,7 +22,7 @@ struct test_murmurhash3_x64_128
 {
   hash_test<cuda::hash_algorithm::murmurhash3_x64_128> murmurhash3_x64_128_test;
 
-  TEST_FUNC constexpr __uint128_t make_result(cuda::std::array<cuda::std::uint64_t, 2> arr)
+  TEST_FUNC __uint128_t make_result(cuda::std::array<cuda::std::uint64_t, 2> arr)
   {
     return cuda::std::bit_cast<__uint128_t>(arr);
   }
