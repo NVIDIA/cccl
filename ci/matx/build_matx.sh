@@ -28,12 +28,16 @@ version_max() {
 # Get the current CCCL info:
 readonly cccl_repo="${PWD}"
 
-# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD
+# of the local checkout is used.
 echo "CCCL_TAG (override): ${CCCL_TAG-}";
 if test -n "${CCCL_TAG-}"; then
-    # If CCCL_TAG is defined, fetch it to the local checkout
-    git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
-    cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+    if [[ "${CCCL_RESOLVE_TAG_LOCALLY:-0}" == 1 ]]; then
+      cccl_sha="$(git -C "${cccl_repo}" rev-parse "${CCCL_TAG}^{commit}")";
+    else
+      git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
+      cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+    fi
 else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
@@ -73,8 +77,12 @@ cd "${workdir}"
 pip install numpy
 
 # Clone MatX
-rm -rf MatX
-git clone "${matx_repo}" -b "${matx_branch}"
+if [[ "${CCCL_REUSE_THIRD_PARTY_SOURCE:-0}" != 1 || ! -d MatX/.git ]]; then
+  rm -rf MatX
+  git clone "${matx_repo}" -b "${matx_branch}"
+else
+  echo "Reusing MatX checkout for baseline comparison."
+fi
 
 cd MatX
 echo "MatX HEAD:"
@@ -97,6 +105,15 @@ cat "$version_override_file"
 # Configure and build
 rm -rf build
 
+declare -a compile_time_cmake_args=()
+if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+  compile_time_cmake_args=(
+    "-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-"
+    "-DCMAKE_CUDA_COMPILER_LAUNCHER="
+    "-DCMAKE_CXX_COMPILER_LAUNCHER="
+  )
+fi
+
 SCCACHE_NO_DIST_COMPILE=1 cmake \
   -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
@@ -104,7 +121,8 @@ SCCACHE_NO_DIST_COMPILE=1 cmake \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \
   -DMATX_BUILD_BENCHMARKS=ON \
-  -DMATX_EN_CUTENSOR=ON
+  -DMATX_EN_CUTENSOR=ON \
+  "${compile_time_cmake_args[@]}"
 
 # Disabled because `cmake --build -j ""` is invalid, but so is
 # `cmake --build -j8`. CMake expects a space between `-j` and

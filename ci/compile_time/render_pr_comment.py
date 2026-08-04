@@ -178,6 +178,7 @@ def render_comment(
     config: dict[str, Any],
     *,
     artifacts_url: str,
+    fragment: bool = False,
 ) -> str:
     config_id = str(config["id"])
     slices = summary.get("slices", [])
@@ -193,30 +194,60 @@ def render_comment(
     )
     if warning_count:
         result += f" {warning_count} warning(s)."
+    summary_result = (
+        f"{worse_count} regression row(s), {better_count} improvement row(s)"
+    )
+    if warning_count:
+        summary_result += f", {warning_count} warning(s)"
 
-    lines = [
-        f"<!-- cccl-compile-time-bench: {md_escape(config_id)} -->",
-        f"## ⏱️ CCCL compile-time benchmark comparison: {md_escape(config.get('name', config_id))}",
-        "",
+    run_rows = [
+        f"| Config | {md_code_span(config_id)} |",
+        f"| Project | {md_code_span(config['project'])} |",
+        f"| Baseline | {md_code_span(config.get('baseline_ref', ''))} |",
+    ]
+    if config.get("preset"):
+        run_rows.append(f"| Preset | {md_code_span(config['preset'])} |")
+    if config.get("targets"):
+        run_rows.append(f"| Targets | {md_code_span(', '.join(config['targets']))} |")
+    run_rows.append(
+        f"| GPU / launch args | {md_code_span(config.get('gpu', ''))} / "
+        f"{md_code_span(config.get('launch_args', ''))} |"
+    )
+
+    body = [
         result,
         "",
         "| Run | Value |",
         "| --- | --- |",
-        f"| Config | {md_code_span(config_id)} |",
-        f"| Baseline | {md_code_span(config.get('baseline_ref', ''))} |",
-        f"| Preset | {md_code_span(config.get('preset', ''))} |",
-        f"| Targets | {md_code_span(', '.join(config.get('targets', [])))} |",
-        f"| GPU / launch args | {md_code_span(config.get('gpu', ''))} / {md_code_span(config.get('launch_args', ''))} |",
+        *run_rows,
         "",
         f"**Artifacts:** [reports and traces]({artifacts_url})",
         "",
     ]
     if sections:
-        lines.extend(join_sections(sections))
+        body.extend(join_sections(sections))
     else:
-        lines.append(
+        body.append(
             "No compile-time benchmark changes exceeded the configured thresholds."
         )
+
+    config_name = md_escape(config.get("name", config_id))
+    if fragment:
+        lines = [
+            "<details>",
+            f"<summary><strong>⏱️ {config_name}</strong> — {summary_result}</summary>",
+            "",
+            *body,
+            "",
+            "</details>",
+        ]
+    else:
+        lines = [
+            f"<!-- cccl-compile-time-bench: {md_escape(config_id)} -->",
+            f"## ⏱️ CCCL compile-time benchmark comparison: {config_name}",
+            "",
+            *body,
+        ]
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -227,6 +258,11 @@ def main() -> None:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--artifacts-url", required=True)
+    parser.add_argument(
+        "--fragment",
+        action="store_true",
+        help="Render a configuration section for inclusion in a combined comment.",
+    )
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
 
@@ -234,6 +270,7 @@ def main() -> None:
         load_json(args.summary),
         load_json(args.config),
         artifacts_url=args.artifacts_url,
+        fragment=args.fragment,
     )
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

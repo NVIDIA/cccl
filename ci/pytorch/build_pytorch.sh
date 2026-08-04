@@ -15,12 +15,16 @@ log_vars() {
   done
 }
 
-# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD
+# of the local checkout is used.
 echo "CCCL_TAG (override): ${CCCL_TAG-}";
 if test -n "${CCCL_TAG-}"; then
-    # If CCCL_TAG is defined, fetch it to the local checkout
-    git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
-    cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+    if [[ "${CCCL_RESOLVE_TAG_LOCALLY:-0}" == 1 ]]; then
+        cccl_sha="$(git -C "${cccl_repo}" rev-parse "${CCCL_TAG}^{commit}")";
+    else
+        git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
+        cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+    fi
 else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
@@ -63,8 +67,12 @@ nvcc --version
 echo "::endgroup::"
 
 echo "::group::Cloning PyTorch..."
-rm -rf pytorch
-git clone "${pytorch_repo}" -b "${pytorch_branch}" --recursive --depth 1
+if [[ "${CCCL_REUSE_THIRD_PARTY_SOURCE:-0}" != 1 || ! -d pytorch/.git ]]; then
+    rm -rf pytorch
+    git clone "${pytorch_repo}" -b "${pytorch_branch}" --recursive --depth 1
+else
+    echo "Reusing PyTorch checkout for baseline comparison."
+fi
 echo "PyTorch HEAD:"
 git -C pytorch log -1 --format=short
 echo "::endgroup::"
@@ -83,6 +91,13 @@ declare -a cmake_args=(
   # Need to define this explicitly, torch's FindCUDA logic adds ancient arches if left undefined:
   "-DTORCH_CUDA_ARCH_LIST=7.5;8.0;9.0;10.0;12.0"
 )
+if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+  cmake_args+=(
+    "-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-"
+    "-DCMAKE_CUDA_COMPILER_LAUNCHER="
+    "-DCMAKE_CXX_COMPILER_LAUNCHER="
+  )
+fi
 SCCACHE_NO_DIST_COMPILE=1 cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
 echo "::endgroup::"
 

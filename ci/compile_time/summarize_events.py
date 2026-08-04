@@ -213,7 +213,7 @@ def normalize_project_file(detail: str, repo_root: Path) -> str | None:
     except ValueError:
         return None
 
-    if detail.startswith("build/"):
+    if "build" in Path(detail).parts:
         return None
     return detail
 
