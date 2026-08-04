@@ -233,7 +233,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
         attributes::gpu_direct_rdma_flush_writes_options.none | attributes::gpu_direct_rdma_flush_writes_options.host
         | attributes::gpu_direct_rdma_flush_writes_options.mem_ops;
       auto options = device_ref(0).attribute(attributes::gpu_direct_rdma_flush_writes_options);
-      CCCLRT_REQUIRE(static_cast<int>(options) <= static_cast<int>(all_flush_writes_options));
+      CCCLRT_REQUIRE(static_cast<unsigned>(options) <= static_cast<unsigned>(all_flush_writes_options));
     }
 
     SECTION("gpu_direct_rdma_writes_ordering")
