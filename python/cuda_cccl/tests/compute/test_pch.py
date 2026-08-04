@@ -1,0 +1,317 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Precompiled-header cache behavior (v2 HostJIT backend only).
+
+Each test runs in a subprocess with CCCL_PCH_CACHE_DIR pointed at a tmp_path, so
+nothing here touches the shared user cache and each case starts from a known
+cache state. Subprocesses are also the only honest way to observe cold-cache
+behavior, since this process has already imported cuda.compute and may have
+populated the shared cache.
+"""
+
+from __future__ import annotations
+
+import os
+import pathlib
+import subprocess
+import sys
+import textwrap
+import time
+
+import pytest
+
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+pytestmark = pytest.mark.skipif(
+    not USING_V2, reason="precompiled headers are a v2 (HostJIT) feature"
+)
+
+
+# tests/ root, so subprocesses can import _utils the way the suite does.
+TESTS_ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
+
+
+def subprocess_env(cache_dir, **overrides):
+    """Environment for a child interpreter: scratch cache + importable _utils."""
+    env = dict(os.environ)
+    env["CCCL_PCH_CACHE_DIR"] = str(cache_dir)
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = (
+        f"{TESTS_ROOT}{os.pathsep}{existing}" if existing else TESTS_ROOT
+    )
+    for k, v in overrides.items():
+        if v is None:
+            env.pop(k, None)
+        else:
+            env[k] = v
+    return env
+
+
+def run_python(code: str, cache_dir, **env_overrides):
+    """Run `code` in a fresh interpreter against a scratch PCH cache."""
+    env = subprocess_env(cache_dir, **env_overrides)
+    return subprocess.run(
+        [sys.executable, "-c", textwrap.dedent(code)],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
+
+
+def pch_files(cache_dir):
+    return sorted(p.name for p in cache_dir.glob("*.pch"))
+
+
+# A minimal build, enough to drive the HostJIT compile path.
+BUILD_SNIPPET = """
+    import numpy as np
+    from _utils.device_array import DeviceArray
+    import cuda.compute as cc
+
+    d_in = DeviceArray.from_numpy(np.arange(4, dtype=np.int32))
+    d_out = DeviceArray.empty(1, np.int32)
+    h_init = np.zeros(1, dtype=np.int32)
+    cc.make_reduce_into(d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init)
+"""
+
+
+def test_build_populates_cache(tmp_path):
+    """A build with an empty cache creates both PCHs and leaves them alone next time."""
+    proc = run_python(BUILD_SNIPPET, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+
+    names = pch_files(tmp_path)
+    assert len(names) == 2, f"expected a device and a host PCH, got {names}"
+    assert any(n.startswith("device_sm") for n in names), names
+    assert any(n.startswith("host_sm") for n in names), names
+
+    before = {p.name: p.stat().st_mtime_ns for p in tmp_path.glob("*.pch")}
+    proc = run_python(BUILD_SNIPPET, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    after = {p.name: p.stat().st_mtime_ns for p in tmp_path.glob("*.pch")}
+    assert before == after, "second build regenerated the cache instead of reusing it"
+
+
+def test_corrupt_pch_falls_back(tmp_path):
+    """A PCH the frontend rejects must not fail the build."""
+    proc = run_python(BUILD_SNIPPET, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    entries = list(tmp_path.glob("*.pch"))
+    assert entries
+
+    for p in entries:
+        p.write_bytes(b"not a precompiled header")
+
+    proc = run_python(BUILD_SNIPPET, tmp_path)
+    assert proc.returncode == 0, (
+        "build failed against a corrupt PCH instead of retrying without it:\n"
+        + proc.stderr
+    )
+    # The rejected entries are dropped so the next build regenerates them rather
+    # than tripping over the same files forever.
+    for p in entries:
+        if p.exists():
+            assert p.read_bytes() != b"not a precompiled header", (
+                f"{p.name} was reused after being rejected"
+            )
+
+
+def test_unwritable_cache_dir_still_builds(tmp_path):
+    """An unusable cache location degrades to building without a PCH."""
+    cache = tmp_path / "readonly"
+    cache.mkdir()
+    cache.chmod(0o500)
+    try:
+        proc = run_python(BUILD_SNIPPET, cache)
+        assert proc.returncode == 0, proc.stderr
+    finally:
+        cache.chmod(0o700)
+
+
+def test_enable_pch_0_disables(tmp_path):
+    """CCCL_ENABLE_PCH=0 is a kill switch, even though Python asks for PCH."""
+    proc = run_python(BUILD_SNIPPET, tmp_path, CCCL_ENABLE_PCH="0")
+    assert proc.returncode == 0, proc.stderr
+    assert pch_files(tmp_path) == [], "PCH was generated despite CCCL_ENABLE_PCH=0"
+
+
+def test_concurrent_cold_builds_generate_once(tmp_path):
+    """Concurrent cold builds must not each generate their own copy.
+
+    Generation costs seconds and tens of megabytes, and simultaneous cold
+    starts are routine (any test runner fanning out workers). One process
+    should win the lock and generate; the rest build without a PCH rather than
+    duplicating the work or waiting on it.
+    """
+    env = subprocess_env(tmp_path)
+
+    procs = [
+        subprocess.Popen(
+            [sys.executable, "-c", textwrap.dedent(BUILD_SNIPPET)],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(4)
+    ]
+    for p in procs:
+        out, err = p.communicate(timeout=900)
+        assert p.returncode == 0, err
+
+    names = pch_files(tmp_path)
+    assert len(names) == 2, f"expected exactly one device and one host PCH, got {names}"
+    # Locks are released on exit, not left behind to block later generations.
+    assert list(tmp_path.glob("*.lock")) == [], "a generation lock outlived its holder"
+
+
+def test_abandoned_generation_debris_is_swept(tmp_path):
+    """Debris from a killed generation must not outlive its window.
+
+    A build interrupted partway through generation leaves its lock directory
+    and libnvcc's partially written temp file behind: the destructor that would
+    have released the lock never runs. The lock is reclaimed by
+    PCHGenerationLock's ten-minute steal; the temp file is swept by the eviction
+    pass. Orphaned temps are tens of megabytes each, one per abandoned attempt.
+    """
+    proc = subprocess.Popen(
+        [sys.executable, "-c", textwrap.dedent(BUILD_SNIPPET)],
+        env=subprocess_env(tmp_path),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    time.sleep(2.0)  # far enough in to be generating, well short of finishing
+    proc.kill()
+    proc.communicate(timeout=60)
+
+    locks = list(tmp_path.glob("*.lock"))
+    temps = list(tmp_path.glob("*.tmp"))
+    if not locks and not temps:
+        pytest.skip("build did not reach the lock/temp stage before being killed")
+
+    # Age it past the reclaim windows (10 min for locks, 1 hour for temps).
+    old = time.time() - 3 * 60 * 60
+    for entry in locks + temps:
+        os.utime(entry, (old, old))
+
+    # Any subsequent process sweeps on cache-dir resolution.
+    proc = run_python(BUILD_SNIPPET, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+
+    assert list(tmp_path.glob("*.lock")) == [], "orphaned lock survived the sweep"
+    assert list(tmp_path.glob("*.tmp")) == [], "orphaned temp file survived the sweep"
+    assert len(pch_files(tmp_path)) == 2, pch_files(tmp_path)
+
+
+def test_size_cap_evicts_lru_entries(tmp_path):
+    """A build evicts older entries to stay under CCCL_PCH_CACHE_MAXSIZE.
+
+    Stands in for a second configuration (different include paths or CTK) whose
+    entries this build should reclaim. Entries the build is about to compile
+    against are exempt, so the cap can be exceeded by the working set of a
+    single build — the same approximation ccache documents.
+    """
+    # A plausible-looking entry from an earlier, unrelated configuration.
+    stale_pch = tmp_path / "device_sm89_0123456789abcdef.pch"
+    stale_pch.write_bytes(b"\0" * (60 * 1024 * 1024))
+    stale_preamble = tmp_path / "device_sm89_0123456789abcdef_preamble.cu"
+    stale_preamble.write_text("// stale\n")
+    old = time.time() - 24 * 60 * 60
+    for entry in (stale_pch, stale_preamble):
+        os.utime(entry, (old, old))
+
+    # 100 MiB holds this build's ~83 MiB but not that plus the 60 MiB squatter.
+    proc = run_python(BUILD_SNIPPET, tmp_path, CCCL_PCH_CACHE_MAXSIZE="100M")
+    assert proc.returncode == 0, proc.stderr
+
+    assert not stale_pch.exists(), "least-recently-used entry survived the cap"
+    assert not stale_preamble.exists(), "evicted entry left its preamble behind"
+    # The build's own entries are exempt and must still be usable.
+    assert len(pch_files(tmp_path)) == 2, pch_files(tmp_path)
+
+
+def test_size_cap_zero_disables_eviction(tmp_path):
+    """CCCL_PCH_CACHE_MAXSIZE=0 keeps everything."""
+    stale = tmp_path / "device_sm89_0123456789abcdef.pch"
+    stale.write_bytes(b"\0" * (60 * 1024 * 1024))
+    old = time.time() - 24 * 60 * 60
+    os.utime(stale, (old, old))
+
+    proc = run_python(BUILD_SNIPPET, tmp_path, CCCL_PCH_CACHE_MAXSIZE="0")
+    assert proc.returncode == 0, proc.stderr
+    assert stale.exists(), "eviction ran despite CCCL_PCH_CACHE_MAXSIZE=0"
+
+
+def test_cache_dir_and_clear(tmp_path):
+    """pch_cache_dir() reports the live location; clear_pch_cache() empties it."""
+    code = """
+        import numpy as np
+        from _utils.device_array import DeviceArray
+        import cuda.compute as cc
+
+        assert cc.pch_cache_dir() is not None, "no cache directory resolved"
+        assert cc.clear_pch_cache() == 0, "cleared something from an empty cache"
+
+        d_in = DeviceArray.from_numpy(np.arange(4, dtype=np.int32))
+        d_out = DeviceArray.empty(1, np.int32)
+        h_init = np.zeros(1, dtype=np.int32)
+        cc.make_reduce_into(d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init)
+
+        cache = cc.pch_cache_dir()
+        assert list(cache.glob("*.pch")), "build left no PCH behind"
+
+        assert cc.clear_pch_cache() > 0, "clear reported removing nothing"
+        assert list(cache.glob("*.pch")) == [], "PCHs survived clear_pch_cache()"
+
+        # Clearing is not destructive to the cache itself -- a later build just
+        # regenerates.
+        assert cc.pch_cache_dir() == cache
+        print("ok")
+    """
+    proc = run_python(code, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert "ok" in proc.stdout
+
+
+def test_cache_dir_follows_env(tmp_path):
+    """The reported directory tracks the resolution chain, not a fixed path."""
+    code = "import cuda.compute as cc; print(cc.pch_cache_dir())"
+
+    proc = run_python(code, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == str(tmp_path)
+
+    # With CCCL_PCH_CACHE_DIR unset, XDG_CACHE_HOME takes over.
+    env = subprocess_env(
+        tmp_path, CCCL_PCH_CACHE_DIR=None, XDG_CACHE_HOME=str(tmp_path / "xdg")
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == str(tmp_path / "xdg" / "cccl" / "hostjit_pch")
+
+
+def test_import_without_cuda_is_quiet(tmp_path):
+    """With no visible device, importing must not warn, raise, or cache anything."""
+    code = """
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            import cuda.compute as cc
+        print("ok")
+    """
+    proc = run_python(code, tmp_path, CUDA_VISIBLE_DEVICES="")
+    assert proc.returncode == 0, proc.stderr
+    assert "ok" in proc.stdout
+    assert pch_files(tmp_path) == [], "import touched the PCH cache"
