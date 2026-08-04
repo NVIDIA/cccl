@@ -13,6 +13,7 @@ import json
 import re
 import sys
 import zipfile
+from collections import Counter
 from pathlib import Path
 
 from wheel_release_expectations import (
@@ -92,27 +93,92 @@ def _parse_unconditional_requirement(requirement: str) -> tuple[str, str] | None
     )
     if match is None:
         return None
+    specifier = match.group(2).strip()
+    if re.search(r"\s", specifier):
+        return None
+    specifier_parts = specifier
+    if specifier_parts.startswith("(") and specifier_parts.endswith(")"):
+        specifier_parts = specifier_parts[1:-1]
+    if specifier_parts and any(not part for part in specifier_parts.split(",")):
+        return None
     return (
         _normalized_distribution_name(match.group(1)),
-        _normalized_specifier(match.group(2)),
-    )
-
-
-def _has_unconditional_requirement(
-    requirements: list[str], name: str, specifier: str = ""
-) -> bool:
-    expected = (
-        _normalized_distribution_name(name),
         _normalized_specifier(specifier),
     )
-    for requirement in requirements:
-        if _parse_unconditional_requirement(requirement) == expected:
-            return True
-    return False
 
 
-def _has_exact_requirement(requirements: list[str], name: str, version: str) -> bool:
-    return _has_unconditional_requirement(requirements, name, f"=={version}")
+_MARKER_ATOM = re.compile(
+    r"\s*(?P<variable>python_version|python_full_version|os_name|sys_platform|"
+    r"platform_release|platform_system|platform_version|platform_machine|"
+    r"platform_python_implementation|implementation_name|implementation_version|"
+    r"extra)\s*"
+    r"(?P<operator>===|==|!=|<=|>=|~=|<|>|not\s+in|in)\s*"
+    r'(?:"[^"\\]*"|\'[^\'\\]*\')\s*'
+)
+_EXTRA_MARKER_ATOM = re.compile(
+    r'\s*extra\s*==\s*(?:"[A-Za-z0-9][A-Za-z0-9._-]*"|'
+    r"'[A-Za-z0-9][A-Za-z0-9._-]*')\s*"
+)
+
+
+def _is_extra_guarded_requirement(requirement: str) -> bool:
+    requirement_text, separator, marker = requirement.partition(";")
+    if not separator or not marker.strip() or "@" in requirement_text:
+        return False
+    atoms = [
+        _MARKER_ATOM.fullmatch(atom) for atom in re.split(r"\s+and\s+", marker.strip())
+    ]
+    if not atoms or any(atom is None for atom in atoms):
+        return False
+    extra_guards = [
+        atom
+        for atom in re.split(r"\s+and\s+", marker.strip())
+        if _EXTRA_MARKER_ATOM.fullmatch(atom)
+    ]
+    return len(extra_guards) == 1
+
+
+def _validate_unconditional_requirements(
+    wheel: Path,
+    requirements: list[str],
+    expected_requirements: tuple[tuple[str, str], ...],
+) -> None:
+    expected = Counter(
+        (
+            _normalized_distribution_name(name),
+            _normalized_specifier(specifier),
+        )
+        for name, specifier in expected_requirements
+    )
+    # Optional dependencies emitted by the build backend are guarded by their
+    # extra. Treat every other entry as part of the base contract so malformed
+    # markers and semicolons inside direct-reference URLs cannot bypass it.
+    unconditional = [
+        requirement
+        for requirement in requirements
+        if not _is_extra_guarded_requirement(requirement)
+    ]
+    parsed = [
+        _parse_unconditional_requirement(requirement) for requirement in unconditional
+    ]
+    actual = Counter(parsed)
+    if actual == expected:
+        return
+
+    missing = [
+        f"{name}{specifier}" for name, specifier in (expected - actual).elements()
+    ]
+    unexpected_counts = actual - expected
+    unexpected = []
+    for requirement, parsed_requirement in zip(unconditional, parsed):
+        if unexpected_counts[parsed_requirement]:
+            unexpected.append(requirement)
+            unexpected_counts[parsed_requirement] -= 1
+
+    raise RuntimeError(
+        f"{wheel.name} has invalid unconditional runtime dependencies; "
+        f"missing or altered: {missing}; unexpected or duplicate: {unexpected}"
+    )
 
 
 def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
@@ -148,11 +214,16 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
         raise RuntimeError(f"Wheel versions are not coordinated: {sorted(versions)}")
     version = versions.pop()
 
-    meta_requirements = meta_metadata.get_all("Requires-Dist", [])
-    if not _has_exact_requirement(meta_requirements, "cuda-compute", version):
-        raise RuntimeError(
-            "cuda-cccl does not exactly require the cuda-compute version"
-        )
+    _validate_unconditional_requirements(
+        headers_wheel,
+        headers_metadata.get_all("Requires-Dist", []),
+        (("cuda-pathfinder", ">=1.2.3"),),
+    )
+    _validate_unconditional_requirements(
+        meta_wheel,
+        meta_metadata.get_all("Requires-Dist", []),
+        (("cuda-compute", f"=={version}"),),
+    )
 
     headers_payload = _payload(headers_names)
     meta_payload = _payload(meta_names)
@@ -200,21 +271,11 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
             ("cuda-core", ""),
             ("typing-extensions", ""),
         )
-        missing_compute_dependencies = [
-            f"{name}{specifier}"
-            for name, specifier in required_compute_dependencies
-            if not _has_unconditional_requirement(compute_requirements, name, specifier)
-        ]
-        if missing_compute_dependencies:
-            raise RuntimeError(
-                f"{compute_wheel.name} is missing runtime dependencies or has "
-                f"altered constraints: {missing_compute_dependencies}"
-            )
-        if not _has_exact_requirement(compute_requirements, "cccl-headers", version):
-            raise RuntimeError(
-                f"{compute_wheel.name} does not exactly require "
-                "the cccl-headers version"
-            )
+        _validate_unconditional_requirements(
+            compute_wheel,
+            compute_requirements,
+            (*required_compute_dependencies, ("cccl-headers", f"=={version}")),
+        )
 
         compute_payload = _payload(compute_names)
         if headers_payload & compute_payload:

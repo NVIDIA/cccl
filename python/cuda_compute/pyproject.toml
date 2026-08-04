@@ -94,24 +94,28 @@ test-cu12 = [
   "cuda-compute[cu12]",
   "pytest",
   "pytest-xdist",
+  "packaging",
   "tomli; python_version < '3.11'",
 ]
 test-cu13 = [
   "cuda-compute[cu13]",
   "pytest",
   "pytest-xdist",
+  "packaging",
   "tomli; python_version < '3.11'",
 ]
 test-sysctk12 = [
   "cuda-compute[sysctk12]",
   "pytest",
   "pytest-xdist",
+  "packaging",
   "tomli; python_version < '3.11'",
 ]
 test-sysctk13 = [
   "cuda-compute[sysctk13]",
   "pytest",
   "pytest-xdist",
+  "packaging",
   "tomli; python_version < '3.11'",
 ]
 bench-cu12 = [

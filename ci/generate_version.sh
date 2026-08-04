@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # Generate a version number string using metadata from git or JSON.
 # Use the PyPi package versioning convention for pre-release or
 # post release patches.
@@ -11,7 +13,8 @@ PACKAGE_VERSION_PREFIX="${PACKAGE_VERSION_PREFIX:-}"
 GIT_DESCRIBE_TAG=$(git describe --tags --match "v[0-9]*" --abbrev=0)
 GIT_DESCRIBE_NUMBER=$(git rev-list "${GIT_DESCRIBE_TAG}"..HEAD --count)
 
-JSON_VERSION=$(jq -r .full /workspace/cccl-version.json)
+CI_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+JSON_VERSION=$(jq -er .full "${CI_DIR}/../cccl-version.json")
 
 # Generate a suffix depending on release or dev branch.
 PACKAGE_VERSION_SUFFIX=""

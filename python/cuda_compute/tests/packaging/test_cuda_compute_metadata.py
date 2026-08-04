@@ -10,6 +10,8 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+from packaging.markers import Marker
+from packaging.requirements import Requirement
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -91,7 +93,20 @@ def test_test_extras_support_python_3_10() -> None:
 
     extras = metadata["project"]["optional-dependencies"]
     for extra in ("test-cu12", "test-cu13", "test-sysctk12", "test-sysctk13"):
-        assert "tomli; python_version < '3.11'" in extras[extra]
+        requirements = [Requirement(requirement) for requirement in extras[extra]]
+        tomli_requirements = [
+            requirement for requirement in requirements if requirement.name == "tomli"
+        ]
+        assert len(tomli_requirements) == 1
+        tomli_requirement = tomli_requirements[0]
+        assert not tomli_requirement.extras
+        assert not tomli_requirement.specifier
+        assert tomli_requirement.url is None
+        assert tomli_requirement.marker == Marker('python_version < "3.11"')
+        assert any(
+            requirement.name == "packaging" and requirement.marker is None
+            for requirement in requirements
+        )
 
 
 def test_pip_toolkit_extras_include_v2_windows_runtime() -> None:
