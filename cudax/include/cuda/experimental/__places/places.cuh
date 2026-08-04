@@ -2072,7 +2072,10 @@ inline data_place data_place::composite(partition_fn_t f, const exec_place& grid
 
 inline data_place data_place::replicated(const exec_place& grid)
 {
-  EXPECT(grid.size() >= 1, "replicated data_place requires a non-empty grid");
+  if (grid.size() < 1)
+  {
+    throw ::std::invalid_argument("replicated data_place requires a non-empty grid");
+  }
   return data_place(::std::make_shared<data_place_replicated>(grid));
 }
 
