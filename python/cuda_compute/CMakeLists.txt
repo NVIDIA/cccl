@@ -35,6 +35,9 @@ message(
 set(_cccl_root ../..)
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
 set(CCCL_C_PARALLEL_V2_HOSTJIT_INSTALL_ROOT "cuda/compute/_cccl")
+if (SKBUILD_STATE STREQUAL "wheel")
+  set(CCCL_C_PARALLEL_V2_HOSTJIT_USE_RUNTIME_PATHS ON)
+endif()
 option(
   CCCL_PYTHON_USE_V2
   "Build cuda-compute against cccl.c.parallel.v2 (HostJIT)."
@@ -123,14 +126,20 @@ endif()
 
 # -3 generates source for Python 3
 # -M generates depfile
-# -w sets working directory
-set(CYTHON_FLAGS -3 -M -w "${cuda_compute_SOURCE_DIR}")
+# -w sets the working directory used for source locations in the generated C.
+# Stage the inputs under the build tree so generated backend includes retain
+# stable cuda/compute/... names instead of embedding the absolute build path.
+set(CYTHON_FLAGS -3 -M -w "${cuda_compute_BINARY_DIR}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(
   pyx_source_file
   "${cuda_compute_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx"
 )
+set(_cython_package_dir "${cuda_compute_BINARY_DIR}/cuda/compute")
+set(_staged_pyx_source "${_cython_package_dir}/_bindings_impl.pyx")
+file(MAKE_DIRECTORY "${_cython_package_dir}")
+configure_file("${pyx_source_file}" "${_staged_pyx_source}" COPYONLY)
 
 set(_generated_extension_src "${cuda_compute_BINARY_DIR}/_bindings_impl.c")
 set(_depfile "${cuda_compute_BINARY_DIR}/_bindings_impl.c.dep")
@@ -144,6 +153,7 @@ if (CCCL_PYTHON_USE_V2)
 else()
   set(_backend_suffix "v1")
 endif()
+set(_configured_pxi_files)
 foreach (
   _pxi_stem
   segmented_reduce_backend
@@ -153,25 +163,28 @@ foreach (
 )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cuda/compute/_bindings_${_pxi_stem}_${_backend_suffix}.pxi"
-    "${CMAKE_CURRENT_BINARY_DIR}/_bindings_${_pxi_stem}.pxi"
+    "${_cython_package_dir}/_bindings_${_pxi_stem}.pxi"
     COPYONLY
+  )
+  list(
+    APPEND _configured_pxi_files
+    "${_cython_package_dir}/_bindings_${_pxi_stem}.pxi"
   )
 endforeach()
 
-# Custom Cython compilation command. `-I ${BINARY_DIR}` lets the .pyx's
-# `include "_bindings_..._backend.pxi"` resolve to the file we configured
-# above.
+# Custom Cython compilation command. The staged .pyx and generated .pxi files
+# share a package directory so relative includes resolve without an absolute
+# include search path.
 add_custom_command(
   OUTPUT "${_generated_extension_src}"
   COMMAND
     "${Python3_EXECUTABLE}" -m cython
     # gersemi: off
     ${CYTHON_FLAGS}
-    -I "${CMAKE_CURRENT_BINARY_DIR}"
-    "${pyx_source_file}"
+    "cuda/compute/_bindings_impl.pyx"
     --output-file "${_generated_extension_src}"
   # gersemi: on
-  DEPENDS "${pyx_source_file}"
+  DEPENDS "${_staged_pyx_source}" ${_configured_pxi_files}
   DEPFILE "${_depfile}"
   COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
 )
