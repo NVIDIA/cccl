@@ -308,7 +308,7 @@ Free-threaded Python
 
    .. code-block:: bash
 
-      pip install cuda-compute[minimal-cu13]  # or minimal-cu12
+      pip install "cuda-compute[minimal-cu13]"  # or minimal-cu12
 
    The full ``cu12`` and ``cu13`` extras and Python-callable operators that
    require Numba CUDA are not currently
@@ -538,8 +538,8 @@ minimal ``cuda-compute`` installation that omits Numba and Numba CUDA:
 
 .. code-block:: bash
 
-   pip install cuda-compute[minimal-cu13]      # or minimal-cu12  (pip-installed CUDA Toolkit)
-   pip install cuda-compute[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA Toolkit)
+   pip install "cuda-compute[minimal-cu13]"      # or minimal-cu12  (pip-installed CUDA Toolkit)
+   pip install "cuda-compute[minimal-sysctk13]"  # or minimal-sysctk12  (system CUDA Toolkit)
 
 
 

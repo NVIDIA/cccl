@@ -25,7 +25,9 @@ Prerequisites
 Before installing ``cuda.compute``, ensure you have:
 
 * **Python 3.10 or later**
-* **CUDA Toolkit 12.x or 13.x**
+* **CUDA Toolkit 12.x or 13.x**, either installed by a ``cu12``/``cu13``
+  package extra or available on the system for a ``sysctk12``/``sysctk13``
+  extra
 * **Compatible NVIDIA GPU** with Compute Capability 7.5 or higher
 * **Operating Systems:** Linux (tested on Ubuntu 20.04+) or Windows 10/11 (with WSL2 support)
 
@@ -40,7 +42,7 @@ matching your environment:
 
 .. code-block:: bash
 
-   pip install cuda-cccl[cu13]  # or cuda-cccl[cu12]
+   pip install "cuda-cccl[cu13]"  # or "cuda-cccl[cu12]"
 
 This installs ``cuda-compute``, ``cccl-headers``, and the ``cuda-toolkit`` pip
 packages for the chosen CUDA major version.
@@ -51,7 +53,7 @@ it, use a ``sysctk`` variant:
 
 .. code-block:: bash
 
-   pip install cuda-cccl[sysctk13]  # or cuda-cccl[sysctk12]
+   pip install "cuda-cccl[sysctk13]"  # or "cuda-cccl[sysctk12]"
 
 These install the same Python dependencies except ``cuda-toolkit``. You are
 responsible for ensuring that a compatible CUDA Toolkit is available through
@@ -62,8 +64,8 @@ For a minimal install without Numba, useful when supplying
 
 .. code-block:: bash
 
-   pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA Toolkit
-   pip install cuda-cccl[minimal-sysctk13]  # system CUDA Toolkit
+   pip install "cuda-cccl[minimal-cu13]"      # pip-installed CUDA Toolkit
+   pip install "cuda-cccl[minimal-sysctk13]"  # system CUDA Toolkit
 
 Free-threaded Python support is currently validated with the ``minimal-cu12``
 and ``minimal-cu13`` extras. The full ``cu12`` and ``cu13`` extras depend on
@@ -98,7 +100,7 @@ It installs its matching ``cccl-headers`` dependency automatically:
 
 .. code-block:: bash
 
-   pip install cuda-compute[cu13]  # or cuda-compute[cu12]
+   pip install "cuda-compute[cu13]"  # or "cuda-compute[cu12]"
 
 The ``sysctk*`` and ``minimal-*`` extras described above are also available on
 ``cuda-compute``.
@@ -137,9 +139,10 @@ sibling build from an index:
 
    git clone https://github.com/NVIDIA/cccl.git
    cd cccl
-   pip install -e ./python/cccl_headers
-   pip install -e "./python/cuda_compute[test-cu13]"  # or test-cu12/test-sysctk*
-   pip install -e ./python/cuda_cccl
+   pip install \
+     -e ./python/cccl_headers \
+     -e "./python/cuda_compute[test-cu13]" \
+     -e ./python/cuda_cccl
 
 The test extras do not install CuPy. To run the CuPy-based ``cuda.compute``
 examples, install it separately, for example ``pip install cupy-cuda13x``.
