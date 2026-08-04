@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <type_traits>
 #include <utility>
@@ -653,6 +654,18 @@ public:
 
     SCOPE(exit)
     {
+      if (start_event)
+      {
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    SCOPE(success)
+    {
       t.end_uncleared();
       if constexpr (::std::is_same_v<context, stream_ctx>)
       {
@@ -677,6 +690,11 @@ public:
       }
 
       t.clear();
+    };
+
+    SCOPE(fail)
+    {
+      t.end();
     };
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
@@ -1086,39 +1104,43 @@ public:
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
-      auto p = static_cast<decltype(args)>(untyped_args);
+      // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
+      // it.
+      on_throw(::std::abort) << [untyped_args] {
+        auto p = static_cast<decltype(args)>(untyped_args);
 
-      auto& data               = ::std::get<0>(*p);
-      const size_t n           = ::std::get<1>(*p);
-      Fun& f                   = ::std::get<2>(*p);
-      const sub_shape_t& shape = ::std::get<3>(*p);
+        auto& data               = ::std::get<0>(*p);
+        const size_t n           = ::std::get<1>(*p);
+        Fun& f                   = ::std::get<2>(*p);
+        const sub_shape_t& shape = ::std::get<3>(*p);
 
-      // deps_ops_t are pairs of data instance type, and a reduction operator,
-      // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, auto&&... data) {
-        auto h = [&](auto&&... coords) {
-          f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+        // deps_ops_t are pairs of data instance type, and a reduction operator,
+        // this gets only the data instance types (eg. slice<double>)
+        auto explode_coords = [&](size_t i, auto&&... data) {
+          auto h = [&](auto&&... coords) {
+            f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+          };
+          auto coords = shape.index_to_coords(i);
+          if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+          {
+            return;
+          }
+          ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
         };
-        auto coords = shape.index_to_coords(i);
-        if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
+
+        // Finally we get to do the workload on every 1D item of the shape
+        for (size_t i = 0; i < n; ++i)
         {
-          return;
+          ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
         }
-        ::cuda::experimental::stf::reserved::__apply_coords(h, mv(coords));
+
+        // For stream contexts, delete immediately (no replay risk)
+        // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+        if constexpr (!::std::is_same_v<context, graph_ctx>)
+        {
+          delete p;
+        }
       };
-
-      // Finally we get to do the workload on every 1D item of the shape
-      for (size_t i = 0; i < n; ++i)
-      {
-        ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
-      }
-
-      // For stream contexts, delete immediately (no replay risk)
-      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<context, graph_ctx>)
-      {
-        delete p;
-      }
     };
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
