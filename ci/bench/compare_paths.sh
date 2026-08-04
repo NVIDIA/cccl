@@ -46,6 +46,8 @@ Environment:
   CCCL_BENCH_TEST_BUILD_DIR  Optional preconfigured build tree for test path.
                              If either is set, both must be set.
   CCCL_BENCH_GPU_NAME        Optional GPU name included in artifact directory names.
+  CCCL_BENCH_NVBENCH_SHA     NVBench SHA/tag used for generated CUB build trees.
+                             Default: "main"
   CCCL_BENCH_BUILD_ROOT      Root directory for generated build trees.
                              Default: "/tmp/cccl-bench-builds"
 EOF
@@ -128,8 +130,15 @@ configure_build_tree() {
   local side="$3"
   local log_path="$4"
   local target_arch="$5"
+  local nvbench_sha="${CCCL_BENCH_NVBENCH_SHA:-main}"
   local -a cmake_cmd
-  cmake_cmd=(cmake --preset "cub-benchmark" -S "${src_path}" -B "${build_path}")
+  cmake_cmd=(
+    cmake
+    --preset "cub-benchmark"
+    -S "${src_path}"
+    -B "${build_path}"
+    "-DCCCL_NVBENCH_SHA=${nvbench_sha}"
+  )
   if [[ -n "${target_arch}" ]]; then
     cmake_cmd+=("-DCMAKE_CUDA_ARCHITECTURES=${target_arch}")
   fi
