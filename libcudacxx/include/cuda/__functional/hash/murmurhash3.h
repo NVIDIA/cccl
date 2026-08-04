@@ -46,13 +46,9 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-template <typename _Key>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
-__fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
+__murmurhash3_fmix32(::cuda::std::uint32_t __h) noexcept
 {
-  static_assert(sizeof(_Key) == 4, "Key type must be 4 bytes in size.");
-
-  auto __h = ::cuda::std::bit_cast<::cuda::std::uint32_t>(__key) ^ __seed;
   __h ^= __h >> 16;
   __h *= 0x85ebca6b;
   __h ^= __h >> 13;
@@ -61,13 +57,9 @@ __fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
   return __h;
 }
 
-template <typename _Key>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
-__fmix64(_Key __key, ::cuda::std::uint64_t __seed = 0) noexcept
+__murmurhash3_fmix64(::cuda::std::uint64_t __h) noexcept
 {
-  static_assert(sizeof(_Key) == 8, "Key type must be 8 bytes in size.");
-
-  auto __h = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__key) ^ __seed;
   __h ^= __h >> 33;
   __h *= 0xff51afd7ed558ccdULL;
   __h ^= __h >> 33;
@@ -172,7 +164,7 @@ private:
     //----------
     // finalization
     __h1 ^= ::cuda::std::uint32_t{sizeof(_Holder)};
-    __h1 = ::cuda::__fmix32(__h1);
+    __h1 = ::cuda::__murmurhash3_fmix32(__h1);
     return __h1;
   }
 
@@ -219,7 +211,7 @@ private:
     //----------
     // finalization
     __h1 ^= static_cast<::cuda::std::uint32_t>(__size);
-    __h1 = ::cuda::__fmix32(__h1);
+    __h1 = ::cuda::__murmurhash3_fmix32(__h1);
     return __h1;
   }
 
@@ -422,10 +414,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = ::cuda::__fmix32(__h[0]);
-    __h[1] = ::cuda::__fmix32(__h[1]);
-    __h[2] = ::cuda::__fmix32(__h[2]);
-    __h[3] = ::cuda::__fmix32(__h[3]);
+    __h[0] = ::cuda::__murmurhash3_fmix32(__h[0]);
+    __h[1] = ::cuda::__murmurhash3_fmix32(__h[1]);
+    __h[2] = ::cuda::__murmurhash3_fmix32(__h[2]);
+    __h[3] = ::cuda::__murmurhash3_fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -581,10 +573,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = ::cuda::__fmix32(__h[0]);
-    __h[1] = ::cuda::__fmix32(__h[1]);
-    __h[2] = ::cuda::__fmix32(__h[2]);
-    __h[3] = ::cuda::__fmix32(__h[3]);
+    __h[0] = ::cuda::__murmurhash3_fmix32(__h[0]);
+    __h[1] = ::cuda::__murmurhash3_fmix32(__h[1]);
+    __h[2] = ::cuda::__murmurhash3_fmix32(__h[2]);
+    __h[3] = ::cuda::__murmurhash3_fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -757,8 +749,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = ::cuda::__fmix64(__h[0]);
-    __h[1] = ::cuda::__fmix64(__h[1]);
+    __h[0] = ::cuda::__murmurhash3_fmix64(__h[0]);
+    __h[1] = ::cuda::__murmurhash3_fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];
@@ -870,8 +862,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = ::cuda::__fmix64(__h[0]);
-    __h[1] = ::cuda::__fmix64(__h[1]);
+    __h[0] = ::cuda::__murmurhash3_fmix64(__h[0]);
+    __h[1] = ::cuda::__murmurhash3_fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];

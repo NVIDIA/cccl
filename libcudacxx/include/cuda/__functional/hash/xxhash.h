@@ -173,7 +173,7 @@ private:
     __h32 += ::cuda::std::uint32_t{sizeof(_Holder)};
 
     // remaining data can be processed in 4-byte chunks
-    if constexpr (_Holder::__num_blocks % __chunk_size > 0)
+    if constexpr (_Holder::__num_blocks % _Holder::__blocks_per_chunk > 0)
     {
       for (; __offset < _Holder::__num_blocks; ++__offset)
       {
