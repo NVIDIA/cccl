@@ -14,13 +14,15 @@
 
 #include "hash_test_helper.h"
 
+#if _CCCL_HAS_INT128()
+
 struct test_murmurhash3_x64_128
 {
   hash_test<cuda::hash_algorithm::murmurhash3_x64_128> murmurhash3_x64_128_test;
 
-  TEST_FUNC constexpr cuda::std::array<cuda::std::uint64_t, 2> make_result(cuda::std::array<cuda::std::uint64_t, 2> arr)
+  TEST_FUNC constexpr __uint128_t make_result(cuda::std::array<cuda::std::uint64_t, 2> arr)
   {
-    return arr;
+    return cuda::std::bit_cast<__uint128_t>(arr);
   }
 
   TEST_FUNC void operator()()
@@ -58,21 +60,26 @@ struct test_murmurhash3_x64_128
   }
 };
 
-#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
+#  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
 static_assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_x64_128>{}(0u)
-               == cuda::std::array<cuda::std::uint64_t, 2>{14961230494313510588ull, 6383328099726337777ull}));
-#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
+               == cuda::std::bit_cast<__uint128_t>(cuda::std::array<cuda::std::uint64_t, 2>{
+                 14961230494313510588ull, 6383328099726337777ull})));
+#  endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
 
 TEST_FUNC void test()
 {
   test_murmurhash3_x64_128{}();
   test_sized_keys<cuda::hash_algorithm::murmurhash3_x64_128>();
   test_noncopyable_key<cuda::hash_algorithm::murmurhash3_x64_128>();
-  test_empty_span<cuda::hash_algorithm::murmurhash3_x64_128>(cuda::std::array<cuda::std::uint64_t, 2>{});
+  test_empty_span<cuda::hash_algorithm::murmurhash3_x64_128>(__uint128_t{});
 }
+
+#endif // _CCCL_HAS_INT128()
 
 int main(int, char**)
 {
+#if _CCCL_HAS_INT128()
   test();
+#endif // _CCCL_HAS_INT128()
   return 0;
 }

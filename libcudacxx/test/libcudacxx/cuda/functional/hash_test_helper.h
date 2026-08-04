@@ -13,6 +13,7 @@
 
 #include <cuda/functional>
 #include <cuda/std/array>
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -58,17 +59,21 @@ struct hash_result<cuda::hash_algorithm::murmurhash3_32>
   using type = cuda::std::uint32_t;
 };
 
+#if _CCCL_HAS_INT128()
+
 template <>
 struct hash_result<cuda::hash_algorithm::murmurhash3_x86_128>
 {
-  using type = cuda::std::array<cuda::std::uint32_t, 4>;
+  using type = __uint128_t;
 };
 
 template <>
 struct hash_result<cuda::hash_algorithm::murmurhash3_x64_128>
 {
-  using type = cuda::std::array<cuda::std::uint64_t, 2>;
+  using type = __uint128_t;
 };
+
+#endif // _CCCL_HAS_INT128()
 
 template <cuda::hash_algorithm Algorithm>
 struct hash_test

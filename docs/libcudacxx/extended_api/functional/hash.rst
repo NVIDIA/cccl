@@ -10,9 +10,12 @@ Defined in the header ``<cuda/functional>``.
     enum class hash_algorithm {
         xxhash_32,
         xxhash_64,
-        murmurhash3_32,
+        murmurhash3_32
+    #if _CCCL_HAS_INT128()
+        ,
         murmurhash3_x86_128,
         murmurhash3_x64_128
+    #endif // _CCCL_HAS_INT128()
     };
 
     template <typename Key, hash_algorithm Algorithm = hash_algorithm::xxhash_32>
@@ -48,25 +51,29 @@ Defined in the header ``<cuda/functional>``.
         [[nodiscard]] __host__ __device__ cuda::std::uint32_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
     };
 
+    #if _CCCL_HAS_INT128()
+
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x86_128> {
     public:
         __host__ __device__ constexpr hash(cuda::std::uint32_t seed = 0) noexcept;
-        [[nodiscard]] __host__ __device__ constexpr cuda::std::array<cuda::std::uint32_t, 4> operator()(const Key& key) const noexcept;
+        [[nodiscard]] __host__ __device__ constexpr __uint128_t operator()(const Key& key) const noexcept;
 
         template <typename SpanKey, cuda::std::size_t Extent>
-        [[nodiscard]] __host__ __device__ cuda::std::array<cuda::std::uint32_t, 4> operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+        [[nodiscard]] __host__ __device__ __uint128_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
     };
 
     template <typename Key>
     class hash<Key, hash_algorithm::murmurhash3_x64_128> {
     public:
         __host__ __device__ constexpr hash(cuda::std::uint64_t seed = 0) noexcept;
-        [[nodiscard]] __host__ __device__ constexpr cuda::std::array<cuda::std::uint64_t, 2> operator()(const Key& key) const noexcept;
+        [[nodiscard]] __host__ __device__ constexpr __uint128_t operator()(const Key& key) const noexcept;
 
         template <typename SpanKey, cuda::std::size_t Extent>
-        [[nodiscard]] __host__ __device__ cuda::std::array<cuda::std::uint64_t, 2> operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
+        [[nodiscard]] __host__ __device__ __uint128_t operator()(cuda::std::span<SpanKey, Extent> keys) const noexcept;
     };
+
+    #endif // _CCCL_HAS_INT128()
 
 ``cuda::hash`` provides host/device implementations of xxHash and MurmurHash3.
 ``Key`` must be trivially copyable; this requirement is enforced when the class is
@@ -93,12 +100,12 @@ The supported algorithms and result types are:
    * - ``hash_algorithm::murmurhash3_32``
      - ``cuda::std::uint32_t``
    * - ``hash_algorithm::murmurhash3_x86_128``
-     - ``cuda::std::array<cuda::std::uint32_t, 4>``
+     - ``__uint128_t``
    * - ``hash_algorithm::murmurhash3_x64_128``
-     - ``cuda::std::array<cuda::std::uint64_t, 2>``
+     - ``__uint128_t``
 
-The arrays store words in algorithm output order: ``{h1, h2, h3, h4}`` for
-``murmurhash3_x86_128`` and ``{h1, h2}`` for ``murmurhash3_x64_128``.
+The 128-bit MurmurHash3 algorithms are available only when ``_CCCL_HAS_INT128()``
+is true.
 
 Example
 -------

@@ -224,11 +224,13 @@ private:
   ::cuda::std::uint32_t __seed_;
 };
 
+#if _CCCL_HAS_INT128()
+
 template <typename _Key>
 struct __murmurhash3_x86_128
 {
 private:
-  using __result_type _CCCL_NODEBUG_ALIAS = ::cuda::std::array<::cuda::std::uint32_t, 4>;
+  using __result_type _CCCL_NODEBUG_ALIAS = __uint128_t;
 
   static constexpr ::cuda::std::uint32_t __c1 = 0x239b961b;
   static constexpr ::cuda::std::uint32_t __c2 = 0xab0e9789;
@@ -294,7 +296,7 @@ public:
       : __seed_{__seed}
   {}
 
-  //! @brief Returns a hash value for its argument as four 32-bit words.
+  //! @brief Returns a 128-bit hash value for its argument.
   //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type operator()(const _Key& __key) const noexcept
@@ -311,7 +313,7 @@ public:
     }
   }
 
-  //! @brief Returns a hash value for its argument as four 32-bit words.
+  //! @brief Returns a 128-bit hash value for its argument.
   //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
@@ -445,7 +447,7 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return __h;
+    return ::cuda::std::bit_cast<__result_type>(__h);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
@@ -604,7 +606,7 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return __h;
+    return ::cuda::std::bit_cast<__result_type>(__h);
   }
 
 private:
@@ -615,7 +617,7 @@ template <typename _Key>
 struct __murmurhash3_x64_128
 {
 private:
-  using __result_type _CCCL_NODEBUG_ALIAS = ::cuda::std::array<::cuda::std::uint64_t, 2>;
+  using __result_type _CCCL_NODEBUG_ALIAS = __uint128_t;
 
   static constexpr ::cuda::std::uint64_t __c1 = 0x87c37b91114253d5ull;
   static constexpr ::cuda::std::uint64_t __c2 = 0x4cf5ad432745937full;
@@ -659,7 +661,7 @@ public:
       : __seed_{__seed}
   {}
 
-  //! @brief Returns a hash value for its argument as two 64-bit words.
+  //! @brief Returns a 128-bit hash value for its argument.
   //! @param[in] __key The input argument to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_type operator()(const _Key& __key) const noexcept
@@ -676,7 +678,7 @@ public:
     }
   }
 
-  //! @brief Returns a hash value for its argument as two 64-bit words.
+  //! @brief Returns a 128-bit hash value for its argument.
   //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
@@ -784,7 +786,7 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    return __h;
+    return ::cuda::std::bit_cast<__result_type>(__h);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
@@ -897,12 +899,14 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    return __h;
+    return ::cuda::std::bit_cast<__result_type>(__h);
   }
 
 private:
   ::cuda::std::uint64_t __seed_;
 };
+
+#endif // _CCCL_HAS_INT128()
 
 _CCCL_END_NAMESPACE_CUDA
 
