@@ -196,6 +196,48 @@ int main()
     printf("replicated data place: stackable conditional scope (concrete + deferred deps) OK\n");
   }
 
+  // ---- stackable + DISTINCT member places: true multi-replica through the
+  // auto-push and a conditional scope (the repeat-grid section above only
+  // exercises the equal-places dedup degenerate)
+#  if _CCCL_CTK_AT_LEAST(12, 4)
+  {
+    green_context_helper gc(8, 0);
+    if (gc.get_count() >= 2)
+    {
+      stackable_ctx ctx;
+      ::std::vector<exec_place> places;
+      places.push_back(exec_place::green_ctx(gc.get_view(0), true));
+      places.push_back(exec_place::green_ctx(gc.get_view(1), true));
+      auto ggrid = make_grid(mv(places));
+
+      auto lin  = ctx.logical_data(shape_of<slice<double>>(n)).set_symbol("gin");
+      auto lacc = ctx.logical_data(shape_of<slice<double>>(n)).set_symbol("gacc");
+      ctx.parallel_for(lin.shape(), lin.write(), lacc.write())->*[] __device__(size_t i, auto in, auto acc) {
+        in(i)  = static_cast<double>(i % 64);
+        acc(i) = 0.0;
+      };
+
+      const size_t iters = 8;
+      {
+        auto rg = ctx.repeat_graph_scope(iters);
+        ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(data_place::replicated()), lacc.rw())
+            ->*[] __device__(size_t i, auto in, auto acc) {
+                  acc(i) += in(i);
+                };
+      }
+
+      ctx.host_launch(lacc.read())->*[&](auto acc) {
+        for (size_t i = 0; i < n; i++)
+        {
+          EXPECT(acc(i) == static_cast<double>(iters) * static_cast<double>(i % 64));
+        }
+      };
+      ctx.finalize();
+      printf("replicated data place: stackable + distinct member replicas OK\n");
+    }
+  }
+#  endif // _CCCL_CTK_AT_LEAST(12, 4)
+
   printf("replicated_data_place: all checks passed\n");
   return 0;
 #endif
