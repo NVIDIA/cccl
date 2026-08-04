@@ -42,11 +42,11 @@ arch=$(echo "$job_def" | jq -r '.origin.matrix_job.cpu')
 project=$(echo "$job_def" | jq -r '.origin.matrix_job.project')
 
 for tag in "$py_version" "$os" "$arch"; do
-  if [[ -z "$tag" ]]; then
+  if [[ -z "$tag" || "$tag" == "null" ]]; then
     echo "Error: Missing required field in job definition for job ID '$job_id'." >&2
     echo "$usage" >&2
     echo >&2
-    "Job definition: $job_def" >&2
+    echo "Job definition: $job_def" >&2
     exit 1
   fi
 done

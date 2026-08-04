@@ -59,10 +59,12 @@ class WheelExpectation:
             )
 
         # auditwheel may emit more than one equivalent manylinux platform tag.
+        manylinux_tag = re.compile(
+            rf"manylinux(?:1|2010|2014|_[0-9]+_[0-9]+)_"
+            rf"{re.escape(platform_architecture)}"
+        )
         return all(
-            tag.endswith(f"_{platform_architecture}")
-            and tag.startswith(("linux_", "manylinux", "musllinux_"))
-            for tag in platform_tag.split(".")
+            manylinux_tag.fullmatch(tag) is not None for tag in platform_tag.split(".")
         )
 
 
@@ -132,12 +134,10 @@ def load_release_expectations(workflow_file: Path) -> tuple[WheelExpectation, ..
             architecture=architecture,
             python_version=python_version,
         )
-        if previous := expectations.get(artifact_name):
-            if previous == expectation:
-                raise RuntimeError(
-                    f"Duplicate release producer for artifact {artifact_name}"
-                )
-            raise RuntimeError(f"Conflicting release producers for {artifact_name}")
+        if artifact_name in expectations:
+            raise RuntimeError(
+                f"Duplicate release producer for artifact {artifact_name}"
+            )
         expectations[artifact_name] = expectation
 
     if not expectations:

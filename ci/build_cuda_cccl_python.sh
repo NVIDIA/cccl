@@ -169,14 +169,16 @@ done
 # metapackage wheels built by the CUDA 12 producer.
 find wheelhouse -maxdepth 1 -name 'cuda_compute-*.cu*.whl' -delete
 
-# Move only the final repaired merged wheel
-if ls wheelhouse_final/cuda_compute-*.whl 1> /dev/null 2>&1; then
-    mv wheelhouse_final/cuda_compute-*.whl wheelhouse/
-    echo "Final merged wheel moved to wheelhouse"
-else
-    echo "No final repaired wheel found, moving unrepaired merged wheel"
-    mv wheelhouse_merged/cuda_compute-*.whl wheelhouse/
+# Move exactly one repaired merged wheel. A raw linux-tagged wheel is not a
+# releasable fallback when auditwheel produces no output.
+shopt -s nullglob
+repaired_wheels=(wheelhouse_final/cuda_compute-*.whl)
+if [[ "${#repaired_wheels[@]}" -ne 1 ]]; then
+    echo "Expected exactly one repaired cuda-compute wheel, found ${#repaired_wheels[@]}" >&2
+    exit 1
 fi
+mv "${repaired_wheels[0]}" wheelhouse/
+echo "Final repaired merged wheel moved to wheelhouse"
 
 # Clean up temporary directories
 rm -rf wheelhouse_merged wheelhouse_final

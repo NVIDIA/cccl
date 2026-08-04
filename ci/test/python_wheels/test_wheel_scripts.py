@@ -318,7 +318,7 @@ class WheelScriptTests(unittest.TestCase):
                 wheelhouse,
                 version,
                 (
-                    f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",
+                    f"cuda_compute-{version}-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                     f"cuda_compute-{version}-cp312-cp312-win_amd64.whl",
                 ),
             )
@@ -341,7 +341,9 @@ class WheelScriptTests(unittest.TestCase):
             _write_coordinated_wheel_set(
                 wheelhouse,
                 version,
-                (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
+                (
+                    f"cuda_compute-{version}-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                ),
             )
             workflow = wheelhouse / "workflow.json"
             _write_workflow(
@@ -354,6 +356,27 @@ class WheelScriptTests(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "Missing cuda-compute wheels"):
                 self.validator.validate(wheelhouse, workflow)
+
+    def test_rejects_unrepaired_linux_compute_wheel(self):
+        for platform_tag in ("linux_x86_64", "musllinux_1_2_x86_64"):
+            with (
+                self.subTest(platform_tag=platform_tag),
+                tempfile.TemporaryDirectory() as temp,
+            ):
+                wheelhouse = Path(temp)
+                version = "1.2.3"
+                _write_coordinated_wheel_set(
+                    wheelhouse,
+                    version,
+                    (f"cuda_compute-{version}-cp312-cp312-{platform_tag}.whl",),
+                )
+                workflow = wheelhouse / "workflow.json"
+                _write_workflow(workflow, (("linux", "amd64", "3.12"),))
+
+                with self.assertRaisesRegex(
+                    RuntimeError, "does not match exactly one producer"
+                ):
+                    self.validator.validate(wheelhouse, workflow)
 
     def test_rejects_duplicate_compute_compatibility_tags(self):
         with tempfile.TemporaryDirectory() as temp:
