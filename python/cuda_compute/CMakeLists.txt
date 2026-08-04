@@ -208,6 +208,13 @@ target_link_libraries(
     ${_cccl_c_parallel_target}
     CUDA::cuda_driver
 )
-set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
+set_target_properties(
+  _bindings_impl
+  PROPERTIES
+    # Keep the link-time GNU build ID independent of the build directory while
+    # preserving a working relative RPATH for editable builds.
+    BUILD_RPATH_USE_ORIGIN TRUE
+    INSTALL_RPATH "$ORIGIN/cccl"
+)
 
 install(TARGETS _bindings_impl DESTINATION cuda/compute/${CUDA_VERSION_DIR})

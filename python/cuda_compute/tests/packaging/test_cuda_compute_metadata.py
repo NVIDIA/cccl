@@ -214,6 +214,13 @@ def test_wheel_and_editable_builds_use_separate_cmake_trees() -> None:
     )
 
 
+def test_extension_build_rpath_is_relocatable() -> None:
+    compute_cmake = (PROJECT_ROOT / "CMakeLists.txt").read_text()
+
+    assert "BUILD_RPATH_USE_ORIGIN TRUE" in compute_cmake
+    assert 'INSTALL_RPATH "$ORIGIN/cccl"' in compute_cmake
+
+
 def test_redistributed_header_licenses_are_packaged() -> None:
     with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
         metadata = tomllib.load(stream)
