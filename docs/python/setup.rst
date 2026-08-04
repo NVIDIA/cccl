@@ -50,6 +50,10 @@ For a minimal install without Numba (useful when you supply your own
    pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
    pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 
+Free-threaded Python support is currently validated with the ``minimal-cu12``
+and ``minimal-cu13`` extras. The full ``cu12`` and ``cu13`` extras depend on
+Numba CUDA and are not currently supported in free-threaded Python.
+
 Install from conda-forge
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,6 +75,10 @@ For development or to access the latest features:
    git clone https://github.com/NVIDIA/cccl.git
    cd cccl/python/cuda_cccl
    pip install -e .[test-cu13]  # or .[test-cu12], .[test-sysctk13], .[test-sysctk12]
+
+The test extras do not install CuPy. To also run the CuPy-based
+``cuda.compute`` examples, install CuPy separately, for example
+``pip install cupy-cuda13x``.
 
 
 Development Setup
@@ -96,4 +104,3 @@ Next Steps
 Now that you have ``cuda-cccl`` installed, check out:
 
 * :doc:`compute/index` - Parallel computing primitives for operations on arrays or data ranges
-* :doc:`coop` - Block and warp-level cooperative algorithms for building custom CUDA kernels with Numba

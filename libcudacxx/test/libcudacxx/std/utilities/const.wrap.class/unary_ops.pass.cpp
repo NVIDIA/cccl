@@ -244,7 +244,7 @@ TEST_FUNC constexpr bool test()
     static_assert(result4 == !42);
 
     // gcc < 13 fails this test with error:
-    //  the address of ‘cuda::std::__4::__cw_fixed_value<int>{42}’ is not a valid template argument
+    //  the address of 'cuda::std::__4::__cw_fixed_value<int>{42}' is not a valid template argument
 #if !_CCCL_COMPILER(GCC, <, 13)
     cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>> decltype(auto) result5 = &cw42;
     static_assert(result5 == &cw42.value);

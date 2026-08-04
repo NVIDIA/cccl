@@ -131,10 +131,10 @@ public:
       __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __parent.hierarchy());
     }
 
-    if (__mapping_result.is_valid() && __mapping_result.rank() == 0 && __thread_rank_in_unit == 0)
+    if (__mapping_result.is_valid() && __mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
     {
       init(&__barriers_[__mapping_result.group_rank()],
-           static_cast<::cuda::std::ptrdiff_t>(__mapping_result.count() * __nthread_in_unit));
+           static_cast<::cuda::std::ptrdiff_t>(__mapping_result.unit_count() * __nthread_in_unit));
     }
 
     // todo(dabayer): How we can expose making this aligned?
@@ -144,11 +144,12 @@ public:
 };
 
 template <class _Barrier, ::cuda::std::size_t _Np>
-_CCCL_DEVICE barrier_synchronizer(::cuda::std::span<_Barrier, _Np>) -> barrier_synchronizer<_Barrier, _Np>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(::cuda::std::span<_Barrier, _Np>)
+  -> barrier_synchronizer<_Barrier, _Np>;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_spannable<_Tp&> _CCCL_AND(!::cuda::std::__is_cuda_std_span_v<::cuda::std::remove_cv_t<_Tp>>))
-_CCCL_DEVICE barrier_synchronizer(_Tp&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(_Tp&)
   -> barrier_synchronizer<_SpanElementType<decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))>,
                           decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))::extent>;
 } // namespace cuda::experimental

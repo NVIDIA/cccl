@@ -24,6 +24,9 @@
 
 #include <cuda/__ptx/ptx_dot_variants.h>
 #include <cuda/__ptx/ptx_helper_functions.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends

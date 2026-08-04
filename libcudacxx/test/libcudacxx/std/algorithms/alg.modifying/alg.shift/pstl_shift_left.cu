@@ -47,7 +47,8 @@ void test_shift_left(const Policy& policy, c2h::device_vector<T>& input)
   }
 
   { // Shift larger than size does nothing
-    auto res = cuda::std::shift_left(policy, input.begin(), input.end(), size + 1);
+    auto res =
+      cuda::std::shift_left(policy, input.begin(), input.end(), size + 1); // NOLINT(bugprone-misplaced-widening-cast)
     CHECK(cuda::std::equal(policy, input.begin(), input.end(), expected_none));
     CHECK(res == input.begin());
   }

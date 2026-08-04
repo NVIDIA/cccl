@@ -753,6 +753,23 @@ struct pointer_t
   }
 };
 
+// std::vector<bool> cannot provide the contiguous storage needed by pointer_t.
+// Use byte storage for Boolean inputs and outputs while describing it to the C
+// API as its corresponding primitive type.
+inline cccl_iterator_t make_boolean_iterator(pointer_t<uint8_t>& storage)
+{
+  static_assert(sizeof(bool) == sizeof(uint8_t));
+  static_assert(alignof(bool) == alignof(uint8_t));
+
+  cccl_iterator_t iterator      = storage;
+  iterator.size                 = sizeof(bool);
+  iterator.alignment            = alignof(bool);
+  iterator.value_type.size      = sizeof(bool);
+  iterator.value_type.alignment = alignof(bool);
+  iterator.value_type.type      = cccl_type_enum::CCCL_BOOLEAN;
+  return iterator;
+}
+
 struct operation_t
 {
   std::string name;

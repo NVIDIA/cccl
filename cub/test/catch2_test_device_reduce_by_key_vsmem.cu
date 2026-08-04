@@ -7,7 +7,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -19,7 +19,7 @@ using large_type_list =
   c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<256>::type>,
                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<512>::type>>;
 
-C2H_TEST("Device reduce-by-key works with huge keys", "[by_key][reduce][device]", large_type_list)
+CUB_TEST("Device reduce-by-key works with huge keys", "[by_key][reduce][device]", CUB_SMALL, large_type_list)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using value_t  = std::uint32_t;

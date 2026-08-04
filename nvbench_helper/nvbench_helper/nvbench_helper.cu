@@ -16,7 +16,9 @@
 
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/__floating_point/cuda_fp_types.h> // __half, __nv_bfloat16
 #include <cuda/std/bit>
+#include <cuda/type_traits>
 
 #include <cstdint>
 #include <random>
@@ -130,7 +132,7 @@ struct random_to_item_t
 
   __host__ __device__ T operator()(double random_value) const
   {
-    if constexpr (std::is_floating_point_v<T>)
+    if constexpr (::cuda::is_floating_point_v<T>)
     {
       return static_cast<T>((m_max - m_min) * random_value + m_min);
     }
@@ -190,6 +192,22 @@ struct and_t
     const std::uint64_t result = cuda::std::bit_cast<std::uint64_t>(a) & cuda::std::bit_cast<std::uint64_t>(b);
     return cuda::std::bit_cast<double>(result);
   }
+
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __half operator()(__half a, __half b) const
+  {
+    const std::uint16_t result = cuda::std::bit_cast<std::uint16_t>(a) & cuda::std::bit_cast<std::uint16_t>(b);
+    return cuda::std::bit_cast<__half>(result);
+  }
+#endif // _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __nv_bfloat16 operator()(__nv_bfloat16 a, __nv_bfloat16 b) const
+  {
+    const std::uint16_t result = cuda::std::bit_cast<std::uint16_t>(a) & cuda::std::bit_cast<std::uint16_t>(b);
+    return cuda::std::bit_cast<__nv_bfloat16>(result);
+  }
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 
   template <typename T>
   __host__ __device__ cuda::std::complex<T> operator()(cuda::std::complex<T> a, cuda::std::complex<T> b) const
@@ -778,11 +796,15 @@ INSTANTIATE(uint64_t);
 
 #undef INSTANTIATE
 
+// Instantiates only the uniform data generators used by non-segmented benchmarks (e.g. Reduce/Scan/RadixSort).
+#define INSTANTIATE_GEN(TYPE)                                                                             \
+  template void detail::gen_device<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max); \
+  template void detail::gen_host<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max)
+
 #define INSTANTIATE(TYPE)                                                                                               \
   template void detail::gen_uniform_key_segments_host<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t);   \
   template void detail::gen_uniform_key_segments_device<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t); \
-  template void detail::gen_device<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max);               \
-  template void detail::gen_host<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max)
+  INSTANTIATE_GEN(TYPE)
 
 INSTANTIATE(bool);
 
@@ -805,4 +827,14 @@ INSTANTIATE(float);
 INSTANTIATE(double);
 INSTANTIATE(complex32);
 INSTANTIATE(complex64);
+
+// Extended floating-point types: only the uniform generators are needed (no segmented-sort key generators yet).
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+INSTANTIATE_GEN(__half);
+#endif
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+INSTANTIATE_GEN(__nv_bfloat16);
+#endif
+
 #undef INSTANTIATE
+#undef INSTANTIATE_GEN

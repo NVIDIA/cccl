@@ -18,7 +18,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 // %PARAM% TEST_LAUNCH lid 0
@@ -28,7 +28,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 // We cover types of various sizes smaller than 16 byte
 using value_types = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t>;
 
-C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value_types)
+CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_SMALL, value_types)
 {
   using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
@@ -67,6 +67,6 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value
 
   REQUIRE_THAT_QUIET(out_result_vec, Equals(expected_result));
 
-  const output_t out_sentinel = out_result[offset + num_items];
+  const output_t out_sentinel = out_result[offset + num_items]; // NOLINT(bugprone-misplaced-widening-cast)
   REQUIRE(out_sentinel == out_sentinel_value);
 }

@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
 
 struct SimpleClass
 {

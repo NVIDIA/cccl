@@ -11,7 +11,7 @@
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -19,7 +19,7 @@ template <class ReductionOpT, class AccumT, class KeyT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB reduce-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
@@ -31,7 +31,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][device]")
+CUB_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][device]", CUB_SMALL)
 {
   using key_t          = int;
   using value_t        = int;

@@ -59,19 +59,10 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   return keys1_begin;
 }
 
-//! Merges elements from two sorted sequences
-//! \tparam ItemsPerThread The number of elements to merge and write to \c output
-//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
-//! \param keys1_beg The index into \c keys_shared where the first sequence starts
-//! \param keys2_beg The index into \c keys_shared where the second sequence starts
-//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
-//! used.
-//! \param keys2_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
-//! used.
-//! \param output The output array
-//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
-template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+namespace detail
+{
+template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
@@ -88,7 +79,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
   KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
-  _CCCL_SORT_MAYBE_UNROLL()
+  _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
   for (int item = 0; item < ItemsPerThread; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -105,6 +96,49 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   }
 }
 
+template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
+  CompareOp compare_op)
+{
+  serial_merge<Unroll>(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+}
+} // namespace detail
+
+//! Merges elements from two sorted sequences
+//! \tparam ItemsPerThread The number of elements to merge and write to \c output
+//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
+//! \param keys1_beg The index into \c keys_shared where the first sequence starts
+//! \param keys2_beg The index into \c keys_shared where the second sequence starts
+//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param keys2_count The maximum number of keys to merge from the second sequence. One more item may be read but is
+//! not used.
+//! \param output The output array
+//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
+template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
+  CompareOp compare_op,
+  KeyT oob_default)
+{
+  detail::serial_merge(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
+}
+
 template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
@@ -116,7 +150,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+  detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 }
 
 /**
@@ -171,7 +205,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
  *   Provides a way of synchronizing threads. Should be derived from
  *   `BlockMergeSortStrategy`.
  */
-template <typename KeyT, typename ValueT, int NumThreads, int ItemsPerThread, typename SynchronizationPolicy>
+template <typename KeyT,
+          typename ValueT,
+          int NumThreads,
+          int ItemsPerThread,
+          typename SynchronizationPolicy,
+          bool _Unroll = true>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -401,7 +440,7 @@ public:
       //
       KeyT max_key = oob_default;
 
-      _CCCL_SORT_MAYBE_UNROLL()
+      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if (ItemsPerThread * linear_tid + item < valid_items)
@@ -419,7 +458,7 @@ public:
     //
     if (!IS_LAST_TILE || ItemsPerThread * linear_tid < valid_items)
     {
-      StableOddEvenSort(keys, items, compare_op);
+      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
     }
 
     // each thread has sorted keys
@@ -476,7 +515,7 @@ public:
       const int keys2_end_loc   = keys2_end;
       const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
       const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
-      SerialMerge(
+      detail::serial_merge<_Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,
@@ -775,20 +814,29 @@ private:
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */
-template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType, int BlockDimY = 1, int BlockDimZ = 1>
+template <typename KeyT,
+          int BlockDimX,
+          int ItemsPerThread,
+          typename ValueT = NullType,
+          int BlockDimY   = 1,
+          int BlockDimZ   = 1,
+          bool _Unroll    = true>
 class BlockMergeSort
-    : public BlockMergeSortStrategy<KeyT,
-                                    ValueT,
-                                    BlockDimX * BlockDimY * BlockDimZ,
-                                    ItemsPerThread,
-                                    BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>>
+    : public BlockMergeSortStrategy<
+        KeyT,
+        ValueT,
+        BlockDimX * BlockDimY * BlockDimZ,
+        ItemsPerThread,
+        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, _Unroll>,
+        _Unroll>
 {
 private:
   // The thread block size in threads
   static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
 
-  using BlockMergeSortStrategyT = BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort>;
+  using BlockMergeSortStrategyT =
+    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, _Unroll>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()

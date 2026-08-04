@@ -433,7 +433,9 @@ void fixed_size_segmented_sort_keys(
 
   // We materialize the offsets to reduce the number of kernel template specializations
   c2h::device_vector<cuda::std::int64_t> d_segment_offsets(num_segments + 1);
-  thrust::copy(segment_offsets_it, segment_offsets_it + (num_segments + 1), d_segment_offsets.begin());
+  thrust::copy(segment_offsets_it,
+               segment_offsets_it + (num_segments + 1), // NOLINT(bugprone-misplaced-widening-cast)
+               d_segment_offsets.begin());
 
   // Perform segmented sort
   auto d_segment_offsets_begin_it = d_segment_offsets.cbegin();

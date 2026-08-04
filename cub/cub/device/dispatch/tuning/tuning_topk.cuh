@@ -50,18 +50,18 @@ struct topk_policy
 {
   int threads_per_block;
   int items_per_thread;
-  int bits_per_pass;
   BlockLoadAlgorithm load_algorithm;
   BlockScanAlgorithm scan_algorithm;
+  int bits_per_pass;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const topk_policy& lhs, const topk_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.bits_per_pass == rhs.bits_per_pass && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.scan_algorithm == rhs.scan_algorithm;
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
+        && lhs.bits_per_pass == rhs.bits_per_pass;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -70,8 +70,8 @@ struct topk_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
   {
     return os << "topk_policy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .bits_per_pass = " << p.bits_per_pass
-              << ", .load_algorithm = " << p.load_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+              << ", .scan_algorithm = " << p.scan_algorithm << ", .bits_per_pass = " << p.bits_per_pass << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -94,13 +94,13 @@ struct policy_selector
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
       const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
-      return topk_policy{512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS};
+      return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
     }
 
     // Default tuning used on older architectures.
     const int items_per_thread =
       ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / key_size, 1, nominal_4b_items_per_thread);
-    return topk_policy{512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS};
+    return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
   }
 };
 

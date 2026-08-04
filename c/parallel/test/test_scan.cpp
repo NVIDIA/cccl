@@ -811,7 +811,7 @@ C2H_TEST("Scan works with no init value", "[scan]")
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("Scan build result has AoT metadata populated", "[scan][aot]")
+C2H_TEST("Scan build result has serialization metadata populated", "[scan][serialization]")
 {
   using T = int32_t;
 
@@ -854,7 +854,7 @@ C2H_TEST("Scan build result has AoT metadata populated", "[scan][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 
-C2H_TEST("Scan compile/load round-trip", "[scan][aot]")
+C2H_TEST("Scan compile/load round-trip", "[scan][serialization]")
 {
   using T = int32_t;
 
@@ -919,7 +919,7 @@ C2H_TEST("Scan compile/load round-trip", "[scan][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 
-C2H_TEST("Scan link_ltoir round-trip", "[scan][aot]")
+C2H_TEST("Scan link_ltoir round-trip", "[scan][serialization]")
 {
   using T = int32_t;
 
