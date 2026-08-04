@@ -28,6 +28,8 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
 
@@ -55,12 +57,6 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! other ranks. Sorting is not stable, and elements that compare equivalent may end up on any
 //! rank that the equivalent run spans.
 //!
-//! The algorithm is histogram sort with sampling, as described in "Histogram Sort with
-//! Sampling" by Harsh et al. (https://arxiv.org/abs/1803.01237). Each rank sorts its local
-//! keys, the ranks cooperatively refine splitters that partition the global sequence into
-//! per-rank buckets, the keys are exchanged accordingly, and each rank merges what it received
-//! before the result is rebalanced back to the original per-rank sizes.
-//!
 //! The communicators, environments, and input ranges are iterated in lockstep. Each tuple
 //! describes one local communicator rank. This overload is intended for a thread or process
 //! that owns multiple local GPUs. For example, if each process owns two GPUs, each process can
@@ -71,21 +67,14 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! All three outer ranges must have the same length. The algorithm caps lockstep iteration at
 //! the shortest range, but this must not be relied upon and may change at any time. Each input
 //! range must refer to writable device-accessible storage, and its iterators must be
-//! contiguous, since the ranges are handed to the communicator collectives directly. The input
-//! ranges must also be resizable, because a rank temporarily holds a different number of keys
-//! while they are re-partitioned. A no-init overload, `resize(size, cuda::no_init)` or
-//! `resize(size, thrust::no_init)`, is used when available and plain `resize(size)` otherwise,
-//! so a resizable device container such as `thrust::device_vector` qualifies while a fixed-size
-//! `cuda::device_buffer` does not. Passing an empty range of communicators is well defined and
-//! does nothing.
+//! contiguous.
 //!
 //! Every communicator rank must participate in the collective call, including ranks whose input
 //! range is empty. `__cmp` must describe the same strict weak ordering on every rank.
 //!
 //! Each environment supplies the *required* stream and optional memory resource for its local
-//! rank, and is also forwarded to the underlying CUB algorithms, so it may carry any parameters
-//! CUB recognizes. The results are ready once the work enqueued on the corresponding streams
-//! completes.
+//! rank, and is also forwarded to the underlying CUB algorithms, so it may carry any
+//! parameters CUB recognizes.
 //!
 //! @tparam _Policy The result policy. Currently only `distributed_t` is supported.
 //! @tparam _CommRange The range of communicators. Each element must model the communicator
@@ -129,7 +118,7 @@ void sort(const __result_policy_base<_Policy>& __policy,
   using _Tp =
     ::cuda::std::ranges::range_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputRange>>>;
 
-  ::cuda::experimental::__detail::__hss_sort::_HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
+  ::cuda::experimental::__detail::__hss_sort::_HSSSorter<_Tp, _Env, ::cuda::std::remove_cvref_t<_BinaryOp>>::__execute(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
@@ -158,12 +147,10 @@ void sort(const __result_policy_base<_Policy>& __policy,
 //! issuing them serially on one thread deadlocks. Prefer the range overload in that case.
 //!
 //! `__input` must refer to writable device-accessible storage and its iterators must be
-//! contiguous, since the range is handed to the communicator collectives directly. It must also
-//! be resizable, as described in the range overload.
+//! contiguous, since the range is handed to the communicator collectives directly.
 //!
 //! The environment supplies the stream and optional memory resource for the local rank, and is
-//! also forwarded to the underlying CUB algorithms. The results are ready once the work
-//! enqueued on that stream completes.
+//! also forwarded to the underlying CUB algorithms.
 //!
 //! @tparam _Policy The result policy. Currently only `distributed_t` is supported.
 //! @tparam _Comm The communicator type. Must model the communicator concept.

@@ -138,7 +138,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   const auto __N                = __setup.__N;
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__buffer_type<_Tp>> __local_rebalanced;
+  ::std::vector<__resizable_buffer_type<_Tp>> __local_rebalanced;
 
   constexpr ::cuda::std::size_t __send_counts_column = 0;
   constexpr ::cuda::std::size_t __send_displs_column = 1;

@@ -22,7 +22,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__container/buffer.h>
 #include <cuda/__container/resizable_buffer.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__optional/optional.h>
@@ -71,30 +70,22 @@ struct _PerCommSplitters
 template <class _Tp, template <class> class _Buffer>
 struct _PerCommSamplingScratch
 {
-  _Buffer<_Tp> __samples;
-  // A size-1 (or __comm_size if on root) array that holds the actual sizes of __samples as it
-  // is filled on the device, so __samples.size() is not necessarily accuracte.
+  // Holds every rank's samples in one fixed-capacity slot per rank, laid out in rank order.
+  // This rank samples straight into its own slot and the all-gather fills the others, so no
+  // separate per-rank sample buffer is needed. Slots are sized to an upper bound, so each one
+  // is only partly filled; __samples_size says by how much.
+  _Buffer<_Tp> __all_samples;
+  // A __comm_size array that holds how many samples each rank actually drew, so that
+  // __samples_size[rank] gives the filled length of that rank's slot. Written on the device by
+  // the sampling kernel, then all-gathered.
   _Buffer<::cuda::std::size_t> __samples_size;
-  // Slot 0 is the probe count, slot 1 is the sample sendcount. They share one allocation but
-  // cannot share one slot: round j's sendcount is read by round j+1, after round j writes the
-  // probe count.
-  ::cuda::buffer<::cuda::std::uint64_t, ::cuda::mr::device_accessible, ::cuda::mr::host_accessible> __counts;
-
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::uint64_t* __probe_count_ptr() noexcept
-  {
-    return __counts.data();
-  }
-
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::uint64_t* __sample_sendcount_ptr() noexcept
-  {
-    return __counts.data() + 1;
-  }
 };
 
 template <template <class> class _Buffer>
 struct _LocalSetupResult
 {
   ::std::vector<_Buffer<::cuda::std::uint64_t>> __all_local_offsets{};
+  ::std::vector<::cuda::std::uint64_t> __all_local_sizes{};
   ::cuda::std::uint64_t __N{};
   ::cuda::std::int32_t __comm_size{};
 };
@@ -123,14 +114,14 @@ public:
 
   // The size/capacity-aware device buffer type for element type `_Up`.
   template <class _Up>
-  using __buffer_type _CCCL_NODEBUG =
+  using __resizable_buffer_type _CCCL_NODEBUG =
     typename __resource_type::default_queries::template rebind<::cuda::__resizable_buffer, _Up>;
 
-  using __per_comm_splitters_type _CCCL_NODEBUG            = _PerCommSplitters<_Tp, __buffer_type>;
-  using __per_comm_sampling_scratch_type _CCCL_NODEBUG     = _PerCommSamplingScratch<_Tp, __buffer_type>;
-  using __local_setup_result_type _CCCL_NODEBUG            = _LocalSetupResult<__buffer_type>;
-  using __per_comm_histogramming_result_type _CCCL_NODEBUG = _PerCommHistogrammingResult<_Tp, __buffer_type>;
-  using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<_Tp, __buffer_type>;
+  using __per_comm_splitters_type _CCCL_NODEBUG            = _PerCommSplitters<_Tp, __resizable_buffer_type>;
+  using __per_comm_sampling_scratch_type _CCCL_NODEBUG     = _PerCommSamplingScratch<_Tp, __resizable_buffer_type>;
+  using __local_setup_result_type _CCCL_NODEBUG            = _LocalSetupResult<__resizable_buffer_type>;
+  using __per_comm_histogramming_result_type _CCCL_NODEBUG = _PerCommHistogrammingResult<_Tp, __resizable_buffer_type>;
+  using __data_exchange_result_type _CCCL_NODEBUG          = _DataExchangeResult<_Tp, __resizable_buffer_type>;
 
 private:
   template <class _CommRange, class _EnvRange, class _InputRange>
@@ -155,8 +146,9 @@ private:
     ::cuda::std::int32_t __j,
     double __sampling_probability,
     const _BinaryOp& __cmp,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
-    const ::std::vector<__per_comm_histogramming_result_type>& __local_hist_results);
+    const ::std::vector<__per_comm_histogramming_result_type>& __local_hist_results,
+    ::cuda::std::span<const ::cuda::std::size_t> __cap_displs,
+    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   template <class _CommRange, class _EnvRange>
   [[nodiscard]]
@@ -164,29 +156,19 @@ private:
                                           ::std::vector<__per_comm_histogramming_result_type>>
   __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs);
 
-  template <class _CommRange, class _EnvRange>
+  template <class _CommRange>
   _CCCL_HOST_API static void __exchange_sample_counts(
     _CommRange&& __comms,
-    _EnvRange&& __envs,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
-    ::std::vector<::cuda::std::size_t>* __root_recvcounts,
-    ::std::vector<::cuda::std::size_t>* __root_displs,
-    ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples);
+    ::cuda::std::span<::cuda::std::size_t> __h_recvcounts,
+    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   template <class _CommRange, class _EnvRange>
   _CCCL_HOST_API static void __gather_and_merge_probes(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     const _BinaryOp& __cmp,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
-    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results,
-    const ::std::vector<::cuda::std::size_t>& __root_recvcounts,
-    const ::std::vector<::cuda::std::size_t>& __root_displs,
-    ::cuda::std::optional<__buffer_type<_Tp>>* __root_all_samples);
-
-  template <class _CommRange>
-  _CCCL_HOST_API static void __distribute_probes(
-    _CommRange&& __comms,
+    ::cuda::std::span<const ::cuda::std::size_t> __h_recvcounts,
+    ::cuda::std::span<const ::cuda::std::size_t> __h_cap_displs,
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
     ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
@@ -208,7 +190,7 @@ private:
   // ------------------------------------------------------------------------------------------
 
   template <class _CommRange, class _EnvRange, class _InputRange>
-  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__buffer_type<::cuda::std::size_t>>
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>
   __compute_send_counts_and_offsets(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
@@ -216,14 +198,14 @@ private:
     _InputRange&& __local_inputs,
     const _BinaryOp& __cmp,
     const ::std::vector<__per_comm_histogramming_result_type>& __hist_results,
-    ::std::vector<__buffer_type<::cuda::std::uint64_t>>* __local_current_offsets);
+    ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets);
 
   template <class _CommRange, class _EnvRange>
-  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__buffer_type<_Tp>> __make_recv_buffers(
+  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__resizable_buffer_type<_Tp>> __make_recv_buffers(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     ::cuda::std::size_t __comm_size,
-    const ::std::vector<__buffer_type<::cuda::std::size_t>>& __local_counts,
+    const ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>& __local_counts,
     ::std::vector<::cuda::std::size_t>* __h_counts);
 
   template <class _CommRange, class _EnvRange, class _InputRange>
@@ -241,11 +223,11 @@ private:
   _CCCL_HOST_API static void __merge_k_way(
     const _Comm& __comm,
     const _Env& __env,
-    const __buffer_type<_Tp>& __data,
+    const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,
     ::cuda::std::span<const ::cuda::std::size_t> __displs,
     const _BinaryOp& __cmp,
-    __buffer_type<_Tp>* __ret);
+    __resizable_buffer_type<_Tp>* __ret);
 
   // ------------------------------------------------------------------------------------------
 

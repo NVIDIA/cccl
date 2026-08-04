@@ -49,8 +49,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //!
 //! Top-level entry point that sequences the histogram-sort-with-sampling phases. Implements
 //! the algorithm defined in "Histogram Sort with Sampling" by Harsh
-//! et. al. (arxiv.org/abs/1803.01237, alternatively
-//! dl.acm.org/doi/10.1145/3323165.3323184)
+//! et. al. (arxiv.org/abs/1803.01237, alternatively dl.acm.org/doi/10.1145/3323165.3323184)
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _Policy, class _CommRange, class _EnvRange, class _InputRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(

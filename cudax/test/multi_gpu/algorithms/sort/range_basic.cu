@@ -78,9 +78,9 @@ MULTI_GPU_TEST("sort documentation example", c2h::type_list<int>)
 {
   auto comms = this->communicators();
 
-  if (comms.size() < 2)
+  if (comms.size() != 2)
   {
-    SKIP("The sort documentation example requires at least two local GPUs");
+    SKIP("The sort documentation example requires exactly two local GPUs");
   }
 
   auto streams_owned = nccl_test_util::make_streams();
@@ -88,9 +88,7 @@ MULTI_GPU_TEST("sort documentation example", c2h::type_list<int>)
   auto streams = std::vector<cuda::stream_ref>{streams_owned.begin(), streams_owned.end()};
 
   //! [sort]
-  // Rank 0 holds {3, 1} and rank 1 holds {4, 2}, so the global sequence is {3, 1, 4, 2}. Each
-  // input range keeps its original size: the sort re-partitions the keys across the ranks and
-  // restores the per-rank sizes before it writes the results back.
+  // Rank 0 holds {3, 1} and rank 1 holds {4, 2}, so the global sequence is {3, 1, 4, 2}.
   std::vector<cuda::device_buffer<int>> inputs;
 
   for (cuda::std::size_t i = 0; i < comms.size(); ++i)

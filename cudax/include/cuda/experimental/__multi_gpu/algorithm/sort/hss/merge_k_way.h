@@ -25,6 +25,7 @@
 #include <cub/device/device_merge.cuh>
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__multi_gpu/algorithm/common.h>
@@ -49,15 +50,17 @@ template <class _Comm>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   const _Comm& __comm,
   const _Env& __env,
-  const __buffer_type<_Tp>& __data,
+  const __resizable_buffer_type<_Tp>& __data,
   ::cuda::std::span<const ::cuda::std::size_t> __counts,
   ::cuda::std::span<const ::cuda::std::size_t> __displs,
   const _BinaryOp& __cmp,
-  __buffer_type<_Tp>* __ret)
+  __resizable_buffer_type<_Tp>* __ret)
 {
   _CCCL_VERIFY(__counts.size() > 1, "We should never get here for single-node. We should have exited earlier.");
 
-  const auto __total = __counts.back() + __displs.back();
+  // __displs may be a capacity layout with gaps between the runs, so the merged size is the sum
+  // of the run lengths, not the end of the last run.
+  const auto __total = ::cuda::std::accumulate(__counts.begin(), __counts.end(), ::cuda::std::size_t{0});
 
   __ret->resize_discard(__ret->stream(), __total, ::cuda::no_init);
 
@@ -77,7 +80,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   if (__counts.size() > 2)
   {
     ::cuda::std::size_t __merged_size = __counts[0] + __counts[1];
-    auto __tmp_buf                    = __buffer_type<_Tp>{
+    auto __tmp_buf                    = __resizable_buffer_type<_Tp>{
       __ret->stream(),
       __ret->memory_resource(),
       __total,
