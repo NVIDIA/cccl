@@ -16,6 +16,7 @@ CUDA-specific bindings. See `compute/_bindings.py` for more details.
 """
 
 import argparse
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -63,9 +64,17 @@ def _is_cuda_major_payload(path: Path) -> bool:
     return cuda_directory.startswith("cu") and cuda_directory[2:].isdigit()
 
 
-def _shared_logical_contents(root: Path) -> dict[Path, bytes]:
+def _file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _shared_logical_contents(root: Path) -> dict[Path, str]:
     """Return payload that must be identical in every CUDA-major wheel."""
-    contents: dict[Path, bytes] = {}
+    contents: dict[Path, str] = {}
     for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
@@ -75,7 +84,7 @@ def _shared_logical_contents(root: Path) -> dict[Path, bytes]:
         # wheel pack regenerates RECORD after the CUDA-major trees are merged.
         if relative.name == "RECORD" and relative.parent.name.endswith(".dist-info"):
             continue
-        contents[relative] = path.read_bytes()
+        contents[relative] = _file_digest(path)
     return contents
 
 

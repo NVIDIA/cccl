@@ -91,6 +91,10 @@ def _write_coordinated_wheel_set(
             {
                 f"cuda_compute-{version}.dist-info/METADATA": (
                     f"Name: cuda-compute\nVersion: {version}\n"
+                    "Requires-Dist: numpy\n"
+                    "Requires-Dist: cuda-pathfinder>=1.2.3\n"
+                    "Requires-Dist: cuda-core\n"
+                    "Requires-Dist: typing_extensions\n"
                     f"Requires-Dist: cccl-headers=={version}\n"
                 ),
                 "cuda/compute/__init__.py": "",
@@ -411,6 +415,60 @@ class WheelScriptTests(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(RuntimeError, "Unexpected wheels"):
+                self.validator.validate(wheelhouse)
+
+    def test_rejects_compute_wheel_missing_runtime_dependencies(self):
+        with tempfile.TemporaryDirectory() as temp:
+            wheelhouse = Path(temp)
+            version = "1.2.3"
+            compute_wheel = (
+                wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
+            )
+            _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
+            _write_wheel(
+                compute_wheel,
+                {
+                    f"cuda_compute-{version}.dist-info/METADATA": (
+                        f"Name: cuda-compute\nVersion: {version}\n"
+                        f"Requires-Dist: cccl-headers=={version}\n"
+                    ),
+                    "cuda/compute/__init__.py": "",
+                },
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "missing runtime dependencies"):
+                self.validator.validate(wheelhouse)
+
+    def test_rejects_marker_guarded_coordinated_dependencies(self):
+        with tempfile.TemporaryDirectory() as temp:
+            wheelhouse = Path(temp)
+            version = "1.2.3"
+            compute_wheel = (
+                wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
+            )
+            _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
+            guarded_requirements = (
+                "numpy",
+                "cuda-pathfinder>=1.2.3",
+                "cuda-core",
+                "typing_extensions",
+                f"cccl-headers=={version}",
+            )
+            _write_wheel(
+                compute_wheel,
+                {
+                    f"cuda_compute-{version}.dist-info/METADATA": (
+                        f"Name: cuda-compute\nVersion: {version}\n"
+                        + "".join(
+                            f'Requires-Dist: {requirement}; extra == "never"\n'
+                            for requirement in guarded_requirements
+                        )
+                    ),
+                    "cuda/compute/__init__.py": "",
+                },
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "missing runtime dependencies"):
                 self.validator.validate(wheelhouse)
 
     def test_monolithic_to_split_migration_sequence(self):

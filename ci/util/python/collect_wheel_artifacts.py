@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -24,9 +25,16 @@ from wheel_release_expectations import (
 _RELEASE_ARTIFACT = re.compile(r"wheel-cccl-(?:linux|windows)-[^/]+-py[^/]+")
 
 
-def _logical_contents(wheel: Path) -> dict[str, bytes]:
+def _logical_contents(wheel: Path) -> dict[str, str]:
     with zipfile.ZipFile(wheel) as archive:
-        return {name: archive.read(name) for name in sorted(archive.namelist())}
+        contents = {}
+        for name in sorted(archive.namelist()):
+            digest = hashlib.sha256()
+            with archive.open(name) as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            contents[name] = digest.hexdigest()
+        return contents
 
 
 def _artifact_name(source: Path, wheel: Path) -> str | None:

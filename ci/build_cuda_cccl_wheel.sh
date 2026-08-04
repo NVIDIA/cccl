@@ -117,6 +117,7 @@ fi
 # Build the two universal wheels in only one of the CUDA-major containers.
 # They are included beside the platform wheel so every test artifact is a
 # self-contained local dependency wheelhouse.
+mkdir -p /workspace/wheelhouse
 if [[ "${BUILD_UNIVERSAL_WHEELS:-1}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   for package in cccl_headers cuda_cccl; do
     package_dir="/workspace/python/${package}"
@@ -146,5 +147,4 @@ for wheel in dist/cuda_compute-*.whl; do
 done
 
 # Move wheel to output directory
-mkdir -p /workspace/wheelhouse
 mv dist/cuda_compute-*.cu*.whl /workspace/wheelhouse/

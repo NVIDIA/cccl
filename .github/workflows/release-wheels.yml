@@ -88,14 +88,39 @@ jobs:
             echo "::error::Run ${RUN_ID} is not a manually dispatched ${REPOSITORY} run"
             exit 1
           fi
-          if [[ "${head_branch}" != "${DEFAULT_BRANCH}" && \
-                ! "${head_branch}" =~ ^python-[0-9]+\.[0-9]+\.[0-9]+-release$ ]]; then
-            echo "::error::Run ${RUN_ID} used unapproved source branch '${head_branch}'"
-            exit 1
-          fi
           if [[ ! "${head_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
             echo "::error::Run ${RUN_ID} has an invalid head SHA: ${head_sha}"
             exit 1
+          fi
+
+          if [[ "${head_branch}" != "${DEFAULT_BRANCH}" ]]; then
+            if [[ ! "${head_branch}" =~ ^python-[0-9]+\.[0-9]+\.[0-9]+-release$ ]]; then
+              echo "::error::Run ${RUN_ID} used unapproved source branch '${head_branch}'"
+              exit 1
+            fi
+
+            release_tag=${head_branch%-release}
+            tag_ref_json=$(gh api "repos/${REPOSITORY}/git/ref/tags/${release_tag}")
+            tag_object_type=$(jq -r '.object.type // ""' <<< "${tag_ref_json}")
+            tag_object_sha=$(jq -r '.object.sha // ""' <<< "${tag_ref_json}")
+            if [[ "${tag_object_type}" != "tag" || \
+                  ! "${tag_object_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              echo "::error::Release source must have an annotated tag named ${release_tag}"
+              exit 1
+            fi
+
+            tag_json=$(gh api "repos/${REPOSITORY}/git/tags/${tag_object_sha}")
+            tag_name=$(jq -r '.tag // ""' <<< "${tag_json}")
+            tag_target_type=$(jq -r '.object.type // ""' <<< "${tag_json}")
+            tag_target_sha=$(jq -r '.object.sha // ""' <<< "${tag_json}")
+            tag_verified=$(jq -r '.verification.verified // false' <<< "${tag_json}")
+            if [[ "${tag_name}" != "${release_tag}" || \
+                  "${tag_target_type}" != "commit" || \
+                  "${tag_target_sha}" != "${head_sha}" || \
+                  "${tag_verified}" != "true" ]]; then
+              echo "::error::Run ${RUN_ID} is not at verified release tag ${release_tag}"
+              exit 1
+            fi
           fi
 
           compare_status=$(gh api \

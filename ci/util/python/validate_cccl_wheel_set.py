@@ -75,10 +75,25 @@ def _validate_identity(metadata, wheel: Path, expected_name: str) -> str:
 
 def _has_exact_requirement(requirements: list[str], name: str, version: str) -> bool:
     expected = f"{name}=={version}".lower()
-    return any(
-        requirement.partition(";")[0].replace(" ", "").lower() == expected
-        for requirement in requirements
-    )
+    for requirement in requirements:
+        requirement_text, separator, marker = requirement.partition(";")
+        if separator and marker.strip():
+            continue
+        if requirement_text.replace(" ", "").lower() == expected:
+            return True
+    return False
+
+
+def _requirement_names(requirements: list[str]) -> set[str]:
+    names = set()
+    for requirement in requirements:
+        requirement_text, separator, marker = requirement.partition(";")
+        if separator and marker.strip():
+            continue
+        match = re.match(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)", requirement_text)
+        if match:
+            names.add(_normalized_distribution_name(match.group(1)))
+    return names
 
 
 def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
@@ -157,6 +172,21 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
             observed_expectations.add(matching_expectations[0])
 
         compute_requirements = compute_metadata.get_all("Requires-Dist", [])
+        required_compute_dependencies = {
+            "cccl-headers",
+            "cuda-core",
+            "cuda-pathfinder",
+            "numpy",
+            "typing-extensions",
+        }
+        missing_compute_dependencies = (
+            required_compute_dependencies - _requirement_names(compute_requirements)
+        )
+        if missing_compute_dependencies:
+            raise RuntimeError(
+                f"{compute_wheel.name} is missing runtime dependencies: "
+                f"{sorted(missing_compute_dependencies)}"
+            )
         if not _has_exact_requirement(compute_requirements, "cccl-headers", version):
             raise RuntimeError(
                 f"{compute_wheel.name} does not exactly require "
