@@ -95,7 +95,7 @@ class philox_engine
   static_assert((0 < _WordSize && _WordSize <= numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
 
-  [[nodiscard]] _CCCL_API static constexpr auto __multipliers() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto __multipliers() noexcept
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -108,7 +108,7 @@ class philox_engine
     }
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto __round_consts() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto __round_consts() noexcept
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -131,12 +131,12 @@ public:
   static constexpr result_type default_seed = 20111115u;
 
   //! The smallest value this engine may potentially produce.
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return 0;
   }
   //! The largest value this engine may potentially produce.
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return ((result_type{1} << (word_size - 1)) | ((result_type{1} << (word_size - 1)) - 1));
   }
@@ -145,11 +145,11 @@ public:
   //! philox_engine.
   //!
   //! @param s The seed used to initialize this philox_engine's state.
-  _CCCL_API constexpr philox_engine() noexcept
+  _CCCL_HOST_DEVICE_API constexpr philox_engine() noexcept
   {
     seed(default_seed);
   }
-  _CCCL_API constexpr explicit philox_engine(const result_type __seed) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit philox_engine(const result_type __seed) noexcept
   {
     seed(__seed);
   }
@@ -165,7 +165,7 @@ public:
   //! a seed value.  If none is provided uses ``default_seed``.
   //!
   //! @param __s The seed used to initializes this philox_engine's state.
-  _CCCL_API constexpr void seed(result_type __s = default_seed) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(result_type __s = default_seed) noexcept
   {
     __x_    = {};
     __y_    = {};
@@ -217,7 +217,7 @@ public:
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
   //! @param __counter The counter.
-  _CCCL_API constexpr void set_counter(const array<result_type, word_count>& __counter) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void set_counter(const array<result_type, word_count>& __counter) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (size_t __j = 0; __j < word_count; ++__j)
@@ -231,7 +231,7 @@ public:
 
   //! This member function produces a new random value and updates this philox_engine's state.
   //! @return A new random number.
-  _CCCL_API constexpr result_type operator()() noexcept
+  _CCCL_HOST_DEVICE_API constexpr result_type operator()() noexcept
   {
     ++__j_;
     if (__j_ == word_count)
@@ -247,7 +247,7 @@ public:
   //! and discards the results. philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
   //!
   //! @param __z The number of random values to discard.
-  _CCCL_API constexpr void discard(unsigned long long __z) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void discard(unsigned long long __z) noexcept
   {
     // Advance __j_ until we are at n - 1
     auto __advance = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
@@ -291,7 +291,7 @@ public:
   //! @param lhs The first philox_engine to test.
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is equal to rhs; false, otherwise.
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const philox_engine& __lhs, const philox_engine& __rhs) noexcept
   {
     if (__lhs.__x_ != __rhs.__x_)
@@ -316,7 +316,7 @@ public:
   //! @param lhs The first philox_engine to test.
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is not equal to rhs; false, otherwise.
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const philox_engine& __lhs, const philox_engine& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -329,7 +329,7 @@ public:
   //! @param e The philox_engine to stream out.
   //! @return os
   template <typename _CharT, typename _Traits>
-  _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_DEVICE_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const philox_engine& __e)
   {
     using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
@@ -390,7 +390,7 @@ public:
   //! @param e The philox_engine to stream in.
   //! @return is
   template <typename _CharT, typename _Traits>
-  _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_DEVICE_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, philox_engine& __e)
   {
     using istream_type = ::std::basic_istream<_CharT, _Traits>;
@@ -430,7 +430,7 @@ public:
 #endif // _CCCL_HOSTED()
 
 private:
-  _CCCL_API constexpr void __increment_counter() noexcept
+  _CCCL_HOST_DEVICE_API constexpr void __increment_counter() noexcept
   {
     // Increment the big integer __x_ by 1, handling overflow.
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -444,7 +444,7 @@ private:
     }
   }
 
-  [[nodiscard]] static _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) noexcept
+  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) noexcept
   {
     // Generic slow implementation
     constexpr result_type __w_half  = word_size / 2;
@@ -467,7 +467,7 @@ private:
     return pair{__hi & max(), __lo & max()};
   }
 
-  static _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) noexcept
+  static _CCCL_HOST_DEVICE_API constexpr auto __mulhilo(result_type __a, result_type __b) noexcept
   {
     if constexpr (word_size == 32 || word_size == 64)
     {
@@ -482,7 +482,7 @@ private:
     }
   }
 
-  _CCCL_API constexpr void __philox() noexcept
+  _CCCL_HOST_DEVICE_API constexpr void __philox() noexcept
   {
     // Only two variants are allowed, n=2 or n=4
     array<result_type, word_count> __S     = __x_;

@@ -1062,6 +1062,17 @@ public:
         d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
       }
 
+      // Composite (localized) allocations cached by the popped context must
+      // not be destroyed with it: ~localized_array unmaps VMM backing with
+      // synchronous driver calls that no event can defer, and the body graph
+      // launched by finalize() may still be running. Hand the cache over to
+      // the parent, gated on the body's completion events: entries are then
+      // reused or released once the parent has synchronized with the nested
+      // work (the dangling-event registration below guarantees the parent's
+      // fence/finalize waits on the body graph).
+      parent_ctx.get_backend().get_composite_cache().import_from(
+        mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
+
       // Forward the body graph's completion event into the parent context.
       //
       // Without this, a graph_scope used purely for token ordering (no
