@@ -171,7 +171,6 @@ int main()
       // green domains (REPLICATED), axis 1 = two execution slots per domain
       // (SHARED). One instance per domain, shared by its two slots.
       {
-        context gctx;
         ::std::vector<exec_place> ps22;
         ps22.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,0)
         ps22.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,0)
@@ -188,19 +187,57 @@ int main()
         EXPECT(rep22.instance_of(3) == 1); // (1,1) shares domain 1's instance
         EXPECT(rep22.member(0) != rep22.member(1));
 
-        auto lgin  = gctx.logical_data(&ref[0], {n});
-        auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
-        gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
-            ->*[] __device__(size_t i, auto in, auto out) {
-                  out(i) = 4.0 * in(i);
-                };
-        gctx.host_launch(lgout.read())->*[&](auto out) {
-          for (size_t i = 0; i < n; i++)
+        context gctx;
+        // the grouped resolution is backend-agnostic: same launch on the
+        // stream and graph backends
+        for (int use_graph22 = 0; use_graph22 < 2; use_graph22++)
+        {
+          if (use_graph22)
           {
-            EXPECT(out(i) == 4.0 * ref[i]);
+            gctx = graph_ctx();
           }
-        };
-        gctx.finalize();
+          auto lgin  = gctx.logical_data(&ref[0], {n});
+          auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
+          gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
+              ->*[] __device__(size_t i, auto in, auto out) {
+                    out(i) = 4.0 * in(i);
+                  };
+          gctx.host_launch(lgout.read())->*[&](auto out) {
+            for (size_t i = 0; i < n; i++)
+            {
+              EXPECT(out(i) == 4.0 * ref[i]);
+            }
+          };
+          gctx.finalize();
+        }
+
+        // and inside a stackable conditional scope: the auto-push imports
+        // the data once, the nested acquire pins one instance per axis-0
+        // group
+        {
+          stackable_ctx sctx;
+          auto lsin  = sctx.logical_data(shape_of<slice<double>>(n)).set_symbol("g22in");
+          auto lsacc = sctx.logical_data(shape_of<slice<double>>(n)).set_symbol("g22acc");
+          sctx.parallel_for(lsin.shape(), lsin.write(), lsacc.write())->*[] __device__(size_t i, auto in, auto acc) {
+            in(i)  = static_cast<double>(i % 32);
+            acc(i) = 0.0;
+          };
+          const size_t iters22 = 6;
+          {
+            auto rg = sctx.repeat_graph_scope(iters22);
+            sctx.parallel_for(blocked_partition(), grid22, lsin.shape(), lsin.read(rep22), lsacc.rw())
+                ->*[] __device__(size_t i, auto in, auto acc) {
+                      acc(i) += in(i);
+                    };
+          }
+          sctx.host_launch(lsacc.read())->*[&](auto acc) {
+            for (size_t i = 0; i < n; i++)
+            {
+              EXPECT(acc(i) == static_cast<double>(iters22) * static_cast<double>(i % 32));
+            }
+          };
+          sctx.finalize();
+        }
 
         // shared axes require co-located fibers: a (2, 2) arrangement whose
         // axis-1 fiber crosses domains must be rejected at construction
@@ -220,7 +257,7 @@ int main()
           thrown22 = true;
         }
         EXPECT(thrown22);
-        printf("replicated data place: axis-grouped replication on a (2,2) grid OK\n");
+        printf("replicated data place: axis-grouped replication on a (2,2) grid OK (stream/graph/stackable)\n");
       }
     }
     else
