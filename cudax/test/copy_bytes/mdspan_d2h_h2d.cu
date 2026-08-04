@@ -295,7 +295,7 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
     {
       for (int k = 0; k < D2; ++k)
       {
-        expected[i + j * D0 + k * D0 * D1] = p++;
+        expected[i + static_cast<std::size_t>(j) * D0 + static_cast<std::size_t>(k) * D0 * D1] = p++;
       }
     }
   }
@@ -391,7 +391,7 @@ TEST_CASE("copy_bytes 2D strided, padded column-major", "[copy_bytes][2d][stride
   {
     for (int j = 0; j < N; ++j)
     {
-      input_data[i + j * Ld] = k++;
+      input_data[i + static_cast<std::size_t>(j) * Ld] = k++;
     }
   }
   using extents                    = cuda::std::extents<int, M, N>;
@@ -502,8 +502,8 @@ TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offs
   {
     for (int j = 0; j < N; ++j)
     {
-      input[SrcOffset + i * SrcLd + j]    = value;
-      expected[DstOffset + i + j * DstLd] = value;
+      input[SrcOffset + static_cast<std::size_t>(i) * SrcLd + j]    = value;
+      expected[DstOffset + i + static_cast<std::size_t>(j) * DstLd] = value;
       ++value;
     }
   }

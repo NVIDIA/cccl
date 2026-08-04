@@ -277,7 +277,7 @@ void TestCountingIteratorDifference()
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
   using Difference = thrust::detail::it_difference_t<Iterator>;
 
-  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1;
+  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1; // NOLINT(bugprone-misplaced-widening-cast)
 
   Iterator first(0);
   Iterator last = first + diff;

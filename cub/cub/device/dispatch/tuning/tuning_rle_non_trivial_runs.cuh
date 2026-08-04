@@ -31,8 +31,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
-struct RleNonTrivialRunsPolicy
+//! The lookback tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+struct RleNonTrivialRunsLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int items_per_thread; //!< Number of items processed per thread
@@ -44,8 +44,8 @@ struct RleNonTrivialRunsPolicy
   //! The @ref LookbackDelayPolicy controlling the delay between lookback iterations
   LookbackDelayPolicy lookback_delay = {LookbackDelayAlgorithm::fixed_delay, 350, 450};
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const RleNonTrivialRunsLookbackPolicy& lhs, const RleNonTrivialRunsLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -53,7 +53,64 @@ struct RleNonTrivialRunsPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const RleNonTrivialRunsLookbackPolicy& lhs, const RleNonTrivialRunsLookbackPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RleNonTrivialRunsLookbackPolicy& p)
+  {
+    return os
+        << "RleNonTrivialRunsLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .store_with_time_slicing = " << p.store_with_time_slicing
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The algorithm used by the non-trivial-runs policy.
+enum class RleNonTrivialRunsAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(RleNonTrivialRunsAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case RleNonTrivialRunsAlgorithm::lookback:
+      return "RleNonTrivialRunsAlgorithm::lookback";
+  }
+  return "<unknown RleNonTrivialRunsAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, RleNonTrivialRunsAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+struct RleNonTrivialRunsPolicy
+{
+  RleNonTrivialRunsAlgorithm algorithm; //!< The non-trivial-runs algorithm to use
+  RleNonTrivialRunsLookbackPolicy lookback; //!< The policy for the non-trivial-runs algorithm based on
+                                            //!< decoupled-lookback. Only used when @p algorithm is @lookback.
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -62,11 +119,7 @@ struct RleNonTrivialRunsPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const RleNonTrivialRunsPolicy& p)
   {
-    return os
-        << "RleNonTrivialRunsPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .store_with_time_slicing = " << p.store_with_time_slicing
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+    return os << "RleNonTrivialRunsPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -313,7 +366,7 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -330,7 +383,7 @@ struct policy_hub
   static auto select_agent_policy(long) ->
     typename DefaultPolicy<BLOCK_LOAD_WARP_TRANSPOSE, LengthT, LOAD_DEFAULT>::RleSweepPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
@@ -341,15 +394,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using RleSweepPolicyT = decltype(select_agent_policy<sm90_tuning<LengthT, KeyT>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
@@ -388,13 +441,14 @@ struct policy_selector
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
   bool key_is_trivially_copyable;
 
+private:
   _CCCL_HOST_DEVICE_API constexpr auto
   make_default_policy(BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) const
   {
     const int nominal_4B_items_per_thread = 15;
     const int items_per_thread =
       ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / key_size, 1, nominal_4B_items_per_thread);
-    return RleNonTrivialRunsPolicy{
+    return RleNonTrivialRunsLookbackPolicy{
       96,
       items_per_thread,
       block_load_alg,
@@ -405,8 +459,8 @@ struct policy_selector
         delay_ctor_key_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> RleNonTrivialRunsPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> RleNonTrivialRunsLookbackPolicy
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -415,7 +469,7 @@ struct policy_selector
         if (key_size == 1)
         {
           // ipt_20.tpb_224.trp_1.ts_0.ld_1.ns_64.dcid_2.l2w_315 1.119878  1.003690  1.130067  1.338983
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             224,
             20,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -427,7 +481,7 @@ struct policy_selector
         if (key_size == 2)
         {
           // ipt_20.tpb_224.trp_1.ts_0.ld_0.ns_116.dcid_7.l2w_340 1.146528  1.072769  1.152390  1.333333
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             224,
             20,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -439,7 +493,7 @@ struct policy_selector
         if (key_size == 4)
         {
           // ipt_13.tpb_224.trp_0.ts_0.ld_0.ns_252.dcid_2.l2w_470 1.113202  1.003690  1.133114  1.349296
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             224,
             13,
             BLOCK_LOAD_DIRECT,
@@ -451,7 +505,7 @@ struct policy_selector
         if (key_size == 8 && key_type != type_t::float64) // fall back to SM90 for double
         {
           // ipt_15.tpb_256.trp_1.ts_0.ld_0.ns_28.dcid_2.l2w_520 1.114944  1.033189  1.122360  1.252083
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             256,
             15,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -471,7 +525,7 @@ struct policy_selector
       {
         if (key_is_primitive && key_size == 1)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             256,
             18,
             BLOCK_LOAD_DIRECT,
@@ -482,7 +536,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 2)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             224,
             20,
             BLOCK_LOAD_DIRECT,
@@ -493,7 +547,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 4)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             256,
             18,
             BLOCK_LOAD_DIRECT,
@@ -504,7 +558,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 8)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             224,
             14,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -515,7 +569,7 @@ struct policy_selector
         }
         if (key_type == type_t::int128 || key_type == type_t::uint128)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             288,
             9,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -542,7 +596,7 @@ struct policy_selector
       {
         if (key_is_primitive && key_size == 1)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             192,
             20,
             BLOCK_LOAD_DIRECT,
@@ -553,7 +607,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 2)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             192,
             20,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -564,7 +618,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 4)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             224,
             15,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -575,7 +629,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 8)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             256,
             13,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -586,7 +640,7 @@ struct policy_selector
         }
         if (key_type == type_t::int128 || key_type == type_t::uint128)
         {
-          return RleNonTrivialRunsPolicy{
+          return RleNonTrivialRunsLookbackPolicy{
             192,
             13,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -602,6 +656,13 @@ struct policy_selector
 
     // default is from SM50
     return make_default_policy(BLOCK_LOAD_DIRECT, int{sizeof(int)}, LOAD_LDG);
+  }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> RleNonTrivialRunsPolicy
+  {
+    return RleNonTrivialRunsPolicy{RleNonTrivialRunsAlgorithm::lookback, get_lookback_policy(cc)};
   }
 };
 

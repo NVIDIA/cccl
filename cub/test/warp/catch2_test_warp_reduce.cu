@@ -18,7 +18,7 @@
 
 #include <test_util.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/operator.cuh>
@@ -214,8 +214,11 @@ void compute_host_reference(
   {
     for (int j = 0; j < logical_warps; ++j)
     {
-      auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread;
-      auto end                     = start + items_per_logical_warp * items_per_thread;
+      auto start =
+        h_in.begin()
+        + (i * warp_size + j * logical_warp_threads) * items_per_thread; // NOLINT(bugprone-misplaced-widening-cast)
+      auto end = start + static_cast<long>(items_per_logical_warp) * items_per_thread;
+      // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
       h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
     }
   }
@@ -236,7 +239,11 @@ std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned 
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]", full_type_list, logical_warp_threads)
+CUB_TEST("WarpReduce::Sum, full_type_list",
+         "[reduce][warp][predefined_op][full]",
+         CUB_SMALL,
+         full_type_list,
+         logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
@@ -253,8 +260,9 @@ C2H_TEST("WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("WarpReduce::Sum/Max/Min, builtin types",
+CUB_TEST("WarpReduce::Sum/Max/Min, builtin types",
          "[reduce][warp][predefined_op][full]",
+         CUB_SMALL,
          builtin_type_list,
          predefined_op_list,
          logical_warp_threads)
@@ -275,8 +283,9 @@ C2H_TEST("WarpReduce::Sum/Max/Min, builtin types",
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("WarpReduce::Max/Min, floating-point redux types",
+CUB_TEST("WarpReduce::Max/Min, floating-point redux types",
          "[reduce][warp][predefined_op][redux]",
+         CUB_SMALL,
          floating_point_redux_type_list,
          predefined_min_max_op_list,
          logical_warp_threads)
@@ -304,7 +313,7 @@ C2H_TEST("WarpReduce::Max/Min, floating-point redux types",
   }
 }
 
-C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_list, logical_warp_threads)
+CUB_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", CUB_SMALL, full_type_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
@@ -324,8 +333,9 @@ C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_lis
 //----------------------------------------------------------------------------------------------------------------------
 // partial
 
-C2H_TEST("WarpReduce::Sum/Max/Min Partial",
+CUB_TEST("WarpReduce::Sum/Max/Min Partial",
          "[reduce][warp][predefined_op][partial]",
+         CUB_SMALL,
          builtin_type_list,
          predefined_op_list,
          logical_warp_threads)
@@ -347,7 +357,7 @@ C2H_TEST("WarpReduce::Sum/Max/Min Partial",
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", full_type_list, logical_warp_threads)
+CUB_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", CUB_SMALL, full_type_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
@@ -368,8 +378,9 @@ C2H_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", full_type_list, 
 //----------------------------------------------------------------------------------------------------------------------
 // multiple items per thread
 
-C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
+CUB_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
          "[reduce][warp][predefined_op][full]",
+         CUB_SMALL,
          builtin_type_list,
          predefined_op_list,
          logical_warp_threads)

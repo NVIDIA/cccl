@@ -11,7 +11,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
@@ -65,7 +65,7 @@ type_quad<custom_t, custom_t, custom_t>
 // clang-format on
 #endif
 
-C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]", full_type_list)
+CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using key_t    = typename params::type_pair_t::key_t;
@@ -258,8 +258,9 @@ using key_alias_type_list = c2h::type_list<float>;
 using key_alias_type_list = c2h::type_list<custom_t>;
 #endif
 
-C2H_TEST("Device scan works when memory for keys and results alias one another",
+CUB_TEST("Device scan works when memory for keys and results alias one another",
          "[by_key][scan][device]",
+         CUB_SMALL,
          key_alias_type_list)
 {
   using key_t    = typename c2h::get<0, TestType>;

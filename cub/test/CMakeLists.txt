@@ -62,6 +62,29 @@ function(_cub_is_fail_test result_var test_src)
   endif()
 endfunction()
 
+## _cub_validate_non_catch2_memory_class
+#
+# Require a non-Catch2 runtime test to declare exactly one GPU memory class.
+function(_cub_validate_non_catch2_memory_class test_src)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
+  string(
+    REGEX MATCHALL
+    "CUB_TEST_MEMORY_CLASS\\([ \t\r\n]*(CUB_SMALL|CUB_LARGE)[ \t\r\n]*\\)"
+    memory_class_declarations
+    "${test_source}"
+  )
+  list(LENGTH memory_class_declarations memory_class_count)
+
+  if (NOT memory_class_count EQUAL 1)
+    message(
+      FATAL_ERROR
+      "${test_src} must declare exactly one of "
+      "CUB_TEST_MEMORY_CLASS(CUB_SMALL) or "
+      "CUB_TEST_MEMORY_CLASS(CUB_LARGE); found ${memory_class_count}."
+    )
+  endif()
+endfunction()
+
 ## _cub_launcher_requires_rdc
 #
 # If given launcher id corresponds to a CDP launcher, set `out_var` to 1.
@@ -172,6 +195,20 @@ function(
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
     endif()
 
+    if (
+      CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+      AND "${test_src}" MATCHES "test_device_transform_tile\\.cu$"
+    )
+      target_compile_options(
+        ${test_target}
+        PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>
+      )
+      target_compile_definitions(
+        ${test_target}
+        PRIVATE _CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+      )
+    endif()
+
     # enable lambdas for all API examples
     if ("${test_src}" MATCHES "test.+_api\\.cu$")
       target_compile_options(
@@ -203,6 +240,10 @@ function(
     endif()
   else() # Not catch2:
     _cub_is_fail_test(is_fail_test "${test_src}")
+
+    if (NOT is_fail_test)
+      _cub_validate_non_catch2_memory_class("${test_src}")
+    endif()
 
     if (is_fail_test)
       cccl_add_executable(

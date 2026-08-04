@@ -5,7 +5,7 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
@@ -93,7 +93,8 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
   return reference;
 }
 
-C2H_TEST("Decoupled look-back works with various message types", "[decoupled look-back][device]", message_types)
+CUB_TEST(
+  "Decoupled look-back works with various message types", "[decoupled look-back][device]", CUB_SMALL, message_types)
 {
   using message_t         = typename c2h::get<0, TestType>;
   using scan_tile_state_t = cub::ScanTileState<message_t>;

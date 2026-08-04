@@ -14,9 +14,9 @@
 #include <iostream>
 
 #include "catch2_test_device_select_common.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-if-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -49,7 +49,7 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flagged-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -82,7 +82,7 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flaggedif-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -117,7 +117,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flagged-inplace-env
   auto data         = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -145,7 +145,7 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-if-inplace-env
   auto data         = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -173,7 +173,7 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flaggedif-inplace-env
   auto data         = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -207,7 +207,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-unique-env
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -234,7 +234,7 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-unique-eqop-env
   // Unique modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
@@ -272,7 +272,7 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
   REQUIRE(output == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-unique-inplace-env
   auto data         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -299,7 +299,9 @@ C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select]
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env with stream",
+         "[select][env]",
+         CUB_SMALL)
 {
   // example-begin select-unique-inplace-eqop-env
   // Unique modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
@@ -331,7 +333,7 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-uniquebykey-env
   auto keys_in      = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -369,7 +371,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equality_op", "[select][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equality_op", "[select][env]", CUB_SMALL)
 {
   // example-begin select-uniquebykey-default-eq-env
   // Same setup/expectations as the explicit equality_op test above, but relying on default equality.
@@ -408,7 +410,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts default env without equality_op", "[select][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts default env without equality_op", "[select][env]", CUB_SMALL)
 {
   // Same expectations as other UniqueByKey tests, but call the 6-arg overload.
   auto keys_in      = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -442,17 +444,18 @@ struct SelectPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
   {
-    return {.threads_per_block = 128,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,
-            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::SelectAlgorithm::lookback,
+            .lookback  = {.threads_per_block = 128,
+                          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,
+                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                          .load_modifier     = cub::LOAD_DEFAULT,
+                          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end select-if-policy-selector
 
-C2H_TEST("cub::DeviceSelect::If env-based API with tuning", "[select][env]")
+CUB_TEST("cub::DeviceSelect::If accepts a custom policy selector", "[select][env]", CUB_SMALL)
 {
   // example-begin select-if-tuning
   auto d_in           = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -492,12 +495,13 @@ struct UniqueByKeyPolicySelector
             .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
             .load_modifier     = cub::LOAD_DEFAULT,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+            .lookback_delay    = cub::LookbackDelayPolicy{
+                 .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   }
 };
 // example-end unique-by-key-policy-selector
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts a custom policy selector", "[select_unique_by_key][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts a custom policy selector", "[select_unique_by_key][env]", CUB_SMALL)
 {
   // example-begin unique-by-key-tuning
   auto keys_in          = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};

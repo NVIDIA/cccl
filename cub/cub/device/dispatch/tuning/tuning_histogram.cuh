@@ -40,7 +40,7 @@ struct HistogramPolicy
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
@@ -50,7 +50,7 @@ struct HistogramPolicy
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -214,7 +214,7 @@ struct policy_hub
   }
 
   // SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // TODO This might be worth it to separate usual histogram and the multi one
     using AgentHistogramPolicyT =
@@ -222,7 +222,7 @@ struct policy_hub
   };
 
   // SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy500>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy500>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy500
     template <typename Tuning>
@@ -245,7 +245,7 @@ struct policy_hub
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>

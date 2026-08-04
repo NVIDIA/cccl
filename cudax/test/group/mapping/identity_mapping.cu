@@ -56,9 +56,9 @@ __device__ void test_identity_mapping(Config config)
     CHECK(result.group_count() == prev_mapping_result.group_count());
     CHECK(result.group_rank() == prev_mapping_result.group_rank());
 
-    static_assert(Result::static_count() == ThreadsInWarpMappingResult::static_count());
-    CHECK(result.count() == prev_mapping_result.count());
-    CHECK(result.rank() == prev_mapping_result.rank());
+    static_assert(Result::static_unit_count() == ThreadsInWarpMappingResult::static_unit_count());
+    CHECK(result.unit_count() == prev_mapping_result.unit_count());
+    CHECK(result.unit_rank() == prev_mapping_result.unit_rank());
 
     CHECK(result.lane_mask() == prev_mapping_result.lane_mask());
 

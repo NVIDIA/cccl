@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-TEST_FUNC void test_construction()
+TEST_HOST_DEVICE_FUNC void test_construction()
 {
   const cuda::std::complex<U> only_real{static_cast<U>(42.0), static_cast<U>(0.0)};
   const cuda::std::complex<U> only_imag{static_cast<U>(0.0), static_cast<U>(42.0)};
@@ -34,7 +34,7 @@ TEST_FUNC void test_construction()
   assert(from_real_imag.imag() == static_cast<T>(112.0));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_construction<__half, float>();

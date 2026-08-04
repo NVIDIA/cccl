@@ -1033,7 +1033,7 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("UniqueByKey build result has AoT metadata populated", "[unique_by_key][aot]")
+C2H_TEST("UniqueByKey build result has serialization metadata populated", "[unique_by_key][serialization]")
 {
   using T = int32_t;
 
@@ -1078,7 +1078,7 @@ C2H_TEST("UniqueByKey build result has AoT metadata populated", "[unique_by_key]
   REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
 }
 
-C2H_TEST("UniqueByKey compile/load round-trip", "[unique_by_key][aot]")
+C2H_TEST("UniqueByKey compile/load round-trip", "[unique_by_key][serialization]")
 {
   using T = int32_t;
 

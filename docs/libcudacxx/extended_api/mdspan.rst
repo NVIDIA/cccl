@@ -40,8 +40,8 @@ Mdspan
 
    * - :ref:`shared_memory mdspan and accessor <libcudacxx-extended-api-mdspan-shared-memory-accessor>`
      - ``mdspan`` and accessor for CUDA shared memory
-     - CCCL 3.2.0
-     - CUDA 13.2
+     - CCCL 3.3.0
+     - CUDA 13.3
 
    * - :ref:`mdspan to dlpack <libcudacxx-extended-api-mdspan-mdspan-to-dlpack>`
      - Convert a ``mdspan`` to a ``DLTensor``

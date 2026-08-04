@@ -11,6 +11,8 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
@@ -20,13 +22,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_k
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairs works with default environment", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -52,8 +56,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs works with default environment", 
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending works with default environment",
-          "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -79,7 +84,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending works with default envi
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortKeys works with default environment", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortKeys works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -99,8 +106,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys works with default environment", "
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending works with default environment",
-          "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -120,8 +128,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending works with default envir
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortKeys DoubleBuffer works with default environment",
-          "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortKeys DoubleBuffer works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt = c2h::device_vector<int>(7);
@@ -140,8 +149,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys DoubleBuffer works with default en
   REQUIRE(result_keys == expected_keys);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer works with default environment",
-          "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt = c2h::device_vector<int>(7);
@@ -162,7 +172,7 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer works with 
 
 #endif
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs uses environment", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -206,7 +216,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs uses environment", "[segmented_rad
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortPairsDescending uses environment", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -250,7 +260,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending uses environment", "[seg
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys uses environment", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -286,7 +296,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys uses environment", "[segmented_radi
   REQUIRE(keys_out == expected_keys);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortKeysDescending uses environment", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -322,7 +332,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending uses environment", "[segm
   REQUIRE(keys_out == expected_keys);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairs uses custom stream", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs uses custom stream", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -374,7 +384,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs uses custom stream", "[segmented_
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -426,7 +438,7 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream", "[
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -470,7 +482,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_r
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
@@ -514,7 +528,7 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream", "[s
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer uses environment", "[segmented_radix_sort][device]", CUB_SMALL)
 {
   auto keys_buf = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt = c2h::device_vector<int>(7);
@@ -553,7 +567,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer uses environment", "[s
   REQUIRE(result_keys == expected_keys);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer uses environment",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   auto keys_buf = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt = c2h::device_vector<int>(7);
@@ -592,8 +608,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer uses environ
   REQUIRE(result_keys == expected_keys);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer works with default environment",
-          "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt   = c2h::device_vector<int>(7);
@@ -620,8 +637,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer works with default e
   REQUIRE(result_values == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer works with default environment",
-          "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer works with default environment",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt   = c2h::device_vector<int>(7);
@@ -648,7 +666,9 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer works with
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses environment", "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses environment",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   auto keys_buf   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt   = c2h::device_vector<int>(7);
@@ -697,8 +717,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses environment", "[
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer uses environment",
-         "[segmented_radix_sort][device]")
+CUB_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer uses environment",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL)
 {
   auto keys_buf   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt   = c2h::device_vector<int>(7);
@@ -747,7 +768,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer uses enviro
   REQUIRE(result_values == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream", "[segmented_radix_sort][device]")
+CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
 {
   auto keys_buf   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_alt   = c2h::device_vector<int>(7);
@@ -813,13 +836,12 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
 template <typename KeyT, typename ValueT, int ThreadsPerBlock>
 struct segmented_radix_sort_block_size_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const
-    -> cub::detail::segmented_radix_sort::segmented_radix_sort_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedRadixSortPolicy
   {
     using default_selector_t = cub::detail::segmented_radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy              = default_selector_t{}(cc);
-    policy.segmented.threads_per_block     = ThreadsPerBlock;
-    policy.alt_segmented.threads_per_block = ThreadsPerBlock;
+    policy.regular_pass.threads_per_block   = ThreadsPerBlock;
+    policy.alternate_pass.threads_per_block = ThreadsPerBlock;
     return policy;
   }
 };
@@ -827,7 +849,7 @@ struct segmented_radix_sort_block_size_tuning
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_sort][device]", block_sizes)
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -857,7 +879,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_s
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending can be tuned", "[segmented_radix_sort][device]", block_sizes)
+CUB_TEST("DeviceSegmentedRadixSort::SortPairsDescending can be tuned",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL,
+         block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -887,7 +912,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending can be tuned", "[segment
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys can be tuned", "[segmented_radix_sort][device]", block_sizes)
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -913,7 +938,8 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys can be tuned", "[segmented_radix_so
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending can be tuned", "[segmented_radix_sort][device]", block_sizes)
+CUB_TEST(
+  "DeviceSegmentedRadixSort::SortKeysDescending can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -939,7 +965,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending can be tuned", "[segmente
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer can be tuned", "[segmented_radix_sort][device]", block_sizes)
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer can be tuned",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL,
+         block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -970,8 +999,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer can be tuned", "[segm
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer can be tuned",
+CUB_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer can be tuned",
          "[segmented_radix_sort][device]",
+         CUB_SMALL,
          block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -1003,7 +1033,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer can be tune
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer can be tuned", "[segmented_radix_sort][device]", block_sizes)
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer can be tuned",
+         "[segmented_radix_sort][device]",
+         CUB_SMALL,
+         block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -1030,8 +1063,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer can be tuned", "[segme
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned",
          "[segmented_radix_sort][device]",
+         CUB_SMALL,
          block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -1060,3 +1094,65 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+CUB_TEST("Test SegmentedRadixSortPolicy properties", "[segmented_radix_sort][device]", CUB_SMALL)
+{
+  // no need to test RadixSortDownsweepPolicy, already covered by the radix sort tests
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedRadixSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedRadixSortPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::SegmentedRadixSortPolicy{
+    cub::RadixSortDownsweepPolicy{
+      192, 15, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6},
+    cub::RadixSortDownsweepPolicy{
+      384, 11, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 5}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::SegmentedRadixSortPolicy{
+    .regular_pass =
+      cub::RadixSortDownsweepPolicy{
+        .threads_per_block = 192,
+        .items_per_thread  = 15,
+        .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .radix_bits        = 6},
+    .alternate_pass = cub::RadixSortDownsweepPolicy{
+      .threads_per_block = 384,
+      .items_per_thread  = 11,
+      .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+      .load_modifier     = cub::LOAD_DEFAULT,
+      .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+      .radix_bits        = 5}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedRadixSortPolicy { .regular_pass = RadixSortDownsweepPolicy {"
+       " .threads_per_block = 192, .items_per_thread = 15"
+       ", .load_algorithm = BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+       ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .radix_bits = 6 }"
+       ", .alternate_pass = RadixSortDownsweepPolicy { .threads_per_block = 384"
+       ", .items_per_thread = 11, .load_algorithm = BLOCK_LOAD_TRANSPOSE"
+       ", .load_modifier = LOAD_DEFAULT, .rank_algorithm = RADIX_RANK_MEMOIZE"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .radix_bits = 5 } }");
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -44,7 +44,7 @@ struct device_policy_getter : PolicySelector
 };
 
 #if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
-#  if _CCCL_STD_VER < 2020
+#  if _CCCL_STD_VER < 2020 && !_CCCL_COMPILER(GCC, <, 8)
 template <typename CudaCcSeq, typename PolicySelector, size_t... Is>
 struct lowest_cc_resolver;
 
@@ -57,21 +57,12 @@ struct lowest_cc_resolver<::cuda::std::integer_sequence<int, CudaCcs...>, Policy
   using policy_t = decltype(PolicySelector{}(::cuda::compute_capability{}));
 
   static constexpr ::cuda::compute_capability all_ccs[sizeof...(Is)]{::cuda::compute_capability{CudaCcs}...};
-
-  // GCC 7 has issues reusing the constexpr array of tuning policies in find_lowest below (it loses the constexpr-ness)
-#    if _CCCL_COMPILER(GCC, >=, 8)
   static constexpr policy_t all_policies[sizeof...(Is)]{PolicySelector{}(all_ccs[Is])...};
-#    endif // _CCCL_COMPILER(GCC, <, 8)
 
   _CCCL_HOST_DEVICE_API static constexpr auto find_lowest(size_t i) -> ::cuda::compute_capability
   {
-#    if _CCCL_COMPILER(GCC, >=, 8)
     const auto& policy = all_policies[i];
     while (i > 0 && policy == all_policies[i - 1])
-#    else // _CCCL_COMPILER(GCC, >=, 8)
-    const auto& policy = PolicySelector{}(all_ccs[i]);
-    while (i > 0 && policy == PolicySelector{}(all_ccs[i - 1]))
-#    endif // _CCCL_COMPILER(GCC, >=, 8)
     {
       --i;
     }
@@ -80,7 +71,7 @@ struct lowest_cc_resolver<::cuda::std::integer_sequence<int, CudaCcs...>, Policy
 
   static constexpr ::cuda::compute_capability lowest_cc_with_same_policy[sizeof...(Is)]{find_lowest(Is)...};
 };
-#  endif // if _CCCL_STD_VER < 2020
+#  endif // if _CCCL_STD_VER < 2020 && !_CCCL_COMPILER(GCC, <, 8)
 
 // GCC below 12 ICEs in some cases when creating an integral_constant holding a policy
 #  if _CCCL_STD_VER >= 2020 && _CCCL_COMPILER(GCC, <, 12)
@@ -113,7 +104,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
   // in the same integral_constant type passed to f
   using policy_t = decltype(policy_selector(::cuda::compute_capability{}));
   (..., (device_cc == all_ccs[Is] ? (e = f(policy_constant<policy_t, policy_selector(all_ccs[Is])>{})) : cudaSuccess));
-#  else // if _CCCL_STD_VER >= 2020
+#  else // _CCCL_STD_VER >= 2020
+#    if _CCCL_COMPILER(GCC, <, 8)
+  // GCC 7 ICEs on constexpr evaluation of policy comparisons, so we skip the lowest-CC-with-same-policy optimization
+  // and instantiate f for each CC directly. This may increase compile time and binary size.
+  (...,
+   (device_cc == all_ccs[Is] ? (e = f(policy_getter<PolicySelector, all_ccs[Is].get()>{policy_selector}))
+                             : cudaSuccess));
+#    else // _CCCL_COMPILER(GCC, <, 8)
   // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_cc once
   // per policy on the lowest CC which produces the same policy
   using resolver_t =
@@ -122,8 +120,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
    (device_cc == all_ccs[Is]
       ? (e = f(policy_getter<PolicySelector, resolver_t::lowest_cc_with_same_policy[Is].get()>{policy_selector}))
       : cudaSuccess));
-
-#  endif // if _CCCL_STD_VER >= 2020
+#    endif // _CCCL_COMPILER(GCC, <, 8)
+#  endif // _CCCL_STD_VER >= 2020
   return e;
 }
 

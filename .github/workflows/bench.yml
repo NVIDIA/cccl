@@ -125,7 +125,7 @@ jobs:
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -363,7 +363,7 @@ jobs:
 
       - name: Upload benchmark artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: ${{ steps.run-benchmark-compare.outputs.artifact_name }}
           path: bench-artifacts/*

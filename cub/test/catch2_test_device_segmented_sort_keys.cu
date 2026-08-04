@@ -10,8 +10,8 @@
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
+#include "cub_test_macros.h"
 #include <c2h/bfloat16.cuh>
-#include <c2h/catch2_test_helper.h>
 #include <c2h/half.cuh>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
@@ -39,7 +39,7 @@ using key_types =
 
 #if TEST_TYPES == 0
 
-C2H_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]")
+CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]", CUB_SMALL)
 {
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -72,7 +72,7 @@ C2H_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   REQUIRE(values_buffer.selector == 1);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]")
+CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]", CUB_SMALL)
 {
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -111,8 +111,9 @@ C2H_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
 
 #endif // TEST_TYPES == 0
 
-C2H_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
+CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
+         CUB_SMALL,
          key_types)
 {
   using KeyT = c2h::get<0, TestType>;
@@ -130,8 +131,9 @@ C2H_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
   test_same_size_segments_derived<KeyT>(segment_size, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
+CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
+         CUB_SMALL,
          key_types)
 {
   using KeyT = c2h::get<0, TestType>;
@@ -149,8 +151,9 @@ C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
   test_random_size_segments_derived<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
+CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
          "[keys][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
+         CUB_SMALL,
          key_types)
 {
   using KeyT = c2h::get<0, TestType>;
@@ -164,13 +167,15 @@ C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
   test_random_size_segments_random<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Edge case segments, random keys", "[keys][segmented][sort][device]", key_types)
+CUB_TEST(
+  "DeviceSegmentedSortKeys: Edge case segments, random keys", "[keys][segmented][sort][device]", CUB_SMALL, key_types)
 {
   using KeyT = c2h::get<0, TestType>;
   test_edge_case_segments_random<KeyT>(C2H_SEED(4));
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][segmented][sort][device]", key_types)
+CUB_TEST(
+  "DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][segmented][sort][device]", CUB_SMALL, key_types)
 {
   using KeyT = c2h::get<0, TestType>;
   test_unspecified_segments_random<KeyT>(C2H_SEED(4));
@@ -178,8 +183,9 @@ C2H_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][s
 
 #if TEST_TYPES == 0
 
-C2H_TEST("DeviceSegmentedSortKeys: very large number of segments",
+CUB_TEST("DeviceSegmentedSortKeys: very large number of segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {
@@ -223,8 +229,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
-C2H_TEST("DeviceSegmentedSort::SortKeys: very large segments",
+CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {

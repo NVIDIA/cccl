@@ -4,7 +4,6 @@ project(nvbench_helper LANGUAGES CXX CUDA)
 
 include(CMakeDependentOption)
 
-cccl_get_catch2()
 cccl_get_cub()
 cccl_get_cudatoolkit()
 cccl_get_libcudacxx()
@@ -48,6 +47,7 @@ cmake_dependent_option(
 mark_as_advanced(nvbench_helper_ENABLE_TESTING)
 
 if (nvbench_helper_ENABLE_TESTING)
+  cccl_get_catch2()
   cccl_get_boost()
 
   thrust_create_target(cccl.nvbench_helper.test.Thrust.cpp.cuda DEVICE CUDA)
