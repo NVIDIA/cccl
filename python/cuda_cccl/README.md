@@ -18,10 +18,11 @@ forwarded to `cuda-compute` as well.
 
 ## Upgrading from the former monolithic wheel
 
-The former `cuda-cccl` wheel owned the `cuda.compute` and `cuda.cccl` files
-that are now owned by its dependencies. Before the first upgrade to this split
-layout, uninstall the old wheel in a separate command so pip cannot remove the
-new owners' files while processing the old wheel's RECORD:
+The former `cuda-cccl` wheel owned the `cuda.compute` files that are now owned
+by `cuda-compute`, along with compatibility modules under `cuda.cccl` that have
+been removed. Before the first upgrade to this split layout, uninstall the old
+wheel in a separate command so pip cannot remove the new owner's files while
+processing the old wheel's RECORD:
 
 ```bash
 python -m pip uninstall -y cuda-cccl

@@ -206,7 +206,9 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
-* **cuda.cccl.headers** — Programmatic access to headers
+
+The `cuda-compute` wheel carries the libcudacxx, CUB, and Thrust headers it
+needs as private package data. `cuda-cccl` is a module-free metapackage.
 
 ### Installation
 
@@ -226,9 +228,12 @@ From source:
 
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
-cd cccl/python/cuda_cccl
-pip install -e .[test-cu13] # or [test-cu12] for CTK 12.X
+cd cccl
+pip install -e "./python/cuda_compute[test-cu13]" # or test-cu12 for CTK 12.X
 ```
+
+Editable installs resolve headers directly from the canonical checkout and do
+not copy them beneath `python/cuda_compute`.
 
 Requirements:
 
@@ -243,9 +248,6 @@ Requirements:
 ```python
 import cuda.compute
 result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
-
-import cuda.cccl.headers as headers
-include_paths = headers.get_include_paths()
 ```
 
 ### Build and Test
@@ -253,15 +255,15 @@ include_paths = headers.get_include_paths()
 ```bash
 ./ci/build_cuda_cccl_python.sh -py-version 3.10
 ./ci/test_cuda_compute_python.sh -py-version 3.10
-./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
+./ci/test_cuda_cccl_metapackage_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
 ```
 
 Test organization:
 
-* `tests/compute` — Algorithms and iterators
-* `tests/headers` — Header integration
-* `test_examples.py` — Runs compute examples
+* `python/cuda_compute/tests/compute` — Algorithms and iterators
+* `python/cuda_compute/tests/packaging` — Private wheel packaging behavior
+* `python/cuda_compute/tests/test_examples.py` — Runs compute examples
 
 ---
 
@@ -379,7 +381,8 @@ cccl/
 ├── thrust/             # Thrust algorithms
 ├── cudax/              # Experimental features
 ├── c/                  # C Parallel library
-├── python/cuda_cccl/   # Python bindings
+├── python/cuda_compute/ # cuda.compute implementation wheel
+├── python/cuda_cccl/   # Module-free aggregate metapackage
 ├── ci/                 # Build/test scripts
 ├── examples/           # Usage examples
 └── CMakePresets.json   # Preset configurations
@@ -388,15 +391,14 @@ cccl/
 Python package layout:
 
 ```
-python/cuda_cccl/
-├── cuda/
-│   ├── compute/
-│   └── cccl/
-│       ├── parallel/
-│       └── headers/
-├── tests/
-├── benchmarks/
-└── pyproject.toml
+python/
+├── cuda_compute/
+│   ├── cuda/compute/
+│   ├── tests/
+│   ├── benchmarks/
+│   └── pyproject.toml
+└── cuda_cccl/
+    └── pyproject.toml
 ```
 
 ---
