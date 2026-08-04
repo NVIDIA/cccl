@@ -62,6 +62,8 @@ private:
 
     __props.allocation_handle_type = __alloc_handle_t::posix_file_descriptor;
 
+    // Though we cna name __alloc_handle_t::fabric regardless of CUDA version, we cannot query
+    // it without error before 12.4.
 #if _CCCL_CTK_AT_LEAST(12, 4)
     if (::cuda::device_attributes::memory_pool_supported_handle_types(__device) & __alloc_handle_t::fabric)
     {
