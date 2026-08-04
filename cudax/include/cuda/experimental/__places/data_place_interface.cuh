@@ -215,6 +215,20 @@ public:
     return false;
   }
 
+  //! Whether this is a replicated data place (one copy per grid member)
+  virtual bool is_replicated() const
+  {
+    return false;
+  }
+
+  //! Number of data instances a dependency at this place resolves to: 1 for
+  //! ordinary and composite places, one per grid member for a replicated
+  //! place (see data_place::member for the r-th instance's place)
+  virtual size_t instance_count() const
+  {
+    return 1;
+  }
+
   /**
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place

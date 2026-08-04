@@ -193,6 +193,22 @@ public:
 
   static data_place composite(partition_fn_t f, const exec_place& grid);
 
+  /**
+   * @brief Replicated data place: one full copy of the data in the affine
+   * memory of every member of \p grid. READ-ONLY: tasks may only take read
+   * access at this place (mutate the data at another place; the next
+   * replicated read re-broadcasts).
+   */
+  static data_place replicated(const exec_place& grid);
+
+  /**
+   * @brief Deferred replicated data place: replicated over the grid of
+   * whichever task the dependency is used with (materialized at task
+   * acquisition; a scalar execution place degenerates to its affine data
+   * place). The counterpart of affine() for replication.
+   */
+  static data_place replicated();
+
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
@@ -235,6 +251,13 @@ public:
 
   // Defined later after data_place_composite is complete
   bool is_composite() const;
+  bool is_replicated() const;
+
+  //! Number of data instances a dependency at this place resolves to
+  size_t instance_count() const;
+  //! Data place of the r-th instance (r < instance_count()); *this when
+  //! the place resolves to a single instance
+  data_place member(size_t r) const;
 
   bool is_invalid() const
   {
@@ -1919,14 +1942,176 @@ private:
   partition_fn_t partitioner_func_;
 };
 
+/**
+ * @brief Replicated data place implementation
+ *
+ * One full copy of the data lives in each grid member's affine memory. The
+ * data instance exposes replica 0; copies INTO the place fan out to the
+ * other replicas, and writes at the place are rejected at task creation, so
+ * a valid replicated instance is synced by construction. Each shard of a
+ * grid parallel_for reads its own replica (the dispatch rebases the
+ * instance per place).
+ */
+class data_place_replicated final : public data_place_interface
+{
+public:
+  explicit data_place_replicated(exec_place grid)
+      : grid_(mv(grid))
+      , deferred_(false)
+  {}
+
+  //! Deferred form: the grid is bound at task acquisition
+  data_place_replicated()
+      : deferred_(true)
+  {}
+
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
+  bool is_replicated() const override
+  {
+    return true;
+  }
+
+  size_t instance_count() const override
+  {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
+    return grid_.size();
+  }
+
+  bool is_deferred() const
+  {
+    return deferred_;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_interface::composite;
+  }
+
+  ::std::string to_string() const override
+  {
+    return deferred_ ? "replicated(deferred)" : "replicated";
+  }
+
+  size_t hash() const override
+  {
+    throw ::std::logic_error("hash() not supported for replicated data_place");
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    const auto& o = static_cast<const data_place_replicated&>(other);
+    if (grid_ == o.grid_)
+    {
+      return 0;
+    }
+    return (grid_ < o.grid_) ? -1 : 1;
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::runtime_error("replicated data_place: allocate through a logical data");
+  }
+
+  void deallocate(void*, size_t, cudaStream_t) const override
+  {
+    throw ::std::runtime_error("replicated data_place: instances deallocate through their member places");
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    // Instances at this place are one ordinary allocation per member, so
+    // teardown is stream-ordered exactly when every member's is: report
+    // the members' conjunction (the place's own allocate() is never used).
+    for (size_t r = 0; r < grid_.size(); r++)
+    {
+      if (!grid_.get_place(r).affine_data_place().allocation_is_stream_ordered())
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  ::std::shared_ptr<void> get_affine_exec_impl() const override
+  {
+    return grid_.get_impl();
+  }
+
+  const exec_place& get_grid() const
+  {
+    return grid_;
+  }
+
+private:
+  exec_place grid_;
+  bool deferred_;
+};
+
+//! Whether this replicated data place still needs its grid bound
+inline bool replicated_is_deferred(const data_place& dp)
+{
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+}
+
+//! Grid of a replicated data place
+inline const exec_place& replicated_grid(const data_place& dp)
+{
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
+}
+
 inline bool data_place::is_composite() const
 {
   return pimpl_->is_composite();
 }
 
+inline bool data_place::is_replicated() const
+{
+  return pimpl_->is_replicated();
+}
+
+inline size_t data_place::instance_count() const
+{
+  return pimpl_->instance_count();
+}
+
+inline data_place data_place::member(size_t r) const
+{
+  _CCCL_ASSERT(r < instance_count(), "member index out of range");
+  if (instance_count() == 1)
+  {
+    return *this;
+  }
+  return replicated_grid(*this).get_place(r).affine_data_place();
+}
+
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
 {
   return data_place(::std::make_shared<data_place_composite>(grid, f));
+}
+
+inline data_place data_place::replicated(const exec_place& grid)
+{
+  if (grid.size() < 1)
+  {
+    throw ::std::invalid_argument("replicated data_place requires a non-empty grid");
+  }
+  return data_place(::std::make_shared<data_place_replicated>(grid));
+}
+
+inline data_place data_place::replicated()
+{
+  return data_place(::std::make_shared<data_place_replicated>());
 }
 
 // User-visible API when the same partitioner as the one of the grid

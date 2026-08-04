@@ -76,16 +76,18 @@ public:
 
   struct __synchronizer_instance
   {
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void
-    do_sync(const _MappingResult& __mapping_result, const barrier_synchronizer& __synchronizer) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result,
+                                  const barrier_synchronizer& __synchronizer,
+                                  const _Hierarchy&) const noexcept
     {
       __synchronizer.__barriers_[__mapping_result.group_rank()].arrive_and_wait();
     }
 
-    template <class _MappingResult>
-    _CCCL_DEVICE_API void
-    do_sync_aligned(const _MappingResult& __mapping_result, const barrier_synchronizer& __synchronizer) const noexcept
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result,
+                                          const barrier_synchronizer& __synchronizer,
+                                          const _Hierarchy&) const noexcept
     {
       __synchronizer.__barriers_[__mapping_result.group_rank()].arrive_and_wait();
     }
