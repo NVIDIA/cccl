@@ -131,7 +131,17 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // The affine data place is set at the task level, it can be inherited
     // from the execution place, or be some composite data place set up in
     // a parallel_for construct, for example
-    const data_place& dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
+    data_place dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
+
+    // A deferred replicated place binds to THIS task's execution place: one
+    // replica per grid member, or plain affine on a scalar place. The
+    // materialized place is written back into the dep so release and grid
+    // dispatch see a concrete place.
+    if (dplace.is_replicated() && ::cuda::experimental::places::replicated_is_deferred(dplace))
+    {
+      dplace = (eplace.size() > 1) ? data_place::replicated(eplace) : eplace.affine_data_place();
+      it->set_dplace(dplace);
+    }
 
     if (dplace.instance_count() > 1)
     {

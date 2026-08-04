@@ -201,6 +201,14 @@ public:
    */
   static data_place replicated(const exec_place& grid);
 
+  /**
+   * @brief Deferred replicated data place: replicated over the grid of
+   * whichever task the dependency is used with (materialized at task
+   * acquisition; a scalar execution place degenerates to its affine data
+   * place). The counterpart of affine() for replication.
+   */
+  static data_place replicated();
+
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
@@ -1949,6 +1957,12 @@ class data_place_replicated final : public data_place_interface
 public:
   explicit data_place_replicated(exec_place grid)
       : grid_(mv(grid))
+      , deferred_(false)
+  {}
+
+  //! Deferred form: the grid is bound at task acquisition
+  data_place_replicated()
+      : deferred_(true)
   {}
 
   bool is_resolved() const override
@@ -1963,7 +1977,16 @@ public:
 
   size_t instance_count() const override
   {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
     return grid_.size();
+  }
+
+  bool is_deferred() const
+  {
+    return deferred_;
   }
 
   int get_device_ordinal() const override
@@ -1973,7 +1996,7 @@ public:
 
   ::std::string to_string() const override
   {
-    return "replicated";
+    return deferred_ ? "replicated(deferred)" : "replicated";
   }
 
   size_t hash() const override
@@ -2032,7 +2055,14 @@ public:
 
 private:
   exec_place grid_;
+  bool deferred_;
 };
+
+//! Whether this replicated data place still needs its grid bound
+inline bool replicated_is_deferred(const data_place& dp)
+{
+  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+}
 
 //! Grid of a replicated data place
 inline const exec_place& replicated_grid(const data_place& dp)
@@ -2077,6 +2107,11 @@ inline data_place data_place::replicated(const exec_place& grid)
     throw ::std::invalid_argument("replicated data_place requires a non-empty grid");
   }
   return data_place(::std::make_shared<data_place_replicated>(grid));
+}
+
+inline data_place data_place::replicated()
+{
+  return data_place(::std::make_shared<data_place_replicated>());
 }
 
 // User-visible API when the same partitioner as the one of the grid

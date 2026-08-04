@@ -515,17 +515,24 @@ class parallel_for_scope
    */
   //! Resolve one instance onto this place's member of a replicated data
   //! place: each shard reads the ordinary instance living at member(r),
-  //! straight from the place-keyed instance table.
+  //! straight from the place-keyed instance table. The tuple's dep copy may
+  //! still hold the DEFERRED form (acquire materialized and wrote back into
+  //! the task's dep vector, not this copy), so the member place is resolved
+  //! against the launch's own execution place in that case.
   template <typename Inst, typename Dep>
-  static void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
+  void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
   {
     const data_place& dp = dep.get_dplace();
-    if (dp.is_invalid() || dp.instance_count() <= 1)
+    if (dp.is_invalid() || !dp.is_replicated())
     {
       return;
     }
+    const data_place member =
+      ::cuda::experimental::places::replicated_is_deferred(dp)
+        ? e_place.get_place(place_index).affine_data_place()
+        : dp.member(place_index);
     auto data = dep.get_data();
-    inst      = data.template instance<Inst>(data.find_instance_id(dp.member(place_index)));
+    inst      = data.template instance<Inst>(data.find_instance_id(member));
   }
 
   template <size_t... I>

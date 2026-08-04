@@ -112,8 +112,37 @@ int main()
           EXPECT(out(i) == 3.0 * ref[i]);
         }
       };
+      // deferred form: the grid is bound at acquire from the launch's
+      // execution place -- no grid repeated at the call site
+      auto lout2 = ctx.logical_data(shape_of<slice<double>>(n));
+      ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(data_place::replicated()), lout2.write())
+          ->*[] __device__(size_t i, auto in, auto out) {
+                out(i) = 5.0 * in(i);
+              };
+      ctx.host_launch(lout2.read())->*[&](auto out) {
+        for (size_t i = 0; i < n; i++)
+        {
+          EXPECT(out(i) == 5.0 * ref[i]);
+        }
+      };
+
+      // scalar degenerate: on a single-place task the deferred form
+      // materializes to the place's affine data place
+      auto lout3 = ctx.logical_data(shape_of<slice<double>>(n));
+      ctx.parallel_for(lin.shape(), lin.read(data_place::replicated()), lout3.write())
+          ->*[] __device__(size_t i, auto in, auto out) {
+                out(i) = 7.0 * in(i);
+              };
+      ctx.host_launch(lout3.read())->*[&](auto out) {
+        for (size_t i = 0; i < n; i++)
+        {
+          EXPECT(out(i) == 7.0 * ref[i]);
+        }
+      };
+
       ctx.finalize();
       printf("replicated data place: green-context grid (distinct member instances) OK\n");
+      printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) OK\n");
     }
     else
     {
