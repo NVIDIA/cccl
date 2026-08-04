@@ -15,6 +15,10 @@ on:
         description: "Display name."
         required: true
         type: string
+      project:
+        description: "Build driver: cccl, pytorch, matx, or rapids."
+        required: true
+        type: string
       gpu:
         description: "GPU selector."
         required: true
@@ -28,12 +32,14 @@ on:
         required: true
         type: string
       preset:
-        description: "CMake preset passed to ci/build_compile_time_bench.sh."
-        required: true
+        description: "CCCL CMake preset passed to ci/build_compile_time_bench.sh."
+        required: false
+        default: ""
         type: string
       targets_json:
-        description: "JSON array of build targets."
-        required: true
+        description: "JSON array of build-system targets."
+        required: false
+        default: "[]"
         type: string
       args:
         description: "Extra quoted wrapper args before '--'."
@@ -44,25 +50,11 @@ on:
         description: "JSON object with a 'slices' array for summarize_events.py."
         required: true
         type: string
-      comment:
-        description: "Whether to post a sticky PR comment."
-        required: false
-        default: "true"
-        type: string
-      comment_header:
-        description: "Sticky comment header."
-        required: true
-        type: string
       artifact_retention_days:
         description: "Artifact retention in days."
         required: false
         default: 14
         type: number
-      pr_number:
-        description: "Pull request number for sticky comments."
-        required: false
-        default: ""
-        type: string
 
 jobs:
   run:
@@ -109,6 +101,7 @@ jobs:
         env:
           CONFIG_ID: ${{ inputs.id }}
           CONFIG_NAME: ${{ inputs.name }}
+          PROJECT: ${{ inputs.project }}
           GPU: ${{ inputs.gpu }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
@@ -123,6 +116,7 @@ jobs:
           jq -n \
             --arg id "${CONFIG_ID}" \
             --arg name "${CONFIG_NAME}" \
+            --arg project "${PROJECT}" \
             --arg gpu "${GPU}" \
             --arg launch_args "${LAUNCH_ARGS}" \
             --arg baseline_ref "${BASELINE_REF}" \
@@ -131,6 +125,7 @@ jobs:
             '{
               id: $id,
               name: $name,
+              project: $project,
               gpu: $gpu,
               launch_args: $launch_args,
               baseline_ref: $baseline_ref,
@@ -153,9 +148,11 @@ jobs:
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
           CONFIG_ID: ${{ inputs.id }}
+          GH_TOKEN: ${{ github.token }}
           GPU_NAME: ${{ inputs.gpu }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           PRESET: ${{ inputs.preset }}
+          PROJECT: ${{ inputs.project }}
           SLICES_PATH: ${{ steps.inputs.outputs.slices }}
           TARGETS_PATH: ${{ steps.inputs.outputs.targets }}
           WRAPPER_ARGS: ${{ inputs.args }}
@@ -163,7 +160,8 @@ jobs:
           ci_script="${RUNNER_TEMP}/compile-time-ci-${CONFIG_ID}.sh"
           artifact_root="compile-time-artifacts/${CONFIG_ID}"
           build_infix="compile-time-${CONFIG_ID}"
-          report_root="build/${build_infix}/${PRESET}/compile_time"
+          report_name="${PRESET:-${PROJECT}}"
+          report_root="build/${build_infix}/${report_name}/compile_time"
           mkdir -p "${artifact_root}"
 
           cat <<"EOF" > "${ci_script}"
@@ -189,8 +187,11 @@ jobs:
 
           declare -a bench_args=(
             -baseline-ref "${BASELINE_REF}"
-            -preset "${PRESET}"
+            -project "${PROJECT}"
           )
+          if [[ -n "${PRESET}" ]]; then
+            bench_args+=(-preset "${PRESET}")
+          fi
           for target in "${targets[@]}"; do
             bench_args+=(-target "${target}")
           done
@@ -204,6 +205,11 @@ jobs:
           GPU_ARGS=""
           if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
             GPU_ARGS="--gpus all"
+          fi
+          RAPIDS_LIBS="$(jq -r 'join(" ")' "${TARGETS_PATH}")"
+          declare -a container_command=(/compile-time-ci.sh)
+          if [[ "${PROJECT}" == "rapids" ]]; then
+            container_command=(./ci/rapids/rapids-entrypoint.sh /compile-time-ci.sh)
           fi
 
           {
@@ -222,13 +228,17 @@ jobs:
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "BASELINE_REF=${BASELINE_REF}" \
             --env "CCCL_BUILD_INFIX=${build_infix}" \
+            --env "CI=true" \
+            --env "GH_TOKEN=${GH_TOKEN}" \
             --env "PRESET=${PRESET}" \
+            --env "PROJECT=${PROJECT}" \
+            --env "RAPIDS_LIBS=${RAPIDS_LIBS}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
             --volume "${ci_script}:/compile-time-ci.sh" \
             --volume "${TARGETS_PATH}:/compile-time-targets.json" \
             --volume "${SLICES_PATH}:/compile-time-slices.json" \
-            -- /compile-time-ci.sh \
+            -- "${container_command[@]}" \
             || rc=$?
 
           if [[ -d "${report_root}/event_reports" ]]; then
@@ -268,15 +278,19 @@ jobs:
               --summary "${summary_json}" \
               --config "${CONFIG_PATH}" \
               --artifacts-url "${ARTIFACTS_URL}" \
+              --fragment \
               -o "${comment_md}"
           else
+            escaped_config_name="$(jq -rn --arg value "${CONFIG_NAME}" '$value | @html')"
             cat > "${comment_md}" <<EOF
-          <!-- cccl-compile-time-bench: ${CONFIG_ID} -->
-          ## ⚠️ CCCL compile-time benchmark comparison: ${CONFIG_NAME}
+          <details>
+          <summary><strong>⚠️ ${escaped_config_name}</strong></summary>
 
           Compile-time benchmark reporting did not produce a summary manifest.
 
           **Artifacts:** [reports and traces](${ARTIFACTS_URL})
+
+          </details>
           EOF
           fi
           echo "comment=${comment_md}" >> "${GITHUB_OUTPUT}"
@@ -332,32 +346,3 @@ jobs:
           path: compile-time-artifacts/${{ inputs.id }}/comment.md
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
-
-  comment:
-    name: "Compile-time comment: ${{ inputs.name }}"
-    needs: run
-    # Temporarily disable posting compile-time results to pull requests.
-    if: ${{ false && always() && inputs.comment == 'true' && inputs.pr_number != '' }}
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      pull-requests: write
-    steps:
-      - name: Download compile-time comment artifact
-        id: download-comment
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: compile-time-${{ inputs.id }}-comment
-          path: compile-time-comment
-
-      - name: Comment on PR
-        if: ${{ steps.download-comment.outcome == 'success' && hashFiles('compile-time-comment/comment.md') != '' }}
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-        with:
-          github_token: ${{ github.token }}
-          header: ${{ inputs.comment_header }}
-          number: ${{ inputs.pr_number }}
-          path: compile-time-comment/comment.md
-          hide_and_recreate: true
-          hide_classify: "OUTDATED"
