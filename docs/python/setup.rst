@@ -131,9 +131,9 @@ Alternatively, install the aggregate CCCL Python package from conda-forge:
 Install from source
 ~~~~~~~~~~~~~~~~~~~
 
-The three projects use exact same-version dependencies. Install the local
-projects in dependency order so pip does not try to resolve an unreleased
-sibling build from an index:
+The three projects use exact same-version dependencies. Install all three local
+projects in one command so pip resolves them from the checkout instead of
+looking for an unreleased sibling build on an index:
 
 .. code-block:: bash
 

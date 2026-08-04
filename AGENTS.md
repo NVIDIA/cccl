@@ -213,7 +213,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`
 From PyPI:
 
 ```bash
-pip install cuda-cccl[cu13] # or [cu12] for CTK 12.X
+pip install "cuda-cccl[cu13]" # or [cu12] for CTK 12.X
 ```
 
 From conda-forge:
@@ -227,9 +227,10 @@ From source:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 cd cccl
-pip install -e python/cccl_headers
-pip install -e 'python/cuda_compute[test-cu13]' # or test-cu12 for CTK 12.X
-pip install -e python/cuda_cccl
+pip install \
+  -e python/cccl_headers \
+  -e "python/cuda_compute[test-cu13]" \
+  -e python/cuda_cccl
 ```
 
 Requirements:
