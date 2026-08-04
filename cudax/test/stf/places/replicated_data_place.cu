@@ -78,6 +78,20 @@ int main()
     }
     EXPECT(thrown);
 
+    // deferred form on this backend: materialized against the launch's
+    // own execution place at acquire
+    auto lout_d = ctx.logical_data(shape_of<slice<double>>(n));
+    ctx.parallel_for(blocked_partition(), grid, lin.shape(), lin.read(data_place::replicated()), lout_d.write())
+        ->*[] __device__(size_t i, auto in, auto out) {
+              out(i) = 6.0 * in(i);
+            };
+    ctx.host_launch(lout_d.read())->*[&](auto out) {
+      for (size_t i = 0; i < n; i++)
+      {
+        EXPECT(out(i) == 6.0 * ref[i]);
+      }
+    };
+
     // merged-mode contract: declaring the SAME data as replicated-read and
     // writable in one task merges the access modes past read; the combined
     // dependency must be rejected at acquisition
@@ -114,7 +128,6 @@ int main()
     if (gc_opt && gc_opt->get_count() >= 2)
     {
       auto& gc = *gc_opt;
-      context ctx;
       ::std::vector<exec_place> places;
       places.push_back(exec_place::green_ctx(gc.get_view(0), true));
       places.push_back(exec_place::green_ctx(gc.get_view(1), true));
@@ -123,49 +136,59 @@ int main()
       EXPECT(grep.instance_count() == 2);
       EXPECT(grep.member(0) != grep.member(1));
 
-      auto lin  = ctx.logical_data(&ref[0], {n});
-      auto lout = ctx.logical_data(shape_of<slice<double>>(n));
-      ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(grep), lout.write())
-          ->*[] __device__(size_t i, auto in, auto out) {
-                out(i) = 3.0 * in(i);
-              };
-      ctx.host_launch(lout.read())->*[&](auto out) {
-        for (size_t i = 0; i < n; i++)
+      context ctx;
+      for (int use_graph_g = 0; use_graph_g < 2; use_graph_g++)
+      {
+        if (use_graph_g)
         {
-          EXPECT(out(i) == 3.0 * ref[i]);
+          ctx = graph_ctx();
         }
-      };
-      // deferred form: the grid is bound at acquire from the launch's
-      // execution place -- no grid repeated at the call site
-      auto lout2 = ctx.logical_data(shape_of<slice<double>>(n));
-      ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(data_place::replicated()), lout2.write())
-          ->*[] __device__(size_t i, auto in, auto out) {
-                out(i) = 5.0 * in(i);
-              };
-      ctx.host_launch(lout2.read())->*[&](auto out) {
-        for (size_t i = 0; i < n; i++)
-        {
-          EXPECT(out(i) == 5.0 * ref[i]);
-        }
-      };
+        auto lin  = ctx.logical_data(&ref[0], {n});
+        auto lout = ctx.logical_data(shape_of<slice<double>>(n));
+        ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(grep), lout.write())
+            ->*[] __device__(size_t i, auto in, auto out) {
+                  out(i) = 3.0 * in(i);
+                };
+        ctx.host_launch(lout.read())->*[&](auto out) {
+          for (size_t i = 0; i < n; i++)
+          {
+            EXPECT(out(i) == 3.0 * ref[i]);
+          }
+        };
+        // deferred form: the grid is bound at acquire from the launch's
+        // execution place -- no grid repeated at the call site
+        auto lout2 = ctx.logical_data(shape_of<slice<double>>(n));
+        ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(data_place::replicated()), lout2.write())
+            ->*[] __device__(size_t i, auto in, auto out) {
+                  out(i) = 5.0 * in(i);
+                };
+        ctx.host_launch(lout2.read())->*[&](auto out) {
+          for (size_t i = 0; i < n; i++)
+          {
+            EXPECT(out(i) == 5.0 * ref[i]);
+          }
+        };
 
-      // scalar degenerate: on a single-place task the deferred form
-      // materializes to the place's affine data place
-      auto lout3 = ctx.logical_data(shape_of<slice<double>>(n));
-      ctx.parallel_for(lin.shape(), lin.read(data_place::replicated()), lout3.write())
-          ->*[] __device__(size_t i, auto in, auto out) {
-                out(i) = 7.0 * in(i);
-              };
-      ctx.host_launch(lout3.read())->*[&](auto out) {
-        for (size_t i = 0; i < n; i++)
-        {
-          EXPECT(out(i) == 7.0 * ref[i]);
-        }
-      };
+        // scalar degenerate: on a single-place task the deferred form
+        // materializes to the place's affine data place
+        auto lout3 = ctx.logical_data(shape_of<slice<double>>(n));
+        ctx.parallel_for(lin.shape(), lin.read(data_place::replicated()), lout3.write())
+            ->*[] __device__(size_t i, auto in, auto out) {
+                  out(i) = 7.0 * in(i);
+                };
+        ctx.host_launch(lout3.read())->*[&](auto out) {
+          for (size_t i = 0; i < n; i++)
+          {
+            EXPECT(out(i) == 7.0 * ref[i]);
+          }
+        };
 
-      ctx.finalize();
-      printf("replicated data place: green-context grid (distinct member instances) OK\n");
-      printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) OK\n");
+        ctx.finalize();
+        printf("replicated data place: green-context grid (distinct member instances) %s OK\n",
+               use_graph_g ? "[graph]" : "[stream]");
+        printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) %s OK\n",
+               use_graph_g ? "[graph]" : "[stream]");
+      }
 
       // ---- axis-grouped replication on a (2, 2) grid: axis 0 = the two
       // green domains (REPLICATED), axis 1 = two execution slots per domain
