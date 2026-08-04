@@ -200,6 +200,7 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             install(
               EXPORT cudaxConsumerTargets
               DESTINATION lib/cmake/cudax-consumer
+              NAMESPACE cudax_consumer::
             )
             """
         ),
@@ -207,6 +208,33 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
     )
     (source_dir / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
     (source_dir / "main.cu").write_text("int main() { return 0; }\n", encoding="utf-8")
+
+    export_source_dir = tmp_path / "export-source"
+    export_source_dir.mkdir()
+    (export_source_dir / "CMakeLists.txt").write_text(
+        textwrap.dedent(
+            """\
+            cmake_minimum_required(VERSION 3.21)
+            project(cccl_headers_cudax_export_contract LANGUAGES CXX)
+
+            find_package(cudax CONFIG REQUIRED)
+            find_package(CCCL CONFIG REQUIRED COMPONENTS cudax)
+            include("${CUDAX_CONSUMER_TARGETS}")
+
+            add_executable(cudax_export_consumer main.cpp)
+            target_link_libraries(
+              cudax_export_consumer
+              PRIVATE
+                cudax_consumer::cudax_export_consumer
+                cudax_consumer::cccl_cudax_export_consumer
+            )
+            """
+        ),
+        encoding="utf-8",
+    )
+    (export_source_dir / "main.cpp").write_text(
+        "int main() { return 0; }\n", encoding="utf-8"
+    )
 
     for enable_cuda in (False, True):
         build_dir = tmp_path / f"build-{enable_cuda}"
@@ -240,6 +268,40 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
                 text=True,
             )
             assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+        export_build_dir = tmp_path / f"export-build-{enable_cuda}"
+        export_targets_file = (
+            build_dir
+            / "install"
+            / "lib"
+            / "cmake"
+            / "cudax-consumer"
+            / "cudaxConsumerTargets.cmake"
+        )
+        result = subprocess.run(
+            [
+                "cmake",
+                "-S",
+                str(export_source_dir),
+                "-B",
+                str(export_build_dir),
+                f"-Dcudax_DIR={cudax_cmake_dir.as_posix()}",
+                f"-DCCCL_DIR={(package_root / 'lib' / 'cmake' / 'cccl').as_posix()}",
+                f"-DCUDAX_CONSUMER_TARGETS={export_targets_file.as_posix()}",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+        result = subprocess.run(
+            ["cmake", "--build", str(export_build_dir)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
 
 def test_distribution_has_one_runtime_dependency():

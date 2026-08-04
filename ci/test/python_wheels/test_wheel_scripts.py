@@ -471,6 +471,112 @@ class WheelScriptTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "missing runtime dependencies"):
                 self.validator.validate(wheelhouse)
 
+    def test_rejects_marker_guarded_compute_header_pin(self):
+        with tempfile.TemporaryDirectory() as temp:
+            wheelhouse = Path(temp)
+            version = "1.2.3"
+            compute_wheel = (
+                wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
+            )
+            _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
+            requirements = (
+                "numpy",
+                "cuda-pathfinder>=1.2.3",
+                "cuda-core",
+                "typing_extensions",
+            )
+            _write_wheel(
+                compute_wheel,
+                {
+                    f"cuda_compute-{version}.dist-info/METADATA": (
+                        f"Name: cuda-compute\nVersion: {version}\n"
+                        + "".join(
+                            f"Requires-Dist: {requirement}\n"
+                            for requirement in requirements
+                        )
+                        + f'Requires-Dist: cccl-headers=={version}; extra == "never"\n'
+                    ),
+                    "cuda/compute/__init__.py": "",
+                },
+            )
+
+            with self.assertRaisesRegex(
+                RuntimeError, "does not exactly require the cccl-headers version"
+            ):
+                self.validator.validate(wheelhouse)
+
+    def test_rejects_marker_guarded_metapackage_compute_pin(self):
+        with tempfile.TemporaryDirectory() as temp:
+            wheelhouse = Path(temp)
+            version = "1.2.3"
+            _write_coordinated_wheel_set(
+                wheelhouse,
+                version,
+                (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
+            )
+            meta_wheel = wheelhouse / f"cuda_cccl-{version}-py3-none-any.whl"
+            _write_wheel(
+                meta_wheel,
+                {
+                    f"cuda_cccl-{version}.dist-info/METADATA": (
+                        f"Name: cuda-cccl\nVersion: {version}\n"
+                        f'Requires-Dist: cuda-compute=={version}; extra == "never"\n'
+                    )
+                },
+            )
+
+            with self.assertRaisesRegex(
+                RuntimeError, "does not exactly require the cuda-compute version"
+            ):
+                self.validator.validate(wheelhouse)
+
+    def test_rejects_altered_compute_runtime_dependencies(self):
+        for dependency, altered_requirement in (
+            ("numpy", "numpy<0"),
+            (
+                "cuda-core",
+                "cuda-core @ https://example.invalid/cuda_core.whl",
+            ),
+        ):
+            with (
+                self.subTest(altered_requirement=altered_requirement),
+                tempfile.TemporaryDirectory() as temp,
+            ):
+                wheelhouse = Path(temp)
+                version = "1.2.3"
+                compute_wheel = (
+                    wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
+                )
+                _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
+                base_requirements = (
+                    "numpy",
+                    "cuda-pathfinder>=1.2.3",
+                    "cuda-core",
+                    "typing_extensions",
+                )
+                requirements = tuple(
+                    altered_requirement if requirement == dependency else requirement
+                    for requirement in base_requirements
+                ) + (f"cccl-headers=={version}",)
+                _write_wheel(
+                    compute_wheel,
+                    {
+                        f"cuda_compute-{version}.dist-info/METADATA": (
+                            f"Name: cuda-compute\nVersion: {version}\n"
+                            + "".join(
+                                f"Requires-Dist: {requirement}\n"
+                                for requirement in requirements
+                            )
+                        ),
+                        "cuda/compute/__init__.py": "",
+                    },
+                )
+
+                with self.assertRaisesRegex(
+                    RuntimeError, "missing runtime dependencies"
+                ):
+                    self.validator.validate(wheelhouse)
+
     def test_monolithic_to_split_migration_sequence(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

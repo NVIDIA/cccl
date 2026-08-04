@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=1.0", "setuptools_scm"]
+requires = ["scikit-build-core>=1.0.1", "setuptools_scm"]
 build-backend = "scikit_build_core.build"
 
 [project]

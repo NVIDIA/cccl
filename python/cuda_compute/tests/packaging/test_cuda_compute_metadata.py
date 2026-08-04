@@ -10,7 +10,11 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
-import tomllib
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 PROJECT_ROOT = Path(__file__).parents[2]
 REPOSITORY_ROOT = PROJECT_ROOT.parents[1]
@@ -79,6 +83,15 @@ def test_compute_extras_reference_compute_distribution() -> None:
     for requirements in metadata["project"]["optional-dependencies"].values():
         for requirement in requirements:
             assert not requirement.startswith("cuda-cccl[")
+
+
+def test_test_extras_support_python_3_10() -> None:
+    with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
+        metadata = tomllib.load(stream)
+
+    extras = metadata["project"]["optional-dependencies"]
+    for extra in ("test-cu12", "test-cu13", "test-sysctk12", "test-sysctk13"):
+        assert "tomli; python_version < '3.11'" in extras[extra]
 
 
 def test_pip_toolkit_extras_include_v2_windows_runtime() -> None:
