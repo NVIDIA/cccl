@@ -91,6 +91,11 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
     size_t covered = 0;
     for (const auto& r : *runs)
     {
+      // strict tiling: each run starts where the previous ended and stays
+      // in bounds (covered == total alone would accept overlap/gap pairs)
+      EXPECT(r.first_block == covered);
+      EXPECT(r.num_blocks > 0);
+      EXPECT(r.num_blocks <= brute.size() - covered);
       for (size_t b = r.first_block; b < r.first_block + r.num_blocks; b++)
       {
         EXPECT(brute[b] == r.owner);
