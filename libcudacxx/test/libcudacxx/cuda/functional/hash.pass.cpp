@@ -29,7 +29,7 @@
 template <cuda::std::int32_t Words>
 struct large_key
 {
-  TEST_HOST_DEVICE_FUNC constexpr large_key(cuda::std::int32_t value)
+  TEST_HOST_DEVICE_FUNC constexpr large_key(cuda::std::int32_t value) noexcept
   {
     for (cuda::std::int32_t i = 0; i < Words; ++i)
     {
@@ -80,16 +80,17 @@ template <cuda::hash_algorithm Algorithm>
 struct hash_test
 {
   template <typename Key, typename ResultT, typename... HashConstructorArgs>
-  TEST_HOST_DEVICE_FUNC void operator()(const Key& key, ResultT expected, HashConstructorArgs&&... hash_constructor_args)
+  TEST_HOST_DEVICE_FUNC void
+  operator()(const Key& key, ResultT expected, HashConstructorArgs&&... hash_constructor_args) noexcept
   {
     using result_type = typename hash_result<Algorithm>::type;
 
-    cuda::hash<Key, Algorithm> hasher(::cuda::std::forward<HashConstructorArgs>(hash_constructor_args)...);
+    const cuda::hash<Key, Algorithm> hasher(::cuda::std::forward<HashConstructorArgs>(hash_constructor_args)...);
 
     cuda::std::array<Key, 1> arr_keys             = {key};
     const cuda::std::array<Key, 1> const_arr_keys = {key};
-    auto keys_span                                = cuda::std::span<Key, 1>{arr_keys};
-    auto const_keys_span                          = cuda::std::span<const Key, 1>{const_arr_keys};
+    const auto keys_span                          = cuda::std::span<Key, 1>{arr_keys};
+    const auto const_keys_span                    = cuda::std::span<const Key, 1>{const_arr_keys};
 
     static_assert(cuda::std::is_same_v<decltype(hasher(key)), result_type>);
     static_assert(cuda::std::is_same_v<decltype(hasher(keys_span)), result_type>);
@@ -281,8 +282,8 @@ static_assert(cuda::std::is_trivially_copyable_v<noncopyable_key>);
 template <cuda::hash_algorithm Algorithm>
 TEST_HOST_DEVICE_FUNC void test_noncopyable_key()
 {
-  noncopyable_key key{42};
-  cuda::hash<noncopyable_key, Algorithm> hasher;
+  const noncopyable_key key{42};
+  const cuda::hash<noncopyable_key, Algorithm> hasher;
   assert(hasher(key) == hasher(cuda::std::span<const noncopyable_key, 1>{&key, 1}));
 }
 
@@ -301,7 +302,7 @@ TEST_HOST_DEVICE_FUNC void test_sized_key()
     key.data_[i] = static_cast<cuda::std::byte>(i);
   }
 
-  cuda::hash<byte_key<Size>, Algorithm> hasher;
+  const cuda::hash<byte_key<Size>, Algorithm> hasher;
   cuda::std::array<byte_key<Size>, 2> keys             = {key, key};
   keys[1].data_[0]                                     = static_cast<cuda::std::byte>(42);
   const cuda::std::array<byte_key<Size>, 2> const_keys = keys;
@@ -326,7 +327,7 @@ TEST_HOST_DEVICE_FUNC void test_sized_keys()
 
 TEST_HOST_DEVICE_FUNC void test_empty_spans()
 {
-  cuda::std::span<const cuda::std::uint32_t> empty;
+  const cuda::std::span<const cuda::std::uint32_t> empty;
   assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::xxhash_32>{}(empty) == 0x02cc5d05u));
   assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::xxhash_64>{}(empty) == 0xef46db3751d8e999ull));
   assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_32>{}(empty) == 0u));

@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/__functional/hash/utils.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -610,6 +611,35 @@ private:
   static constexpr ::cuda::std::uint32_t __block_size = 8;
   static constexpr ::cuda::std::uint32_t __chunk_size = 16;
 
+  struct __compute_chunk
+  {
+    template <class _Index, class _Holder>
+    _CCCL_HOST_DEVICE_API constexpr void
+    operator()(_Index __i, const _Holder& __holder, ::cuda::std::array<::cuda::std::uint64_t, 2>& __h) const noexcept
+    {
+      ::cuda::std::uint64_t __k1 = __holder.__blocks_[2 * __i];
+      ::cuda::std::uint64_t __k2 = __holder.__blocks_[2 * __i + 1];
+
+      __k1 *= __c1;
+      __k1 = ::cuda::std::rotl(__k1, 31);
+      __k1 *= __c2;
+      __h[0] ^= __k1;
+
+      __h[0] = ::cuda::std::rotl(__h[0], 27);
+      __h[0] += __h[1];
+      __h[0] = __h[0] * 5 + 0x52dce729;
+
+      __k2 *= __c2;
+      __k2 = ::cuda::std::rotl(__k2, 33);
+      __k2 *= __c1;
+      __h[1] ^= __k2;
+
+      __h[1] = ::cuda::std::rotl(__h[1], 31);
+      __h[1] += __h[0];
+      __h[1] = __h[1] * 5 + 0x38495ab5;
+    }
+  };
+
 public:
   //! @brief Constructs a MurmurHash3 x64 128-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
@@ -653,33 +683,7 @@ private:
     ::cuda::std::array<::cuda::std::uint64_t, 2> __h{__seed_, __seed_};
     constexpr auto __size = ::cuda::std::uint64_t{sizeof(_Holder)};
 
-    if constexpr (_Holder::__num_chunks > 0)
-    {
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (::cuda::std::size_t __i = 0; __i < _Holder::__num_chunks; ++__i)
-      {
-        ::cuda::std::uint64_t __k1 = __holder.__blocks_[2 * __i];
-        ::cuda::std::uint64_t __k2 = __holder.__blocks_[2 * __i + 1];
-
-        __k1 *= __c1;
-        __k1 = ::cuda::std::rotl(__k1, 31);
-        __k1 *= __c2;
-        __h[0] ^= __k1;
-
-        __h[0] = ::cuda::std::rotl(__h[0], 27);
-        __h[0] += __h[1];
-        __h[0] = __h[0] * 5 + 0x52dce729;
-
-        __k2 *= __c2;
-        __k2 = ::cuda::std::rotl(__k2, 33);
-        __k2 *= __c1;
-        __h[1] ^= __k2;
-
-        __h[1] = ::cuda::std::rotl(__h[1], 31);
-        __h[1] += __h[0];
-        __h[1] = __h[1] * 5 + 0x38495ab5;
-      }
-    }
+    ::cuda::static_for<_Holder::__num_chunks>(__compute_chunk{}, __holder, __h);
     // tail
     if constexpr (_Holder::__tail_size > 0)
     {

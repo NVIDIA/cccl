@@ -58,6 +58,7 @@
 #include <cuda/__functional/hash/utils.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/array>
@@ -100,9 +101,16 @@ public:
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
     if constexpr (sizeof(_Holder) == sizeof(_Key))
     {
-      // Materialize the holder so the device compiler can use wide loads.
-      const auto __holder = ::cuda::std::bit_cast<_Holder>(__key);
-      return __compute_hash(__holder);
+      if constexpr (::cuda::std::is_copy_constructible_v<_Key>)
+      {
+        // Materialize a copy so the device compiler can use wide loads.
+        const _Key __copy{__key};
+        return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));
+      }
+      else
+      {
+        return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
+      }
     }
     else
     {
@@ -132,8 +140,8 @@ private:
   template <class _Holder>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
-    ::cuda::std::size_t __offset = 0;
-    ::cuda::std::uint32_t __h32  = {};
+    ::cuda::std::uint32_t __offset = 0;
+    ::cuda::std::uint32_t __h32    = {};
 
     // process data in 16-byte chunks
     if constexpr (_Holder::__num_chunks > 0)
@@ -300,7 +308,16 @@ public:
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
   {
-    return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
+    if constexpr (sizeof(_Key) <= 16 && ::cuda::std::is_copy_constructible_v<_Key>)
+    {
+      // Materialize a copy so the device compiler can use wide loads.
+      const _Key __copy{__key};
+      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__copy, 1});
+    }
+    else
+    {
+      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
+    }
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint64_t`.
