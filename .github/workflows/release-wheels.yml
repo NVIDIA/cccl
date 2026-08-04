@@ -51,12 +51,36 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
         with:
           persist-credentials: false
+          ref: ${{ github.sha }}
 
       - name: Download CCCL Python wheels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ inputs.run-id }}
         run: |
+          if [[ ! "${RUN_ID}" =~ ^[0-9]+$ ]]; then
+            echo "Run ID must be numeric: ${RUN_ID}" >&2
+            exit 1
+          fi
+
+          wheel_workflow_id=$(gh api \
+            "repos/${REPOSITORY}/actions/workflows/build-and-test-python-wheels.yml" \
+            --jq '.id')
+          run_json=$(gh api "repos/${REPOSITORY}/actions/runs/${RUN_ID}")
+          if ! jq -e \
+            --argjson workflow_id "${wheel_workflow_id}" \
+            --arg repository "${REPOSITORY}" \
+            '.workflow_id == $workflow_id
+              and .status == "completed"
+              and .conclusion == "success"
+              and .event == "workflow_dispatch"
+              and .head_repository.full_name == $repository' \
+            <<< "${run_json}" >/dev/null; then
+            echo "Run ${RUN_ID} is not a successful trusted Python wheel build" >&2
+            exit 1
+          fi
+
           gh run download "${RUN_ID}" -D dl -R "${{ github.repository }}" \
             -p 'wheel-cccl-linux-*' \
             -p 'wheel-cccl-windows-*'
