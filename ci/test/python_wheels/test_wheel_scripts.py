@@ -146,6 +146,71 @@ class WheelScriptTests(unittest.TestCase):
     collector = None
     validator = None
 
+    def test_python_wheel_helpers_pin_local_dependencies(self):
+        helper = REPOSITORY_ROOT / "ci" / "pyenv_helper.sh"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            wheelhouse = root / "wheel house"
+            wheelhouse.mkdir()
+            wheelhouse_arg = wheelhouse.as_posix()
+
+            def run_helper(command: str) -> subprocess.CompletedProcess[str]:
+                return subprocess.run(
+                    [
+                        "bash",
+                        "-c",
+                        f'source "$1"; {command}',
+                        "bash",
+                        helper.as_posix(),
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    env={**os.environ, "PYTHON": sys.executable},
+                )
+
+            result = run_helper(f'get_one_python_wheel "{wheelhouse_arg}" cuda_compute')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("found 0", result.stderr)
+
+            compute_wheel = wheelhouse / "cuda_compute-1.2.3+local-py3-none-any.whl"
+            compute_wheel.touch()
+            compute_wheel_arg = compute_wheel.as_posix()
+            result = run_helper(f'get_one_python_wheel "{wheelhouse_arg}" cuda_compute')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), compute_wheel_arg)
+
+            duplicate_wheel = wheelhouse / "cuda_compute-1.2.4-py3-none-any.whl"
+            duplicate_wheel.touch()
+            result = run_helper(f'get_one_python_wheel "{wheelhouse_arg}" cuda_compute')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("found 2", result.stderr)
+            duplicate_wheel.unlink()
+
+            headers_wheel = wheelhouse / "cccl_headers-1.2.3-py3-none-any.whl"
+            headers_wheel.touch()
+            constraints = root / "constraints.txt"
+            result = run_helper(
+                f'write_python_wheel_constraints "{constraints.as_posix()}" '
+                f'cuda-compute "{compute_wheel_arg}" '
+                f'cccl-headers "{headers_wheel.as_posix()}"'
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                constraints.read_text(encoding="utf-8"),
+                f"cuda-compute @ {compute_wheel.resolve().as_uri()}\n"
+                f"cccl-headers @ {headers_wheel.resolve().as_uri()}\n",
+            )
+            self.assertIn("%2Blocal", constraints.read_text(encoding="utf-8"))
+            self.assertIn("wheel%20house", constraints.read_text(encoding="utf-8"))
+
+            result = run_helper(
+                f'write_python_wheel_constraints "{constraints.as_posix()}" '
+                "cuda-compute"
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("distribution/path pairs", result.stderr)
+
     def test_generate_version_uses_checkout_version_file(self):
         tag = subprocess.run(
             ["git", "describe", "--tags", "--match", "v[0-9]*", "--abbrev=0"],

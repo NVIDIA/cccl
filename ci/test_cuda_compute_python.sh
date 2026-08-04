@@ -26,15 +26,14 @@ fi
 
 # Install cuda-compute directly. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
 # (system-provided toolkit) depending on the -ctk-mode arg.
-CUDA_COMPUTE_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_compute-*.whl)"
-CCCL_HEADERS_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cccl_headers-*.whl)"
-if [[ ! -f "${CUDA_COMPUTE_WHEEL_PATH}" || ! -f "${CCCL_HEADERS_WHEEL_PATH}" ]]; then
-  echo "Expected exactly one cuda-compute and cccl-headers wheel in ${repo_root}/wheelhouse." >&2
-  printf 'Resolved paths: compute=%q headers=%q\n' "${CUDA_COMPUTE_WHEEL_PATH}" "${CCCL_HEADERS_WHEEL_PATH}" >&2
-  exit 1
-fi
+CUDA_COMPUTE_WHEEL_PATH="$(get_one_python_wheel "${repo_root}/wheelhouse" cuda_compute)"
+CCCL_HEADERS_WHEEL_PATH="$(get_one_python_wheel "${repo_root}/wheelhouse" cccl_headers)"
+wheel_constraints="$(mktemp)"
+trap 'rm -f "${wheel_constraints}"' EXIT
+write_python_wheel_constraints "${wheel_constraints}" \
+  cccl-headers "${CCCL_HEADERS_WHEEL_PATH}"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install --find-links "${repo_root}/wheelhouse" \
+python -m pip install --constraint "${wheel_constraints}" --find-links "${repo_root}/wheelhouse" \
   "${CUDA_COMPUTE_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 python -m pip check
 python -c "import importlib.util; assert importlib.util.find_spec('cuda.cccl.headers')"

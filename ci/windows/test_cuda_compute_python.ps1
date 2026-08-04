@@ -26,12 +26,18 @@ $repoRoot = Get-RepoRoot
 
 $wheelPath = Get-CudaComputeWheel
 $wheelhouse = Split-Path -Parent $wheelPath
-$null = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
+$headersWheel = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
 
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Checked {
-    & $python -m pip install --find-links $wheelhouse "$wheelPath[test-$ctkFlavor$cudaMajor]"
-} "Failed to install cuda-compute test extra"
+$wheelConstraints = New-PythonWheelConstraints -Wheels @{
+    'cccl-headers' = $headersWheel
+}
+try {
+    Invoke-Checked {
+        & $python -m pip install --constraint $wheelConstraints --find-links $wheelhouse "$wheelPath[test-$ctkFlavor$cudaMajor]"
+    } "Failed to install cuda-compute test extra"
+}
+finally { Remove-Item -LiteralPath $wheelConstraints -Force }
 Invoke-Checked { & $python -m pip check } "Installed cuda-compute environment is inconsistent"
 Invoke-Checked {
     & $python -c "import importlib.metadata as m; import cuda.cccl.headers; assert m.version('cccl-headers') == m.version('cuda-compute')"

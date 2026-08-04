@@ -75,3 +75,48 @@ ctk_extra_flavor() {
         echo "cu"
     fi
 }
+
+# Resolve exactly one wheel with the supplied distribution filename prefix.
+# Unlike command substitution around `ls`, this keeps the explicit diagnostic
+# reachable under `set -e` when there are no matches.
+get_one_python_wheel() {
+    local wheelhouse=$1
+    local wheel_prefix=$2
+    local -a matches=()
+
+    mapfile -d '' -t matches < <(
+        find "${wheelhouse}" -maxdepth 1 -type f -name "${wheel_prefix}-*.whl" -print0 2> /dev/null
+    )
+    if (( ${#matches[@]} != 1 )); then
+        echo "Expected exactly one ${wheel_prefix}-*.whl under ${wheelhouse}; found ${#matches[@]}." >&2
+        if (( ${#matches[@]} > 0 )); then
+            printf '  %s\n' "${matches[@]}" >&2
+        fi
+        return 1
+    fi
+
+    printf '%s\n' "${matches[0]}"
+}
+
+# Constrain transitive package resolution to coordinated wheels in the local
+# wheelhouse. Arguments after the output path are distribution/path pairs.
+write_python_wheel_constraints() {
+    local output_path=$1
+    shift
+
+    "${PYTHON:-python}" - "${output_path}" "$@" <<'PY'
+import sys
+from pathlib import Path
+
+output = Path(sys.argv[1])
+arguments = sys.argv[2:]
+if len(arguments) % 2:
+    raise ValueError("wheel constraints require distribution/path pairs")
+
+lines = [
+    f"{distribution} @ {Path(wheel).resolve().as_uri()}"
+    for distribution, wheel in zip(arguments[::2], arguments[1::2])
+]
+output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+PY
+}

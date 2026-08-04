@@ -206,6 +206,39 @@ function Get-CudaCcclWheel {
     return Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
 }
 
+function New-PythonWheelConstraints {
+    <#
+    .SYNOPSIS
+        Writes a temporary pip constraints file that resolves coordinated
+        transitive dependencies from specific local wheels.
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [hashtable] $Wheels
+    )
+
+    $constraintPath = [System.IO.Path]::GetTempFileName()
+    try {
+        $constraints = @(
+            foreach ($distribution in ($Wheels.Keys | Sort-Object)) {
+                $wheel = (Get-Item -LiteralPath $Wheels[$distribution]).FullName
+                $wheelUri = [System.Uri]::new($wheel).AbsoluteUri
+                "$distribution @ $wheelUri"
+            }
+        )
+        [System.IO.File]::WriteAllLines(
+            $constraintPath,
+            $constraints,
+            [System.Text.Encoding]::ASCII
+        )
+        return $constraintPath
+    }
+    catch {
+        Remove-Item -LiteralPath $constraintPath -Force -ErrorAction SilentlyContinue
+        throw
+    }
+}
+
 function Get-OnePathMatch {
     <#
     .SYNOPSIS
@@ -273,4 +306,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CcclPythonWheelhouse, Get-CcclHeadersWheel, Get-CudaComputeWheel, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CcclPythonWheelhouse, Get-CcclHeadersWheel, Get-CudaComputeWheel, Get-CudaCcclWheel, Get-OnePathMatch, New-PythonWheelConstraints
