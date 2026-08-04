@@ -127,9 +127,18 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
         textwrap.dedent(
             """\
             cmake_minimum_required(VERSION 3.21)
-            project(cccl_headers_cudax_contract LANGUAGES NONE)
+            project(cccl_headers_cudax_contract LANGUAGES CXX)
+
+            include(CheckLanguage)
+            check_language(CUDA)
+            if (CMAKE_CUDA_COMPILER)
+              enable_language(CUDA)
+            endif()
 
             find_package(cudax CONFIG REQUIRED)
+
+            add_executable(cudax_consumer main.cpp)
+            target_link_libraries(cudax_consumer PRIVATE cudax::cudax)
 
             get_target_property(cudax_alias cudax::cudax ALIASED_TARGET)
             if (NOT cudax_alias STREQUAL "_cudax_cudax")
@@ -142,11 +151,14 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             endif()
 
             get_target_property(cudax_features _cudax_cudax INTERFACE_COMPILE_FEATURES)
-            foreach (required_feature IN ITEMS cxx_std_17 cuda_std_17)
-              if (NOT required_feature IN_LIST cudax_features)
-                message(FATAL_ERROR "cudax::cudax is missing ${required_feature}")
-              endif()
-            endforeach()
+            if (NOT cxx_std_17 IN_LIST cudax_features)
+              message(FATAL_ERROR "cudax::cudax is missing cxx_std_17")
+            endif()
+            if (CMAKE_CUDA_COMPILER AND NOT cuda_std_17 IN_LIST cudax_features)
+              message(FATAL_ERROR "CUDA consumers require cuda_std_17")
+            elseif (NOT CMAKE_CUDA_COMPILER AND cuda_std_17 IN_LIST cudax_features)
+              message(FATAL_ERROR "C++-only consumers must not require cuda_std_17")
+            endif()
 
             get_target_property(cudax_includes _cudax_cudax INTERFACE_INCLUDE_DIRECTORIES)
             file(REAL_PATH "${EXPECTED_CUDAX_INCLUDE}" expected_cudax_include)
@@ -167,17 +179,27 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
         ),
         encoding="utf-8",
     )
+    (source_dir / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
 
+    build_dir = tmp_path / "build"
     result = subprocess.run(
         [
             "cmake",
             "-S",
             str(source_dir),
             "-B",
-            str(tmp_path / "build"),
+            str(build_dir),
             f"-Dcudax_DIR={cudax_cmake_dir}",
             f"-DEXPECTED_CUDAX_INCLUDE={(package_root / 'include').as_posix()}",
         ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    result = subprocess.run(
+        ["cmake", "--build", str(build_dir)],
         check=False,
         capture_output=True,
         text=True,

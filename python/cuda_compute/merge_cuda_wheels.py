@@ -86,10 +86,14 @@ def _validate_shared_contents(extracted_wheels: list[Path], wheels: list[Path]) 
         if contents == base_contents:
             continue
 
-        missing = sorted(str(path) for path in base_contents.keys() - contents.keys())
-        extra = sorted(str(path) for path in contents.keys() - base_contents.keys())
+        missing = sorted(
+            path.as_posix() for path in base_contents.keys() - contents.keys()
+        )
+        extra = sorted(
+            path.as_posix() for path in contents.keys() - base_contents.keys()
+        )
         changed = sorted(
-            str(path)
+            path.as_posix()
             for path in base_contents.keys() & contents.keys()
             if base_contents[path] != contents[path]
         )

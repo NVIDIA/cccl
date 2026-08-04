@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from pathlib import Path
+from types import ModuleType
 
+import pytest
 import tomllib
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -43,6 +47,29 @@ def test_exact_cccl_headers_dependency_follows_cuda_compute_version() -> None:
             "result": ["cccl-headers=={project[version]}"],
         },
     ]
+
+
+def test_missing_cuda_bindings_has_actionable_extra_diagnostic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cuda_namespace = ModuleType("cuda")
+    cuda_namespace.__path__ = []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "cuda", cuda_namespace)
+    monkeypatch.delitem(sys.modules, "cuda.bindings", raising=False)
+
+    module_path = PROJECT_ROOT / "cuda/compute/_cuda_version_utils.py"
+    spec = importlib.util.spec_from_file_location(
+        "cuda_version_utils_test", module_path
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+
+    with pytest.raises(
+        ImportError,
+        match=r"cuda-compute\[cu12\].*cuda-compute\[cu13\]",
+    ):
+        spec.loader.exec_module(module)
 
 
 def test_compute_extras_reference_compute_distribution() -> None:

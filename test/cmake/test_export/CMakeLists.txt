@@ -161,7 +161,12 @@ foreach (component IN LISTS COMPONENTS)
       _cudax_cudax
       INTERFACE_COMPILE_FEATURES
     )
-    foreach (required_feature IN ITEMS cxx_std_17 cuda_std_17)
+    set(cudax_required_features cxx_std_17)
+    get_property(cudax_enabled_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if (CUDA IN_LIST cudax_enabled_languages)
+      list(APPEND cudax_required_features cuda_std_17)
+    endif()
+    foreach (required_feature IN LISTS cudax_required_features)
       if (NOT required_feature IN_LIST cudax_compile_features)
         message(
           FATAL_ERROR

@@ -62,7 +62,11 @@ add_library(_cudax_cudax INTERFACE)
 add_library(cudax::cudax ALIAS _cudax_cudax)
 set(cudax_target_name _cudax_cudax)
 
-target_compile_features(${cudax_target_name} INTERFACE cxx_std_17 cuda_std_17)
+target_compile_features(${cudax_target_name} INTERFACE cxx_std_17)
+get_property(cudax_enabled_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+if (CUDA IN_LIST cudax_enabled_languages)
+  target_compile_features(${cudax_target_name} INTERFACE cuda_std_17)
+endif()
 target_compile_definitions(
   ${cudax_target_name}
   INTERFACE _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX

@@ -86,6 +86,10 @@ wheel's RECORD:
 This is a one-time migration. Subsequent upgrades within the three-wheel
 layout can use the normal ``pip install --upgrade`` flow.
 
+The deprecated ``cuda.cccl.parallel.experimental`` compatibility import is not
+part of the split layout. Import the supported API directly from
+``cuda.compute``.
+
 Install individual distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

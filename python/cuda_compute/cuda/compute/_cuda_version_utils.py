@@ -6,7 +6,15 @@
 
 from typing import Optional
 
-import cuda.bindings
+try:
+    import cuda.bindings
+except ModuleNotFoundError as error:
+    if error.name != "cuda.bindings":
+        raise
+    raise ImportError(
+        "cuda.bindings is not installed. Please install the appropriate extra "
+        "cuda-compute[cu12] or cuda-compute[cu13]."
+    ) from None
 
 
 def detect_cuda_version() -> Optional[int]:
