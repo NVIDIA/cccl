@@ -89,19 +89,22 @@ public:
 
     if (memory_node.is_replicated())
     {
-      // One padded replica per grid member, each in its member's affine
-      // memory. The instance exposes replica 0, so ordinary copies target
-      // it; copies INTO the place fan out to the other replicas (see the
-      // copy path), and writes at the place are rejected at task creation,
-      // so a valid replicated instance is synced by construction.
-      const auto& grid             = ::cuda::experimental::places::replicated_grid(memory_node);
-      const size_t stride          = reserved::replicated_replica_stride(static_cast<size_t>(s));
-      auto [array, cached_prereqs] = bctx.get_composite_cache().get_replicated(grid, stride);
-      prereqs.merge(mv(cached_prereqs));
-      T* rep_base                        = static_cast<T*>(array->get_base_ptr());
-      *extra_args                        = array.release();
-      local_desc                         = this->shape.create(rep_base);
-      replicated_instances_[instance_id] = grid.size();
+      // One ORDINARY allocation per grid member, through each member's
+      // affine data place and the regular (stream-ordered) allocator: no
+      // VMM machinery, no padding, per-place pools respected. The instance
+      // exposes replica 0, so ordinary copies target it; copies INTO the
+      // place fan out to the other replicas (see the copy path), and
+      // writes at the place are rejected at task creation, so a valid
+      // replicated instance is synced by construction.
+      const auto& grid     = ::cuda::experimental::places::replicated_grid(memory_node);
+      const size_t nplaces = grid.size();
+      ::std::vector<void*> table(nplaces);
+      for (size_t r = 0; r < nplaces; r++)
+      {
+        table[r] = custom_allocator.allocate(bctx, grid.get_place(r).affine_data_place(), s, prereqs);
+      }
+      local_desc                         = this->shape.create(static_cast<T*>(table[0]));
+      replicated_instances_[instance_id] = mv(table);
       return;
     }
 
@@ -162,13 +165,25 @@ public:
     // TODO erase local_desc to avoid future reuse by mistake
     // local_desc = element_type();
 
-    if (!memory_node.is_composite() && !memory_node.is_replicated())
+    if (memory_node.is_replicated())
+    {
+      const auto& grid = ::cuda::experimental::places::replicated_grid(memory_node);
+      auto it          = replicated_instances_.find(instance_id);
+      _CCCL_ASSERT(it != replicated_instances_.end(), "unknown replicated instance");
+      for (size_t r = 0; r < it->second.size(); r++)
+      {
+        custom_allocator.deallocate(bctx, grid.get_place(r).affine_data_place(), prereqs, it->second[r], sz);
+      }
+      replicated_instances_.erase(it);
+      return;
+    }
+
+    if (!memory_node.is_composite())
     {
       custom_allocator.deallocate(bctx, memory_node, prereqs, ptr, sz);
       return;
     }
 
-    replicated_instances_.erase(instance_id);
     assert(extra_args);
 
     // To properly erase a composite data, we would need to synchronize the
@@ -274,20 +289,30 @@ public:
     // rejected, so no other path can desynchronize individual replicas).
     if (const auto it = replicated_instances_.find(dst_instance_id); it != replicated_instances_.end())
     {
-      const size_t bytes  = b.size() * sizeof(T);
-      const size_t stride = reserved::replicated_replica_stride(bytes);
-      char* rep_base      = reinterpret_cast<char*>(dst_ptr);
-      for (size_t r = 1; r < it->second; r++)
+      const size_t bytes = b.size() * sizeof(T);
+      for (size_t r = 1; r < it->second.size(); r++)
       {
-        cuda_try(cudaMemcpyAsync(rep_base + r * stride, rep_base, bytes, cudaMemcpyDefault, s));
+        cuda_try(cudaMemcpyAsync(it->second[r], it->second[0], bytes, cudaMemcpyDefault, s));
       }
     }
 
     prereqs = op.end(bctx);
   }
 
-  //! Replica count of live replicated instances (fan-out in the copy path)
-  ::std::map<instance_id_t, size_t> replicated_instances_;
+  //! Replica pointers of live replicated instances (fan-out in the copy
+  //! path; per-shard argument rebase through replica_pointer())
+  ::std::map<instance_id_t, ::std::vector<void*>> replicated_instances_;
+
+  const void* replica_pointer(instance_id_t instance_id, size_t r) const override
+  {
+    const auto it = replicated_instances_.find(instance_id);
+    if (it == replicated_instances_.end())
+    {
+      return nullptr;
+    }
+    _CCCL_ASSERT(r < it->second.size(), "replica index out of range");
+    return it->second[r];
+  }
 
   bool pin_host_memory(instance_id_t instance_id) override
   {

@@ -152,6 +152,16 @@ public:
   data_interface() {}
 
   /**
+   * @brief Pointer of one replica of an instance living at a replicated
+   * data place, or nullptr if the instance is not replicated. Grid
+   * dispatch rebases each shard's argument onto its own replica.
+   */
+  virtual const void* replica_pointer(instance_id_t, size_t) const
+  {
+    return nullptr;
+  }
+
+  /**
    * @brief Allocate data and return a prerequisite event list.
    *
    * @param ctx Backend context state

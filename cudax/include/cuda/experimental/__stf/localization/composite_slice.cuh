@@ -207,59 +207,6 @@ struct cached_cute_localized_array
   event_list prereqs;
 };
 
-//! Padded per-replica stride of a replicated instance: the replica size
-//! rounded up to the placement granularity, so each replica's pages can be
-//! bound to its own place. The single source of truth shared by allocation
-//! (composite cache) and the per-place instance rebase in parallel_for.
-inline size_t replicated_replica_stride(size_t bytes)
-{
-  const size_t g = ::cuda::experimental::places::default_placement_block_size();
-  return ((bytes + g - 1) / g) * g;
-}
-
-/**
- * @brief Pairs the replicated localized_array of one (grid, stride) with an
- * event_list for async cache reuse (same lifecycle as the composite
- * entries: the VMM teardown is synchronous, so arrays are recycled through
- * the cache and handed to the parent context on stackable pops).
- */
-struct cached_replicated_array
-{
-  //! Build the replicas: one padded copy per grid member, place-local
-  cached_replicated_array(const exec_place& grid_, const size_t& stride_bytes_)
-      : grid(grid_)
-      , stride_bytes(stride_bytes_)
-  {
-    const size_t nplaces = grid.size();
-    const size_t stride  = stride_bytes;
-    array                = ::std::make_unique<localized_array>(
-      grid,
-      [stride](size_t byte_index) {
-        return pos4(static_cast<ssize_t>(byte_index / stride));
-      },
-      nplaces * stride,
-      1,
-      dim4(nplaces * stride));
-  }
-
-  //! Wrap an existing array returned to the cache
-  cached_replicated_array(const exec_place& grid_, size_t stride_bytes_, ::std::unique_ptr<localized_array> a)
-      : grid(grid_)
-      , stride_bytes(stride_bytes_)
-      , array(mv(a))
-  {}
-
-  bool operator==(const ::cuda::std::tuple<const exec_place&, const size_t&>& t) const
-  {
-    return stride_bytes == ::cuda::std::get<1>(t) && grid == ::cuda::std::get<0>(t);
-  }
-
-  exec_place grid;
-  size_t stride_bytes;
-  ::std::unique_ptr<localized_array> array;
-  event_list prereqs;
-};
-
 /**
  * @brief A very simple allocation cache for slices in composite data places
  */
@@ -282,20 +229,7 @@ public:
       result.merge(mv(entry.prereqs));
       entry.prereqs.clear();
     });
-    replicated_cache.each([&](auto& entry) {
-      result.merge(mv(entry.prereqs));
-      entry.prereqs.clear();
-    });
     return result;
-  }
-
-  //! Take one replicated array for (grid, stride) from the cache, or build it
-  [[nodiscard]] ::std::pair<::std::unique_ptr<localized_array>, event_list>
-  get_replicated(const exec_place& grid, size_t stride_bytes)
-  {
-    auto entry         = replicated_cache.get(grid, stride_bytes);
-    event_list prereqs = mv(entry->prereqs);
-    return {mv(entry->array), mv(prereqs)};
   }
 
   //! Take every cached allocation from \p other (e.g. the cache of a popped
@@ -318,12 +252,8 @@ public:
     other.cute_partition_cache.each([&](auto& entry) {
       entry.prereqs.merge(completion);
     });
-    other.replicated_cache.each([&](auto& entry) {
-      entry.prereqs.merge(completion);
-    });
     partition_fn_cache.import_from(mv(other.partition_fn_cache));
     cute_partition_cache.import_from(mv(other.cute_partition_cache));
-    replicated_cache.import_from(mv(other.replicated_cache));
   }
 
   void put(const data_place& place,
@@ -333,19 +263,8 @@ public:
            size_t elem_size,
            dim4 data_dims)
   {
-    const bool composite_or_replicated = place.is_composite() || place.is_replicated();
-    EXPECT(composite_or_replicated);
+    EXPECT(place.is_composite());
     EXPECT(a.get());
-
-    if (place.is_replicated())
-    {
-      const auto& grid = ::cuda::experimental::places::replicated_grid(place);
-      auto entry =
-        ::std::make_unique<cached_replicated_array>(grid, replicated_replica_stride(total_size * elem_size), mv(a));
-      entry->prereqs.merge(prereqs);
-      replicated_cache.put(mv(entry));
-      return;
-    }
 
     if (const auto* cute_place = as_cute_composite(place))
     {
@@ -403,6 +322,5 @@ private:
 
   linear_pool<cached_localized_array> partition_fn_cache;
   linear_pool<cached_cute_localized_array> cute_partition_cache;
-  linear_pool<cached_replicated_array> replicated_cache;
 };
 } // end namespace cuda::experimental::stf::reserved
