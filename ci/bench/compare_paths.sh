@@ -34,7 +34,7 @@ Options:
   --python-filter <regex>   Python benchmark regex filter (repeatable).
   --arch <arch>             CMAKE_CUDA_ARCHITECTURES for CUB builds.
   --nvbench-args <args>     Extra args passed to benchmark binaries/scripts.
-  --nvbench-compare-args <args>  Extra args passed to nvbench_compare.
+  --nvbench-compare-args <args>  Extra args passed to nvbench-compare-robust.
 
 Environment:
   CCCL_BENCH_ARTIFACT_ROOT   Root directory for outputs.
@@ -172,10 +172,10 @@ resolve_compare_script() {
   local build_path="$1"
   local nvbench_src="${build_path}/_deps/nvbench-src"
   local candidate=""
-  # Diff versions have the script at diff locations:
+  # Different versions have the script at different locations:
   for candidate in \
-    "${nvbench_src}/python/scripts/nvbench_compare.py" \
-    "${nvbench_src}/scripts/nvbench_compare.py"; do
+    "${nvbench_src}/python/scripts/nvbench_compare_robust.py" \
+    "${nvbench_src}/scripts/nvbench_compare_robust.py"; do
     if [[ -f "${candidate}" ]]; then
       printf "%s" "${candidate}"
       return 0
@@ -203,7 +203,7 @@ run_target_for_side() {
     "${binary_path}"
     -d 0
     "${NVBENCH_RUN_ARGS[@]}"
-    --json "${json_path}"
+    --jsonbin "${json_path}"
     --md "${md_path}"
   )
 
@@ -357,8 +357,8 @@ setup_python_venv() {
       python3 -m venv '${venv_path}'
       '${venv_path}/bin/pip' install --upgrade pip
       '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      # nvbench-compare runtime deps (until cuda-bench declares them):
-      '${venv_path}/bin/pip' install colorama jsondiff tabulate
+      # cuda-cccl[bench-cuXX] installs cuda-bench[cuXX], not cuda-bench[compare].
+      '${venv_path}/bin/pip' install colorama jsondiff numpy tabulate
     "
   )
 
@@ -387,7 +387,7 @@ run_python_target_for_side() {
     "${script_path}"
     -d 0
     "${NVBENCH_RUN_ARGS[@]}"
-    --json "${json_path}"
+    --jsonbin "${json_path}"
     --md "${md_path}"
   )
 
@@ -410,7 +410,7 @@ run_python_compare_target() {
   local elapsed_s=0
   local rc=0
   local -a compare_cmd
-  compare_cmd=("${venv_path}/bin/nvbench-compare" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  compare_cmd=("${venv_path}/bin/nvbench-compare-robust" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
   : > "${compare_log}"
   echo "::group::${label}"
@@ -846,7 +846,7 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     compare_script="$(resolve_compare_script "${base_build_dir}" || true)"
   fi
   if [[ -z "${compare_script}" ]]; then
-    die "Unable to locate nvbench_compare.py in build dependencies." 1
+    die "Unable to locate nvbench_compare_robust.py in build dependencies." 1
   fi
   compare_script_dir="$(dirname "${compare_script}")"
 

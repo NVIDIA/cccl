@@ -59,14 +59,20 @@ In `.github/workflows/bench.yml`:
 
 ## Python Benchmarks
 
-Python benchmarks live under `python/cuda_cccl/benchmarks/` and use `cuda.bench` (the Python nvbench bindings). Each benchmark script outputs nvbench-compatible JSON.
+Python benchmarks live under `python/cuda_cccl/benchmarks/` and use `cuda.bench` (the Python nvbench bindings). Each benchmark script outputs nvbench-compatible JSON with binary sidecars for bulk sample data.
+
+For CUB-only comparisons, the caller's Python environment must provide the NVBench compare dependencies:
+
+```bash
+python3 -m pip install 'cuda-bench[compare]'
+```
 
 For Python benchmarks, `compare_paths.sh`:
 
 1. Creates isolated virtual environments for base and test trees.
 2. Installs `cuda-cccl[bench-cuXX]` (editable, from each worktree), which pulls in `cuda-bench`, `cupy`, and all other benchmark dependencies.
 3. Runs matching benchmark scripts in each venv.
-4. Compares results using `nvbench-compare` (installed with `cuda-bench`).
+4. Compares results using `nvbench-compare-robust` (installed with `cuda-bench`).
 
 Python filters are regex patterns matched against relative paths under `python/cuda_cccl/benchmarks/`, for example:
 - `compute/reduce/sum\.py` — single benchmark
@@ -76,7 +82,7 @@ Python filters are regex patterns matched against relative paths under `python/c
 
 `compare_paths.sh` writes a run directory under `${CCCL_BENCH_ARTIFACT_ROOT:-$(pwd)/bench-artifacts}` containing:
 
-- per-target JSON and markdown outputs for base/test runs,
+- per-target JSON, binary sidecars, and markdown outputs for base/test runs,
 - grouped build logs (`build.base.log`, `build.test.log`), per-target run logs, and per-target compare logs (`compare.<target>.log`),
 - Python venv setup logs (`py.venv.base.log`, `py.venv.test.log`),
 - `summary.md` with run metadata and per-target collapsible full compare reports.

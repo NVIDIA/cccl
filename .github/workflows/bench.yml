@@ -48,7 +48,7 @@ on:
         default: ""
         type: string
       nvbench_compare_args:
-        description: "nvbench_compare.py extra args"
+        description: "nvbench-compare-robust extra args"
         required: false
         default: ""
         type: string
@@ -100,7 +100,7 @@ on:
         default: ""
         type: string
       nvbench_compare_args:
-        description: "nvbench_compare.py extra args"
+        description: "nvbench-compare-robust extra args"
         required: false
         default: ""
         type: string
@@ -319,6 +319,7 @@ jobs:
           ./ci/util/retry.sh 5 30 python3 -m pip install \
             colorama \
             jsondiff \
+            numpy \
             tabulate
 
           ./ci/bench/bench.sh "${bench_args[@]}"
