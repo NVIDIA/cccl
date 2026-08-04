@@ -143,6 +143,62 @@ int main()
       ctx.finalize();
       printf("replicated data place: green-context grid (distinct member instances) OK\n");
       printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) OK\n");
+
+      // ---- axis-grouped replication on a (2, 2) grid: axis 0 = the two
+      // green domains (REPLICATED), axis 1 = two execution slots per domain
+      // (SHARED). One instance per domain, shared by its two slots.
+      {
+        context gctx;
+        ::std::vector<exec_place> ps22;
+        ps22.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,0)
+        ps22.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,0)
+        ps22.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,1)
+        ps22.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,1)
+        auto grid22 = make_grid(mv(ps22), dim4(2, 2));
+        auto rep22  = data_place::replicated(grid22, replicate_over<0>);
+
+        // projection math: one instance per axis-0 coordinate
+        EXPECT(rep22.instance_count() == 2);
+        EXPECT(rep22.instance_of(0) == 0); // (0,0)
+        EXPECT(rep22.instance_of(1) == 1); // (1,0)
+        EXPECT(rep22.instance_of(2) == 0); // (0,1) shares domain 0's instance
+        EXPECT(rep22.instance_of(3) == 1); // (1,1) shares domain 1's instance
+        EXPECT(rep22.member(0) != rep22.member(1));
+
+        auto lgin  = gctx.logical_data(&ref[0], {n});
+        auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
+        gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
+            ->*[] __device__(size_t i, auto in, auto out) {
+                  out(i) = 4.0 * in(i);
+                };
+        gctx.host_launch(lgout.read())->*[&](auto out) {
+          for (size_t i = 0; i < n; i++)
+          {
+            EXPECT(out(i) == 4.0 * ref[i]);
+          }
+        };
+        gctx.finalize();
+
+        // shared axes require co-located fibers: a (2, 2) arrangement whose
+        // axis-1 fiber crosses domains must be rejected at construction
+        ::std::vector<exec_place> bad;
+        bad.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (0,0)
+        bad.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (1,0)
+        bad.push_back(exec_place::green_ctx(gc.get_view(1), true)); // (0,1) != (0,0)
+        bad.push_back(exec_place::green_ctx(gc.get_view(0), true)); // (1,1) != (1,0)
+        auto bad_grid = make_grid(mv(bad), dim4(2, 2));
+        bool thrown22 = false;
+        try
+        {
+          auto r = data_place::replicated(bad_grid, replicate_over<0>);
+        }
+        catch (const ::std::invalid_argument&)
+        {
+          thrown22 = true;
+        }
+        EXPECT(thrown22);
+        printf("replicated data place: axis-grouped replication on a (2,2) grid OK\n");
+      }
     }
     else
     {

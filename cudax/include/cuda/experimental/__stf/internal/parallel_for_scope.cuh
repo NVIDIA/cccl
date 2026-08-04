@@ -531,7 +531,7 @@ class parallel_for_scope
     const data_place member =
       ::cuda::experimental::places::replicated_is_deferred(dp)
         ? e_place.get_place(place_index).affine_data_place()
-        : dp.member(place_index);
+        : dp.member(dp.instance_of(place_index));
     auto data = dep.get_data();
     inst      = data.template instance<Inst>(data.find_instance_id(member));
   }
