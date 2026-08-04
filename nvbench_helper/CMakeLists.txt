@@ -36,7 +36,10 @@ if (CUDAToolkit_VERSION VERSION_LESS "12.5.0")
 endif()
 
 if (CCCL_ENABLE_TILE)
-  target_compile_options(cccl.nvbench_helper PUBLIC "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>")
+  target_compile_options(
+    cccl.nvbench_helper
+    PUBLIC "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+  )
 endif()
 
 # Don't enable tests when pulled in as an internal dependency.
