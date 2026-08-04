@@ -18,6 +18,7 @@ _SCRIPT_DIRECTORY = str(Path(__file__).resolve().parent)
 if _SCRIPT_DIRECTORY not in sys.path:
     sys.path.insert(0, _SCRIPT_DIRECTORY)
 
+import atomic  # noqa: E402
 import buffer  # noqa: E402
 import complex  # noqa: E402
 import event  # noqa: E402
@@ -26,7 +27,16 @@ import memory_resource  # noqa: E402
 import std_array  # noqa: E402
 import tuple  # noqa: E402
 
-_PRINTERS = (memory_resource, buffer, std_array, complex, tuple, inplace_vector, event)
+_PRINTERS = (
+    memory_resource,
+    atomic,
+    buffer,
+    std_array,
+    complex,
+    tuple,
+    inplace_vector,
+    event,
+)
 
 
 def register() -> None:
