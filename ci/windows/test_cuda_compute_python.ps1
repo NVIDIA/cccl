@@ -26,6 +26,7 @@ $repoRoot = Get-RepoRoot
 
 $wheelPath = Get-CudaComputeWheel
 $wheelhouse = Split-Path -Parent $wheelPath
+$null = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
 
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
 Invoke-Checked {

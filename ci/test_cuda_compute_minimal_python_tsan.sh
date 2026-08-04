@@ -54,6 +54,12 @@ fi
 # minimal-cu* extra intentionally avoids numba/numba-cuda (which re-enable the
 # GIL). pytest-run-parallel drives the concurrent sweep.
 CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cccl_headers-*.whl)"
+if [[ ! -f "${CUDA_COMPUTE_WHEEL_PATH}" || ! -f "${CCCL_HEADERS_WHEEL_PATH}" ]]; then
+  echo "Expected exactly one cuda-compute and cccl-headers wheel in ${wheelhouse_dir}." >&2
+  printf 'Resolved paths: compute=%q headers=%q\n' "${CUDA_COMPUTE_WHEEL_PATH}" "${CCCL_HEADERS_WHEEL_PATH}" >&2
+  exit 1
+fi
 python -m pip install --find-links "${wheelhouse_dir}" \
   "${CUDA_COMPUTE_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
 python -m pip check

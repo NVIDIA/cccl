@@ -26,6 +26,8 @@ $repoRoot = Get-RepoRoot
 
 ${wheelPath} = Get-CudaCcclWheel
 $wheelhouse = Split-Path -Parent $wheelPath
+$null = Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_compute-.*\.whl' -File
+$null = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
 
 # pytest-benchmark is for the host-benchmark smoke test below.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"

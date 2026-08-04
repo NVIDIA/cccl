@@ -227,6 +227,7 @@ From source:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 cd cccl
+# Use test-cu12 instead for CUDA Toolkit 12.x.
 pip install \
   -e python/cccl_headers \
   -e "python/cuda_compute[test-cu13]" \

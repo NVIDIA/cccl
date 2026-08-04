@@ -4,6 +4,7 @@
 
 import importlib.metadata
 import importlib.util
+import os
 import shutil
 import subprocess
 import textwrap
@@ -121,6 +122,8 @@ def test_complete_license_set():
 
 def test_cudax_cmake_target_is_consumer_safe(tmp_path_factory):
     if shutil.which("cmake") is None:
+        if os.environ.get("GITHUB_ACTIONS"):
+            pytest.fail("cmake is required for the installed-wheel CMake contract test")
         pytest.skip("cmake is not available")
 
     # MSBuild's generated compiler-probe paths remain subject to MAX_PATH.

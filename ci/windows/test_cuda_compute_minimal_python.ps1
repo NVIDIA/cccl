@@ -26,6 +26,7 @@ $repoRoot = Get-RepoRoot
 
 $wheelPath = Get-CudaComputeWheel
 $wheelhouse = Split-Path -Parent $wheelPath
+$null = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
 
 # Install cuda-compute with the minimal CUDA extra. This intentionally avoids the
 # full cu* extras because those pull in numba/numba-cuda.

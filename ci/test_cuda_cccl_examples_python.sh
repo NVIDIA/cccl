@@ -29,6 +29,14 @@ fi
 # for the throughput smoke, is installed best-effort further down since it does
 # not always ship a wheel for the newest Python.)
 CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
+CUDA_COMPUTE_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_compute-*.whl)"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cccl_headers-*.whl)"
+if [[ ! -f "${CUDA_CCCL_WHEEL_PATH}" || ! -f "${CUDA_COMPUTE_WHEEL_PATH}" || ! -f "${CCCL_HEADERS_WHEEL_PATH}" ]]; then
+  echo "Expected exactly one cuda-cccl, cuda-compute, and cccl-headers wheel in ${repo_root}/wheelhouse." >&2
+  printf 'Resolved paths: metapackage=%q compute=%q headers=%q\n' \
+    "${CUDA_CCCL_WHEEL_PATH}" "${CUDA_COMPUTE_WHEEL_PATH}" "${CCCL_HEADERS_WHEEL_PATH}" >&2
+  exit 1
+fi
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${repo_root}/wheelhouse" \
   "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" \

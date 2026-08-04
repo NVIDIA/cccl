@@ -32,6 +32,12 @@ fi
 # full cu*/sysctk* extras because those pull in numba/numba-cuda. The flavor is
 # "cu" (pip toolkit) or "sysctk" (system toolkit) per the -ctk-mode arg.
 CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
+CCCL_HEADERS_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cccl_headers-*.whl)"
+if [[ ! -f "${CUDA_COMPUTE_WHEEL_PATH}" || ! -f "${CCCL_HEADERS_WHEEL_PATH}" ]]; then
+  echo "Expected exactly one cuda-compute and cccl-headers wheel in ${wheelhouse_dir}." >&2
+  printf 'Resolved paths: compute=%q headers=%q\n' "${CUDA_COMPUTE_WHEEL_PATH}" "${CCCL_HEADERS_WHEEL_PATH}" >&2
+  exit 1
+fi
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${wheelhouse_dir}" \
   "${CUDA_COMPUTE_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
