@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <algorithm>
 
 // template <class PopulationIterator, class SampleIterator, class Distance,
@@ -25,7 +28,7 @@
 // Stable if and only if PopulationIterator meets the requirements of a
 // ForwardIterator type.
 template <class PopulationIterator, class SampleIterator>
-TEST_FUNC void test_stability(bool expect_stable)
+TEST_HOST_DEVICE_FUNC void test_stability(bool expect_stable)
 {
   const unsigned kPopulationSize = 100;
   int ia[kPopulationSize];
