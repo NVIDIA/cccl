@@ -23,6 +23,7 @@
 
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
+#include <cuda/functional>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/extents.h>
@@ -33,7 +34,6 @@
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/types.cuh>
 
@@ -71,7 +71,7 @@ template <class _Key,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent,
           ::cuda::thread_scope _Scope   = ::cuda::thread_scope_device,
           class _KeyEqual               = ::cuda::std::equal_to<_Key>,
-          class _ProbingScheme          = linear_probing<4, hash<_Key>>,
+          class _ProbingScheme          = linear_probing<4, ::cuda::hash<_Key>>,
           int _BucketSize               = 1,
           class _MemoryResource         = ::cuda::device_memory_pool_ref>
 class fixed_capacity_map

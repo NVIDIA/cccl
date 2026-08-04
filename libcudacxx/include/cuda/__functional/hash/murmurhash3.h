@@ -36,8 +36,6 @@
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -100,7 +98,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 32-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -111,32 +109,23 @@ public:
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
-    if constexpr (sizeof(_Holder) == sizeof(_Key))
-    {
-      return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
-    }
-    else
-    {
-      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
-    }
+    return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
-  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
-  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  template <::cuda::std::size_t _Extent>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
+  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::uint32_t __h1 = __seed_;
 
@@ -292,7 +281,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 x86 128-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x86_128(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -303,25 +292,15 @@ public:
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
-    if constexpr (sizeof(_Holder) == sizeof(_Key))
-    {
-      return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
-    }
-    else
-    {
-      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
-    }
+    return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
   //! @brief Returns a 128-bit hash value for its argument.
-  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
-  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  template <::cuda::std::size_t _Extent>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
@@ -657,7 +636,7 @@ private:
 public:
   //! @brief Constructs a MurmurHash3 x64 128-bit hash function with the given seed.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __murmurhash3_x64_128(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -668,25 +647,15 @@ public:
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
-    if constexpr (sizeof(_Holder) == sizeof(_Key))
-    {
-      return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
-    }
-    else
-    {
-      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
-    }
+    return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
   //! @brief Returns a 128-bit hash value for its argument.
-  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type
-  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  template <::cuda::std::size_t _Extent>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __result_type operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }

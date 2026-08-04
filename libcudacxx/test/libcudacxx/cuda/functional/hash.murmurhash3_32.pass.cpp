@@ -38,16 +38,9 @@ struct test_murmurhash3_32
   }
 };
 
-#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-static_assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_32>{}(0u) == 593689054u));
-#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
-
 TEST_FUNC void test()
 {
   test_murmurhash3_32{}();
-  test_sized_keys<cuda::hash_algorithm::murmurhash3_32>();
-  test_noncopyable_key<cuda::hash_algorithm::murmurhash3_32>();
-  test_empty_span<cuda::hash_algorithm::murmurhash3_32>(0u);
 }
 
 int main(int, char**)

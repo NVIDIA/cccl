@@ -64,18 +64,9 @@ struct test_murmurhash3_x86_128
   }
 };
 
-#  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-static_assert((cuda::hash<cuda::std::uint32_t, cuda::hash_algorithm::murmurhash3_x86_128>{}(0u)
-               == cuda::std::bit_cast<__uint128_t>(cuda::std::array<cuda::std::uint32_t, 4>{
-                 3422973727u, 2656139328u, 2656139328u, 2656139328u})));
-#  endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
-
 TEST_FUNC void test()
 {
   test_murmurhash3_x86_128{}();
-  test_sized_keys<cuda::hash_algorithm::murmurhash3_x86_128>();
-  test_noncopyable_key<cuda::hash_algorithm::murmurhash3_x86_128>();
-  test_empty_span<cuda::hash_algorithm::murmurhash3_x86_128>(__uint128_t{});
 }
 
 #endif // _CCCL_HAS_INT128()

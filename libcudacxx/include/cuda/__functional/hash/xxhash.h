@@ -59,9 +59,6 @@
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotate.h>
-#include <cuda/std/__type_traits/is_copy_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -119,7 +116,7 @@ private:
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __xxhash_32(::cuda::std::uint32_t __seed = 0) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __xxhash_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -130,34 +127,18 @@ public:
   {
     using _Holder _CCCL_NODEBUG_ALIAS =
       __byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
-    if constexpr (sizeof(_Holder) == sizeof(_Key))
-    {
-      if constexpr (::cuda::std::is_copy_constructible_v<_Key>)
-      {
-        // Materialize a copy so the device compiler can use wide loads.
-        const _Key __copy{__key};
-        return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));
-      }
-      else
-      {
-        return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
-      }
-    }
-    else
-    {
-      return __compute_hash_span(::cuda::std::span<const _Key, 1>{&__key, 1});
-    }
+    // Materialize a copy so the device compiler can use wide loads.
+    const _Key __copy{__key};
+    return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));
   }
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
-  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
+  template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
-  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }
@@ -225,7 +206,7 @@ private:
   //! @param[in] __keys The span of keys to hash
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
-  __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
+  __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
     const auto __size  = __keys.size_bytes();
@@ -276,7 +257,7 @@ private:
     {
       while (__offset < __size)
       {
-        __h32 += (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset])) * __prime5;
+        __h32 += (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset]) & 255) * __prime5;
         __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
         ++__offset;
       }
@@ -345,7 +326,7 @@ public:
   //! @brief Constructs a XXH64 hash function with the given `seed`.
   //!
   //! @param[in] __seed A custom number to randomize the resulting hash value
-  _CCCL_HOST_DEVICE_API constexpr __xxhash_64(::cuda::std::uint64_t __seed = 0) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __xxhash_64(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -355,7 +336,7 @@ public:
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
   {
-    if constexpr (sizeof(_Key) <= 16 && ::cuda::std::is_copy_constructible_v<_Key>)
+    if constexpr (sizeof(_Key) <= 16)
     {
       // Materialize a copy so the device compiler can use wide loads.
       const _Key __copy{__key};
@@ -369,14 +350,12 @@ public:
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint64_t`.
   //!
-  //! @tparam _SpanKey The possibly const key type
   //! @tparam _Extent The extent type
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
-  _CCCL_TEMPLATE(class _SpanKey, ::cuda::std::size_t _Extent)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_SpanKey>, ::cuda::std::remove_const_t<_Key>>)
+  template <::cuda::std::size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
-  operator()(::cuda::std::span<_SpanKey, _Extent> __keys) const noexcept
+  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
   }

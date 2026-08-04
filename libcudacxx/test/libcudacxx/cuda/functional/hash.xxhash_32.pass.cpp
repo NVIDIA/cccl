@@ -38,16 +38,9 @@ struct test_xxhash32
   }
 };
 
-#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-static_assert(cuda::hash<cuda::std::uint32_t>{}(0u) == 148298089u);
-#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
-
 TEST_FUNC void test()
 {
   test_xxhash32{}();
-  test_sized_keys<cuda::hash_algorithm::xxhash_32>();
-  test_noncopyable_key<cuda::hash_algorithm::xxhash_32>();
-  test_empty_span<cuda::hash_algorithm::xxhash_32>(0x02cc5d05u);
 }
 
 int main(int, char**)

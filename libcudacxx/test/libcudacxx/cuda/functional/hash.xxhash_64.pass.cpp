@@ -41,9 +41,6 @@ struct test_xxhash64
 TEST_FUNC void test()
 {
   test_xxhash64{}();
-  test_sized_keys<cuda::hash_algorithm::xxhash_64>();
-  test_noncopyable_key<cuda::hash_algorithm::xxhash_64>();
-  test_empty_span<cuda::hash_algorithm::xxhash_64>(0xef46db3751d8e999ull);
 }
 
 int main(int, char**)
