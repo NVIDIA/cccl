@@ -30,18 +30,18 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #if _CCCL_HAS_INT128()
 // 128-bit integer conversion is deliberately deleted: it would silently truncate
 // to 64 bits. Verify no emulated type converts to __int128 while the standard
 // integer widths remain (explicitly) convertible.
-static_assert(!cuda::std::is_constructible_v<__int128_t, fpemu<double>>);
-static_assert(!cuda::std::is_constructible_v<__uint128_t, fpemu<double>>);
-static_assert(!cuda::std::is_constructible_v<__int128_t, fpemu_unpacked<double>>);
-static_assert(!cuda::std::is_constructible_v<__uint128_t, fpemu_unpacked<double>>);
-static_assert(cuda::std::is_constructible_v<int64_t, fpemu<double>>);
-static_assert(cuda::std::is_constructible_v<uint64_t, fpemu<double>>);
+static_assert(!cuda::std::is_constructible_v<__int128_t, cudax::fpemu<double>>);
+static_assert(!cuda::std::is_constructible_v<__uint128_t, cudax::fpemu<double>>);
+static_assert(!cuda::std::is_constructible_v<__int128_t, cudax::fpemu_unpacked<double>>);
+static_assert(!cuda::std::is_constructible_v<__uint128_t, cudax::fpemu_unpacked<double>>);
+static_assert(cuda::std::is_constructible_v<int64_t, cudax::fpemu<double>>);
+static_assert(cuda::std::is_constructible_v<uint64_t, cudax::fpemu<double>>);
 #endif // _CCCL_HAS_INT128()
 
 // Target type / rounding-mode indices. conv index = type*4 + mode.
@@ -63,30 +63,30 @@ enum
 };
 
 // Width-preserving encode of an integer result into a uint64_t slot.
-_CCCL_HOST_DEVICE uint64_t enc_i32(int32_t v)
+TEST_HOST_DEVICE_FUNC uint64_t enc_i32(int32_t v)
 {
   return (uint64_t) (uint32_t) v;
 }
-_CCCL_HOST_DEVICE uint64_t enc_u32(uint32_t v)
+TEST_HOST_DEVICE_FUNC uint64_t enc_u32(uint32_t v)
 {
   return (uint64_t) v;
 }
-_CCCL_HOST_DEVICE uint64_t enc_i64(int64_t v)
+TEST_HOST_DEVICE_FUNC uint64_t enc_i64(int64_t v)
 {
   return (uint64_t) v;
 }
-_CCCL_HOST_DEVICE uint64_t enc_u64(uint64_t v)
+TEST_HOST_DEVICE_FUNC uint64_t enc_u64(uint64_t v)
 {
   return v;
 }
 
-_CCCL_HOST_DEVICE double from_bits(uint64_t b)
+TEST_HOST_DEVICE_FUNC double from_bits(uint64_t b)
 {
   return cuda::std::bit_cast<double>(b);
 }
 
 // Round-half-to-even of an already-finite double.
-_CCCL_HOST_DEVICE double ref_round_even(double d)
+TEST_HOST_DEVICE_FUNC double ref_round_even(double d)
 {
   double f    = cuda::std::floor(d);
   double diff = d - f;
@@ -103,43 +103,43 @@ _CCCL_HOST_DEVICE double ref_round_even(double d)
 }
 
 // Reference: CUDA intrinsics on device, portable saturating math on host.
-_CCCL_HOST_DEVICE uint64_t ref_one(double d, int type, int mode){NV_IF_ELSE_TARGET(
+TEST_HOST_DEVICE_FUNC uint64_t ref_one(double d, int type, int mode){NV_IF_ELSE_TARGET(
   NV_IS_DEVICE,
   ({
     switch (type * 4 + mode)
     {
       case T_I32 * 4 + M_RN:
-        return enc_i32(__double2int_rn(d));
+        return enc_i32(::__double2int_rn(d));
       case T_I32 * 4 + M_RZ:
-        return enc_i32(__double2int_rz(d));
+        return enc_i32(::__double2int_rz(d));
       case T_I32 * 4 + M_RU:
-        return enc_i32(__double2int_ru(d));
+        return enc_i32(::__double2int_ru(d));
       case T_I32 * 4 + M_RD:
-        return enc_i32(__double2int_rd(d));
+        return enc_i32(::__double2int_rd(d));
       case T_U32 * 4 + M_RN:
-        return enc_u32(__double2uint_rn(d));
+        return enc_u32(::__double2uint_rn(d));
       case T_U32 * 4 + M_RZ:
-        return enc_u32(__double2uint_rz(d));
+        return enc_u32(::__double2uint_rz(d));
       case T_U32 * 4 + M_RU:
-        return enc_u32(__double2uint_ru(d));
+        return enc_u32(::__double2uint_ru(d));
       case T_U32 * 4 + M_RD:
-        return enc_u32(__double2uint_rd(d));
+        return enc_u32(::__double2uint_rd(d));
       case T_I64 * 4 + M_RN:
-        return enc_i64(__double2ll_rn(d));
+        return enc_i64(::__double2ll_rn(d));
       case T_I64 * 4 + M_RZ:
-        return enc_i64(__double2ll_rz(d));
+        return enc_i64(::__double2ll_rz(d));
       case T_I64 * 4 + M_RU:
-        return enc_i64(__double2ll_ru(d));
+        return enc_i64(::__double2ll_ru(d));
       case T_I64 * 4 + M_RD:
-        return enc_i64(__double2ll_rd(d));
+        return enc_i64(::__double2ll_rd(d));
       case T_U64 * 4 + M_RN:
-        return enc_u64(__double2ull_rn(d));
+        return enc_u64(::__double2ull_rn(d));
       case T_U64 * 4 + M_RZ:
-        return enc_u64(__double2ull_rz(d));
+        return enc_u64(::__double2ull_rz(d));
       case T_U64 * 4 + M_RU:
-        return enc_u64(__double2ull_ru(d));
+        return enc_u64(::__double2ull_ru(d));
       case T_U64 * 4 + M_RD:
-        return enc_u64(__double2ull_rd(d));
+        return enc_u64(::__double2ull_rd(d));
       default:
         break;
     }
@@ -216,47 +216,47 @@ _CCCL_HOST_DEVICE uint64_t ref_one(double d, int type, int mode){NV_IF_ELSE_TARG
 
 // Compare every emulation surface for one value against the reference computed on
 // the same target.
-_CCCL_HOST_DEVICE void check_value(double x)
+TEST_HOST_DEVICE_FUNC void check_value(double x)
 {
-  __fpbits64 e       = __fp64emu_from_double(x);
-  fp64emu p          = x;
-  fp64emu_unpacked u = (fp64emu_unpacked) x;
+  cudax::__fpbits64 e       = cudax::__fp64emu_from_double(x);
+  cudax::fp64emu p          = x;
+  cudax::fp64emu_unpacked u = (cudax::fp64emu_unpacked) x;
 
   // C builtins (__fp64emu_to_*), all 16 conversions.
-  assert(enc_i32(__fp64emu_to_int_rn(e)) == ref_one(x, T_I32, M_RN));
-  assert(enc_i32(__fp64emu_to_int_rz(e)) == ref_one(x, T_I32, M_RZ));
-  assert(enc_i32(__fp64emu_to_int_ru(e)) == ref_one(x, T_I32, M_RU));
-  assert(enc_i32(__fp64emu_to_int_rd(e)) == ref_one(x, T_I32, M_RD));
-  assert(enc_u32(__fp64emu_to_uint_rn(e)) == ref_one(x, T_U32, M_RN));
-  assert(enc_u32(__fp64emu_to_uint_rz(e)) == ref_one(x, T_U32, M_RZ));
-  assert(enc_u32(__fp64emu_to_uint_ru(e)) == ref_one(x, T_U32, M_RU));
-  assert(enc_u32(__fp64emu_to_uint_rd(e)) == ref_one(x, T_U32, M_RD));
-  assert(enc_i64(__fp64emu_to_ll_rn(e)) == ref_one(x, T_I64, M_RN));
-  assert(enc_i64(__fp64emu_to_ll_rz(e)) == ref_one(x, T_I64, M_RZ));
-  assert(enc_i64(__fp64emu_to_ll_ru(e)) == ref_one(x, T_I64, M_RU));
-  assert(enc_i64(__fp64emu_to_ll_rd(e)) == ref_one(x, T_I64, M_RD));
-  assert(enc_u64(__fp64emu_to_ull_rn(e)) == ref_one(x, T_U64, M_RN));
-  assert(enc_u64(__fp64emu_to_ull_rz(e)) == ref_one(x, T_U64, M_RZ));
-  assert(enc_u64(__fp64emu_to_ull_ru(e)) == ref_one(x, T_U64, M_RU));
-  assert(enc_u64(__fp64emu_to_ull_rd(e)) == ref_one(x, T_U64, M_RD));
+  assert(enc_i32(cudax::__fp64emu_to_int_rn(e)) == ref_one(x, T_I32, M_RN));
+  assert(enc_i32(cudax::__fp64emu_to_int_rz(e)) == ref_one(x, T_I32, M_RZ));
+  assert(enc_i32(cudax::__fp64emu_to_int_ru(e)) == ref_one(x, T_I32, M_RU));
+  assert(enc_i32(cudax::__fp64emu_to_int_rd(e)) == ref_one(x, T_I32, M_RD));
+  assert(enc_u32(cudax::__fp64emu_to_uint_rn(e)) == ref_one(x, T_U32, M_RN));
+  assert(enc_u32(cudax::__fp64emu_to_uint_rz(e)) == ref_one(x, T_U32, M_RZ));
+  assert(enc_u32(cudax::__fp64emu_to_uint_ru(e)) == ref_one(x, T_U32, M_RU));
+  assert(enc_u32(cudax::__fp64emu_to_uint_rd(e)) == ref_one(x, T_U32, M_RD));
+  assert(enc_i64(cudax::__fp64emu_to_ll_rn(e)) == ref_one(x, T_I64, M_RN));
+  assert(enc_i64(cudax::__fp64emu_to_ll_rz(e)) == ref_one(x, T_I64, M_RZ));
+  assert(enc_i64(cudax::__fp64emu_to_ll_ru(e)) == ref_one(x, T_I64, M_RU));
+  assert(enc_i64(cudax::__fp64emu_to_ll_rd(e)) == ref_one(x, T_I64, M_RD));
+  assert(enc_u64(cudax::__fp64emu_to_ull_rn(e)) == ref_one(x, T_U64, M_RN));
+  assert(enc_u64(cudax::__fp64emu_to_ull_rz(e)) == ref_one(x, T_U64, M_RZ));
+  assert(enc_u64(cudax::__fp64emu_to_ull_ru(e)) == ref_one(x, T_U64, M_RU));
+  assert(enc_u64(cudax::__fp64emu_to_ull_rd(e)) == ref_one(x, T_U64, M_RD));
 
   // C++ packed named ops (__double2*), all 16 conversions.
-  assert(enc_i32(__double2int_rn(p)) == ref_one(x, T_I32, M_RN));
-  assert(enc_i32(__double2int_rz(p)) == ref_one(x, T_I32, M_RZ));
-  assert(enc_i32(__double2int_ru(p)) == ref_one(x, T_I32, M_RU));
-  assert(enc_i32(__double2int_rd(p)) == ref_one(x, T_I32, M_RD));
-  assert(enc_u32(__double2uint_rn(p)) == ref_one(x, T_U32, M_RN));
-  assert(enc_u32(__double2uint_rz(p)) == ref_one(x, T_U32, M_RZ));
-  assert(enc_u32(__double2uint_ru(p)) == ref_one(x, T_U32, M_RU));
-  assert(enc_u32(__double2uint_rd(p)) == ref_one(x, T_U32, M_RD));
-  assert(enc_i64(__double2ll_rn(p)) == ref_one(x, T_I64, M_RN));
-  assert(enc_i64(__double2ll_rz(p)) == ref_one(x, T_I64, M_RZ));
-  assert(enc_i64(__double2ll_ru(p)) == ref_one(x, T_I64, M_RU));
-  assert(enc_i64(__double2ll_rd(p)) == ref_one(x, T_I64, M_RD));
-  assert(enc_u64(__double2ull_rn(p)) == ref_one(x, T_U64, M_RN));
-  assert(enc_u64(__double2ull_rz(p)) == ref_one(x, T_U64, M_RZ));
-  assert(enc_u64(__double2ull_ru(p)) == ref_one(x, T_U64, M_RU));
-  assert(enc_u64(__double2ull_rd(p)) == ref_one(x, T_U64, M_RD));
+  assert(enc_i32(cudax::__double2int_rn(p)) == ref_one(x, T_I32, M_RN));
+  assert(enc_i32(cudax::__double2int_rz(p)) == ref_one(x, T_I32, M_RZ));
+  assert(enc_i32(cudax::__double2int_ru(p)) == ref_one(x, T_I32, M_RU));
+  assert(enc_i32(cudax::__double2int_rd(p)) == ref_one(x, T_I32, M_RD));
+  assert(enc_u32(cudax::__double2uint_rn(p)) == ref_one(x, T_U32, M_RN));
+  assert(enc_u32(cudax::__double2uint_rz(p)) == ref_one(x, T_U32, M_RZ));
+  assert(enc_u32(cudax::__double2uint_ru(p)) == ref_one(x, T_U32, M_RU));
+  assert(enc_u32(cudax::__double2uint_rd(p)) == ref_one(x, T_U32, M_RD));
+  assert(enc_i64(cudax::__double2ll_rn(p)) == ref_one(x, T_I64, M_RN));
+  assert(enc_i64(cudax::__double2ll_rz(p)) == ref_one(x, T_I64, M_RZ));
+  assert(enc_i64(cudax::__double2ll_ru(p)) == ref_one(x, T_I64, M_RU));
+  assert(enc_i64(cudax::__double2ll_rd(p)) == ref_one(x, T_I64, M_RD));
+  assert(enc_u64(cudax::__double2ull_rn(p)) == ref_one(x, T_U64, M_RN));
+  assert(enc_u64(cudax::__double2ull_rz(p)) == ref_one(x, T_U64, M_RZ));
+  assert(enc_u64(cudax::__double2ull_ru(p)) == ref_one(x, T_U64, M_RU));
+  assert(enc_u64(cudax::__double2ull_rd(p)) == ref_one(x, T_U64, M_RD));
 
   // C++ packed cast operators (round-to-zero).
   assert(enc_i32((int32_t) p) == ref_one(x, T_I32, M_RZ));
@@ -275,7 +275,7 @@ _CCCL_HOST_DEVICE void check_value(double x)
 // magnitude that exercises the ties, one range that lands inside 32 bits and one
 // that straddles the 64-bit boundary where the conversion saturates, plus
 // arbitrary bit patterns.
-_CCCL_HOST_DEVICE double draw(cuda::std::minstd_rand& rng, const double* specials, int n)
+TEST_HOST_DEVICE_FUNC double draw(cuda::std::minstd_rand& rng, const double* specials, int n)
 {
   cuda::std::uniform_int_distribution<int> which(0, 5);
   cuda::std::uniform_int_distribution<int> pick(0, n - 1);

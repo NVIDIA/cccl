@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Comparison operation indices (also bit positions in the packed result code).
 enum cmp_op
@@ -38,13 +38,13 @@ enum cmp_op
   OP_COUNT
 };
 
-_CCCL_HOST_DEVICE double from_bits(uint64_t b)
+TEST_HOST_DEVICE_FUNC double from_bits(uint64_t b)
 {
   return cuda::std::bit_cast<double>(b);
 }
 
 // Pack the six native comparison results into one bit code.
-_CCCL_HOST_DEVICE uint32_t native_codes(double x, double y)
+TEST_HOST_DEVICE_FUNC uint32_t native_codes(double x, double y)
 {
   uint32_t c = 0;
   c |= (uint32_t) (x == y) << OP_EQ;
@@ -57,21 +57,21 @@ _CCCL_HOST_DEVICE uint32_t native_codes(double x, double y)
 }
 
 // Compare all three emulation surfaces against native for one pair.
-_CCCL_HOST_DEVICE void check_pair(double x, double y)
+TEST_HOST_DEVICE_FUNC void check_pair(double x, double y)
 {
   const uint32_t ref = native_codes(x, y);
 
-  __fpbits64 ex = __fp64emu_from_double(x);
-  __fpbits64 ey = __fp64emu_from_double(y);
-  uint32_t cb   = 0;
-  cb |= (uint32_t) __fp64emu_cmp_eq(ex, ey) << OP_EQ;
-  cb |= (uint32_t) __fp64emu_cmp_ne(ex, ey) << OP_NE;
-  cb |= (uint32_t) __fp64emu_cmp_lt(ex, ey) << OP_LT;
-  cb |= (uint32_t) __fp64emu_cmp_le(ex, ey) << OP_LE;
-  cb |= (uint32_t) __fp64emu_cmp_gt(ex, ey) << OP_GT;
-  cb |= (uint32_t) __fp64emu_cmp_ge(ex, ey) << OP_GE;
+  cudax::__fpbits64 ex = cudax::__fp64emu_from_double(x);
+  cudax::__fpbits64 ey = cudax::__fp64emu_from_double(y);
+  uint32_t cb          = 0;
+  cb |= (uint32_t) cudax::__fp64emu_cmp_eq(ex, ey) << OP_EQ;
+  cb |= (uint32_t) cudax::__fp64emu_cmp_ne(ex, ey) << OP_NE;
+  cb |= (uint32_t) cudax::__fp64emu_cmp_lt(ex, ey) << OP_LT;
+  cb |= (uint32_t) cudax::__fp64emu_cmp_le(ex, ey) << OP_LE;
+  cb |= (uint32_t) cudax::__fp64emu_cmp_gt(ex, ey) << OP_GT;
+  cb |= (uint32_t) cudax::__fp64emu_cmp_ge(ex, ey) << OP_GE;
 
-  fp64emu px = x, py = y;
+  cudax::fp64emu px = x, py = y;
   uint32_t cp = 0;
   cp |= (uint32_t) (px == py) << OP_EQ;
   cp |= (uint32_t) (px != py) << OP_NE;
@@ -80,7 +80,7 @@ _CCCL_HOST_DEVICE void check_pair(double x, double y)
   cp |= (uint32_t) (px > py) << OP_GT;
   cp |= (uint32_t) (px >= py) << OP_GE;
 
-  fp64emu_unpacked ux = (fp64emu_unpacked) x, uy = (fp64emu_unpacked) y;
+  cudax::fp64emu_unpacked ux = (cudax::fp64emu_unpacked) x, uy = (cudax::fp64emu_unpacked) y;
   uint32_t cu = 0;
   cu |= (uint32_t) (ux == uy) << OP_EQ;
   cu |= (uint32_t) (ux != uy) << OP_NE;
@@ -96,7 +96,7 @@ _CCCL_HOST_DEVICE void check_pair(double x, double y)
 
 // Mostly arbitrary bit patterns, with one draw in sixteen taken from the special
 // values so the sweep keeps hitting the classes an encoding rarely produces.
-_CCCL_HOST_DEVICE double draw(cuda::std::minstd_rand& rng, const double* specials, int n)
+TEST_HOST_DEVICE_FUNC double draw(cuda::std::minstd_rand& rng, const double* specials, int n)
 {
   cuda::std::uniform_int_distribution<int> one_in_16(0, 15);
   cuda::std::uniform_int_distribution<int> pick(0, n - 1);

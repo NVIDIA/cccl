@@ -29,7 +29,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 enum
 {
@@ -40,43 +40,43 @@ enum
   M_COUNT
 };
 
-_CCCL_HOST_DEVICE double from_bits(uint64_t b)
+TEST_HOST_DEVICE_FUNC double from_bits(uint64_t b)
 {
   return cuda::std::bit_cast<double>(b);
 }
-_CCCL_HOST_DEVICE uint64_t d_bits(double d)
+TEST_HOST_DEVICE_FUNC uint64_t d_bits(double d)
 {
   return cuda::std::bit_cast<uint64_t>(d);
 }
 
-_CCCL_HOST_DEVICE bool is_nan_bits(uint64_t b)
+TEST_HOST_DEVICE_FUNC bool is_nan_bits(uint64_t b)
 {
   return ((b & UINT64_C(0x7FF0000000000000)) == UINT64_C(0x7FF0000000000000)) && (b & UINT64_C(0x000FFFFFFFFFFFFF));
 }
 // NaN payloads are platform-defined: treat any two NaNs as a match.
-_CCCL_HOST_DEVICE bool match(uint64_t got, uint64_t ref)
+TEST_HOST_DEVICE_FUNC bool match(uint64_t got, uint64_t ref)
 {
   return (got == ref) || (is_nan_bits(got) && is_nan_bits(ref));
 }
 
 // Reference: CUDA __dsqrt_* intrinsics on device, fenv-directed sqrt on host.
-_CCCL_HOST_DEVICE uint64_t ref_one(double a, int mode){NV_IF_ELSE_TARGET(
+TEST_HOST_DEVICE_FUNC uint64_t ref_one(double a, int mode){NV_IF_ELSE_TARGET(
   NV_IS_DEVICE,
   ({
     double r;
     switch (mode)
     {
       case M_RZ:
-        r = __dsqrt_rz(a);
+        r = ::__dsqrt_rz(a);
         break;
       case M_RU:
-        r = __dsqrt_ru(a);
+        r = ::__dsqrt_ru(a);
         break;
       case M_RD:
-        r = __dsqrt_rd(a);
+        r = ::__dsqrt_rd(a);
         break;
       default:
-        r = __dsqrt_rn(a);
+        r = ::__dsqrt_rn(a);
         break; // M_RN
     }
     return d_bits(r);
@@ -111,26 +111,26 @@ _CCCL_HOST_DEVICE uint64_t ref_one(double a, int mode){NV_IF_ELSE_TARGET(
 
 // Compare every sqrt surface for one value against the reference on the same
 // target.
-_CCCL_HOST_DEVICE void check_value(double x)
+TEST_HOST_DEVICE_FUNC void check_value(double x)
 {
-  __fpbits64 a = __fp64emu_from_double(x);
+  cudax::__fpbits64 a = cudax::__fp64emu_from_double(x);
 
-  assert(match((uint64_t) __fp64emu_dsqrt_rn(a), ref_one(x, M_RN)));
-  assert(match((uint64_t) __fp64emu_dsqrt_rz(a), ref_one(x, M_RZ)));
-  assert(match((uint64_t) __fp64emu_dsqrt_ru(a), ref_one(x, M_RU)));
-  assert(match((uint64_t) __fp64emu_dsqrt_rd(a), ref_one(x, M_RD)));
+  assert(match((uint64_t) cudax::__fp64emu_dsqrt_rn(a), ref_one(x, M_RN)));
+  assert(match((uint64_t) cudax::__fp64emu_dsqrt_rz(a), ref_one(x, M_RZ)));
+  assert(match((uint64_t) cudax::__fp64emu_dsqrt_ru(a), ref_one(x, M_RU)));
+  assert(match((uint64_t) cudax::__fp64emu_dsqrt_rd(a), ref_one(x, M_RD)));
 
-  fp64emu p = x;
+  cudax::fp64emu p = x;
   assert(match(d_bits((double) sqrt(p)), ref_one(x, M_RN)));
 
-  fp64emu_unpacked u = (fp64emu_unpacked) x;
+  cudax::fp64emu_unpacked u = (cudax::fp64emu_unpacked) x;
   assert(match(d_bits((double) sqrt(u)), ref_one(x, M_RN)));
 }
 
 // The four classes the old randomized sweep drew from. The two uniform ranges are
 // non-negative, where the result is a real number; negative inputs still arrive
 // through the special values and the arbitrary bit patterns.
-_CCCL_HOST_DEVICE double draw(cuda::std::minstd_rand& rng, const double* specials, int n)
+TEST_HOST_DEVICE_FUNC double draw(cuda::std::minstd_rand& rng, const double* specials, int n)
 {
   cuda::std::uniform_int_distribution<int> which(0, 3);
   cuda::std::uniform_int_distribution<int> pick(0, n - 1);

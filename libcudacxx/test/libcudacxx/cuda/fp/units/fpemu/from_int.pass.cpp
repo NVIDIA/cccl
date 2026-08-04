@@ -21,31 +21,31 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #if _CCCL_HAS_INT128()
 // 128-bit integer construction is deliberately deleted: it would silently truncate
 // to 64 bits. Verify no emulated type is constructible from __int128 while the
 // standard integer widths remain constructible.
-static_assert(!cuda::std::is_constructible_v<fpemu<double>, __int128_t>);
-static_assert(!cuda::std::is_constructible_v<fpemu<double>, __uint128_t>);
-static_assert(!cuda::std::is_constructible_v<fpemu_unpacked<double>, __int128_t>);
-static_assert(!cuda::std::is_constructible_v<fpemu_unpacked<double>, __uint128_t>);
-static_assert(cuda::std::is_constructible_v<fpemu<double>, int64_t>);
-static_assert(cuda::std::is_constructible_v<fpemu<double>, uint64_t>);
+static_assert(!cuda::std::is_constructible_v<cudax::fpemu<double>, __int128_t>);
+static_assert(!cuda::std::is_constructible_v<cudax::fpemu<double>, __uint128_t>);
+static_assert(!cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, __int128_t>);
+static_assert(!cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, __uint128_t>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, int64_t>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, uint64_t>);
 #endif // _CCCL_HAS_INT128()
 
 // Convert one integer through fp64emu and compare bit-for-bit against the native
 // cast to double.
 template <class T>
-_CCCL_HOST_DEVICE bool int_ok(T v)
+TEST_HOST_DEVICE_FUNC bool int_ok(T v)
 {
-  fp64emu e(v);
+  cudax::fp64emu e(v);
   return cuda::std::bit_cast<uint64_t>((double) e) == cuda::std::bit_cast<uint64_t>((double) v);
 }
 
 template <class T, int N>
-_CCCL_HOST_DEVICE void check_all(const T (&vals)[N])
+TEST_HOST_DEVICE_FUNC void check_all(const T (&vals)[N])
 {
   for (int i = 0; i < N; i++)
   {

@@ -29,45 +29,45 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #if _CCCL_HAS_FLOAT128()
 // __float128 -> double is a lossy narrowing (and otherwise makes construction
 // ambiguous with the float/double ctors), so quad construction is deliberately
 // deleted for the single-double emulated types, mirroring the deleted 128-bit
 // integer ctors. (fp64mp2's double-double CAN hold a quad and keeps its ctor.)
-static_assert(!cuda::std::is_constructible_v<fpemu<double>, __float128>);
-static_assert(!cuda::std::is_constructible_v<fpemu_unpacked<double>, __float128>);
+static_assert(!cuda::std::is_constructible_v<cudax::fpemu<double>, __float128>);
+static_assert(!cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, __float128>);
 #endif // _CCCL_HAS_FLOAT128()
 
 // Bit-reinterpret helpers (host + device via cuda::std::bit_cast).
-_CCCL_HOST_DEVICE uint64_t d_bits(double d)
+TEST_HOST_DEVICE_FUNC uint64_t d_bits(double d)
 {
   return cuda::std::bit_cast<uint64_t>(d);
 }
-_CCCL_HOST_DEVICE uint32_t f_bits(float f)
+TEST_HOST_DEVICE_FUNC uint32_t f_bits(float f)
 {
   return cuda::std::bit_cast<uint32_t>(f);
 }
-_CCCL_HOST_DEVICE double from_d_bits(uint64_t b)
+TEST_HOST_DEVICE_FUNC double from_d_bits(uint64_t b)
 {
   return cuda::std::bit_cast<double>(b);
 }
-_CCCL_HOST_DEVICE float from_f_bits(uint32_t b)
+TEST_HOST_DEVICE_FUNC float from_f_bits(uint32_t b)
 {
   return cuda::std::bit_cast<float>(b);
 }
 
-_CCCL_HOST_DEVICE bool is_nan_d(uint64_t b)
+TEST_HOST_DEVICE_FUNC bool is_nan_d(uint64_t b)
 {
   return ((b >> 52) & 0x7FF) == 0x7FF && (b & 0x000FFFFFFFFFFFFFull) != 0;
 }
-_CCCL_HOST_DEVICE bool is_nan_f(uint32_t b)
+TEST_HOST_DEVICE_FUNC bool is_nan_f(uint32_t b)
 {
   return ((b >> 23) & 0xFF) == 0xFF && (b & 0x007FFFFFu) != 0;
 }
 
-_CCCL_HOST_DEVICE constexpr bool relax_nan_payload()
+TEST_HOST_DEVICE_FUNC constexpr bool relax_nan_payload()
 {
 #if (_CCCL_FPEMU_PACKED_VIA_UNPACKED == 1)
   return true;
@@ -77,9 +77,9 @@ _CCCL_HOST_DEVICE constexpr bool relax_nan_payload()
 }
 
 // float -> fp64emu -> double (widening, exact).
-_CCCL_HOST_DEVICE bool f2d_ok(float v)
+TEST_HOST_DEVICE_FUNC bool f2d_ok(float v)
 {
-  fp64emu e(v);
+  cudax::fp64emu e(v);
   const uint64_t be = d_bits((double) e);
   const uint64_t br = d_bits((double) v);
   if (be == br)
@@ -90,9 +90,9 @@ _CCCL_HOST_DEVICE bool f2d_ok(float v)
 }
 
 // double -> fp64emu -> float (narrowing, round-to-nearest-even).
-_CCCL_HOST_DEVICE bool d2f_ok(double v)
+TEST_HOST_DEVICE_FUNC bool d2f_ok(double v)
 {
-  fp64emu e(v);
+  cudax::fp64emu e(v);
   const uint32_t be = f_bits((float) e);
   const uint32_t br = f_bits((float) v);
   if (be == br)
