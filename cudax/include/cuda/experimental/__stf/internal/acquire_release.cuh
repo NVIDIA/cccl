@@ -133,6 +133,34 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // a parallel_for construct, for example
     const data_place& dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
 
+    if (dplace.instance_count() > 1)
+    {
+      // A dependency at a replicated place resolves to one ORDINARY data
+      // instance per member place, each allocated and made valid by the
+      // unchanged per-instance path below (members with equal data places
+      // deduplicate naturally: find_instance_id is keyed by place). The
+      // dep records the first member's instance; grid dispatch resolves
+      // the other shards per sub-task. Only read access reaches this
+      // point (validated in add_deps).
+      instance_id_t first_id = instance_id_t::invalid;
+      for (size_t r = 0; r < dplace.instance_count(); r++)
+      {
+        const data_place member = dplace.member(r);
+        const instance_id_t im  = d.find_instance_id(member);
+        const bool already_done = (im == first_id) || (r > 0 && im == it->get_instance_id());
+        if (r == 0)
+        {
+          first_id = im;
+          it->set_instance_id(im);
+        }
+        if (r == 0 || !already_done)
+        {
+          reserved::fetch_data(ctx, d, im, *this, mode, eplace, member, result);
+        }
+      }
+      continue;
+    }
+
     const instance_id_t instance_id =
       mode == access_mode::relaxed ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);
 
@@ -285,6 +313,21 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
     {
       // If we have a read-only task, we only need to make sure that write accesses waits for this task
       data_instance.add_write_prereq(ctx, done_prereqs);
+
+      // A dep at a replicated place read one instance PER member place:
+      // protect the others the same way (writes elsewhere must wait)
+      const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
+      if (rel_dplace.instance_count() > 1)
+      {
+        for (size_t r = 1; r < rel_dplace.instance_count(); r++)
+        {
+          const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
+          if (im != e.get_instance_id())
+          {
+            d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+          }
+        }
+      }
     }
     else
     {

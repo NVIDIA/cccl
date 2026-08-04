@@ -83,8 +83,48 @@ int main()
     printf("replicated data place: %s backend OK\n", use_graph ? "graph" : "stream");
   }
 
-  // ---- stackable conditional graph scope (lifetime through pops rides the
-  // composite cache, which hands entries to the parent on pop)
+  // ---- green-context grid: member places are DISTINCT, so a replicated
+  // dep pins one real instance per member (the repeat grid above
+  // deduplicates to a single instance by place equality)
+#  if _CCCL_CTK_AT_LEAST(12, 4)
+  {
+    green_context_helper gc(8, 0);
+    if (gc.get_count() >= 2)
+    {
+      context ctx;
+      ::std::vector<exec_place> places;
+      places.push_back(exec_place::green_ctx(gc.get_view(0), true));
+      places.push_back(exec_place::green_ctx(gc.get_view(1), true));
+      auto ggrid = make_grid(mv(places));
+      auto grep  = data_place::replicated(ggrid);
+      EXPECT(grep.instance_count() == 2);
+      EXPECT(grep.member(0) != grep.member(1));
+
+      auto lin  = ctx.logical_data(&ref[0], {n});
+      auto lout = ctx.logical_data(shape_of<slice<double>>(n));
+      ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(grep), lout.write())
+          ->*[] __device__(size_t i, auto in, auto out) {
+                out(i) = 3.0 * in(i);
+              };
+      ctx.host_launch(lout.read())->*[&](auto out) {
+        for (size_t i = 0; i < n; i++)
+        {
+          EXPECT(out(i) == 3.0 * ref[i]);
+        }
+      };
+      ctx.finalize();
+      printf("replicated data place: green-context grid (distinct member instances) OK\n");
+    }
+    else
+    {
+      printf("replicated data place: green-context flavor skipped (single group)\n");
+    }
+  }
+#  endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+  // ---- stackable conditional graph scope: replicas are ordinary
+  // stream-ordered instances, so the auto-push (freeze + get within the
+  // nested context) and pop-time lifetime need no special handling
   {
     stackable_ctx ctx;
     auto grid = exec_place::repeat(exec_place::current_device(), nplaces);

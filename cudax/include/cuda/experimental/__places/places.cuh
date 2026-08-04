@@ -245,6 +245,12 @@ public:
   bool is_composite() const;
   bool is_replicated() const;
 
+  //! Number of data instances a dependency at this place resolves to
+  size_t instance_count() const;
+  //! Data place of the r-th instance (r < instance_count()); *this when
+  //! the place resolves to a single instance
+  data_place member(size_t r) const;
+
   bool is_invalid() const
   {
     const auto& ref = *pimpl_;
@@ -1955,6 +1961,11 @@ public:
     return true;
   }
 
+  size_t instance_count() const override
+  {
+    return grid_.size();
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::composite;
@@ -2037,6 +2048,21 @@ inline bool data_place::is_composite() const
 inline bool data_place::is_replicated() const
 {
   return pimpl_->is_replicated();
+}
+
+inline size_t data_place::instance_count() const
+{
+  return pimpl_->instance_count();
+}
+
+inline data_place data_place::member(size_t r) const
+{
+  _CCCL_ASSERT(r < instance_count(), "member index out of range");
+  if (instance_count() == 1)
+  {
+    return *this;
+  }
+  return replicated_grid(*this).get_place(r).affine_data_place();
 }
 
 inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)

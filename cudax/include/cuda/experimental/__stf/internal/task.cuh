@@ -240,7 +240,7 @@ public:
   static void validate_dep_place(const task_dep_untyped& d)
   {
     const data_place& dp = d.get_dplace();
-    if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
+    if (!dp.is_invalid() && dp.instance_count() > 1 && d.get_access_mode() != access_mode::read)
     {
       throw ::std::invalid_argument(
         "replicated data places only support read access (mutate the data at another place; the next replicated "

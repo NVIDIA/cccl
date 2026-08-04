@@ -513,62 +513,36 @@ class parallel_for_scope
    * @return A tuple containing the result of `dep.instance(t)` for each dependency,
    *         with `std::ignore` in positions where the result type is `void_interface&`.
    */
-  //! Detects mdspan-like instances (the only ones a replicated place can rebase)
-  template <typename X, typename = void>
-  struct pf_has_data_handle : ::std::false_type
-  {};
-  template <typename X>
-  struct pf_has_data_handle<X, ::std::void_t<decltype(::std::declval<X&>().data_handle())>> : ::std::true_type
-  {};
-
-  //! Rebase one instance onto this place's replica of a replicated data
-  //! place: the replica pointers are ordinary per-place allocations,
-  //! published by the data interface (replica_pointer).
+  //! Resolve one instance onto this place's member of a replicated data
+  //! place: each shard reads the ordinary instance living at member(r),
+  //! straight from the place-keyed instance table.
   template <typename Inst, typename Dep>
-  static void rebase_replicated_one(Inst& inst, const Dep& dep, typename context::task_type& t, size_t place_index)
+  static void rebase_replicated_one(Inst& inst, const Dep& dep, size_t place_index)
   {
     const data_place& dp = dep.get_dplace();
-    if (dp.is_invalid() || !dp.is_replicated())
+    if (dp.is_invalid() || dp.instance_count() <= 1)
     {
       return;
     }
-    if constexpr (pf_has_data_handle<Inst>::value)
-    {
-      using element_type = typename Inst::element_type;
-      // The tuple's dep copy does not carry the task's instance id: resolve
-      // it the same way dep.instance(t) does
-      auto data              = dep.get_data();
-      const auto& itf        = data.get_data_interface();
-      const instance_id_t id = itf.get_default_instance_id(data.get_ctx(), data, t);
-      const void* p          = itf.replica_pointer(id, place_index);
-      if (!p)
-      {
-        throw ::std::runtime_error("no replica pointer for a dep at a replicated data place");
-      }
-      inst = Inst(static_cast<element_type*>(const_cast<void*>(p)), inst.mapping());
-    }
-    else
-    {
-      throw ::std::runtime_error("replicated data places require slice (mdspan) data in parallel_for");
-    }
+    auto data = dep.get_data();
+    inst      = data.template instance<Inst>(data.find_instance_id(dp.member(place_index)));
   }
 
   template <size_t... I>
-  void rebase_replicated_impl(
-    deps_tup_t& instances, typename context::task_type& t, size_t place_index, ::std::index_sequence<I...>)
+  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index, ::std::index_sequence<I...>)
   {
-    (rebase_replicated_one(::std::get<I>(instances), ::std::get<I>(deps), t, place_index), ...);
+    (rebase_replicated_one(::std::get<I>(instances), ::std::get<I>(deps), place_index), ...);
   }
 
-  //! Each shard of a grid dispatch reads its own replica of any dep placed
-  //! at a replicated data place (place 0 uses the instance as fetched).
-  void rebase_replicated_instances(deps_tup_t& instances, typename context::task_type& t, size_t place_index)
+  //! Each shard of a grid dispatch reads its own member instance of any dep
+  //! placed at a replicated data place (place 0 uses the instance as fetched)
+  void rebase_replicated_instances(deps_tup_t& instances, size_t place_index)
   {
     if (place_index == 0)
     {
       return;
     }
-    rebase_replicated_impl(instances, t, place_index, ::std::make_index_sequence<sizeof...(deps_ops_t)>());
+    rebase_replicated_impl(instances, place_index, ::std::make_index_sequence<sizeof...(deps_ops_t)>());
   }
 
   static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
@@ -1076,7 +1050,7 @@ public:
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
-    rebase_replicated_instances(arg_instances, t, place_index);
+    rebase_replicated_instances(arg_instances, place_index);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
