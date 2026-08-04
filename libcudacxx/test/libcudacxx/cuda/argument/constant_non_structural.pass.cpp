@@ -54,6 +54,11 @@ struct non_constexpr_value
   }
 };
 
+// Source arrays for `__make_constant_seq`. They live at namespace scope on purpose: until C++20 a reference non-type
+// template parameter requires an entity with linkage, and a block-scope object never has one.
+constexpr int __seq_src[]{5, 1, 9};
+constexpr int __make_src[]{10, 30, 20};
+
 template <class _Tp>
 _CCCL_HOST_DEVICE void test_single_value()
 {
@@ -92,8 +97,7 @@ _CCCL_HOST_DEVICE void test_sequence()
   assert(cuda::args::__highest_(S{}) == _Tp(8));
 
   // make_constant_seq: structural source array, non-structural target element type.
-  static constexpr int __src[]{5, 1, 9};
-  const auto __made = cuda::args::__make_constant_seq<_Tp, __src>();
+  const auto __made = cuda::args::__make_constant_seq<_Tp, __seq_src>();
   static_assert(cuda::std::is_same_v<typename decltype(__made)::value_type, cuda::std::array<_Tp, 3>>);
   const auto __made_arr = cuda::args::__unwrap(__made);
   assert(__made_arr[0] == _Tp(5));
@@ -123,13 +127,12 @@ TEST_FUNC void test()
 
   // make_constant_seq with arithmetic types.
   {
-    static constexpr int __src[]{10, 30, 20};
-    constexpr auto __s = cuda::args::__make_constant_seq<__src>();
+    constexpr auto __s = cuda::args::__make_constant_seq<__make_src>();
     static_assert(cuda::args::__unwrap(__s) == cuda::std::array<int, 3>{10, 30, 20});
     static_assert(cuda::args::__traits<decltype(__s)>::lowest == 10);
     static_assert(cuda::args::__traits<decltype(__s)>::highest == 30);
 
-    constexpr auto __sf = cuda::args::__make_constant_seq<float, __src>();
+    constexpr auto __sf = cuda::args::__make_constant_seq<float, __make_src>();
     static_assert(cuda::args::__unwrap(__sf) == cuda::std::array<float, 3>{10.f, 30.f, 20.f});
   }
 
