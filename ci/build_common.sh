@@ -182,6 +182,10 @@ if "${USE_SCCACHE_DIST:-false}" && [[ -n "${SCCACHE_DIST_URL:+x}" ]] && [[ "$PAR
     PARALLEL_LEVEL="$(((mem_available - mem_for_sccache_daemon - mem_for_preprocessing) / mem_per_job))"
 fi
 
+if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
+    PARALLEL_LEVEL="$N_CPUS_MINUS_1"
+fi
+
 export PARALLEL_LEVEL
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
