@@ -35,6 +35,8 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test types
   static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);
   static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
+  static_assert(cuda::std::is_same_v<void, typename Group::mapping_type>);
+  static_assert(cuda::std::is_same_v<cudax::level_synchronizer, typename Group::synchronizer_type>);
 
   // Test that the group can be queried for it's hierarchy.
   {

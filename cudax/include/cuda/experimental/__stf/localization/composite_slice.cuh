@@ -151,11 +151,9 @@ struct cached_localized_array
  */
 struct cached_cute_localized_array
 {
-  template <typename F>
   explicit cached_cute_localized_array(
     exec_place grid_,
     ::cuda::experimental::places::cute_partition_descriptor partition_,
-    F&& delinearize,
     size_t total_size,
     size_t elem_size,
     dim4 data_dims_)
@@ -165,11 +163,17 @@ struct cached_cute_localized_array
       , data_dims(data_dims_)
       , elemsize(elem_size)
   {
-    const auto owner_of = ::std::function<pos4(size_t)>(
-      [partition = this->partition, delinearize = ::cuda::std::forward<F>(delinearize)](size_t ind) {
-        return partition.owner(delinearize(ind));
-      });
-    array = ::std::make_unique<localized_array>(grid, owner_of, total_size, elem_size, data_dims);
+    // Structured tier: the descriptor's ownership mapping is defined by its
+    // value alone, so no caller-supplied delinearization is taken (the
+    // provider uses dim4::index_to_pos, the composite path's linearization
+    // convention -- see slice.cuh).
+    array = ::std::make_unique<localized_array>(
+      grid,
+      ::cuda::experimental::places::make_partition_placement_provider(
+        this->partition, data_dims_, total_size, elem_size),
+      total_size,
+      elem_size,
+      data_dims_);
   }
 
   explicit cached_cute_localized_array(
@@ -191,11 +195,11 @@ struct cached_cute_localized_array
   bool operator==(::cuda::std::tuple<P&...> t) const
   {
     // tuple arguments:
-    // 0: grid, 1: partition, 2: delinearize function, 3: total size,
-    // 4: element size, 5: data dimensions
+    // 0: grid, 1: partition, 2: total size, 3: element size,
+    // 4: data dimensions
     return grid == ::cuda::std::get<0>(t) && partition == ::cuda::std::get<1>(t)
-        && total_size_bytes == ::cuda::std::get<3>(t) * ::cuda::std::get<4>(t) && elemsize == ::cuda::std::get<4>(t)
-        && data_dims == ::cuda::std::get<5>(t);
+        && total_size_bytes == ::cuda::std::get<2>(t) * ::cuda::std::get<3>(t) && elemsize == ::cuda::std::get<3>(t)
+        && data_dims == ::cuda::std::get<4>(t);
   }
 
   exec_place grid;
@@ -295,8 +299,9 @@ public:
                                       "extents");
       }
 
-      auto entry = cute_partition_cache.get(
-        place.affine_exec_place(), partition, ::cuda::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+      // The cute tier does not take the delinearize callable: the partition
+      // value fully determines placement (see cached_cute_localized_array).
+      auto entry = cute_partition_cache.get(place.affine_exec_place(), partition, total_size, elem_size, data_dims);
       event_list prereqs = mv(entry->prereqs);
       return {mv(entry->array), mv(prereqs)};
     }
