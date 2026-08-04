@@ -35,7 +35,7 @@
 
 // #include <cuda/experimental/__execution/lazy.cuh>
 #include <cuda/experimental/__utility/manual_lifetime.cuh>
-#include <cuda/experimental/__utility/scope_exit.cuh>
+#include <cuda/experimental/__utility/scope.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

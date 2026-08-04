@@ -29,7 +29,7 @@
 
 using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
 #if __STDCPP_FLOAT64_T__ == 1
   // _Float64 is a distinct type here, yet fpemu<_Float64> must still be a valid,

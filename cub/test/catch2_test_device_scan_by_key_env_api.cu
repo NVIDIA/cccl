@@ -12,9 +12,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-by-key-env
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
@@ -39,7 +39,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin exclusive-scan-by-key-env
   auto op     = cuda::std::plus{};
@@ -73,7 +73,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[sca
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin inclusive-sum-by-key-env
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
@@ -98,7 +98,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-by-key-env
   auto op     = cuda::std::plus{};
@@ -151,7 +151,7 @@ struct ScanByKeyPolicySelector
 };
 // example-end exclusive-sum-by-key-policy-selector
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts a custom policy selector", "[scan][by_key][env]")
+CUB_TEST("cub::DeviceScan::ExclusiveSumByKey accepts a custom policy selector", "[scan][by_key][env]", CUB_SMALL)
 {
   // example-begin exclusive-sum-by-key-tuning
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};

@@ -67,7 +67,7 @@ namespace cuda::experimental
 //!
 //! @param  x The packed 64-bit value to unpack
 //! @return The unpacked representation
-_CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
 {
   __fpbits64_unpacked __a_unpacked;
   __uint32x2 __a32  = ::cuda::std::bit_cast<__uint32x2>(__x);
@@ -129,7 +129,7 @@ _CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) 
 //! @param  x  The unpacked value to pack
 //! @return The packed 64-bit value
 template <__fpemu_rounding _Rm = __fpemu_rounding::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
 {
   const bool __sign   = __x.sign != 0;
   const bool __is_inf = (static_cast<int32_t>(__x.exponent) >= 0x2000);

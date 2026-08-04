@@ -21,12 +21,14 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter, class T>
 TEST_FUNC constexpr void test(Iter first, Iter last, T init, T x)
 {
   assert(cuda::std::accumulate(first, last, init) == x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -42,6 +44,7 @@ TEST_FUNC constexpr void test()
   test(Iter(ia), Iter(ia + sa), 10, 31);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>>();

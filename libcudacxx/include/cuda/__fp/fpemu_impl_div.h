@@ -58,7 +58,7 @@ namespace cuda::experimental
 
 //! @brief Approximation of floor(2^63 / b32) for b32 in [2^31, 2^32).
 //!        Seeded by the fp32 reciprocal builtin, refined by one Newton step.
-_CCCL_TRIVIAL_API uint32_t __internal_fp64emu_div_recip32(uint32_t __b32) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __internal_fp64emu_div_recip32(uint32_t __b32) noexcept
 {
   // fp32 seed: interpret b32 as bf = b32 / 2^31 in [1, 2); 1/bf in (0.5, 1].
   // r ~ (1/bf) * 2^32 = 2^63 / b32.
@@ -107,7 +107,7 @@ _CCCL_TRIVIAL_API uint32_t __internal_fp64emu_div_recip32(uint32_t __b32) noexce
 } // __internal_fp64emu_div_recip32
 
 //! @brief True if the bit pattern encodes a NaN.
-_CCCL_TRIVIAL_API bool __internal_fp64emu_div_is_nan(uint64_t __ui) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_div_is_nan(uint64_t __ui) noexcept
 {
   return ((~__ui & _CCCL_FPEMU_EXP_64) == 0) && (__ui & _CCCL_FPEMU_MANT_64);
 } // __internal_fp64emu_div_is_nan
@@ -116,7 +116,8 @@ _CCCL_TRIVIAL_API bool __internal_fp64emu_div_is_nan(uint64_t __ui) noexcept
 //! accuracy; other modes return a cheap NaN (ui64_a | ui64_b is always a NaN when at
 //! least one operand is a NaN) to keep the implementation light.
 template <fpemu_accuracy _Acc = fpemu_accuracy::high>
-_CCCL_TRIVIAL_API uint64_t __internal_fp64emu_div_propagate_nan(uint64_t __ui64_a, uint64_t __ui64_b) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API uint64_t
+__internal_fp64emu_div_propagate_nan(uint64_t __ui64_a, uint64_t __ui64_b) noexcept
 {
   if constexpr (_Acc != fpemu_accuracy::high)
   {
@@ -160,7 +161,7 @@ _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_div_propagate_nan(uint64_t __ui64_
 // Forward declaration: the unpacked divide core is defined below, but the
 // packed wrapper references it for the packed-via-unpacked (testing) path.
 template <fpemu_accuracy _Acc>
-_CCCL_TRIVIAL_API __fpbits64_unpacked
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked
 __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept;
 
 //! @brief Divide two double-precision floating point numbers
@@ -173,7 +174,7 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
 //! @param __y The second double-precision floating point number
 //! @return The result of the division
 template <__fpemu_rounding _Rm = __fpemu_rounding::def, fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x, __fpbits64 __y) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x, __fpbits64 __y) noexcept
 {
 #if (_CCCL_FPEMU_PACKED_VIA_UNPACKED == 1)
   // Packed-via-unpacked (testing): pack(ddiv_unpacked(unpack(x), unpack(y))).
@@ -326,7 +327,7 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x, __fpbits64 
 //! @param __y The second double-precision floating point number
 //! @return The result of the division
 template <fpemu_accuracy _Acc = fpemu_accuracy::def>
-_CCCL_TRIVIAL_API __fpbits64_unpacked
+_CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked
 __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
   // ---- True unpacked divide -------------------------------------------
@@ -529,7 +530,8 @@ namespace cuda::experimental
 
 // Default API implementation
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> operator/(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+operator/(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -550,7 +552,8 @@ _CCCL_API fpemu<double, _Acc> operator/(const fpemu<double, _Acc>& __x, const fp
 } // operator /
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __ddiv_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__ddiv_rn(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
@@ -569,19 +572,22 @@ _CCCL_API fpemu<double, _Acc> __ddiv_rn(const fpemu<double, _Acc>& __x, const fp
   }
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __ddiv_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__ddiv_rz(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
     __fp64emu_ddiv_rz(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __ddiv_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__ddiv_ru(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
     __fp64emu_ddiv_ru(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
 }
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu<double, _Acc> __ddiv_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
+_CCCL_HOST_DEVICE_API fpemu<double, _Acc>
+__ddiv_rd(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
   return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
     __fp64emu_ddiv_rd(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y)));
@@ -589,7 +595,7 @@ _CCCL_API fpemu<double, _Acc> __ddiv_rd(const fpemu<double, _Acc>& __x, const fp
 
 // Operator/ for unpacked division
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 operator/(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -611,7 +617,7 @@ operator/(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 } // operator/
 
 template <fpemu_accuracy _Acc>
-_CCCL_API fpemu_unpacked<double, _Acc>
+_CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc>
 __ddiv_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
   if constexpr (_Acc == fpemu_accuracy::high)
@@ -639,7 +645,7 @@ __ddiv_rn(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, 
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_rn(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __ddiv_rn(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __ddiv_rn(_Fp(__x), _Fp(__y));
@@ -647,7 +653,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_rn(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_rz(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __ddiv_rz(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __ddiv_rz(_Fp(__x), _Fp(__y));
@@ -655,7 +661,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_rz(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_ru(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __ddiv_ru(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __ddiv_ru(_Fp(__x), _Fp(__y));
@@ -663,7 +669,7 @@ _CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_ru(const _T1& __x, const _T2& __y) noe
 
 _CCCL_TEMPLATE(class _T1, class _T2)
 _CCCL_REQUIRES(__fpemu_mixed_v<_T1, _T2>)
-_CCCL_API __fpemu_pick_t<_T1, _T2> __ddiv_rd(const _T1& __x, const _T2& __y) noexcept
+_CCCL_HOST_DEVICE_API __fpemu_pick_t<_T1, _T2> __ddiv_rd(const _T1& __x, const _T2& __y) noexcept
 {
   using _Fp = __fpemu_pick_t<_T1, _T2>;
   return __ddiv_rd(_Fp(__x), _Fp(__y));

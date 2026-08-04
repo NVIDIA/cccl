@@ -102,16 +102,31 @@ bool BitcodeCollector::compile_and_add(const char* source, size_t source_size, c
     return true;
   }
 
-  hostjit::CUDACompiler compiler;
   std::string src(source, source_size);
-  auto result = compiler.compileToDeviceBitcode(src, config_);
-  if (!result.success)
+  auto path = make_temp_path("cccl_" + name + "_", unique_id_, ".bc");
+
+  std::vector<std::string> options;
+  config_.appendCommandLineArguments(options);
+  auto option_ptrs = hostjit::detail::make_libnvcc_option_ptrs(options);
+
+  hostjit::detail::LibnvccProgramGuard program;
+  auto create_result = libnvccCreateProgram(&program.program, src.c_str(), "input.cu");
+  if (create_result != LIBNVCC_SUCCESS)
   {
-    fprintf(stderr, "\nERROR compiling %s to bitcode: %s\n", name.c_str(), result.diagnostics.c_str());
+    fprintf(stderr, "\nERROR creating libnvcc program for %s: %s\n", name.c_str(), libnvccGetErrorString(create_result));
     return false;
   }
-  auto path = make_temp_path("cccl_" + name + "_", unique_id_, ".bc");
-  if (write_file(result.bitcode.data(), result.bitcode.size(), path))
+
+  auto result = libnvccCompileProgramToDeviceBitcode(
+    program.program, path.c_str(), static_cast<int>(option_ptrs.size()), option_ptrs.data());
+  if (result != LIBNVCC_SUCCESS)
+  {
+    auto log = hostjit::detail::get_libnvcc_program_log(program.program);
+    fprintf(stderr, "\nERROR compiling %s to bitcode: %s\n", name.c_str(), log.c_str());
+    return false;
+  }
+
+  if (std::filesystem::exists(path))
   {
     config_.device_bitcode_files.push_back(path);
     temp_paths_.push_back(path);

@@ -100,6 +100,7 @@ set(
   reductions/sum_array.cu
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
+  stackable/composite_conditional.cu
   stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
@@ -232,6 +233,7 @@ set(
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/source_location.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
 )
