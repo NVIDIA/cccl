@@ -1,49 +1,37 @@
-# CUDA CCCL Python Package
+# cuda-cccl
 
-[`cuda.cccl`](https://nvidia.github.io/cccl/unstable/python)
-provides a Pythonic interface to the
-[CUDA Core Compute Libraries](https://nvidia.github.io/cccl/unstable/cpp.html#cccl-cpp-libraries).
-It provides the following modules:
+`cuda-cccl` is the aggregate Python metapackage for the CUDA Core Compute
+Libraries. It contains no importable modules. Installing it brings in the
+same-version `cuda-compute` distribution. The headers needed by
+`cuda.compute` are private data inside that wheel.
 
-- **`cuda.compute`** - Device-level parallel algorithms (reduce, scan, sort, etc.) and iterators
-- **`cuda.cccl.headers`** - Programmatic access to CCCL headers
-
-## Installation
-
-Install from PyPI:
+Install the aggregate package from PyPI with the CUDA extra matching your
+environment:
 
 ```bash
-pip install cuda-cccl[cu13]  # For CUDA 13.x (pip-installed cuda-toolkit)
-pip install cuda-cccl[cu12]  # For CUDA 12.x (pip-installed cuda-toolkit)
+pip install cuda-cccl[cu13]  # CUDA 13.x with a pip-installed toolkit
+pip install cuda-cccl[cu12]  # CUDA 12.x with a pip-installed toolkit
 ```
 
-If you already have a CUDA toolkit on your system and do not want pip to
-install it, use the `sysctk` variants:
+The `sysctk12`, `sysctk13`, `minimal-*`, `test-*`, and `bench-*` extras are
+forwarded to `cuda-compute` as well.
+
+## Upgrading from the former monolithic wheel
+
+The former `cuda-cccl` wheel owned the `cuda.compute` and `cuda.cccl` files
+that are now owned by its dependencies. Before the first upgrade to this split
+layout, uninstall the old wheel in a separate command so pip cannot remove the
+new owners' files while processing the old wheel's RECORD:
 
 ```bash
-pip install cuda-cccl[sysctk13]  # For CUDA 13.x (system CUDA toolkit)
-pip install cuda-cccl[sysctk12]  # For CUDA 12.x (system CUDA toolkit)
+python -m pip uninstall -y cuda-cccl
+python -m pip install "cuda-cccl[cu13]"  # or the extra for your environment
 ```
 
-For a minimal install without Numba (useful when supplying pre-compiled operators):
-
-```bash
-pip install cuda-cccl[minimal-cu13]      # pip-installed cuda-toolkit
-pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
-```
-
-Install from conda-forge:
-
-```bash
-conda install -c conda-forge cccl-python
-```
-
-**Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with Compute Capability 7.5+
+This is a one-time migration. Subsequent upgrades within the two-wheel layout
+can use the normal `pip install --upgrade` flow.
 
 ## Documentation
 
-For complete documentation, examples, and API reference, visit:
-
-- **Full Documentation**: [nvidia.github.io/cccl/unstable/python](https://nvidia.github.io/cccl/unstable/python)
-- **Repository**: [github.com/NVIDIA/cccl](https://github.com/NVIDIA/cccl)
-- **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples)
+See the [CCCL Python documentation](https://nvidia.github.io/cccl/unstable/python)
+for complete installation and API guidance.

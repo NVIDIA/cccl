@@ -102,8 +102,8 @@ repos:
         # python_version=3.10, and numpy<2.3 has no wheels for the Python that
         # pre-commit.ci runs. numpy is instead ignored in the mypy config.
         additional_dependencies: [types-cachetools]
-        args: ["--config-file=python/cuda_cccl/pyproject.toml",
-               "python/cuda_cccl/cuda/compute/"]
+        args: ["--config-file=python/cuda_compute/pyproject.toml",
+               "python/cuda_compute/cuda/compute/"]
         pass_filenames: false
 
   - repo: https://github.com/sirosen/texthooks
