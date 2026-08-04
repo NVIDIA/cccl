@@ -129,20 +129,32 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             cmake_minimum_required(VERSION 3.21)
             project(cccl_headers_cudax_contract LANGUAGES CXX)
 
-            include(CheckLanguage)
-            check_language(CUDA)
-            if (CMAKE_CUDA_COMPILER)
-              enable_language(CUDA)
-            endif()
-
+            # Discover CUDAX before CUDA is enabled. A repeated find after
+            # enabling CUDA must add the CUDA language requirement.
             find_package(cudax CONFIG REQUIRED)
+
+            if (ENABLE_CUDA)
+              include(CheckLanguage)
+              check_language(CUDA)
+              if (CMAKE_CUDA_COMPILER)
+                enable_language(CUDA)
+                find_package(cudax CONFIG REQUIRED)
+              endif()
+            endif()
 
             add_executable(cudax_consumer main.cpp)
             target_link_libraries(cudax_consumer PRIVATE cudax::cudax)
+            if (ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
+              add_executable(cudax_cuda_consumer main.cu)
+              target_link_libraries(cudax_cuda_consumer PRIVATE cudax::cudax)
+            endif()
 
-            get_target_property(cudax_alias cudax::cudax ALIASED_TARGET)
-            if (NOT cudax_alias STREQUAL "_cudax_cudax")
-              message(FATAL_ERROR "cudax::cudax must alias a non-imported target")
+            get_target_property(cudax_imported cudax::cudax IMPORTED)
+            get_target_property(cudax_links cudax::cudax INTERFACE_LINK_LIBRARIES)
+            if (NOT cudax_imported OR NOT "_cudax_cudax" IN_LIST cudax_links)
+              message(FATAL_ERROR
+                "cudax::cudax must wrap the non-imported _cudax_cudax target"
+              )
             endif()
 
             get_target_property(cudax_definitions _cudax_cudax INTERFACE_COMPILE_DEFINITIONS)
@@ -154,7 +166,7 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
             if (NOT cxx_std_17 IN_LIST cudax_features)
               message(FATAL_ERROR "cudax::cudax is missing cxx_std_17")
             endif()
-            if (CMAKE_CUDA_COMPILER AND NOT cuda_std_17 IN_LIST cudax_features)
+            if (ENABLE_CUDA AND CMAKE_CUDA_COMPILER AND NOT cuda_std_17 IN_LIST cudax_features)
               message(FATAL_ERROR "CUDA consumers require cuda_std_17")
             elseif (NOT CMAKE_CUDA_COMPILER AND cuda_std_17 IN_LIST cudax_features)
               message(FATAL_ERROR "C++-only consumers must not require cuda_std_17")
@@ -175,36 +187,52 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
                 "at '${EXPECTED_CUDAX_INCLUDE}'"
               )
             endif()
+
+            add_library(cudax_export_consumer INTERFACE)
+            target_link_libraries(cudax_export_consumer INTERFACE cudax::cudax)
+            install(TARGETS cudax_export_consumer EXPORT cudaxConsumerTargets)
+            install(
+              EXPORT cudaxConsumerTargets
+              DESTINATION lib/cmake/cudax-consumer
+            )
             """
         ),
         encoding="utf-8",
     )
     (source_dir / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
+    (source_dir / "main.cu").write_text("int main() { return 0; }\n", encoding="utf-8")
 
-    build_dir = tmp_path / "build"
-    result = subprocess.run(
-        [
-            "cmake",
-            "-S",
-            str(source_dir),
-            "-B",
-            str(build_dir),
-            f"-Dcudax_DIR={cudax_cmake_dir}",
-            f"-DEXPECTED_CUDAX_INCLUDE={(package_root / 'include').as_posix()}",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    for enable_cuda in (False, True):
+        build_dir = tmp_path / f"build-{enable_cuda}"
+        result = subprocess.run(
+            [
+                "cmake",
+                "-S",
+                str(source_dir),
+                "-B",
+                str(build_dir),
+                f"-DENABLE_CUDA={'ON' if enable_cuda else 'OFF'}",
+                f"-Dcudax_DIR={cudax_cmake_dir}",
+                f"-DEXPECTED_CUDAX_INCLUDE={(package_root / 'include').as_posix()}",
+                f"-DCMAKE_INSTALL_PREFIX={build_dir / 'install'}",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
-    result = subprocess.run(
-        ["cmake", "--build", str(build_dir)],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+        for command in (
+            ["cmake", "--build", str(build_dir)],
+            ["cmake", "--install", str(build_dir)],
+        ):
+            result = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
 
 def test_distribution_has_one_runtime_dependency():
