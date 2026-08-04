@@ -8,11 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-12.0
-
 #include <cuda/functional>
+#include <cuda/std/cstdint>
 
 #include "hash_test_helper.h"
+#include "test_macros.h"
 
 struct test_murmurhash3_32
 {

@@ -48,7 +48,7 @@ Defined in the header ``<cuda/functional>``.
         [[nodiscard]] __host__ __device__ constexpr cuda::std::uint32_t operator()(const Key& key) const noexcept;
 
         template <cuda::std::size_t Extent>
-        [[nodiscard]] __host__ __device__ cuda::std::uint64_t operator()(cuda::std::span<Key, Extent> keys) const noexcept;
+        [[nodiscard]] __host__ __device__ cuda::std::uint32_t operator()(cuda::std::span<Key, Extent> keys) const noexcept;
     };
 
     #if _CCCL_HAS_INT128()
@@ -77,6 +77,10 @@ Defined in the header ``<cuda/functional>``.
 
 ``cuda::hash`` provides host/device implementations of xxHash and MurmurHash3.
 The hash is computed from the raw object representation of a key.
+Consequently, equal objects whose complete object representations differ,
+including padding bytes, are not guaranteed to produce equal hash values.
+xxHash and MurmurHash3 are non-cryptographic hash functions and must not be used
+for security-sensitive hashing.
 
 Each specialization accepts an optional seed and hashes either one key or the
 concatenated object representations in a contiguous mutable ``cuda::std::span``
@@ -94,7 +98,7 @@ The supported algorithms and result types are:
    * - ``hash_algorithm::xxhash_64``
      - ``cuda::std::uint64_t``
    * - ``hash_algorithm::murmurhash3_32``
-     - ``cuda::std::uint32_t`` for one key; ``cuda::std::uint64_t`` for a span
+     - ``cuda::std::uint32_t``
    * - ``hash_algorithm::murmurhash3_x86_128``
      - ``__uint128_t``
    * - ``hash_algorithm::murmurhash3_x64_128``

@@ -8,11 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvcc-12.0
-
 #include <cuda/functional>
+#include <cuda/std/array>
+#include <cuda/std/bit>
+#include <cuda/std/cstdint>
 
 #include "hash_test_helper.h"
+#include "test_macros.h"
 
 #if _CCCL_HAS_INT128()
 

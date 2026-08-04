@@ -123,7 +123,7 @@ struct __byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, f
   //! The number of `_BlockSize` blocks in a `_ChunkSize` chunk
   static constexpr ::cuda::std::size_t __blocks_per_chunk = _ChunkSize / _BlockSize;
 
-  //! The number of `_BlockSize` blocks in a `_ChunkSize` chunk
+  //! The number of `_BlockSize` blocks
   static constexpr ::cuda::std::size_t __num_blocks =
     _UseTailBlock ? _KeySize / _BlockSize : __num_chunks * __blocks_per_chunk;
 

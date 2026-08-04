@@ -117,7 +117,7 @@ public:
   //! @param[in] __keys span of keys to hash
   //! @return The resulting hash value
   template <::cuda::std::size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -401,11 +401,10 @@ private:
     }
 
     // finalization
-    const auto __size32 = static_cast<::cuda::std::uint32_t>(__size);
-    __h[0] ^= __size32;
-    __h[1] ^= __size32;
-    __h[2] ^= __size32;
-    __h[3] ^= __size32;
+    __h[0] ^= __size;
+    __h[1] ^= __size;
+    __h[2] ^= __size;
+    __h[3] ^= __size;
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -667,7 +666,10 @@ private:
     ::cuda::std::array<::cuda::std::uint64_t, 2> __h{__seed_, __seed_};
     constexpr auto __size = ::cuda::std::uint64_t{sizeof(_Holder)};
 
-    ::cuda::static_for<_Holder::__num_chunks>(__compute_chunk{}, __holder, __h);
+    if constexpr (_Holder::__num_chunks > 0)
+    {
+      ::cuda::static_for<_Holder::__num_chunks>(__compute_chunk{}, __holder, __h);
+    }
     // tail
     if constexpr (_Holder::__tail_size > 0)
     {
