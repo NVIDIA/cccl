@@ -128,13 +128,13 @@ projects:
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
     matrix_project: "python_v2"
-    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust, so listing
-    # it here transitively triggers python_v2 on any of those upstream
-    # changes too. Direct includes catch Python-only edits.
+    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust, so listing it
+    # here transitively triggers python_v2 when any bundled canonical header
+    # source changes. Direct includes catch changes to either Python project.
     lite_dependencies: [cccl_c_parallel_v2]
     full_dependencies: []
     include_regexes:
-      - "python/cuda_cccl/"
+      - "python/(cuda_cccl|cuda_compute)/"
       - "pyproject\\.toml"
 
   python_tsan:
@@ -149,7 +149,7 @@ projects:
     lite_dependencies: [cccl_c_parallel_public]
     full_dependencies: []
     include_regexes:
-      - "python/cuda_cccl/"
+      - "python/(cuda_cccl|cuda_compute)/"
       - "pyproject\\.toml"
       - "c/parallel/CMakeLists\\.txt"
 
@@ -166,8 +166,11 @@ projects:
     matrix_project: "python"
     lite_dependencies: [cccl_c_parallel_public]
     full_dependencies: []
+    # cuda-compute bundles libcudacxx/CUB/Thrust headers privately. The
+    # cccl_c_parallel_public dependency already propagates those public header
+    # changes; CUDAX is intentionally not a dependency.
     include_regexes:
-    - "python/"
+    - "python/(cuda_cccl|cuda_compute)/"
     - "pyproject.toml"
 
   packaging:

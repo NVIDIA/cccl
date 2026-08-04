@@ -607,11 +607,11 @@ jobs:
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
   # Python:
-  build_py_wheel:   { name: "Build cuda.cccl",             gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
-  test_py_headers:  { name: "Test cuda.cccl.headers",      gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_headers'} }
-  test_py_par:      { name: "Test cuda.compute",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute'} }
+  build_py_wheel:   { name: "Build CCCL Python wheels",    gpu: false, invoke: { prefix: 'build_cuda_cccl'} }
+  test_py_meta:     { name: "Test cuda-cccl metapackage",  gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_metapackage'} }
+  test_py_par:      { name: "Test cuda.compute",           gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute'} }
   test_py_compute_minimal: { name: "Test cuda.compute minimal", gpu: true, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute_minimal'} }
-  test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
+  test_py_examples: { name: "Test cuda.compute examples",  gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }
@@ -669,12 +669,11 @@ projects:
     name: "Python"
     job_map:
       build: ['build_py_wheel']
-      test:  ['test_py_headers', 'test_py_par', 'test_py_examples']
+      test:  ['test_py_meta', 'test_py_par', 'test_py_examples']
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
-    # Only cuda.compute differs between v1 and v2; cuda.cccl.headers does not
-    # need separate coverage. Run the examples because they exercise
-    # cuda.compute against the v2 backend.
+    # The module-free cuda-cccl metapackage is backend independent. Run the
+    # compute tests and examples against the v2 backend.
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_par', 'test_py_examples']

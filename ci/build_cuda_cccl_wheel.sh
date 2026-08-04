@@ -51,17 +51,11 @@ command -v python
 python --version
 echo "Done setting up python env"
 
-# Figure out the version to use for the package, we need repo history
-if "$(git rev-parse --is-shallow-repository)"; then
-  git fetch --unshallow
-fi
-export PACKAGE_VERSION_PREFIX="0.1."
-package_version=$(/workspace/ci/generate_version.sh)
-echo "Using package version ${package_version}"
-# Override the version used by setuptools_scm to the custom version
-export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_CCCL="${package_version}"
-
-cd /workspace/python/cuda_cccl
+# Keep archive timestamps deterministic across the CUDA-major producers. The
+# projects carry their release versions in their own pyproject.toml files.
+export SOURCE_DATE_EPOCH
+SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+mkdir -p /workspace/wheelhouse
 
 # Determine CUDA version from nvcc
 cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f1)
@@ -112,11 +106,28 @@ if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   echo "Building wheel with ThreadSanitizer-instrumented c.parallel: CMAKE_ARGS=${CMAKE_ARGS}"
 fi
 
-# Build the wheel
+# Build the module-free metapackage in only one CUDA-major producer. Keeping it
+# beside the compute wheel makes the uploaded artifact a self-contained local
+# wheelhouse for resolving cuda-cccl's exact cuda-compute dependency.
+if [[ "${BUILD_CUDA_CCCL_METAPACKAGE:-1}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  rm -rf /workspace/python/cuda_cccl/dist
+  CMAKE_ARGS="" python -m pip wheel \
+    --no-deps \
+    --verbose \
+    --wheel-dir /workspace/python/cuda_cccl/dist \
+    /workspace/python/cuda_cccl
+  mv /workspace/python/cuda_cccl/dist/cuda_cccl-*.whl /workspace/wheelhouse/
+fi
+
+# Build the CUDA-major-specific compute wheel. Its private CCCL headers are
+# installed directly from the canonical repository trees by CMake; no source
+# copy is created under python/cuda_compute.
+cd /workspace/python/cuda_compute
+rm -rf dist
 python -m pip wheel --no-deps --verbose --wheel-dir dist .
 
 # Rename wheel to include CUDA version suffix
-for wheel in dist/cuda_cccl-*.whl; do
+for wheel in dist/cuda_compute-*.whl; do
     if [[ -f "$wheel" ]]; then
         base_name=$(basename "$wheel" .whl)
         new_name="${base_name}.cu${cuda_version}.whl"
@@ -126,5 +137,4 @@ for wheel in dist/cuda_cccl-*.whl; do
 done
 
 # Move wheel to output directory
-mkdir -p /workspace/wheelhouse
-mv dist/cuda_cccl-*.cu*.whl /workspace/wheelhouse/
+mv dist/cuda_compute-*.cu*.whl /workspace/wheelhouse/

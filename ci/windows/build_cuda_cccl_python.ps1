@@ -1,11 +1,12 @@
 <#
 .SYNOPSIS
-    Build Python cuda-cccl wheels on Windows.
+    Build the cuda-compute and cuda-cccl wheels on Windows.
 
 .DESCRIPTION
     This script is the Windows analog to the Linux ../build_cuda_cccl_python.sh
-    script.  It is responsible for building CUDA 12.x and CUDA 13.x wheels that
-    are then merged together into a singular cuda-cccl wheel.
+    script. It builds CUDA 12.x and CUDA 13.x cuda-compute wheels, merges them
+    into one multi-CUDA wheel, and builds the module-free cuda-cccl
+    metapackage once.
 
     A single CUDA 12.9 builder image (i.e. Docker devcontainer) is used to
     build each distinct Python/MSVC combo.  Much like the Linux approach, this
@@ -15,8 +16,9 @@
     yields a `cu13` build.
 
     Upon completion of the `cu13` build, the outer 12.9 container merges both
-    `cu12` and `cu13` wheels into a single cuda-cccl wheel, and uploads that
-    via the standard CCCL CI artifact upload mechanisms.
+    `cu12` and `cu13` wheels into a single cuda-compute wheel. The final
+    artifact is a self-contained local wheelhouse containing cuda-compute and
+    its cuda-cccl metapackage.
 
 .PARAMETER PyVersion
     **Required.** The Python version to use for building the wheel, expressed
@@ -39,9 +41,8 @@
     Action.
 
 .EXAMPLE
-    # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
-    # 12 and 13 versions), and, if in CI, upload the resulting wheel as an
-    # artifact.
+    # Build the two coordinated wheels for Python 3.11 and, if in CI, upload
+    # them as one artifact.
     .\build_cuda_cccl_python.ps1 -PyVersion 3.11
 #>
 
@@ -146,8 +147,15 @@ $pipBaseConfigArgs = @(
 
 $env:CMAKE_GENERATOR = "Ninja"
 
-# Ensure wheelhouse directories exist.
+# Start outer builds with empty, explicit wheel output directories. The nested
+# CUDA 13 build shares these paths and must preserve the outer CUDA 12 output.
 $Wheelhouse = Join-Path $RepoRoot "wheelhouse"
+if (-not $OnlyCudaMajor) {
+    foreach ($directoryName in @('wheelhouse', 'wheelhouse_cu12', 'wheelhouse_cu13', 'wheelhouse_merged')) {
+        Remove-Item (Join-Path $RepoRoot $directoryName) `
+            -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 New-Item -ItemType Directory -Path $Wheelhouse -Force | Out-Null
 ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Force
 ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Force
@@ -227,7 +235,7 @@ function Invoke-Cuda13NestedBuild {
     Invoke-Checked { & docker @dockerArgs } 'Nested CUDA 13 wheel build failed'
 }
 
-function Build-CudaCcclWheel {
+function Build-CudaComputeWheel {
     <#
     .SYNOPSIS
         Perform the regular wheel build for a given CUDA major version.
@@ -271,13 +279,14 @@ function Build-CudaCcclWheel {
     # Use separate output directories for 12 vs 13.
     $outDir = Join-Path $RepoRoot "wheelhouse_$extra"
 
-    Write-Host "Building cuda-cccl wheel for CUDA $Major at $CudaPathForMajor..."
+    Write-Host "Building cuda-compute wheel for CUDA $Major at $CudaPathForMajor..."
 
     # Run pip wheel to build the wheel.
     $pythonArgs = @(
         '-m', 'pip', 'wheel',
+        '--no-deps',
         '-w', $outDir,
-        ".[${extra}]",
+        '.',
         '-v'
     ) + $pipConfigArgs
 
@@ -286,7 +295,7 @@ function Build-CudaCcclWheel {
 
     # Normalise the wheel filename (append .cu12/.cu13) and prune duplicates.
     $builtWheel = Get-OnePathMatch -Path $outDir `
-        -Pattern '^cuda_cccl-.*\.whl' `
+        -Pattern '^cuda_compute-.*\.whl' `
         -File
     if (-not $builtWheel) {
         throw "Failed to locate built wheel in $outDir for CUDA $Major"
@@ -301,7 +310,7 @@ function Build-CudaCcclWheel {
     }
 
     # Remove any stray wheels that lack the .cuXX suffix.
-    Get-ChildItem -Path $outDir -Filter 'cuda_cccl-*.whl' |
+    Get-ChildItem -Path $outDir -Filter 'cuda_compute-*.whl' |
     Where-Object { $_.Name -notmatch "\.cu$Major\.whl$" } |
     ForEach-Object {
         Write-Host "Removing duplicate wheel: $($_.FullName)"
@@ -310,7 +319,7 @@ function Build-CudaCcclWheel {
 }
 
 # Main build entry code.
-Push-Location (Join-Path $RepoRoot 'python/cuda_cccl')
+Push-Location (Join-Path $RepoRoot 'python/cuda_compute')
 try {
     foreach ($major in $CudaMajorsToBuild) {
 
@@ -326,7 +335,7 @@ try {
 
         # Perform a normal build for the current major version.  This may
         # be invoked from either an "outer" or inner "nested" image.
-        Build-CudaCcclWheel `
+        Build-CudaComputeWheel `
             -Major $major `
             -RepoRoot $RepoRoot `
             -PythonExe $PythonExe `
@@ -345,12 +354,12 @@ if ($DoMerge) {
 
     $Cu12Wheel = Get-OnePathMatch `
         -Path (Join-Path $RepoRoot 'wheelhouse_cu12') `
-        -Pattern '^cuda_cccl-.*\.cu12\.whl' `
+        -Pattern '^cuda_compute-.*\.cu12\.whl' `
         -File
 
     $Cu13Wheel = Get-OnePathMatch `
         -Path (Join-Path $RepoRoot 'wheelhouse_cu13') `
-        -Pattern '^cuda_cccl-.*\.cu13\.whl' `
+        -Pattern '^cuda_compute-.*\.cu13\.whl' `
         -File
 
     Write-Host "Found CUDA 12 wheel: $Cu12Wheel"
@@ -362,20 +371,30 @@ if ($DoMerge) {
     $WheelhouseMerged = Join-Path $RepoRoot 'wheelhouse_merged'
     ${null} = New-Item -ItemType Directory -Path $WheelhouseMerged -Force
 
-    $mergePy = Join-Path $RepoRoot 'python/cuda_cccl/merge_cuda_wheels.py'
+    $mergePy = Join-Path $RepoRoot 'python/cuda_compute/merge_cuda_wheels.py'
     Invoke-Checked { & $PythonExe $mergePy $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged } 'Merging wheels failed'
 
-    # Clean up the per-major directories and move the merged wheel into the
-    # final location.
-    Get-ChildItem $Wheelhouse -Filter '*.whl' |
-    ForEach-Object {
-        Remove-Item -Force $_.FullName
-    }
+    # Move the merged compute wheel into the final coordinated wheelhouse.
     $MergedWheel = Get-OnePathMatch `
         -Path $WheelhouseMerged `
-        -Pattern '^cuda_cccl-.*\.whl' `
+        -Pattern '^cuda_compute-.*\.whl' `
         -File
     Move-Item -Force $MergedWheel $Wheelhouse
+
+    # Build the universal metapackage once. Its exact cuda-compute dependency
+    # is intentionally left unresolved until installation from this wheelhouse.
+    $metaPackageDir = Join-Path $RepoRoot 'python/cuda_cccl'
+    $metaDistDir = Join-Path $metaPackageDir 'dist'
+    Remove-Item $metaDistDir -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Path $metaDistDir -Force | Out-Null
+    Invoke-Checked {
+        & $PythonExe -m pip wheel --no-deps -v -w $metaDistDir $metaPackageDir
+    } 'cuda-cccl metapackage build failed'
+    $MetaWheel = Get-OnePathMatch `
+        -Path $metaDistDir `
+        -Pattern '^cuda_cccl-.*-py3-none-any\.whl' `
+        -File
+    Move-Item -Force $MetaWheel $Wheelhouse
 
     Remove-Item $WheelhouseMerged -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $RepoRoot 'wheelhouse_cu12') `
@@ -388,6 +407,54 @@ if ($DoMerge) {
     ForEach-Object {
         Write-Host " - $($_.Name)"
     }
+
+    $releaseWheels = @(
+        Get-ChildItem -LiteralPath $Wheelhouse -Filter '*.whl' -File |
+        ForEach-Object { $_.FullName }
+    )
+    if ($releaseWheels.Count -ne 2) {
+        throw "Expected cuda-compute and cuda-cccl wheels; found $($releaseWheels.Count)"
+    }
+    Invoke-Checked { & $PythonExe -m pip install twine } 'Installing twine failed'
+    Invoke-Checked { & $PythonExe -m twine check @releaseWheels } 'Twine validation failed'
+
+    # Native JIT templates and generated sources must remain relocatable.
+    # Search both UTF-8 and UTF-16LE payloads for this checkout and the nested
+    # container mount, accepting either slash convention.
+    $absolutePathCheck = @'
+import sys
+import zipfile
+from pathlib import Path
+
+roots = {root for root in sys.argv[1].split(";;") if len(root) > 2}
+variants = {
+    variant
+    for root in roots
+    for variant in (root, root.replace("\\", "/"), root.replace("/", "\\"))
+}
+needles = {
+    encoded.lower()
+    for variant in variants
+    for encoded in (variant.encode(), variant.encode("utf-16le"))
+}
+violations = []
+for wheel_arg in sys.argv[2:]:
+    wheel = Path(wheel_arg)
+    with zipfile.ZipFile(wheel) as archive:
+        for member in archive.infolist():
+            payload = archive.read(member).lower()
+            if any(needle in payload for needle in needles):
+                violations.append(f"{wheel.name}:{member.filename}")
+if violations:
+    raise SystemExit(
+        "wheel payload contains absolute checkout/build paths: "
+        + ", ".join(violations)
+    )
+'@
+    $checkoutRoots = @("$RepoRoot", "$($env:CONTAINER_WORKSPACE)") -join ";;"
+    Invoke-Checked {
+        & $PythonExe -c $absolutePathCheck $checkoutRoots @releaseWheels
+    } 'Wheel payload contains absolute checkout/build paths'
 }
 
 # If it turns out we need delvewheel, we'd handle it here, after the merging
