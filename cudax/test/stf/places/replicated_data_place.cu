@@ -20,6 +20,54 @@
 
 using namespace cuda::experimental::stf;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
+//! Replica instances are populated by copies issued INSIDE the nested
+//! context of a stackable scope (the auto-push imports a single instance),
+//! so the conditional body graph contains memcpy nodes. Some drivers reject
+//! those at graph instantiation: probe for support so the stackable flavors
+//! can waive instead of aborting.
+bool conditional_body_memcpy_supported()
+{
+  cudaGraph_t g;
+  cuda_safe_call(cudaGraphCreate(&g, 0));
+  cudaGraphConditionalHandle handle;
+  cuda_safe_call(cudaGraphConditionalHandleCreate(&handle, g, 1, cudaGraphCondAssignDefault));
+  cudaGraphNodeParams np{};
+  np.type               = cudaGraphNodeTypeConditional;
+  np.conditional.handle = handle;
+  np.conditional.type   = cudaGraphCondTypeWhile;
+  np.conditional.size   = 1;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  const cudaGraphNode_t cnode = cuda_try<cudaGraphAddNode>(g, nullptr, nullptr, 0, &np);
+#  else
+  const cudaGraphNode_t cnode = cuda_try<cudaGraphAddNode>(g, nullptr, 0, &np);
+#  endif
+  (void) cnode;
+  cudaGraph_t body = np.conditional.phGraph_out[0];
+
+  void* a = nullptr;
+  void* b = nullptr;
+  cuda_safe_call(cudaMalloc(&a, 8));
+  cuda_safe_call(cudaMalloc(&b, 8));
+  cudaGraphNode_t cp;
+  bool ok = (cudaGraphAddMemcpyNode1D(&cp, body, nullptr, 0, b, a, 8, cudaMemcpyDefault) == cudaSuccess);
+  if (ok)
+  {
+    cudaGraphExec_t e;
+    ok = (cudaGraphInstantiate(&e, g, 0) == cudaSuccess);
+    if (ok)
+    {
+      cuda_safe_call(cudaGraphExecDestroy(e));
+    }
+  }
+  cudaGetLastError(); // clear any probe failure
+  cuda_safe_call(cudaFree(a));
+  cuda_safe_call(cudaFree(b));
+  cuda_safe_call(cudaGraphDestroy(g));
+  return ok;
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
 int main()
 {
 #if _CCCL_CTK_BELOW(12, 4)
@@ -33,6 +81,13 @@ int main()
   for (size_t i = 0; i < n; i++)
   {
     ref[i] = 0.25 * static_cast<double>(i % 1024) + 1.0;
+  }
+
+  const bool stackable_ok = conditional_body_memcpy_supported();
+  if (!stackable_ok)
+  {
+    printf("replicated data place: stackable flavors will be skipped (driver rejects memcpy nodes in conditional "
+           "body graphs)\n");
   }
 
   // ---- stream and graph backends
@@ -237,6 +292,7 @@ int main()
         // and inside a stackable conditional scope: the auto-push imports
         // the data once, the nested acquire pins one instance per axis-0
         // group
+        if (stackable_ok)
         {
           stackable_ctx sctx;
           auto lsin  = sctx.logical_data(shape_of<slice<double>>(n)).set_symbol("g22in");
@@ -293,6 +349,7 @@ int main()
   // ---- stackable conditional graph scope: replicas are ordinary
   // stream-ordered instances, so the auto-push (freeze + get within the
   // nested context) and pop-time lifetime need no special handling
+  if (stackable_ok)
   {
     stackable_ctx ctx;
     auto grid = exec_place::repeat(exec_place::current_device(), nplaces);
@@ -347,7 +404,7 @@ int main()
     }
     catch (...)
     {}
-    if (gc_opt && gc_opt->get_count() >= 2)
+    if (stackable_ok && gc_opt && gc_opt->get_count() >= 2)
     {
       auto& gc = *gc_opt;
       stackable_ctx ctx;
