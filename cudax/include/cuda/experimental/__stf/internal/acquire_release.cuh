@@ -28,6 +28,9 @@
 
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 
+#include <algorithm>
+#include <vector>
+
 namespace cuda::experimental::stf
 {
 /**
@@ -114,10 +117,40 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // Since logical data are ordered by addresses, "mergeable" deps will be
     // stored contiguously, so we can stop as soon as there is another
     // dependency
+    const auto group_first = it;
     for (auto next = ::std::next(it); next != task_deps.end() && *it == *next; ++it, ++next)
     {
       mode |= next->get_access_mode();
       it->skipped = true;
+    }
+
+    // Merging picks one surviving dependency per logical data, so a
+    // replicated dep in the group only takes effect if it survives, and the
+    // MERGED mode governs the fetch. A group that mixes a replicated place
+    // with a write-capable mode (one replica would be fetched writable,
+    // leaving the others stale) or with a different place (the surviving
+    // place would silently win) is rejected outright.
+    for (auto g = group_first;; ++g)
+    {
+      const data_place& gdp = g->get_dplace();
+      if (!gdp.is_invalid() && gdp.is_replicated())
+      {
+        if (mode != access_mode::read)
+        {
+          throw ::std::invalid_argument(
+            "replicated data places only support read access (another dependency on the same logical data upgrades "
+            "the merged access mode)");
+        }
+        if (!(it->get_dplace() == gdp))
+        {
+          throw ::std::invalid_argument("conflicting data places for merged dependencies on the same logical data (one "
+                                        "of them is replicated)");
+        }
+      }
+      if (g == it)
+      {
+        break;
+      }
     }
 
     /* Get of this dependency which is not skipped, and save it in a vector. We also save the equivalent merged
@@ -147,24 +180,27 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     {
       // A dependency at a replicated place resolves to one ORDINARY data
       // instance per member place, each allocated and made valid by the
-      // unchanged per-instance path below (members with equal data places
-      // deduplicate naturally: find_instance_id is keyed by place). The
-      // dep records the first member's instance; grid dispatch resolves
-      // the other shards per sub-task. Only read access reaches this
-      // point (validated in add_deps).
-      instance_id_t first_id = instance_id_t::invalid;
+      // unchanged per-instance path below. The dep records the first
+      // member's instance; grid dispatch resolves the other shards per
+      // sub-task. Read-only and place-consistency across merged deps were
+      // validated by the group check above.
+      _CCCL_ASSERT(mode == access_mode::read, "replicated fetches are read-only");
+      // Members with equal data places resolve to the same instance
+      // (find_instance_id is keyed by place): fetch each distinct instance
+      // exactly once.
+      ::std::vector<instance_id_t> processed;
+      processed.reserve(dplace.instance_count());
       for (size_t r = 0; r < dplace.instance_count(); r++)
       {
         const data_place member = dplace.member(r);
         const instance_id_t im  = d.find_instance_id(member);
-        const bool already_done = (im == first_id) || (r > 0 && im == it->get_instance_id());
         if (r == 0)
         {
-          first_id = im;
           it->set_instance_id(im);
         }
-        if (r == 0 || !already_done)
+        if (::std::find(processed.begin(), processed.end(), im) == processed.end())
         {
+          processed.push_back(im);
           reserved::fetch_data(ctx, d, im, *this, mode, eplace, member, result);
         }
       }
@@ -329,11 +365,14 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
       const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
       if (rel_dplace.instance_count() > 1)
       {
+        ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
+        protected_ids.reserve(rel_dplace.instance_count());
         for (size_t r = 1; r < rel_dplace.instance_count(); r++)
         {
           const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
-          if (im != e.get_instance_id())
+          if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
           {
+            protected_ids.push_back(im);
             d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
           }
         }

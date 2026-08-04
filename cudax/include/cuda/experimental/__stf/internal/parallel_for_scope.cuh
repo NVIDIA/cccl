@@ -536,10 +536,25 @@ class parallel_for_scope
     inst      = data.template instance<Inst>(data.find_instance_id(member));
   }
 
-  template <size_t... I>
-  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index, ::std::index_sequence<I...>)
+  //! Walk (dep index J, instance index K) in lockstep: deps_tup_t filters
+  //! void_interface dependencies out of the instances tuple, so the two
+  //! tuples are NOT aligned index-for-index -- a token dep advances J only.
+  template <size_t J, size_t K>
+  void rebase_replicated_impl(deps_tup_t& instances, size_t place_index)
   {
-    (rebase_replicated_one(::std::get<I>(instances), ::std::get<I>(deps), place_index), ...);
+    if constexpr (J < sizeof...(deps_ops_t))
+    {
+      using dep_t = ::std::tuple_element_t<J, ::std::tuple<deps_ops_t...>>;
+      if constexpr (::std::is_same_v<typename dep_t::dep_type, void_interface>)
+      {
+        rebase_replicated_impl<J + 1, K>(instances, place_index);
+      }
+      else
+      {
+        rebase_replicated_one(::std::get<K>(instances), ::std::get<J>(deps), place_index);
+        rebase_replicated_impl<J + 1, K + 1>(instances, place_index);
+      }
+    }
   }
 
   //! Each shard of a grid dispatch reads its own member instance of any dep
@@ -550,7 +565,7 @@ class parallel_for_scope
     {
       return;
     }
-    rebase_replicated_impl(instances, place_index, ::std::make_index_sequence<sizeof...(deps_ops_t)>());
+    rebase_replicated_impl<0, 0>(instances, place_index);
   }
 
   static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)

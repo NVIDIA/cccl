@@ -213,7 +213,9 @@ public:
    * @brief Deferred replicated data place: replicated over the grid of
    * whichever task the dependency is used with (materialized at task
    * acquisition; a scalar execution place degenerates to its affine data
-   * place). The counterpart of affine() for replication.
+   * place). The counterpart of affine() for replication. The deferred form
+   * always replicates over every grid axis (axis grouping requires the
+   * explicit replicate_over overload).
    */
   static data_place replicated();
 
@@ -270,7 +272,7 @@ public:
 
   // Defined later after data_place_composite is complete
   bool is_composite() const;
-  bool is_replicated() const;
+  bool is_replicated() const noexcept;
 
   //! Number of data instances a dependency at this place resolves to
   size_t instance_count() const;
@@ -1998,7 +2000,7 @@ public:
     return true;
   }
 
-  bool is_replicated() const override
+  bool is_replicated() const noexcept override
   {
     return true;
   }
@@ -2025,6 +2027,10 @@ public:
   //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
   size_t instance_of(size_t place_index) const
   {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
     size_t idx = 0, mult = 1;
@@ -2042,6 +2048,10 @@ public:
   //! Linear grid place of the instance's representative (shared coords = 0)
   size_t representative_place(size_t instance_index) const
   {
+    if (deferred_)
+    {
+      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+    }
     const dim4 dims = grid_.get_dims();
     ssize_t c[4]    = {0, 0, 0, 0};
     for (size_t a = 0; a < 4; a++)
@@ -2077,7 +2087,7 @@ public:
     }
   }
 
-  bool is_deferred() const
+  bool is_deferred() const noexcept
   {
     return deferred_;
   }
@@ -2104,11 +2114,17 @@ public:
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
     const auto& o = static_cast<const data_place_replicated&>(other);
-    if (grid_ == o.grid_)
+    // Deferred places carry no grid: order them before concrete ones and
+    // never dereference grid_ (it has no impl in the deferred form)
+    if (deferred_ || o.deferred_)
     {
-      return 0;
+      return static_cast<int>(o.deferred_) - static_cast<int>(deferred_);
     }
-    return (grid_ < o.grid_) ? -1 : 1;
+    if (axes_mask_ != o.axes_mask_)
+    {
+      return (axes_mask_ < o.axes_mask_) ? -1 : 1;
+    }
+    return (grid_ < o.grid_) ? -1 : (grid_ != o.grid_);
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -2141,7 +2157,7 @@ public:
     return grid_.get_impl();
   }
 
-  const exec_place& get_grid() const
+  const exec_place& get_grid() const noexcept
   {
     return grid_;
   }
@@ -2171,7 +2187,7 @@ inline bool data_place::is_composite() const
   return pimpl_->is_composite();
 }
 
-inline bool data_place::is_replicated() const
+inline bool data_place::is_replicated() const noexcept
 {
   return pimpl_->is_replicated();
 }
@@ -2208,9 +2224,9 @@ inline data_place data_place::composite(partition_fn_t f, const exec_place& grid
 
 inline data_place data_place::replicated(const exec_place& grid)
 {
-  if (grid.size() < 1)
+  if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a non-empty grid");
+    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
   }
   return data_place(::std::make_shared<data_place_replicated>(grid));
 }
@@ -2225,9 +2241,9 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
 {
   static_assert(sizeof...(axes) >= 1, "replicate_over needs at least one axis");
   static_assert(((axes < 4) && ...), "grid axes are 0..3");
-  if (grid.size() < 1)
+  if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a non-empty grid");
+    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
   }
   constexpr unsigned mask = ((1u << axes) | ...);
   auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);
