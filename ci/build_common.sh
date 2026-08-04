@@ -155,8 +155,10 @@ check_required_dependencies
 set -u
 
 N_CPUS="$(grep -cP 'processor\s+:' /proc/cpuinfo)"
+N_CPUS_MINUS_1="$((N_CPUS > 1 ? N_CPUS - 1 : 1))"
 readonly N_CPUS
-declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=$((N_CPUS - 1))}"
+readonly N_CPUS_MINUS_1
+declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=$N_CPUS_MINUS_1}"
 
 # If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
 # concurrent preprocessor calls we think we can do without OOM'ing the machine
@@ -211,7 +213,7 @@ function symlink_latest_preset {
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
-export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > (N_CPUS - 1) ? (N_CPUS - 1) : PARALLEL_LEVEL))"
+export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS_MINUS_1 ? N_CPUS_MINUS_1 : PARALLEL_LEVEL))"
 export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
