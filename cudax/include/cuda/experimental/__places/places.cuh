@@ -2069,7 +2069,6 @@ public:
   //! place -- "share" only means something where a common memory exists
   void validate_colocation() const
   {
-    const dim4 dims    = grid_.get_dims();
     const size_t total = grid_.size();
     for (size_t p = 0; p < total; p++)
     {
