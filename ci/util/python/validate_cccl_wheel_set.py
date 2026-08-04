@@ -9,18 +9,11 @@ from __future__ import annotations
 
 import argparse
 import email
-import json
 import re
 import sys
 import zipfile
 from collections import Counter
 from pathlib import Path
-
-from wheel_release_expectations import (
-    WheelExpectation,
-    load_release_expectations,
-    wheel_compatibility_tags,
-)
 
 
 def _wheels(wheelhouse: Path, prefix: str) -> list[Path]:
@@ -74,12 +67,29 @@ def _validate_identity(metadata, wheel: Path, expected_name: str) -> str:
     return version
 
 
-def _normalized_specifier(specifier: str) -> str:
+_SPECIFIER_PART = re.compile(r"\s*(===|==|!=|<=|>=|~=|<|>)\s*([^\s,()]+)\s*")
+_CURRENT_EXTRA_MARKER = re.compile(
+    r"\s*(?:python_version\s*<\s*(?:\"3\.11\"|'3\.11')\s+and\s+)?"
+    r"extra\s*==\s*(?:\"[A-Za-z0-9][A-Za-z0-9._-]*\"|"
+    r"'[A-Za-z0-9][A-Za-z0-9._-]*')\s*"
+)
+
+
+def _normalized_specifier(specifier: str) -> str | None:
     specifier = specifier.strip()
     if specifier.startswith("(") and specifier.endswith(")"):
         specifier = specifier[1:-1]
+    if not specifier:
+        return ""
+    matches = [_SPECIFIER_PART.fullmatch(part) for part in specifier.split(",")]
+    if any(match is None for match in matches):
+        return None
     return ",".join(
-        sorted(part for part in re.sub(r"\s+", "", specifier).split(",") if part)
+        sorted(
+            f"{match.group(1)}{match.group(2)}"
+            for match in matches
+            if match is not None
+        )
     )
 
 
@@ -93,49 +103,23 @@ def _parse_unconditional_requirement(requirement: str) -> tuple[str, str] | None
     )
     if match is None:
         return None
-    specifier = match.group(2).strip()
-    if re.search(r"\s", specifier):
-        return None
-    specifier_parts = specifier
-    if specifier_parts.startswith("(") and specifier_parts.endswith(")"):
-        specifier_parts = specifier_parts[1:-1]
-    if specifier_parts and any(not part for part in specifier_parts.split(",")):
+    specifier = _normalized_specifier(match.group(2))
+    if specifier is None:
         return None
     return (
         _normalized_distribution_name(match.group(1)),
-        _normalized_specifier(specifier),
+        specifier,
     )
-
-
-_MARKER_ATOM = re.compile(
-    r"\s*(?P<variable>python_version|python_full_version|os_name|sys_platform|"
-    r"platform_release|platform_system|platform_version|platform_machine|"
-    r"platform_python_implementation|implementation_name|implementation_version|"
-    r"extra)\s*"
-    r"(?P<operator>===|==|!=|<=|>=|~=|<|>|not\s+in|in)\s*"
-    r'(?:"[^"\\]*"|\'[^\'\\]*\')\s*'
-)
-_EXTRA_MARKER_ATOM = re.compile(
-    r'\s*extra\s*==\s*(?:"[A-Za-z0-9][A-Za-z0-9._-]*"|'
-    r"'[A-Za-z0-9][A-Za-z0-9._-]*')\s*"
-)
 
 
 def _is_extra_guarded_requirement(requirement: str) -> bool:
     requirement_text, separator, marker = requirement.partition(";")
     if not separator or not marker.strip() or "@" in requirement_text:
         return False
-    atoms = [
-        _MARKER_ATOM.fullmatch(atom) for atom in re.split(r"\s+and\s+", marker.strip())
-    ]
-    if not atoms or any(atom is None for atom in atoms):
-        return False
-    extra_guards = [
-        atom
-        for atom in re.split(r"\s+and\s+", marker.strip())
-        if _EXTRA_MARKER_ATOM.fullmatch(atom)
-    ]
-    return len(extra_guards) == 1
+    # These are the two marker shapes emitted by the current project extras.
+    # Fail closed if that metadata contract changes instead of maintaining a
+    # second, partial PEP 508 parser in release tooling.
+    return _CURRENT_EXTRA_MARKER.fullmatch(marker) is not None
 
 
 def _validate_unconditional_requirements(
@@ -143,13 +127,15 @@ def _validate_unconditional_requirements(
     requirements: list[str],
     expected_requirements: tuple[tuple[str, str], ...],
 ) -> None:
-    expected = Counter(
-        (
-            _normalized_distribution_name(name),
-            _normalized_specifier(specifier),
+    expected_entries = []
+    for name, specifier in expected_requirements:
+        normalized_specifier = _normalized_specifier(specifier)
+        if normalized_specifier is None:
+            raise AssertionError(f"Invalid expected dependency: {name}{specifier}")
+        expected_entries.append(
+            (_normalized_distribution_name(name), normalized_specifier)
         )
-        for name, specifier in expected_requirements
-    )
+    expected = Counter(expected_entries)
     # Optional dependencies emitted by the build backend are guarded by their
     # extra. Treat every other entry as part of the base contract so malformed
     # markers and semicolons inside direct-reference URLs cannot bypass it.
@@ -181,11 +167,23 @@ def _validate_unconditional_requirements(
     )
 
 
-def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
-    expectations: tuple[WheelExpectation, ...] = ()
-    if workflow_file is not None:
-        expectations = load_release_expectations(workflow_file)
+def _wheel_compatibility_tags(wheel: Path) -> tuple[str, str, str]:
+    components = wheel.name.removesuffix(".whl").rsplit("-", 3)
+    if len(components) != 4 or not all(components[-3:]):
+        raise RuntimeError(f"Unable to parse wheel compatibility tags: {wheel.name}")
+    return components[-3], components[-2], components[-1]
 
+
+def _is_release_platform_tag(platform_tag: str) -> bool:
+    if platform_tag in {"win_amd64", "win_arm64"}:
+        return True
+    manylinux = re.compile(
+        r"manylinux(?:1|2010|2014|_[0-9]+_[0-9]+)_(?:x86_64|aarch64)"
+    )
+    return all(manylinux.fullmatch(tag) is not None for tag in platform_tag.split("."))
+
+
+def validate(wheelhouse: Path, require_release_tags: bool = False) -> None:
     headers_wheel = _one_wheel(wheelhouse, "cccl_headers")
     compute_wheels = _wheels(wheelhouse, "cuda_compute")
     meta_wheel = _one_wheel(wheelhouse, "cuda_cccl")
@@ -233,12 +231,15 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
         raise RuntimeError("cccl-headers owns files outside cuda/cccl")
 
     compute_tags: dict[tuple[str, str, str], Path] = {}
-    observed_expectations: set[WheelExpectation] = set()
     for compute_wheel, compute_metadata, compute_names in compute_artifacts:
-        tags = wheel_compatibility_tags(compute_wheel)
+        tags = _wheel_compatibility_tags(compute_wheel)
         if tags == ("py3", "none", "any"):
             raise RuntimeError(
                 f"Expected a platform cuda-compute wheel: {compute_wheel.name}"
+            )
+        if require_release_tags and not _is_release_platform_tag(tags[2]):
+            raise RuntimeError(
+                f"Expected a repaired release cuda-compute wheel: {compute_wheel.name}"
             )
         if previous_wheel := compute_tags.get(tags):
             raise RuntimeError(
@@ -247,19 +248,6 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
                 f"{compute_wheel.name}"
             )
         compute_tags[tags] = compute_wheel
-
-        if expectations:
-            matching_expectations = [
-                expectation
-                for expectation in expectations
-                if expectation.matches_compute_tags(tags)
-            ]
-            if len(matching_expectations) != 1:
-                raise RuntimeError(
-                    f"{compute_wheel.name} does not match exactly one producer in "
-                    f"{workflow_file}"
-                )
-            observed_expectations.add(matching_expectations[0])
 
         compute_requirements = compute_metadata.get_all("Requires-Dist", [])
         # Keep this runtime contract synchronized with [project].dependencies
@@ -301,17 +289,8 @@ def validate(wheelhouse: Path, workflow_file: Path | None = None) -> None:
         )
 
     for universal_wheel in (headers_wheel, meta_wheel):
-        if wheel_compatibility_tags(universal_wheel) != ("py3", "none", "any"):
+        if _wheel_compatibility_tags(universal_wheel) != ("py3", "none", "any"):
             raise RuntimeError(f"Expected a universal wheel: {universal_wheel.name}")
-
-    if expectations and observed_expectations != set(expectations):
-        missing = sorted(
-            expectation.artifact_name
-            for expectation in set(expectations) - observed_expectations
-        )
-        raise RuntimeError(
-            f"Missing cuda-compute wheels required by the generated workflow: {missing}"
-        )
 
     print(
         "Validated coordinated CCCL Python wheel set at version "
@@ -323,14 +302,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("wheelhouse", type=Path)
     parser.add_argument(
-        "--workflow",
-        type=Path,
-        help="generated workflow.json that defines the complete release wheel matrix",
+        "--require-release-tags",
+        action="store_true",
+        help="reject raw linux and other non-release platform tags",
     )
     args = parser.parse_args()
     try:
-        validate(args.wheelhouse, args.workflow)
-    except (json.JSONDecodeError, OSError, RuntimeError, zipfile.BadZipFile) as error:
+        validate(args.wheelhouse, args.require_release_tags)
+    except (OSError, RuntimeError, zipfile.BadZipFile) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     return 0

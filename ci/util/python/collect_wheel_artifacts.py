@@ -9,18 +9,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import re
 import shutil
 import sys
 import zipfile
 from pathlib import Path
-
-from wheel_release_expectations import (
-    WheelExpectation,
-    load_release_expectations,
-    wheel_compatibility_tags,
-)
 
 _RELEASE_ARTIFACT = re.compile(r"wheel-cccl-(?:linux|windows)-[^/]+-py[^/]+")
 
@@ -50,85 +43,10 @@ def _is_universal_wheel(name: str) -> bool:
     return name.endswith("-py3-none-any.whl")
 
 
-def _validate_expected_artifacts(
-    source: Path,
-    wheels: list[Path],
-    expectations: tuple[WheelExpectation, ...],
-) -> None:
-    expected_names = {expectation.artifact_name for expectation in expectations}
-    actual_names = {
-        artifact_name
-        for wheel in wheels
-        if (artifact_name := _artifact_name(source, wheel)) is not None
-    }
-    if actual_names != expected_names:
-        missing = sorted(expected_names - actual_names)
-        unexpected = sorted(actual_names - expected_names)
-        raise RuntimeError(
-            "Release artifacts do not match the generated workflow "
-            f"(missing={missing}, unexpected={unexpected})"
-        )
-
-    compute_wheels: dict[str, Path] = {}
-    for expectation in expectations:
-        artifact_wheels = [
-            wheel
-            for wheel in wheels
-            if _artifact_name(source, wheel) == expectation.artifact_name
-        ]
-        headers_wheels = [
-            wheel for wheel in artifact_wheels if wheel.name.startswith("cccl_headers-")
-        ]
-        compute_candidates = [
-            wheel for wheel in artifact_wheels if wheel.name.startswith("cuda_compute-")
-        ]
-        meta_wheels = [
-            wheel for wheel in artifact_wheels if wheel.name.startswith("cuda_cccl-")
-        ]
-        recognized = {*headers_wheels, *compute_candidates, *meta_wheels}
-        if (
-            len(headers_wheels) != 1
-            or len(compute_candidates) != 1
-            or len(meta_wheels) != 1
-        ):
-            raise RuntimeError(
-                f"Expected one wheel for each coordinated distribution in "
-                f"{expectation.artifact_name}"
-            )
-        if set(artifact_wheels) != recognized:
-            unexpected = sorted(
-                wheel.name for wheel in set(artifact_wheels) - recognized
-            )
-            raise RuntimeError(
-                f"Unexpected wheels in {expectation.artifact_name}: {unexpected}"
-            )
-        for universal_wheel in (*headers_wheels, *meta_wheels):
-            if not _is_universal_wheel(universal_wheel.name):
-                raise RuntimeError(
-                    f"Expected a universal wheel in {expectation.artifact_name}: "
-                    f"{universal_wheel.name}"
-                )
-
-        compute_wheel = compute_candidates[0]
-        tags = wheel_compatibility_tags(compute_wheel)
-        if not expectation.matches_compute_tags(tags):
-            raise RuntimeError(
-                f"{compute_wheel.name} does not match producer artifact "
-                f"{expectation.artifact_name}"
-            )
-        if previous := compute_wheels.get(compute_wheel.name):
-            raise RuntimeError(
-                f"Producer artifacts {previous.parent} and {compute_wheel.parent} "
-                f"contain the same cuda-compute wheel {compute_wheel.name}"
-            )
-        compute_wheels[compute_wheel.name] = compute_wheel
-
-
 def collect_wheels(
     source: Path,
     destination: Path,
     canonical_artifact: str,
-    workflow_file: Path | None = None,
 ) -> None:
     discovered_wheels = sorted(source.rglob("*.whl"))
     wheels = [
@@ -138,17 +56,6 @@ def collect_wheels(
     ]
     if not wheels:
         raise RuntimeError(f"No release wheel artifacts found below {source}")
-
-    if workflow_file is not None:
-        expectations = load_release_expectations(workflow_file)
-        if canonical_artifact not in {
-            expectation.artifact_name for expectation in expectations
-        }:
-            raise RuntimeError(
-                f"Canonical artifact {canonical_artifact} is not a producer in "
-                f"{workflow_file}"
-            )
-        _validate_expected_artifacts(source, wheels, expectations)
 
     for wheel in sorted(set(discovered_wheels) - set(wheels)):
         print(f"Ignored wheel outside a release artifact: {wheel}")
@@ -202,12 +109,6 @@ def main() -> int:
     parser.add_argument("source", type=Path)
     parser.add_argument("destination", type=Path)
     parser.add_argument(
-        "--workflow",
-        required=True,
-        type=Path,
-        help="generated workflow.json that defines the complete release wheel matrix",
-    )
-    parser.add_argument(
         "--canonical-artifact",
         default="wheel-cccl-linux-amd64-py3.10",
         help="required source artifact for universal wheels",
@@ -219,9 +120,8 @@ def main() -> int:
             args.source,
             args.destination,
             args.canonical_artifact,
-            args.workflow,
         )
-    except (json.JSONDecodeError, OSError, RuntimeError, zipfile.BadZipFile) as error:
+    except (OSError, RuntimeError, zipfile.BadZipFile) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     return 0

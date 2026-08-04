@@ -185,7 +185,7 @@ rm -rf wheelhouse_merged wheelhouse_final
 
 echo "Final wheels in wheelhouse:"
 ls -la wheelhouse/
-python ci/util/python/validate_cccl_wheel_set.py wheelhouse
+python ci/util/python/validate_cccl_wheel_set.py wheelhouse --require-release-tags
 python -m twine check wheelhouse/*.whl
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then

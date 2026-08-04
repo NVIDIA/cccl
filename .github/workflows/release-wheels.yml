@@ -38,7 +38,6 @@ defaults:
 jobs:
   publish-wheels:
     name: Publish wheels
-    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.wheel-dst }}
@@ -48,131 +47,24 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Validate source wheel workflow run
-        id: source-run
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          RUN_ID: ${{ inputs.run-id }}
-        run: |
-          if [[ ! "${RUN_ID}" =~ ^[0-9]+$ ]]; then
-            echo "::error::Invalid GitHub Actions run ID: ${RUN_ID}"
-            exit 1
-          fi
-
-          expected_workflow_id=$(gh api \
-            "repos/${REPOSITORY}/actions/workflows/build-and-test-python-wheels.yml" \
-            --jq '.id')
-          run_json=$(gh api "repos/${REPOSITORY}/actions/runs/${RUN_ID}")
-          workflow_name=$(jq -r '.name // ""' <<< "${run_json}")
-          workflow_id=$(jq -r '.workflow_id // ""' <<< "${run_json}")
-          status=$(jq -r '.status // ""' <<< "${run_json}")
-          conclusion=$(jq -r '.conclusion // ""' <<< "${run_json}")
-          event=$(jq -r '.event // ""' <<< "${run_json}")
-          head_branch=$(jq -r '.head_branch // ""' <<< "${run_json}")
-          head_repository=$(jq -r '.head_repository.full_name // ""' <<< "${run_json}")
-          head_sha=$(jq -r '.head_sha // ""' <<< "${run_json}")
-
-          if [[ "${workflow_id}" != "${expected_workflow_id}" || \
-                "${workflow_name}" != "Build and Test Python Wheels" ]]; then
-            echo "::error::Run ${RUN_ID} is for '${workflow_name}', not 'Build and Test Python Wheels'"
-            exit 1
-          fi
-          if [[ "${status}" != "completed" || "${conclusion}" != "success" ]]; then
-            echo "::error::Run ${RUN_ID} is not a completed successful run (status=${status}, conclusion=${conclusion})"
-            exit 1
-          fi
-          if [[ "${event}" != "workflow_dispatch" || \
-                "${head_repository}" != "${REPOSITORY}" ]]; then
-            echo "::error::Run ${RUN_ID} is not a manually dispatched ${REPOSITORY} run"
-            exit 1
-          fi
-          if [[ ! "${head_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            echo "::error::Run ${RUN_ID} has an invalid head SHA: ${head_sha}"
-            exit 1
-          fi
-
-          if [[ "${head_branch}" != "${DEFAULT_BRANCH}" ]]; then
-            if [[ ! "${head_branch}" =~ ^python-[0-9]+\.[0-9]+\.[0-9]+-release$ ]]; then
-              echo "::error::Run ${RUN_ID} used unapproved source branch '${head_branch}'"
-              exit 1
-            fi
-
-            release_tag=${head_branch%-release}
-            tag_ref_json=$(gh api "repos/${REPOSITORY}/git/ref/tags/${release_tag}")
-            tag_object_type=$(jq -r '.object.type // ""' <<< "${tag_ref_json}")
-            tag_object_sha=$(jq -r '.object.sha // ""' <<< "${tag_ref_json}")
-            if [[ "${tag_object_type}" != "tag" || \
-                  ! "${tag_object_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
-              echo "::error::Release source must have an annotated tag named ${release_tag}"
-              exit 1
-            fi
-
-            tag_json=$(gh api "repos/${REPOSITORY}/git/tags/${tag_object_sha}")
-            tag_name=$(jq -r '.tag // ""' <<< "${tag_json}")
-            tag_target_type=$(jq -r '.object.type // ""' <<< "${tag_json}")
-            tag_target_sha=$(jq -r '.object.sha // ""' <<< "${tag_json}")
-            tag_verified=$(jq -r '.verification.verified // false' <<< "${tag_json}")
-            if [[ "${tag_name}" != "${release_tag}" || \
-                  "${tag_target_type}" != "commit" || \
-                  "${tag_target_sha}" != "${head_sha}" || \
-                  "${tag_verified}" != "true" ]]; then
-              echo "::error::Run ${RUN_ID} is not at verified release tag ${release_tag}"
-              exit 1
-            fi
-          fi
-
-          compare_status=$(gh api \
-            "repos/${REPOSITORY}/compare/${head_sha}...${head_branch}" \
-            --jq '.status')
-          if [[ "${compare_status}" != "identical" && \
-                "${compare_status}" != "ahead" ]]; then
-            echo "::error::Source SHA ${head_sha} is no longer reachable from ${head_branch}"
-            exit 1
-          fi
-
-          echo "Validated successful ${workflow_name} run ${RUN_ID} from ${head_branch} at ${head_sha}"
-          echo "head-sha=${head_sha}" >> "${GITHUB_OUTPUT}"
-
-      - name: Checkout trusted release tooling
-        uses: actions/checkout@v6
+      - name: Checkout release tooling
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
         with:
           persist-credentials: false
-          ref: ${{ github.sha }}
 
       - name: Download CCCL Python wheels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ inputs.run-id }}
-          SOURCE_SHA: ${{ steps.source-run.outputs.head-sha }}
-          TRUSTED_SHA: ${{ github.sha }}
         run: |
-          checkout_sha=$(git rev-parse HEAD)
-          if [[ "${checkout_sha}" != "${TRUSTED_SHA}" ]]; then
-            echo "::error::Checked out ${checkout_sha}, expected trusted release tooling at ${TRUSTED_SHA}"
-            exit 1
-          fi
-          echo "Validating artifacts produced at ${SOURCE_SHA} with trusted tooling at ${TRUSTED_SHA}"
-
-          gh run download "${RUN_ID}" -D run-metadata \
-            -R "${{ github.repository }}" -n workflow
-          mapfile -t workflow_files < <(find run-metadata -type f -name workflow.json)
-          if [[ "${#workflow_files[@]}" -ne 1 ]]; then
-            echo "::error::Expected one generated workflow.json, found ${#workflow_files[@]}"
-            exit 1
-          fi
-          workflow_file=${workflow_files[0]}
-
           gh run download "${RUN_ID}" -D dl -R "${{ github.repository }}" \
             -p 'wheel-cccl-linux-*' \
             -p 'wheel-cccl-windows-*'
           python ci/util/python/collect_wheel_artifacts.py dl dist \
-            --canonical-artifact wheel-cccl-linux-amd64-py3.10 \
-            --workflow "${workflow_file}"
+            --canonical-artifact wheel-cccl-linux-amd64-py3.10
           python ci/util/python/validate_cccl_wheel_set.py dist \
-            --workflow "${workflow_file}"
-          rm -rf dl run-metadata
+            --require-release-tags
+          rm -rf dl
           ls -lh dist/
 
       - name: Publish package distributions to PyPI

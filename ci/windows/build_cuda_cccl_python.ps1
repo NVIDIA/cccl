@@ -94,7 +94,7 @@ if ($isShallow -eq 'true') {
 $env:PACKAGE_VERSION_PREFIX = "0.1."
 Push-Location $RepoRoot
 try {
-    $PackageVersion = (& bash -lc "ci/generate_version.sh").Trim()
+    $PackageVersion = (& bash "ci/generate_version.sh").Trim()
     if ($LASTEXITCODE -ne 0 -or -not $PackageVersion) {
         throw "Failed to generate the coordinated Python package version"
     }
@@ -479,7 +479,7 @@ assert not missing, f"merged v2 wheel is missing PR #9583 libnvcc DLLs: {sorted(
 
     $validator = Join-Path $RepoRoot 'ci/util/python/validate_cccl_wheel_set.py'
     Invoke-Checked {
-        & $PythonExe $validator $Wheelhouse
+        & $PythonExe $validator $Wheelhouse --require-release-tags
     } 'Coordinated CCCL Python wheel validation failed'
 
     $releaseWheels = @(

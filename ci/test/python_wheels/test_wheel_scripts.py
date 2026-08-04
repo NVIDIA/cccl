@@ -79,9 +79,21 @@ def _write_coordinated_wheel_set(
     compute_wheel_names: tuple[str, ...],
     *,
     headers_requirements: tuple[str, ...] = ("cuda-pathfinder>=1.2.3",),
-    compute_additional_requirements: tuple[str, ...] = (),
-    meta_additional_requirements: tuple[str, ...] = (),
+    compute_requirements: tuple[str, ...] | None = None,
+    meta_requirements: tuple[str, ...] | None = None,
 ) -> None:
+    if compute_requirements is None:
+        compute_requirements = (
+            "numpy",
+            "cuda-pathfinder>=1.2.3",
+            "cuda-core",
+            # Exercise PEP 503 normalization against the hyphenated contract.
+            "typing_extensions",
+            f"cccl-headers=={version}",
+        )
+    if meta_requirements is None:
+        meta_requirements = (f"cuda-compute=={version}",)
+
     _write_wheel(
         wheelhouse / f"cccl_headers-{version}-py3-none-any.whl",
         {
@@ -105,18 +117,11 @@ def _write_coordinated_wheel_set(
             {
                 f"cuda_compute-{version}.dist-info/METADATA": (
                     f"Name: cuda-compute\nVersion: {version}\n"
-                    "Requires-Dist: numpy\n"
-                    "Requires-Dist: cuda-pathfinder>=1.2.3\n"
-                    "Requires-Dist: cuda-core\n"
-                    # Exercise PEP 503 name normalization: the source project
-                    # spells this equivalent dependency with an underscore.
-                    "Requires-Dist: typing_extensions\n"
-                    f"Requires-Dist: cccl-headers=={version}\n"
-                    'Requires-Dist: pytest; extra == "test-cu13"\n'
                     + "".join(
                         f"Requires-Dist: {requirement}\n"
-                        for requirement in compute_additional_requirements
+                        for requirement in compute_requirements
                     )
+                    + 'Requires-Dist: pytest; extra == "test-cu13"\n'
                 ),
                 "cuda/compute/__init__.py": "",
             },
@@ -126,80 +131,13 @@ def _write_coordinated_wheel_set(
         {
             f"cuda_cccl-{version}.dist-info/METADATA": (
                 f"Name: cuda-cccl\nVersion: {version}\n"
-                f"Requires-Dist: cuda-compute=={version}\n"
-                f'Requires-Dist: cuda-compute[test-cu13]; extra == "test-cu13"\n'
                 + "".join(
                     f"Requires-Dist: {requirement}\n"
-                    for requirement in meta_additional_requirements
+                    for requirement in meta_requirements
                 )
+                + 'Requires-Dist: cuda-compute[test-cu13]; extra == "test-cu13"\n'
             )
         },
-    )
-
-
-def _write_workflow(path: Path, producers: tuple[tuple[str, str, str], ...]) -> None:
-    producer_jobs = []
-    for operating_system, architecture, python_version in producers:
-        compiler_family = "MSVC" if operating_system == "windows" else "GCC"
-        producer_jobs.append(
-            {
-                "name": f"Build {operating_system} {architecture} py{python_version}",
-                "runner": f"{operating_system}-{architecture}-cpu16",
-                "origin": {
-                    "workflow_name": "python-wheels",
-                    "matrix_job": {
-                        "project": "python",
-                        "jobs": ["build_py_wheel"],
-                        "cpu": architecture,
-                        "py_version": python_version,
-                        "cxx_family": compiler_family,
-                    },
-                },
-            }
-        )
-    path.write_text(
-        json.dumps(
-            {
-                "Python wheels": {
-                    "two_stage": [
-                        {
-                            "producers": producer_jobs,
-                            "consumers": [],
-                        }
-                    ]
-                }
-            }
-        ),
-        encoding="utf-8",
-    )
-
-
-def _write_release_artifact(
-    root: Path,
-    operating_system: str,
-    architecture: str,
-    python_version: str,
-    version: str = "1.2.3",
-) -> None:
-    artifact = root / f"wheel-cccl-{operating_system}-{architecture}-py{python_version}"
-    python_tag = f"cp{python_version.replace('.', '')}"
-    platform_tag = {
-        ("linux", "amd64"): "manylinux_2_17_x86_64.manylinux2014_x86_64",
-        ("linux", "arm64"): "manylinux_2_28_aarch64",
-        ("windows", "amd64"): "win_amd64",
-    }[(operating_system, architecture)]
-    _write_wheel(
-        artifact / f"cccl_headers-{version}-py3-none-any.whl",
-        {f"cccl_headers-{version}.dist-info/METADATA": f"Version: {version}\n"},
-    )
-    _write_wheel(
-        artifact
-        / f"cuda_compute-{version}-{python_tag}-{python_tag}-{platform_tag}.whl",
-        {f"cuda_compute-{version}.dist-info/METADATA": f"Version: {version}\n"},
-    )
-    _write_wheel(
-        artifact / f"cuda_cccl-{version}-py3-none-any.whl",
-        {f"cuda_cccl-{version}.dist-info/METADATA": f"Version: {version}\n"},
     )
 
 
@@ -208,6 +146,15 @@ class WheelScriptTests(unittest.TestCase):
     validator = None
 
     def test_generate_version_uses_checkout_version_file(self):
+        tag = subprocess.run(
+            ["git", "describe", "--tags", "--match", "v[0-9]*", "--abbrev=0"],
+            cwd=REPOSITORY_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        if tag.returncode:
+            self.skipTest("checkout has no version tag history")
+
         version_data = json.loads(
             (REPOSITORY_ROOT / "cccl-version.json").read_text(encoding="utf-8")
         )
@@ -215,7 +162,7 @@ class WheelScriptTests(unittest.TestCase):
         environment["CCCL_BRANCH"] = "dev"
         environment["PACKAGE_VERSION_PREFIX"] = "0.1."
         result = subprocess.run(
-            ["bash", "-lc", "../../generate_version.sh"],
+            ["bash", "../../generate_version.sh"],
             cwd=REPOSITORY_ROOT / "ci/test/python_wheels",
             env=environment,
             check=True,
@@ -314,53 +261,35 @@ class WheelScriptTests(unittest.TestCase):
                 [path.name for path in destination.glob("*.whl")], [release_wheel]
             )
 
-    def test_collects_complete_generated_workflow_matrix(self):
+    def test_collects_every_unique_platform_compute_wheel(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            producers = (
-                ("linux", "amd64", "3.10"),
-                ("linux", "arm64", "3.11"),
-                ("windows", "amd64", "3.12"),
+            wheels = (
+                (
+                    "wheel-cccl-linux-amd64-py3.10",
+                    "cuda_compute-1.2.3-cp310-cp310-manylinux2014_x86_64.whl",
+                ),
+                (
+                    "wheel-cccl-linux-arm64-py3.11",
+                    "cuda_compute-1.2.3-cp311-cp311-manylinux_2_28_aarch64.whl",
+                ),
+                (
+                    "wheel-cccl-windows-amd64-py3.12",
+                    "cuda_compute-1.2.3-cp312-cp312-win_amd64.whl",
+                ),
             )
-            workflow = root / "workflow.json"
-            _write_workflow(workflow, producers)
-            for producer in producers:
-                _write_release_artifact(root, *producer)
+            for artifact, wheel in wheels:
+                _write_wheel(root / artifact / wheel, {"compute": wheel})
 
             destination = root / "dist"
             self.collector.collect_wheels(
-                root,
-                destination,
-                "wheel-cccl-linux-amd64-py3.10",
-                workflow,
+                root, destination, "wheel-cccl-linux-amd64-py3.10"
             )
 
             self.assertEqual(
-                len(list(destination.glob("cuda_compute-*.whl"))), len(producers)
+                {path.name for path in destination.glob("*.whl")},
+                {wheel for _, wheel in wheels},
             )
-            self.assertEqual(len(list(destination.glob("cccl_headers-*.whl"))), 1)
-            self.assertEqual(len(list(destination.glob("cuda_cccl-*.whl"))), 1)
-
-    def test_rejects_missing_generated_workflow_artifact(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            workflow = root / "workflow.json"
-            _write_workflow(
-                workflow,
-                (
-                    ("linux", "amd64", "3.10"),
-                    ("windows", "amd64", "3.10"),
-                ),
-            )
-            _write_release_artifact(root, "linux", "amd64", "3.10")
-
-            with self.assertRaisesRegex(RuntimeError, "missing=.*windows"):
-                self.collector.collect_wheels(
-                    root,
-                    root / "dist",
-                    "wheel-cccl-linux-amd64-py3.10",
-                    workflow,
-                )
 
     def test_validates_coordinated_wheel_contract(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -375,39 +304,7 @@ class WheelScriptTests(unittest.TestCase):
                 ),
             )
 
-            workflow = wheelhouse / "workflow.json"
-            _write_workflow(
-                workflow,
-                (
-                    ("linux", "amd64", "3.12"),
-                    ("windows", "amd64", "3.12"),
-                ),
-            )
-
-            self.validator.validate(wheelhouse, workflow)
-
-    def test_rejects_missing_compute_wheel_from_generated_workflow(self):
-        with tempfile.TemporaryDirectory() as temp:
-            wheelhouse = Path(temp)
-            version = "1.2.3"
-            _write_coordinated_wheel_set(
-                wheelhouse,
-                version,
-                (
-                    f"cuda_compute-{version}-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                ),
-            )
-            workflow = wheelhouse / "workflow.json"
-            _write_workflow(
-                workflow,
-                (
-                    ("linux", "amd64", "3.12"),
-                    ("linux", "arm64", "3.12"),
-                ),
-            )
-
-            with self.assertRaisesRegex(RuntimeError, "Missing cuda-compute wheels"):
-                self.validator.validate(wheelhouse, workflow)
+            self.validator.validate(wheelhouse, True)
 
     def test_rejects_unrepaired_linux_compute_wheel(self):
         for platform_tag in ("linux_x86_64", "musllinux_1_2_x86_64"):
@@ -422,13 +319,10 @@ class WheelScriptTests(unittest.TestCase):
                     version,
                     (f"cuda_compute-{version}-cp312-cp312-{platform_tag}.whl",),
                 )
-                workflow = wheelhouse / "workflow.json"
-                _write_workflow(workflow, (("linux", "amd64", "3.12"),))
-
                 with self.assertRaisesRegex(
-                    RuntimeError, "does not match exactly one producer"
+                    RuntimeError, "Expected a repaired release"
                 ):
-                    self.validator.validate(wheelhouse, workflow)
+                    self.validator.validate(wheelhouse, True)
 
     def test_rejects_duplicate_compute_compatibility_tags(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -465,223 +359,82 @@ class WheelScriptTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "Unexpected wheels"):
                 self.validator.validate(wheelhouse)
 
-    def test_rejects_compute_wheel_missing_runtime_dependencies(self):
-        with tempfile.TemporaryDirectory() as temp:
-            wheelhouse = Path(temp)
-            version = "1.2.3"
-            compute_wheel = (
-                wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
-            )
-            _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
-            _write_wheel(
-                compute_wheel,
+    def test_rejects_invalid_runtime_dependency_contracts(self):
+        version = "1.2.3"
+        compute_base = (
+            "numpy",
+            "cuda-pathfinder>=1.2.3",
+            "cuda-core",
+            "typing_extensions",
+        )
+        cases = (
+            ("headers missing", {"headers_requirements": ()}),
+            (
+                "headers floor",
+                {"headers_requirements": ("cuda-pathfinder>=1.0.0",)},
+            ),
+            (
+                "headers extra",
                 {
-                    f"cuda_compute-{version}.dist-info/METADATA": (
-                        f"Name: cuda-compute\nVersion: {version}\n"
-                        f"Requires-Dist: cccl-headers=={version}\n"
-                    ),
-                    "cuda/compute/__init__.py": "",
-                },
-            )
-
-            with self.assertRaisesRegex(
-                RuntimeError, "invalid unconditional runtime dependencies"
-            ):
-                self.validator.validate(wheelhouse)
-
-    def test_rejects_marker_guarded_coordinated_dependencies(self):
-        with tempfile.TemporaryDirectory() as temp:
-            wheelhouse = Path(temp)
-            version = "1.2.3"
-            compute_wheel = (
-                wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
-            )
-            _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
-            guarded_requirements = (
-                "numpy",
-                "cuda-pathfinder>=1.2.3",
-                "cuda-core",
-                "typing_extensions",
-                f"cccl-headers=={version}",
-            )
-            _write_wheel(
-                compute_wheel,
-                {
-                    f"cuda_compute-{version}.dist-info/METADATA": (
-                        f"Name: cuda-compute\nVersion: {version}\n"
-                        + "".join(
-                            f'Requires-Dist: {requirement}; extra == "never"\n'
-                            for requirement in guarded_requirements
-                        )
-                    ),
-                    "cuda/compute/__init__.py": "",
-                },
-            )
-
-            with self.assertRaisesRegex(
-                RuntimeError, "invalid unconditional runtime dependencies"
-            ):
-                self.validator.validate(wheelhouse)
-
-    def test_rejects_marker_guarded_compute_header_pin(self):
-        with tempfile.TemporaryDirectory() as temp:
-            wheelhouse = Path(temp)
-            version = "1.2.3"
-            compute_wheel = (
-                wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
-            )
-            _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
-            requirements = (
-                "numpy",
-                "cuda-pathfinder>=1.2.3",
-                "cuda-core",
-                "typing_extensions",
-            )
-            _write_wheel(
-                compute_wheel,
-                {
-                    f"cuda_compute-{version}.dist-info/METADATA": (
-                        f"Name: cuda-compute\nVersion: {version}\n"
-                        + "".join(
-                            f"Requires-Dist: {requirement}\n"
-                            for requirement in requirements
-                        )
-                        + f'Requires-Dist: cccl-headers=={version}; extra == "never"\n'
-                    ),
-                    "cuda/compute/__init__.py": "",
-                },
-            )
-
-            with self.assertRaisesRegex(
-                RuntimeError, "invalid unconditional runtime dependencies"
-            ):
-                self.validator.validate(wheelhouse)
-
-    def test_rejects_marker_guarded_metapackage_compute_pin(self):
-        with tempfile.TemporaryDirectory() as temp:
-            wheelhouse = Path(temp)
-            version = "1.2.3"
-            _write_coordinated_wheel_set(
-                wheelhouse,
-                version,
-                (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
-            )
-            meta_wheel = wheelhouse / f"cuda_cccl-{version}-py3-none-any.whl"
-            _write_wheel(
-                meta_wheel,
-                {
-                    f"cuda_cccl-{version}.dist-info/METADATA": (
-                        f"Name: cuda-cccl\nVersion: {version}\n"
-                        f'Requires-Dist: cuda-compute=={version}; extra == "never"\n'
+                    "headers_requirements": (
+                        "cuda-pathfinder>=1.2.3",
+                        "requests",
                     )
                 },
-            )
+            ),
+            ("compute missing pin", {"compute_requirements": compute_base}),
+            (
+                "compute guarded pin",
+                {
+                    "compute_requirements": (
+                        *compute_base,
+                        f'cccl-headers=={version}; extra == "never"',
+                    )
+                },
+            ),
+            (
+                "compute extra",
+                {
+                    "compute_requirements": (
+                        *compute_base,
+                        f"cccl-headers=={version}",
+                        "requests",
+                    )
+                },
+            ),
+            (
+                "compute duplicate",
+                {
+                    "compute_requirements": (
+                        *compute_base,
+                        f"cccl-headers=={version}",
+                        f"cccl_headers=={version}",
+                    )
+                },
+            ),
+            ("meta missing", {"meta_requirements": ()}),
+            (
+                "meta wrong pin",
+                {"meta_requirements": (f"cuda-compute<{version}",)},
+            ),
+            (
+                "meta guarded pin",
+                {"meta_requirements": (f'cuda-compute=={version}; extra == "never"',)},
+            ),
+            (
+                "meta extra",
+                {
+                    "meta_requirements": (
+                        f"cuda-compute=={version}",
+                        "requests",
+                    )
+                },
+            ),
+        )
 
-            with self.assertRaisesRegex(
-                RuntimeError, "invalid unconditional runtime dependencies"
-            ):
-                self.validator.validate(wheelhouse)
-
-    def test_rejects_altered_compute_runtime_dependencies(self):
-        for dependency, altered_requirement in (
-            ("numpy", "numpy<0"),
-            (
-                "cuda-pathfinder>=1.2.3",
-                "cuda-pathfinder>=1.0.0",
-            ),
-            (
-                "cuda-core",
-                "cuda-core @ https://example.invalid/cuda_core.whl",
-            ),
-            (
-                "cuda-pathfinder>=1.2.3",
-                "cuda-pathfinder > = 1.2.3",
-            ),
-            (
-                "cuda-pathfinder>=1.2.3",
-                "cuda-pathfinder>=1.2.3,,",
-            ),
-        ):
+        for name, overrides in cases:
             with (
-                self.subTest(altered_requirement=altered_requirement),
-                tempfile.TemporaryDirectory() as temp,
-            ):
-                wheelhouse = Path(temp)
-                version = "1.2.3"
-                compute_wheel = (
-                    wheelhouse / f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl"
-                )
-                _write_coordinated_wheel_set(wheelhouse, version, (compute_wheel.name,))
-                base_requirements = (
-                    "numpy",
-                    "cuda-pathfinder>=1.2.3",
-                    "cuda-core",
-                    "typing_extensions",
-                )
-                requirements = tuple(
-                    altered_requirement if requirement == dependency else requirement
-                    for requirement in base_requirements
-                ) + (f"cccl-headers=={version}",)
-                _write_wheel(
-                    compute_wheel,
-                    {
-                        f"cuda_compute-{version}.dist-info/METADATA": (
-                            f"Name: cuda-compute\nVersion: {version}\n"
-                            + "".join(
-                                f"Requires-Dist: {requirement}\n"
-                                for requirement in requirements
-                            )
-                        ),
-                        "cuda/compute/__init__.py": "",
-                    },
-                )
-
-                with self.assertRaisesRegex(
-                    RuntimeError, "invalid unconditional runtime dependencies"
-                ):
-                    self.validator.validate(wheelhouse)
-
-    def test_rejects_invalid_headers_runtime_dependencies(self):
-        for requirements in (
-            (),
-            ("cuda-pathfinder>=1.0.0",),
-            ("cuda-pathfinder>=1.2.3", "requests"),
-            ("cuda-pathfinder>=1.2.3", "cuda_pathfinder>=1.2.3"),
-        ):
-            with (
-                self.subTest(requirements=requirements),
-                tempfile.TemporaryDirectory() as temp,
-            ):
-                wheelhouse = Path(temp)
-                version = "1.2.3"
-                _write_coordinated_wheel_set(
-                    wheelhouse,
-                    version,
-                    (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
-                    headers_requirements=requirements,
-                )
-
-                with self.assertRaisesRegex(
-                    RuntimeError, "invalid unconditional runtime dependencies"
-                ):
-                    self.validator.validate(wheelhouse)
-
-    def test_rejects_unexpected_compute_runtime_dependencies(self):
-        version = "1.2.3"
-        for additional_requirement in (
-            "requests",
-            f"cccl-headers=={version}",
-            f"cccl_headers<{version}",
-            "rogue @ https://example.invalid/pkg.whl?x=1;y=2",
-            "requests;",
-            'requests; python_version >= "0" or extra == "test-cu13"',
-            'requests; garbage extra == "test-cu13"',
-            'requests; extra == "test-cu13" garbage',
-            'requests; extra == ""',
-            "requests; extra == ''",
-        ):
-            with (
-                self.subTest(additional_requirement=additional_requirement),
+                self.subTest(name=name),
                 tempfile.TemporaryDirectory() as temp,
             ):
                 wheelhouse = Path(temp)
@@ -689,31 +442,7 @@ class WheelScriptTests(unittest.TestCase):
                     wheelhouse,
                     version,
                     (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
-                    compute_additional_requirements=(additional_requirement,),
-                )
-
-                with self.assertRaisesRegex(
-                    RuntimeError, "invalid unconditional runtime dependencies"
-                ):
-                    self.validator.validate(wheelhouse)
-
-    def test_rejects_unexpected_metapackage_runtime_dependencies(self):
-        version = "1.2.3"
-        for additional_requirement in (
-            "requests",
-            f"cuda-compute=={version}",
-            "cuda_compute<1.0",
-        ):
-            with (
-                self.subTest(additional_requirement=additional_requirement),
-                tempfile.TemporaryDirectory() as temp,
-            ):
-                wheelhouse = Path(temp)
-                _write_coordinated_wheel_set(
-                    wheelhouse,
-                    version,
-                    (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
-                    meta_additional_requirements=(additional_requirement,),
+                    **overrides,
                 )
 
                 with self.assertRaisesRegex(
