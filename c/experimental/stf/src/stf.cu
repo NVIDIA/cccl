@@ -522,6 +522,28 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  auto* grid_ptr = from_opaque(grid);
+  return to_opaque(stf_try_allocate([grid_ptr] {
+    return new data_place(data_place::replicated(*grid_ptr));
+  }));
+}
+
+stf_data_place_handle stf_data_place_replicated_deferred(void)
+{
+  return to_opaque(stf_try_allocate([] {
+    return new data_place(data_place::replicated());
+  }));
+}
+
+int stf_data_place_is_replicated(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
+  return from_opaque(h)->is_replicated() ? 1 : 0;
+}
+
 stf_get_executor_fn stf_partition_fn_blocked(int dim)
 {
   switch (dim)

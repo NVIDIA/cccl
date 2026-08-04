@@ -171,6 +171,9 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_data_place_handle stf_data_place_device(int dev_id)
     stf_data_place_handle stf_data_place_managed()
     stf_data_place_handle stf_data_place_affine()
+    stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
+    stf_data_place_handle stf_data_place_replicated_deferred()
+    int stf_data_place_is_replicated(stf_data_place_handle h)
     stf_data_place_handle stf_data_place_current_device()
     stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper)
     stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
@@ -1057,6 +1060,20 @@ class dep:
     # ld may be either a logical_data or a stackable_logical_data; both classes
     # call dep(self, ...) from their .read()/.write()/.rw() helpers.
     def __init__(self, object ld, int mode, dplace=None):
+        # Replicated data places are read-only: mutate the data at another
+        # place, the next replicated read re-broadcasts. Validate here so
+        # the error is a Python exception at dependency construction rather
+        # than a C++ exception at task creation.
+        if (
+            dplace is not None
+            and mode != AccessMode.READ.value
+            and isinstance(dplace, data_place)
+            and stf_data_place_is_replicated((<data_place>dplace)._h)
+        ):
+            raise ValueError(
+                "replicated data places only support read access (mutate the "
+                "data at another place; the next replicated read re-broadcasts)"
+            )
         self.ld   = ld
         self.mode = mode
         self.dplace = dplace  # can be None or a data place
@@ -1633,6 +1650,22 @@ cdef class data_place:
         p._h = stf_data_place_affine()
         if p._h == NULL:
             raise RuntimeError("failed to create affine data_place")
+        return p
+
+    @staticmethod
+    def replicated(exec_place grid=None):
+        """One copy of the data per member of ``grid`` (read-only at the
+        place). With no argument, the deferred form: replicated over the
+        grid of whichever task the dependency is used with (bound at task
+        acquisition; a scalar execution place degenerates to affine)."""
+        cdef data_place p = data_place.__new__(data_place)
+        if grid is None:
+            p._h = stf_data_place_replicated_deferred()
+        else:
+            p._h = stf_data_place_replicated(grid._h)
+            p._add_owner(grid)
+        if p._h == NULL:
+            raise RuntimeError("failed to create replicated data_place")
         return p
 
     @staticmethod
