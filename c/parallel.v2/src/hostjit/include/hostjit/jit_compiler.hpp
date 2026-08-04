@@ -86,7 +86,6 @@ private:
   void removeTempDirectory();
 
   CompilerConfig config_;
-  CUDACompiler compiler_;
   DynamicLibrary library_;
   std::string temp_dir_;
   std::string last_error_;

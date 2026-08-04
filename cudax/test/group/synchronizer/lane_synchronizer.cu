@@ -24,6 +24,8 @@ namespace
 template <class Level, class Config>
 __device__ void test_lane_synchronizer(const Level& level, Config config)
 {
+  const auto& hierarchy = config.hierarchy();
+
   using Synchronizer = cudax::lane_synchronizer;
   static_assert(cuda::std::is_empty_v<Synchronizer>);
 
@@ -43,15 +45,17 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
       synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
 
     // Test do_sync(...).
-    static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer))>);
-    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, synchronizer)));
-    synchronizer_instance.do_sync(mapping_result, synchronizer);
+    static_assert(
+      cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, synchronizer, hierarchy)));
+    synchronizer_instance.do_sync(mapping_result, synchronizer, hierarchy);
 
     // Test do_sync_aligned(...).
     static_assert(
-      cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer))>);
-    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer)));
-    synchronizer_instance.do_sync_aligned(mapping_result, synchronizer);
+      cuda::std::is_same_v<void,
+                           decltype(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer, hierarchy)));
+    synchronizer_instance.do_sync_aligned(mapping_result, synchronizer, hierarchy);
   }
 }
 

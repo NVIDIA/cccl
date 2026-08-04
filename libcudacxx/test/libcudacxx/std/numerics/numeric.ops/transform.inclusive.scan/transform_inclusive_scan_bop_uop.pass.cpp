@@ -35,6 +35,7 @@ struct add_one
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class BOp, class UOp, class T>
 TEST_FUNC constexpr void test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T* rFirst, const T* rLast)
 {
@@ -55,6 +56,7 @@ TEST_FUNC constexpr void test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T
   assert(cuda::std::equal(out, end, rFirst, rLast));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -84,6 +86,7 @@ TEST_FUNC constexpr cuda::std::size_t triangle(size_t n)
 }
 
 //  Basic sanity
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr void basic_tests()
 {
   {
@@ -127,6 +130,7 @@ TEST_FUNC constexpr void basic_tests()
 #endif // !TEST_COMPILER(NVHPC)
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   basic_tests();
