@@ -11,6 +11,10 @@
 #include <cuda/iterator>
 #include <cuda/std/functional>
 
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 int main()
 {
   _CCCL_NVTX_RANGE_SCOPE("main");
