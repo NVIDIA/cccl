@@ -26,16 +26,17 @@ $repoRoot = Get-RepoRoot
 
 ${wheelPath} = Get-CudaCcclWheel
 $wheelhouse = Split-Path -Parent $wheelPath
-$computeWheelPath = Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_compute-.*\.whl' -File
-$headersWheelPath = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
 
 # pytest-benchmark is for the host-benchmark smoke test below.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
 # CuPy is required by the cuda.compute examples and is not part of the test extras
 Invoke-Checked {
-    & $python -m pip install --find-links $wheelhouse $headersWheelPath $computeWheelPath "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x"
+    & $python -m pip install --find-links $wheelhouse "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x"
 } "Failed to install cuda-cccl test extra / cupy"
 Invoke-Checked { & $python -m pip check } "Installed cuda-cccl environment is inconsistent"
+Invoke-Checked {
+    & $python -c "import importlib.metadata as m; assert len({m.version(name) for name in ('cccl-headers', 'cuda-compute', 'cuda-cccl')}) == 1"
+} "cuda-cccl did not install the coordinated compute and headers versions"
 
 Invoke-Checked {
     & $python -m pytest -n 0 -v (Join-Path $repoRoot "python/cuda_cccl/tests")

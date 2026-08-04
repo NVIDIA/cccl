@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 import venv
 import zipfile
@@ -308,21 +309,19 @@ class WheelScriptTests(unittest.TestCase):
 
     def test_rejects_unrepaired_linux_compute_wheel(self):
         for platform_tag in ("linux_x86_64", "musllinux_1_2_x86_64"):
-            with (
-                self.subTest(platform_tag=platform_tag),
-                tempfile.TemporaryDirectory() as temp,
-            ):
-                wheelhouse = Path(temp)
-                version = "1.2.3"
-                _write_coordinated_wheel_set(
-                    wheelhouse,
-                    version,
-                    (f"cuda_compute-{version}-cp312-cp312-{platform_tag}.whl",),
-                )
-                with self.assertRaisesRegex(
-                    RuntimeError, "Expected a repaired release"
-                ):
-                    self.validator.validate(wheelhouse, True)
+            with self.subTest(platform_tag=platform_tag):
+                with tempfile.TemporaryDirectory() as temp:
+                    wheelhouse = Path(temp)
+                    version = "1.2.3"
+                    _write_coordinated_wheel_set(
+                        wheelhouse,
+                        version,
+                        (f"cuda_compute-{version}-cp312-cp312-{platform_tag}.whl",),
+                    )
+                    with self.assertRaisesRegex(
+                        RuntimeError, "Expected a repaired release"
+                    ):
+                        self.validator.validate(wheelhouse, True)
 
     def test_rejects_duplicate_compute_compatibility_tags(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -433,22 +432,20 @@ class WheelScriptTests(unittest.TestCase):
         )
 
         for name, overrides in cases:
-            with (
-                self.subTest(name=name),
-                tempfile.TemporaryDirectory() as temp,
-            ):
-                wheelhouse = Path(temp)
-                _write_coordinated_wheel_set(
-                    wheelhouse,
-                    version,
-                    (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
-                    **overrides,
-                )
+            with self.subTest(name=name):
+                with tempfile.TemporaryDirectory() as temp:
+                    wheelhouse = Path(temp)
+                    _write_coordinated_wheel_set(
+                        wheelhouse,
+                        version,
+                        (f"cuda_compute-{version}-cp312-cp312-linux_x86_64.whl",),
+                        **overrides,
+                    )
 
-                with self.assertRaisesRegex(
-                    RuntimeError, "invalid unconditional runtime dependencies"
-                ):
-                    self.validator.validate(wheelhouse)
+                    with self.assertRaisesRegex(
+                        RuntimeError, "invalid unconditional runtime dependencies"
+                    ):
+                        self.validator.validate(wheelhouse)
 
     def test_monolithic_to_split_migration_sequence(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -513,10 +510,20 @@ class WheelScriptTests(unittest.TestCase):
                 [
                     python,
                     "-c",
-                    (
-                        "import importlib.util; "
-                        "assert importlib.util.find_spec('cuda.compute') is None; "
-                        "assert importlib.util.find_spec('cuda.cccl') is None"
+                    textwrap.dedent(
+                        """\
+                        import importlib.util
+
+                        def has_file_backed_module(name):
+                            try:
+                                spec = importlib.util.find_spec(name)
+                            except ModuleNotFoundError:
+                                return False
+                            return spec is not None and spec.origin is not None
+
+                        assert not has_file_backed_module("cuda.compute")
+                        assert not has_file_backed_module("cuda.cccl")
+                        """
                     ),
                 ],
                 check=True,

@@ -26,15 +26,17 @@ $repoRoot = Get-RepoRoot
 
 $wheelPath = Get-CudaComputeWheel
 $wheelhouse = Split-Path -Parent $wheelPath
-$headersWheelPath = Get-OnePathMatch -Path $wheelhouse -Pattern '^cccl_headers-.*\.whl' -File
 
 # Install cuda-compute with the minimal CUDA extra. This intentionally avoids the
 # full cu* extras because those pull in numba/numba-cuda.
 Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
 Invoke-Checked {
-    & $python -m pip install --find-links $wheelhouse $headersWheelPath "$wheelPath[minimal-$ctkFlavor$cudaMajor]"
+    & $python -m pip install --find-links $wheelhouse "$wheelPath[minimal-$ctkFlavor$cudaMajor]"
 } "Failed to install cuda-compute minimal extra"
 Invoke-Checked { & $python -m pip check } "Installed cuda-compute environment is inconsistent"
+Invoke-Checked {
+    & $python -c "import importlib.metadata as m; import cuda.cccl.headers; assert m.version('cccl-headers') == m.version('cuda-compute')"
+} "cuda-compute did not install its cccl-headers dependency"
 Invoke-Checked {
     & $python -c "import importlib.metadata as m; assert all(d.metadata['Name'] != 'cuda-cccl' for d in m.distributions())"
 } "Direct cuda-compute install unexpectedly installed cuda-cccl"

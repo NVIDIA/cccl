@@ -54,11 +54,10 @@ fi
 # minimal-cu* extra intentionally avoids numba/numba-cuda (which re-enable the
 # GIL). pytest-run-parallel drives the concurrent sweep.
 CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
-CCCL_HEADERS_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cccl_headers-*.whl)"
 python -m pip install --find-links "${wheelhouse_dir}" \
-  "${CCCL_HEADERS_WHEEL_PATH}" \
   "${CUDA_COMPUTE_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
 python -m pip check
+python -c "import importlib.metadata as m; assert m.version('cccl-headers') == m.version('cuda-compute')"
 python -m pip install pytest pytest-xdist pytest-run-parallel
 
 # The instrumented .so links libtsan but keeps it external (auditwheel --exclude),

@@ -4,6 +4,7 @@
 
 import importlib.metadata
 import importlib.util
+import shutil
 import subprocess
 import textwrap
 from pathlib import Path
@@ -118,7 +119,13 @@ def test_complete_license_set():
         assert path.stat().st_size > 1_000, license_file
 
 
-def test_cudax_cmake_target_is_consumer_safe(tmp_path):
+def test_cudax_cmake_target_is_consumer_safe(tmp_path_factory):
+    if shutil.which("cmake") is None:
+        pytest.skip("cmake is not available")
+
+    # MSBuild's generated compiler-probe paths remain subject to MAX_PATH.
+    # Avoid pytest's long test-name directory for this CMake consumer.
+    tmp_path = tmp_path_factory.mktemp("c")
     package_root = Path(headers.__file__).parent
     cudax_cmake_dir = package_root / "lib" / "cmake" / "cudax"
     source_dir = tmp_path / "source"
@@ -246,10 +253,10 @@ def test_cudax_cmake_target_is_consumer_safe(tmp_path):
                 "-B",
                 str(build_dir),
                 f"-DENABLE_CUDA={'ON' if enable_cuda else 'OFF'}",
-                f"-Dcudax_DIR={cudax_cmake_dir}",
+                f"-Dcudax_DIR={cudax_cmake_dir.as_posix()}",
                 f"-DCCCL_DIR={(package_root / 'lib' / 'cmake' / 'cccl').as_posix()}",
                 f"-DEXPECTED_CUDAX_INCLUDE={(package_root / 'include').as_posix()}",
-                f"-DCMAKE_INSTALL_PREFIX={build_dir / 'install'}",
+                f"-DCMAKE_INSTALL_PREFIX={(build_dir / 'install').as_posix()}",
             ],
             check=False,
             capture_output=True,

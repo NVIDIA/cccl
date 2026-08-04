@@ -168,7 +168,9 @@ def _validate_unconditional_requirements(
 
 
 def _wheel_compatibility_tags(wheel: Path) -> tuple[str, str, str]:
-    components = wheel.name.removesuffix(".whl").rsplit("-", 3)
+    if not wheel.name.endswith(".whl"):
+        raise RuntimeError(f"Unable to parse wheel compatibility tags: {wheel.name}")
+    components = wheel.name[:-4].rsplit("-", 3)
     if len(components) != 4 or not all(components[-3:]):
         raise RuntimeError(f"Unable to parse wheel compatibility tags: {wheel.name}")
     return components[-3], components[-2], components[-1]

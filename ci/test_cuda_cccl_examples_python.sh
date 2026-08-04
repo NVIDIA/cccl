@@ -29,15 +29,12 @@ fi
 # for the throughput smoke, is installed best-effort further down since it does
 # not always ship a wheel for the newest Python.)
 CUDA_CCCL_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_cccl-*.whl)"
-CUDA_COMPUTE_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_compute-*.whl)"
-CCCL_HEADERS_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cccl_headers-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${repo_root}/wheelhouse" \
-  "${CCCL_HEADERS_WHEEL_PATH}" \
-  "${CUDA_COMPUTE_WHEEL_PATH}" \
   "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" \
   "cupy-cuda${cuda_major_version}x" pytest-benchmark
 python -m pip check
+python -c "import importlib.metadata as m; assert len({m.version(name) for name in ('cccl-headers', 'cuda-compute', 'cuda-cccl')}) == 1"
 
 # Validate metapackage dependency and forwarded-extra metadata.
 python -m pytest -n 0 -v "${repo_root}/python/cuda_cccl/tests/"

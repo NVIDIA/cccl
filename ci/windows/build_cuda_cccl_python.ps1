@@ -80,31 +80,38 @@ $PythonExe = Get-Python -Version $PyVersion
 Write-Host "Using Python: $PythonExe"
 & $PythonExe -m pip --version
 
-# All three distributions are released as one coordinated version tuple. Use
-# the same generated version in the outer CUDA 12 build, the nested CUDA 13
-# build, and both universal-wheel builds.
-$isShallow = (& git -C $RepoRoot rev-parse --is-shallow-repository).Trim()
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to determine whether the repository is shallow"
-}
-if ($isShallow -eq 'true') {
-    Invoke-Checked { & git -C $RepoRoot fetch --unshallow } "Failed to unshallow repository"
+# All three distributions are released as one coordinated version tuple. The
+# outer build generates the values once and forwards them to the nested CUDA 13
+# build; standalone single-major builds derive them locally.
+$PackageVersion = $env:SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_COMPUTE
+if (-not $PackageVersion) {
+    $isShallow = (& git -C $RepoRoot rev-parse --is-shallow-repository).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to determine whether the repository is shallow"
+    }
+    if ($isShallow -eq 'true') {
+        Invoke-Checked { & git -C $RepoRoot fetch --unshallow } "Failed to unshallow repository"
+    }
+
+    $env:PACKAGE_VERSION_PREFIX = "0.1."
+    Push-Location $RepoRoot
+    try {
+        $PackageVersion = (& bash "ci/generate_version.sh").Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $PackageVersion) {
+            throw "Failed to generate the coordinated Python package version"
+        }
+    }
+    finally {
+        Pop-Location
+    }
 }
 
-$env:PACKAGE_VERSION_PREFIX = "0.1."
-Push-Location $RepoRoot
-try {
-    $PackageVersion = (& bash "ci/generate_version.sh").Trim()
-    if ($LASTEXITCODE -ne 0 -or -not $PackageVersion) {
-        throw "Failed to generate the coordinated Python package version"
-    }
-    $SourceDateEpoch = (& git show -s --format=%ct HEAD).Trim()
+$SourceDateEpoch = $env:SOURCE_DATE_EPOCH
+if (-not $SourceDateEpoch) {
+    $SourceDateEpoch = (& git -C $RepoRoot show -s --format=%ct HEAD).Trim()
     if ($LASTEXITCODE -ne 0 -or -not $SourceDateEpoch) {
         throw "Failed to determine SOURCE_DATE_EPOCH"
     }
-}
-finally {
-    Pop-Location
 }
 
 Write-Host "Using coordinated package version: $PackageVersion"
@@ -263,6 +270,8 @@ function Invoke-Cuda13NestedBuild {
         '--env', "GITHUB_RUN_ID=$($env:GITHUB_RUN_ID)",
         '--env', "JOB_ID=$($env:JOB_ID)",
         '--env', "CCCL_PYTHON_USE_V2=$($env:CCCL_PYTHON_USE_V2)",
+        '--env', "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_COMPUTE=$PackageVersion",
+        '--env', "SOURCE_DATE_EPOCH=$SourceDateEpoch",
         $Cuda13Image,
         'PowerShell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
         '-File', $targetFile,

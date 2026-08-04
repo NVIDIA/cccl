@@ -27,13 +27,12 @@ fi
 # Install cuda-compute directly. The extra flavor is "cu" (pip-installed toolkit) or "sysctk"
 # (system-provided toolkit) depending on the -ctk-mode arg.
 CUDA_COMPUTE_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cuda_compute-*.whl)"
-CCCL_HEADERS_WHEEL_PATH="$(ls "${repo_root}"/wheelhouse/cccl_headers-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${repo_root}/wheelhouse" \
-  "${CCCL_HEADERS_WHEEL_PATH}" \
   "${CUDA_COMPUTE_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 python -m pip check
 python -c "import importlib.util; assert importlib.util.find_spec('cuda.cccl.headers')"
+python -c "import importlib.metadata as m; assert m.version('cccl-headers') == m.version('cuda-compute')"
 python - <<'PY'
 import importlib.metadata
 
