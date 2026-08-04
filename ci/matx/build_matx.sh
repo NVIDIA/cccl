@@ -38,7 +38,7 @@ else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
 
-cccl_repo_version="$(git -C "${cccl_repo}" describe "${cccl_sha}"| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+cccl_repo_version="$(git -C "${cccl_repo}" describe --match 'v[0-9]*' "${cccl_sha}"| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
 readonly cccl_repo_version
 
 # Define CCCL_VERSION to override the version used by rapids-cmake to patch CCCL.

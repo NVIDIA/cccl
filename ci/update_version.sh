@@ -47,7 +47,7 @@ new_thrust_cub_version=$((major * 100000 + minor * 100 + patch)) # MMMmmmpp
 current_cccl_version=$(grep -oP "define CCCL_VERSION \K[0-9]+" "$CCCL_VERSION_FILE")
 
 # Fetch the latest tag from git and strip the 'v' prefix if present
-latest_tag=$(git tag --sort=-v:refname | head -n 1 | sed 's/^v//')
+latest_tag=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -n 1 | sed 's/^v//')
 
 # Since the tags and versions are numerically comparable, we cast them to integers
 latest_tag_version=$(echo "$latest_tag" | awk -F. '{ printf("%d%03d%03d", $1,$2,$3) }')
