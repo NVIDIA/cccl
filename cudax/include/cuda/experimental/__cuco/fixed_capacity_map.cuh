@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
@@ -446,6 +447,36 @@ public:
     _OutputIt __output_begin) const noexcept
   {
     __impl->find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
+  }
+
+  // ===== Retrieve All =====
+
+  //! @brief Retrieves all keys and their associated mapped values.
+  //!
+  //! @note This function synchronizes the given stream.
+  //! @note The output order is implementation-defined and may differ between calls.
+  //! @note Behavior is undefined if either output range is smaller than the number of elements in
+  //! the map.
+  //!
+  //! @tparam _KeyOutputIt Device-accessible random access output iterator assignable from
+  //! `key_type`
+  //! @tparam _ValueOutputIt Device-accessible random access output iterator assignable from
+  //! `mapped_type`
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __keys_out Beginning of the key output range
+  //! @param __values_out Beginning of the mapped-value output range
+  //!
+  //! @return Pair of iterators indicating the ends of the output ranges
+  template <class _KeyOutputIt, class _ValueOutputIt>
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::pair<_KeyOutputIt, _ValueOutputIt>
+  retrieve_all(::cuda::stream_ref __stream, _KeyOutputIt __keys_out, _ValueOutputIt __values_out) const
+  {
+    const auto __zipped_out_begin = ::cuda::make_zip_iterator(__keys_out, __values_out);
+    const auto __zipped_out_end   = __impl->retrieve_all(__stream, __zipped_out_begin);
+    const auto __num_out          = __zipped_out_end - __zipped_out_begin;
+
+    return {__keys_out + __num_out, __values_out + __num_out};
   }
 
   // ===== Accessors =====

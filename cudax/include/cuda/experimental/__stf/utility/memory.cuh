@@ -235,9 +235,12 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-      deallocateHostMemory(args->second, args->first);
-      delete args;
+      // The CUDA runtime calls this back, so an exception must not leave it.
+      on_throw(::std::abort) << [vp] {
+        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateHostMemory(args->second, args->first);
+        delete args;
+      };
     },
     args.get()));
   args.release();
@@ -262,9 +265,11 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-      deallocateManagedMemory(args->second, args->first);
-      delete args;
+      on_throw(::std::abort) << [vp] {
+        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+        deallocateManagedMemory(args->second, args->first);
+        delete args;
+      };
     },
     args.get()));
   args.release();
@@ -290,9 +295,11 @@ inline cudaGraphNode_t deallocateHostMemory(
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
-        auto args = static_cast<::std::pair<size_t, void*>*>(vp);
-        deallocateHostMemory(args->second, args->first);
-        delete args;
+        on_throw(::std::abort) << [vp] {
+          auto args = static_cast<::std::pair<size_t, void*>*>(vp);
+          deallocateHostMemory(args->second, args->first);
+          delete args;
+        };
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);

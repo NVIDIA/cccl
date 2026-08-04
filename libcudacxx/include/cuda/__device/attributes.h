@@ -244,6 +244,7 @@ template <>
 struct __dev_attr<::cudaDevAttrGPUDirectRDMAFlushWritesOptions> //
     : __dev_attr_impl<::cudaDevAttrGPUDirectRDMAFlushWritesOptions, ::cudaFlushGPUDirectRDMAWritesOptions>
 {
+  static constexpr type none    = static_cast<type>(0);
   static constexpr type host    = ::cudaFlushGPUDirectRDMAWritesOptionHost;
   static constexpr type mem_ops = ::cudaFlushGPUDirectRDMAWritesOptionMemOps;
 };
