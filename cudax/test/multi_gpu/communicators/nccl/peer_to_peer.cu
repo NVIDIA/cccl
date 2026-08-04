@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#include "nccl_test_helpers.cuh"
+#include <nccl_test_common.h>
 
 namespace
 {
@@ -28,7 +28,7 @@ struct payload
 } // namespace
 
 // Ring exchange via send/recv. Rank r contributes {r, r, r}.
-NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
+MULTI_GPU_TEST("nccl_communicator_ref send/recv ring", )
 {
   if (cuda::devices.size() == 1)
   {
@@ -84,7 +84,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref send/recv transports trivially copyable payload")
+MULTI_GPU_TEST("nccl_communicator_ref send/recv transports trivially copyable payload", )
 {
   if (cuda::devices.size() == 1)
   {
@@ -140,6 +140,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv transports trivially copyable pa
     auto pool                               = cuda::mr::legacy_pinned_memory_resource{};
     const cuda::host_buffer<payload> actual = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
+    actual.stream().sync();
     for (cuda::std::size_t k = 0; k < actual.size(); ++k)
     {
       REQUIRE(actual[k].from == static_cast<cuda::std::int32_t>(prev));

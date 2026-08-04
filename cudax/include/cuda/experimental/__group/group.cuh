@@ -98,14 +98,14 @@ class group
     if (__mapping_result.is_valid())
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
-      _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
+      _CCCL_ASSERT(__mapping_result.unit_rank() < __mapping_result.unit_count(), "invalid unit rank");
 
       if constexpr (::cuda::std::is_same_v<_Unit, thread_level>)
       {
         _CCCL_ASSERT(
           (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
           "invalid lane mask - this lane must be contained in the lane mask");
-        _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.count(),
+        _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.unit_count(),
                      "invalid lane mask - too many lanes are set in the lane mask");
       }
       else
@@ -176,7 +176,6 @@ public:
     return __mapping_result_;
   }
 
-  // todo(dabayer): Do we want to expose synchronizer getter?
   [[nodiscard]] _CCCL_DEVICE_API const synchronizer_type& synchronizer() const noexcept
   {
     return __synchronizer_;
@@ -194,7 +193,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_);
+    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
@@ -207,7 +206,7 @@ public:
         return;
       }
     }
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_);
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_, __hier_);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
@@ -252,7 +251,7 @@ public:
 
 _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup>)
-_CCCL_DEVICE group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
   -> group<_Unit, _ParentGroup, _Mapping, _Synchronizer>;
 } // namespace cuda::experimental
 

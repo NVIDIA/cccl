@@ -18,6 +18,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter>
 TEST_FUNC constexpr void test()
 {
@@ -31,6 +32,7 @@ TEST_FUNC constexpr void test()
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<int*>>();

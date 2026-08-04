@@ -25,6 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
@@ -182,6 +185,20 @@ public:
   _CCCL_HOST_DEVICE static constexpr dim4 min(const dim4& a, const dim4& b)
   {
     return dim4(::std::min(a.x, b.x), ::std::min(a.y, b.y), ::std::min(a.z, b.z), ::std::min(a.t, b.t));
+  }
+
+  /// Get the coordinate corresponding to a 1D index within a dim4 class
+  /// (inverse of get_index: dimension 0 varies fastest)
+  _CCCL_HOST_DEVICE constexpr pos4 index_to_pos(size_t index) const
+  {
+    _CCCL_ASSERT(index < size(), "invalid index");
+    const size_t px = index % x;
+    index /= x;
+    const size_t py = index % y;
+    index /= y;
+    const size_t pz = index % z;
+    index /= z;
+    return pos4(px, py, pz, index);
   }
 
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
@@ -484,22 +501,20 @@ public:
     return !(*this == rhs);
   }
 
-  using coords_t = array_tuple<size_t, dimensions>;
+  using coords_t = ::cuda::std::array<size_t, dimensions>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-    // Help the compiler which may not detect that a device lambda is calling a device lambda
-    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
-    return make_tuple_indexwise<dimensions>([&](auto i) {
-      // included
-      const ::std::ptrdiff_t begin_i  = get_begin(i);
-      const ::std::ptrdiff_t extent_i = get_extent(i);
-      auto result                     = begin_i + (index % extent_i);
+    coords_t coords{};
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      const ::cuda::std::ptrdiff_t begin_i  = get_begin(i);
+      const ::cuda::std::ptrdiff_t extent_i = get_extent(i);
+      coords[i]                             = begin_i + (index % extent_i);
       index /= extent_i;
-      return result;
-    });
-    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
+    }
+    return coords;
   }
 
 private:

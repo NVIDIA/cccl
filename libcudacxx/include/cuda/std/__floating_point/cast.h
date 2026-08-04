@@ -97,6 +97,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_float_to_fp4(__v, __NV_E2M1, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return static_cast<__float128>(__v);
+    }
+#endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -169,6 +175,12 @@ template <class _To, class _From>
         ::__nv_cvt_double_to_fp4(__v, __NV_E2M1, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return static_cast<__float128>(__v);
+    }
+#endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -237,6 +249,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return static_cast<__float128>(__v);
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -306,6 +324,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_halfraw_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -379,6 +403,12 @@ template <class _To, class _From>
         ::__nv_cvt_bfloat16raw_to_fp4(__v, __NV_E2M1, ::cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -448,6 +478,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -517,6 +553,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -586,6 +628,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -655,6 +703,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -724,6 +778,12 @@ template <class _To, class _From>
       return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
@@ -793,12 +853,93 @@ template <class _To, class _From>
     {
       return __v;
     }
+#  if _CCCL_HAS_FLOAT128()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return ::cuda::std::__fp_cast<__float128>(::cuda::std::__fp_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_FLOAT128()
     else
     {
       static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  else if constexpr (is_same_v<_From, __float128>)
+  {
+    if constexpr (is_same_v<_To, float>)
+    {
+      return static_cast<float>(__v);
+    }
+    else if constexpr (is_same_v<_To, double>)
+    {
+      return static_cast<double>(__v);
+    }
+#  if _CCCL_HAS_LONG_DOUBLE()
+    else if constexpr (is_same_v<_To, long double>)
+    {
+      return static_cast<long double>(__v);
+    }
+#  endif // _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_NVFP16()
+    else if constexpr (is_same_v<_To, __half>)
+    {
+      return ::cuda::std::__fp_cast<__half>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+    else if constexpr (is_same_v<_To, __nv_bfloat16>)
+    {
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVBF16()
+#  if _CCCL_HAS_NVFP8_E4M3()
+    else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
+    {
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP8_E4M3()
+#  if _CCCL_HAS_NVFP8_E5M2()
+    else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
+    {
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP8_E5M2()
+#  if _CCCL_HAS_NVFP8_E8M0()
+    else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
+    {
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP8_E8M0()
+#  if _CCCL_HAS_NVFP6_E2M3()
+    else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
+    {
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP6_E2M3()
+#  if _CCCL_HAS_NVFP6_E3M2()
+    else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
+    {
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP6_E3M2()
+#  if _CCCL_HAS_NVFP4_E2M1()
+    else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
+    {
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(static_cast<float>(__v));
+    }
+#  endif // _CCCL_HAS_NVFP4_E2M1()
+    else if constexpr (is_same_v<_To, __float128>)
+    {
+      return __v;
+    }
+    else
+    {
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
+    }
+  }
+#endif // _CCCL_HAS_FLOAT128()
   else
   {
     static_assert(__always_false_v<_From>, "Unsupported floating point format");

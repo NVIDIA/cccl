@@ -21,7 +21,7 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #include <cstdint>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_VEC_SIZE types 1:2:3:4
 
@@ -127,7 +127,7 @@ struct transform_op_t
   }
 };
 
-C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
+CUB_TEST("Test tex-obj texture iterator", "[iterator]", CUB_SMALL, types)
 {
   using T                            = c2h::get<0, TestType>;
   constexpr unsigned int TEST_VALUES = 11000;
@@ -145,7 +145,7 @@ C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
   test_iterator(d_obj_itr, h_reference);
 }
 
-C2H_TEST("Test texture transform iterator", "[iterator]", types)
+CUB_TEST("Test texture transform iterator", "[iterator]", CUB_SMALL, types)
 {
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;

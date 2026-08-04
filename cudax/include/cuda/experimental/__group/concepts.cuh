@@ -53,9 +53,9 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
   _Same_as(unsigned) __v.group_count(),
   _Same_as(unsigned) __v.group_rank(),
-  _Same_as(::cuda::std::size_t) _Tp::static_count(),
-  _Same_as(unsigned) __v.count(),
-  _Same_as(unsigned) __v.rank(),
+  _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
+  _Same_as(unsigned) __v.unit_count(),
+  _Same_as(unsigned) __v.unit_rank(),
   _Same_as(::cuda::device::lane_mask) __v.lane_mask(),
   _Same_as(bool) _Tp::is_always_exhaustive(),
   _Same_as(bool) _Tp::is_always_contiguous());

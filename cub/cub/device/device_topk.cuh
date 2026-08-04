@@ -9,6 +9,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_topk.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -54,7 +61,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   NumItemsT num_items,
   NumOutItemsT k,
   DecomposerT decomposer,
-  EnvT env)
+  const EnvT& env)
 {
   // Offset type selection
   using offset_t     = choose_offset_t<NumItemsT>;
@@ -130,7 +137,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
   ValueOutputIteratorT d_values_out,
   NumItemsT num_items,
   NumOutItemsT k,
-  EnvT env)
+  const EnvT& env)
 {
   return dispatch_topk<SelectDirection>(
     d_temp_storage,
@@ -296,7 +303,7 @@ struct DeviceTopK
     ValueOutputIteratorT d_values_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
@@ -403,7 +410,7 @@ struct DeviceTopK
     ValueOutputIteratorT d_values_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxPairs");
 
@@ -540,7 +547,7 @@ struct DeviceTopK
              NumItemsT num_items,
              NumOutItemsT k,
              DecomposerT decomposer,
-             EnvT env = {})
+             const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -664,7 +671,7 @@ struct DeviceTopK
     NumItemsT num_items,
     NumOutItemsT k,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -774,7 +781,7 @@ struct DeviceTopK
     ValueOutputIteratorT d_values_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
@@ -881,7 +888,7 @@ struct DeviceTopK
     ValueOutputIteratorT d_values_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinPairs");
 
@@ -1018,7 +1025,7 @@ struct DeviceTopK
              NumItemsT num_items,
              NumOutItemsT k,
              DecomposerT decomposer,
-             EnvT env = {})
+             const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -1142,7 +1149,7 @@ struct DeviceTopK
     NumItemsT num_items,
     NumOutItemsT k,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -1235,7 +1242,7 @@ struct DeviceTopK
     KeyOutputIteratorT d_keys_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
@@ -1320,8 +1327,12 @@ struct DeviceTopK
     typename NumOutItemsT,
     typename EnvT = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
-    KeyInputIteratorT d_keys_in, KeyOutputIteratorT d_keys_out, NumItemsT num_items, NumOutItemsT k, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  MaxKeys(KeyInputIteratorT d_keys_in,
+          KeyOutputIteratorT d_keys_out,
+          NumItemsT num_items,
+          NumOutItemsT k,
+          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxKeys");
 
@@ -1441,7 +1452,7 @@ struct DeviceTopK
             NumItemsT num_items,
             NumOutItemsT k,
             DecomposerT decomposer,
-            EnvT env = {})
+            const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -1548,7 +1559,7 @@ struct DeviceTopK
     NumItemsT num_items,
     NumOutItemsT k,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -1650,7 +1661,7 @@ struct DeviceTopK
     KeyOutputIteratorT d_keys_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
@@ -1735,8 +1746,12 @@ struct DeviceTopK
     typename NumOutItemsT,
     typename EnvT = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
-    KeyInputIteratorT d_keys_in, KeyOutputIteratorT d_keys_out, NumItemsT num_items, NumOutItemsT k, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  MinKeys(KeyInputIteratorT d_keys_in,
+          KeyOutputIteratorT d_keys_out,
+          NumItemsT num_items,
+          NumOutItemsT k,
+          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinKeys");
 
@@ -1856,7 +1871,7 @@ struct DeviceTopK
             NumItemsT num_items,
             NumOutItemsT k,
             DecomposerT decomposer,
-            EnvT env = {})
+            const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
@@ -1963,7 +1978,7 @@ struct DeviceTopK
     NumItemsT num_items,
     NumOutItemsT k,
     DecomposerT decomposer,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;

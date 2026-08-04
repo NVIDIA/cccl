@@ -13,7 +13,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include "catch2_radix_sort_helper.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -21,7 +21,7 @@ template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB radix sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -98,7 +98,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segmented][radix][sort][device]")
+CUB_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segmented][radix][sort][device]", CUB_SMALL)
 {
   using key_t          = int;
   using value_t        = NullType;

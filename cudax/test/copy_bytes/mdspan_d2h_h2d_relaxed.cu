@@ -72,7 +72,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, sliding window", "[copy_bytes][rela
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i + j;
+      expected[static_cast<std::size_t>(i) * N + j] = i + j;
     }
   }
 

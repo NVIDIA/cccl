@@ -159,27 +159,33 @@ class cuda::std::numeric_limits<c2h::custom_type_t<Policies...>>
 public:
   static constexpr bool is_specialized = true;
 
+  // template <class SizeT = size_t> is a workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>`
+  // with `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+
+  template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> max()
   {
     c2h::custom_type_t<Policies...> val;
-    val.key = numeric_limits<std::size_t>::max();
-    val.val = numeric_limits<std::size_t>::max();
+    val.key = numeric_limits<SizeT>::max();
+    val.val = numeric_limits<SizeT>::max();
     return val;
   }
 
+  template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> min()
   {
     c2h::custom_type_t<Policies...> val;
-    val.key = numeric_limits<std::size_t>::min();
-    val.val = numeric_limits<std::size_t>::min();
+    val.key = numeric_limits<SizeT>::min();
+    val.val = numeric_limits<SizeT>::min();
     return val;
   }
 
+  template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> lowest()
   {
     c2h::custom_type_t<Policies...> val;
-    val.key = numeric_limits<std::size_t>::lowest();
-    val.val = numeric_limits<std::size_t>::lowest();
+    val.key = numeric_limits<SizeT>::lowest();
+    val.val = numeric_limits<SizeT>::lowest();
     return val;
   }
 };

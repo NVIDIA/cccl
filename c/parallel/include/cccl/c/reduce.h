@@ -34,14 +34,12 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel single_tile_kernel;
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;
-  CUkernel nondeterministic_atomic_kernel;
   cccl_determinism_t determinism;
   void* runtime_policy;
   size_t runtime_policy_size;
   char* single_tile_kernel_lowered_name;
   char* single_tile_second_kernel_lowered_name;
   char* reduction_kernel_lowered_name;
-  char* nondeterministic_kernel_lowered_name;
 } cccl_device_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
@@ -119,7 +117,7 @@ CCCL_C_API CUresult cccl_device_reduce_link_ltoir(
 
 // Serializes a populated build_result into a self-describing byte buffer.
 // On success *out_buf points to a heap allocation that the caller must free
-// with cccl_aot_buffer_free, and *out_size holds its length. The build_result
+// with cccl_serialization_buffer_free, and *out_size holds its length. The build_result
 // itself is not modified. CUlibrary/CUkernel handles are not serialized.
 CCCL_C_API CUresult
 cccl_device_reduce_serialize(const cccl_device_reduce_build_result_t* build, void** out_buf, size_t* out_size);

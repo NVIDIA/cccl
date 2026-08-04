@@ -42,16 +42,16 @@ template <bool _Dummy = false>
 _CCCL_TEMPLATE(class _Group, class _Tp)
 _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
-[[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_rank) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
   using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
 
-  _CCCL_ASSERT(__src_rank < __mapping_result.count(),
-               "invalid __src_rank - must be less than the number of units within the group");
+  _CCCL_ASSERT(__src_unit_rank < __mapping_result.unit_count(),
+               "invalid __src_unit_rank - must be less than the number of units within the group");
 
   const auto __lane_mask   = __mapping_result.lane_mask();
-  const auto __lane_offset = static_cast<int>(__src_rank) - static_cast<int>(__mapping_result.rank());
+  const auto __lane_offset = static_cast<int>(__src_unit_rank) - static_cast<int>(__mapping_result.unit_rank());
 
   unsigned __src_lane{};
   if constexpr (_MappingResult::is_always_contiguous())
@@ -61,7 +61,7 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
   }
   else
   {
-    __src_lane = ::__fns(__lane_mask.value(), 0, static_cast<int>(__src_rank) + 1);
+    __src_lane = ::__fns(__lane_mask.value(), 0, static_cast<int>(__src_unit_rank) + 1);
   }
   return ::cuda::device::warp_shuffle_idx(__value, static_cast<int>(__src_lane), __lane_mask.value());
 }
@@ -69,12 +69,12 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
 //! @brief Shuffles values among units within a group.
 //! @param[in] __group The group.
 //! @param[in] __value This thread's value to be shuffled.
-//! @param[in] __src_rank The rank of the unit whose value should be taken by this unit.
+//! @param[in] __src_unit_rank The rank of the unit whose value should be taken by this unit.
 //! @return The value passed to the function by the equivalent thread from the source rank unit.
 template <class _Group, class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_rank) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
-  return ::cuda::experimental::coop::__shuffle_impl(__group, __value, __src_rank);
+  return ::cuda::experimental::coop::__shuffle_impl(__group, __value, __src_unit_rank);
 }
 } // namespace cuda::experimental::coop
 

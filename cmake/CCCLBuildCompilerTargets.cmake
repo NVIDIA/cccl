@@ -102,6 +102,9 @@ function(cccl_build_compiler_targets)
   if (CCCL_ENABLE_WERROR)
     list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   endif()
+  if (CCCL_ENABLE_TILE)
+    list(APPEND cuda_compile_options "--enable-tile")
+  endif()
 
   if (NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
     # Ensure that we build our tests without treating ourself as system header

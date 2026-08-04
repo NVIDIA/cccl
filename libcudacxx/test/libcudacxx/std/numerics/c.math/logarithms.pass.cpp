@@ -83,12 +83,15 @@ TEST_FUNC void test(float value)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(value);
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+
+#if !_CCCL_TILE_COMPILATION()
+#  if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(__float2half(value));
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(__float2bfloat16(value));
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // !_CCCL_TILE_COMPILATION()
 
   test<unsigned short>(static_cast<unsigned short>(value));
   test<int>(static_cast<int>(value));
@@ -126,6 +129,9 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test_constexpr<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   test_constexpr<unsigned short>();
   test_constexpr<int>();

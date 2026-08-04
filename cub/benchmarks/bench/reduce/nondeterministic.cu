@@ -19,18 +19,17 @@
 template <typename AccumT>
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
     const auto [items, threads] =
       cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
-    const auto policy = cub::detail::reduce::agent_reduce_policy{
+    const auto policy = cub::ReducePassPolicy{
       threads,
       items,
       1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
       cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
       cub::LOAD_DEFAULT};
-    return {policy};
+    return {policy, {}};
   }
 };
 #endif // !TUNE_BASE

@@ -41,8 +41,8 @@ struct __mapping_result
 {
   unsigned __group_count_;
   unsigned __group_rank_;
-  unsigned __count_;
-  unsigned __rank_;
+  unsigned __unit_count_;
+  unsigned __unit_rank_;
   ::cuda::device::lane_mask __lane_mask_;
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result invalid() noexcept
@@ -95,12 +95,12 @@ struct __mapping_result
     return __group_rank_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
     return _StaticCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_count() const noexcept
   {
     if constexpr (_StaticCount != ::cuda::std::dynamic_extent)
     {
@@ -112,17 +112,17 @@ struct __mapping_result
       {
         _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
       }
-      return __count_;
+      return __unit_count_;
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_rank() const noexcept
   {
     if constexpr (!_IsExhaustive)
     {
-      _CCCL_ASSERT(is_valid(), "getting rank of thread that is not part of the group is UB");
+      _CCCL_ASSERT(is_valid(), "getting unit rank of thread that is not part of the group is UB");
     }
-    return __rank_;
+    return __unit_rank_;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const noexcept
@@ -142,7 +142,7 @@ struct __mapping_result
     }
     else
     {
-      return __rank_ != __invalid_count_or_rank;
+      return __unit_rank_ != __invalid_count_or_rank;
     }
   }
 

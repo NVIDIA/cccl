@@ -18,16 +18,16 @@
 #include <vector>
 
 #include "util/nvjitlink.h"
-#include <cccl/c/aot.h>
 #include <cccl/c/for.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
-#include <util/aot_serialize.h>
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
+#include <util/serialization.h>
 #include <util/types.h>
 
 struct op_wrapper;
@@ -359,9 +359,9 @@ try
   *out_buf  = nullptr;
   *out_size = 0;
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_FOR, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_FOR, build_ptr->payload_kind, build_ptr->cc);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_cstring(build_ptr->static_kernel_lowered_name);
   w.release(out_buf, out_size);
@@ -383,9 +383,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_FOR);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_FOR);
 
   std::unique_ptr<char[]> payload_owner;
   size_t payload_size = 0;
@@ -396,13 +396,13 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
   if (!n_kernel || n_kernel[0] == '\0')
   {
-    throw std::runtime_error("aot blob: empty or missing static kernel name");
+    throw std::runtime_error("serialization blob: empty or missing static kernel name");
   }
 
   // Commit-on-success: populate a zero-initialized local result and assign it only

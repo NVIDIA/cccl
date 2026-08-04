@@ -1188,7 +1188,7 @@ C2H_TEST_LIST("segmented_reduce respects guaranteed_max_segment_size for large s
   run_guaranteed_max_seg_size_test<segment_size, TestType>(n_rows, segment_size, build_cache, test_key);
 }
 
-C2H_TEST("SegmentedReduce build result has AoT metadata populated", "[segmented_reduce][aot]")
+C2H_TEST("SegmentedReduce build result has serialization metadata populated", "[segmented_reduce][serialization]")
 {
   using T = int32_t;
 
@@ -1231,7 +1231,7 @@ C2H_TEST("SegmentedReduce build result has AoT metadata populated", "[segmented_
   REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
 }
 
-C2H_TEST("SegmentedReduce compile/load round-trip", "[segmented_reduce][aot]")
+C2H_TEST("SegmentedReduce compile/load round-trip", "[segmented_reduce][serialization]")
 {
   using T = int32_t;
 

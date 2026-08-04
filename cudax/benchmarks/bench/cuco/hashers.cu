@@ -34,8 +34,8 @@ private:
 template <cuda::std::int32_t BlockSize, typename Key, typename Hasher, typename OutputIt>
 __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool materialize_result)
 {
-  size_t const gid         = BlockSize * blockIdx.x + threadIdx.x;
-  size_t const loop_stride = gridDim.x * BlockSize;
+  size_t const gid         = static_cast<size_t>(BlockSize) * blockIdx.x + threadIdx.x;
+  size_t const loop_stride = static_cast<size_t>(gridDim.x) * BlockSize;
   size_t idx               = gid;
   using result_t           = decltype(hash(0));
 

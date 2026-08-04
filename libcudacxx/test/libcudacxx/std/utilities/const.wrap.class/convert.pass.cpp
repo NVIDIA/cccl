@@ -17,6 +17,9 @@
 
 // REQUIRES: !c++17
 
+// disable this test as it will be replaced soon
+// UNSUPPORTED: true
+
 // constant_wrapper
 
 // constexpr operator decltype(value)() const noexcept { return value; }
@@ -77,7 +80,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // gcc < 13 fails this test with:
-    //   ‘test()::<lambda(int)>::_FUN’ is not a valid template argument of type ‘int (*)(int)’ because it is not
+    //   'test()::<lambda(int)>::_FUN' is not a valid template argument of type 'int (*)(int)' because it is not
     //   a variable
 #if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer conversion

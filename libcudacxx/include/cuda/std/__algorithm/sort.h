@@ -601,8 +601,12 @@ __bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, 
   }
   else
   {
-    while (++__first < __last && !__comp(__pivot, *__first))
+    while (++__first < __last)
     {
+      if (__comp(__pivot, *__first))
+      {
+        break;
+      }
     }
   }
   // Find the last element less than or equal to the pivot.
@@ -705,8 +709,14 @@ __partition_with_equals_on_right(_RandomAccessIterator __first, _RandomAccessIte
   // Find the last element less than the pivot.
   if (__begin == __first - difference_type(1))
   {
-    while (__first < __last && !__comp(*--__last, __pivot))
-      ;
+    while (__first < __last)
+    {
+      --__last;
+      if (__comp(*__last, __pivot))
+      {
+        break;
+      }
+    }
   }
   else
   {
@@ -777,8 +787,12 @@ __partition_with_equals_on_left(_RandomAccessIterator __first, _RandomAccessIter
   }
   else
   {
-    while (++__first < __last && !__comp(__pivot, *__first))
+    while (++__first < __last)
     {
+      if (__comp(__pivot, *__first))
+      {
+        break;
+      }
     }
   }
 

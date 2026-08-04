@@ -81,7 +81,7 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
 {
   const int threads_per_block = active_policy.threads_per_block;
   const int items_per_thread  = active_policy.items_per_thread;
-  const auto tile_size        = static_cast<OffsetT>(threads_per_block * items_per_thread);
+  const auto tile_size        = static_cast<OffsetT>(threads_per_block) * static_cast<OffsetT>(items_per_thread);
   const auto num_tiles        = ::cuda::ceil_div(num_items, tile_size);
 
 #ifdef CUB_DEBUG_LOG

@@ -105,11 +105,10 @@ public:
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
-/**
- * \brief Returns the number of CUDA devices available or -1 if an error
- *        occurred.
- */
-CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
+namespace detail
+{
+// TODO(bgruber): remove in CCCL 4.0
+CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 {
   int count = -1;
   if (CubDebug(cudaGetDeviceCount(&count)))
@@ -122,27 +121,56 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
   return count;
 }
 
-// Host code. This is a separate function to avoid defining a local static in a host/device function.
-_CCCL_HOST inline int DeviceCountCachedValue()
+// TODO(bgruber): remove in CCCL 4.0
+_CCCL_HOST inline int device_count_cached_value()
 {
-  static int count = DeviceCountUncached();
+  static int count = device_count_uncached();
   return count;
 }
 
+// TODO(bgruber): remove in CCCL 4.0
+CUB_RUNTIME_FUNCTION inline int device_count()
+{
+  int result = -1;
+
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, ({ result = detail::device_count_cached_value(); }), ({ result = detail::device_count_uncached(); }));
+
+  return result;
+}
+} // namespace detail
+
+// TODO(bgruber): remove in CCCL 4.0
+/**
+ * \brief Returns the number of CUDA devices available or -1 if an error
+ *        occurred.
+ * Deprecated [Since 3.5]
+ */
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
+{
+  return detail::device_count_uncached();
+}
+
+// TODO(bgruber): remove in CCCL 4.0
+// Host code. This is a separate function to avoid defining a local static in a host/device function.
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline int DeviceCountCachedValue()
+{
+  return detail::device_count_cached_value();
+}
+
+// TODO(bgruber): remove in CCCL 4.0
 /**
  * \brief Returns the number of CUDA devices available.
  *
  * \note This function may cache the result internally.
  *
  * \note This function is thread safe.
+ *
+ * Deprecated [Since 3.5]
  */
-CUB_RUNTIME_FUNCTION inline int DeviceCount()
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  int result = -1;
-
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
-
-  return result;
+  return detail::device_count();
 }
 
 #  if _CCCL_HOSTED()
@@ -186,7 +214,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    _CCCL_ASSERT(DeviceCount() <= detail::max_devices, "");
+    _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
   }
 
   /**
@@ -198,7 +226,7 @@ public:
   template <typename Invocable>
   _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= DeviceCount() || device < 0)
+    if (device >= detail::device_count() || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }
@@ -628,10 +656,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
   const int extra_space = (num_bytes == 0) ? 0 : detail::bulk_copy_min_align;
   return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
 }
-} // namespace detail
 
-namespace detail
-{
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
@@ -689,15 +714,9 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }
-} // namespace detail
-
-//----------------------------------------------------------------------------------------------------------------------
-// ChainedPolicy
 
 #if !_CCCL_COMPILER(NVRTC)
 
-namespace detail
-{
 // Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
 
@@ -746,21 +765,18 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
-} // namespace detail
+
 #endif // !_CCCL_COMPILER(NVRTC)
 
-namespace detail
-{
 template <typename T>
 struct get_active_policy
 {
   using type = typename T::ActivePolicy;
 };
-} // namespace detail
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
-struct ChainedPolicy
+struct chained_policy
 {
 private:
   static constexpr bool have_previous_policy = !::cuda::std::is_same_v<PolicyT, PrevPolicyT>;
@@ -799,7 +815,7 @@ public:
 
 private:
   template <int, typename, typename>
-  friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
+  friend struct chained_policy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int CcMult, int... CudaCcs, typename FunctorT>
@@ -832,6 +848,14 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+} // namespace detail
+
+/// Helper for dispatching into a policy chain
+/// Deprecated [Since 3.5]
+template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
+using ChainedPolicy
+  CCCL_DEPRECATED_BECAUSE("Pass policy selectors into the environments of device-scope CUB algorithms to providing "
+                          "custom tunings.") = detail::chained_policy<PolicyPtxVersion, PolicyT, PrevPolicyT>;
 
 namespace detail
 {

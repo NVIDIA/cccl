@@ -5,6 +5,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_merge.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,11 +29,32 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! @rst
 //! DeviceMerge provides device-wide, parallel operations for merging two sorted sequences of values (called keys) or
 //! key-value pairs in device-accessible memory. The sorting order is determined by a comparison functor (default:
-//! less-than), which has to establish a [strict weak ordering].
+//! less-than), which has to establish a `strict weak ordering
+//! <https://en.cppreference.com/w/cpp/concepts/strict_weak_order>`_.
 //!
-//! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceMerge that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::MergePolicy`, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin merge-keys-policy-selector
+//!      :end-before: example-end merge-keys-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin merge-keys-tuning
+//!      :end-before: example-end merge-keys-tuning
+//!
+//! @endrst
 struct DeviceMerge
 {
   //! @rst
@@ -189,7 +217,7 @@ struct DeviceMerge
     ::cuda::std::int64_t num_keys2,
     KeyIteratorOut keys_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
@@ -415,7 +443,7 @@ struct DeviceMerge
     KeyIteratorOut keys_out,
     ValueIteratorOut values_out,
     CompareOp compare_op = {},
-    EnvT env             = {})
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
     using default_policy_selector = detail::merge::

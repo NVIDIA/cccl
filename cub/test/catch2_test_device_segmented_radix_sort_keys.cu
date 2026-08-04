@@ -19,7 +19,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -66,8 +66,9 @@ using fp_key_types         = c2h::type_list<double>;
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
          "[keys][segmented][radix][sort][device]",
+         CUB_SMALL,
          key_types,
          offset_types)
 {
@@ -131,7 +132,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
 
 #if defined(SINGLE_TEST_CASE_INSTANTIATION)
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][radix][sort][device]", single_key_type)
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data",
+         "[keys][segmented][radix][sort][device]",
+         CUB_SMALL,
+         single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
@@ -187,8 +191,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][ra
 
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
          "[keys][segmented][radix][sort][device]",
+         CUB_SMALL,
          bit_window_key_types)
 {
   using key_t    = c2h::get<0, TestType>;
@@ -259,7 +264,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
 
 #if defined(SINGLE_TEST_CASE_INSTANTIATION)
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented][radix][sort][device]", single_key_type)
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments",
+         "[keys][segmented][radix][sort][device]",
+         CUB_SMALL,
+         single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
@@ -317,8 +325,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
          "[keys][segmented][radix][sort][device]",
+         CUB_SMALL,
          single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
@@ -369,8 +378,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
   REQUIRE((ref_keys == keys) == true);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
          "[keys][segmented][radix][sort][device]",
+         CUB_SMALL,
          single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
@@ -443,8 +453,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
          "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {
@@ -492,8 +503,9 @@ catch (std::bad_alloc& e)
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
 #  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
-C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE,
          all_offset_types)
 try
 {
