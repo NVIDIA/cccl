@@ -14,13 +14,24 @@
 # limitations under the License.
 
 name: "Release: Upload Wheels to PyPi"
-description: "Manually triggered release workflow for wheels build and upload."
+description: "Manually triggered release workflow for one Python distribution."
 
 on:
   workflow_dispatch:
     inputs:
       run-id:
         description: "The GHA run ID that generated validated artifacts"
+        required: true
+        type: string
+      package:
+        description: "Which Python distribution to publish?"
+        required: true
+        type: choice
+        options:
+          - cuda-compute
+          - cuda-cccl
+      package-version:
+        description: "Exact package version and component tag version to publish"
         required: true
         type: string
       wheel-dst:
@@ -37,31 +48,135 @@ defaults:
 
 jobs:
   publish-wheels:
-    name: Publish wheels
+    name: Publish ${{ inputs.package }} wheels
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.wheel-dst }}
-      url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/p/${{ inputs.component }}/
+      url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/p/${{ inputs.package }}/
     permissions:
+      actions: read
+      contents: read
       id-token: write
     steps:
-      - name: Download component wheels
+      - name: Checkout release tooling
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Validate source run and stage selected wheels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_NAME: ${{ inputs.package }}
+          PACKAGE_VERSION: ${{ inputs.package-version }}
+          REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ inputs.run-id }}
+          WHEEL_DST: ${{ inputs.wheel-dst }}
         run: |
-          gh run download ${RUN_ID} -D dl -R ${{ github.repository }} -p 'wheel-*'
-          mkdir dist
-          mv dl/*/*/*.whl dist/
-          rm -rf dl
-          ls -lh dist/
+          if [[ ! "${RUN_ID}" =~ ^[0-9]+$ ]]; then
+            echo "Run ID must be numeric: ${RUN_ID}" >&2
+            exit 1
+          fi
+
+          wheel_workflow_id=$(gh api \
+            "repos/${REPOSITORY}/actions/workflows/build-and-test-python-wheels.yml" \
+            --jq '.id')
+          run_json=$(gh api "repos/${REPOSITORY}/actions/runs/${RUN_ID}")
+          if ! jq -e \
+            --argjson workflow_id "${wheel_workflow_id}" \
+            --arg repository "${REPOSITORY}" \
+            '.workflow_id == $workflow_id
+              and .status == "completed"
+              and .conclusion == "success"
+              and .event == "workflow_dispatch"
+              and .head_repository.full_name == $repository' \
+            <<< "${run_json}" >/dev/null; then
+            echo "Run ${RUN_ID} is not a successful trusted Python wheel build" >&2
+            exit 1
+          fi
+
+          run_head_sha=$(jq -er \
+            '.head_sha | select(type == "string" and test("^[0-9a-f]{40}$"))' \
+            <<< "${run_json}")
+          release_tag=$(python ci/util/python/stage_python_wheel_publish.py \
+            tag "${PACKAGE_NAME}" "${PACKAGE_VERSION}")
+          tag_ref="refs/cccl-release-tags/${release_tag}"
+          git fetch --no-tags origin "refs/tags/${release_tag}:${tag_ref}"
+          tag_head_sha=$(git rev-parse "${tag_ref}^{commit}")
+          if [[ "${tag_head_sha}" != "${run_head_sha}" ]]; then
+            echo "Tag ${release_tag} points to ${tag_head_sha}, not build commit ${run_head_sha}" >&2
+            exit 1
+          fi
+
+          gh run download "${RUN_ID}" -D dl -R "${REPOSITORY}" \
+            -p 'wheel-cccl-linux-*' \
+            -p 'wheel-cccl-windows-*'
+
+          gh api --paginate \
+            "repos/${REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
+            --jq '.artifacts[]
+              | select(.name
+                | test("^wheel-cccl-(linux|windows)-[^/]+-py[^/]+$"))
+              | .name' \
+            | LC_ALL=C sort > expected-artifacts.txt
+          find dl -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+            | LC_ALL=C sort > downloaded-artifacts.txt
+          test -s expected-artifacts.txt
+          diff -u expected-artifacts.txt downloaded-artifacts.txt
+
+          python ci/util/python/stage_python_wheel_publish.py stage \
+            dl publish-dist "${PACKAGE_NAME}" "${PACKAGE_VERSION}"
+
+          if [[ "${PACKAGE_NAME}" == "cuda-cccl" ]]; then
+            dependency_version=$(python \
+              ci/util/python/stage_python_wheel_publish.py dependency-version \
+              publish-dist cuda-cccl cuda-compute)
+            python ci/util/python/stage_python_wheel_publish.py stage \
+              dl dependency-dist cuda-compute "${dependency_version}"
+            if [[ "${WHEEL_DST}" == "testpypi" ]]; then
+              index_root="https://test.pypi.org"
+            else
+              index_root="https://pypi.org"
+            fi
+            dependency_json=$(mktemp)
+            ci/util/retry.sh 5 10 curl --fail --silent --show-error --location \
+              --output "${dependency_json}" \
+              "${index_root}/pypi/cuda-compute/${dependency_version}/json"
+            jq -e --arg version "${dependency_version}" \
+              '.info.version == $version
+                and (.urls | any(.packagetype == "bdist_wheel"
+                  and ((.yanked // false) | not)))' \
+              "${dependency_json}" >/dev/null
+            find dependency-dist -maxdepth 1 -type f -name '*.whl' -printf '%f\n' \
+              | LC_ALL=C sort > expected-dependency-wheels.txt
+            jq -r '.urls[]
+              | select(.packagetype == "bdist_wheel"
+                and ((.yanked // false) | not))
+              | .filename' "${dependency_json}" \
+              | LC_ALL=C sort > published-dependency-wheels.txt
+            if ! comm -23 expected-dependency-wheels.txt \
+              published-dependency-wheels.txt \
+              > missing-dependency-wheels.txt; then
+              exit 1
+            fi
+            if [[ -s missing-dependency-wheels.txt ]]; then
+              echo "Published cuda-compute ${dependency_version} is incomplete:" >&2
+              sed 's/^/  missing /' missing-dependency-wheels.txt >&2
+              exit 1
+            fi
+          fi
+
+          ls -lh publish-dist/
 
       - name: Publish package distributions to PyPI
         if: ${{ inputs.wheel-dst == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
+        with:
+          packages-dir: publish-dist/
 
       - name: Publish package distributions to TestPyPI
         if: ${{ inputs.wheel-dst == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
         with:
+          packages-dir: publish-dist/
           repository-url: https://test.pypi.org/legacy/
