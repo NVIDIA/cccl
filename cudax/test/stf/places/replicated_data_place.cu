@@ -175,14 +175,25 @@ int main()
               };
     }
 
+    // the DEFERRED form through the stackable auto-push: the push imports
+    // the data at the context's default place; the nested task's acquire
+    // then materializes replicated() against its own execution place
+    {
+      auto rg = ctx.repeat_graph_scope(iters);
+      ctx.parallel_for(blocked_partition(), grid, lin.shape(), lin.read(data_place::replicated()), lacc.rw())
+          ->*[] __device__(size_t i, auto in, auto acc) {
+                acc(i) += in(i);
+              };
+    }
+
     ctx.host_launch(lacc.read())->*[&](auto acc) {
       for (size_t i = 0; i < n; i++)
       {
-        EXPECT(acc(i) == static_cast<double>(iters) * static_cast<double>(i % 128));
+        EXPECT(acc(i) == 2.0 * static_cast<double>(iters) * static_cast<double>(i % 128));
       }
     };
     ctx.finalize();
-    printf("replicated data place: stackable conditional scope OK\n");
+    printf("replicated data place: stackable conditional scope (concrete + deferred deps) OK\n");
   }
 
   printf("replicated_data_place: all checks passed\n");
