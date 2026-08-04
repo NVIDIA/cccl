@@ -20,6 +20,9 @@
 #include <nvbench/nvbench.cuh>
 #include <nvbench/range.cuh>
 
+// repeat hash computation n times
+static constexpr auto n_repeats = 100;
+
 template <cuda::std::int32_t Words>
 struct large_key
 {
@@ -63,11 +66,14 @@ __global__ void hash_bench_kernel(Hasher hash, cuda::std::size_t n, OutputIt out
   while (idx < n)
   {
     const Key key(static_cast<cuda::std::int32_t>(idx));
-    agg += reduce_hash_result(hash(key));
+    for (cuda::std::int32_t i = 0; i < n_repeats; ++i)
+    {
+      agg += reduce_hash_result(hash(key));
+    }
     idx += loop_stride;
   }
 
-  if (materialize_result && gid < n)
+  if (materialize_result)
   {
     out[gid] = agg;
   }
@@ -79,12 +85,10 @@ void hash_eval(nvbench::state& state, nvbench::type_list<HasherTag, Key>)
 {
   using hash_t = typename HasherTag::template fn<Key>;
 
-  const bool materialize_result   = false;
-  constexpr auto block_size       = 128;
-  constexpr auto items_per_thread = 16;
-  const auto num_keys             = state.get_int64("NumInputs");
-  const auto keys_per_block       = block_size * items_per_thread;
-  const auto grid_size            = (num_keys + keys_per_block - 1) / keys_per_block;
+  const bool materialize_result = false;
+  constexpr auto block_size     = 128;
+  const auto num_keys           = state.get_int64("NumInputs");
+  const auto grid_size          = (num_keys + block_size * 16 - 1) / block_size * 16;
 
   thrust::device_vector<cuda::std::uint64_t> hash_values((materialize_result) ? num_keys : 1);
 

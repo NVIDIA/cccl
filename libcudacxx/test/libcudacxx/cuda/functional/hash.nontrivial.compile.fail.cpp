@@ -10,9 +10,11 @@
 
 #include <cuda/functional>
 
+#include "test_macros.h"
+
 struct nontrivial_key
 {
-  ~nontrivial_key() {}
+  TEST_FUNC ~nontrivial_key() {}
 };
 
 int main(int, char**)
