@@ -40,12 +40,12 @@ pip install cuda-compute[minimal-sysctk13]  # system CUDA toolkit
 The `cuda-cccl` metapackage forwards the same extras, so existing aggregate
 installs such as `pip install cuda-cccl[cu13]` continue to install this package.
 
-When developing from a complete CCCL checkout, an editable install uses the
-canonical `libcudacxx`, CUB, and Thrust directories in place. It does not copy
-headers into `python/cuda_compute`:
+When developing from a complete CCCL checkout, install from the repository
+root. Editable mode uses the canonical `libcudacxx`, CUB, and Thrust
+directories in place. It does not copy headers into `python/cuda_compute`:
 
 ```bash
-pip install -e ".[test-cu13]"
+pip install -e "./python/cuda_compute[test-cu13]"
 ```
 
 **Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with Compute Capability 7.5+
