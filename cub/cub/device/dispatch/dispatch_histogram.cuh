@@ -276,8 +276,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int threads_per_block = detail::histogram::threads_per_block(active_policy, PrivatizationMode{});
-  const int items_per_thread  = detail::histogram::items_per_thread(active_policy, PrivatizationMode{});
+  const HistogramKernelConfig sweep = kernel_config(active_policy, PrivatizationMode{});
+  const int threads_per_block       = sweep.threads_per_block;
+  const int items_per_thread        = sweep.items_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
@@ -288,7 +289,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (const auto error = CubDebug(launcher_factory.set_max_dynamic_smem_size_for(
-                         sweep_kernel, active_policy.dynamic_smem_max_privatized_bytes)))
+                         sweep_kernel, active_policy.dynamic_smem.max_privatized_smem_bytes)))
                    {
                      return error;
                    }
@@ -791,37 +792,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
 {
-  using sweep = typename ActivePolicy::AgentHistogramPolicyT;
-  return {
+  using sweep              = typename ActivePolicy::AgentHistogramPolicyT;
+  const auto kernel_config = HistogramKernelConfig{
     sweep::BLOCK_THREADS,
     sweep::PIXELS_PER_THREAD,
     sweep::VEC_SIZE,
     sweep::LOAD_ALGORITHM,
     sweep::LOAD_MODIFIER,
     sweep::IS_RLE_COMPRESS,
-    sweep::IS_WORK_STEALING,
-    sweep::BLOCK_THREADS,
-    sweep::PIXELS_PER_THREAD,
-    sweep::VEC_SIZE,
-    sweep::LOAD_ALGORITHM,
-    sweep::LOAD_MODIFIER,
-    sweep::IS_RLE_COMPRESS,
-    sweep::IS_WORK_STEALING,
-    256 * sizeof(unsigned int),
-    0,
-    sweep::BLOCK_THREADS,
-    sweep::PIXELS_PER_THREAD,
-    sweep::VEC_SIZE,
-    sweep::LOAD_ALGORITHM,
-    sweep::LOAD_MODIFIER,
-    sweep::IS_RLE_COMPRESS,
-    sweep::IS_WORK_STEALING,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0};
+    sweep::IS_WORK_STEALING};
+  return {kernel_config, {kernel_config, 256 * sizeof(unsigned int), 0}, {kernel_config, 0, 0, 0, 0, 0}, 0};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
