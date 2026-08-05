@@ -66,6 +66,66 @@ bool conditional_body_memcpy_supported()
   cuda_safe_call(cudaGraphDestroy(g));
   return ok;
 }
+
+__global__ void probe_noop_kernel() {}
+
+//! Conditional body graphs additionally require every kernel node to belong
+//! to the SAME CUDA context ("all kernels ... must belong to the same CUDA
+//! context"), and green contexts are distinct contexts. A stackable scope
+//! running a green-grid task therefore mixes the primary context (the
+//! condition-update kernel) with the grid's green contexts inside the body:
+//! probe whether the driver accepts that at instantiation.
+bool conditional_body_multi_context_supported(green_context_helper& gc)
+{
+  cudaGraph_t g;
+  cuda_safe_call(cudaGraphCreate(&g, 0));
+  cudaGraphConditionalHandle handle;
+  cuda_safe_call(cudaGraphConditionalHandleCreate(&handle, g, 1, cudaGraphCondAssignDefault));
+  cudaGraphNodeParams np{};
+  np.type               = cudaGraphNodeTypeConditional;
+  np.conditional.handle = handle;
+  np.conditional.type   = cudaGraphCondTypeWhile;
+  np.conditional.size   = 1;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  const cudaGraphNode_t cnode = cuda_try<cudaGraphAddNode>(g, nullptr, nullptr, 0, &np);
+#  else
+  const cudaGraphNode_t cnode = cuda_try<cudaGraphAddNode>(g, nullptr, 0, &np);
+#  endif
+  (void) cnode;
+  cudaGraph_t body = np.conditional.phGraph_out[0];
+
+  cudaKernelNodeParams kp{};
+  kp.func           = (void*) probe_noop_kernel;
+  kp.gridDim        = dim3(1);
+  kp.blockDim       = dim3(1);
+  kp.sharedMemBytes = 0;
+  kp.kernelParams   = nullptr;
+  kp.extra          = nullptr;
+
+  // one kernel in the current (primary) context, then one per green context
+  cudaGraphNode_t k;
+  cuda_safe_call(cudaGraphAddKernelNode(&k, body, nullptr, 0, &kp));
+  CUcontext prev;
+  cuda_safe_call(cuCtxGetCurrent(&prev));
+  for (size_t v = 0; v < 2; v++)
+  {
+    CUcontext gctx;
+    cuda_safe_call(cuCtxFromGreenCtx(&gctx, gc.get_view(v).g_ctx));
+    cuda_safe_call(cuCtxSetCurrent(gctx));
+    cuda_safe_call(cudaGraphAddKernelNode(&k, body, nullptr, 0, &kp));
+  }
+  cuda_safe_call(cuCtxSetCurrent(prev));
+
+  cudaGraphExec_t e;
+  bool ok = (cudaGraphInstantiate(&e, g, 0) == cudaSuccess);
+  if (ok)
+  {
+    cuda_safe_call(cudaGraphExecDestroy(e));
+  }
+  cudaGetLastError(); // clear any probe failure
+  cuda_safe_call(cudaGraphDestroy(g));
+  return ok;
+}
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 int main()
@@ -292,7 +352,13 @@ int main()
         // and inside a stackable conditional scope: the auto-push imports
         // the data once, the nested acquire pins one instance per axis-0
         // group
-        if (stackable_ok)
+        const bool multi_ctx_ok = conditional_body_multi_context_supported(gc);
+        if (!multi_ctx_ok)
+        {
+          printf("replicated data place: green stackable flavors skipped (driver requires a single CUDA context in "
+                 "conditional body graphs)\n");
+        }
+        if (stackable_ok && multi_ctx_ok)
         {
           stackable_ctx sctx;
           auto lsin  = sctx.logical_data(shape_of<slice<double>>(n)).set_symbol("g22in");
@@ -404,7 +470,7 @@ int main()
     }
     catch (...)
     {}
-    if (stackable_ok && gc_opt && gc_opt->get_count() >= 2)
+    if (stackable_ok && gc_opt && gc_opt->get_count() >= 2 && conditional_body_multi_context_supported(*gc_opt))
     {
       auto& gc = *gc_opt;
       stackable_ctx ctx;
