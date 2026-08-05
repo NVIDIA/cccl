@@ -9,6 +9,7 @@ print_environment_details
 
 PRESET="libcudacxx"
 CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
+CMAKE_OPTIONS+=("-DLIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS=ON")
 
 configure_and_build_preset libcudacxx "$PRESET" "${CMAKE_OPTIONS[@]}"
 
