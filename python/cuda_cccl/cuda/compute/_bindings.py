@@ -4,7 +4,7 @@
 # _bindings.py is a shim module that imports symbols from a
 # _bindings_impl extension module. The shim serves the following purposes:
 #
-# 1. Import a CUDA-specific extension. The cuda.cccl wheel ships with multiple
+# 1. Import a CUDA-specific extension. The cuda-compute wheel ships with multiple
 #    extensions, one for each CUDA version. At runtime, this shim chooses the
 #    appropriate extension based on the detected CUDA version, and imports all
 #    symbols from it.
@@ -18,24 +18,36 @@
 #    This indirection ensures the right loading order, regardless of how
 #    `_bindings` is first imported across the codebase.
 #
-# 3. On Windows, add the directory containing cccl.c.parallel's dependent DLL
-#    (e.g. cuda/cccl/parallel/experimental/cu13/_bindings_impl.cp312-win_amd64.pyd)
-#    to the current process's DLL search path using `os.add_dll_directory`.
+# 3. On Windows, add the directory containing cccl.c.parallel's dependent DLLs
+#    (e.g. cuda/compute/cu13/cccl) to the current process's DLL search path
+#    using `os.add_dll_directory`.
 
 from __future__ import annotations
 
 import importlib
 import os
 
-from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 from cuda.pathfinder import (  # type: ignore[import-not-found]
     load_nvidia_dynamic_lib,
 )
 
+from ._cuda_version_utils import detect_cuda_version, get_recommended_extra
+
 
 def _load_cuda_libraries():
     # Load appropriate libraries for the detected CUDA version
-    for libname in ("nvrtc", "nvJitLink"):
+    libraries = ["nvrtc", "nvJitLink"]
+    try:
+        from ._build_info import USING_V2  # type: ignore[import-not-found]
+    except ImportError:
+        USING_V2 = False
+    if USING_V2 and os.name == "nt":
+        # PR #9583's libnvcc.dll links nvfatbin dynamically on Windows. Load
+        # the pip- or system-toolkit copy before importing _bindings_impl so
+        # Windows can resolve libnvcc's transitive dependency.
+        libraries.append("nvfatbin")
+
+    for libname in libraries:
         load_nvidia_dynamic_lib(libname)
 
 
@@ -56,8 +68,8 @@ module_suffix = f".{extra_name}._bindings_impl"
 module_fullname = __package__ + module_suffix
 
 # On Windows, ensure the dependent DLLs next to the extension are discoverable.
-# The extension lives at .../experimental/<extra_name>/_bindings_impl.*.pyd
-# and its dependent DLLs are under .../experimental/<extra_name>/cccl/.
+# The extension lives at .../compute/<extra_name>/_bindings_impl.*.pyd and its
+# dependent DLLs are under .../compute/<extra_name>/cccl/.
 if os.name == "nt":
     spec = importlib.util.find_spec(module_fullname)
     if spec and spec.origin:
@@ -82,6 +94,6 @@ except ImportError as e:
     import warnings
 
     warnings.warn(
-        f"CUDA CCCL bindings for CUDA {cuda_version} not available: {e}",
+        f"cuda.compute bindings for CUDA {cuda_version} not available: {e}",
         RuntimeWarning,
     )

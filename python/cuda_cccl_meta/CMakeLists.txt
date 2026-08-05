@@ -2,4 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared test utilities for cuda-compute."""
+cmake_minimum_required(VERSION 3.21)
+
+project(cuda_cccl DESCRIPTION "Python metapackage cuda-cccl" LANGUAGES NONE)

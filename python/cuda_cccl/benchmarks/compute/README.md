@@ -8,8 +8,8 @@ This project uses [pixi](https://pixi.sh) to manage environments and dependencie
 
 Two environments are available:
 
-- **`wheel`** - Uses the released `cuda-cccl` package
-- **`source`** - Builds `cuda-cccl` from the local repository
+- **`wheel`** - Uses the released `cuda-compute` package
+- **`source`** - Builds `cuda-compute` from the local repository
 
 ### Build C++ Benchmarks
 
@@ -27,7 +27,7 @@ Binaries are built to: `build/cub/bin/`
 ### Using pixi tasks
 
 ```bash
-# Run Python benchmarks (released cuda-cccl)
+# Run Python benchmarks (released cuda-compute)
 pixi run -e wheel bench
 
 # Run Python benchmarks (local source build)

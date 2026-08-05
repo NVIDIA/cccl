@@ -1,0 +1,84 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[build-system]
+requires = ["scikit-build-core>=1.0.1"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cuda-cccl"
+version = "1.2.0.dev0"
+description = "CUDA Core Compute Libraries for Python"
+authors = [{ name = "NVIDIA Corporation" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+]
+requires-python = ">=3.10"
+dependencies = ["cuda-compute==1.2.0.dev0"]
+readme = { file = "README.md", content-type = "text/markdown" }
+
+[project.optional-dependencies]
+minimal-cu12 = ["cuda-compute[minimal-cu12]"]
+minimal-cu13 = ["cuda-compute[minimal-cu13]"]
+minimal-sysctk12 = ["cuda-compute[minimal-sysctk12]"]
+minimal-sysctk13 = ["cuda-compute[minimal-sysctk13]"]
+cu12 = ["cuda-compute[cu12]"]
+cu13 = ["cuda-compute[cu13]"]
+sysctk12 = ["cuda-compute[sysctk12]"]
+sysctk13 = ["cuda-compute[sysctk13]"]
+test-cu12 = ["cuda-compute[test-cu12]"]
+test-cu13 = ["cuda-compute[test-cu13]"]
+test-sysctk12 = ["cuda-compute[test-sysctk12]"]
+test-sysctk13 = ["cuda-compute[test-sysctk13]"]
+bench-cu12 = ["cuda-compute[bench-cu12]"]
+bench-cu13 = ["cuda-compute[bench-cu13]"]
+bench-sysctk12 = ["cuda-compute[bench-sysctk12]"]
+bench-sysctk13 = ["cuda-compute[bench-sysctk13]"]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA/cccl"
+Repository = "https://github.com/NVIDIA/cccl"
+Documentation = "https://nvidia.github.io/cccl"
+Issues = "https://github.com/NVIDIA/cccl/issues"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.cmake]
+version = ">=3.21"
+build-type = "Release"
+source-dir = "."
+
+[tool.scikit-build.ninja]
+version = ">=1.11"
+make-fallback = true
+
+[tool.scikit-build.wheel]
+packages = []
+py-api = "py3"
+platlib = false
+license-files = []
+force-include = { "../../LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/LICENSE" }
+reproducible = true
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+xfail_strict = true

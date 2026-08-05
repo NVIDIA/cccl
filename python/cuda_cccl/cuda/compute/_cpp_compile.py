@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import functools
 
-from cuda.cccl import get_include_paths
 from cuda.core import Device, Program, ProgramOptions
 
 from ._bindings import TypeEnum
+from ._cccl_include_paths import get_include_paths
 from ._device_code import DeviceCode
 
 try:
@@ -42,7 +42,7 @@ def _get_arch_string() -> str:
 def _get_include_paths() -> list[str]:
     """Get include paths for CCCL headers."""
     paths = get_include_paths().as_tuple()
-    return [p for p in paths if p is not None]
+    return [str(p) for p in paths if p is not None]
 
 
 def compile_cpp_to_ltoir(

@@ -10,10 +10,9 @@ import struct
 
 import numpy as np
 
-from cuda.cccl import __version__ as _PKG_VERSION
-
 from .._bindings import Iterator, IteratorKind, Op, OpKind, TypeEnum, TypeInfo, Value
 from .._device_code import DeviceCode
+from .._version import __version__ as _PKG_VERSION
 
 # An opaque 8-byte marker identifying a cuda.compute serialization blob.
 _MAGIC = b"CCCLPYS1"
@@ -92,9 +91,9 @@ def _check_header(r: Reader) -> None:
     version = r.text()
     if version != _PKG_VERSION:
         raise ValueError(
-            "serialization blob: cuda-cccl version mismatch "
+            "serialization blob: cuda-compute version mismatch "
             f"(blob={version!r}, current={_PKG_VERSION!r}); "
-            "re-serialize with this version of cuda-cccl"
+            "re-serialize with this version of cuda-compute"
         )
 
 

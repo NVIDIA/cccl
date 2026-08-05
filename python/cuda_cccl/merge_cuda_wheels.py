@@ -21,18 +21,27 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
 
 
 def run_command(
-    cmd: List[str], cwd: Path = None, env: dict = None
-) -> subprocess.CompletedProcess:
+    cmd: list[str],
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     """Run a command with error handling."""
     print(f"Running: {' '.join(cmd)}")
     if cwd:
         print(f"  Working directory: {cwd}")
 
-    result = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
+    # Callers construct argv lists directly; no shell parses wheel paths.
+    result = subprocess.run(  # noqa: S603
+        cmd,
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
     if result.returncode != 0:
         print(f"Command failed with return code {result.returncode}")
@@ -43,7 +52,54 @@ def run_command(
     return result
 
 
-def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
+def _is_cuda_major_payload(path: Path) -> bool:
+    parts = path.parts
+    if parts[0:2] != ("cuda", "compute"):
+        return False
+    try:
+        cuda_directory = parts[2]
+    except IndexError:
+        return False
+    return cuda_directory.startswith("cu") and cuda_directory[2:].isdigit()
+
+
+def _shared_logical_contents(root: Path) -> dict[Path, bytes]:
+    """Return payload that must be identical in every CUDA-major wheel."""
+    contents: dict[Path, bytes] = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root)
+        if _is_cuda_major_payload(relative):
+            continue
+        # wheel pack regenerates RECORD after the CUDA-major trees are merged.
+        if relative.name == "RECORD" and relative.parent.name.endswith(".dist-info"):
+            continue
+        contents[relative] = path.read_bytes()
+    return contents
+
+
+def _validate_shared_contents(extracted_wheels: list[Path], wheels: list[Path]) -> None:
+    base_contents = _shared_logical_contents(extracted_wheels[0])
+    for wheel, extracted in zip(wheels[1:], extracted_wheels[1:], strict=True):
+        contents = _shared_logical_contents(extracted)
+        if contents == base_contents:
+            continue
+
+        missing = sorted(str(path) for path in base_contents.keys() - contents.keys())
+        extra = sorted(str(path) for path in contents.keys() - base_contents.keys())
+        changed = sorted(
+            str(path)
+            for path in base_contents.keys() & contents.keys()
+            if base_contents[path] != contents[path]
+        )
+        raise RuntimeError(
+            f"Cannot merge {wheel.name}: non-CUDA-major wheel contents differ "
+            f"(missing={missing}, extra={extra}, changed={changed})"
+        )
+
+
+def merge_wheels(wheels: list[Path], output_dir: Path) -> Path:
     """Merge multiple wheels into a single wheel with version-specific binaries."""
     print("\n=== Merging wheels ===")
     print(f"Input wheels: {[w.name for w in wheels]}")
@@ -81,7 +137,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             # Find the extracted directory (wheel unpack creates a subdirectory)
             extract_dir = None
             for item in temp_path.iterdir():
-                if item.is_dir() and item.name.startswith("cuda_cccl"):
+                if item.is_dir() and item.name.startswith("cuda_compute"):
                     extract_dir = item
                     break
 
@@ -99,6 +155,11 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
 
         # Use the first wheel as the base and merge binaries from others
         base_wheel = extracted_wheels[0]
+
+        # Python sources, HostJIT resources, build metadata, and dist-info must
+        # be identical across CUDA-major builds. Only cuda/compute/cuXX may
+        # differ; silently taking the first copy would hide a divergent build.
+        _validate_shared_contents(extracted_wheels, wheels)
 
         # now copy the version-specific directory from other wheels
         # into the appropriate place in the base wheel
@@ -145,7 +206,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         return merged_wheel
 
 
-def main():
+def main() -> None:
     """Main merge script."""
     parser = argparse.ArgumentParser(
         description="Merge CUDA-specific wheels into a single multi-CUDA wheel"
@@ -159,11 +220,11 @@ def main():
 
     args = parser.parse_args()
 
-    print("CUDA CCCL Wheel Merger")
-    print("======================")
+    print("cuda-compute Wheel Merger")
+    print("=========================")
 
     # Convert wheel paths to Path objects and validate
-    wheels = []
+    wheels: list[Path] = []
     for wheel_path in args.wheels:
         wheel = Path(wheel_path)
         if not wheel.exists():
@@ -180,12 +241,9 @@ def main():
 
     output_dir = Path(args.output_dir)
 
-    # Check that we have wheel tool available
-    try:
-        run_command([sys.executable, "-m", "wheel", "--help"])
-    except Exception:
-        print("Error: wheel package not available. Install with: pip install wheel")
-        sys.exit(1)
+    # Check that we have the wheel tool available. run_command already reports
+    # the module error and exits cleanly when it is unavailable.
+    run_command([sys.executable, "-m", "wheel", "--help"])
 
     # Merge the wheels
     merged_wheel = merge_wheels(wheels, output_dir)

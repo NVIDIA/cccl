@@ -36,7 +36,6 @@ CUB_CMAKE_VERSION_FILE="lib/cmake/cub/cub-config-version.cmake"
 LIBCUDACXX_CMAKE_VERSION_FILE="lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
 THRUST_CMAKE_VERSION_FILE="lib/cmake/thrust/thrust-config-version.cmake"
 CUDAX_CMAKE_VERSION_FILE="lib/cmake/cudax/cudax-config-version.cmake"
-CUDA_CCCL_VERSION_FILE="python/cuda_cccl/cuda/cccl/_version.py"
 
 # Calculated version codes
 new_cccl_version=$((major * 1000000 + minor * 1000 + patch))     # MMMmmmppp
@@ -110,9 +109,6 @@ update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_PATCH \([0-9]\+\))" "se
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MAJOR \([0-9]\+\))" "set(cudax_VERSION_MAJOR $major)"
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MINOR \([0-9]\+\))" "set(cudax_VERSION_MINOR $minor)"
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_PATCH \([0-9]\+\))" "set(cudax_VERSION_PATCH $patch)"
-
-update_file "$CUDA_CCCL_VERSION_FILE" "^__version__ = \"\([0-9.]\+\)\"" "__version__ = \"$major.$minor.$patch\""
-
 
 if [[ "$DRY_RUN" = true ]]; then
     echo "Dry run completed. No changes made."

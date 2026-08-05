@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+from ._version import __version__
+
 
 # When built against the v2 (HostJIT) backend, the JIT loads Clang's CUDA
 # headers and our cuda_minimal stubs from paths that don't exist on the
-# user's machine. The wheel bundles both under cuda/cccl/headers/{clang,…};
+# user's machine. The wheel bundles both under cuda/compute/_cccl/{clang,…};
 # point hostjit at them via the env vars its detectDefaultConfig() reads.
 # Only sets vars that aren't already configured by the user, and skips
 # silently if the bundled directories are absent (e.g. v1 builds).
@@ -28,7 +30,7 @@ def _configure_hostjit_paths() -> None:
     # bundled headers are absent. In that case, leave the env vars unset and
     # let the C library use its build-time CLANG_HEADERS_DIR / HOSTJIT_INCLUDE_DIR
     # macros (pointing at the LLVM source tree under the CMake build dir).
-    headers_dir = Path(__file__).resolve().parent.parent / "cccl" / "headers"
+    headers_dir = Path(__file__).resolve().parent / "_cccl"
     clang_dir = headers_dir / "clang"
     if (
         clang_dir / "__clang_cuda_math_forward_declares.h"
@@ -45,7 +47,7 @@ _configure_hostjit_paths()
 from ._bindings import _BINDINGS_AVAILABLE  # type: ignore[attr-defined]  # noqa: E402
 
 if not _BINDINGS_AVAILABLE:
-    __all__ = ["_BINDINGS_AVAILABLE"]
+    __all__ = ["_BINDINGS_AVAILABLE", "__version__"]
 
     def __getattr__(name):
         raise AttributeError(
@@ -109,6 +111,7 @@ else:
 
     __all__ = [
         "_BINDINGS_AVAILABLE",
+        "__version__",
         "serialize",
         "deserialize",
         "ProxyArray",

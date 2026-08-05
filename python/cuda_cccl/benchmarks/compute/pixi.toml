@@ -41,14 +41,14 @@ cuda-driver-dev_linux-64 = "*"
 [feature.cpp-bench.target.linux-64.activation.env]
 CUDA_HOME = "$CONDA_PREFIX/targets/x86_64-linux"
 
-# Important: cuda-cccl installation variants
+# Important: cuda-compute installation variants
 
 # Released version from PyPI
 [feature.cccl-wheel.pypi-dependencies]
-cuda-cccl = { version = ">=0.1.0", extras = ["cu13"] }
+cuda-compute = { version = ">=0.1.0", extras = ["cu13"] }
 
 # Local source build (editable install from repo)
-# Needs nvcc, compilers, and CUDA dev libraries for scikit-build-core to build cuda-cccl
+# Needs nvcc, compilers, and CUDA dev libraries for scikit-build-core to build cuda-compute
 [feature.cccl-source.dependencies]
 cuda-nvcc = "*"
 cuda-nvrtc-dev = "*"
@@ -59,7 +59,7 @@ c-compiler = "*"
 cxx-compiler = "*"
 
 [feature.cccl-source.pypi-dependencies]
-cuda-cccl = { path = "../..", editable = true, extras = ["cu13"] }
+cuda-compute = { path = "../..", editable = true, extras = ["cu13"] }
 
 # Environments
 [environments]

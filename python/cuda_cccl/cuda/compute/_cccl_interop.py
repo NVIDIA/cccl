@@ -20,17 +20,6 @@ except ImportError:
 
 import numpy as np
 
-# TODO: adding a type-ignore here because `cuda` being a
-# namespace package confuses mypy when `cuda.<something_else>`
-# is installed, but not `cuda.cccl`. For namespace packages,
-# it appears we need to actually install the sub-package
-# in order for mypy to find its py.typed file. However, CI
-# does type checking of `cuda.cccl` without actually installing
-# it.
-#
-# We need to find a better solution for this.
-from cuda.cccl import get_include_paths  # type: ignore
-
 from . import types
 from ._bindings import (
     CommonData,
@@ -46,6 +35,7 @@ from ._bindings import (
     make_pointer_object,
 )
 from ._caching import _PerCCBuildResults
+from ._cccl_include_paths import get_include_paths
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._base import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
@@ -274,9 +264,14 @@ def _common_data_for_cc(cc):
         cc_major, cc_minor = CudaDevice().compute_capability
     else:
         cc_major, cc_minor = cc
-    cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_includes()
+    paths = get_include_paths()
     return CommonData(
-        cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
+        cc_major,
+        cc_minor,
+        f"-I{paths.cub}",
+        f"-I{paths.thrust}",
+        f"-I{paths.libcudacxx}",
+        f"-I{paths.cuda}",
     )
 
 

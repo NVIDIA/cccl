@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""
-CUDA version detection utilities shared across the cccl package.
-"""
+"""CUDA version detection utilities for :mod:`cuda.compute`."""
 
 from typing import Optional
 

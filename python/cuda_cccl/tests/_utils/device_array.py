@@ -65,7 +65,7 @@ def _resolve_device_and_stream(
 
 
 class DeviceArray:
-    """A small, Buffer-backed device array for cuda-cccl tests.
+    """A small, Buffer-backed device array for cuda-compute tests.
 
     The class intentionally provides only allocation, NumPy transfers, array
     metadata, and the CUDA Array Interface. Array operations and initialization
