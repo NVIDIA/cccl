@@ -398,12 +398,20 @@ jobs:
           mapfile -t meta_wheels < <(
             find artifact -name 'cuda_cccl-*.whl' -type f -print | sort
           )
+          mapfile -t compute_wheels < <(
+            find artifact -name 'cuda_compute-*.whl' -type f -print | sort
+          )
           if [[ "${#meta_wheels[@]}" -ne 1 ]]; then
             echo "Expected one cuda-cccl wheel; found ${#meta_wheels[@]}." >&2
             exit 1
           fi
+          if [[ "${#compute_wheels[@]}" -ne 1 ]]; then
+            echo "Expected one cuda-compute wheel; found ${#compute_wheels[@]}." >&2
+            exit 1
+          fi
           pip install \
             --find-links "$(dirname "${meta_wheels[0]}")" \
+            "${compute_wheels[0]}" \
             "${meta_wheels[0]}[cu13]"
 
       - name: Test CPU-only import

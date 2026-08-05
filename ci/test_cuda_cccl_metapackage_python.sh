@@ -20,9 +20,10 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install only the metapackage from an explicit path. Its exact dependency must
-# resolve transitively from the sibling wheelhouse; index access remains
-# available for the selected CUDA extra's third-party dependencies.
+# Pass both coordinated wheels as explicit local requirements so an
+# equal-version index candidate cannot replace cuda-compute. The metapackage
+# extra still supplies compute's selected dependencies, with index access left
+# available for those third-party packages.
 wheelhouse_dir="${repo_root}/wheelhouse"
 mapfile -t cuda_cccl_wheels < <(
   find "${wheelhouse_dir}" -maxdepth 1 -type f -name 'cuda_cccl-*.whl' -print | sort
@@ -39,8 +40,10 @@ if [[ "${#cuda_compute_wheels[@]}" -ne 1 ]]; then
   exit 1
 fi
 CUDA_CCCL_WHEEL_PATH="${cuda_cccl_wheels[0]}"
+CUDA_COMPUTE_WHEEL_PATH="${cuda_compute_wheels[0]}"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${wheelhouse_dir}" \
+  "${CUDA_COMPUTE_WHEEL_PATH}" \
   "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
 python -m pip check
 python - <<'PY'
