@@ -20,13 +20,15 @@ else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
 
-# Install only the metapackage from a path. Pip must resolve its exact
-# cuda-compute dependency from the coordinated local wheelhouse.
+# Install both coordinated wheels from explicit paths. Index access remains
+# available for the selected CUDA extra's third-party dependencies.
 wheelhouse_dir="${repo_root}/wheelhouse"
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
+CUDA_COMPUTE_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_compute-*.whl)"
 ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
 python -m pip install --find-links "${wheelhouse_dir}" \
-  "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]"
+  "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major_version}]" \
+  "${CUDA_COMPUTE_WHEEL_PATH}"
 python -m pip check
 python - <<'PY'
 import importlib.metadata

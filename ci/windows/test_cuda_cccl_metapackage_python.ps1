@@ -18,13 +18,17 @@ $cudaMajor = Get-CudaMajor
 $ctkFlavor = Get-CtkExtraFlavor $CtkMode
 Set-CtkPin $CtkMode
 
-$wheelPath = Get-CudaCcclWheel
-$wheelhouse = Split-Path -Parent $wheelPath
+$cudaCcclWheel = Get-CudaCcclWheel
+$wheelhouse = Split-Path -Parent $cudaCcclWheel
+$cudaComputeWheel = Get-OnePathMatch `
+    -Path $wheelhouse -Pattern '^cuda_compute-.*\.whl' -File
 
-# Install only the metapackage from a path. Pip must resolve its exact
-# cuda-compute dependency from the coordinated local wheelhouse.
+# Install both coordinated wheels from explicit paths. Index access remains
+# available for the selected CUDA extra's third-party dependencies.
 Invoke-Checked {
-    & $python -m pip install --find-links $wheelhouse "${wheelPath}[minimal-$ctkFlavor$cudaMajor]"
+    & $python -m pip install --find-links $wheelhouse `
+        "${cudaCcclWheel}[minimal-$ctkFlavor$cudaMajor]" `
+        $cudaComputeWheel
 } "Failed to install cuda-cccl metapackage"
 Invoke-Checked { & $python -m pip check } "Installed cuda-cccl environment is inconsistent"
 Invoke-Checked {
