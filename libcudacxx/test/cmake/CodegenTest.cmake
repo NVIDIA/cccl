@@ -71,7 +71,7 @@ endfunction()
 
 set(
   libcudacxx_codegen_dump_and_check
-  "${CMAKE_CURRENT_LIST_DIR}/dump_and_check.bash"
+  "${CMAKE_CURRENT_LIST_DIR}/../codegen/dump_and_check.bash"
 )
 
 function(libcudacxx_codegen_set_cuda_arch target_name arch)
