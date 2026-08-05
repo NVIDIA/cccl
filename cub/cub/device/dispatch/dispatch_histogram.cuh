@@ -276,9 +276,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const HistogramKernelConfig sweep = kernel_config(active_policy, PrivatizationMode{});
-  const int threads_per_block       = sweep.threads_per_block;
-  const int items_per_thread        = sweep.items_per_thread;
+  const HistogramPolicy::Kernel sweep = active_policy.kernel(PrivatizationMode{});
+  const int threads_per_block         = sweep.threads_per_block;
+  const int items_per_thread          = sweep.items_per_thread;
 
   int dynamic_smem_bytes = 0;
   if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
@@ -385,7 +385,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_threads_per_block = 256;
+  constexpr int histogram_init_threads_per_block = init_threads_per_block;
   int histogram_init_grid_dims =
     (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
@@ -403,7 +403,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                          histogram_init_threads_per_block,
                          0,
                          stream,
-                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+                         /* dependent_launch */ supports_dependent_launch(cc))
           .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
@@ -434,7 +434,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                          threads_per_block,
                          dynamic_smem_bytes,
                          stream,
-                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+                         /* dependent_launch */ supports_dependent_launch(cc))
           .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,
@@ -736,7 +736,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
   for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
   {
-    num_privatized_levels[channel] = 257;
+    num_privatized_levels[channel] = byte_sample_privatized_levels;
 
     int num_levels = num_output_levels[channel];
     if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
@@ -790,10 +790,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
+  -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
+{
+  return ActivePolicy::init_kernel_pdl_trigger_max_bins;
+}
+
+// TODO(bgruber): drop in CCCL 4.0
+template <typename ActivePolicy>
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
+{
+  return 0;
+}
+
+// TODO(bgruber): drop in CCCL 4.0
+template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
 {
   using sweep              = typename ActivePolicy::AgentHistogramPolicyT;
-  const auto kernel_config = HistogramKernelConfig{
+  const auto kernel_config = HistogramPolicy::Kernel{
     sweep::BLOCK_THREADS,
     sweep::PIXELS_PER_THREAD,
     sweep::VEC_SIZE,
@@ -801,7 +816,10 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_legacy_policy() -> HistogramPolicy
     sweep::LOAD_MODIFIER,
     sweep::IS_RLE_COMPRESS,
     sweep::IS_WORK_STEALING};
-  return {kernel_config, {kernel_config, 256 * sizeof(unsigned int), 0}, {kernel_config, 0, 0, 0, 0, 0}, 0};
+  return {kernel_config,
+          {kernel_config, legacy_privatized_smem_bins * supported_counter_bytes, 0},
+          {kernel_config, 0, 0, 0, 0, 0},
+          convert_pdl_trigger<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -833,6 +851,18 @@ public:
                       }),
                       ({ return convert_legacy_policy<typename MaxPolicy::ActivePolicy>(); }));
   }
+};
+
+template <typename PolicyHub>
+struct max_policy_from_hub
+{
+  using type = typename PolicyHub::MaxPolicy;
+};
+
+template <>
+struct max_policy_from_hub<void>
+{
+  using type = void;
 };
 
 template <int NUM_CHANNELS,
@@ -889,7 +919,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
-      num_privatized_levels[channel] = 257;
+      num_privatized_levels[channel] = byte_sample_privatized_levels;
       output_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
 
       if (num_output_levels[channel] > max_levels)
@@ -1122,7 +1152,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
-      num_privatized_levels[channel] = 257;
+      num_privatized_levels[channel] = byte_sample_privatized_levels;
 
       int num_levels = num_output_levels[channel];
       if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
@@ -1410,12 +1440,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    * @param stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
    */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ false>,
-              PolicyHub>::MaxPolicy,
-            bool IsByteSample>
+  template <typename MaxPolicyT = typename detail::histogram::max_policy_from_hub<PolicyHub>::type, bool IsByteSample>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1430,16 +1455,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     ::cuda::std::bool_constant<IsByteSample> is_byte_sample,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    [[maybe_unused]] MaxPolicyT max_policy = {})
+    [[maybe_unused]] ::cuda::std::_If<::cuda::std::is_void_v<MaxPolicyT>, ::cuda::std::nullptr_t, MaxPolicyT>
+      max_policy = {})
   {
-    using default_policy_hub =
-      detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
-    static constexpr bool uses_default_policy =
-      ::cuda::std::is_void_v<PolicyHub> && ::cuda::std::is_same_v<MaxPolicyT, typename default_policy_hub::MaxPolicy>;
-    using policy_selector_t = ::cuda::std::_If<
-      uses_default_policy,
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
-      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+    static constexpr bool uses_default_policy = ::cuda::std::is_void_v<MaxPolicyT>;
+    using policy_selector_t                   = ::cuda::std::_If<
+                        uses_default_policy,
+                        detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>,
+                        detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1504,12 +1527,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
    */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ true>,
-              PolicyHub>::MaxPolicy,
-            bool IsByteSample>
+  template <typename MaxPolicyT = typename detail::histogram::max_policy_from_hub<PolicyHub>::type, bool IsByteSample>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1525,16 +1543,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     ::cuda::std::bool_constant<IsByteSample> is_byte_sample,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
-    [[maybe_unused]] MaxPolicyT max_policy = {})
+    [[maybe_unused]] ::cuda::std::_If<::cuda::std::is_void_v<MaxPolicyT>, ::cuda::std::nullptr_t, MaxPolicyT>
+      max_policy = {})
   {
-    using default_policy_hub =
-      detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
-    static constexpr bool uses_default_policy =
-      ::cuda::std::is_void_v<PolicyHub> && ::cuda::std::is_same_v<MaxPolicyT, typename default_policy_hub::MaxPolicy>;
-    using policy_selector_t = ::cuda::std::_If<
-      uses_default_policy,
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
-      detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
+    static constexpr bool uses_default_policy = ::cuda::std::is_void_v<MaxPolicyT>;
+    using policy_selector_t                   = ::cuda::std::_If<
+                        uses_default_policy,
+                        detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>,
+                        detail::histogram::policy_selector_from_hub<MaxPolicyT>>;
     return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
