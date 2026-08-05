@@ -315,12 +315,8 @@ jobs:
           # This adds them to a bench_args array while preserving any quotes, whitespace, etc
           mapfile -d '' -t bench_args < "/bench_args.txt"
 
-          # NVBench deps:
-          ./ci/util/retry.sh 5 30 python3 -m pip install \
-            colorama \
-            jsondiff \
-            numpy \
-            tabulate
+          # NVBench compare deps:
+          ./ci/util/retry.sh 5 30 python3 -m pip install 'cuda-bench[compare]>=0.3.0'
 
           ./ci/bench/bench.sh "${bench_args[@]}"
           EOF

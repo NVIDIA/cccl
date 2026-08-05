@@ -64,7 +64,7 @@ Python benchmarks live under `python/cuda_cccl/benchmarks/` and use `cuda.bench`
 For CUB-only comparisons, the caller's Python environment must provide the NVBench compare dependencies:
 
 ```bash
-python3 -m pip install 'cuda-bench[compare]'
+python3 -m pip install 'cuda-bench[compare]>=0.3.0'
 ```
 
 For Python benchmarks, `compare_paths.sh`:

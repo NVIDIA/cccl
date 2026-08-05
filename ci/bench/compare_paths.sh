@@ -366,8 +366,7 @@ setup_python_venv() {
       python3 -m venv '${venv_path}'
       '${venv_path}/bin/pip' install --upgrade pip
       '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
-      # cuda-cccl[bench-cuXX] installs cuda-bench[cuXX], not cuda-bench[compare].
-      '${venv_path}/bin/pip' install colorama jsondiff numpy tabulate
+      '${venv_path}/bin/pip' install 'cuda-bench[compare]>=0.3.0'
     "
   )
 
