@@ -418,17 +418,17 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    const auto sweep = cub::HistogramSweepPolicy{
+    const auto sweep = cub::HistogramKernelConfig{
       128, cc > cuda::compute_capability{9, 0} ? 16 : 7, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, false, false};
     return {
-      .gmem         = sweep,
-      .static_smem  = {.sweep = sweep, .max_privatized_smem_bytes = 257 * sizeof(unsigned int), .min_blocks_per_sm = 0},
-      .dynamic_smem = {.sweep                     = sweep,
-                       .max_privatized_smem_bytes = 0,
-                       .range_max_bins            = 0,
-                       .even_2ch_max_bins         = 0,
-                       .even_3ch_max_bins         = 0,
-                       .even_4ch_max_bins         = 0},
+      .gmem        = sweep,
+      .static_smem = {.kernel = sweep, .max_privatized_smem_bytes = 256 * sizeof(unsigned int), .min_blocks_per_sm = 0},
+      .dynamic_smem                     = {.kernel                    = sweep,
+                                           .max_privatized_smem_bytes = 0,
+                                           .range_max_bins            = 0,
+                                           .even_2ch_max_bins         = 0,
+                                           .even_3ch_max_bins         = 0,
+                                           .even_4ch_max_bins         = 0},
       .init_kernel_pdl_trigger_max_bins = 2048};
   }
 };
