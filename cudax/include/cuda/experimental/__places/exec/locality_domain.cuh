@@ -1,0 +1,640 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDASTF in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+/**
+ * @file
+ * @brief Execution and data places for locality domains
+ *
+ * Some devices partition their multiprocessors and memory into locality
+ * domains. This file provides places pinned to one such domain:
+ *  - `exec_place::locality_domain(dev, i)` runs work on an SM partition
+ *    confined to domain `i` (a green context built with
+ *    `cuDevSmResourceSplit` + `CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID`),
+ *  - `data_place::locality_domain(dev, i)` allocates memory whose backing
+ *    store lives in domain `i` (`CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN`,
+ *    both VMM physical handles and stream-ordered memory pools),
+ *  - `make_locality_domain_grid(dev)` builds a grid over every domain of a
+ *    device,
+ *  - `locality_domain_helper` enumerates the domains of a device.
+ *
+ * `exec_place::locality_domain(d, i)` and `data_place::locality_domain(d, i)`
+ * share the same domain ordinal, so compute and memory are co-located.
+ *
+ * Fallback for toolkits older than CUDA 13.4
+ * ------------------------------------------
+ * The locality-domain driver APIs require CUDA 13.4+. On older toolkits this
+ * header automatically degrades to a whole-device fallback exposing the exact
+ * same API:
+ *  - every valid device reports a single locality domain
+ *    (`locality_domain_count() == 1`),
+ *  - data places allocate plain device memory,
+ *  - exec places run on the whole device (`cudaSetDevice`).
+ * The domain ordinal is still carried through hashing, comparison and
+ * `to_string()`, so distinct ordinals stay distinguishable as labels. Code
+ * written against this API therefore compiles and runs everywhere; on older
+ * toolkits it simply behaves as if each GPU were a single, non-partitioned
+ * domain. Defining `CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK` selects the
+ * fallback even on recent toolkits (useful to test that path).
+ *
+ * Addressing model: a locality-domain place is identified by a
+ * (device ordinal, domain ordinal) pair that is just an identity token.
+ * Construction of a data place performs no existence check, so any pair is
+ * valid to build, hash, compare or use as a map key -- this mirrors
+ * `data_place::device(i)` / `exec_place::device(i)`, which likewise do not
+ * validate the ordinal. The ordinals are validated lazily, when the place is
+ * actually used (memory allocation, or building the per-domain green context).
+ */
+
+#pragma once
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__places/data_place_interface.cuh>
+#include <cuda/experimental/__places/exec/cuda_context.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
+#include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
+
+// The locality-domain driver APIs (cuDevSmResourceSplit with
+// CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID, and
+// CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN) require CUDA 13.4+.
+#if _CCCL_CTK_AT_LEAST(13, 4) && !defined(CUDAX_PLACES_FORCE_LOCALITY_DOMAIN_FALLBACK)
+#  define _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE 1
+#else // ^^^ native backend ^^^ / vvv whole-device fallback vvv
+#  define _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE 0
+#endif // toolkit selection
+
+namespace cuda::experimental::places
+{
+#if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+
+/**
+ * @brief Number of locality domains exposed by a device.
+ *
+ * Queries `CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT`. Returns 0 when the
+ * query cannot be performed (no driver support, invalid device, ...): a zero
+ * count means locality-domain placement is unusable on this device and
+ * callers are expected to fall back to regular device places.
+ */
+inline unsigned int locality_domain_count(int dev_id)
+{
+  if (cuInit(0) != CUDA_SUCCESS)
+  {
+    return 0;
+  }
+  CUdevice dev;
+  if (cuDeviceGet(&dev, dev_id) != CUDA_SUCCESS)
+  {
+    return 0;
+  }
+  int count       = 0;
+  CUresult result = cuDeviceGetAttribute(&count, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, dev);
+  return (result == CUDA_SUCCESS && count > 0) ? static_cast<unsigned int>(count) : 0;
+}
+
+/**
+ * @brief Whether localized memory placement is disabled via the environment.
+ *
+ * When `CUDASTF_DISABLE_LOCALIZED_MEMORY` is set, locality-domain data places
+ * hand out plain device memory (`CU_MEM_LOCATION_TYPE_DEVICE`) instead of
+ * domain-localized memory. This is an A/B knob to benchmark localized
+ * execution with and without localized memory placement.
+ */
+inline bool locality_domain_memory_disabled()
+{
+  static const bool disabled = [] {
+    const bool d = (::std::getenv("CUDASTF_DISABLE_LOCALIZED_MEMORY") != nullptr);
+    if (d)
+    {
+      fprintf(stderr, "places: locality-domain memory localization DISABLED (CUDASTF_DISABLE_LOCALIZED_MEMORY set)\n");
+    }
+    return d;
+  }();
+  return disabled;
+}
+
+/**
+ * @brief Cache of per-(device, domain) localized memory pools.
+ *
+ * Localized stream-ordered allocation goes through memory pools
+ * (`cuMemPoolCreate` + `cuMemAllocFromPoolAsync`). Pools are created lazily
+ * and reused for the lifetime of the process. Thread-safe.
+ */
+class locality_domain_mem_pool_cache
+{
+public:
+  static locality_domain_mem_pool_cache& instance()
+  {
+    static locality_domain_mem_pool_cache inst;
+    return inst;
+  }
+
+  CUmemoryPool get(int dev_id, int domain_id)
+  {
+    ::std::lock_guard<::std::mutex> lock(mtx_);
+    auto key = ::std::make_pair(dev_id, domain_id);
+    auto it  = pools_.find(key);
+    if (it != pools_.end())
+    {
+      return it->second;
+    }
+
+    CUmemPoolProps props = {};
+    props.allocType      = CU_MEM_ALLOCATION_TYPE_PINNED;
+    if (locality_domain_memory_disabled())
+    {
+      props.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+      props.location.id   = dev_id;
+    }
+    else
+    {
+      props.location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
+      props.location.localized.deviceId         = static_cast<unsigned char>(dev_id);
+      props.location.localized.localityDomainId = static_cast<unsigned char>(domain_id);
+    }
+
+    CUmemoryPool pool = nullptr;
+    cuda_try(cuMemPoolCreate(&pool, &props));
+    pools_[key] = pool;
+    return pool;
+  }
+
+private:
+  locality_domain_mem_pool_cache()                                                 = default;
+  locality_domain_mem_pool_cache(const locality_domain_mem_pool_cache&)            = delete;
+  locality_domain_mem_pool_cache& operator=(const locality_domain_mem_pool_cache&) = delete;
+
+  ::std::map<::std::pair<int, int>, CUmemoryPool> pools_;
+  ::std::mutex mtx_;
+};
+
+/**
+ * @brief Cache of per-domain green contexts and stream pools.
+ *
+ * For each device, splits the SM resource by locality domain via
+ * `cuDevSmResourceSplit` (one `CU_DEV_SM_RESOURCE_GROUP_PARAMS` per domain
+ * with `CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID`), then creates one green
+ * context per domain. Each green context provides a primary `CUcontext` used
+ * as the execution place's context: streams created there are bound to the
+ * domain's SM partition.
+ *
+ * Domain index `i` corresponds directly to the domain ordinal used for
+ * localized memory, so `exec_place::locality_domain(d, i)` and
+ * `data_place::locality_domain(d, i)` are co-located.
+ *
+ * Entries are created lazily per device and kept alive for the process, which
+ * also guarantees the (non-owning) `exec_place_cuda_ctx_impl` places built on
+ * top always refer to a live context. Thread-safe.
+ */
+class locality_domain_ctx_cache
+{
+public:
+  struct domain_entry
+  {
+    CUgreenCtx g_ctx      = {};
+    CUcontext primary_ctx = nullptr;
+    stream_pool pool;
+  };
+
+  static locality_domain_ctx_cache& instance()
+  {
+    static locality_domain_ctx_cache inst;
+    return inst;
+  }
+
+  const domain_entry& get(int dev_id, int domain_id)
+  {
+    ::std::lock_guard<::std::mutex> lock(mtx_);
+    auto it = devices_.find(dev_id);
+    if (it == devices_.end())
+    {
+      init_device(dev_id);
+      it = devices_.find(dev_id);
+    }
+    _CCCL_ASSERT(domain_id >= 0 && domain_id < static_cast<int>(it->second.size()),
+                 "locality domain ordinal out of range");
+    return it->second[domain_id];
+  }
+
+private:
+  void init_device(int dev_id)
+  {
+    CUdevice device = cuda_try<cuDeviceGet>(dev_id);
+
+    int num_domains = 0;
+    cuda_try(cuDeviceGetAttribute(&num_domains, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, device));
+    _CCCL_ASSERT(num_domains > 0, "device reports no locality domains");
+
+    CUdevResource sm_resource;
+    cuda_try(cuDeviceGetDevResource(device, &sm_resource, CU_DEV_RESOURCE_TYPE_SM));
+
+    // One SM resource group per locality domain.
+    ::std::vector<CU_DEV_SM_RESOURCE_GROUP_PARAMS> params(num_domains);
+    for (int i = 0; i < num_domains; ++i)
+    {
+      params[i]                  = CU_DEV_SM_RESOURCE_GROUP_PARAMS{};
+      params[i].flags            = CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
+      params[i].localityDomainId = static_cast<unsigned int>(i);
+    }
+
+    ::std::vector<CUdevResource> domain_sms(num_domains);
+    CUdevResource remainder;
+    cuda_try(cuDevSmResourceSplit(
+      domain_sms.data(), static_cast<unsigned int>(num_domains), &sm_resource, &remainder, 0, params.data()));
+
+    // Create one green context (and a stream pool) per locality domain.
+    ::std::vector<domain_entry> entries(num_domains);
+    for (int i = 0; i < num_domains; ++i)
+    {
+      CUdevResourceDesc desc = cuda_try<cuDevResourceGenerateDesc>(&domain_sms[i], 1);
+      cuda_try(cuGreenCtxCreate(&entries[i].g_ctx, desc, device, CU_GREEN_CTX_DEFAULT_STREAM));
+      entries[i].primary_ctx = cuda_try<cuCtxFromGreenCtx>(entries[i].g_ctx);
+      // Streams are created lazily by stream_pool::next(), inside the place's
+      // (green primary) context, exactly like exec_place::green_ctx places.
+      entries[i].pool = stream_pool(exec_place::impl::pool_size);
+    }
+
+    devices_[dev_id] = ::std::move(entries);
+  }
+
+  ::std::map<int, ::std::vector<domain_entry>> devices_;
+  ::std::mutex mtx_;
+};
+
+#else // ^^^ _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE ^^^ / vvv whole-device fallback vvv
+
+/**
+ * @brief Number of locality domains exposed by a device (fallback).
+ *
+ * Without the CUDA 13.4 locality-domain APIs every valid device reports a
+ * single domain, so code written against this API keeps working with
+ * whole-device semantics.
+ */
+inline unsigned int locality_domain_count(int dev_id)
+{
+  int count = 0;
+  if (cudaGetDeviceCount(&count) != cudaSuccess || dev_id < 0 || dev_id >= count)
+  {
+    return 0;
+  }
+  return 1u;
+}
+
+#endif // _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+
+/**
+ * @brief Data place pinned to one locality domain of a device.
+ *
+ * With the native backend, `mem_create` produces a VMM physical handle whose
+ * backing store lives in the requested domain, and `allocate` hands out
+ * stream-ordered memory from a per-domain localized memory pool. With the
+ * fallback backend, both delegate to the plain device data place. Identity
+ * (device ordinal, domain ordinal) is preserved by both backends.
+ */
+class locality_domain_data_place_impl : public data_place_interface
+{
+public:
+  explicit locality_domain_data_place_impl(locality_domain_view view)
+      : view_(mv(view))
+  {}
+
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
+  ::std::shared_ptr<void> get_affine_exec_impl() const override;
+
+  int get_device_ordinal() const override
+  {
+    return view_.devid;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "locality_domain(dev=" + ::std::to_string(view_.devid) + ",id=" + ::std::to_string(view_.domain_id) + ")";
+  }
+
+  size_t hash() const override
+  {
+    return hash_all(view_.devid, view_.domain_id);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    const auto& o = static_cast<const locality_domain_data_place_impl&>(other);
+    return (o.view_ < view_) - (view_ < o.view_);
+  }
+
+  const locality_domain_view& get_view() const
+  {
+    return view_;
+  }
+
+#if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+  /**
+   * @brief Create physical memory localized to this domain (VMM API).
+   *
+   * Uses `CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN` so the backing store is
+   * placed in the requested domain. When `CUDASTF_DISABLE_LOCALIZED_MEMORY` is
+   * set, falls back to plain device memory.
+   */
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+
+    if (locality_domain_memory_disabled())
+    {
+      prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+      prop.location.id   = view_.devid;
+    }
+    else
+    {
+      prop.location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
+      prop.location.localized.deviceId         = static_cast<unsigned char>(view_.devid);
+      prop.location.localized.localityDomainId = static_cast<unsigned char>(view_.domain_id);
+    }
+
+    return cuMemCreate(handle, size, &prop, 0);
+  }
+
+  /**
+   * @brief Stream-ordered localized allocation from a per-domain memory pool.
+   */
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  {
+    cuda_try(cudaSetDevice(view_.devid));
+    CUmemoryPool pool = locality_domain_mem_pool_cache::instance().get(view_.devid, view_.domain_id);
+
+    CUdeviceptr ptr = 0;
+    cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
+    return reinterpret_cast<void*>(ptr);
+  }
+
+  void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
+  {
+    cuda_try(cuMemFreeAsync(reinterpret_cast<CUdeviceptr>(ptr), reinterpret_cast<CUstream>(stream)));
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return true;
+  }
+#else // ^^^ _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE ^^^ / vvv whole-device fallback vvv
+  // Plain device memory: the locality-domain VMM/pool APIs are unavailable.
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+    return data_place::device(view_.devid).mem_create(handle, size);
+  }
+
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  {
+    return data_place::device(view_.devid).allocate(size, stream);
+  }
+
+  void deallocate(void* ptr, size_t size, cudaStream_t stream) const override
+  {
+    data_place::device(view_.devid).deallocate(ptr, size, stream);
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return data_place::device(view_.devid).allocation_is_stream_ordered();
+  }
+#endif // _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+
+private:
+  locality_domain_view view_;
+};
+
+#if !_CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+
+/**
+ * @brief Execution place implementation for the whole-device fallback.
+ *
+ * Activation switches to the whole device with `cudaSetDevice` (mirroring
+ * `exec_place_device`); no SM partitioning is involved. Stream pools come
+ * from the default per-place registry, and impls are cached per
+ * (device, domain) so repeated factory calls share the same pools. The
+ * domain ordinal is carried through hashing/comparison/`to_string` so
+ * distinct ordinals remain distinguishable as labels.
+ */
+class exec_place_locality_domain_impl : public exec_place::impl
+{
+public:
+  exec_place_locality_domain_impl(locality_domain_view view)
+      : view_(mv(view))
+  {}
+
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  {
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
+    return shared_from_this();
+  }
+
+  exec_place activate(size_t idx) const override
+  {
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
+
+    const int old_dev_id = cuda_try<cudaGetDevice>();
+    if (old_dev_id != view_.devid)
+    {
+      cuda_try(cudaSetDevice(view_.devid));
+    }
+    // The previous device is encoded in the returned place's affine data place.
+    return exec_place::device(old_dev_id);
+  }
+
+  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  {
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
+
+    const int restore_dev_id = device_ordinal(prev.affine_data_place());
+    const int cur_dev_id     = cuda_try<cudaGetDevice>();
+    if (cur_dev_id != restore_dev_id)
+    {
+      cuda_try(cudaSetDevice(restore_dev_id));
+    }
+  }
+
+  ::std::string to_string() const override
+  {
+    return "locality_domain(dev=" + ::std::to_string(view_.devid) + ",id=" + ::std::to_string(view_.domain_id) + ")";
+  }
+
+  int cmp(const exec_place::impl& rhs) const override
+  {
+    if (typeid(*this) != typeid(rhs))
+    {
+      return typeid(*this).before(typeid(rhs)) ? -1 : 1;
+    }
+    const auto& other = static_cast<const exec_place_locality_domain_impl&>(rhs);
+    return (other.view_ < view_) - (view_ < other.view_);
+  }
+
+  size_t hash() const override
+  {
+    return hash_all(view_.devid, view_.domain_id);
+  }
+
+  /**
+   * @brief One cached impl per (device, domain) so the registry-backed stream
+   * pools are shared across repeated factory calls.
+   */
+  static ::std::shared_ptr<exec_place_locality_domain_impl> get_cached(const locality_domain_view& view)
+  {
+    static ::std::mutex mtx;
+    static ::std::map<::std::pair<int, int>, ::std::shared_ptr<exec_place_locality_domain_impl>> cache;
+
+    ::std::lock_guard<::std::mutex> lock(mtx);
+    auto key = ::std::make_pair(view.devid, view.domain_id);
+    auto it  = cache.find(key);
+    if (it == cache.end())
+    {
+      auto p = ::std::make_shared<exec_place_locality_domain_impl>(view);
+      p->set_affine_data_place(data_place::locality_domain(view));
+      it = cache.emplace(key, mv(p)).first;
+    }
+    return it->second;
+  }
+
+private:
+  locality_domain_view view_;
+};
+
+#endif // !_CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+
+/**
+ * @brief Create a data place pinned to one locality domain
+ *
+ * See the addressing-model note at the top of this file: the view is an
+ * identity token validated lazily, when memory is actually allocated.
+ */
+inline data_place data_place::locality_domain(const locality_domain_view& view)
+{
+  return data_place(::std::make_shared<locality_domain_data_place_impl>(view));
+}
+
+inline data_place data_place::locality_domain(int dev_id, int domain_id)
+{
+  return locality_domain(locality_domain_view(dev_id, domain_id));
+}
+
+/**
+ * @brief Create an execution place pinned to one locality domain
+ *
+ * With the native backend this is a green context whose SMs all belong to the
+ * requested domain, and the affine data place allocates domain-localized
+ * memory. Like `exec_place::green_ctx`, the place is keyed on the underlying
+ * (process-wide, cached) `CUcontext`, so places built repeatedly for the same
+ * domain compare equal. With the fallback backend, the place runs on the
+ * whole device.
+ */
+inline exec_place exec_place::locality_domain(const locality_domain_view& view)
+{
+#if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+  const auto& entry = locality_domain_ctx_cache::instance().get(view.devid, view.domain_id);
+  return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(
+    entry.primary_ctx, view.devid, entry.pool, data_place::locality_domain(view)));
+#else // ^^^ _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE ^^^ / vvv whole-device fallback vvv
+  return exec_place(exec_place_locality_domain_impl::get_cached(view));
+#endif // _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+}
+
+inline exec_place exec_place::locality_domain(int dev_id, int domain_id)
+{
+  return locality_domain(locality_domain_view(dev_id, domain_id));
+}
+
+inline ::std::shared_ptr<void> locality_domain_data_place_impl::get_affine_exec_impl() const
+{
+  return exec_place::locality_domain(view_).get_impl();
+}
+
+/**
+ * @brief Create a grid of execution places over all locality domains of a device
+ *
+ * The grid adapts to the queried domain count: on a device with a single
+ * domain (or with the fallback backend) it holds one whole-domain place.
+ *
+ * @param dev_id The CUDA device ordinal
+ * @return exec_place grid with one place per locality domain
+ */
+inline exec_place make_locality_domain_grid(int dev_id)
+{
+  const unsigned int num_domains = locality_domain_count(dev_id);
+  _CCCL_ASSERT(num_domains > 0, "no locality domains available on this device");
+
+  ::std::vector<exec_place> domains;
+  domains.reserve(num_domains);
+  for (unsigned int i = 0; i < num_domains; i++)
+  {
+    domains.push_back(exec_place::locality_domain(dev_id, static_cast<int>(i)));
+  }
+  return make_grid(mv(domains));
+}
+
+/**
+ * @brief Helper enumerating the locality domains of a device
+ *
+ * Mirrors `green_context_helper`: construct one per device, then use
+ * `get_count()` / `get_view(i)` to build places. The count is captured at
+ * construction; a zero count means locality-domain placement is unusable on
+ * this device (callers should fall back to regular device places).
+ */
+class locality_domain_helper
+{
+public:
+  explicit locality_domain_helper(int devid = cuda_try<cudaGetDevice>())
+      : devid_(devid)
+      , count_(locality_domain_count(devid))
+  {}
+
+  size_t get_count() const
+  {
+    return count_;
+  }
+
+  int get_device_id() const
+  {
+    return devid_;
+  }
+
+  locality_domain_view get_view(size_t id) const
+  {
+    _CCCL_ASSERT(id < count_, "locality domain ordinal out of range");
+    return locality_domain_view(devid_, static_cast<int>(id));
+  }
+
+private:
+  int devid_    = -1;
+  size_t count_ = 0;
+};
+} // end namespace cuda::experimental::places
