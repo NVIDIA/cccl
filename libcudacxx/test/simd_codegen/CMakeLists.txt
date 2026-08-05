@@ -74,6 +74,15 @@ file(
   "min_max/*.cu"
 )
 
+# arithmetic_u8x4.cu only checks for VIADD, which requires the PTX ISA 9.2
+# 8-bit SIMD path available with CUDA 13.2 and newer.
+if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.2)
+  list(
+    REMOVE_ITEM simd_codegen_sass_tests
+    "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
+  )
+endif()
+
 add_subdirectory(load_store)
 
 libcudacxx_codegen_add_sass_tests(
