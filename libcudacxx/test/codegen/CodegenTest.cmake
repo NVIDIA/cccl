@@ -131,6 +131,9 @@ function(
     plus_prefixes
     "${test_contents}"
   )
+  if ("${arch}" MATCHES "[af]$")
+    set(plus_prefixes)
+  endif()
   foreach (plus_prefix IN LISTS plus_prefixes)
     string(REGEX REPLACE ".*SM([0-9]+)-PLUS.*" "\\1" plus_arch "${plus_prefix}")
     if (arch GREATER_EQUAL plus_arch)
@@ -275,6 +278,18 @@ function(libcudacxx_codegen_add_sass_tests)
 
   foreach (test_path IN LISTS arg_TESTS)
     file(READ "${test_path}" test_contents)
+    string(
+      REGEX MATCH
+      "; SM[0-9]+[af]-PLUS(:|-[A-Z]+:)"
+      invalid_plus_prefix
+      "${test_contents}"
+    )
+    if (invalid_plus_prefix)
+      message(
+        FATAL_ERROR
+        "${test_path}: architecture- and family-specific SASS prefixes cannot use -PLUS: ${invalid_plus_prefix}"
+      )
+    endif()
 
     set(test_archs)
     foreach (arch IN LISTS arg_ARCHITECTURES)
