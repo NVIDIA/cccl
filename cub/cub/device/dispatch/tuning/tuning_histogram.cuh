@@ -159,26 +159,21 @@ struct dynamic_smem_chained_policy
   static constexpr int EVEN_4CH_MAX_BINS         = Even4chMaxBins;
 };
 
-enum class privatization_tier
+template <class PrivatizationMode>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const HistogramKernelConfig&
+kernel_config(const HistogramPolicy& policy, PrivatizationMode)
 {
-  gmem,
-  static_smem,
-  dynamic_smem
-};
-
-template <privatization_tier Tier>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const HistogramKernelConfig& kernel_config(const HistogramPolicy& policy)
-{
-  if constexpr (Tier == privatization_tier::static_smem)
+  if constexpr (is_privatized_static_smem_v<PrivatizationMode>)
   {
     return policy.static_smem.kernel;
   }
-  else if constexpr (Tier == privatization_tier::dynamic_smem)
+  else if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
   {
     return policy.dynamic_smem.kernel;
   }
   else
   {
+    static_assert(is_privatized_gmem_v<PrivatizationMode>);
     return policy.gmem;
   }
 }

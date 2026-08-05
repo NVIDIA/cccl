@@ -91,6 +91,10 @@ struct HistogramPrivatizedDynamicSmem
 struct HistogramPrivatizedGmem
 {};
 
+inline constexpr auto histogram_privatized_static_smem  = HistogramPrivatizedStaticSmem{};
+inline constexpr auto histogram_privatized_dynamic_smem = HistogramPrivatizedDynamicSmem{};
+inline constexpr auto histogram_privatized_gmem         = HistogramPrivatizedGmem{};
+
 template <class PrivatizationMode>
 inline constexpr bool is_privatized_static_smem_v =
   ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedStaticSmem>;
