@@ -58,8 +58,11 @@ readonly cuda12_image
 # shellcheck disable=SC2034
 readonly cuda13_image
 
-rm -rf wheelhouse wheelhouse_merged wheelhouse_final
 mkdir -p wheelhouse
+# CI mounts a Docker volume at wheelhouse, so preserve the mountpoint and clear
+# only its contents. The intermediate directories are ordinary checkout paths.
+find wheelhouse -mindepth 1 -delete
+rm -rf wheelhouse_merged wheelhouse_final
 
 # Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
 # identical LLVM/clang tree (LLVM has no CUDA dep), so a shared ccache cuts
