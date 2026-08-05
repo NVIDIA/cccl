@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/version>
+
 #include <algorithm>
 #include <cstddef>
 #include <execution>
