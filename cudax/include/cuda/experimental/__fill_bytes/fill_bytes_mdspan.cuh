@@ -171,10 +171,9 @@ _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Ac
   {
     _CCCL_THROW(::std::invalid_argument, "cudax::fill_bytes: destination mdspan must be sufficiently aligned");
   }
-  if (::cuda::experimental::__has_interleaved_stride_order(__mdspan))
+  if (!__mdspan.is_unique())
   {
-    _CCCL_THROW(::std::invalid_argument,
-                "cudax::fill_bytes: destination mdspan must not have interleaved stride order");
+    _CCCL_THROW(::std::invalid_argument, "cudax::fill_bytes: destination mdspan must have a unique layout");
   }
   if (__tensor_size == 1) // rank == 0 also falls into this case
   {

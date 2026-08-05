@@ -112,10 +112,9 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: destination mdspan must be sufficiently aligned");
   }
-  if (cudax::__has_interleaved_stride_order(__dst))
+  if (!__dst.is_unique())
   {
-    _CCCL_THROW(::std::invalid_argument,
-                "cudax::copy_bytes: destination mdspan must not have interleaved stride order");
+    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: destination mdspan must have a unique layout");
   }
 
   if (__tensor_size == 1) // rank == 0 also falls into this case

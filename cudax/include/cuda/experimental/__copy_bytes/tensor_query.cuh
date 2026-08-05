@@ -124,54 +124,6 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   }
   return __result;
 }
-
-//! @brief Conservative check for interleaved stride order in tensor layouts.
-//!
-//! Sorts modes by ascending absolute stride, then verifies two conditions:
-//! 1. No mode with extent > 1 has stride == 0 (broadcast)
-//! 2. No mode's span (extent * |stride|) exceeds the next mode's |stride|
-//!
-//! Returns true when the layout fails this non-interleaving rule. This is stronger than a mathematical injectivity
-//! check and may reject some layouts with distinct offsets.
-//!
-//! @param[in] __mdspan Mdspan view to inspect
-//! @return true if the layout has interleaved strides
-template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
-[[nodiscard]] _CCCL_HOST_API constexpr bool __has_interleaved_stride_order(
-  const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
-{
-  if constexpr (_Extents::rank() > 0)
-  {
-    namespace cudax       = ::cuda::experimental;
-    const auto __tensor   = cudax::__to_raw_tensor(__mdspan);
-    const auto __sorted   = cudax::__sort_by_stride(__tensor);
-    using __stride_t      = decltype(__sorted.__strides[0]);
-    using __rank_t        = typename _Extents::rank_type;
-    const auto& __extents = __sorted.__extents;
-    const auto& __strides = __sorted.__strides;
-    const auto __rank     = __sorted.__rank;
-    for (__rank_t __i = 0; __i < __rank; ++__i)
-    {
-      if (__extents[__i] > 1 && __strides[__i] == 0)
-      {
-        return true;
-      }
-    }
-    for (__rank_t __i = 0; __i + 1 < __rank; ++__i)
-    {
-      const auto __extent = static_cast<__stride_t>(__extents[__i]);
-      if (__extent * cudax::__abs_integer(__strides[__i]) > cudax::__abs_integer(__strides[__i + 1]))
-      {
-        return true;
-      }
-    }
-    return false;
-  }
-  else
-  {
-    return false;
-  }
-}
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>

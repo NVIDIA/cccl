@@ -25,6 +25,7 @@
 #include <cuda/__fwd/mdspan.h>
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/mul_overflow.h>
+#include <cuda/std/__algorithm/sort.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/concepts.h>
@@ -157,6 +158,104 @@ private:
       }
     }
     return __result;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr bool __has_zero_volume() const noexcept
+  {
+    for (rank_type __r = 0; __r < __rank_; ++__r)
+    {
+      if (extents().extent(__r) == index_type{0})
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  //! @brief Computes the mode permutation that orders a tensor by ascending absolute stride.
+  //!
+  //! @param[in] __tensor Raw tensor whose stride order is inspected
+  //! @return Mode permutation sorted by ascending absolute stride
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::array<rank_type, __rank_> __get_stride_order() const noexcept
+  {
+    ::cuda::std::array<rank_type, __rank_> __perm{};
+    for (rank_type __i = 0; __i < __rank_; ++__i)
+    {
+      __perm[__i] = __i;
+    }
+    ::cuda::std::sort(__perm.begin(), __perm.begin() + __rank_, [this](rank_type __a, rank_type __b) {
+      const auto __abs_stride_a = ::cuda::uabs(strides().stride(__a));
+      const auto __abs_stride_b = ::cuda::uabs(strides().stride(__b));
+      return __abs_stride_a < __abs_stride_b;
+    });
+    return __perm;
+  }
+
+  //! @brief Conservative uniqueness check (i.e. may return false for some unique layouts)
+  //! It returns false for any non-unique layout and correctly reports as unique
+  //! layouts that can be derived as permutations and slices of layout_right/layout_left.
+  [[nodiscard]] _CCCL_HOST_API constexpr bool __is_unique() const noexcept
+  {
+    if (__has_zero_volume())
+    {
+      // there are no two different conflicting indices when there are no elements
+      return true;
+    }
+    const auto __stride_order = __get_stride_order();
+    // ``__span_size`` is the size of the ``[min_offset, max_offset]`` range,
+    // restricted to ``__r`` dimensions with smallest strides.
+    // max_offset = sum((e_j - 1) * s_j for j in range(__r) if e_j > 0 and s_j > 0)
+    // min_offset = sum((e_j - 1) * s_j for j in range(__r) if e_j > 0 and s_j < 0)
+    // __span_size = max_offset - min_offset + 1 = 1 + sum((e_j - 1) * |s_j| for j in range(__r))
+    index_type __span_size{1};
+    for (rank_type __r = 0; __r < __rank_; ++__r)
+    {
+      const auto __i      = __stride_order[__r];
+      const auto __extent = extents().extent(__i);
+      const auto __stride = strides().stride(__i);
+      if (__extent == index_type{1})
+      {
+        continue;
+      }
+      _CCCL_ASSERT(::cuda::std::in_range<offset_type>(__extent - 1),
+                   "layout_stride_relaxed::mapping: extent - 1 is not representable as offset_type");
+      const auto __max_extent = static_cast<offset_type>(__extent - 1);
+      _CCCL_ASSERT(::cuda::std::in_range<index_type>(::cuda::uabs(__stride)),
+                   "layout_stride_relaxed::mapping: stride is out of range");
+      const auto __abs_stride_u = ::cuda::uabs(__stride);
+      _CCCL_ASSERT(::cuda::std::in_range<offset_type>(__abs_stride_u),
+                   "layout_stride_relaxed::mapping: absolute stride is not representable as offset_type");
+      const auto __abs_stride = static_cast<offset_type>(__abs_stride_u);
+      if (::cuda::std::cmp_less(__abs_stride, __span_size))
+      {
+        return false;
+      }
+      _CCCL_ASSERT(!::cuda::mul_overflow(__max_extent, __abs_stride)
+                     && !::cuda::add_overflow(__max_extent * __abs_stride, __span_size),
+                   "layout_stride_relaxed::mapping: span size is not representable");
+      // note that slicing a layout can increase |stride| or extent * |stride|, but
+      // not (extent - 1) * |stride|
+      __span_size += __max_extent * __abs_stride;
+    }
+    // Assume for contradiction that there exist two different n-dimensional
+    // indices idx1 and idx2 such that `dot(idx1, strides) == dot(idx2, strides)`.
+    // Without loss of generality, assume that strides are already sorted in
+    // ascending order (s_j <= s_{j+1}).
+    // Take largest r, 0 <= r <= n - 1 such that idx1[r] != idx2[r].
+    // Since idx1[i] == idx2[i] for i > r, they contribute the same to the dot product,
+    // so we can ignore the suffix where idx1 and idx2 are equal and consider sub-layout
+    // restricted to first r + 1 dimensions.
+    // We have `dot(idx1, strides) = dot(idx2, strides)`. Rearranging the terms we get:
+    // `(idx1[r] - idx2[r]) * s[r] = dot(idx2[:r], strides[:r]) - dot(idx1[:r], strides[:r])`.
+    // Putting absolute values on both sides, we get:
+    // |(idx1[r] - idx2[r]) * s[r]| = |dot(idx2[:r], strides[:r]) - dot(idx1[:r], strides[:r])|.
+    // Now, |s[r]| <= |(idx1[r] - idx2[r])| * |s[r]| = LHS
+    // And RHS is a distance between two elements in a sub-layout restricted to r dims
+    // thus RHS <= max_offset - min_offset = __span_size - 1.
+    // Therefore, |s[r]| <= __span_size - 1, equivalent to |s[r]| < __span_size.
+    // The latter one is the condition we checked above for all r,
+    // so we must have returned false.
+    return true;
   }
 
 public:
@@ -375,11 +474,13 @@ public:
     }
   }
 
-  //! @brief Returns false - uniqueness depends on strides (conservative)
+  //! @brief Conservative uniqueness check.
+  //! On device - always returns false. On host, returns false for any non-unique layout
+  //! and correctly reports as unique layouts that can be derived as permutations
+  //! and slices of layout_right/layout_left.
   [[nodiscard]] _CCCL_API constexpr bool is_unique() const noexcept
   {
-    // Conservative: negative/zero strides make uniqueness hard to determine
-    return false;
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_unique();), (return false;))
   }
 
   //! @brief Returns false - exhaustiveness depends on strides (conservative)

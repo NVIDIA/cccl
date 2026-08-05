@@ -429,13 +429,46 @@ TEST_CASE("fill_bytes handles rank-zero and zero-size mdspans", "[fill_bytes][ed
 
 TEST_CASE("fill_bytes rejects interleaved layout", "[fill_bytes][throw]")
 {
-  using extents_t = cuda::std::extents<int, 2, 2>;
+  using extents_t = cuda::std::extents<int, 4, 3>;
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
-  auto input      = make_host_data<uint32_t>(6, 0xCD);
+  auto input      = make_host_data<uint32_t>(13, 0xCD);
+  auto strides    = cuda::dstrides<int, 2>(2, 3);
+
+  // indices (0, 2) -> dot((0, 2), (2, 3)) = 6
+  // and     (3, 0) -> dot((3, 0), (2, 3)) = 6
+  // map to the same offset 6, so the layout is interleaved.
 
   thrust::device_vector<uint32_t> device_data(input.begin(), input.end());
   cuda::device_mdspan<uint32_t, extents_t, cuda::layout_stride_relaxed> dst(
-    thrust::raw_pointer_cast(device_data.data()), mapping_t(extents_t{}, cuda::dstrides<int, 2>(2, 3)));
+    thrust::raw_pointer_cast(device_data.data()), mapping_t(extents_t{}, strides));
 
   REQUIRE_THROWS_AS(cuda::experimental::fill_bytes(dst, uint32_t{0x12345678}, stream), std::invalid_argument);
+}
+
+TEST_CASE("fill_bytes accepts sliced layout", "[fill_bytes][no_throw]")
+{
+  // layout((2, 5) : (5, 1))[:, ::2] (sliced with step 2 in r-most dimension)
+  // results in layout((2, 3) : (5, 2)). Even though 2 * 3 (r-most stride * extent)
+  // = 6 > 5 (l-most stride), the layout is still unique/non-interleaved
+  // (the l-most stride 5 >= r-most memory range size [0..4])
+  constexpr int rows    = 2;
+  constexpr int cols    = 3; // sliced down from 5 (ceil(5 / 2))
+  constexpr int stride0 = 5;
+  constexpr int stride1 = 2;
+  using extents_t       = cuda::std::extents<int, rows, cols>;
+
+  // Same backing storage the un-sliced (2, 5):(5, 1) layout would need:
+  // max offset = (rows - 1) * stride0 + (cols - 1) * stride1 = 5 + 4 = 9, so 10 elements.
+  auto input           = make_host_data<uint32_t>(10, 0xCD);
+  constexpr auto value = uint32_t{0x12345678};
+
+  auto expected = to_byte_vector(input);
+  for (int row = 0; row < rows; ++row)
+  {
+    for (int col = 0; col < cols; ++col)
+    {
+      fill_expected_element<uint32_t>(expected, row * stride0 + col * stride1, value);
+    }
+  }
+  test_impl_relaxed(input, expected, extents_t{}, cuda::dstrides<int, 2>(stride0, stride1), /* offset = */ 0, value);
 }

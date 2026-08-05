@@ -284,16 +284,25 @@ public:
     array<rank_type, extents_type::rank()> __permute{_Pos...};
     __bubble_sort_by_strides(__permute);
 
-    // check that this permutations represents a growing set
-    bool __result = true;
-    for (rank_type __i = 1; __i < __rank_; __i++)
+    // __span_size = 1 + max_offset = 1 + sum((e_j - 1) * s_j for j in range(__i))
+    // check that next stride is bigger than the max offset attainable
+    // with all the previous dimensions combined
+    index_type __span_size = 1;
+    bool __result          = true;
+    for (rank_type __i = 0; __i < __rank_; __i++)
     {
-      if (static_cast<index_type>(__strides()[__permute[__i]])
-          < static_cast<index_type>(__strides()[__permute[__i - 1]]) * extents().extent(__permute[__i - 1]))
+      const auto __extent = extents().extent(__permute[__i]);
+      if (__extent == index_type{1})
+      {
+        continue;
+      }
+      const auto __stride = static_cast<index_type>(__strides()[__permute[__i]]);
+      if (__stride < __span_size)
       {
         __result = false;
         break;
       }
+      __span_size += (__extent - 1) * __stride;
     }
     return __result;
   }

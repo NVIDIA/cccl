@@ -30,8 +30,17 @@ using cuda::std::intptr_t;
 
 template <class E>
 TEST_FUNC constexpr void test_layout_mapping_stride_relaxed(
-  E ext, [[maybe_unused]] cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, bool expected_is_strided)
+  E ext,
+  [[maybe_unused]] cuda::std::array<intptr_t, E::rank()> input_strides,
+  intptr_t offset,
+  bool expected_is_strided,
+  bool expected_is_unique)
 {
+#if defined(__CUDA_ARCH__)
+  // In device code, layout_stride_relaxed::mapping does not attempt
+  // to determine uniqueness, it just returns false.
+  expected_is_unique = false;
+#endif
   using M            = cuda::layout_stride_relaxed::template mapping<E>;
   using strides_type = typename M::strides_type;
   using offset_type  = typename M::offset_type;
@@ -51,8 +60,8 @@ TEST_FUNC constexpr void test_layout_mapping_stride_relaxed(
   assert(M::is_always_strided() == false);
 
   // is_unique and is_exhaustive return false (conservative)
-  assert(m.is_unique() == false);
-  assert(c_m.is_unique() == false);
+  assert(m.is_unique() == expected_is_unique);
+  assert(c_m.is_unique() == expected_is_unique);
   assert(m.is_exhaustive() == false);
   assert(c_m.is_exhaustive() == false);
 
@@ -95,90 +104,172 @@ TEST_FUNC constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Rank-0 cases
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 5, false);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 0, true, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 5, false, true);
 
   // Basic cases with zero offset (is_strided = true)
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<signed char, 4, 5>(), cuda::std::array<intptr_t, 2>{1, 4}, 0, true);
+    cuda::std::extents<signed char, 4, 5>(), cuda::std::array<intptr_t, 2>{1, 4}, 0, true, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<unsigned, D, 4>(7), cuda::std::array<intptr_t, 2>{20, 2}, 0, true);
+    cuda::std::extents<unsigned, D, 4>(7), cuda::std::array<intptr_t, 2>{20, 2}, 0, true, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<size_t, D, D, D, D>(3, 3, 3, 3), cuda::std::array<intptr_t, 4>{3, 1, 9, 27}, 0, true);
+    cuda::std::extents<size_t, D, D, D, D>(3, 3, 3, 3), cuda::std::array<intptr_t, 4>{3, 1, 9, 27}, 0, true, true);
 
   // Cases with non-zero offset (is_strided = false)
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<signed char, 4, 5>(), cuda::std::array<intptr_t, 2>{1, 4}, 10, false);
+    cuda::std::extents<signed char, 4, 5>(), cuda::std::array<intptr_t, 2>{1, 4}, 10, false, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<unsigned, D, 4>(7), cuda::std::array<intptr_t, 2>{20, 2}, 5, false);
+    cuda::std::extents<unsigned, D, 4>(7), cuda::std::array<intptr_t, 2>{20, 2}, 5, false, true);
 
   // Cases with negative strides
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 4>(), cuda::std::array<intptr_t, 1>{-1}, 3, false);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 4, 5>(), cuda::std::array<intptr_t, 2>{-1, 4}, 3, false);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 4>(), cuda::std::array<intptr_t, 1>{-1}, 3, false, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 4, 5>(), cuda::std::array<intptr_t, 2>{-1, 4}, 3, false, true);
 
   // Cases with zero strides (broadcasting)
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 4, 5>(), cuda::std::array<intptr_t, 2>{0, 1}, 0, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 4, 5>(), cuda::std::array<intptr_t, 2>{0, 1}, 0, true, false);
 
   // ============================================================================
   // Edge cases with zero extents
   // ============================================================================
 
   // Single zero extent (dynamic)
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{1}, 5, false);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{1}, 5, false, true);
 
   // Single zero extent (static)
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0>(), cuda::std::array<intptr_t, 1>{1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0>(), cuda::std::array<intptr_t, 1>{1}, 10, false);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0>(), cuda::std::array<intptr_t, 1>{1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0>(), cuda::std::array<intptr_t, 1>{1}, 10, false, true);
 
   // All extents zero (multiple dimensions)
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D, D>(0, 0), cuda::std::array<intptr_t, 2>{1, 1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0, 0>(), cuda::std::array<intptr_t, 2>{8, 1}, 0, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, D, D, D>(0, 0, 0), cuda::std::array<intptr_t, 3>{1, 1, 1}, 0, true);
+    cuda::std::extents<int, D, D>(0, 0), cuda::std::array<intptr_t, 2>{1, 1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 0, 0>(), cuda::std::array<intptr_t, 2>{8, 1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, D, D, D>(0, 0, 0), cuda::std::array<intptr_t, 3>{1, 1, 1}, 0, true, true);
 
   // All extents zero with non-zero offset
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, D, D>(0, 0), cuda::std::array<intptr_t, 2>{1, 1}, 100, false);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0, 0>(), cuda::std::array<intptr_t, 2>{8, 1}, 50, false);
+    cuda::std::extents<int, D, D>(0, 0), cuda::std::array<intptr_t, 2>{1, 1}, 100, false, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 0, 0>(), cuda::std::array<intptr_t, 2>{8, 1}, 50, false, true);
 
   // Zero extent with negative strides
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{-1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{-1}, 10, false);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0>(), cuda::std::array<intptr_t, 1>{-5}, 0, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{-1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D>(0), cuda::std::array<intptr_t, 1>{-1}, 10, false, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0>(), cuda::std::array<intptr_t, 1>{-5}, 0, true, true);
 
   // Mix of zero and non-zero extents
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D, D>(0, 5), cuda::std::array<intptr_t, 2>{5, 1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D, D>(5, 0), cuda::std::array<intptr_t, 2>{1, 5}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 0, 5>(), cuda::std::array<intptr_t, 2>{5, 1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, 5, 0>(), cuda::std::array<intptr_t, 2>{1, 5}, 0, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, D, D>(0, 5), cuda::std::array<intptr_t, 2>{5, 1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, D, D>(5, 0), cuda::std::array<intptr_t, 2>{1, 5}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 0, 5>(), cuda::std::array<intptr_t, 2>{5, 1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 0>(), cuda::std::array<intptr_t, 2>{1, 5}, 0, true, true);
 
   // Mix of zero and non-zero extents with negative strides
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D, D>(0, 5), cuda::std::array<intptr_t, 2>{-1, 1}, 0, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, D, D>(5, 0), cuda::std::array<intptr_t, 2>{-1, 1}, 4, false);
+    cuda::std::extents<int, D, D>(0, 5), cuda::std::array<intptr_t, 2>{-1, 1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, D, D>(5, 0), cuda::std::array<intptr_t, 2>{-1, 1}, 4, false, true);
 
   // Zero extent in the middle of non-zero extents
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, D, D, D>(3, 0, 4), cuda::std::array<intptr_t, 3>{12, 4, 1}, 0, true);
+    cuda::std::extents<int, D, D, D>(3, 0, 4), cuda::std::array<intptr_t, 3>{12, 4, 1}, 0, true, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, 3, 0, 4>(), cuda::std::array<intptr_t, 3>{12, 4, 1}, 0, true);
+    cuda::std::extents<int, 3, 0, 4>(), cuda::std::array<intptr_t, 3>{12, 4, 1}, 0, true, true);
 
   // Zero extent with zero stride (broadcasting an empty dimension)
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D, D>(0, 5), cuda::std::array<intptr_t, 2>{0, 1}, 0, true);
-  test_layout_mapping_stride_relaxed(cuda::std::extents<int, D, D>(5, 0), cuda::std::array<intptr_t, 2>{1, 0}, 0, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, D, D>(0, 5), cuda::std::array<intptr_t, 2>{0, 1}, 0, true, true);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, D, D>(5, 0), cuda::std::array<intptr_t, 2>{1, 0}, 0, true, true);
 
   // Higher rank with multiple zero extents
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int64_t, D, 0, D, 0>(5, 7), cuda::std::array<intptr_t, 4>{1, 2, 3, 4}, 0, true);
+    cuda::std::extents<int64_t, D, 0, D, 0>(5, 7), cuda::std::array<intptr_t, 4>{1, 2, 3, 4}, 0, true, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int64_t, 0, D, 0, D>(5, 7), cuda::std::array<intptr_t, 4>{1, 2, 3, 4}, 50, false);
+    cuda::std::extents<int64_t, 0, D, 0, D>(5, 7), cuda::std::array<intptr_t, 4>{1, 2, 3, 4}, 50, false, true);
 
   // Zero extent with mixed positive, negative, and zero strides
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, D, D, D>(0, 5, 3), cuda::std::array<intptr_t, 3>{-1, 0, 1}, 0, true);
+    cuda::std::extents<int, D, D, D>(0, 5, 3), cuda::std::array<intptr_t, 3>{-1, 0, 1}, 0, true, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int, D, D, D>(5, 0, 3), cuda::std::array<intptr_t, 3>{-1, 0, 1}, 4, false);
+    cuda::std::extents<int, D, D, D>(5, 0, 3), cuda::std::array<intptr_t, 3>{-1, 0, 1}, 4, false, true);
+
+  // Slice with -1 stride/step, permuted layouts
+  // right(5, 4, 3)[::-1, ::-1, ::-1]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 4, 3>{}, cuda::std::array<intptr_t, 3>{-12, -3, -1}, 59, false, true);
+  // right(5, 4, 3)[::-1, ::-1, ::-1].permute(2, 1, 0)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 3, 4, 5>{}, cuda::std::array<intptr_t, 3>{-1, -3, -12}, 59, false, true);
+  // right(5, 4, 3)[::-1, :, ::-1]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 4, 3>{}, cuda::std::array<intptr_t, 3>{-12, 3, -1}, 50, false, true);
+  // right(5, 4, 3)[::-1, :, ::-1].permute(2, 0, 1)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 3, 5, 4>{}, cuda::std::array<intptr_t, 3>{-1, -12, 3}, 50, false, true);
+  // right(5, 4, 3)[:, ::-1, :]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 4, 3>{}, cuda::std::array<intptr_t, 3>{12, -3, 1}, 9, false, true);
+  // right(5, 4, 3)[:, ::-1, :].permute(1, 0, 2)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 4, 5, 3>{}, cuda::std::array<intptr_t, 3>{-3, 12, 1}, 9, false, true);
+
+  // Slice with with |stride| > 1, permuted layouts
+  // right(5, 4, 3)[:, :, ::-2]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 4, 2>{}, cuda::std::array<intptr_t, 3>{12, 3, -2}, 2, false, true);
+  // right(5, 4, 3)[:, :, ::-2].permute(0, 2, 1)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 2, 4>{}, cuda::std::array<intptr_t, 3>{12, -2, 3}, 2, false, true);
+
+  // Unit extents handling (should have no effect on is_unique)
+  // right(5, 2, 3)[:, :, ::3]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 2, 1>{}, cuda::std::array<intptr_t, 3>{6, 3, 3}, 0, true, true);
+  // right(5, 2, 3)[:, :, ::3].permute(0, 2, 1)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 1, 2>{}, cuda::std::array<intptr_t, 3>{6, 3, 3}, 0, true, true);
+
+  // right(5, 5, 3)[:, ::3, ::3]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 2, 1>{}, cuda::std::array<intptr_t, 3>{15, 9, 3}, 0, true, true);
+  // right(5, 5, 3)[:, ::-3, ::3].permute(0, 2, 1)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 1, 2>{}, cuda::std::array<intptr_t, 3>{15, 3, -9}, 12, false, true);
+  // right(5, 5, 3)[:, ::-3, ::-3].permute(0, 2, 1)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 1, 2>{}, cuda::std::array<intptr_t, 3>{15, -3, -9}, 14, false, true);
+
+  // like above, but gibberish stride for unit extent
+  // right(5, 2, 3)[:, :, ::3]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 2, 1>{}, cuda::std::array<intptr_t, 3>{6, 3, 72}, 0, true, true);
+  // right(5, 2, 3)[:, :, ::3].permute(0, 2, 1)
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 1, 2>{}, cuda::std::array<intptr_t, 3>{6, 72, 3}, 0, true, true);
+  // right(5, 5, 3)[:, ::3, ::3]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 2, 1>{}, cuda::std::array<intptr_t, 3>{15, 9, -72}, 0, true, true);
+  // right(5, 5, 3)[:, ::3, ::3]
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 2, 1>{}, cuda::std::array<intptr_t, 3>{15, 9, 0}, 0, true, true);
+
+  // Overlapping extents (non-unique layouts)
+  // Counterexamples to attempt at checking 1 + (e - 1) * stride <= next_stride
+  // for uniqueness - examples below meet the condition, but are non-unique
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 2, 2, 2, 2>{}, cuda::std::array<intptr_t, 4>{4, 3, 2, 1}, 0, true, false);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 2, 2, 2, 2>{}, cuda::std::array<intptr_t, 4>{1, 2, 3, 4}, 0, true, false);
+  test_layout_mapping_stride_relaxed(
+    cuda::std::extents<int, 5, 4, 3>{}, cuda::std::array<intptr_t, 3>{4, 1, 17}, 0, true, false);
 
   return true;
 }
